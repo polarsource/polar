@@ -2662,6 +2662,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /** SubscriptionConfirmationEmail */
     SubscriptionConfirmationEmail: {
@@ -2682,6 +2687,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionCycledAfterTrialEmail */
@@ -2703,6 +2713,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionCycledEmail */
@@ -2724,6 +2739,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionEmail */
@@ -2908,6 +2928,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionPastDueEmail */
@@ -2929,6 +2954,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       /**
        * Access Ends At
        * @default null
@@ -2959,6 +2989,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /**
      * SubscriptionProrationBehavior
@@ -2988,6 +3023,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       /** Renewal Date */
       renewal_date: string
     }
@@ -3010,6 +3050,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /** SubscriptionRevokedEmail */
     SubscriptionRevokedEmail: {
@@ -3030,6 +3075,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /**
      * SubscriptionStatus
@@ -3063,6 +3113,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       /** Conversion Date */
       conversion_date: string
     }
@@ -3085,6 +3140,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /** SubscriptionUpdatedEmail */
     SubscriptionUpdatedEmail: {
@@ -3105,6 +3165,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail'] | null
     }
     /** SupportCaseOrganizationNewMessageEmail */

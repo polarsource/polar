@@ -16,7 +16,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
 from polar.config import settings
-from polar.email.schemas import OrderConfirmationEmail
+from polar.email.schemas import OrderConfirmationEmail, SubscriptionCycledEmail
 from polar.enums import (
     InvoiceNumbering,
     PaymentMode,
@@ -65,6 +65,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
@@ -140,6 +141,10 @@ from tests.fixtures.random_objects import (
     create_wallet_billing,
     create_wallet_transaction,
     set_product_benefits,
+)
+from tests.merchant_migration._helpers import (
+    build_connected_migration,
+    stage_subscription_record,
 )
 from tests.transaction.conftest import create_transaction
 
@@ -3163,6 +3168,46 @@ class TestSendConfirmationEmail:
         assert [benefit.description for benefit in email.props.product.benefits] == [
             "Public benefit"
         ]
+
+    async def test_cycle_mentions_stripe_migration(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            subscription,
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionCycledEmail)
+        assert email.props.previous_billing_provider == "Stripe"
 
 
 @pytest.mark.asyncio

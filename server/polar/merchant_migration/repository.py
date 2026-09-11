@@ -131,6 +131,28 @@ class MerchantMigrationRecordRepository(
 ):
     model = MerchantMigrationRecord
 
+    async def get_moved_source_platform(
+        self, subscription_id: UUID
+    ) -> MerchantMigrationSourcePlatform | None:
+        statement = (
+            self.get_base_statement()
+            .join(
+                MerchantMigration,
+                MerchantMigration.id == MerchantMigrationRecord.merchant_migration_id,
+            )
+            .where(
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+                MerchantMigrationRecord.target_id == subscription_id,
+                MerchantMigrationRecord.cutover_status
+                == MerchantMigrationCutoverStatus.moved,
+                MerchantMigration.deleted_at.is_(None),
+            )
+            .with_only_columns(MerchantMigration.source_platform)
+            .limit(1)
+        )
+        return await self.session.scalar(statement)
+
     async def get_by_source(
         self,
         *,

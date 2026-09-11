@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   Divider,
@@ -17,6 +18,7 @@ export function SubscriptionCycledAfterTrial({
   product,
   order,
   url,
+  previous_billing_provider,
 }: schemas['SubscriptionCycledAfterTrialProps']) {
   return (
     <WrapperOrganization
@@ -38,6 +40,12 @@ export function SubscriptionCycledAfterTrial({
           </>
         )}
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Button href={url}>Manage subscription</Button>
       <Divider />
       <OrderSummary order={order} />
@@ -55,6 +63,7 @@ SubscriptionCycledAfterTrial.PreviewProps = {
     status: 'active',
   },
   order,
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

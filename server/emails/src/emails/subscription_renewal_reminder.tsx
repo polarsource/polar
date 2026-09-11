@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -14,6 +15,7 @@ export function SubscriptionRenewalReminder({
   product,
   url,
   renewal_date,
+  previous_billing_provider,
 }: schemas['SubscriptionRenewalReminderProps']) {
   return (
     <WrapperOrganization
@@ -31,6 +33,12 @@ export function SubscriptionRenewalReminder({
         </Text>
         .
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Text>
         If you&rsquo;d like to make any changes to your subscription, you can do
         so from your customer portal.
@@ -46,6 +54,7 @@ SubscriptionRenewalReminder.PreviewProps = {
   organization,
   product,
   renewal_date: 'April 15, 2026',
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

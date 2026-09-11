@@ -27,6 +27,10 @@ from polar.customer_meter.service import customer_meter as customer_meter_servic
 from polar.customer_seat.service import seat_service
 from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.discount.service import discount as discount_service
+from polar.email.billing_migration import (
+    is_billing_migration_notice_template,
+    previous_billing_provider_for_notice,
+)
 from polar.email.deduplication import (
     subscription_renewal_reminder_key,
     subscription_trial_conversion_reminder_key,
@@ -4206,6 +4210,15 @@ class SubscriptionService:
 
         subject = subject_template.format(product=product)
 
+        extra_context = dict(extra_context or {})
+        if (
+            is_billing_migration_notice_template(template_name)
+            and "previous_billing_provider" not in extra_context
+        ):
+            extra_context[
+                "previous_billing_provider"
+            ] = await previous_billing_provider_for_notice(session, subscription)
+
         async def send_to_recipients(recipients: Sequence[str]) -> None:
             for recipient_email in recipients:
                 token = await customer_service.create_session_token_for_recipient(
@@ -4234,7 +4247,7 @@ class SubscriptionService:
                             "product": product,
                             "subscription": subscription,
                             "url": portal_url,
-                            **(extra_context or {}),
+                            **extra_context,
                         },
                     }
                 )

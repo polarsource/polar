@@ -45,6 +45,29 @@ class TestListPayoutAccounts:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
+    @pytest.mark.auth
+    async def test_lists_the_organizations_using_each_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        free_account = await create_payout_account(save_fixture, organization, user)
+        organization.payout_account = payout_account
+        await save_fixture(organization)
+
+        response = await client.get("/v1/payout-accounts/")
+
+        assert response.status_code == 200
+        accounts = {item["id"]: item for item in response.json()["items"]}
+        assert accounts[str(payout_account.id)]["organizations"] == [
+            {"id": str(organization.id), "slug": organization.slug}
+        ]
+        assert accounts[str(free_account.id)]["organizations"] == []
+
 
 @pytest.mark.asyncio
 class TestCreatePayoutAccount:

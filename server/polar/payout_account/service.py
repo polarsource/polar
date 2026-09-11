@@ -3,6 +3,7 @@ from collections.abc import Sequence
 
 import stripe as stripe_lib
 import structlog
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
@@ -99,7 +100,9 @@ class PayoutAccountService:
         auth_subject: AuthSubject[User],
     ) -> Sequence[PayoutAccount]:
         repository = PayoutAccountRepository.from_session(session)
-        statement = repository.get_statement_by_user(auth_subject.subject)
+        statement = repository.get_statement_by_user(auth_subject.subject).options(
+            selectinload(PayoutAccount.organizations)
+        )
         return await repository.get_all(statement)
 
     async def get(

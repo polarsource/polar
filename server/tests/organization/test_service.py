@@ -5180,6 +5180,33 @@ class TestSetPayoutAccount:
             )
 
     @pytest.mark.auth
+    async def test_enqueues_website_sync(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.set_payout_account(
+            session, organization, payout_account
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
+
+    @pytest.mark.auth
     async def test_activates_when_all_gates_pass(
         self,
         session: AsyncSession,

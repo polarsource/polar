@@ -1009,6 +1009,11 @@ class OrganizationService:
                 payout_account_id=previous_payout_account_id,
             )
 
+        enqueue_job(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
+
         # Reusing an already-ready payout account doesn't fire a Stripe
         # `account.updated` webhook, so attempt activation here too.
         await self.maybe_activate(session, organization)

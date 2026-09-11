@@ -29,6 +29,8 @@ MAX_SLICE = timedelta(days=14)
 MAX_ROWS = 10_000
 MESSAGE = "Embedded checkout framing policy resolved"
 
+OUR_ORIGINS = ("https://polar.sh", "https://sandbox.polar.sh")
+
 Observation = tuple[str, int, datetime]
 
 _QUERY = f"""
@@ -41,6 +43,7 @@ FROM records
 WHERE message = '{MESSAGE}'
   AND attributes->>'fetch_dest' = 'iframe'
   AND attributes->>'frame_origin' IS NOT NULL
+  AND attributes->>'frame_origin' NOT IN {tuple(OUR_ORIGINS)}
 GROUP BY 1, 2
 """
 

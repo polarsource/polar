@@ -1344,8 +1344,8 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "sum by (api_version) (rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\", api_version!=\"\"}[$__rate_interval]))",
-                        "legendFormat": "{{api_version}}"
+                        "expr": "sum by (api_version, api_version_set) (rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\", api_version!=\"\"}[$__rate_interval]))",
+                        "legendFormat": "{{api_version}} (explicit: {{api_version_set}})"
                       },
                       "version": "v0"
                     },
@@ -1357,7 +1357,7 @@
               "transformations": []
             }
           },
-          "description": "Resolved API version for routed requests. Requests without Polar-Version use Current. Rejected versions and existing metric exclusions are not counted.",
+          "description": "Resolved API version and whether Polar-Version was explicitly set for routed requests. Requests without Polar-Version use Current. Rejected versions and existing metric exclusions are not counted.",
           "id": 36,
           "links": [],
           "title": "Request Rate by API Version",

@@ -37,6 +37,10 @@ export interface WebhookBenefitCreatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Benefit;
@@ -55,6 +59,10 @@ export interface WebhookBenefitGrantCreatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -76,6 +84,10 @@ export interface WebhookBenefitGrantCycledPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: BenefitGrantWebhook;
@@ -94,6 +106,10 @@ export interface WebhookBenefitGrantRevokedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -114,6 +130,10 @@ export interface WebhookBenefitGrantUpdatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: BenefitGrantWebhook;
@@ -133,6 +153,10 @@ export interface WebhookBenefitUpdatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Benefit;
@@ -151,6 +175,10 @@ export interface WebhookCheckoutCreatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -174,6 +202,10 @@ export interface WebhookCheckoutExpiredPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Checkout;
@@ -192,6 +224,10 @@ export interface WebhookCheckoutUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -217,6 +253,10 @@ export interface WebhookCustomerCreatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Customer;
@@ -235,6 +275,10 @@ export interface WebhookCustomerDeletedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -256,6 +300,10 @@ export interface WebhookCustomerSeatAssignedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: CustomerSeat;
@@ -275,6 +323,10 @@ export interface WebhookCustomerSeatClaimedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: CustomerSeat;
@@ -293,6 +345,10 @@ export interface WebhookCustomerSeatRevokedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -319,6 +375,10 @@ export interface WebhookCustomerStateChangedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: CustomerState;
@@ -342,6 +402,10 @@ export interface WebhookCustomerUpdatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Customer;
@@ -360,6 +424,10 @@ export interface WebhookDiscountCreatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -380,6 +448,10 @@ export interface WebhookDiscountDeletedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Discount;
@@ -398,6 +470,10 @@ export interface WebhookDiscountUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -423,6 +499,10 @@ export interface WebhookMemberCreatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Member;
@@ -445,6 +525,10 @@ export interface WebhookMemberDeletedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Member;
@@ -466,6 +550,10 @@ export interface WebhookMemberUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -496,6 +584,10 @@ export interface WebhookOrderCreatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Order;
@@ -517,6 +609,10 @@ export interface WebhookOrderPaidPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Order;
@@ -535,6 +631,10 @@ export interface WebhookOrderRefundedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -560,6 +660,10 @@ export interface WebhookOrderUpdatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Order;
@@ -578,6 +682,10 @@ export interface WebhookOrganizationUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -598,6 +706,10 @@ export interface WebhookProductCreatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Product;
@@ -616,6 +728,10 @@ export interface WebhookProductUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -636,6 +752,10 @@ export interface WebhookRefundCreatedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Refund;
@@ -654,6 +774,10 @@ export interface WebhookRefundUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -675,6 +799,10 @@ export interface WebhookSubscriptionActivePayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Subscription;
@@ -694,6 +822,10 @@ export interface WebhookSubscriptionCanceledPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -715,6 +847,10 @@ export interface WebhookSubscriptionCreatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -743,6 +879,10 @@ export interface WebhookSubscriptionCycledPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Subscription;
@@ -767,6 +907,10 @@ export interface WebhookSubscriptionPastDuePayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Subscription;
@@ -789,6 +933,10 @@ export interface WebhookSubscriptionPausedPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Subscription;
@@ -809,6 +957,10 @@ export interface WebhookSubscriptionResumedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -831,6 +983,10 @@ export interface WebhookSubscriptionRevokedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */
@@ -855,6 +1011,10 @@ export interface WebhookSubscriptionUncanceledPayload {
    */
   timestamp: string;
   /**
+   * api_version
+   */
+  api_version: string;
+  /**
    * data
    */
   data: Subscription;
@@ -877,6 +1037,10 @@ export interface WebhookSubscriptionUpdatedPayload {
    * timestamp
    */
   timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
   /**
    * data
    */

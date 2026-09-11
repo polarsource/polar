@@ -4,6 +4,7 @@ import {
   AuthError,
   loginCommand,
   type ActiveOrganization,
+  type OrganizationSelection,
   type PolarEnvironment,
   type Session,
 } from '@/schemas/Auth'
@@ -13,6 +14,14 @@ import { Credentials } from '@/services/credentials'
 import { OAuth } from '@/services/oauth'
 import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
+import {
+  type SendError,
+  Trigger,
+  type TriggerError,
+  type TriggerEvent,
+  type TriggerRequest,
+  type TriggerResult,
+} from '@/services/trigger'
 
 export const session = (
   accessToken = 'access',
@@ -38,8 +47,9 @@ export const overrideCredential = (accessToken = 'ci-token'): Credential => ({
 
 interface AuthState {
   credential: Credential
+  environment: PolarEnvironment
+  sessions: PolarEnvironment[]
   replaced: boolean
-  deleted: boolean
   failure: AuthError | undefined
   resolutions: Array<{
     environment: PolarEnvironment
@@ -52,14 +62,24 @@ export const fakeAuth = (
 ) => {
   const state: AuthState = {
     credential: keyringCredential(),
+    environment: 'production',
+    sessions: ['sandbox', 'production'],
     replaced: true,
-    deleted: true,
     failure: undefined,
     resolutions: [],
     ...initial,
   }
   const auth = Auth.of({
     override: Effect.sync(() => state.credential.source === 'override'),
+    environments: Effect.suspend(() =>
+      state.failure
+        ? Effect.fail(state.failure)
+        : Effect.succeed(
+            state.credential.source === 'override'
+              ? [state.environment]
+              : [...state.sessions],
+          ),
+    ),
     resolve: (environment, rejected) =>
       Effect.suspend(() => {
         state.resolutions.push({ environment, rejected })
@@ -68,14 +88,23 @@ export const fakeAuth = (
           : Effect.succeed(state.credential)
       }),
     login: () => Effect.sync(() => state.replaced),
-    logout: () => Effect.sync(() => state.deleted),
+    logout: (targets) =>
+      Effect.sync(() => {
+        const deleted = targets.filter((target) =>
+          state.sessions.includes(target),
+        )
+        state.sessions = state.sessions.filter(
+          (session) => !targets.includes(session),
+        )
+        return deleted
+      }),
   })
   return { auth, state }
 }
 
 interface OrganizationsState {
   items: ActiveOrganization[]
-  selected: Partial<Record<PolarEnvironment, string>>
+  selected: OrganizationSelection | undefined
   failure: AuthError | undefined
 }
 
@@ -84,33 +113,34 @@ export const fakeOrganizations = (
 ) => {
   const state: OrganizationsState = {
     items: [],
-    selected: {},
+    selected: undefined,
     failure: undefined,
     ...initial,
   }
+  const available = () =>
+    state.failure ? Effect.fail(state.failure) : Effect.succeed(state.items)
   const organizations = Organizations.of({
-    list: () =>
-      Effect.suspend(() =>
-        state.failure
-          ? Effect.fail(state.failure)
-          : Effect.succeed(state.items),
+    list: (environment) =>
+      Effect.map(Effect.suspend(available), (items) =>
+        items.filter((item) => item.environment === environment),
       ),
-    selected: (environment) => Effect.sync(() => state.selected[environment]),
-    select: (environment, id) =>
+    listAll: Effect.suspend(available),
+    selected: Effect.sync(() => state.selected),
+    select: (selection) =>
       Effect.sync(() => {
-        state.selected[environment] = id
+        state.selected = selection
       }),
-    resolve: (environment, id) =>
+    resolve: (id) =>
       Effect.suspend(() => {
-        const target = id ?? state.selected[environment]
-        const found = state.items.find((item) => item.id === target)
+        const found = state.items.find((item) =>
+          id
+            ? item.id === id
+            : item.id === state.selected?.id &&
+              item.environment === state.selected.environment,
+        )
         return found
           ? Effect.succeed(found)
-          : Effect.fail(
-              new AuthError({
-                message: `No active organization for ${environment}.`,
-              }),
-            )
+          : Effect.fail(new AuthError({ message: 'No active organization.' }))
       }),
   })
   return { organizations, state }
@@ -156,22 +186,18 @@ export const fakeCredentials = (
 }
 
 interface ConfigState {
-  activeOrganizations: Partial<Record<PolarEnvironment, string>>
+  activeOrganization: OrganizationSelection | undefined
   writes: number
 }
 
-export const fakeConfig = (
-  activeOrganizations: ConfigState['activeOrganizations'] = {},
-) => {
-  const state: ConfigState = { activeOrganizations, writes: 0 }
+export const fakeConfig = (activeOrganization?: OrganizationSelection) => {
+  const state: ConfigState = { activeOrganization, writes: 0 }
   const config = CLIConfig.of({
-    getActiveOrganization: (environment) =>
-      Effect.sync(() => state.activeOrganizations[environment]),
-    setActiveOrganization: (environment, id) =>
+    getActiveOrganization: Effect.sync(() => state.activeOrganization),
+    setActiveOrganization: (selection) =>
       Effect.sync(() => {
         state.writes++
-        if (id === undefined) delete state.activeOrganizations[environment]
-        else state.activeOrganizations[environment] = id
+        state.activeOrganization = selection
       }),
   })
   return { config, state }
@@ -246,4 +272,44 @@ export const fakePolar = (client: unknown) => {
       }),
   })
   return { polar, state }
+}
+
+interface TriggerState {
+  events: TriggerEvent[]
+  result: TriggerResult
+  failure: SendError | undefined
+  listFailure: TriggerError | undefined
+  sent: Array<{ organization: ActiveOrganization; request: TriggerRequest }>
+}
+
+export const fakeTrigger = (initial: Partial<TriggerState> = {}) => {
+  const state: TriggerState = {
+    events: [],
+    result: {
+      webhookEventId: 'evt-1',
+      event: 'order.created',
+      delivered: true,
+      payload: { type: 'order.created', data: { id: 'ord-1' } },
+    },
+    failure: undefined,
+    listFailure: undefined,
+    sent: [],
+    ...initial,
+  }
+  const trigger = Trigger.of({
+    listEvents: () =>
+      Effect.suspend(() =>
+        state.listFailure
+          ? Effect.fail(state.listFailure)
+          : Effect.succeed(state.events),
+      ),
+    send: (organization, request) =>
+      Effect.suspend(() => {
+        state.sent.push({ organization, request })
+        return state.failure
+          ? Effect.fail(state.failure)
+          : Effect.succeed({ ...state.result, event: request.event })
+      }),
+  })
+  return { trigger, state }
 }

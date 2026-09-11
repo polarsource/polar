@@ -200,6 +200,7 @@ class APIVersionMiddleware:
             await self.app(scope, receive, send)
             return
 
+        api_version_set = Headers(scope=scope).get(VERSION_HEADER) is not None
         try:
             api_version = APIVersion.from_scope(scope, default=self.default_version)
         except ValueError:
@@ -215,6 +216,7 @@ class APIVersionMiddleware:
             return
 
         scope.setdefault("state", {})["api_version"] = api_version
+        scope["state"]["api_version_set"] = api_version_set
 
         async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":

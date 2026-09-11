@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
+    setupFiles: ['./src/utils/test-utils/setup.ts'],
     coverage: {
       provider: 'istanbul',
       include: ['src/**/*.ts', 'scripts/**/*.js'],

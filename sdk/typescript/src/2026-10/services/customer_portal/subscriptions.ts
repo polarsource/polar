@@ -9,9 +9,9 @@ import type {
 import {
   AlreadyCanceledSubscription,
   CustomerPortalSubscriptionsUpdate403Error,
+  CustomerPortalSubscriptionsUpdate409Error,
   HTTPValidationError,
   PaymentFailed,
-  PaymentMethodRequired,
   ResourceNotFound,
 } from "../../errors";
 
@@ -186,7 +186,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PaymentFailed} Payment required to apply the subscription update.
    * @throws {CustomerPortalSubscriptionsUpdate403Error} Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
    * @throws {ResourceNotFound} Customer subscription was not found.
-   * @throws {PaymentMethodRequired} The subscription has no payment method to charge.
+   * @throws {CustomerPortalSubscriptionsUpdate409Error} The subscription has no payment method to charge, or is not scheduled to be canceled.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
@@ -210,7 +210,7 @@ export const updateSubscriptions = (client: ClientBase) => {
       402: PaymentFailed,
       403: CustomerPortalSubscriptionsUpdate403Error,
       404: ResourceNotFound,
-      409: PaymentMethodRequired,
+      409: CustomerPortalSubscriptionsUpdate409Error,
       422: HTTPValidationError,
     });
   };

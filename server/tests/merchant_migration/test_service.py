@@ -42,7 +42,6 @@ from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
-    STEP_RESOLVE_UNCOVERED,
     STEP_VERIFY_CARDS,
 )
 from polar.merchant_migration.repository import (
@@ -2426,7 +2425,7 @@ class TestRunCardVerification:
         await service.run_card_verification(session, migration.id)
 
         checklist = service._checklist(migration)
-        assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+        assert checklist.current_step_key == STEP_CUTOVER
 
     async def test_re_running_picks_up_only_what_arrived_since(
         self,
@@ -2608,7 +2607,7 @@ class TestRunCardVerification:
         await service.run_card_verification(session, migration.id)
 
         checklist = service._checklist(migration)
-        assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+        assert checklist.current_step_key == STEP_CUTOVER
 
     async def test_lists_a_customer_once_however_many_subscriptions(
         self,
@@ -2676,6 +2675,32 @@ def _fake_cutover(
         service, "_build_adapter", new=mocker.AsyncMock(return_value=object())
     )
     return runner
+
+
+@pytest.mark.asyncio
+class TestFinishCardChecks:
+    async def test_moves_the_migration_onto_the_switch(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.copy_cards
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+
+        await service._complete_step(session, migration, STEP_VERIFY_CARDS)
+
+        await session.flush()
+        await session.refresh(migration)
+        checklist = service._checklist(migration)
+        assert checklist.current_step_key == STEP_CUTOVER
+        assert migration.step == MerchantMigrationStep.activate_subscriptions
 
 
 @pytest.mark.asyncio

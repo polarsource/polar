@@ -21,7 +21,12 @@ from polar.models import (
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.postgres import AsyncSession
 from polar.version import CURRENT_API_VERSION
-from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
+from polar.webhook.schemas import (
+    DeprecatedWebhookEndpointCreateWithSecret,
+    DeprecatedWebhookEndpointUpdateWithSecret,
+    WebhookEndpointCreate,
+    WebhookEndpointUpdate,
+)
 from polar.webhook.service import EventDoesNotExist, EventNotSuccessul
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookCheckoutUpdatedPayload
@@ -79,6 +84,26 @@ class TestCreateEndpoint:
         assert endpoint.secret.startswith("whsec_")
         assert endpoint.secret_generated_at is not None
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_merchant_provided_secret_stays_on_legacy_signature(
+        self, auth_subject: AuthSubject[Organization], session: AsyncSession
+    ) -> None:
+        create_schema = DeprecatedWebhookEndpointCreateWithSecret(
+            url=webhook_url,
+            format=WebhookFormat.raw,
+            events=[],
+            organization_id=None,
+            secret="polar_wh_secret_1234567890abcdef",
+        )
+
+        endpoint = await webhook_service.create_endpoint(
+            session, auth_subject, create_schema
+        )
+        assert endpoint.secret == "polar_wh_secret_1234567890abcdef"
+        assert endpoint.secret_generated_at is None
+
 
 @pytest.mark.asyncio
 class TestUpdateEndpoint:
@@ -102,6 +127,28 @@ class TestUpdateEndpoint:
             update_schema=update_schema,
         )
         assert updated_endpoint.url == "https://example.com/hook-updated"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_merchant_provided_secret_stays_on_legacy_signature(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        webhook_endpoint_organization.secret_generated_at = utc_now()
+
+        updated_endpoint = await webhook_service.update_endpoint(
+            session,
+            auth_subject,
+            endpoint=webhook_endpoint_organization,
+            update_schema=DeprecatedWebhookEndpointUpdateWithSecret(
+                secret="polar_wh_secret_1234567890abcdef"
+            ),
+        )
+        assert updated_endpoint.secret == "polar_wh_secret_1234567890abcdef"
+        assert updated_endpoint.secret_generated_at is None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})

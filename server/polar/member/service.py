@@ -687,21 +687,8 @@ class MemberService:
             member.created_at = created_at
 
         try:
-            created_member = await repository.create(member, flush=True)
-            log.info(
-                "member.create.success",
-                customer_id=customer_id,
-                member_id=created_member.id,
-                organization_id=customer.organization_id,
-                role=role,
-            )
-            await webhook_service.send(
-                session,
-                customer.organization,
-                WebhookEventType.member_created,
-                created_member,
-            )
-            return created_member
+            async with session.begin_nested():
+                created_member = await repository.create(member, flush=True)
         except IntegrityError as e:
             log.warning(
                 "member.create.constraint_violation",
@@ -720,6 +707,21 @@ class MemberService:
                 )
                 return existing_member
             raise
+        else:
+            log.info(
+                "member.create.success",
+                customer_id=customer_id,
+                member_id=created_member.id,
+                organization_id=customer.organization_id,
+                role=role,
+            )
+            await webhook_service.send(
+                session,
+                customer.organization,
+                WebhookEventType.member_created,
+                created_member,
+            )
+            return created_member
 
     async def _validate_email_change(
         self,

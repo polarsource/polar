@@ -476,15 +476,58 @@ describe('checkout frame ancestors', () => {
     )
   })
 
-  it('asks nothing on a top-level navigation', async () => {
+  it('admits the hosts the organization listed', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        frame_ancestors: ['https://example.com', 'https://*.shop.example.com'],
+      }),
+    })
+
+    const response = await proxy(
+      framedRequest('https://polar.sh/checkout/polar_c_123'),
+    )
+
+    const policy = response.headers.get('Content-Security-Policy')
+    expect(policy).toContain(
+      'frame-ancestors https://example.com https://*.shop.example.com;',
+    )
+    expect(policy).toContain("script-src 'self'")
+  })
+
+  it('asks nothing on a top-level navigation, and refuses framing', async () => {
     const request = new NextRequest('https://polar.sh/checkout/polar_c_123', {
       headers: { 'Sec-Fetch-Dest': 'document' },
     })
 
-    await proxy(request)
+    const response = await proxy(request)
 
     expect(mockFetch).not.toHaveBeenCalled()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
   })
+
+  it('leaves other pages to the static policy', async () => {
+    const response = await proxy(
+      framedRequest('https://polar.sh/embed/payment-method'),
+    )
+
+    expect(response.headers.get('Content-Security-Policy')).toBeNull()
+  })
+
+  it.each(['iframe', 'frame', 'object', 'embed'])(
+    'asks for every destination that can hold a document: %s',
+    async (destination) => {
+      await proxy(
+        new NextRequest('https://polar.sh/checkout/polar_c_123', {
+          headers: { 'Sec-Fetch-Dest': destination },
+        }),
+      )
+
+      expect(mockFetch).toHaveBeenCalledOnce()
+    },
+  )
 
   it('asks when the browser sends no fetch destination', async () => {
     await proxy(new NextRequest('https://polar.sh/checkout/polar_c_123'))
@@ -498,7 +541,7 @@ describe('checkout frame ancestors', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('swallows a failed call', async () => {
+  it('refuses framing when the call fails', async () => {
     mockFetch.mockRejectedValue(new Error('unreachable'))
 
     const response = await proxy(
@@ -506,5 +549,8 @@ describe('checkout frame ancestors', () => {
     )
 
     expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
   })
 })

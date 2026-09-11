@@ -10,6 +10,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
+    from .organization import Organization
     from .user import User
 
 # Stripe `requirements.disabled_reason` values the merchant can act on themselves.
@@ -51,6 +52,18 @@ class PayoutAccount(RecordModel):
         String(255), nullable=True, default=None
     )
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    @declared_attr
+    def organizations(cls) -> Mapped[list["Organization"]]:
+        return relationship(
+            "Organization",
+            lazy="raise",
+            primaryjoin=(
+                "and_(Organization.payout_account_id == PayoutAccount.id,"
+                "~Organization.is_deleted)"
+            ),
+            viewonly=True,
+        )
 
     @declared_attr
     def admin(cls) -> Mapped["User"]:

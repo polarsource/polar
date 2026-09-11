@@ -250,11 +250,6 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key=STEP_RESOLVE_UNCOVERED,
-        owner=PanStepOwner.merchant,
-        kind=PanStepKind.confirm,
-    ),
-    PanStepTemplate(
         key=STEP_CUTOVER,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
@@ -312,11 +307,6 @@ PAN_IMPORT_TEMPLATES: tuple[PanStepTemplate, ...] = (
         kind=PanStepKind.auto,
     ),
     PanStepTemplate(
-        key=STEP_RESOLVE_UNCOVERED,
-        owner=PanStepOwner.merchant,
-        kind=PanStepKind.confirm,
-    ),
-    PanStepTemplate(
         key=STEP_CUTOVER,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
@@ -370,8 +360,7 @@ def build(method: PanTransferMethod) -> list[PanTransferStep]:
         )
         for template in templates_for(method)
     ]
-    _advance(method, steps)
-    return steps
+    return advance(method, steps)
 
 
 def current(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
@@ -389,18 +378,25 @@ def _get(steps: Sequence[PanTransferStep], key: str) -> PanTransferStep:
     raise PanStepNotFound(key)
 
 
-def _advance(method: PanTransferMethod, steps: list[PanTransferStep]) -> None:
-    """Make the first unfinished step actionable, walking past any that complete
-    on their own."""
+def advance(
+    method: PanTransferMethod, steps: list[PanTransferStep]
+) -> list[PanTransferStep]:
+    """Make the next unfinished step actionable, walking past auto-completing
+    and retired keys."""
+    templates = _TEMPLATES_BY_KEY[method]
     for step in steps:
         if step.status == PanStepStatus.completed:
             continue
         if step.status == PanStepStatus.blocked:
             step.status = PanStepStatus.pending
             step.started_at = utc_now()
-        if not _template(method, step.key).auto_complete:
-            return
+        template = templates.get(step.key)
+        # No template: the step left the checklist. Complete it so stored
+        # migrations don't stall on a key Polar no longer asks anyone to do.
+        if template is not None and not template.auto_complete:
+            return steps
         _settle(step, PanStepActor.system)
+    return steps
 
 
 def _settle(step: PanTransferStep, actor: PanStepActor) -> None:
@@ -465,18 +461,21 @@ def complete(
     step = _get(steps, key)
     if step.status not in _ACTIONABLE:
         raise PanStepNotActionable(key)
+    template = _TEMPLATES_BY_KEY[method].get(key)
+    if template is None:
+        _settle(step, PanStepActor.system)
+        return advance(method, steps)
     if step.owner not in _ACTOR_OWNERS[actor]:
         raise PanStepNotOwned(key, step.owner)
 
     # Blank is the same as absent, so an untouched optional field doesn't get
     # stored and an all-whitespace required one still reads as missing.
     provided = {k: v.strip() for k, v in inputs.items() if v.strip()}
-    _validate_inputs(_template(method, key), provided)
+    _validate_inputs(template, provided)
 
     step.inputs = {**step.inputs, **provided}
     _settle(step, actor)
-    _advance(method, steps)
-    return steps
+    return advance(method, steps)
 
 
 def annotate(

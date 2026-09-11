@@ -1,13 +1,22 @@
 import { Data, Schema } from 'effect'
 
-export type PolarEnvironment = 'sandbox' | 'production'
+export const environments = ['sandbox', 'production'] as const
+export const PolarEnvironment = Schema.Literals(environments)
+export type PolarEnvironment = typeof PolarEnvironment.Type
 
 export const ActiveOrganization = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   slug: Schema.String,
+  environment: PolarEnvironment,
 })
 export type ActiveOrganization = typeof ActiveOrganization.Type
+
+export const OrganizationSelection = Schema.Struct({
+  id: Schema.String,
+  environment: PolarEnvironment,
+})
+export type OrganizationSelection = typeof OrganizationSelection.Type
 
 export const Session = Schema.Struct({
   version: Schema.Literal(1),
@@ -25,7 +34,6 @@ export class AuthError extends Data.TaggedError('AuthError')<{
 }> {}
 
 export const loginCommand = (environment: PolarEnvironment) =>
-  `polar auth login${environment === 'production' ? ' --production' : ''}`
+  `polar auth login --${environment}`
 
-export const orgCommand = (environment: PolarEnvironment) =>
-  `polar auth org${environment === 'production' ? ' --production' : ''}`
+export const orgCommand = 'polar auth org'

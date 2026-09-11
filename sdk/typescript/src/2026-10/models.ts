@@ -3,6 +3,10 @@
  */
 export type AggregationFunction = "count" | "sum" | "max" | "min" | "avg" | "unique";
 /**
+ * The API version that'll be used in event payloads.
+ */
+export type ApiVersion = "2026-04" | "2026-10";
+/**
  * BenefitGrantSortProperty
  */
 export type BenefitGrantSortProperty =
@@ -937,7 +941,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -2146,6 +2150,10 @@ export interface AuthorizeOrganization {
    * slug
    */
   slug: string;
+  /**
+   * name
+   */
+  name: string;
   /**
    * avatar_url
    */
@@ -17421,7 +17429,7 @@ You can store up to **50 key-value pairs**.
    */
   customer_id: string;
   /**
-   * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price and free products are supported.
+   * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
    */
   product_id: string;
   /**
@@ -17429,9 +17437,13 @@ You can store up to **50 key-value pairs**.
    */
   currency?: string | null;
   /**
-   * A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum.
+   * A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
    */
   amount?: number | null;
+  /**
+   * The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+   */
+  units?: number | null;
   /**
    * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
    */
@@ -17572,6 +17584,14 @@ export interface OrderItemSchema {
    * Associated price ID, if any.
    */
   product_price_id: string | null;
+  /**
+   * Start of the period covered by this line item, if any.
+   */
+  start_timestamp: string | null;
+  /**
+   * End of the period covered by this line item, if any.
+   */
+  end_timestamp: string | null;
 }
 
 /**
@@ -18701,10 +18721,6 @@ export interface OrganizationFeatureSettings {
    */
   issue_funding_enabled?: boolean;
   /**
-   * If this organization has seat-based pricing enabled
-   */
-  seat_based_pricing_enabled?: boolean;
-  /**
    * If this organization has Wallets enabled
    */
   wallets_enabled?: boolean;
@@ -18760,6 +18776,10 @@ export interface OrganizationFeatureSettings {
    * If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
    */
   merchant_migration_enabled?: boolean;
+  /**
+   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+   */
+  frame_ancestors_enforced?: boolean;
 }
 
 /**
@@ -18769,10 +18789,6 @@ Other feature settings are managed by Polar staff: they're ignored if
 provided and keep their current value.
  */
 export interface OrganizationFeatureSettingsUpdate {
-  /**
-   * If this organization has seat-based pricing enabled
-   */
-  seat_based_pricing_enabled?: boolean;
   /**
    * If this organization has the Member model enabled
    */
@@ -21911,6 +21927,20 @@ export interface SubscriptionMeter {
 }
 
 /**
+ * SubscriptionNotScheduledToCancel
+ */
+export interface SubscriptionNotScheduledToCancel {
+  /**
+   * error
+   */
+  error: "SubscriptionNotScheduledToCancel";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * An event created by Polar when a subscription becomes past due.
  */
 export interface SubscriptionPastDueEvent {
@@ -22929,7 +22959,9 @@ export interface SubscriptionUpdateBillingPeriod {
   /**
    * Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
 
-It is not possible to update the current billing period on a canceled subscription.
+If the subscription is set to cancel at the end of the period, it'll end on this new date instead.
+
+It is not possible to update the current billing period on a subscription that's already revoked or not active.
    */
   current_billing_period_end: string;
 }
@@ -23691,6 +23723,10 @@ export interface WebhookEndpoint {
    */
   name?: string | null;
   /**
+   * The API version that'll be used in event payloads.
+   */
+  api_version: string;
+  /**
    * format
    */
   format: WebhookFormat;
@@ -23710,6 +23746,10 @@ export interface WebhookEndpoint {
    * Whether the webhook endpoint is enabled and will receive events.
    */
   enabled: boolean;
+  /**
+   * Whether Polar signs deliveries to this endpoint with Standard Webhooks. False means Polar's original HMAC over the UTF-8 bytes of the full secret.
+   */
+  uses_standard_webhook_signature: boolean;
 }
 
 /**
@@ -23724,6 +23764,10 @@ export interface WebhookEndpointCreate {
    * An optional name for the webhook endpoint to help organize and identify it.
    */
   name?: string | null;
+  /**
+   * The API version that'll be used in event payloads.
+   */
+  api_version?: ApiVersion;
   /**
    * format
    */
@@ -23750,6 +23794,10 @@ export interface WebhookEndpointUpdate {
    * An optional name for the webhook endpoint to help organize and identify it.
    */
   name?: string | null;
+  /**
+   * The API version that'll be used in event payloads.
+   */
+  api_version?: ("2026-04" | "2026-10") | null;
   /**
    * format
    */
@@ -23798,6 +23846,10 @@ export interface WebhookEvent {
    * Whether this event was skipped because the webhook endpoint was disabled.
    */
   skipped: boolean;
+  /**
+   * The API version used in the payload of this event.
+   */
+  api_version: string;
   /**
    * The payload of the webhook event.
    */

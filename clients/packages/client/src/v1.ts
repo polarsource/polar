@@ -1366,7 +1366,7 @@ export interface paths {
      * Get Organization Order Invoice
      * @description Get the invoice URL for a Polar order belonging to this organization.
      *
-     *     **Scopes**: `organizations:read` `organizations:write`
+     *     **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
      */
     get: operations['organizations:get_order_invoice']
     put?: never
@@ -2947,6 +2947,46 @@ export interface paths {
     get: operations['cli_router:listen']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cli/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Events
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['cli:events']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cli/trigger/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Trigger
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    post: operations['cli:trigger']
     delete?: never
     options?: never
     head?: never
@@ -24270,10 +24310,10 @@ export interface components {
       items: components['schemas']['Payment'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[PayoutAccount] */
-    ListResource_PayoutAccount_: {
+    /** ListResource[PayoutAccountWithOrganizations] */
+    ListResource_PayoutAccountWithOrganizations_: {
       /** Items */
-      items: components['schemas']['PayoutAccount'][]
+      items: components['schemas']['PayoutAccountWithOrganizations'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Payout] */
@@ -26153,6 +26193,17 @@ export interface components {
        * @constant
        */
       error: 'MissingStripeScopes'
+      /** Detail */
+      detail: string
+    }
+    /** NoActiveListener */
+    NoActiveListener: {
+      /**
+       * Error
+       * @example NoActiveListener
+       * @constant
+       */
+      error: 'NoActiveListener'
       /** Detail */
       detail: string
     }
@@ -28987,6 +29038,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Frame Ancestors Enforced
+       * @description If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+       * @default false
+       */
+      frame_ancestors_enforced: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -31436,6 +31493,16 @@ export interface components {
       /** Url */
       url: string
     }
+    /** PayoutAccountOrganization */
+    PayoutAccountOrganization: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string
+      /** Slug */
+      slug: string
+    }
     /**
      * PayoutAccountStatus
      * @enum {string}
@@ -31479,6 +31546,42 @@ export interface components {
      * @enum {string}
      */
     PayoutAccountType: 'stripe' | 'manual'
+    /** PayoutAccountWithOrganizations */
+    PayoutAccountWithOrganizations: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      type: components['schemas']['PayoutAccountType']
+      /** Processor Id */
+      processor_id: string | null
+      /** Country */
+      country: string
+      /** Currency */
+      currency: string
+      /** Is Payout Ready */
+      is_payout_ready: boolean
+      status: components['schemas']['PayoutAccountStatus']
+      /**
+       * Organizations
+       * @description Organizations this payout account pays out for.
+       */
+      organizations: components['schemas']['PayoutAccountOrganization'][]
+    }
     /** PayoutAttempt */
     PayoutAttempt: {
       /**
@@ -37917,6 +38020,52 @@ export interface components {
      * @enum {string}
      */
     TrialInterval: 'day' | 'week' | 'month' | 'year'
+    /** TriggerEvent */
+    TriggerEvent: {
+      type: components['schemas']['WebhookEventType']
+      /**
+       * Description
+       * @description One-line description of when Polar sends this event.
+       */
+      description: string
+    }
+    /** TriggerRequest */
+    TriggerRequest: {
+      event: components['schemas']['WebhookEventType']
+      /**
+       * Overrides
+       * @description Payload fields to override, keyed by dotted path relative to the payload root, e.g. `data.amount`.
+       */
+      overrides?: {
+        [key: string]: unknown
+      }
+      /**
+       * Seed
+       * @description Seed for generated IDs and numbers, for reproducible payloads.
+       */
+      seed?: number | null
+      /**
+       * Deliver
+       * @description Send the event to the organization's active CLI listener.
+       * @default true
+       */
+      deliver: boolean
+    }
+    /** TriggerResponse */
+    TriggerResponse: {
+      /**
+       * Webhook Event Id
+       * Format: uuid
+       */
+      webhook_event_id: string
+      event: components['schemas']['WebhookEventType']
+      /** Delivered */
+      delivered: boolean
+      /** Payload */
+      payload: {
+        [key: string]: unknown
+      }
+    }
     /** Unauthorized */
     Unauthorized: {
       /**
@@ -47556,6 +47705,79 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cli:events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TriggerEvent'][]
+        }
+      }
+    }
+  }
+  'cli:trigger': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TriggerRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TriggerResponse']
+        }
+      }
+      /** @description Organization not found or not accessible. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description No CLI is listening for this organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NoActiveListener']
         }
       }
       /** @description Validation Error */
@@ -60910,7 +61132,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_PayoutAccount_']
+          'application/json': components['schemas']['ListResource_PayoutAccountWithOrganizations_']
         }
       }
     }

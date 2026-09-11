@@ -3,6 +3,8 @@ import typing
 AggregationFunction: typing.TypeAlias = typing.Literal[
     "count", "sum", "max", "min", "avg", "unique"
 ]
+ApiVersion: typing.TypeAlias = typing.Literal["2026-04", "2026-10"]
+"""The API version that'll be used in event payloads."""
 BenefitGrantSortProperty: typing.TypeAlias = typing.Literal[
     "created_at",
     "-created_at",
@@ -808,6 +810,7 @@ PaymentTrigger: typing.TypeAlias = typing.Literal[
 Permission: typing.TypeAlias = typing.Literal[
     "pull", "triage", "push", "maintain", "admin"
 ]
+"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Literal[
     "aed",
     "all",

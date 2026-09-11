@@ -34,6 +34,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from logo import print_banner
 from shared import (
     CLIENTS_DIR,
     SERVER_DIR,
@@ -179,19 +180,7 @@ def up(
     Installs dependencies, starts infrastructure, runs migrations,
     and prompts to configure GitHub and Stripe integrations.
     """
-    console.print()
-    console.print(
-        Panel(
-            Text(
-                "Setting up Polar development environment",
-                justify="center",
-                style="bold",
-            ),
-            border_style="blue",
-            padding=(1, 4),
-        )
-    )
-    console.print()
+    print_banner("Polar dev", "Setting up your development environment")
 
     ctx = Context(
         clean=clean,
@@ -209,6 +198,7 @@ def up(
         _track_up_step(module.__name__, step_started_at, success, clean)
         if not success:
             console.print(f"\n[red]Setup failed at step {i}/{total}: {name}[/red]")
+            console.print("Fix the issue above and run [bold]dev up[/bold] again. Finished steps are skipped.")
             raise typer.Exit(1)
         console.print()
 

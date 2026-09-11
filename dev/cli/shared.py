@@ -1,9 +1,11 @@
 """Shared utilities and context for the Polar Development CLI."""
 
+import json
 import os
 import shutil
 import socket
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -129,6 +131,132 @@ def step_status(success: bool, message: str, detail: str = "") -> None:
         console.print(f"  {icon} {message}  [dim]{detail}[/dim]")
     else:
         console.print(f"  {icon} {message}")
+
+
+def step_failed(
+    message: str,
+    detail: str,
+    result: subprocess.CompletedProcess | None = None,
+    hints: tuple[str, ...] = (),
+    lines: int = 30,
+) -> None:
+    """Report a failed step: status line, the command's output tail, then how to fix it."""
+    step_status(False, message, detail)
+    print_output_tail(result, lines)
+    if hints:
+        console.print("  [bold]To fix:[/bold]")
+        for hint in hints:
+            console.print(f"    • {hint}")
+
+
+def print_output_tail(
+    result: subprocess.CompletedProcess | None, lines: int = 30, max_line_length: int = 200
+) -> None:
+    """Print the last lines of a failed command's output, stdout and stderr combined."""
+    if result is None:
+        return
+    output = "\n".join(part.strip() for part in (result.stdout, result.stderr) if part and part.strip())
+    if not output:
+        return
+    tail = [
+        line if len(line) <= max_line_length else line[: max_line_length - 1] + "…"
+        for line in output.splitlines()[-lines:]
+    ]
+    console.print(Padding(Text("\n".join(tail), style="dim"), (0, 0, 0, 4)))
+
+
+_BROKEN_CLT_MARKERS = (
+    "tapi error",
+    "unknown architecture",
+    "linker command failed",
+    "xcrun: error",
+    "invalid active developer path",
+    "does not contain",
+)
+
+
+def looks_like_broken_clt(output: str) -> bool:
+    """Whether build output points at outdated or broken macOS Command Line Tools."""
+    lowered = output.lower()
+    return any(marker in lowered for marker in _BROKEN_CLT_MARKERS)
+
+
+def check_clt_can_link() -> bool:
+    """Compile and link a trivial program against a system framework.
+
+    An outdated or half-updated Command Line Tools install passes `xcode-select -p`
+    but fails here, the same way native Python extensions fail later in `uv sync`.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        source = Path(tmp) / "clt_check.c"
+        source.write_text("int main(void) { return 0; }\n")
+        result = run_command(
+            ["cc", "-framework", "CoreFoundation", "-o", str(Path(tmp) / "clt_check"), str(source)],
+            capture=True,
+            timeout=60,
+        )
+    return result is not None and result.returncode == 0
+
+
+def print_clt_repair_hint() -> None:
+    """Explain how to fix Command Line Tools that can't build native code."""
+    console.print(
+        "  [yellow]The macOS Command Line Tools can't build native code."
+        " This happens when they are outdated or only partially updated.[/yellow]"
+    )
+    console.print("  Fix them, then run [bold]dev up[/bold] again:")
+    console.print(
+        "    1. System Settings → General → Software Update:"
+        " install the [bold]Command Line Tools for Xcode[/bold] update if one is offered"
+    )
+    console.print(
+        '       (or: [bold]softwareupdate --list[/bold], then [bold]softwareupdate --install "<label>"[/bold])'
+    )
+    console.print(
+        "    2. If no update is offered, reinstall them:"
+        " [bold]sudo rm -rf /Library/Developer/CommandLineTools && xcode-select --install[/bold]"
+    )
+
+
+def required_pnpm_version() -> str | None:
+    """The pnpm version pinned in clients/package.json, if any."""
+    try:
+        manager = json.loads((CLIENTS_DIR / "package.json").read_text()).get("packageManager", "")
+    except (OSError, ValueError):
+        return None
+    return manager.removeprefix("pnpm@") if manager.startswith("pnpm@") else None
+
+
+def install_pnpm() -> subprocess.CompletedProcess | None:
+    """Install the pinned pnpm via corepack, falling back to npm."""
+    spec = f"pnpm@{required_pnpm_version() or 'latest'}"
+    result = run_command(["corepack", "enable"], capture=True)
+    if result and result.returncode == 0:
+        result = run_command(["corepack", "prepare", spec, "--activate"], capture=True)
+        if result and result.returncode == 0:
+            return result
+    return run_command(["npm", "install", "-g", spec], capture=True)
+
+
+def ensure_pnpm() -> bool:
+    """Make sure pnpm is available, installing it when Node is present but pnpm is not."""
+    if check_command_exists("pnpm"):
+        step_status(True, "pnpm", get_command_version("pnpm") or "installed")
+        return True
+
+    console.print("  [yellow]pnpm not found, installing...[/yellow]")
+    result = install_pnpm()
+    if result is not None and result.returncode == 0 and check_command_exists("pnpm"):
+        step_status(True, "pnpm", f"installed ({get_command_version('pnpm') or ''})".replace(" ()", ""))
+        return True
+
+    step_status(False, "pnpm", "installation failed")
+    print_output_tail(result)
+    console.print(
+        f"  [dim]Install manually: npm install -g pnpm@{required_pnpm_version() or 'latest'},"
+        " then run dev up again[/dim]"
+    )
+    return False
 
 
 def check_env_file_exists(path: Path) -> bool:

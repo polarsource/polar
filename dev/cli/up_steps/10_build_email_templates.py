@@ -4,8 +4,8 @@ from shared import (
     SERVER_DIR,
     Context,
     check_email_binary_exists,
-    console,
     run_command,
+    step_failed,
     step_spinner,
     step_status,
 )
@@ -27,8 +27,14 @@ def run(ctx: Context) -> bool:
             step_status(True, "Email templates", "built")
             return True
         else:
-            step_status(False, "Email templates", "build failed (optional)")
-            if result:
-                console.print(f"[dim]{result.stderr}[/dim]")
-            # Don't fail - emails are optional for basic dev
-            return True
+            step_failed(
+                "Email templates",
+                "build failed",
+                result,
+                hints=(
+                    "The API and tests refuse to start without server/emails/bin/react-email-pkg, so this can't be skipped",
+                    "Run [bold]uv run task emails[/bold] in server/ to retry with the full log",
+                ),
+                lines=40,
+            )
+            return False

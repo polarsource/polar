@@ -180,8 +180,7 @@ Treat **Accepted** ADRs as binding:
 `.claude/hooks/session-start.sh` runs as a `SessionStart` hook and leaves the container ready to
 run tests and linters. It mirrors `.github/workflows/test_server.yaml` rather than `dev up`,
 because `dev up` targets interactive local development: it aborts if the Tinybird CLI install
-fails, curl-installs nvm, calls `systemctl start docker`, prompts for GitHub/Stripe, and — worst
-for an agent — swallows a failed email-renderer build, the artifact that blocks config import.
+fails, curl-installs nvm, calls `systemctl start docker`, and prompts for GitHub/Stripe.
 
 It is idempotent, skips work already done, and reports failed steps in its output rather than
 aborting. It fires on session start and resume, not on every compaction. Read the script for

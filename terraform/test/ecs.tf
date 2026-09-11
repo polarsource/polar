@@ -39,7 +39,7 @@ module "pgbouncer_aws" {
     name = aws_service_discovery_private_dns_namespace.internal[0].name
   }
 
-  client_security_group_ids  = [aws_security_group.lambda[0].id]
+  client_security_group_ids  = [aws_security_group.lambda[0].id, module.ec2_tailscale[0].security_group_id]
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
   repository_credentials_arn = aws_secretsmanager_secret.ghcr_pull[0].arn
 

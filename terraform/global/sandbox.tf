@@ -567,3 +567,11 @@ resource "tfe_variable" "merchant_migration_destination_stripe_account_id_sandbo
   sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "ec2_tailscale_authkey_sandbox" {
+  key             = "ec2_tailscale_authkey"
+  category        = "terraform"
+  description     = "Reusable, pre-authorized Tailscale auth key for the sandbox AWS subnet router"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

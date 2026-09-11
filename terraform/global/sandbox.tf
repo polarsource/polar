@@ -575,10 +575,10 @@ resource "tfe_variable" "private_backoffice_enabled_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
-resource "tfe_variable" "private_backoffice_tailscale_auth_key_sandbox" {
-  key             = "private_backoffice_tailscale_auth_key"
+resource "tfe_variable" "private_backoffice_tailscale_oauth_client_secret_sandbox" {
+  key             = "private_backoffice_tailscale_oauth_client_secret"
   category        = "terraform"
-  description     = "Tailscale auth key for the private backoffice replica in sandbox"
+  description     = "Tailscale OAuth client secret for the private backoffice replica in sandbox"
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
@@ -594,6 +594,6 @@ resource "tfe_variable" "private_backoffice_cloudflare_api_token_sandbox" {
 resource "tfe_variable" "private_backoffice_tailscale_ip_sandbox" {
   key             = "private_backoffice_tailscale_ip"
   category        = "terraform"
-  description     = "Assigned Tailscale IPv4 address for the private backoffice replica in sandbox"
+  description     = "Stable Tailscale Service IPv4 address for the private backoffice replica in sandbox"
   variable_set_id = tfe_variable_set.sandbox.id
 }

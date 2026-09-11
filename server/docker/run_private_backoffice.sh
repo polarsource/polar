@@ -3,7 +3,7 @@ set -euo pipefail
 umask 077
 
 : "${POLAR_BACKOFFICE_HOST:?Set the private backoffice hostname}"
-tailscale_auth_key="${TS_AUTHKEY:?Set a reusable, non-ephemeral Tailscale auth key}"
+tailscale_oauth_secret="${TS_AUTHKEY:?Set the Tailscale OAuth client secret}"
 cloudflare_api_token="${CLOUDFLARE_API_TOKEN:?Set a DNS token scoped to the polar.sh zone}"
 unset TS_AUTHKEY CLOUDFLARE_API_TOKEN
 
@@ -21,7 +21,7 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 0' TERM INT
 
-TS_AUTHKEY="$tailscale_auth_key" start containerboot
+TS_KUBE_SECRET="" TS_AUTHKEY="$tailscale_oauth_secret" start containerboot
 
 start uv run uvicorn polar.app:app \
   --host 127.0.0.1 --port 10000 --workers 1 \

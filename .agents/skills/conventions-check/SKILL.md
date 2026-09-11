@@ -34,7 +34,9 @@ tiring to read.
 
 What is left for you: module structure, the repository and service patterns, read versus
 write sessions, auth dependencies and per-module `auth.py`, test layout and fixtures, Orbit
-`<Box />` usage, the 250-line frontend file limit, i18n placement.
+`<Box />` usage **except** `clients/packages/checkout` (must stay Orbit-free), the
+250-line frontend file limit, i18n placement, and `session.commit()` /
+`TransactionalMiddleware` timing.
 
 ## Output
 

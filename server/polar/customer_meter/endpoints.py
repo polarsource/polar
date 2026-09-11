@@ -32,6 +32,12 @@ CustomerMeterNotFound = {
     "/",
     summary="List Customer Meters",
     response_model=ListResource[CustomerMeterSchema],
+    openapi_extra={
+        "x-tool-name": "customer_meters_list",
+        "x-tool-title": "List customer meters",
+        "x-tool-description": "List customer meters.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.CustomerMeterRead,
@@ -77,6 +83,12 @@ async def list(
     summary="Get Customer Meter",
     response_model=CustomerMeterSchema,
     responses={404: CustomerMeterNotFound},
+    openapi_extra={
+        "x-tool-name": "customer_meters_get",
+        "x-tool-title": "Get customer meter",
+        "x-tool-description": "Get a customer meter by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     id: CustomerMeterID,

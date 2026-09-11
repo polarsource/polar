@@ -22,6 +22,12 @@ router = APIRouter(prefix="/event-types", tags=["event-types", APITag.public])
     summary="List Event Types",
     response_model=ListResource[schemas.EventTypeWithStats],
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "event_types_list",
+        "x-tool-title": "List event types",
+        "x-tool-description": "List event types with aggregated statistics.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.EventTypeRead,
@@ -85,6 +91,11 @@ async def list(
     description="Update an event type's label.",
     status_code=200,
     responses={404: {}},
+    openapi_extra={
+        "x-tool-name": "event_types_update",
+        "x-tool-title": "Update event type",
+        "x-tool-description": "Update an event type's label.",
+    },
 )
 async def update(
     id: schemas.EventTypeID,

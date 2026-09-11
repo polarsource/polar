@@ -71,7 +71,13 @@ SubscriptionNotFound = {
     response_model=ListResource[SubscriptionSchema],
     summary="List Subscriptions",
     tags=[APITag.mcp, APITag.cli],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "x-tool-name": "subscriptions_list",
+        "x-tool-title": "List subscriptions",
+        "x-tool-description": "List active subscriptions.",
+        "x-tool-annotations": ["read_only"],
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 async def list(
     auth_subject: auth.SubscriptionsRead,
@@ -237,6 +243,12 @@ async def export(
     response_model=SubscriptionSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: SubscriptionNotFound},
+    openapi_extra={
+        "x-tool-name": "subscriptions_get",
+        "x-tool-title": "Get subscription details",
+        "x-tool-description": "Get a subscription by ID.",
+        "x-tool-annotations": ["read_only"],
+    },
 )
 async def get(
     id: SubscriptionID,
@@ -439,6 +451,11 @@ async def create(
             | SubscriptionNotScheduledToCancel.schema(),
         },
     },
+    openapi_extra={
+        "x-tool-name": "subscriptions_update",
+        "x-tool-title": "Update subscription",
+        "x-tool-description": "Update a subscription.",
+    },
 )
 async def update(
     id: SubscriptionID,
@@ -503,6 +520,12 @@ async def update(
             "description": "Subscription is pending an update.",
             "model": SubscriptionLocked.schema(),
         },
+    },
+    openapi_extra={
+        "x-tool-name": "subscriptions_revoke",
+        "x-tool-title": "Revoke subscription",
+        "x-tool-description": "Revoke a subscription, i.e cancel immediately.",
+        "x-tool-annotations": ["destructive"],
     },
 )
 async def revoke(

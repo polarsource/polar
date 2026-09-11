@@ -519,6 +519,12 @@ async def list_statistics_timeseries(
     summary="List Event Names",
     response_model=ListResource[EventName],
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "events_list_names",
+        "x-tool-title": "List event names",
+        "x-tool-description": "List event names.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list_names(
     auth_subject: auth.EventRead,
@@ -564,6 +570,12 @@ async def list_names(
     response_model=EventSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: EventNotFound},
+    openapi_extra={
+        "x-tool-name": "events_get",
+        "x-tool-title": "Get event",
+        "x-tool-description": "Get an event by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     id: EventID,

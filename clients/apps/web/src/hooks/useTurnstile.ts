@@ -57,6 +57,16 @@ export const useTurnstile = (action: string) => {
     }
   }, [])
 
+  const reset = useCallback(() => {
+    const turnstile = (window as TurnstileWindow).turnstile
+    const widgetId = widgetIdRef.current
+    tokenRef.current = null
+    executedRef.current = false
+    if (turnstile && widgetId) {
+      turnstile.reset(widgetId)
+    }
+  }, [])
+
   const render = useCallback(() => {
     const turnstile = (window as TurnstileWindow).turnstile
     const container = containerRef.current
@@ -73,14 +83,16 @@ export const useTurnstile = (action: string) => {
       execution: 'execute',
       size: 'flexible',
       callback: settleToken,
-      'error-callback': () => settleToken(null),
-      // Turnstile refreshes expired tokens on its own, so only drop the stale
-      // one and let the next callback settle any pending submit.
-      'expired-callback': () => {
-        tokenRef.current = null
+      // A failed or expired challenge leaves the widget without a token and
+      // Turnstile doesn't queue another execute on its own, so re-arm it for
+      // the next getToken() instead of letting that one wait out the timeout.
+      'error-callback': () => {
+        settleToken(null)
+        reset()
       },
+      'expired-callback': reset,
     })
-  }, [action, settleToken])
+  }, [action, settleToken, reset])
 
   useEffect(() => {
     render()
@@ -130,16 +142,6 @@ export const useTurnstile = (action: string) => {
       }),
     [execute],
   )
-
-  const reset = useCallback(() => {
-    const turnstile = (window as TurnstileWindow).turnstile
-    const widgetId = widgetIdRef.current
-    tokenRef.current = null
-    executedRef.current = false
-    if (turnstile && widgetId) {
-      turnstile.reset(widgetId)
-    }
-  }, [])
 
   return { containerRef, render, execute, getToken, reset }
 }

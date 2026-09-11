@@ -118,7 +118,7 @@ class PayoutAccountService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def create_or_resume(
+    async def create(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
@@ -132,15 +132,6 @@ class PayoutAccountService:
         if organization.payout_account_id is not None:
             repository = PayoutAccountRepository.from_session(session)
             current = await repository.get_by_id(organization.payout_account_id)
-
-        # An unfinished account in the same country is the one the merchant was
-        # already onboarding, so hand it back instead of opening a second one.
-        if (
-            current is not None
-            and not current.is_payout_ready
-            and current.country == payout_account_create.country
-        ):
-            return current
 
         payout_account = await self._create_stripe_account(
             session,

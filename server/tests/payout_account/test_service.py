@@ -83,7 +83,7 @@ class TestCreate:
         )
         enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
 
-        payout_account = await payout_account_service.create_or_resume(
+        payout_account = await payout_account_service.create(
             auth_subject,
             session,
             PayoutAccountCreate(
@@ -98,64 +98,6 @@ class TestCreate:
             organization_id=organization.id,
             payout_account_id=payout_account.id,
         )
-
-    @pytest.mark.auth
-    async def test_resumes_an_unfinished_account(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        stripe_service_mock: StripeService,
-    ) -> None:
-        unfinished = await create_payout_account(
-            save_fixture, organization, user, is_payouts_enabled=False, country="US"
-        )
-
-        payout_account = await payout_account_service.create_or_resume(
-            auth_subject,
-            session,
-            PayoutAccountCreate(
-                type=PayoutAccountType.stripe,
-                organization_id=organization.id,
-                country=StripeAccountCountry.US,
-            ),
-        )
-
-        assert payout_account.id == unfinished.id
-        stripe_service_mock.create_account.assert_not_called()  # type: ignore[attr-defined]
-
-    @pytest.mark.auth
-    async def test_another_country_creates_a_new_account(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        stripe_service_mock: StripeService,
-    ) -> None:
-        unfinished = await create_payout_account(
-            save_fixture, organization, user, is_payouts_enabled=False, country="US"
-        )
-        stripe_service_mock.create_account.return_value = _stripe_account("acct_fr")  # type: ignore[attr-defined]
-
-        payout_account = await payout_account_service.create_or_resume(
-            auth_subject,
-            session,
-            PayoutAccountCreate(
-                type=PayoutAccountType.stripe,
-                organization_id=organization.id,
-                country=StripeAccountCountry.FR,
-            ),
-        )
-
-        await session.flush()
-        assert payout_account.id != unfinished.id
-        assert organization.payout_account_id == payout_account.id
 
     @pytest.mark.auth
     async def test_does_not_unlink_a_ready_account(
@@ -173,7 +115,7 @@ class TestCreate:
         )
         stripe_service_mock.create_account.return_value = _stripe_account("acct_new")  # type: ignore[attr-defined]
 
-        payout_account = await payout_account_service.create_or_resume(
+        payout_account = await payout_account_service.create(
             auth_subject,
             session,
             PayoutAccountCreate(
@@ -205,7 +147,7 @@ class TestCreate:
         stripe_service_mock.create_account.return_value = _stripe_account("acct_new")  # type: ignore[attr-defined]
         enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
 
-        payout_account = await payout_account_service.create_or_resume(
+        payout_account = await payout_account_service.create(
             auth_subject,
             session,
             PayoutAccountCreate(

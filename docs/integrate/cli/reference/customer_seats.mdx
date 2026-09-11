@@ -1,0 +1,128 @@
+---
+title: "polar customer_seats"
+sidebarTitle: "customer_seats"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar customer_seats <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar customer_seats assign_seat`](#polar-customer_seats-assign_seat) **Scopes**: `customer_seats:write`
+- [`polar customer_seats claim_seat`](#polar-customer_seats-claim_seat) claim_seat
+- [`polar customer_seats get_claim_info`](#polar-customer_seats-get_claim_info) get_claim_info
+- [`polar customer_seats list_seats`](#polar-customer_seats-list_seats) **Scopes**: `customer_seats:read`
+- [`polar customer_seats resend_invitation`](#polar-customer_seats-resend_invitation) **Scopes**: `customer_seats:write`
+- [`polar customer_seats revoke_seat`](#polar-customer_seats-revoke_seat) **Scopes**: `customer_seats:write`
+
+## polar customer_seats assign_seat
+
+**Scopes**: `customer_seats:write`
+
+```bash
+polar customer_seats assign_seat [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--subscription-id` | `string` | Subscription ID. Required if neither order_id nor checkout_id is provided. |
+| `--order-id` | `string` | Order ID for one-time purchases. Required if subscription_id is not provided. |
+| `--email` | `string` | Email of the customer to assign the seat to |
+| `--external-customer-id` | `string` | External customer ID for the seat assignment |
+| `--customer-id` | `string` | Customer ID for the seat assignment |
+| `--external-member-id` | `string` | External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member). |
+| `--member-id` | `string` | Member ID for the seat assignment. |
+| `--metadata` | `string` | Additional metadata for the seat (max 10 keys, 1KB total) JSON: &#123;"&lt;key&gt;": any&#125; |
+| `--immediate-claim` | `boolean` | If true, the seat will be immediately claimed without sending an invitation email. API-only feature. |
+
+## polar customer_seats claim_seat
+
+claim_seat
+
+```bash
+polar customer_seats claim_seat [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--environment` | `choice` | Environment for this unauthenticated request (choices: production, sandbox) |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--invitation-token` | `string` | Required. Invitation token to claim the seat |
+
+## polar customer_seats get_claim_info
+
+get_claim_info
+
+```bash
+polar customer_seats get_claim_info [flags] <invitation_token>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `invitation_token` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--environment` | `choice` | Environment for this unauthenticated request (choices: production, sandbox) |
+
+## polar customer_seats list_seats
+
+**Scopes**: `customer_seats:read`
+
+```bash
+polar customer_seats list_seats [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--subscription-id` | `string` | subscription_id |
+| `--order-id` | `string` | order_id |
+
+## polar customer_seats resend_invitation
+
+**Scopes**: `customer_seats:write`
+
+```bash
+polar customer_seats resend_invitation [flags] <seat_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `seat_id` | `string` |  |
+
+## polar customer_seats revoke_seat
+
+**Scopes**: `customer_seats:write`
+
+```bash
+polar customer_seats revoke_seat [flags] <seat_id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `seat_id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |

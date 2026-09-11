@@ -1,0 +1,132 @@
+---
+title: "polar checkout_links"
+sidebarTitle: "checkout_links"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar checkout_links <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar checkout_links create`](#polar-checkout_links-create) Create a checkout link.
+- [`polar checkout_links delete`](#polar-checkout_links-delete) Delete a checkout link.
+- [`polar checkout_links get`](#polar-checkout_links-get) Get a checkout link by ID.
+- [`polar checkout_links list`](#polar-checkout_links-list) List checkout links.
+- [`polar checkout_links update`](#polar-checkout_links-update) Update a checkout link.
+
+## polar checkout_links create
+
+Create a checkout link.
+
+```bash
+polar checkout_links create [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--trial-interval` | `choice` | The interval unit for the trial period. (choices: day, week, month, year) |
+| `--trial-interval-count` | `integer` | The number of interval units for the trial period. |
+| `--payment-processor` | `choice` | Required. Payment processor to use. Currently only Stripe is supported. (choices: stripe) |
+| `--label` | `string` | Optional label to distinguish links internally |
+| `--allow-discount-codes` | `boolean` | Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it. |
+| `--require-billing-address` | `boolean` | Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. |
+| `--discount-id` | `string` | ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored. |
+| `--seats` | `integer` | Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored. |
+| `--units` | `integer` | Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored. |
+| `--success-url` | `string` | URL where the customer will be redirected after a successful payment.You can add the `checkout_id=&#123;CHECKOUT_ID&#125;` query parameter to retrieve the checkout session id. |
+| `--return-url` | `string` | When set, a back button will be shown in the checkout to return to this URL. |
+| `--product-price-id` | `string` | product_price_id |
+| `--product-id` | `string` | product_id |
+| `--products` | `string` | List of products that will be available to select at checkout. |
+
+## polar checkout_links delete
+
+Delete a checkout link.
+
+```bash
+polar checkout_links delete [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+
+## polar checkout_links get
+
+Get a checkout link by ID.
+
+```bash
+polar checkout_links get [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+## polar checkout_links list
+
+List checkout links.
+
+```bash
+polar checkout_links list [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--organization-id`, `--org` | `string` | Filter by organization ID. Defaults to the active organization. |
+| `--product-id` | `string` | Filter by product ID. |
+| `--page` | `integer` | Page number, defaults to 1. |
+| `--limit` | `integer` | Size of a page, defaults to 10. Maximum is 100. |
+| `--sorting` | `choice` | Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. (choices: created_at, -created_at, label, -label, success_url, -success_url, allow_discount_codes, -allow_discount_codes) |
+
+## polar checkout_links update
+
+Update a checkout link.
+
+```bash
+polar checkout_links update [flags] <id>
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
+| `--trial-interval` | `choice` | The interval unit for the trial period. (choices: day, week, month, year) |
+| `--trial-interval-count` | `integer` | The number of interval units for the trial period. |
+| `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
+| `--products` | `string` | List of products that will be available to select at checkout. |
+| `--label` | `string` | label |
+| `--allow-discount-codes` | `boolean` | Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it. |
+| `--require-billing-address` | `boolean` | Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. |
+| `--discount-id` | `string` | ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored. |
+| `--seats` | `integer` | Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored. |
+| `--units` | `integer` | Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored. |
+| `--success-url` | `string` | URL where the customer will be redirected after a successful payment.You can add the `checkout_id=&#123;CHECKOUT_ID&#125;` query parameter to retrieve the checkout session id. |
+| `--return-url` | `string` | When set, a back button will be shown in the checkout to return to this URL. |

@@ -173,6 +173,51 @@
                 ]
               },
               {
+                "group": "CLI",
+                "pages": [
+                  "integrate/cli/introduction",
+                  "integrate/cli/authentication",
+                  "integrate/cli/webhooks",
+                  "integrate/cli/reference",
+                  {
+                    "group": "CLI commands",
+                    "pages": [
+                      "integrate/cli/reference/auth",
+                      "integrate/cli/reference/listen",
+                      "integrate/cli/reference/trigger",
+                      "integrate/cli/reference/update"
+                    ]
+                  },
+                  {
+                    "group": "API resources",
+                    "pages": [
+                      "integrate/cli/reference/benefit_grants",
+                      "integrate/cli/reference/benefits",
+                      "integrate/cli/reference/checkout_links",
+                      "integrate/cli/reference/checkouts",
+                      "integrate/cli/reference/custom_fields",
+                      "integrate/cli/reference/customer_meters",
+                      "integrate/cli/reference/customer_seats",
+                      "integrate/cli/reference/customers",
+                      "integrate/cli/reference/discounts",
+                      "integrate/cli/reference/event_types",
+                      "integrate/cli/reference/events",
+                      "integrate/cli/reference/files",
+                      "integrate/cli/reference/license_keys",
+                      "integrate/cli/reference/meters",
+                      "integrate/cli/reference/metrics",
+                      "integrate/cli/reference/orders",
+                      "integrate/cli/reference/organizations",
+                      "integrate/cli/reference/payments",
+                      "integrate/cli/reference/products",
+                      "integrate/cli/reference/refunds",
+                      "integrate/cli/reference/subscriptions",
+                      "integrate/cli/reference/webhooks"
+                    ]
+                  }
+                ]
+              },
+              {
                 "group": "Framework Adapters",
                 "pages": [
                   "integrate/sdk/adapters/introduction",
@@ -212,15 +257,6 @@
                   "integrate/oauth2/connect"
                 ]
               }
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": [
-              "cli/introduction",
-              "cli/authentication",
-              "cli/webhooks",
-              "cli/reference"
             ]
           },
           {
@@ -3115,7 +3151,7 @@
     },
     {
       "source": "/integrate/webhooks/locally",
-      "destination": "/cli/webhooks"
+      "destination": "/integrate/cli/webhooks"
     }
   ]
 }

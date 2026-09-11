@@ -68,11 +68,11 @@ formatting. Making it a breeze to setup in-chat notifications for your team.
 <Tip>
   **Developing locally?**
 
-  The [Polar CLI](/cli/webhooks) forwards your organization's webhooks to a URL on your machine, so you can test handlers without deploying them.
+  The [Polar CLI](/integrate/cli/webhooks) forwards your organization's webhooks to a URL on your machine, so you can test handlers without deploying them.
 
   ```bash Terminal
   curl -fsSL https://polar.sh/install.sh | bash
-  polar auth login --sandbox
+  polar auth login --production
   polar listen http://localhost:3000/api/webhooks
   ```
 

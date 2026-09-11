@@ -32,6 +32,9 @@ jobs:
           filters: |
             clients:
               - 'clients/**'
+              - 'sdk/cli-commands/**'
+              - 'docs/integrate/cli/**'
+              - 'docs/docs.json'
               - '.github/workflows/test_client.yaml'
               - '.github/workflows/release_cli.yml'
 

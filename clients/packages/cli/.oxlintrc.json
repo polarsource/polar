@@ -15,5 +15,13 @@
     "polar-cli/no-process-env": "error",
     "polar-cli/service-boundaries": "error",
     "polar-cli/test-colocation": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**"],
+      "rules": {
+        "polar-cli/no-effect-run-outside-entrypoint": "off"
+      }
+    }
+  ]
 }

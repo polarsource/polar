@@ -1,0 +1,46 @@
+---
+title: "polar listen"
+sidebarTitle: "listen"
+description: "Forward webhook events for an organization to a local URL"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar listen [flags] [<url>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `url` | `string` | Where to forward webhook events: a port like 3000, or a URL like http://localhost:3000/api/webhooks (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID for this invocation only |
+| `--print-secret` | `boolean` | Print the secret that signs forwarded events, then exit |
+
+**Examples**
+
+Forward events to http://localhost:3000
+```bash
+polar listen 3000
+```
+
+Forward events to a route on your local server
+```bash
+polar listen 3000/api/webhooks
+```
+
+Forward events for a specific organization
+```bash
+polar listen http://localhost:3000/api/webhooks --org <id>
+```
+
+Print the signing secret, e.g. for POLAR_WEBHOOK_SECRET in .env
+```bash
+polar listen --print-secret
+```

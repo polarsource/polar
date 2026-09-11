@@ -36,8 +36,8 @@ and ORM returns, POST/PATCH/DELETE status codes, `ListResource`, `responses=`, t
 
 ### 1. Public or private
 
-`APITag` has two values, `public` and `private` (`polar/openapi.py`). Public means documented
-and in the SDKs.
+`APITag` values are `public`, `private`, `mcp`, and `cli` (`polar/openapi.py`). Public means
+documented and in the SDKs; `mcp` and `cli` mark endpoints exposed by Polar's MCP server and CLI.
 
 - Set it deliberately on every new router and route. Never hide something with
   `include_in_schema=False`; use `tags=[APITag.private]`.

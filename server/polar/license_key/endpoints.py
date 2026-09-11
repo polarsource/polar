@@ -61,6 +61,12 @@ RotateNotPermittedResponse = {
         401: UnauthorizedResponse,
         404: NotFoundResponse,
     },
+    openapi_extra={
+        "x-tool-name": "license_keys_list",
+        "x-tool-title": "List license keys",
+        "x-tool-description": "Get license keys connected to the given organization & filters.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.LicenseKeysRead,
@@ -107,6 +113,12 @@ async def list(
         401: UnauthorizedResponse,
         404: NotFoundResponse,
     },
+    openapi_extra={
+        "x-tool-name": "license_keys_get",
+        "x-tool-title": "Get license key",
+        "x-tool-description": "Get a license key.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     auth_subject: auth.LicenseKeysRead,
@@ -129,6 +141,11 @@ async def get(
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,
+    },
+    openapi_extra={
+        "x-tool-name": "license_keys_update",
+        "x-tool-title": "Update license key",
+        "x-tool-description": "Update a license key.",
     },
 )
 async def update(
@@ -160,6 +177,18 @@ async def update(
         401: UnauthorizedResponse,
         404: NotFoundResponse,
     },
+    openapi_extra={
+        "x-tool-name": "license_keys_rotate",
+        "x-tool-title": "Rotate license key",
+        "x-tool-description": (
+            "Rotate a license key.\n"
+            "\n"
+            "Generates a new key string for the same license key record. The previous"
+            "\n"
+            "key string immediately stops validating. Status, usage, limits, expiry,\n"
+            "and activations are preserved."
+        ),
+    },
 )
 async def rotate(
     auth_subject: auth.LicenseKeysWrite,
@@ -190,6 +219,12 @@ async def rotate(
     responses={
         401: UnauthorizedResponse,
         404: ActivationNotFoundResponse,
+    },
+    openapi_extra={
+        "x-tool-name": "license_keys_get_activation",
+        "x-tool-title": "Get license key activation",
+        "x-tool-description": "Get a license key activation.",
+        "x-tool-annotations": ["read_only", "idempotent"],
     },
 )
 async def get_activation(

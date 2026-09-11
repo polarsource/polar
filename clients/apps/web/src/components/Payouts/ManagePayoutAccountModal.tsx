@@ -324,18 +324,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                     />
                     {account.is_payout_ready ? 'Ready' : 'Setup required'}
                   </span>
-                  <span className="dark:text-polar-400 flex flex-row items-center gap-x-1.5 text-xs text-gray-500">
-                    {isShared && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Stripe requires one payout account per organization.
-                          Give each of these their own.
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
+                  <span className="dark:text-polar-400 text-xs text-gray-500">
                     {isUnused
                       ? 'Not used by any organization'
                       : account.organizations
@@ -343,6 +332,12 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                           .join(', ')}
                   </span>
                 </div>
+                {isShared && (
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    Stripe requires one payout account per organization. Give
+                    each of these their own.
+                  </p>
+                )}
               </li>
             )
           })}

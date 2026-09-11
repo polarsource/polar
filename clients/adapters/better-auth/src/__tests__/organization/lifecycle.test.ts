@@ -118,7 +118,7 @@ const createAuthContext = (storedMemberships = memberships) => {
           ),
         )
         if (sortBy?.field === 'createdAt') {
-          result = result.toSorted(
+          result = [...result].sort(
             (left, right) =>
               left.createdAt.getTime() - right.createdAt.getTime(),
           )

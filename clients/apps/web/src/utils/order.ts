@@ -110,7 +110,7 @@ export function getLatestFailedPayment(
   return (
     payments
       .filter((payment) => payment.status === 'failed')
-      .toSorted(
+      .sort(
         (a, b) =>
           parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime(),
       )[0] ?? null

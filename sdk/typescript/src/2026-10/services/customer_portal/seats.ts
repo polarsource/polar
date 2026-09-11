@@ -37,7 +37,7 @@ export const listSeatsSeats = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CustomerPortalSeatsListSeats401Error} Authentication required
-   * @throws {CustomerPortalSeatsListSeats403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsListSeats403Error} Not permitted
    * @throws {CustomerPortalSeatsListSeats404Error} Subscription or order not found
    * @throws {HTTPValidationError} Validation Error
    */
@@ -80,7 +80,7 @@ export const assignSeatSeats = (client: ClientBase) => {
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CustomerPortalSeatsAssignSeat400Error} No available seats or customer already has a seat
    * @throws {CustomerPortalSeatsAssignSeat401Error} Authentication required
-   * @throws {CustomerPortalSeatsAssignSeat403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsAssignSeat403Error} Not permitted
    * @throws {CustomerPortalSeatsAssignSeat404Error} Subscription, order, or customer not found
    * @throws {HTTPValidationError} Validation Error
    */
@@ -117,7 +117,7 @@ export const revokeSeatSeats = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CustomerPortalSeatsRevokeSeat401Error} Authentication required
-   * @throws {CustomerPortalSeatsRevokeSeat403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsRevokeSeat403Error} Not permitted
    * @throws {CustomerPortalSeatsRevokeSeat404Error} Seat not found
    * @throws {HTTPValidationError} Validation Error
    */
@@ -153,7 +153,7 @@ export const resendInvitationSeats = (client: ClientBase) => {
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CustomerPortalSeatsResendInvitation400Error} Seat is not pending or already claimed
    * @throws {CustomerPortalSeatsResendInvitation401Error} Authentication required
-   * @throws {CustomerPortalSeatsResendInvitation403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsResendInvitation403Error} Not permitted
    * @throws {CustomerPortalSeatsResendInvitation404Error} Seat not found
    * @throws {HTTPValidationError} Validation Error
    */

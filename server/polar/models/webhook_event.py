@@ -24,6 +24,15 @@ class WebhookEvent(RecordModel):
             "created_at",
             postgresql_where="payload IS NOT NULL",
         ),
+        Index(
+            "ix_webhook_events_created_at_pending",
+            "created_at",
+            postgresql_include=["id"],
+            postgresql_where=(
+                "succeeded IS NULL AND deleted_at IS NULL "
+                "AND payload IS NOT NULL AND NOT skipped"
+            ),
+        ),
     )
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(

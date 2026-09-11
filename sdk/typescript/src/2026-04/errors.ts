@@ -30,6 +30,7 @@ import type {
   RotateNotPermitted as RotateNotPermittedModel,
   SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
   SubscriptionLocked as SubscriptionLockedModel,
+  SubscriptionNotScheduledToCancel as SubscriptionNotScheduledToCancelModel,
   Unauthorized as UnauthorizedModel,
   UpdateSubscriptionPlanNotAllowed as UpdateSubscriptionPlanNotAllowedModel,
   UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
@@ -147,6 +148,20 @@ export class SubscriptionsUpdate403Error extends PolarClientError<
   ) {
     super(statusCode, error);
     this.name = "SubscriptionsUpdate403Error";
+  }
+}
+/**
+ * Subscription is pending an update, or is not scheduled to be canceled.
+ */
+export class SubscriptionsUpdate409Error extends PolarClientError<
+  SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsUpdate409Error";
   }
 }
 /**
@@ -430,7 +445,7 @@ export class CustomerPortalSeatsListSeats401Error extends PolarClientError<null>
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerPortalSeatsListSeats403Error extends PolarClientError<null> {
   constructor(
@@ -478,7 +493,7 @@ export class CustomerPortalSeatsAssignSeat401Error extends PolarClientError<null
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerPortalSeatsAssignSeat403Error extends PolarClientError<null> {
   constructor(
@@ -514,7 +529,7 @@ export class CustomerPortalSeatsRevokeSeat401Error extends PolarClientError<null
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerPortalSeatsRevokeSeat403Error extends PolarClientError<null> {
   constructor(
@@ -562,7 +577,7 @@ export class CustomerPortalSeatsResendInvitation401Error extends PolarClientErro
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerPortalSeatsResendInvitation403Error extends PolarClientError<null> {
   constructor(
@@ -813,15 +828,17 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   }
 }
 /**
- * The subscription has no payment method to charge.
+ * The subscription has no payment method to charge, or is not scheduled to be canceled.
  */
-export class PaymentMethodRequired extends PolarClientError<PaymentMethodRequiredModel> {
+export class CustomerPortalSubscriptionsUpdate409Error extends PolarClientError<
+  PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+> {
   constructor(
     public readonly statusCode: 409,
-    public readonly error: PaymentMethodRequiredModel,
+    public readonly error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
   ) {
     super(statusCode, error);
-    this.name = "PaymentMethodRequired";
+    this.name = "CustomerPortalSubscriptionsUpdate409Error";
   }
 }
 /**
@@ -837,7 +854,7 @@ export class CustomerSeatsListSeats401Error extends PolarClientError<null> {
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerSeatsListSeats403Error extends PolarClientError<null> {
   constructor(
@@ -885,7 +902,7 @@ export class CustomerSeatsAssignSeat401Error extends PolarClientError<null> {
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerSeatsAssignSeat403Error extends PolarClientError<null> {
   constructor(
@@ -921,7 +938,7 @@ export class CustomerSeatsRevokeSeat401Error extends PolarClientError<null> {
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerSeatsRevokeSeat403Error extends PolarClientError<null> {
   constructor(
@@ -969,7 +986,7 @@ export class CustomerSeatsResendInvitation401Error extends PolarClientError<null
   }
 }
 /**
- * Not permitted or seat-based pricing not enabled
+ * Not permitted
  */
 export class CustomerSeatsResendInvitation403Error extends PolarClientError<null> {
   constructor(

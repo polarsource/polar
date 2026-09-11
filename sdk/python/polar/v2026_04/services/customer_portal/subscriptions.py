@@ -12,9 +12,9 @@ from polar.base import (
 from polar.v2026_04.errors import (
     AlreadyCanceledSubscription,
     CustomerPortalSubscriptionsUpdate403Error,
+    CustomerPortalSubscriptionsUpdate409Error,
     HTTPValidationError,
     PaymentFailed,
-    PaymentMethodRequired,
     ResourceNotFound,
 )
 from polar.v2026_04.inputs import (
@@ -322,7 +322,7 @@ class SubscriptionsSync(SyncServiceBase):
             PaymentFailed: Payment required to apply the subscription update.
             CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
             ResourceNotFound: Customer subscription was not found.
-            PaymentMethodRequired: The subscription has no payment method to charge.
+            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, or is not scheduled to be canceled.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -344,7 +344,7 @@ class SubscriptionsSync(SyncServiceBase):
             402: PaymentFailed,
             403: CustomerPortalSubscriptionsUpdate403Error,
             404: ResourceNotFound,
-            409: PaymentMethodRequired,
+            409: CustomerPortalSubscriptionsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSubscription, method_errors)
@@ -638,7 +638,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             PaymentFailed: Payment required to apply the subscription update.
             CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
             ResourceNotFound: Customer subscription was not found.
-            PaymentMethodRequired: The subscription has no payment method to charge.
+            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, or is not scheduled to be canceled.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -660,7 +660,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             402: PaymentFailed,
             403: CustomerPortalSubscriptionsUpdate403Error,
             404: ResourceNotFound,
-            409: PaymentMethodRequired,
+            409: CustomerPortalSubscriptionsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSubscription, method_errors)

@@ -131,6 +131,8 @@ class AuthorizeOrganization:
 
     slug: str
 
+    name: str
+
     avatar_url: str | None
 
 
@@ -7958,6 +7960,12 @@ class OrderItemSchema:
     product_price_id: str | None
     """Associated price ID, if any."""
 
+    start_timestamp: str | None
+    """Start of the period covered by this line item, if any."""
+
+    end_timestamp: str | None
+    """End of the period covered by this line item, if any."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrderNotDraft:
@@ -8561,9 +8569,6 @@ class OrganizationFeatureSettings:
     issue_funding_enabled: bool = False
     """If this organization has issue funding enabled"""
 
-    seat_based_pricing_enabled: bool = False
-    """If this organization has seat-based pricing enabled"""
-
     wallets_enabled: bool = False
     """If this organization has Wallets enabled"""
 
@@ -8605,6 +8610,9 @@ class OrganizationFeatureSettings:
 
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
+
+    frame_ancestors_enforced: bool = False
+    """If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9862,6 +9870,13 @@ class SubscriptionMeter:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionNotScheduledToCancel:
+    error: typing.Literal["SubscriptionNotScheduledToCancel"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class SubscriptionPastDueEvent:
     """An event created by Polar when a subscription becomes past due."""
 
@@ -10864,6 +10879,9 @@ class WebhookEndpoint:
     name: str | None = None
     """An optional name for the webhook endpoint to help organize and identify it."""
 
+    api_version: str
+    """The API version that'll be used in event payloads."""
+
     format: WebhookFormat
 
     secret: str
@@ -10877,6 +10895,9 @@ class WebhookEndpoint:
 
     enabled: bool
     """Whether the webhook endpoint is enabled and will receive events."""
+
+    uses_standard_webhook_signature: bool
+    """Whether Polar signs deliveries to this endpoint with Standard Webhooks. False means Polar's original HMAC over the UTF-8 bytes of the full secret."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -10906,6 +10927,9 @@ class WebhookEvent:
 
     skipped: bool
     """Whether this event was skipped because the webhook endpoint was disabled."""
+
+    api_version: str
+    """The API version used in the payload of this event."""
 
     payload: str | None
     """The payload of the webhook event."""

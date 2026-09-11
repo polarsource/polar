@@ -28,6 +28,16 @@ class MerchantMigrationSourcePlatform(StrEnum):
     lemon_squeezy = "lemon_squeezy"
     paddle = "paddle"
 
+    @property
+    def label(self) -> str:
+        match self:
+            case MerchantMigrationSourcePlatform.stripe:
+                return "Stripe"
+            case MerchantMigrationSourcePlatform.lemon_squeezy:
+                return "Lemon Squeezy"
+            case MerchantMigrationSourcePlatform.paddle:
+                return "Paddle"
+
 
 class MerchantMigrationStep(StrEnum):
     source_setup = "source_setup"

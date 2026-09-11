@@ -2,6 +2,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import select
 
 from polar.enums import EmailSender
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -31,6 +32,27 @@ def extract_organization_id(
 
 class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, UUID]):
     model = EmailLog
+
+    async def has_billing_migration_notice(self, subscription_id: UUID) -> bool:
+        statement = (
+            select(EmailLog.id)
+            .where(
+                EmailLog.email_template.in_(
+                    (
+                        "subscription_renewal_reminder",
+                        "subscription_cycled",
+                        "subscription_cycled_after_trial",
+                        "subscription_past_due",
+                    )
+                ),
+                EmailLog.email_props["subscription"]["id"].astext
+                == str(subscription_id),
+                EmailLog.email_props["previous_billing_provider"].astext.is_not(None),
+                EmailLog.email_props["previous_billing_provider"].astext != "",
+            )
+            .limit(1)
+        )
+        return await self.session.scalar(statement) is not None
 
     async def get_by_processor_id(self, processor_id: str) -> EmailLog | None:
         statement = self.get_base_statement().where(

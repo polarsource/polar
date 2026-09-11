@@ -26,6 +26,10 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
+from polar.email.billing_migration import (
+    is_billing_migration_notice_template,
+    previous_billing_provider_for_notice,
+)
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.enums import (
@@ -2593,6 +2597,15 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
+        previous_billing_provider: str | None = None
+        if (
+            is_billing_migration_notice_template(template_name)
+            and subscription is not None
+        ):
+            previous_billing_provider = await previous_billing_provider_for_notice(
+                session, subscription
+            )
+
         for recipient_email in recipients:
             token = await customer_service.create_session_token_for_recipient(
                 session, customer, recipient_email
@@ -2619,17 +2632,20 @@ class OrderService:
                 query_string = urlencode(params)
                 url_path = url_path_template.format(organization=organization.slug)
                 url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+            props: dict[str, Any] = {
+                "email": recipient_email,
+                "organization": organization,
+                "product": product,
+                "order": order,
+                "subscription": subscription,
+                "url": url,
+            }
+            if is_billing_migration_notice_template(template_name):
+                props["previous_billing_provider"] = previous_billing_provider
             email = EmailAdapter.validate_python(
                 {
                     "template": template_name,
-                    "props": {
-                        "email": recipient_email,
-                        "organization": organization,
-                        "product": product,
-                        "order": order,
-                        "subscription": subscription,
-                        "url": url,
-                    },
+                    "props": props,
                 }
             )
 

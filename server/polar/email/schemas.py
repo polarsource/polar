@@ -286,6 +286,7 @@ class SubscriptionPropsBase(EmailProps):
     product: ProductEmail
     subscription: SubscriptionEmail
     url: str
+    previous_billing_provider: str | None = None
 
 
 class SubscriptionCancellationProps(SubscriptionPropsBase): ...

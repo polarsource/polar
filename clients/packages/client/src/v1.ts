@@ -2944,7 +2944,7 @@ export interface paths {
      * Listen
      * @description **Scopes**: `webhooks:read` `webhooks:write`
      */
-    get: operations['cli:listen']
+    get: operations['cli_router:listen']
     put?: never
     post?: never
     delete?: never
@@ -47538,7 +47538,7 @@ export interface operations {
       }
     }
   }
-  'cli:listen': {
+  'cli_router:listen': {
     parameters: {
       query?: never
       header?: never

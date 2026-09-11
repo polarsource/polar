@@ -186,6 +186,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
               organization && account.id === organization.payout_account_id
 
             const isUnused = account.organizations.length === 0
+            const isShared = account.organizations.length > 1
             return (
               <li
                 key={account.id}
@@ -331,6 +332,12 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                           .join(', ')}
                   </span>
                 </div>
+                {isShared && (
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    Stripe requires one payout account per organization. Give
+                    each of these their own.
+                  </p>
+                )}
               </li>
             )
           })}

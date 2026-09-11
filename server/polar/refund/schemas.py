@@ -53,6 +53,7 @@ class RefundCreate(MetadataInputMixin, Schema):
     )
     revoke_benefits: bool = Field(
         False,
+        json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
         description=inspect.cleandoc(
             """
             Should this refund trigger the associated customer benefits to be revoked?

@@ -1,9 +1,9 @@
 // Generated from webhooks:update_webhook_endpoint (2026-04). Do not edit.
 import type { Polar } from '@polar-sh/sdk/2026-04'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { confirm, data, mergeInput } from '../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['webhooks']['updateWebhookEndpoint']>[1]
@@ -12,6 +12,7 @@ type Body = NonNullable<
 export const command = Command.make(
   'update_webhook_endpoint',
   {
+    confirm,
     path: {
       id: Argument.string('id'),
     },
@@ -96,11 +97,30 @@ export const command = Command.make(
         events: config.input.events,
         enabled: config.input.enabled,
       })
+      const confirmationInput = yield* Schema.decodeUnknownEffect(
+        Schema.Struct({
+          enabled: Schema.optionalKey(Schema.NullOr(Schema.Boolean)),
+        }),
+      )(body).pipe(
+        Effect.mapError(
+          (error) => new ApiCommandError({ message: error.message }),
+        ),
+      )
       yield* api.execute({
         operationId: 'webhooks:update_webhook_endpoint',
         method: 'PATCH',
-        requiresConfirmation: false,
-        confirm: false,
+        requiresConfirmation: confirmationInput['enabled'] === false,
+        confirm: config.confirm,
+        preview: {
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'name', label: 'Name' },
+            { key: 'url', label: 'URL' },
+            { key: 'enabled', label: 'Enabled' },
+          ],
+          invoke: (client) =>
+            client.webhooks.getWebhookEndpoint(config.path.id),
+        },
         invoke: (client) =>
           client.webhooks.updateWebhookEndpoint(config.path.id, body),
       })

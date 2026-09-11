@@ -412,8 +412,9 @@ async def _backfill_seats(
 
     # Find non-revoked seats for this organization's products.
     # We need to join through subscription/order → product to filter by organization.
-    # joinedload requires unique() which is incompatible with streaming,
-    # so we use LIMIT/OFFSET batch pagination instead.
+    # joinedload requires unique() which is incompatible with streaming, so we batch
+    # by keyset on CustomerSeat.id: the loop flushes member_id, the column the
+    # statement filters on, so offset-based paging would skip unprocessed rows.
     sub_seats_stmt = (
         select(CustomerSeat)
         .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
@@ -451,15 +452,18 @@ async def _backfill_seats(
     billing_customer_ids_with_seats: set[uuid.UUID] = set()
 
     for base_stmt in [sub_seats_stmt, order_seats_stmt]:
-        offset = 0
+        last_id: uuid.UUID | None = None
         while True:
-            batch_stmt = base_stmt.limit(_BACKFILL_BATCH_SIZE).offset(offset)
+            batch_stmt = base_stmt
+            if last_id is not None:
+                batch_stmt = batch_stmt.where(CustomerSeat.id > last_id)
+            batch_stmt = batch_stmt.limit(_BACKFILL_BATCH_SIZE)
             result = await session.execute(batch_stmt)
             seats = list(result.scalars().unique().all())
             if not seats:
                 break
             seats_found += len(seats)
-            offset += _BACKFILL_BATCH_SIZE
+            last_id = seats[-1].id
 
             for seat in seats:
                 if seat.subscription_id is not None and seat.subscription is not None:
@@ -1014,15 +1018,18 @@ async def _prepare_seats(
     count = 0
 
     for base_stmt in [sub_seats_stmt, order_seats_stmt]:
-        offset = 0
+        last_id: uuid.UUID | None = None
         while True:
-            batch_stmt = base_stmt.limit(_PREPARE_BATCH_SIZE).offset(offset)
+            batch_stmt = base_stmt
+            if last_id is not None:
+                batch_stmt = batch_stmt.where(CustomerSeat.id > last_id)
+            batch_stmt = batch_stmt.limit(_PREPARE_BATCH_SIZE)
             result = await session.execute(batch_stmt)
             seats = list(result.scalars().unique().all())
             if not seats:
                 break
             seats_found += len(seats)
-            offset += _PREPARE_BATCH_SIZE
+            last_id = seats[-1].id
 
             for seat in seats:
                 if seat.subscription_id is not None and seat.subscription is not None:

@@ -412,13 +412,9 @@ async def _backfill_seats(
 
     # Find non-revoked seats for this organization's products.
     # We need to join through subscription/order → product to filter by organization.
-    # joinedload requires unique() which is incompatible with streaming, so we
-    # batch by keyset pagination on CustomerSeat.id. We must NOT use OFFSET here:
-    # this loop mutates and flushes the filtered column (member_id) inside the
-    # loop, so processed rows leave the result set after each flush. OFFSET would
-    # then advance past unprocessed rows (mutating-filter + OFFSET skip). Keyset
-    # pagination re-queries from a fixed id cursor, so already-linked rows are
-    # excluded by both id > last_id and member_id IS NULL — no rows are skipped.
+    # joinedload requires unique() which is incompatible with streaming, so we batch
+    # by keyset on CustomerSeat.id: the loop flushes member_id, the column the
+    # statement filters on, so offset-based paging would skip unprocessed rows.
     sub_seats_stmt = (
         select(CustomerSeat)
         .join(Subscription, CustomerSeat.subscription_id == Subscription.id)

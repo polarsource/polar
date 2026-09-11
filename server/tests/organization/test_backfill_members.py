@@ -20,6 +20,7 @@ from polar.models.file import File, FileServiceTypes
 from polar.models.license_key import LicenseKey
 from polar.models.member import Member, MemberRole
 from polar.models.subscription import SubscriptionStatus
+from polar.organization import tasks as org_tasks
 from polar.organization.tasks import (
     OrganizationDoesNotExist,
     backfill_members,
@@ -2442,20 +2443,9 @@ class TestBackfillBenefitGrantsDuplicates:
 
 @pytest.mark.asyncio
 class TestBackfillSeatsKeysetPagination:
-    """Regression tests for the LIMIT/OFFSET pagination bug in _backfill_seats.
+    """_backfill_seats links every seat when they span several batches.
 
-    _backfill_seats paginates over `CustomerSeat.member_id IS NULL` while
-    mutating and flushing `member_id` inside the loop. With OFFSET, processed
-    rows leave the result set after each flush, so the ever-growing offset
-    advances past unprocessed rows — skipping a contiguous block of seats.
-    Skipped seats never get `member_id` set, and the subsequent Step C then
-    permanently misattributes their benefit grants to the billing manager's
-    owner member. The fix uses keyset pagination (`CustomerSeat.id > last_id`)
-    instead of OFFSET.
-
-    These tests shrink `_BACKFILL_BATCH_SIZE` so the multi-batch code path is
-    exercised with a small number of seats (existing tests never exceed one
-    batch, so the skip branch was never reached).
+    The batch size is shrunk so a handful of seats crosses the boundary.
     """
 
     async def test_links_all_subscription_seats_across_batches(
@@ -2465,10 +2455,6 @@ class TestBackfillSeatsKeysetPagination:
         account: Account,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """All non-revoked subscription seats must be linked in a single run,
-        even when the count exceeds the batch size (keyset vs OFFSET)."""
-        from polar.organization import tasks as org_tasks
-
         monkeypatch.setattr(org_tasks, "_BACKFILL_BATCH_SIZE", 5)
 
         organization = await create_organization(
@@ -2524,10 +2510,7 @@ class TestBackfillSeatsKeysetPagination:
             .scalars()
             .all()
         )
-        assert unlinked == [], (
-            f"Expected all 12 seats to be linked, but {len(unlinked)} remain "
-            f"unlinked: {[s.id for s in unlinked]}"
-        )
+        assert unlinked == []
 
         seats = (
             (
@@ -2550,10 +2533,6 @@ class TestBackfillSeatsKeysetPagination:
         account: Account,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """The order-seat path (order_seats_stmt) has the same OFFSET bug;
-        keyset pagination must link every order seat across batches."""
-        from polar.organization import tasks as org_tasks
-
         monkeypatch.setattr(org_tasks, "_BACKFILL_BATCH_SIZE", 5)
 
         organization = await create_organization(
@@ -2606,10 +2585,7 @@ class TestBackfillSeatsKeysetPagination:
             .scalars()
             .all()
         )
-        assert unlinked == [], (
-            f"Expected all 10 order seats to be linked, but {len(unlinked)} "
-            f"remain unlinked: {[s.id for s in unlinked]}"
-        )
+        assert unlinked == []
 
         seats = (
             (
@@ -2632,14 +2608,6 @@ class TestBackfillSeatsKeysetPagination:
         account: Account,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """End-to-end corruption check. With the OFFSET bug, seats skipped in
-        Step B have their Step C benefit grants transferred to the billing
-        customer but misattributed to the billing manager's owner member
-        (permanent — re-running Step C only processes member_id IS NULL
-        grants). With keyset pagination every seat is linked, so every grant
-        resolves to its correct seat-holder member."""
-        from polar.organization import tasks as org_tasks
-
         monkeypatch.setattr(org_tasks, "_BACKFILL_BATCH_SIZE", 5)
 
         organization = await create_organization(
@@ -2710,8 +2678,6 @@ class TestBackfillSeatsKeysetPagination:
         )
         assert len(grants) == 10
 
-        # Every grant transferred to the billing customer and linked to a
-        # distinct seat-holder member — never the billing manager's owner member.
         member_emails: set[str] = set()
         for grant in grants:
             assert grant.customer_id == billing_customer.id
@@ -2719,28 +2685,17 @@ class TestBackfillSeatsKeysetPagination:
             member = await session.get(Member, grant.member_id)
             assert member is not None
             assert member.customer_id == billing_customer.id
-            assert member.role == MemberRole.member, (
-                f"Grant {grant.id} misattributed to owner member (role=owner) "
-                f"instead of the seat-holder member (role=member)"
-            )
+            assert member.role == MemberRole.member
             member_emails.add(member.email)
 
-        assert member_emails == set(holder_emails), (
-            f"Grant member emails {member_emails} do not match the set of "
-            f"seat-holder emails {set(holder_emails)} — some grants were "
-            f"misattributed to a single member"
-        )
+        assert member_emails == set(holder_emails)
 
 
 @pytest.mark.asyncio
 class TestPrepareSeatsKeysetPagination:
-    """Regression tests for the same LIMIT/OFFSET bug in _prepare_seats.
+    """_prepare_seats links every seat across batches, leaving customer_id alone.
 
-    _prepare_seats skips seats the same way _backfill_seats does, but the
-    impact is recoverable (no customer_id rewrite, no destructive Step C/D/E):
-    skipped seats simply keep member_id IS NULL. These tests confirm the
-    keyset fix links every seat across batches and leaves customer_id
-    untouched (non-destructive).
+    The batch size is shrunk so a handful of seats crosses the boundary.
     """
 
     async def test_prepare_links_all_subscription_seats_across_batches(
@@ -2750,13 +2705,8 @@ class TestPrepareSeatsKeysetPagination:
         account: Account,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """All subscription seats must get member_id in a single prepare run,
-        across the batch boundary, without rewriting customer_id."""
-        from polar.organization import tasks as org_tasks
-
         monkeypatch.setattr(org_tasks, "_PREPARE_BATCH_SIZE", 5)
 
-        # Prepare runs before the flag is flipped — leave it disabled.
         organization = await create_organization(
             save_fixture,
             account,
@@ -2810,10 +2760,7 @@ class TestPrepareSeatsKeysetPagination:
             .scalars()
             .all()
         )
-        assert unlinked == [], (
-            f"Expected all 12 prepared seats to be linked, but "
-            f"{len(unlinked)} remain unlinked: {[s.id for s in unlinked]}"
-        )
+        assert unlinked == []
 
         seats = (
             (
@@ -2828,10 +2775,7 @@ class TestPrepareSeatsKeysetPagination:
         )
         assert len(seats) == 12
         for seat in seats:
-            # Prepare is non-destructive — customer_id must be unchanged.
-            assert seat.customer_id == original_customer_ids[seat.id], (
-                f"Prepare rewrote customer_id for seat {seat.id}"
-            )
+            assert seat.customer_id == original_customer_ids[seat.id]
             assert seat.member_id is not None
             member = await session.get(Member, seat.member_id)
             assert member is not None
@@ -2844,10 +2788,6 @@ class TestPrepareSeatsKeysetPagination:
         account: Account,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """The order-seat path of _prepare_seats must also link every seat
-        across batches without rewriting customer_id."""
-        from polar.organization import tasks as org_tasks
-
         monkeypatch.setattr(org_tasks, "_PREPARE_BATCH_SIZE", 5)
 
         organization = await create_organization(
@@ -2900,10 +2840,7 @@ class TestPrepareSeatsKeysetPagination:
             .scalars()
             .all()
         )
-        assert unlinked == [], (
-            f"Expected all 10 prepared order seats to be linked, but "
-            f"{len(unlinked)} remain unlinked: {[s.id for s in unlinked]}"
-        )
+        assert unlinked == []
 
         seats = (
             (

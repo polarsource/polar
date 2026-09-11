@@ -35,6 +35,14 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   ip_protocol                  = "tcp"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "redis_tailscale" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = module.ec2_tailscale.security_group_id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
+
 module "redis_private_link" {
   source = "../modules/redis_private_link"
 

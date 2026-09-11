@@ -20,7 +20,7 @@ import {
   replaceBinary,
   update,
 } from '@/commands/update'
-import type { CLIRelease } from '@/services/github-releases'
+import { type CLIRelease, GitHubReleaseError } from '@/services/github-releases'
 import { captureConsole, runCli } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
@@ -167,23 +167,53 @@ describe('replaceBinary', () => {
 })
 
 describe('update command', () => {
+  const releaseUrl =
+    'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1'
+
   test('reports when the CLI is already up to date', async () => {
     const http = fakeHttp({
-      'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1':
-        Response.json([
-          {
-            tag_name: `polar-cli@${VERSION.slice(1)}`,
-            draft: false,
-            prerelease: false,
-            assets: [],
-          },
-        ]),
+      [releaseUrl]: Response.json([
+        {
+          tag_name: `polar-cli@${VERSION.slice(1)}`,
+          draft: false,
+          prerelease: false,
+          assets: [],
+        },
+      ]),
     })
     const cli = runCli(update, [])
     await Effect.runPromise(cli.effect.pipe(Effect.provide(http.layer)))
 
     expect(cli.output()).toContain('Checking for updates...')
     expect(cli.output()).toContain(`Already up to date ${VERSION}`)
+  })
+
+  test('wraps release-check HTTP failures as GitHubReleaseError', async () => {
+    const http = fakeHttp({
+      [releaseUrl]: new Response('Rate limit exceeded', { status: 403 }),
+    })
+    const cli = runCli(update, [])
+    const error = await Effect.runPromise(
+      cli.effect.pipe(Effect.provide(http.layer), Effect.flip),
+    )
+
+    expect(error).toBeInstanceOf(GitHubReleaseError)
+    expect(error._tag).toBe('GitHubReleaseError')
+    expect(error.message).toContain('403')
+  })
+
+  test('preserves GitHubReleaseError for missing stable releases', async () => {
+    const http = fakeHttp({
+      [releaseUrl]: Response.json([]),
+    })
+    const cli = runCli(update, [])
+    const error = await Effect.runPromise(
+      cli.effect.pipe(Effect.provide(http.layer), Effect.flip),
+    )
+
+    expect(error).toBeInstanceOf(GitHubReleaseError)
+    expect(error._tag).toBe('GitHubReleaseError')
+    expect(error.message).toBe('No stable CLI release found')
   })
 })
 

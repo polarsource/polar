@@ -6,6 +6,7 @@ import { HttpClient } from 'effect/unstable/http'
 import {
   type CLIRelease,
   getLatestRelease,
+  GitHubReleaseError,
   isNewerVersion,
 } from '@/services/github-releases'
 import * as ui from '@/utils/ui'
@@ -277,7 +278,13 @@ export const update = Command.make('update', {}, () =>
     yield* Console.log(ui.blank)
     yield* Console.log(ui.step('Checking for updates...'))
 
-    const release = yield* getLatestRelease
+    const release = yield* getLatestRelease.pipe(
+      Effect.mapError((cause) =>
+        cause instanceof GitHubReleaseError
+          ? cause
+          : new GitHubReleaseError({ message: cause.message }),
+      ),
+    )
 
     const latestVersion = release.version
 

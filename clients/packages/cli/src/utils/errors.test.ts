@@ -72,4 +72,16 @@ describe('describeError', () => {
       hint: releasesHint,
     })
   })
+
+  test('renders wrapped HttpClientError with the release-check prefix and hint', () => {
+    const wrapped = new GitHubReleaseError({
+      message:
+        'StatusCode: non 2xx status code (403 GET https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1)',
+    })
+    expect(describeError(wrapped)).toEqual({
+      title:
+        'Could not check for updates: StatusCode: non 2xx status code (403 GET https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1)',
+      hint: releasesHint,
+    })
+  })
 })

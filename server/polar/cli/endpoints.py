@@ -23,7 +23,7 @@ from polar.routing import APIRouter
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/cli", tags=["cli", APITag.private])
+router = APIRouter(prefix="/cli", tags=["cli_router", APITag.private])
 
 
 async def transform_webhook_events(

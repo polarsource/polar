@@ -91,15 +91,15 @@ async def webhooks(request: Request) -> JSONResponse:
     async_sessionmaker: AsyncSessionMaker = request.state.async_sessionmaker
     async with async_sessionmaker() as session:
         repository = WebhookEventRepository(session)
-        undelivered_webhooks = await repository.get_all_undelivered(
+        undelivered_webhooks = await repository.count_undelivered(
             older_than=utc_now() - UNDELIVERED_WEBHOOKS_MINIMUM_AGE,
             newer_than=utc_now() - UNDELIVERED_WEBHOOKS_MAXIMUM_AGE,
         )
-        if len(undelivered_webhooks) > UNDELIVERED_WEBHOOKS_ALERT_THRESHOLD:
+        if undelivered_webhooks > UNDELIVERED_WEBHOOKS_ALERT_THRESHOLD:
             return JSONResponse(
                 {
                     "status": "error",
-                    "undelivered_webhooks": len(undelivered_webhooks),
+                    "undelivered_webhooks": undelivered_webhooks,
                 },
                 status_code=503,
             )

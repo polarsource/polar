@@ -24310,10 +24310,10 @@ export interface components {
       items: components['schemas']['Payment'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[PayoutAccount] */
-    ListResource_PayoutAccount_: {
+    /** ListResource[PayoutAccountWithOrganizations] */
+    ListResource_PayoutAccountWithOrganizations_: {
       /** Items */
-      items: components['schemas']['PayoutAccount'][]
+      items: components['schemas']['PayoutAccountWithOrganizations'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Payout] */
@@ -31493,6 +31493,16 @@ export interface components {
       /** Url */
       url: string
     }
+    /** PayoutAccountOrganization */
+    PayoutAccountOrganization: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string
+      /** Slug */
+      slug: string
+    }
     /**
      * PayoutAccountStatus
      * @enum {string}
@@ -31536,6 +31546,42 @@ export interface components {
      * @enum {string}
      */
     PayoutAccountType: 'stripe' | 'manual'
+    /** PayoutAccountWithOrganizations */
+    PayoutAccountWithOrganizations: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      type: components['schemas']['PayoutAccountType']
+      /** Processor Id */
+      processor_id: string | null
+      /** Country */
+      country: string
+      /** Currency */
+      currency: string
+      /** Is Payout Ready */
+      is_payout_ready: boolean
+      status: components['schemas']['PayoutAccountStatus']
+      /**
+       * Organizations
+       * @description Organizations this payout account pays out for.
+       */
+      organizations: components['schemas']['PayoutAccountOrganization'][]
+    }
     /** PayoutAttempt */
     PayoutAttempt: {
       /**
@@ -61086,7 +61132,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_PayoutAccount_']
+          'application/json': components['schemas']['ListResource_PayoutAccountWithOrganizations_']
         }
       }
     }

@@ -148,5 +148,16 @@ class PayoutAccount(TimestampedSchema, IDSchema):
     status: PayoutAccountStatus
 
 
+class PayoutAccountOrganization(Schema):
+    id: UUID
+    slug: str
+
+
+class PayoutAccountWithOrganizations(PayoutAccount):
+    organizations: list[PayoutAccountOrganization] = Field(
+        description="Organizations this payout account pays out for."
+    )
+
+
 class PayoutAccountLink(Schema):
     url: str

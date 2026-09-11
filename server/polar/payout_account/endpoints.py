@@ -20,7 +20,11 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from .schemas import PayoutAccount as PayoutAccountSchema
-from .schemas import PayoutAccountCreate, PayoutAccountLink
+from .schemas import (
+    PayoutAccountCreate,
+    PayoutAccountLink,
+    PayoutAccountWithOrganizations,
+)
 from .service import (
     PayoutAccountStripeAccountDoesNotExist,
     PayoutAccountSyncFailed,
@@ -31,16 +35,16 @@ from .service import payout_account as payout_account_service
 router = APIRouter(prefix="/payout-accounts", tags=["payout_accounts", APITag.private])
 
 
-@router.get("/", response_model=ListResource[PayoutAccountSchema])
+@router.get("/", response_model=ListResource[PayoutAccountWithOrganizations])
 async def list(
     auth_subject: AuthorizeWebPayoutsRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[PayoutAccountSchema]:
+) -> ListResource[PayoutAccountWithOrganizations]:
     """List payout accounts accessible to the authenticated user."""
     results: Sequence[PayoutAccount] = await payout_account_service.list(
         session, auth_subject
     )
-    items = [PayoutAccountSchema.model_validate(r) for r in results]
+    items = [PayoutAccountWithOrganizations.model_validate(r) for r in results]
     return ListResource(
         items=items,
         pagination=Pagination(total_count=len(items), max_page=1),

@@ -156,6 +156,8 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
           {accounts.map((account) => {
             const isActive =
               organization && account.id === organization.payout_account_id
+
+            const isUnused = account.organizations.length === 0
             return (
               <li
                 key={account.id}
@@ -201,7 +203,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                         <ExternalLink className="ml-2 h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {!isActive && (
+                    {isUnused && (
                       <Button
                         variant="destructive"
                         size="sm"
@@ -239,7 +241,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                             : 'Complete Setup'}
                         </DropdownMenuItem>
                       )}
-                      {!isActive && (
+                      {isUnused && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -275,6 +277,13 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                       }`}
                     />
                     {account.is_payout_ready ? 'Ready' : 'Setup required'}
+                  </span>
+                  <span className="dark:text-polar-400 text-xs text-gray-500">
+                    {isUnused
+                      ? 'Not used by any organization'
+                      : account.organizations
+                          .map(({ slug }) => slug)
+                          .join(', ')}
                   </span>
                 </div>
               </li>

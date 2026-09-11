@@ -200,7 +200,6 @@
                 "group": "Webhooks",
                 "pages": [
                   "integrate/webhooks/endpoints",
-                  "integrate/webhooks/locally",
                   "integrate/webhooks/delivery",
                   "integrate/webhooks/events"
                 ]
@@ -213,6 +212,15 @@
                   "integrate/oauth2/connect"
                 ]
               }
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/introduction",
+              "cli/authentication",
+              "cli/webhooks",
+              "cli/reference"
             ]
           },
           {
@@ -3104,6 +3112,10 @@
     {
       "source": "/api-reference/2026-10/organizationupdated",
       "destination": "/api-reference/2026-10/organization_updated"
+    },
+    {
+      "source": "/integrate/webhooks/locally",
+      "destination": "/cli/webhooks"
     }
   ]
 }

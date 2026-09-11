@@ -11,6 +11,8 @@
   "scripts": {
     "generate": "pnpm --dir ../../../sdk/cli-commands generate && pnpm --dir ../.. install --filter @polar-sh/cli --ignore-scripts --frozen-lockfile",
     "build": "tsup ./src/cli.ts --format esm --outDir bin",
+    "docs": "bun scripts/docs.ts",
+    "docs:check": "bun scripts/docs.ts --check",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "bun --bun vitest run --coverage",

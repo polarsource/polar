@@ -126,7 +126,7 @@ class Receipt(Invoice):
             paid_at=paid_at,
             seller_name=settings.INVOICES_NAME,
             organization_name=order.organization.name,
-            statement_descriptor=f"POLAR*{order.organization.statement_descriptor()}",
+            statement_descriptor=f"POLAR*{order.statement_descriptor_suffix}",
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=customer_name,

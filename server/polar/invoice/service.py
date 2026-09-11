@@ -58,7 +58,7 @@ class InvoiceService:
                 order.tax_id,
                 order.customer.locale,
                 order.organization.name,
-                order.organization.statement_descriptor(),
+                order.statement_descriptor_suffix,
             ],
             sort_keys=True,
         )

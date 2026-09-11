@@ -1047,7 +1047,7 @@
       {
         "tab": "Changelog",
         "icon": "signal-stream",
-        "pages": ["changelog/recent"]
+        "pages": ["changelog/recent", "changelog/api"]
       },
       {
         "tab": "Support",

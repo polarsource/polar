@@ -52,7 +52,12 @@ def _assert_mutable(file: File) -> None:
         )
 
 
-@router.get("/", summary="List Files", response_model=ListResource[FileRead])
+@router.get(
+    "/",
+    summary="List Files",
+    response_model=ListResource[FileRead],
+    tags=[APITag.mcp, APITag.cli],
+)
 async def list(
     auth_subject: auth.FileRead,
     pagination: PaginationParamsQuery,
@@ -211,6 +216,7 @@ async def update(
 @router.delete(
     "/{id}",
     summary="Delete File",
+    tags=[APITag.mcp, APITag.cli],
     status_code=204,
     responses={
         204: {"description": "File deleted."},

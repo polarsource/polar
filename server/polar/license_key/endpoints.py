@@ -51,6 +51,7 @@ RotateNotPermittedResponse = {
     "/",
     summary="List License Keys",
     response_model=ListResource[LicenseKeyRead],
+    tags=[APITag.mcp, APITag.cli],
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,
@@ -93,6 +94,7 @@ async def list(
     "/{id}",
     summary="Get License Key",
     response_model=LicenseKeyWithActivations,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,
@@ -115,6 +117,7 @@ async def get(
     "/{id}",
     summary="Update License Key",
     response_model=LicenseKeyRead,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,
@@ -142,6 +145,7 @@ async def update(
     "/{id}/rotate",
     summary="Rotate License Key",
     response_model=LicenseKeyRead,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         400: RotateNotPermittedResponse,
         401: UnauthorizedResponse,
@@ -173,6 +177,7 @@ async def rotate(
     "/{id}/activations/{activation_id}",
     summary="Get Activation",
     response_model=LicenseKeyActivationRead,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,

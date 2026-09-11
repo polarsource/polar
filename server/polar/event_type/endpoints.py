@@ -21,6 +21,7 @@ router = APIRouter(prefix="/event-types", tags=["event-types", APITag.public])
     "/",
     summary="List Event Types",
     response_model=ListResource[schemas.EventTypeWithStats],
+    tags=[APITag.mcp, APITag.cli],
 )
 async def list(
     auth_subject: auth.EventTypeRead,
@@ -80,6 +81,7 @@ async def list(
     "/{id}",
     response_model=schemas.EventType,
     summary="Update Event Type",
+    tags=[APITag.mcp, APITag.cli],
     description="Update an event type's label.",
     status_code=200,
     responses={404: {}},

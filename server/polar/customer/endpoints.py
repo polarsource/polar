@@ -70,6 +70,7 @@ CustomerNotFound = {
     "/",
     summary="List Customers",
     response_model=ListResource[CustomerSchema],
+    tags=[APITag.mcp, APITag.cli],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
@@ -260,6 +261,7 @@ async def top(
     "/{id}",
     summary="Get Customer",
     response_model=CustomerSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
 )
 async def get(
@@ -280,6 +282,7 @@ async def get(
     "/external/{external_id}",
     summary="Get Customer by External ID",
     response_model=CustomerSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
 )
 async def get_external(
@@ -300,6 +303,7 @@ async def get_external(
     "/{id}/state",
     summary="Get Customer State",
     response_model=CustomerState,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
 )
 async def get_state(
@@ -329,6 +333,7 @@ async def get_state(
     "/external/{external_id}/state",
     summary="Get Customer State by External ID",
     response_model=CustomerState,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
 )
 async def get_state_external(
@@ -372,6 +377,7 @@ def _serialize_payment_method(
     "/{id}/payment-methods",
     summary="List Customer Payment Methods",
     response_model=ListResource[CustomerPaymentMethod],
+    tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
 )
 async def list_payment_methods(
@@ -401,6 +407,7 @@ async def list_payment_methods(
     "/external/{external_id}/payment-methods",
     summary="List Customer Payment Methods by External ID",
     response_model=ListResource[CustomerPaymentMethod],
+    tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
 )
 async def list_payment_methods_external(
@@ -431,6 +438,7 @@ async def list_payment_methods_external(
     response_model=CustomerSchema,
     status_code=201,
     summary="Create Customer",
+    tags=[APITag.mcp, APITag.cli],
     responses={201: {"description": "Customer created."}},
 )
 async def create(
@@ -446,6 +454,7 @@ async def create(
     "/{id}",
     response_model=CustomerSchema,
     summary="Update Customer",
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Customer updated."},
         404: CustomerNotFound,
@@ -473,6 +482,7 @@ async def update(
     "/external/{external_id}",
     response_model=CustomerSchema,
     summary="Update Customer by External ID",
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Customer updated."},
         404: CustomerNotFound,
@@ -500,6 +510,7 @@ async def update_external(
     "/{id}",
     status_code=204,
     summary="Delete Customer",
+    tags=[APITag.mcp, APITag.cli],
     responses={
         204: {"description": "Customer deleted."},
         404: CustomerNotFound,
@@ -551,6 +562,7 @@ async def delete(
     "/external/{external_id}",
     status_code=204,
     summary="Delete Customer by External ID",
+    tags=[APITag.mcp, APITag.cli],
     responses={
         204: {"description": "Customer deleted."},
         404: CustomerNotFound,

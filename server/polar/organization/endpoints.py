@@ -152,7 +152,7 @@ OrganizationNotFound = {
     "/",
     summary="List Organizations",
     response_model=ListResource[OrganizationSchema],
-    tags=[APITag.public],
+    tags=[APITag.public, APITag.mcp, APITag.cli],
     operation_id="organizations:list",
 )
 async def list_organizations(
@@ -183,7 +183,7 @@ async def list_organizations(
     summary="Get Organization",
     response_model=OrganizationSchema,
     responses={404: OrganizationNotFound},
-    tags=[APITag.public],
+    tags=[APITag.public, APITag.mcp, APITag.cli],
 )
 async def get(
     authz: AuthorizeOrgAccess,

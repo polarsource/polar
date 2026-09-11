@@ -94,6 +94,7 @@ GET_INVOICE_MINTLIFY_CONTENT = dedent(
     "/",
     summary="List Orders",
     response_model=ListResource[OrderSchema],
+    tags=[APITag.mcp, APITag.cli],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
@@ -234,6 +235,7 @@ async def export(
     "/{id}",
     summary="Get Order",
     response_model=OrderSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
 )
 async def get(
@@ -281,6 +283,7 @@ async def create(
     "/{id}",
     summary="Update Order",
     response_model=OrderSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
 )
 async def update(
@@ -344,6 +347,7 @@ async def finalize(
     "/{id}/invoice",
     status_code=202,
     summary="Generate Order Invoice",
+    tags=[APITag.mcp, APITag.cli],
     responses={
         404: OrderNotFound,
         409: {
@@ -379,6 +383,7 @@ async def generate_invoice(
     "/{id}/invoice",
     summary="Get Order Invoice",
     response_model=OrderInvoice,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
     openapi_extra={"x-mint": {"content": GET_INVOICE_MINTLIFY_CONTENT}},
 )
@@ -400,6 +405,7 @@ async def invoice(
     "/{id}/receipt",
     summary="Get Order Receipt",
     response_model=OrderReceipt,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         202: {"description": "Receipt generation in progress."},
         404: OrderNotFound,

@@ -25,7 +25,10 @@ from .schemas import CheckoutLink as CheckoutLinkSchema
 from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from .service import checkout_link as checkout_link_service
 
-router = APIRouter(prefix="/checkout-links", tags=["checkout-links", APITag.public])
+router = APIRouter(
+    prefix="/checkout-links",
+    tags=["checkout-links", APITag.public, APITag.mcp, APITag.cli],
+)
 
 CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT = dedent(
     """
@@ -51,7 +54,10 @@ CheckoutLinkNotFound = {
 
 
 @router.get(
-    "/", summary="List Checkout Links", response_model=ListResource[CheckoutLinkSchema]
+    "/",
+    summary="List Checkout Links",
+    response_model=ListResource[CheckoutLinkSchema],
+    tags=[APITag.mcp, APITag.cli],
 )
 async def list(
     auth_subject: auth.CheckoutLinkRead,
@@ -87,6 +93,7 @@ async def list(
     summary="Get Checkout Link",
     response_model=CheckoutLinkSchema,
     responses={404: CheckoutLinkNotFound},
+    tags=[APITag.mcp, APITag.cli],
 )
 async def get(
     id: CheckoutLinkID,
@@ -108,6 +115,7 @@ async def get(
     status_code=201,
     summary="Create Checkout Link",
     responses={201: {"description": "Checkout link created."}},
+    tags=[APITag.mcp, APITag.cli],
     openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
 )
 async def create(
@@ -129,6 +137,7 @@ async def create(
         200: {"description": "Checkout link updated."},
         404: CheckoutLinkNotFound,
     },
+    tags=[APITag.mcp, APITag.cli],
 )
 async def update(
     id: CheckoutLinkID,
@@ -155,6 +164,7 @@ async def update(
         204: {"description": "Checkout link deleted."},
         404: CheckoutLinkNotFound,
     },
+    tags=[APITag.mcp, APITag.cli],
 )
 async def delete(
     id: CheckoutLinkID,

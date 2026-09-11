@@ -23,7 +23,10 @@ from .schemas import CustomField as CustomFieldSchema
 from .schemas import CustomFieldAdapter, CustomFieldCreate, CustomFieldUpdate
 from .service import custom_field as custom_field_service
 
-router = APIRouter(prefix="/custom-fields", tags=["custom-fields", APITag.public])
+router = APIRouter(
+    prefix="/custom-fields",
+    tags=["custom-fields", APITag.public, APITag.mcp, APITag.cli],
+)
 
 
 CustomFieldID = Annotated[UUID4, Path(description="The custom field ID.")]

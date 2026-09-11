@@ -94,7 +94,10 @@ CheckoutForbiddenError = {
 
 
 @inner_router.get(
-    "/", summary="List Checkout Sessions", response_model=ListResource[CheckoutSchema]
+    "/",
+    summary="List Checkout Sessions",
+    response_model=ListResource[CheckoutSchema],
+    tags=[APITag.mcp, APITag.cli],
 )
 async def list(
     auth_subject: auth.CheckoutRead,
@@ -146,6 +149,7 @@ async def list(
 @inner_router.get(
     "/{id}",
     summary="Get Checkout Session",
+    tags=[APITag.mcp, APITag.cli],
     response_model=CheckoutSchema,
     responses={404: CheckoutNotFound},
 )

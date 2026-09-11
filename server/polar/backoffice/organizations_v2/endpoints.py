@@ -1099,6 +1099,18 @@ async def _get_overview_card_organization(
     return organization
 
 
+async def _get_shared_organizations(
+    session: AsyncSession, organization: Organization
+) -> Sequence[Organization]:
+    """The other organizations pointing at the same payout account."""
+    if organization.payout_account_id is None:
+        return []
+
+    repository = OrganizationRepository.from_session(session)
+    linked = await repository.get_all_by_payout_account(organization.payout_account_id)
+    return [other for other in linked if other.id != organization.id]
+
+
 async def _build_setup_data(
     session: AsyncSession, organization: Organization
 ) -> dict[str, int | bool]:
@@ -1209,6 +1221,7 @@ async def overview_payment_metrics(
     name="organizations:overview_setup_checklist",
 )
 async def overview_setup_checklist(
+    request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
@@ -1222,8 +1235,9 @@ async def overview_setup_checklist(
         organization,
         orders_count=orders_count,
         unrefunded_orders_count=unrefunded_orders_count,
+        shared_organizations=await _get_shared_organizations(session, organization),
     )
-    with overview.setup_checklist_card(setup_data):
+    with overview.setup_checklist_card(request, setup_data):
         pass
 
 

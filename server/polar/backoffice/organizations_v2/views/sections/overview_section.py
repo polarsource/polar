@@ -53,6 +53,7 @@ class OverviewSection(ChecklistMixin):
         agent_reviewed_at: datetime | None = None,
         has_open_appeal_case: bool = False,
         risk_signals: Sequence[OrganizationRiskSignal] = (),
+        shared_organizations: Sequence[Organization] = (),
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -61,6 +62,7 @@ class OverviewSection(ChecklistMixin):
         self.agent_reviewed_at = agent_reviewed_at
         self.has_open_appeal_case = has_open_appeal_case
         self.risk_signals = risk_signals
+        self.shared_organizations = shared_organizations
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -546,7 +548,7 @@ class OverviewSection(ChecklistMixin):
 
     @contextlib.contextmanager
     def setup_checklist_card(
-        self, setup_data: dict[str, int | bool] | None = None
+        self, request: Request, setup_data: dict[str, int | bool] | None = None
     ) -> Generator[None]:
         """Merged setup status + account checklist + reply template."""
         with card(bordered=True):
@@ -584,7 +586,7 @@ class OverviewSection(ChecklistMixin):
                                 text(str(value))
 
             # --- Checklist section ---
-            self._render_checklist()
+            self._render_checklist(request)
 
             yield
 
@@ -699,7 +701,7 @@ class OverviewSection(ChecklistMixin):
 
             yield
 
-    def _render_checklist(self) -> None:
+    def _render_checklist(self, request: Request) -> None:
         """Render the account checklist rows."""
         with tag.div(classes="pt-4 mt-4 border-t border-base-200"):
             with tag.h3(classes="text-sm font-bold mb-3"):
@@ -763,6 +765,7 @@ class OverviewSection(ChecklistMixin):
                         )
 
                 self._render_payout_account_row()
+                self._render_shared_payout_account_row(request)
 
     def _render_payout_account_row(self) -> None:
         """Payout status with Stripe's raw `disabled_reason`.
@@ -797,6 +800,50 @@ class OverviewSection(ChecklistMixin):
                     text("Payout Account")
             with tag.span(classes="text-sm"):
                 text(value)
+
+    def _render_shared_payout_account_row(self, request: Request) -> None:
+        """Whether the payout account also serves other organizations.
+
+        Stripe requires one connected account per website. Sharing is blocked
+        for new organizations, so what is left is history: ask the merchant to
+        move to their own account while reviewing them.
+        """
+        if self.org.payout_account is None:
+            return
+
+        shared = self.shared_organizations
+        dot_class = "bg-warning" if shared else "bg-success"
+
+        with tag.div(classes="flex items-center justify-between py-2"):
+            with tag.div(classes="flex items-center gap-2"):
+                with tag.span(
+                    classes=f"w-2.5 h-2.5 rounded-full {dot_class} inline-block"
+                ):
+                    pass
+                with tag.span(classes="text-sm font-medium"):
+                    text("Dedicated Payout Account")
+            with tag.span(classes="text-sm"):
+                if shared:
+                    text(
+                        f"Shared with {len(shared)} "
+                        f"organization{'s' if len(shared) != 1 else ''}"
+                    )
+                else:
+                    text("Yes")
+
+        if shared:
+            with tag.div(classes="flex flex-wrap gap-2 pb-2 border-b border-base-200"):
+                for organization in shared:
+                    with tag.a(
+                        href=str(
+                            request.url_for(
+                                "organizations:detail",
+                                organization_id=organization.id,
+                            )
+                        ),
+                        classes="badge badge-sm badge-warning",
+                    ):
+                        text(organization.slug)
 
     # ------------------------------------------------------------------
     # Main render: AI review first, then supporting evidence

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import pytest
 
@@ -7,7 +8,7 @@ from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.trial import TrialInterval
-from polar.models import Checkout, Organization, Product
+from polar.models import Checkout, Meter, Organization, Product
 from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -192,6 +193,67 @@ class TestIsFreeProductPrice:
 
         assert checkout.is_free_product_price is False
         assert checkout.is_payment_form_required is True
+
+
+@pytest.mark.asyncio
+class TestHasMeteredPrices:
+    @pytest.mark.parametrize(
+        ("currency", "expected_metered"), [("usd", False), ("eur", True)]
+    )
+    async def test_selected_currency(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        currency: str,
+        expected_metered: bool,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(0, None, None, "usd"), (meter, Decimal("0.01"), None, "eur")],
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], currency=currency
+        )
+        checkout.amount = 0
+        checkout.net_amount = 0
+
+        assert checkout.has_metered_prices is expected_metered
+        assert checkout.is_payment_setup_required is expected_metered
+        assert checkout.is_payment_form_required is expected_metered
+
+        checkout.currency = "gbp"
+        assert checkout.has_metered_prices is False
+
+
+@pytest.mark.asyncio
+class TestIsDiscountApplicable:
+    @pytest.mark.parametrize(
+        ("currency", "expected_applicable"), [("usd", False), ("eur", True)]
+    )
+    async def test_selected_currency(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        currency: str,
+        expected_applicable: bool,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(0, "usd"), (1000, "eur")],
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], currency=currency
+        )
+
+        assert checkout.is_discount_applicable is expected_applicable
+
+        checkout.currency = "gbp"
+        assert checkout.is_discount_applicable is False
 
 
 @pytest.mark.asyncio

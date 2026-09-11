@@ -334,10 +334,7 @@ class Checkout(
         product_prices = self.product_prices
         if product_prices is None:
             return False
-        currency_prices = [
-            price for price in product_prices if price.price_currency == self.currency
-        ]
-        return bool(currency_prices) and all(price.is_free for price in currency_prices)
+        return bool(product_prices) and all(price.is_free for price in product_prices)
 
     @property
     def has_metered_prices(self) -> bool:
@@ -486,7 +483,11 @@ class Checkout(
     def product_prices(self) -> list[ProductPrice] | None:
         if self.product_id is None:
             return None
-        return self.prices[self.product_id]
+        return [
+            price
+            for price in self.prices[self.product_id]
+            if price.price_currency == self.currency
+        ]
 
 
 @event.listens_for(Checkout, "before_update")

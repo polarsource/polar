@@ -1,0 +1,62 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferPanel.tsx
+  s_7135f7ba91de29::t_84a1bc31c88af3 44-45,48,58,63
+  s_7135f7ba91de29::t_0ae4b6538c5677 6
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.test.ts
+  s_7135f7ba91de29::t_61630fa6bce1f2 69-70,72,74-77,79-80,82-83,86-88
+  s_7135f7ba91de29::t_8c0832f0653352 3-4
+  s_7135f7ba91de29::t_913b8ec4be2f03 71,73,78,81,84-85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.ts
+  s_7135f7ba91de29::t_f2ca6f9a4e5e8e 159-163,166,170
+  s_7135f7ba91de29::t_0cb5168543d226 158,164,167-169,171
+  s_7135f7ba91de29::t_5f98948ede6ed6 143
+  s_7135f7ba91de29::t_39b4f873792b7f 165
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_7135f7ba91de29::t_1a53b7bcc11e97 2
+  s_7135f7ba91de29::t_8feac9a2ad9326 85,90-97,105,107,110-113
+server/polar/merchant_migration/pan_transfer.py
+  s_7135f7ba91de29::t_8d195e50e548c9 382-390,394,401-404
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7135f7ba91de29::t_b48dced1ec5303 4-7,14
+  s_7135f7ba91de29::t_8f04284ddd2482 106-140,143,146,155
+  s_7135f7ba91de29::t_8b758a3117877a 69
+  s_7135f7ba91de29::t_b9f4372da09b9e 172-179
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_7135f7ba91de29::t_dd82e5abc496bf 25-31
+  s_7135f7ba91de29::t_39b4f873792b7f 32-37
+  s_7135f7ba91de29::t_76fe2aa8bd91ce 1-24,38-46
+server/tests/merchant_migration/test_pan_transfer.py
+  s_7135f7ba91de29::t_604a4ab1f9808d 133-177
+  s_7135f7ba91de29::t_f50580175b86d2 4,7-9
+server/tests/merchant_migration/test_service.py
+  s_7135f7ba91de29::t_dd70b37fd2da7a 2699
+  s_7135f7ba91de29::t_a3e1b1c49b9174 2428,2610
+  s_7135f7ba91de29::t_719e084822bc64 2682-2688,2704-2705
+  s_7135f7ba91de29::t_e697f7011dccc7 2689-2698,2700-2703
+  s_7135f7ba91de29::t_680f0d4db34557 2681
+  s_7135f7ba91de29::t_61d828569c7cd2 2680
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepBody.tsx
+  s_7135f7ba91de29::t_05890e860eaa01 71,82
+server/polar/merchant_migration/service.py
+  s_7135f7ba91de29::t_1a4fae5b478a6e 678-683
+  s_7135f7ba91de29::t_d84007799de07f 1028-1029,1031
+  s_7135f7ba91de29::t_9543fed8dbae5e 129
+  s_7135f7ba91de29::t_aff83d8cf7ef9c 1030,1032-1034
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_7135f7ba91de29::t_91d8044ca38bad 13,16,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0b9316d969fee4180e2799b5fd3def0ae432a7fc",
+  "prompts": {},
+  "sessions": {
+    "s_7135f7ba91de29": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8ae9ab6b-edf6-40a9-a6bd-339767b9f031",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

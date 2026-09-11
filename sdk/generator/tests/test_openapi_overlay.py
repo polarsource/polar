@@ -2,7 +2,10 @@ import json
 import pathlib
 import typing
 
-from generator.docs_openapi import apply_overlay, generate_private_operations_overlay
+from generator.openapi_overlay import (
+    apply_overlay,
+    generate_private_operations_overlay,
+)
 
 
 def test_private_operations_overlay_removes_private_operations(

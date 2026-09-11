@@ -3,8 +3,8 @@
 from shared import (
     CLIENTS_DIR,
     Context,
-    console,
     run_command,
+    step_failed,
     step_spinner,
     step_status,
 )
@@ -24,7 +24,14 @@ def run(ctx: Context) -> bool:
             step_status(True, "Packages built", "ui, client, checkout, customer-portal")
             return True
         else:
-            step_status(False, "Package build", "failed")
-            if result and result.stderr:
-                console.print(f"[dim]{result.stderr[:500]}[/dim]")
+            step_failed(
+                "Package build",
+                "failed",
+                result,
+                hints=(
+                    "Run [bold]pnpm turbo run build --filter=./packages/*[/bold] in clients/ to see the full log",
+                    "If the error mentions a missing module, run [bold]pnpm install[/bold] in clients/ first",
+                ),
+                lines=40,
+            )
             return False

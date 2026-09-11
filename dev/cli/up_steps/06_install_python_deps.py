@@ -3,7 +3,9 @@
 from shared import (
     SERVER_DIR,
     Context,
-    console,
+    looks_like_broken_clt,
+    print_clt_repair_hint,
+    print_output_tail,
     run_command,
     step_spinner,
     step_status,
@@ -21,6 +23,7 @@ def run(ctx: Context) -> bool:
             return True
         else:
             step_status(False, "uv sync", "failed")
-            if result:
-                console.print(f"[dim]{result.stderr}[/dim]")
+            print_output_tail(result, lines=60)
+            if result and looks_like_broken_clt(result.stderr or ""):
+                print_clt_repair_hint()
             return False

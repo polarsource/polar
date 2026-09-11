@@ -3,8 +3,8 @@
 from shared import (
     SERVER_DIR,
     Context,
-    console,
     run_command,
+    step_failed,
     step_spinner,
     step_status,
 )
@@ -22,7 +22,15 @@ def run(ctx: Context) -> bool:
             step_status(True, "Database migrations", "applied")
             return True
         else:
-            step_status(False, "Database migrations", "failed")
-            if result:
-                console.print(f"[dim]{result.stderr}[/dim]")
+            step_failed(
+                "Database migrations",
+                "failed",
+                result,
+                hints=(
+                    "Is PostgreSQL up? [bold]dev status[/bold] shows it; [bold]docker compose logs db[/bold] in server/ shows why not",
+                    "Run [bold]uv run task db_migrate[/bold] in server/ to retry with the full log",
+                    "A stale local database can be rebuilt with [bold]dev db reset[/bold] (this wipes local data)",
+                ),
+                lines=40,
+            )
             return False

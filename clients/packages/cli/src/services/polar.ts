@@ -13,6 +13,7 @@ interface PolarImpl {
   use: <A>(
     fn: (client: PolarSDK) => Promise<A>,
     environment?: PolarEnvironment,
+    options?: { timeout: number },
   ) => Effect.Effect<A, AuthError>
 }
 
@@ -33,6 +34,7 @@ export const make = Effect.gen(function* () {
   const use = <A>(
     fn: (client: PolarSDK) => Promise<A>,
     environment: PolarEnvironment = 'sandbox',
+    options?: { timeout: number },
   ) =>
     Effect.gen(function* () {
       const credential = yield* auth.resolve(environment)
@@ -45,13 +47,15 @@ export const make = Effect.gen(function* () {
                 environment,
                 baseUrl,
                 accessToken: Redacted.value(accessToken),
+                ...options,
               }),
             ),
           catch: (error) => ({
             statusCode:
               typeof error === 'object' &&
               error !== null &&
-              'statusCode' in error
+              'statusCode' in error &&
+              typeof error.statusCode === 'number'
                 ? error.statusCode
                 : undefined,
           }),
@@ -75,20 +79,24 @@ export const make = Effect.gen(function* () {
           switch (error.statusCode) {
             case 401:
               return new AuthError({
+                statusCode: error.statusCode,
                 message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
               })
             case 403:
               return new AuthError({
+                statusCode: error.statusCode,
                 message:
                   'Access denied. Check the token permissions (organizations:read is required to list organizations).',
               })
             case 404:
               return new AuthError({
+                statusCode: error.statusCode,
                 message:
                   'Organization is missing or inaccessible. Check --org or run polar auth org with the selected environment.',
               })
             default:
               return new AuthError({
+                statusCode: error.statusCode,
                 message:
                   'Polar API request failed. Check your connection and try again.',
               })

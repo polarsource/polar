@@ -17,7 +17,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import TimeInterval
 from polar.models import Customer, PaymentMethod
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.payment_method.schemas import PaymentMethodTypeAdapter
 from polar.postgres import (
@@ -59,6 +59,13 @@ router = APIRouter(
     tags=["customers", APITag.public],
 )
 
+
+CUSTOMER_PREVIEW_FIELDS = (
+    ("id", "ID"),
+    ("name", "Name"),
+    ("email", "Email"),
+    ("external_id", "External ID"),
+)
 
 CustomerNotFound = {
     "description": "Customer not found.",
@@ -260,6 +267,7 @@ async def top(
 @router.get(
     "/{id}",
     summary="Get Customer",
+    openapi_extra=cli_preview(*CUSTOMER_PREVIEW_FIELDS),
     response_model=CustomerSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
@@ -281,6 +289,7 @@ async def get(
 @router.get(
     "/external/{external_id}",
     summary="Get Customer by External ID",
+    openapi_extra=cli_preview(*CUSTOMER_PREVIEW_FIELDS),
     response_model=CustomerSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},

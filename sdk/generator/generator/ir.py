@@ -4,7 +4,7 @@ import re
 import typing
 
 import openapi_pydantic as op
-from pydantic import BaseModel, Discriminator
+from pydantic import BaseModel, Discriminator, StringConstraints
 
 from generator.casing import to_pascal_case
 
@@ -249,6 +249,18 @@ class Pagination(BaseModel):
     item_schema: TypeRef
 
 
+CLI_PREVIEW = "x-polar-cli-preview"
+
+
+class CLIPreviewField(BaseModel):
+    key: typing.Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    label: typing.Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class CLIPreview(BaseModel):
+    fields: list[CLIPreviewField]
+
+
 class Method(BaseModel):
     """A single API endpoint grouped under a Service."""
 
@@ -265,6 +277,7 @@ class Method(BaseModel):
     errors: list[ErrorResponse] = []
     deprecated: bool | None = None
     pagination: Pagination | None = None
+    cli_preview: CLIPreview | None = None
 
 
 class Service(BaseModel):
@@ -1227,6 +1240,14 @@ def _generate_ir_version(
                         item_schema=item_schema,
                     )
 
+                preview_extension = (operation.__pydantic_extra__ or {}).get(
+                    CLI_PREVIEW
+                )
+                cli_preview = (
+                    CLIPreview.model_validate(preview_extension)
+                    if preview_extension is not None
+                    else None
+                )
                 method = Method(
                     name=method_name,
                     operation_id=typing.cast(str, operation.operationId),
@@ -1241,6 +1262,7 @@ def _generate_ir_version(
                     errors=errors,
                     deprecated=True if operation.deprecated else None,
                     pagination=pagination,
+                    cli_preview=cli_preview,
                 )
                 current_service.methods.append(method)
 

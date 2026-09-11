@@ -2,13 +2,13 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { production } from '../inputs'
 
 export const command = Command.make(
   'get',
   {
-    production,
-    id: Argument.string('id'),
+    path: {
+      id: Argument.string('id'),
+    },
   },
   (config) =>
     Effect.gen(function* () {
@@ -16,9 +16,8 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:get',
         method: 'GET',
-        environment: config.production ? 'production' : 'sandbox',
         confirm: false,
-        invoke: (client) => client.customers.get(config.id),
+        invoke: (client) => client.customers.get(config.path.id),
       })
     }),
 ).pipe(Command.withDescription('Get a customer by ID.'))

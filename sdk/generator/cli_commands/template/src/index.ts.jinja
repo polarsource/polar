@@ -1,18 +1,17 @@
-// Generated customer command registry. Do not edit.
-import { Command } from 'effect/unstable/cli'
-{% for method in methods %}
-import { command as {{ method.name | sdk_name }} } from './customers/{{ method.name }}'
+// Generated CLI command registry. Do not edit.
+{% for service in services %}
+import { command as {{ service.name | service_name }} } from './{{ service.name | snake }}'
 {% endfor %}
 
-export const customers = Command.make('customers').pipe(
-  Command.withDescription('Manage Polar customers'),
-  Command.withSubcommands([
-{% for method in methods %}
-    {{ method.name | sdk_name }},
+export {
+{% for service in services %}
+  {{ service.name | service_name }},
 {% endfor %}
-  ]),
-)
-
-export const commands = [customers]
+}
+export const commands = [
+{% for service in services %}
+  {{ service.name | service_name }},
+{% endfor %}
+]
 export { ApiRuntime, ApiCommandError } from './runtime'
-export type { ApiOperation, Environment } from './runtime'
+export type { ApiOperation, ApiPreview, PreviewField, Environment } from './runtime'

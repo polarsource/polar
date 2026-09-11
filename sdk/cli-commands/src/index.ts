@@ -1,36 +1,79 @@
-// Generated customer command registry. Do not edit.
-import { Command } from 'effect/unstable/cli'
-import { command as createCustomers } from './customers/create'
-import { command as deleteCustomers } from './customers/delete'
-import { command as deleteExternalCustomers } from './customers/delete_external'
-import { command as getCustomers } from './customers/get'
-import { command as getExternalCustomers } from './customers/get_external'
-import { command as getStateCustomers } from './customers/get_state'
-import { command as getStateExternalCustomers } from './customers/get_state_external'
-import { command as listCustomers } from './customers/list'
-import { command as listPaymentMethodsCustomers } from './customers/list_payment_methods'
-import { command as listPaymentMethodsExternalCustomers } from './customers/list_payment_methods_external'
-import { command as updateCustomers } from './customers/update'
-import { command as updateExternalCustomers } from './customers/update_external'
+// Generated CLI command registry. Do not edit.
+import { command as benefitGrants } from './benefit_grants'
+import { command as benefits } from './benefits'
+import { command as checkoutLinks } from './checkout_links'
+import { command as checkouts } from './checkouts'
+import { command as customFields } from './custom_fields'
+import { command as customerMeters } from './customer_meters'
+import { command as customerSeats } from './customer_seats'
+import { command as customers } from './customers'
+import { command as discounts } from './discounts'
+import { command as eventTypes } from './event_types'
+import { command as events } from './events'
+import { command as files } from './files'
+import { command as licenseKeys } from './license_keys'
+import { command as meters } from './meters'
+import { command as metrics } from './metrics'
+import { command as orders } from './orders'
+import { command as organizations } from './organizations'
+import { command as payments } from './payments'
+import { command as products } from './products'
+import { command as refunds } from './refunds'
+import { command as subscriptions } from './subscriptions'
+import { command as webhooks } from './webhooks'
 
-export const customers = Command.make('customers').pipe(
-  Command.withDescription('Manage Polar customers'),
-  Command.withSubcommands([
-    createCustomers,
-    deleteCustomers,
-    deleteExternalCustomers,
-    getCustomers,
-    getExternalCustomers,
-    getStateCustomers,
-    getStateExternalCustomers,
-    listCustomers,
-    listPaymentMethodsCustomers,
-    listPaymentMethodsExternalCustomers,
-    updateCustomers,
-    updateExternalCustomers,
-  ]),
-)
-
-export const commands = [customers]
+export {
+  benefitGrants,
+  benefits,
+  checkoutLinks,
+  checkouts,
+  customFields,
+  customerMeters,
+  customerSeats,
+  customers,
+  discounts,
+  eventTypes,
+  events,
+  files,
+  licenseKeys,
+  meters,
+  metrics,
+  orders,
+  organizations,
+  payments,
+  products,
+  refunds,
+  subscriptions,
+  webhooks,
+}
+export const commands = [
+  benefitGrants,
+  benefits,
+  checkoutLinks,
+  checkouts,
+  customFields,
+  customerMeters,
+  customerSeats,
+  customers,
+  discounts,
+  eventTypes,
+  events,
+  files,
+  licenseKeys,
+  meters,
+  metrics,
+  orders,
+  organizations,
+  payments,
+  products,
+  refunds,
+  subscriptions,
+  webhooks,
+]
 export { ApiRuntime, ApiCommandError } from './runtime'
-export type { ApiOperation, Environment } from './runtime'
+export type {
+  ApiOperation,
+  ApiPreview,
+  PreviewField,
+  Environment,
+} from './runtime'

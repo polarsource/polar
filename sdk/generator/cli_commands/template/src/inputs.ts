@@ -1,4 +1,4 @@
-import { Option } from 'effect'
+import { Option, Schema } from 'effect'
 import { Flag } from 'effect/unstable/cli'
 
 export const jsonFlag = (name: string) =>
@@ -9,30 +9,17 @@ export const jsonFlag = (name: string) =>
     ),
   )
 
-export const data = jsonFlag('data').pipe(
+export const data = Flag.string('data').pipe(
   Flag.withAlias('d'),
-  Flag.mapTryCatch(
-    (value): Record<string, unknown> => {
-      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-        throw new Error('Expected a JSON object')
-      }
-      return value as Record<string, unknown>
-    },
-    () => '--data must contain a JSON object',
-  ),
+  Flag.withSchema(Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown))),
   Flag.optional,
   Flag.withDescription('JSON object; explicitly supplied flags override its top-level keys'),
-)
-
-export const production = Flag.boolean('production').pipe(
-  Flag.withDefault(false),
-  Flag.withDescription('Use production instead of sandbox'),
 )
 
 export const confirm = Flag.boolean('confirm').pipe(
   Flag.withAlias('c'),
   Flag.withDefault(false),
-  Flag.withDescription('Confirm deletion (required for DELETE in this prototype)'),
+  Flag.withDescription('Skip the confirmation prompt for DELETE requests'),
 )
 
 // The prototype validates flags and JSON syntax; full input validation remains server-side.

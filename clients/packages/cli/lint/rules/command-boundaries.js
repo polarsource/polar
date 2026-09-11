@@ -1,4 +1,4 @@
-import { inDirectory } from '../ast.js'
+import { inDirectory, isMember } from '../ast.js'
 
 const forbiddenImports = [
   {
@@ -47,7 +47,13 @@ export default {
         if (rule) context.report({ node, messageId: rule.messageId })
       },
       CallExpression(node) {
-        if (node.callee.type === 'Identifier' && node.callee.name === 'fetch') {
+        const { callee } = node
+        const bare = callee.type === 'Identifier' && callee.name === 'fetch'
+        const global =
+          isMember(callee, 'globalThis', 'fetch') ||
+          isMember(callee, 'self', 'fetch') ||
+          isMember(callee, 'window', 'fetch')
+        if (bare || global) {
           context.report({ node, messageId: 'fetch' })
         }
       },

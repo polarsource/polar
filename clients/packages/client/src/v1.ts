@@ -2449,7 +2449,16 @@ export interface paths {
     get: operations['products:get']
     put?: never
     post?: never
-    delete?: never
+    /**
+     * Delete Product
+     * @description Delete a product.
+     *
+     *     Only products that never had an order, subscription or trial can be deleted.
+     *     Products with sales can only be archived.
+     *
+     *     **Scopes**: `products:write`
+     */
+    delete: operations['products:delete']
     options?: never
     head?: never
     /**
@@ -32086,6 +32095,11 @@ export interface components {
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
       /**
+       * Is Deletable
+       * @description Whether the product can be permanently deleted. Only products that never had an order, subscription or trial can be deleted; the others can only be archived.
+       */
+      is_deletable: boolean
+      /**
        * Prices
        * @description List of prices for this product.
        */
@@ -32367,6 +32381,17 @@ export interface components {
       readonly size_readable: string
       /** Public Url */
       readonly public_url: string
+    }
+    /** ProductNotDeletable */
+    ProductNotDeletable: {
+      /**
+       * Error
+       * @example ProductNotDeletable
+       * @constant
+       */
+      error: 'ProductNotDeletable'
+      /** Detail */
+      detail: string
     }
     ProductPrice:
       | components['schemas']['ProductPriceFixed']
@@ -46331,6 +46356,62 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Product deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description You don't have the permission to delete this product. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Product has sales and cannot be deleted. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNotDeletable']
         }
       }
       /** @description Validation Error */

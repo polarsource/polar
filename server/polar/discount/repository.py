@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    delete,
     distinct,
     func,
     or_,
@@ -16,6 +17,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    DiscountProduct,
     DiscountRedemption,
     Order,
     Payment,
@@ -29,6 +31,12 @@ from polar.models.refund import RefundReason, RefundStatus
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
+
+    async def remove_product(self, product_id: UUID) -> None:
+        statement = delete(DiscountProduct).where(
+            DiscountProduct.product_id == product_id
+        )
+        await self.session.execute(statement)
 
     async def get_by_code_and_organization_for_update(
         self,

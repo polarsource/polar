@@ -120,6 +120,27 @@ export const useUpdateProduct = (organization: schemas['Organization']) =>
     },
   })
 
+export const useDeleteProduct = (organization: schemas['Organization']) =>
+  useMutation({
+    mutationFn: (product: schemas['Product']) => {
+      return api.DELETE('/v1/products/{id}', {
+        params: { path: { id: product.id } },
+      })
+    },
+    onSuccess: async (result, variables) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['products', { organizationId: organization.id }],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['products', { id: variables.id }],
+      })
+    },
+  })
+
 export const useUpdateProducts = () =>
   useMutation({
     mutationFn: ({

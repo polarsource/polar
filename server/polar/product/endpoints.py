@@ -24,6 +24,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import Product as ProductSchema
 from .schemas import ProductBenefitsUpdate, ProductCreate, ProductID, ProductUpdate
+from .service import ProductNotDeletable
 from .service import product as product_service
 from .sorting import ProductSortProperty
 
@@ -198,3 +199,39 @@ async def update_benefits(
         session, product, benefits_update.benefits, auth_subject
     )
     return product
+
+
+@router.delete(
+    "/{id}",
+    status_code=204,
+    summary="Delete Product",
+    responses={
+        204: {"description": "Product deleted."},
+        403: {
+            "description": "You don't have the permission to delete this product.",
+            "model": NotPermitted.schema(),
+        },
+        404: ProductNotFound,
+        409: {
+            "description": "Product has sales and cannot be deleted.",
+            "model": ProductNotDeletable.schema(),
+        },
+    },
+)
+async def delete(
+    id: ProductID,
+    auth_subject: auth.CreatorProductsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Delete a product.
+
+    Only products that never had an order, subscription or trial can be deleted.
+    Products with sales can only be archived.
+    """
+    product = await product_service.get(session, auth_subject, id)
+
+    if product is None:
+        raise ResourceNotFound()
+
+    await product_service.delete(session, product, auth_subject)

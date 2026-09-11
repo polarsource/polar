@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -13,14 +13,26 @@ from sqlalchemy import (
     Integer,
     Text,
     Uuid,
+    and_,
     case,
+    column,
+    event,
+    exists,
     or_,
     select,
+    table,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, TSVECTOR
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    column_property,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
+from sqlalchemy.orm.attributes import set_committed_value
 
 from polar.enums import MeterInterval, SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
@@ -53,6 +65,16 @@ class ProductBillingType(StrEnum):
 # Alias over the shared `Visibility` enum that keeps the public OpenAPI/SDK
 # component named `ProductVisibility` for backwards compatibility.
 ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility")]
+
+
+# Referenced by table name rather than model to avoid circular imports: these
+# models import from `polar.product` while this module is still loading.
+_PRODUCT_SALES_TABLES = (
+    table("orders", column("product_id", Uuid)),
+    table("subscriptions", column("product_id", Uuid)),
+    table("subscription_updates", column("product_id", Uuid)),
+    table("trial_redemptions", column("product_id", Uuid)),
+)
 
 
 class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):
@@ -172,6 +194,27 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
         back_populates="product",
     )
 
+    @declared_attr
+    def is_deletable(cls) -> Mapped[bool]:
+        """
+        Whether the product can be permanently deleted.
+
+        Only products that never had a sale (order, subscription or trial)
+        can be deleted; the others can only be archived.
+        """
+        return column_property(
+            and_(
+                *(
+                    ~exists()
+                    .where(referencing_table.c.product_id == cls.id)
+                    .correlate_except(referencing_table)
+                    for referencing_table in _PRODUCT_SALES_TABLES
+                )
+            ),
+            # Sales come from other flows, never from a product flush
+            expire_on_flush=False,
+        )
+
     def get_price(
         self, id: UUID, *, include_archived: bool = False
     ) -> "ProductPrice | None":
@@ -234,6 +277,13 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
             (cls.is_recurring, ProductBillingType.recurring),
             else_=ProductBillingType.one_time,
         )
+
+
+@event.listens_for(Product, "init")
+def _set_new_product_deletable(target: Product, args: Any, kwargs: Any) -> None:
+    # `is_deletable` is only loaded from the database on query: a product
+    # instantiated in-session has no sales yet, so populate it upfront.
+    set_committed_value(target, "is_deletable", True)
 
 
 products_search_vector_update_function = PGFunction(

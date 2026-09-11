@@ -228,9 +228,13 @@ A few things to know:
 
 ## Archive a product
 
-Products can be archived but not permanently deleted. Click **Archive** from the product menu and the product disappears from new checkouts.
+Products can be archived at any time. Click **Archive** from the product menu and the product disappears from new checkouts.
 
 Existing customers keep their access, and active subscriptions keep renewing. You can unarchive at any time from the same menu to make the product available again.
+
+## Delete a product
+
+A product that never had an order, subscription or trial can be permanently deleted. Archive it first, then click **Delete Permanently** from the product menu. The option only appears for products without sales, and the `is_deletable` field on the API tells you whether a product qualifies.
 
 ## FAQ
 

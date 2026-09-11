@@ -4,6 +4,7 @@ import * as http from 'node:http'
 import { Console, Effect, Layer, Redacted } from 'effect'
 import * as browser from 'open'
 import { exchange, layer, OAuth, validateCallback } from '@/services/oauth'
+import { loginCommand } from '@/schemas/Auth'
 import { captureConsole } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { session } from '@/utils/test-utils/services'
@@ -30,9 +31,13 @@ beforeEach(() => {
   api = fakeHttp()
 })
 
-test.each([true, false])(
-  'closes the callback server after OAuth completion (authorized: %s)',
-  async (authorized) => {
+test.each([
+  ['sandbox', true],
+  ['sandbox', false],
+  ['production', false],
+] as const)(
+  'closes the callback server after OAuth completion (env: %s, authorized: %s)',
+  async (environment, authorized) => {
     let callbackResponse:
       | { status: number | undefined; type: string | undefined; body: string }
       | undefined
@@ -84,7 +89,7 @@ test.each([true, false])(
       const result = await Effect.runPromise(
         Effect.gen(function* () {
           const oauth = yield* OAuth
-          return yield* oauth.login('sandbox')
+          return yield* oauth.login(environment)
         }).pipe(
           Effect.provide(layer.pipe(Layer.provide(api.layer))),
           Effect.provideService(Console.Console, captureConsole().console),
@@ -101,6 +106,9 @@ test.each([true, false])(
       expect(callbackResponse!.body).toContain(
         authorized ? 'You are signed in' : 'Sign-in canceled',
       )
+      if (!authorized) {
+        expect(callbackResponse!.body).toContain(loginCommand(environment))
+      }
     } finally {
       server.closeAllConnections()
       server.close()

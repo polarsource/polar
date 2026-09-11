@@ -252,7 +252,7 @@ const login = (environment: PolarEnvironment) =>
           .writeHead(result.outcome === 'invalid' ? 400 : 200, {
             'Content-Type': 'text/html; charset=utf-8',
           })
-          .end(callbackPage(result.outcome))
+          .end(callbackPage(result.outcome, environment))
         finish(validateCallback(url, state))
       })
       server.on('error', () =>

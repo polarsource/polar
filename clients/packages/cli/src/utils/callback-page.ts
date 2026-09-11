@@ -1,20 +1,23 @@
+import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
+
 export type CallbackOutcome = 'success' | 'denied' | 'invalid'
 
-const copy: Record<CallbackOutcome, { title: string; message: string }> = {
-  success: {
+const copy: Record<
+  CallbackOutcome,
+  (environment: PolarEnvironment) => { title: string; message: string }
+> = {
+  success: () => ({
     title: 'You are signed in',
     message: 'Return to your terminal to continue. You can close this tab.',
-  },
-  denied: {
+  }),
+  denied: (environment) => ({
     title: 'Sign-in canceled',
-    message:
-      'Authorization was denied. Return to your terminal and run <code>polar auth login</code> to try again.',
-  },
-  invalid: {
+    message: `Authorization was denied. Return to your terminal and run <code>${loginCommand(environment)}</code> to try again.`,
+  }),
+  invalid: (environment) => ({
     title: 'Something went wrong',
-    message:
-      'This sign-in link is invalid or has expired. Return to your terminal and run <code>polar auth login</code> again.',
-  },
+    message: `This sign-in link is invalid or has expired. Return to your terminal and run <code>${loginCommand(environment)}</code> again.`,
+  }),
 }
 
 const logo = `<svg width="88" height="88" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -23,8 +26,11 @@ const logo = `<svg width="88" height="88" viewBox="0 0 29 29" fill="none" xmlns=
 <path fill-rule="evenodd" clip-rule="evenodd" d="M13.8537 24.7382C16.5062 25.0215 19.1534 20.5972 19.7664 14.8563C20.3794 9.1155 18.7261 4.23202 16.0736 3.94879C13.4211 3.66556 10.7739 8.08983 10.1609 13.8307C9.54788 19.5715 11.2012 24.455 13.8537 24.7382ZM15.0953 22.9906C17.015 22.9603 18.5101 19.0742 18.4349 14.3108C18.3596 9.54747 16.7424 5.71058 14.8228 5.7409C12.9032 5.77123 11.408 9.6573 11.4833 14.4207C11.5585 19.184 13.1757 23.0209 15.0953 22.9906Z" fill="currentColor"/>
 </svg>`
 
-export const callbackPage = (outcome: CallbackOutcome) => {
-  const { title, message } = copy[outcome]
+export const callbackPage = (
+  outcome: CallbackOutcome,
+  environment: PolarEnvironment,
+) => {
+  const { title, message } = copy[outcome](environment)
   return `<!doctype html>
 <html lang="en">
 <head>

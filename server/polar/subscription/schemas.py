@@ -461,6 +461,7 @@ class SubscriptionCancelBase(Schema):
 
 class SubscriptionCancel(SubscriptionCancelBase):
     cancel_at_period_end: bool = Field(
+        json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
         description=inspect.cleandoc(
             """
         Cancel an active subscription once the current period ends.
@@ -473,7 +474,8 @@ class SubscriptionCancel(SubscriptionCancelBase):
 
 class SubscriptionRevoke(SubscriptionCancelBase):
     revoke: Literal[True] = Field(
-        description="Cancel and revoke an active subscription immediately"
+        description="Cancel and revoke an active subscription immediately",
+        json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
     )
 
 
@@ -481,6 +483,7 @@ class SubscriptionPause(Schema):
     model_config = ConfigDict(extra="forbid")
 
     pause_at_period_end: bool = Field(
+        json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
         description=inspect.cleandoc(
             """
         Pause an active subscription at the end of the current period.

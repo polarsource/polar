@@ -107,6 +107,7 @@ class CLICommandsEmitter(EmitterBase):
                     **context,
                     "preview": previews.get(method.path)
                     if context["needs_confirmation"]
+                    and method.http_method in ("DELETE", "PATCH", "PUT")
                     else None,
                 },
             )
@@ -186,8 +187,9 @@ class CLICommandsEmitter(EmitterBase):
         else:
             confirmation_expression = (
                 " || ".join(
-                    f"confirmationInput[{json.dumps(field['key'])}] === {json.dumps(field['equals'])}"
+                    f"confirmationInput[{json.dumps(field['key'])}] === {json.dumps(value)}"
                     for field in conditions
+                    for value in field["values"]
                 )
                 or "false"
             )

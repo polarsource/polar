@@ -4,7 +4,13 @@ import re
 import typing
 
 import openapi_pydantic as op
-from pydantic import BaseModel, Discriminator, StringConstraints
+from pydantic import (
+    BaseModel,
+    Discriminator,
+    StringConstraints,
+    model_serializer,
+    model_validator,
+)
 
 from generator.casing import to_pascal_case
 
@@ -132,10 +138,34 @@ type TypeRef = typing.Annotated[
 ]
 
 
-class CLIConfirmation(BaseModel):
-    model_config = {"strict": True, "allow_inf_nan": False}
+type CLIConfirmationValue = str | bool | int | float | None
 
-    equals: str | bool | int | float | None
+
+class CLIConfirmation(BaseModel):
+    model_config = {"strict": True, "allow_inf_nan": False, "extra": "forbid"}
+
+    equals: CLIConfirmationValue = None
+    one_of: list[CLIConfirmationValue] | None = None
+
+    @model_validator(mode="after")
+    def validate_condition(self) -> typing.Self:
+        if self.model_fields_set == {"equals"}:
+            return self
+        if self.model_fields_set == {"one_of"} and self.one_of:
+            return self
+        raise ValueError("Specify either 'equals' or a non-empty 'one_of' list")
+
+    @model_serializer
+    def serialize_condition(
+        self,
+    ) -> dict[str, CLIConfirmationValue | list[CLIConfirmationValue]]:
+        if self.one_of is not None:
+            return {"one_of": self.one_of}
+        return {"equals": self.equals}
+
+    @property
+    def values(self) -> list[CLIConfirmationValue]:
+        return self.one_of if self.one_of is not None else [self.equals]
 
 
 class Field(BaseModel):

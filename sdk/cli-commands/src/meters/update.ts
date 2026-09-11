@@ -1,15 +1,16 @@
 // Generated from meters:update (2026-04). Do not edit.
 import type { Polar } from '@polar-sh/sdk/2026-04'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { confirm, data, mergeInput, jsonFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['meters']['update']>[1]>
 
 export const command = Command.make(
   'update',
   {
+    confirm,
     path: {
       id: Argument.string('id'),
     },
@@ -76,11 +77,28 @@ export const command = Command.make(
         aggregation: config.input.aggregation,
         is_archived: config.input.is_archived,
       })
+      const confirmationInput = yield* Schema.decodeUnknownEffect(
+        Schema.Struct({
+          is_archived: Schema.optionalKey(Schema.NullOr(Schema.Boolean)),
+        }),
+      )(body).pipe(
+        Effect.mapError(
+          (error) => new ApiCommandError({ message: error.message }),
+        ),
+      )
       yield* api.execute({
         operationId: 'meters:update',
         method: 'PATCH',
-        requiresConfirmation: false,
-        confirm: false,
+        requiresConfirmation: confirmationInput['is_archived'] === true,
+        confirm: config.confirm,
+        preview: {
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'name', label: 'Name' },
+            { key: 'unit', label: 'Unit' },
+          ],
+          invoke: (client) => client.meters.get(config.path.id),
+        },
         invoke: (client) => client.meters.update(config.path.id, body),
       })
     }),

@@ -205,6 +205,57 @@ def test_confirmation_value_must_match_field_schema(
         CLICommandsEmitter(changed).emit(tmp_path)
 
 
+def test_destructive_input_annotations(cli_ir: APIIR, tmp_path: pathlib.Path) -> None:
+    CLICommandsEmitter(cli_ir).emit(tmp_path)
+    expected = {
+        "meters/update": ['confirmationInput["is_archived"] === true'],
+        "subscriptions/update": [
+            'confirmationInput["cancel_at_period_end"] === true',
+            'confirmationInput["revoke"] === true',
+            'confirmationInput["pause_at_period_end"] === true',
+        ],
+        "webhooks/update_webhook_endpoint": ['confirmationInput["enabled"] === false'],
+        "license_keys/update": [
+            'confirmationInput["status"] === "revoked" || confirmationInput["status"] === "disabled"',
+        ],
+        "refunds/create": ['confirmationInput["revoke_benefits"] === true'],
+    }
+    for command, comparisons in expected.items():
+        source = (tmp_path / f"src/{command}.ts").read_text()
+        assert "confirm: config.confirm" in source
+        for comparison in comparisons:
+            assert comparison in source
+        if command == "refunds/create":
+            assert "preview:" not in source
+        else:
+            assert "preview:" in source
+
+
+def test_confirmation_one_of_validates_every_value(
+    cli_ir: APIIR, tmp_path: pathlib.Path
+) -> None:
+    changed = cli_ir.model_copy(deep=True)
+    model = next(
+        model
+        for model in changed.versions[0].input_models
+        if model.name == "LicenseKeyUpdate"
+    )
+    field = next(field for field in model.fields if field.name == "status")
+    field.cli_confirm = CLIConfirmation(one_of=["revoked", "invalid"])
+    with pytest.raises(ValueError, match="does not match its schema"):
+        CLICommandsEmitter(changed).emit(tmp_path)
+
+
+def test_confirmation_rules_round_trip() -> None:
+    for rule in [
+        CLIConfirmation(equals=None),
+        CLIConfirmation(equals=False),
+        CLIConfirmation(one_of=["revoked", "disabled"]),
+    ]:
+        restored = CLIConfirmation.model_validate_json(rule.model_dump_json())
+        assert restored.values == rule.values
+
+
 def test_confirmation_metadata_on_query_fields(
     cli_spec: op.OpenAPI, tmp_path: pathlib.Path
 ) -> None:
@@ -229,7 +280,16 @@ def test_confirmation_metadata_on_query_fields(
     assert "preview:" not in source
 
 
-@pytest.mark.parametrize("annotation", [{}, {"equals": []}, {"equals": {}}])
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        {},
+        {"equals": []},
+        {"equals": {}},
+        {"one_of": []},
+        {"equals": True, "one_of": [False]},
+    ],
+)
 def test_malformed_confirmation_annotations_fail(
     cli_spec: op.OpenAPI, annotation: dict[str, object]
 ) -> None:

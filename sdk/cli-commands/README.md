@@ -70,9 +70,18 @@ is_archived: bool | None = Field(
 )
 ```
 
-This applies to commands consuming that input schema. Query parameter schemas can
-use the same annotation. The generator checks that the comparison value matches
-the field schema and emits `requiresConfirmation` from the merged request input.
+For multiple matching values, use `one_of` instead of `equals`:
+
+```python
+json_schema_extra={
+    "x-polar-cli-confirm": {"one_of": ["revoked", "disabled"]}
+}
+```
+
+Exactly one of `equals` or a non-empty `one_of` list must be specified. This applies
+to commands consuming that input schema. Query parameter schemas can use the same
+annotation. The generator checks every comparison value against the field schema
+and emits `requiresConfirmation` from the merged request input.
 Any matching annotated field triggers confirmation; DELETE always requires it.
 Nested properties and structured comparison values are not supported.
 
@@ -93,6 +102,16 @@ strings or numbers cannot bypass a boolean condition through backend coercion.
 Other API payload validation remains server-side. Preview lookup, its one-second
 timeout, 404 handling, and fixed loading rows are shared with DELETE confirmation.
 The GET's `x-polar-cli-preview` metadata selects the displayed record fields.
+Only updates and deletions use a same-path GET preview; creation commands prompt
+without fetching a collection as though it were an existing record.
+
+Protected inputs include:
+
+- Products and meters: `--is-archived=true`.
+- Subscriptions: `--revoke=true`, `--cancel-at-period-end=true`, or `--pause-at-period-end=true`.
+- Webhook endpoints: `--enabled=false`.
+- License keys: `--status=revoked` or `--status=disabled`.
+- Refund creation: `--revoke-benefits=true`. Other refunds are not gated by this rule.
 
 ## Prototype boundaries
 

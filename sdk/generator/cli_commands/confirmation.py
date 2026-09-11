@@ -4,6 +4,7 @@ import typing
 
 from generator.ir import (
     APIVersion,
+    CLIConfirmationValue,
     EnumRef,
     Field,
     LiteralType,
@@ -19,7 +20,7 @@ from generator.ir import (
 class ConfirmationField(typing.TypedDict):
     key: str
     schema: str
-    equals: str | bool | int | float | None
+    values: list[CLIConfirmationValue]
 
 
 def confirmation_fields(
@@ -31,20 +32,22 @@ def confirmation_fields(
         if field.cli_confirm is None:
             continue
 
-        expected = field.cli_confirm.equals
-        schema, matches = _condition_schema(field.type, expected, api)
-        if not matches:
+        values = field.cli_confirm.values
+        schemas = [_condition_schema(field.type, value, api) for value in values]
+        if not all(matches for _, matches in schemas):
             raise ValueError(
                 f"CLI confirmation value for {field.name!r} does not match its schema"
             )
 
-        conditions.append({"key": field.name, "schema": schema, "equals": expected})
+        conditions.append(
+            {"key": field.name, "schema": schemas[0][0], "values": values}
+        )
 
     return conditions
 
 
 def _condition_schema(
-    type_ref: TypeRef, expected: str | bool | int | float | None, api: APIVersion
+    type_ref: TypeRef, expected: CLIConfirmationValue, api: APIVersion
 ) -> tuple[str, bool]:
     if isinstance(type_ref, PrimitiveType):
         match type_ref.type:

@@ -1,15 +1,16 @@
 // Generated from subscriptions:update (2026-04). Do not edit.
 import type { Polar } from '@polar-sh/sdk/2026-04'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { confirm, data, mergeInput, jsonFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['subscriptions']['update']>[1]>
 
 export const command = Command.make(
   'update',
   {
+    confirm,
     path: {
       id: Argument.string('id'),
     },
@@ -152,11 +153,34 @@ export const command = Command.make(
         resume: config.input.resume,
         pending_update: config.input.pending_update,
       })
+      const confirmationInput = yield* Schema.decodeUnknownEffect(
+        Schema.Struct({
+          cancel_at_period_end: Schema.optionalKey(Schema.Boolean),
+          revoke: Schema.optionalKey(Schema.Literal(true)),
+          pause_at_period_end: Schema.optionalKey(Schema.Boolean),
+        }),
+      )(body).pipe(
+        Effect.mapError(
+          (error) => new ApiCommandError({ message: error.message }),
+        ),
+      )
       yield* api.execute({
         operationId: 'subscriptions:update',
         method: 'PATCH',
-        requiresConfirmation: false,
-        confirm: false,
+        requiresConfirmation:
+          confirmationInput['cancel_at_period_end'] === true ||
+          confirmationInput['revoke'] === true ||
+          confirmationInput['pause_at_period_end'] === true,
+        confirm: config.confirm,
+        preview: {
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'status', label: 'Status' },
+            { key: 'customer_id', label: 'Customer ID' },
+            { key: 'product_id', label: 'Product ID' },
+          ],
+          invoke: (client) => client.subscriptions.get(config.path.id),
+        },
         invoke: (client) => client.subscriptions.update(config.path.id, body),
       })
     }),

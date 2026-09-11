@@ -74,6 +74,7 @@ class Invoice(BaseModel):
     number: str
     date: datetime
     seller_name: str
+    organization_name: str | None = None
     seller_address: Address
     seller_additional_info: str | None = None
     customer_name: str
@@ -89,6 +90,7 @@ class Invoice(BaseModel):
     currency: str
     items: list[InvoiceItem]
     notes: str | None = None
+    statement_descriptor: str | None = None
     extra_heading_items: list[InvoiceHeadingItem] | None = None
     extra_totals_items: list[InvoiceTotalsItem] | None = None
 
@@ -222,6 +224,8 @@ class Invoice(BaseModel):
             number=order.invoice_number,
             date=order.created_at,
             seller_name=settings.INVOICES_NAME,
+            organization_name=order.organization.name,
+            statement_descriptor=f"POLAR*{order.organization.statement_descriptor()}",
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=order.billing_name,
@@ -511,6 +515,7 @@ class InvoiceGenerator(FPDF):
         self._render_addresses()
         self._render_items_table()
         self._render_totals_table()
+        self._render_statement_descriptor()
         self._render_notes()
 
     def _render_title(self) -> None:
@@ -554,11 +559,17 @@ class InvoiceGenerator(FPDF):
         self.set_y(max(seller_end_y, customer_end_y) + self.elements_y_margin)
 
     def _render_seller_block(self) -> float:
-        self.set_font(style="B")
+        self.set_font(style="")
+        seller_name = f"**{escape_markdown(self.data.seller_name)}**"
+        if self.data.organization_name is not None:
+            seller_name = (
+                f"**{escape_markdown(self.data.organization_name)}** via {seller_name}"
+            )
         self.multi_cell(
             80,
             self.cell_height(),
-            text=self._shape_text(self.data.seller_name),
+            text=self._shape_text(seller_name),
+            markdown=True,
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
@@ -653,6 +664,31 @@ class InvoiceGenerator(FPDF):
                 row.cell(self._shape_text(total_item.label))
                 self.set_font(style="")
                 row.cell(format_currency(total_item.amount, total_item.currency))
+
+    def _render_statement_descriptor(self) -> None:
+        if self.data.statement_descriptor is None:
+            return
+        prefix = "This payment will appear on your statement as "
+        descriptor = self._shape_text(self.data.statement_descriptor)
+        self.set_font(style="")
+        prefix_width = self.get_string_width(prefix)
+        self.set_font(style="B")
+        descriptor_width = self.get_string_width(descriptor)
+        self.set_font(style="")
+        period_width = self.get_string_width(".")
+        line_width = prefix_width + descriptor_width + period_width
+        self.set_xy(
+            self.l_margin + (self.epw - line_width) / 2,
+            self.get_y() + self.elements_y_margin,
+        )
+        self.set_text_color(123, 123, 123)
+        self.write(h=self.cell_height(), text=prefix)
+        self.set_font(style="B")
+        self.write(h=self.cell_height(), text=descriptor)
+        self.set_font(style="")
+        self.write(h=self.cell_height(), text=".")
+        self.set_text_color(0, 0, 0)
+        self.ln(self.cell_height())
 
     def _render_notes(self) -> None:
         self.set_font(style="")

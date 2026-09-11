@@ -21,7 +21,7 @@ from .generator import (
 )
 from .render import render_invoice_pdf
 
-INVOICE_TEMPLATE_VERSION = 1
+INVOICE_TEMPLATE_VERSION = 2
 """Bump when the invoice template/rendering or seller-side settings
 (e.g. INVOICES_NAME, INVOICES_ADDRESS) change in a way that should
 invalidate previously generated invoices."""
@@ -57,6 +57,8 @@ class InvoiceService:
                 billing_address,
                 order.tax_id,
                 order.customer.locale,
+                order.organization.name,
+                order.organization.statement_descriptor(),
             ],
             sort_keys=True,
         )

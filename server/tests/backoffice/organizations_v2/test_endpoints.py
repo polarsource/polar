@@ -549,7 +549,7 @@ class TestEditDetailsWebsiteSync:
         )
 
         assert response.status_code == 303
-        assert organization.website == "https://new.example.com"
+        assert organization.website == "https://new.example.com/"
 
         sync_calls = [
             call

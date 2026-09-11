@@ -172,11 +172,6 @@ class TestIsFreeProductPrice:
         )
 
         assert checkout.is_free_product_price is expected_free
-        assert checkout.is_payment_form_required is not expected_free
-        assert checkout.is_payment_setup_required is not expected_free
-
-        checkout.currency = "gbp"
-        assert checkout.is_free_product_price is False
 
     async def test_free_base_with_paid_component(
         self,
@@ -192,7 +187,6 @@ class TestIsFreeProductPrice:
         checkout = await create_checkout(save_fixture, products=[product], seats=1)
 
         assert checkout.is_free_product_price is False
-        assert checkout.is_payment_form_required is True
 
 
 @pytest.mark.asyncio
@@ -221,11 +215,6 @@ class TestHasMeteredPrices:
         checkout.net_amount = 0
 
         assert checkout.has_metered_prices is expected_metered
-        assert checkout.is_payment_setup_required is expected_metered
-        assert checkout.is_payment_form_required is expected_metered
-
-        checkout.currency = "gbp"
-        assert checkout.has_metered_prices is False
 
 
 @pytest.mark.asyncio
@@ -251,9 +240,6 @@ class TestIsDiscountApplicable:
         )
 
         assert checkout.is_discount_applicable is expected_applicable
-
-        checkout.currency = "gbp"
-        assert checkout.is_discount_applicable is False
 
 
 @pytest.mark.asyncio

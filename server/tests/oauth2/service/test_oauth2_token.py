@@ -228,39 +228,6 @@ class TestGetByAccessToken:
         )
         assert result is None
 
-    async def test_expired_token_app_client(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        oauth2_client: OAuth2Client,
-        user: User,
-        mocker: MockerFixture,
-    ) -> None:
-        mocker.patch(
-            "polar.oauth2.service.oauth2_token.APP_CLIENT_ID",
-            oauth2_client.client_id,
-        )
-
-        await create_oauth2_token(
-            save_fixture,
-            client=oauth2_client,
-            access_token="polar_at_u_123",
-            refresh_token="polar_rt_u_123",
-            scopes=["openid"],
-            user=user,
-            issued_at=int(time.time()) - 7200,
-            expires_in=3600,
-        )
-
-        log_mock = mocker.patch("polar.oauth2.service.oauth2_token.log")
-
-        result = await oauth2_token_service.get_by_access_token(
-            session, "polar_at_u_123"
-        )
-        assert result is not None
-        assert result.client_id == oauth2_client.client_id
-        log_mock.warning.assert_called_once()
-
 
 @pytest.mark.asyncio
 class TestDeleteExpired:
@@ -360,37 +327,6 @@ class TestDeleteExpired:
         await oauth2_token_service.delete_expired(session)
 
         preserved = await session.get(OAuth2Token, valid.id)
-        assert preserved is not None
-
-    async def test_preserves_app_client_tokens(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        oauth2_client: OAuth2Client,
-        user: User,
-        mocker: MockerFixture,
-    ) -> None:
-        mocker.patch(
-            "polar.oauth2.service.oauth2_token.APP_CLIENT_ID",
-            oauth2_client.client_id,
-        )
-
-        expired = await create_oauth2_token(
-            save_fixture,
-            client=oauth2_client,
-            access_token="polar_at_u_app",
-            refresh_token="polar_rt_u_app",
-            scopes=["openid"],
-            user=user,
-            issued_at=int(time.time()) - 7200,
-            expires_in=3600,
-        )
-        expired.refresh_token = None  # pyright: ignore
-        await save_fixture(expired)
-
-        await oauth2_token_service.delete_expired(session)
-
-        preserved = await session.get(OAuth2Token, expired.id)
         assert preserved is not None
 
 

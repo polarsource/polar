@@ -6,7 +6,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.config import Environment, settings
+from polar.config import settings
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
@@ -21,16 +21,6 @@ from polar.user_organization.service import (
 )
 
 log: Logger = structlog.get_logger()
-
-# TEMPORARY: the Polar app (iOS/Android/web, @polar-sh/app) does not refresh
-# its access tokens and crashes on 401. Until the app's auth flow is fixed,
-# expired tokens issued to it are still accepted but logged. Source of truth
-# for these IDs: clients/apps/app/hooks/oauth.ts.
-_APP_CLIENT_IDS: dict[Environment, str] = {
-    Environment.production: "polar_ci_yZLBGwoWZVsOdfN5CODRwVSTlJfwJhXqwg65e2CuNMZ",
-    Environment.development: "polar_ci_hbFdMZZRghgdm2F4LMceQSrcQNunmjlh6ukGJ1dG0Vg",
-}
-APP_CLIENT_ID: str | None = _APP_CLIENT_IDS.get(settings.ENV)
 
 
 class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
@@ -53,15 +43,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             return None
 
         if cast(bool, token.is_expired()):
-            if token.client_id != APP_CLIENT_ID:
-                return None
-            log.warning(
-                "Allowing expired access token from Polar app client",
-                token_id=token.id,
-                client_id=token.client_id,
-                expires_at=token.expires_at,
-                expired_seconds_ago=int(time.time()) - token.expires_at,
-            )
+            return None
 
         if not token.sub.can_authenticate:
             return None
@@ -70,10 +52,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
     async def delete_expired(self, session: AsyncSession) -> None:
         repository = OAuth2TokenRepository.from_session(session)
-        exclude_client_ids: list[str] = []
-        if APP_CLIENT_ID is not None:
-            exclude_client_ids.append(APP_CLIENT_ID)
-        await repository.delete_expired(exclude_client_ids=exclude_client_ids)
+        await repository.delete_expired()
 
     async def revoke_for_sso_enforcement(
         self, session: AsyncSession, organization_id: UUID

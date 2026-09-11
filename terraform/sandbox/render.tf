@@ -127,7 +127,7 @@ module "sandbox" {
   resend_domain = {
     zone_id         = "22bcd1b07ec25452aab472486bc8df94"
     dkim_public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCx8TPulpiuGKqifNLwJchDkpDbZK0R25boNFoztUf8nNT+4h3jzZL6pE3sJ2oSbqOZ4Jfr+4R7E9uXsmSQf5WJcXJOLjVhd8HJOQIdjn9WtJGxzplXs5f1iWFBBsTK7jOkDPVnWOovYBDa2fRypKGdHsSvi0kDZ5sV89/y/1QZlQIDAQAB"
-    spf_policy      = "\"v=spf1 include:amazonses.com -all\""
+    spf_policy      = "\"v=spf1 include:amazonses.com ~all\""
   }
 
   api_service_config = {

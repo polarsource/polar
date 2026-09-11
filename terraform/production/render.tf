@@ -182,7 +182,7 @@ module "production" {
   resend_domain = {
     zone_id         = "22bcd1b07ec25452aab472486bc8df94"
     dkim_public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCqT9xW1l4M3o9tgdDcKBrQ3s+WFLwrVkGppzoq1GP36o+TPHFVXMJvMRa+RSokTXRAlxu2hR00WHj7vKVJUhDaqbtZDm0wUhgYleuiXB6pxa13g+/dMyrI9L/bM1BLDa3TOJBwxbB7JTNAyyJ6Q+FcHsGA1b/5B+HPQE+TCpDZUwIDAQAB"
-    spf_policy      = "\"v=spf1 include:amazonses.com -all\""
+    spf_policy      = "\"v=spf1 include:amazonses.com ~all\""
   }
 
   workers = {

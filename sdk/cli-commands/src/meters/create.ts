@@ -75,6 +75,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'meters:create',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.meters.create(body),
       })

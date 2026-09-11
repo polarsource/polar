@@ -17,6 +17,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'license_keys:get_activation',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.licenseKeys.getActivation(

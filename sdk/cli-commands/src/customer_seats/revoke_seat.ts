@@ -18,6 +18,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customer-seats:revoke_seat',
         method: 'DELETE',
+        requiresConfirmation: true,
         confirm: config.confirm,
         invoke: (client) =>
           client.customerSeats.revokeSeat(config.path.seat_id),

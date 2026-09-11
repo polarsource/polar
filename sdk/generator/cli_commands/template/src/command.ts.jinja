@@ -2,9 +2,9 @@
 {% if input_type %}
 import type { Polar } from '@polar-sh/sdk/{{ api.version }}'
 {% endif %}
-import { Effect } from 'effect'
+import { Effect{% if confirmation_fields %}, Schema{% endif %} } from 'effect'
 import { {% if method.path_params %}Argument, {% endif %}Command{% if fields %}, Flag{% endif %} } from 'effect/unstable/cli'
-import { ApiRuntime } from '{{ runtime_path }}runtime'
+import { ApiRuntime{% if confirmation_fields %}, ApiCommandError{% endif %} } from '{{ runtime_path }}runtime'
 {% if helpers %}
 import { {{ helpers | join(', ') }} } from '{{ runtime_path }}inputs'
 {% endif %}
@@ -16,7 +16,7 @@ type {{ input_type }} = NonNullable<Parameters<{{ sdk_type }}['{{ sdk_method }}'
 export const command = Command.make(
   {{ method.name | quote }},
   {
-{% if method.http_method == 'DELETE' %}
+{% if needs_confirmation %}
     confirm,
 {% endif %}
 {% if method.path_params %}
@@ -43,7 +43,7 @@ export const command = Command.make(
     },
 {% endif %}
   },
-  ({% if method.path_params or input_type or method.http_method == 'DELETE' %}config{% endif %}) => Effect.gen(function* () {
+  ({% if method.path_params or input_type or needs_confirmation %}config{% endif %}) => Effect.gen(function* () {
     const api = yield* ApiRuntime
 {% if input_type %}
     const {{ input_type | lower }} = mergeInput<{{ input_type }}>(config.data, {
@@ -52,10 +52,22 @@ export const command = Command.make(
 {% endfor %}
     })
 {% endif %}
+{% if confirmation_fields %}
+    const confirmationInput = yield* Schema.decodeUnknownEffect(
+      Schema.Struct({
+{% for field in confirmation_fields %}
+        {{ field.key | quote }}: Schema.optionalKey({{ field.schema }}),
+{% endfor %}
+      }),
+    )({{ input_type | lower }}).pipe(
+      Effect.mapError((error) => new ApiCommandError({ message: error.message })),
+    )
+{% endif %}
     yield* api.execute({
       operationId: {{ method.operation_id | quote }},
       method: {{ method.http_method | quote }},
-      confirm: {% if method.http_method == 'DELETE' %}config.confirm{% else %}false{% endif %},
+      requiresConfirmation: {{ confirmation_expression }},
+      confirm: {% if needs_confirmation %}config.confirm{% else %}false{% endif %},
 {% if preview %}
       preview: {
         fields: [

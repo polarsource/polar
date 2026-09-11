@@ -65,6 +65,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'discounts:list',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.discounts.list(query),
       })

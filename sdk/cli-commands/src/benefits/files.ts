@@ -35,6 +35,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'benefits:files',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.benefits.files(config.path.id, query),
       })

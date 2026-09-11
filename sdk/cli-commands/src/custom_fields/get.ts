@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'custom-fields:get',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.customFields.get(config.path.id),
       })

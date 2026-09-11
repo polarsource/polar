@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customer-seats:resend_invitation',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.customerSeats.resendInvitation(config.path.seat_id),

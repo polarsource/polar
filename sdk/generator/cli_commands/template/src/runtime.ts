@@ -22,6 +22,7 @@ export interface ApiOperation<A> {
   operationId: string
   method: string
   environment?: Environment
+  requiresConfirmation: boolean
   confirm: boolean
   preview?: ApiPreview
   invoke: (client: Polar) => Promise<A>

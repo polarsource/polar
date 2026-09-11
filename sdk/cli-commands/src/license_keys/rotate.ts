@@ -16,6 +16,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'license_keys:rotate',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.licenseKeys.rotate(config.path.id),
       })

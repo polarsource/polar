@@ -71,6 +71,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'benefits:create',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.benefits.create(body),
       })

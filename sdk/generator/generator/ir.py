@@ -132,6 +132,12 @@ type TypeRef = typing.Annotated[
 ]
 
 
+class CLIConfirmation(BaseModel):
+    model_config = {"strict": True, "allow_inf_nan": False}
+
+    equals: str | bool | int | float | None
+
+
 class Field(BaseModel):
     """A single property of a Model, with optional read/write and deprecation metadata."""
 
@@ -141,6 +147,7 @@ class Field(BaseModel):
     description: str | None = None
     read_only: bool | None = None
     write_only: bool | None = None
+    cli_confirm: CLIConfirmation | None = None
     deprecated: bool | None = None
     default: typing.Any | None = None
     has_default: bool = False
@@ -212,6 +219,7 @@ class Parameter(BaseModel):
 
     name: str
     parameter_name: str
+    cli_confirm: CLIConfirmation | None = None
     type: TypeRef
     required: bool
     description: str | None = None
@@ -662,6 +670,19 @@ def _schema_to_enum(name: str, schema: op.Schema) -> Enum:
     )
 
 
+def _cli_confirmation(
+    schema: op.Schema | op.Reference | None,
+) -> CLIConfirmation | None:
+    if schema is None:
+        return None
+
+    extras = schema.__pydantic_extra__ or {}
+    if "x-polar-cli-confirm" not in extras:
+        return None
+
+    return CLIConfirmation.model_validate(extras["x-polar-cli-confirm"])
+
+
 def _schema_to_model(
     name: str,
     schema: op.Schema,
@@ -686,6 +707,7 @@ def _schema_to_model(
         read_only = None
         write_only = None
         deprecated = None
+        cli_confirm = _cli_confirmation(prop)
         default = None
         has_default = False
         has_example, example = _extract_example(prop)
@@ -705,6 +727,7 @@ def _schema_to_model(
                 description=description,
                 read_only=read_only,
                 write_only=write_only,
+                cli_confirm=cli_confirm,
                 deprecated=deprecated,
                 default=default,
                 has_default=has_default,
@@ -963,6 +986,7 @@ def _convert_parameter_ir(
         type=type_,
         required=parameter.required or False,
         description=parameter.description or None,
+        cli_confirm=_cli_confirmation(parameter.param_schema),
         deprecated=True if parameter.deprecated else None,
         default=default,
         has_default=has_default,

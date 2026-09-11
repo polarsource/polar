@@ -18,6 +18,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'webhooks:delete_webhook_endpoint',
         method: 'DELETE',
+        requiresConfirmation: true,
         confirm: config.confirm,
         preview: {
           fields: [

@@ -4,6 +4,7 @@ import shlex
 import shutil
 import typing
 
+from cli_commands.confirmation import confirmation_fields
 from cli_commands.preview import PreviewOperation, preview_fields
 from generator.casing import to_snake_case
 from generator.emitter import EmitterBase
@@ -97,13 +98,15 @@ class CLICommandsEmitter(EmitterBase):
         children = sorted(service.services, key=lambda child: child.name)
 
         for method in methods:
+            context = self._command_context(method, api, path)
+
             self.render_file(
                 "src/command.ts.jinja",
                 directory / f"{method.name}.ts",
                 {
-                    **self._command_context(method, api, path),
+                    **context,
                     "preview": previews.get(method.path)
-                    if method.http_method == "DELETE"
+                    if context["needs_confirmation"]
                     else None,
                 },
             )
@@ -130,7 +133,9 @@ class CLICommandsEmitter(EmitterBase):
                     method.http_method == "GET"
                     and method.response_type == "json"
                     and method.body is None
-                    and not any(p.required for p in method.query_params)
+                    and not any(
+                        p.required or p.cli_confirm for p in method.query_params
+                    )
                 ):
                     arguments = ", ".join(
                         f"config.path.{p.name}" for p in method.path_params
@@ -171,8 +176,24 @@ class CLICommandsEmitter(EmitterBase):
             for field in fields
         ]
 
-        helpers = []
+        conditions = (
+            [] if method.http_method == "DELETE" else confirmation_fields(fields, api)
+        )
+        needs_confirmation = method.http_method == "DELETE" or bool(conditions)
+
         if method.http_method == "DELETE":
+            confirmation_expression = "true"
+        else:
+            confirmation_expression = (
+                " || ".join(
+                    f"confirmationInput[{json.dumps(field['key'])}] === {json.dumps(field['equals'])}"
+                    for field in conditions
+                )
+                or "false"
+            )
+
+        helpers = []
+        if needs_confirmation:
             helpers.append("confirm")
 
         if input_type:
@@ -196,6 +217,9 @@ class CLICommandsEmitter(EmitterBase):
             "input_index": len(method.path_params),
             "fields": generated_fields,
             "helpers": helpers,
+            "confirmation_fields": conditions,
+            "needs_confirmation": needs_confirmation,
+            "confirmation_expression": confirmation_expression,
             "arguments": arguments,
             "description": (method.description or method.name).split("\n")[0],
         }
@@ -215,6 +239,20 @@ class CLICommandsEmitter(EmitterBase):
             for variant in union.variants:
                 for field in self._body_fields(variant, api):
                     previous = fields.get(field.name)
+                    if previous and previous.cli_confirm:
+                        if (
+                            field.cli_confirm
+                            and previous.cli_confirm.model_dump_json()
+                            != field.cli_confirm.model_dump_json()
+                        ):
+                            raise ValueError(
+                                f"Conflicting CLI confirmation rules for {field.name!r}"
+                            )
+
+                        field = field.model_copy(
+                            update={"cli_confirm": previous.cli_confirm}
+                        )
+
                     if previous and previous.type != field.type:
                         variants: list[TypeRef] = (
                             previous.type.variants

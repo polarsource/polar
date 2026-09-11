@@ -17,21 +17,21 @@ export const layer = Layer.effect(
             ? ` in ${operation.environment}`
             : ''
 
-          if (operation.method === 'DELETE' && !operation.confirm) {
+          if (operation.requiresConfirmation && !operation.confirm) {
             const stdio = yield* Stdio.Stdio
             if (
               !(yield* stdio.stdinIsTerminal) ||
               !(yield* stdio.stdoutIsTerminal)
             ) {
               return yield* new ApiCommandError({
-                message: `${operation.operationId} performs a DELETE request${environmentContext}. Pass --confirm to proceed without an interactive terminal.`,
+                message: `${operation.operationId} performs a destructive ${operation.method} request${environmentContext}. Pass --confirm to proceed without an interactive terminal.`,
               })
             }
 
             yield* Console.log(
               [
                 ui.blank,
-                ui.warning(ui.bold('Confirm DELETE request')),
+                ui.warning(ui.bold('Confirm destructive request')),
                 ui.blank,
                 ui.keyValue([
                   ['Operation', ui.command(operation.operationId)],

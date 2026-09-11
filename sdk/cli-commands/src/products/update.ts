@@ -1,15 +1,16 @@
 // Generated from products:update (2026-04). Do not edit.
 import type { Polar } from '@polar-sh/sdk/2026-04'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { ApiRuntime, ApiCommandError } from '../runtime'
+import { confirm, data, mergeInput, jsonFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['products']['update']>[1]>
 
 export const command = Command.make(
   'update',
   {
+    confirm,
     path: {
       id: Argument.string('id'),
     },
@@ -112,10 +113,28 @@ export const command = Command.make(
         medias: config.input.medias,
         attached_custom_fields: config.input.attached_custom_fields,
       })
+      const confirmationInput = yield* Schema.decodeUnknownEffect(
+        Schema.Struct({
+          is_archived: Schema.optionalKey(Schema.NullOr(Schema.Boolean)),
+        }),
+      )(body).pipe(
+        Effect.mapError(
+          (error) => new ApiCommandError({ message: error.message }),
+        ),
+      )
       yield* api.execute({
         operationId: 'products:update',
         method: 'PATCH',
-        confirm: false,
+        requiresConfirmation: confirmationInput['is_archived'] === true,
+        confirm: config.confirm,
+        preview: {
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'name', label: 'Name' },
+            { key: 'is_archived', label: 'Archived' },
+          ],
+          invoke: (client) => client.products.get(config.path.id),
+        },
         invoke: (client) => client.products.update(config.path.id, body),
       })
     }),

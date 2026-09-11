@@ -50,6 +50,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'benefits:grants',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.benefits.grants(config.path.id, query),
       })

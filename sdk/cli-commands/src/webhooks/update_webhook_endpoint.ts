@@ -99,6 +99,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'webhooks:update_webhook_endpoint',
         method: 'PATCH',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.webhooks.updateWebhookEndpoint(config.path.id, body),

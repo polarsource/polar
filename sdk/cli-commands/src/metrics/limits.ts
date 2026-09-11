@@ -9,6 +9,7 @@ export const command = Command.make('limits', {}, () =>
     yield* api.execute({
       operationId: 'metrics:limits',
       method: 'GET',
+      requiresConfirmation: false,
       confirm: false,
       invoke: (client) => client.metrics.limits(),
     })

@@ -49,6 +49,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:members:list',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.customers.members.list(config.path.id, query),

@@ -77,6 +77,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customer-seats:assign_seat',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.customerSeats.assignSeat(body),
       })

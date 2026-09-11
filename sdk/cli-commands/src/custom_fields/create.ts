@@ -62,6 +62,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'custom-fields:create',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.customFields.create(body),
       })

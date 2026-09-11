@@ -60,6 +60,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'refunds:create',
         method: 'POST',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.refunds.create(body),
       })

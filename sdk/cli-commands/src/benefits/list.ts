@@ -94,6 +94,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'benefits:list',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.benefits.list(query),
       })

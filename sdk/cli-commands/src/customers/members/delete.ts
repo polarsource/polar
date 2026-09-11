@@ -19,6 +19,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:members:delete',
         method: 'DELETE',
+        requiresConfirmation: true,
         confirm: config.confirm,
         preview: {
           fields: [

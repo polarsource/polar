@@ -122,6 +122,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'webhooks:list_webhook_deliveries',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.webhooks.listWebhookDeliveries(query),
       })

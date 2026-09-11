@@ -17,6 +17,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:members:get_external',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) =>
           client.customers.members.getExternal(

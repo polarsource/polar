@@ -93,6 +93,7 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'event-types:list',
         method: 'GET',
+        requiresConfirmation: false,
         confirm: false,
         invoke: (client) => client.eventTypes.list(query),
       })

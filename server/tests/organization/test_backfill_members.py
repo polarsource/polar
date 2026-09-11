@@ -125,6 +125,57 @@ class TestBackfillMembers:
         assert c1.id in member_customer_ids
         assert c2.id in member_customer_ids
 
+    async def test_skips_email_less_customers_without_crashing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """An email-less team customer (legacy, created with an owner but no
+        email) cannot have an owner member backfilled. The backfill must skip it
+        rather than abort the whole org run, while still creating owners for
+        customers that do have an email."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": True}
+        )
+        no_email_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=None,
+            name="No Email Team",
+            stripe_customer_id="stripe_no_email",
+        )
+        no_email_customer.type = CustomerType.team
+        await save_fixture(no_email_customer)
+
+        with_email_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="has-email@test.com",
+            stripe_customer_id="stripe_has_email",
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # The email-less customer must NOT get an owner member
+        stmt_no_email = select(Member).where(
+            Member.customer_id == no_email_customer.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt_no_email)
+        assert len(result.scalars().all()) == 0
+
+        # The customer with an email must still get its owner member
+        stmt_with_email = select(Member).where(
+            Member.customer_id == with_email_customer.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt_with_email)
+        assert len(result.scalars().all()) == 1
+
     async def test_skips_customers_with_existing_owner_member(
         self,
         session: AsyncSession,

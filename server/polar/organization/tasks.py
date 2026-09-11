@@ -2,7 +2,7 @@ import uuid
 from typing import Any, cast
 
 import structlog
-from sqlalchemy import CursorResult, select
+from sqlalchemy import CursorResult, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -335,7 +335,35 @@ async def _backfill_owner_members(
     session: AsyncSession,
     organization: Organization,
 ) -> int:
-    """Step A: Create owner members for all customers that don't have one."""
+    """Step A: Create owner members for all customers that don't have one.
+
+    Customers without an email are skipped and logged for separate handling:
+    ``create_owner_member`` requires an email, and raising on a missing one
+    would abort the whole org run (``prepare_members`` is ``max_retries=0``).
+    """
+    skipped_no_email = await session.scalar(
+        select(func.count())
+        .select_from(Customer)
+        .outerjoin(
+            Member,
+            (Customer.id == Member.customer_id)
+            & (Member.role == MemberRole.owner)
+            & (~Member.is_deleted),
+        )
+        .where(
+            Customer.organization_id == organization.id,
+            ~Customer.is_deleted,
+            Member.id.is_(None),
+            Customer.email.is_(None),
+        )
+    )
+    if skipped_no_email:
+        log.warning(
+            "organization.backfill_members.step_a_skipped_no_email",
+            organization_id=str(organization.id),
+            customers_skipped=skipped_no_email,
+        )
+
     # Find customers without an owner member
     statement = (
         select(Customer)
@@ -349,6 +377,7 @@ async def _backfill_owner_members(
             Customer.organization_id == organization.id,
             ~Customer.is_deleted,
             Member.id.is_(None),
+            Customer.email.is_not(None),
         )
     )
     results = await session.stream_scalars(

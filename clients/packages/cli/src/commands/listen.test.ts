@@ -3,7 +3,7 @@ import { Console, Effect, Fiber, Redacted } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { startListening } from '@/commands/listen'
+import { startListening, describeForwardFailure } from '@/commands/listen'
 import { authenticatedClient } from '@/services/api'
 import { captureConsole } from '@/utils/test-utils/cli'
 import { fakeAuth, overrideCredential } from '@/utils/test-utils/services'
@@ -128,6 +128,42 @@ describe('startListening', () => {
     )
   })
 
+  test('prints a friendly message when the forward target refuses the connection', async () => {
+    const log = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const refusal = new TypeError(
+      'Unable to connect. Is the computer able to access the url?',
+    )
+    Object.defineProperty(refusal, 'code', {
+      value: 'ConnectionRefused',
+      enumerable: true,
+    })
+    forward.mockRejectedValueOnce(refusal)
+    run()
+    await tick()
+    const rawPayload = '{ "type": "order.created", "data": {} }'
+    const headers = {
+      'x-polar-triggered': 'true',
+      'user-agent': 'polar.sh webhooks',
+      'content-type': 'application/json',
+      'webhook-id': 'wh_1',
+      'webhook-timestamp': '12345',
+      'webhook-signature': 'sig',
+    }
+    emit({
+      id: 'evt_1',
+      key: 'webhook',
+      payload: { webhook_event_id: 'whid_1', payload: rawPayload },
+      headers,
+    })
+    await tick()
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('connection refused, is your server running?'),
+    )
+    expect(log).not.toHaveBeenCalledWith(
+      expect.stringContaining('Unable to connect'),
+    )
+  })
+
   test('reconnects immediately, resumes event IDs and prints the banner once', async () => {
     run()
     await tick()
@@ -195,6 +231,68 @@ describe('startListening', () => {
       code: 200,
       message: 'Expected a text/event-stream response.',
     })
+  })
+})
+
+describe('describeForwardFailure', () => {
+  const FRIENDLY = 'connection refused, is your server running?'
+
+  const withCode = (error: Error, code: unknown): Error => {
+    Object.defineProperty(error, 'code', { value: code, enumerable: true })
+    return error
+  }
+
+  test.each([
+    {
+      name: 'Bun connection-refused wrapped by Effect.tryPromise (code at depth 1)',
+      error: new Error('An error occurred in Effect.tryPromise', {
+        cause: withCode(
+          new TypeError(
+            'Unable to connect. Is the computer able to access the url?',
+          ),
+          'ConnectionRefused',
+        ),
+      }),
+    },
+    // Depth-2 is the only case that fails if the `while` loop is simplified to
+    // a single `if`, so it guards the multi-level cause traversal specifically.
+    {
+      name: 'Node fetch-failed chain (code at depth 2)',
+      error: new Error('An error occurred in Effect.tryPromise', {
+        cause: new TypeError('fetch failed', {
+          cause: withCode(
+            new Error('connect ECONNREFUSED 127.0.0.1:39998'),
+            'ECONNREFUSED',
+          ),
+        }),
+      }),
+    },
+    {
+      name: 'a bare ECONNREFUSED message with no wrapping',
+      error: new Error('connect ECONNREFUSED 127.0.0.1:39998'),
+    },
+  ])(
+    'returns the friendly message for $name',
+    ({ error }: { error: unknown }) => {
+      expect(describeForwardFailure(error)).toBe(FRIENDLY)
+    },
+  )
+
+  test('returns the underlying cause message for a non-refused network error', () => {
+    const error = new Error('An error occurred in Effect.tryPromise', {
+      cause: withCode(
+        new TypeError('getaddrinfo ENOTFOUND example.test'),
+        'ENOTFOUND',
+      ),
+    })
+    expect(describeForwardFailure(error)).toBe(
+      'getaddrinfo ENOTFOUND example.test',
+    )
+  })
+
+  test('returns the string form of a non-Error rejection', () => {
+    expect(describeForwardFailure('a string error')).toBe('a string error')
+    expect(describeForwardFailure(undefined)).toBe('undefined')
   })
 })
 

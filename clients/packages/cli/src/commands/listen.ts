@@ -39,14 +39,24 @@ const printError = (line: string) =>
     process.stderr.write(`${line}\n`)
   })
 
-const describeForwardFailure = (error: unknown) => {
+export const describeForwardFailure = (error: unknown) => {
+  let current: unknown = error
+  while (current instanceof Error) {
+    const code = (current as { code?: unknown }).code
+    if (
+      typeof code === 'string' &&
+      /ECONNREFUSED|ConnectionRefused/i.test(code)
+    ) {
+      return 'connection refused, is your server running?'
+    }
+    if (/ECONNREFUSED/i.test(current.message)) {
+      return 'connection refused, is your server running?'
+    }
+    current = (current as { cause?: unknown }).cause
+  }
   const cause =
     error instanceof Error && error.cause instanceof Error ? error.cause : error
-  const message = cause instanceof Error ? cause.message : String(cause)
-  if (/ECONNREFUSED/i.test(message)) {
-    return 'connection refused, is your server running?'
-  }
-  return message
+  return cause instanceof Error ? cause.message : String(cause)
 }
 
 const eventLine = (eventType: string, outcome: string, startedAt: number) =>

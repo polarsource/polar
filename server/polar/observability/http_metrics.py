@@ -5,8 +5,8 @@ These metrics track all HTTP endpoints (except those in METRICS_DENY_LIST
 or belonging to METRICS_EXCLUDED_APPS) for availability and latency SLIs.
 
 Metrics:
-- polar_http_request_total: Counter by endpoint, method, status_code, api_version
-- polar_http_request_duration_seconds: Histogram by endpoint, method, api_version
+- polar_http_request_total: Counter by endpoint, method, status_code, api_version, api_version_set
+- polar_http_request_duration_seconds: Histogram by endpoint, method, api_version, api_version_set
 """
 
 import os
@@ -55,7 +55,7 @@ def exclude_app_from_metrics(app: "ASGIApp") -> None:
 HTTP_REQUEST_TOTAL = Counter(
     "polar_http_request_total",
     "Total number of HTTP requests",
-    ["endpoint", "method", "status_code", "api_version"],
+    ["endpoint", "method", "status_code", "api_version", "api_version_set"],
 )
 
 # HTTP request duration histogram for latency SLI
@@ -68,7 +68,7 @@ HTTP_REQUEST_TOTAL = Counter(
 HTTP_REQUEST_DURATION_SECONDS = Histogram(
     "polar_http_request_duration_seconds",
     "HTTP request duration in seconds",
-    ["endpoint", "method", "api_version"],
+    ["endpoint", "method", "api_version", "api_version_set"],
     buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
 )
 

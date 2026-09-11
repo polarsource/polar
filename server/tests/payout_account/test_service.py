@@ -83,7 +83,7 @@ class TestCreate:
         )
         enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
 
-        await payout_account_service.create_or_resume(
+        payout_account = await payout_account_service.create_or_resume(
             auth_subject,
             session,
             PayoutAccountCreate(
@@ -96,6 +96,7 @@ class TestCreate:
         enqueue_job_mock.assert_any_call(
             "organization.sync_payout_account_website",
             organization_id=organization.id,
+            payout_account_id=payout_account.id,
         )
 
     @pytest.mark.auth
@@ -185,6 +186,40 @@ class TestCreate:
         await session.flush()
         assert payout_account.id != ready.id
         assert organization.payout_account_id == ready.id
+
+    @pytest.mark.auth
+    async def test_syncs_the_website_onto_the_new_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        await create_payout_account(
+            save_fixture, organization, user, is_payouts_enabled=True
+        )
+        stripe_service_mock.create_account.return_value = _stripe_account("acct_new")  # type: ignore[attr-defined]
+        enqueue_job_mock = mocker.patch("polar.payout_account.service.enqueue_job")
+
+        payout_account = await payout_account_service.create_or_resume(
+            auth_subject,
+            session,
+            PayoutAccountCreate(
+                type=PayoutAccountType.stripe,
+                organization_id=organization.id,
+                country=StripeAccountCountry.US,
+            ),
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+            payout_account_id=payout_account.id,
+        )
 
 
 @pytest.mark.asyncio

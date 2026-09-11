@@ -1,7 +1,5 @@
 import { inDirectory, isMember } from '../ast.js'
 
-const outputCalls = new Set(['log', 'error', 'warn', 'info', 'debug'])
-
 const forbiddenImports = [
   {
     matches: (source) => source.startsWith('@/commands/'),
@@ -49,10 +47,7 @@ export default {
         if (rule) context.report({ node, messageId: rule.messageId })
       },
       MemberExpression(node) {
-        if (
-          (isMember(node, 'Console') || isMember(node, 'console')) &&
-          outputCalls.has(node.property.name)
-        ) {
+        if (isMember(node, 'Console') || isMember(node, 'console')) {
           context.report({ node, messageId: 'print' })
         } else if (isProcessStream(node)) {
           context.report({ node, messageId: 'print' })

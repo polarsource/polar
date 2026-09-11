@@ -1,4 +1,4 @@
-import { inDirectory, isFile, isMember } from '../ast.js'
+import { inSource, isFile, isMember, isTest } from '../ast.js'
 
 const allowed = [
   'cli.ts',
@@ -20,12 +20,7 @@ export default {
     },
   },
   create(context) {
-    if (
-      isFile(context, ...allowed) ||
-      (!inDirectory(context, 'services') &&
-        !inDirectory(context, 'commands') &&
-        !inDirectory(context, 'utils'))
-    ) {
+    if (!inSource(context) || isTest(context) || isFile(context, ...allowed)) {
       return {}
     }
     return {

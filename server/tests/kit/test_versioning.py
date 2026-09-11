@@ -2,7 +2,7 @@ import dataclasses
 from typing import Annotated
 
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
@@ -133,6 +133,10 @@ def test_versioned_routes() -> None:
     async def next_only_endpoint() -> str:
         return "next-only"
 
+    @router.get("/version-state")
+    async def version_state(request: Request) -> dict[str, bool]:
+        return {"api_version_set": request.scope["state"]["api_version_set"]}
+
     app = FastAPI(openapi_url=None)
     add_versioned_routers(
         app, router, [], [current_version, next_version], current_version
@@ -147,6 +151,11 @@ def test_versioned_routes() -> None:
     response = client.get("/items", headers={"Polar-Version": "2026-10"})
     assert response.json() == {"endpoint": "next", "dependency": "overridden"}
     assert response.headers["Polar-Version"] == "2026-10"
+
+    assert client.get("/version-state").json() == {"api_version_set": False}
+    assert client.get(
+        "/version-state", headers={"Polar-Version": "2026-04"}
+    ).json() == {"api_version_set": True}
 
     assert client.get("/next-only").status_code == 404
     assert (

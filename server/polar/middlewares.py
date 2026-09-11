@@ -43,6 +43,10 @@ class LogCorrelationIdMiddleware:
             api_version = scope.get("state", {}).get("api_version")
             if api_version is not None:
                 root_span.set_attribute("api_version", str(api_version))
+                root_span.set_attribute(
+                    "api_version_set",
+                    scope.get("state", {}).get("api_version_set", False),
+                )
 
         # Capture client identification headers (sent by the mobile app)
         # so we can correlate API traffic to specific client builds for

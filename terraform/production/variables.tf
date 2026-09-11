@@ -429,6 +429,12 @@ variable "lambda_worker_tailscale_token" {
   sensitive   = true
 }
 
+variable "ec2_tailscale_authkey" {
+  description = "Reusable, pre-authorized Tailscale auth key for the AWS subnet router"
+  type        = string
+  sensitive   = true
+}
+
 variable "plain_default_tier_external_id" {
   description = "Default Plain tier external ID used as a fallback for the polar-self support benefit"
   type        = string

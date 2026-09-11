@@ -72,6 +72,14 @@ class APITag(StrEnum):
         ]
 
 
+def cli_preview(*fields: tuple[str, str]) -> dict[str, Any]:
+    return {
+        "x-polar-cli-preview": {
+            "fields": [{"key": key, "label": label} for key, label in fields]
+        }
+    }
+
+
 def get_openapi(
     version: "APIVersion",
     route_contexts: Sequence[RouteContext],

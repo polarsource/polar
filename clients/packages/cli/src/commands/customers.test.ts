@@ -101,10 +101,9 @@ describe('generated customer commands', () => {
     expect(requests[0]!.headers.get('Polar-Version')).toBe('2026-04')
   })
 
-  test('list preserves explicit false and repeated filters in production', async () => {
+  test('list preserves explicit false and repeated filters', async () => {
     const cli = run([
       'list',
-      '--production',
       '--active=false',
       '--email=alice@example.com',
       '--org=org-1',
@@ -117,7 +116,7 @@ describe('generated customer commands', () => {
     ])
     await cli.promise
     const url = new URL(requests[0]!.url)
-    expect(url.origin).toBe('https://api.polar.sh')
+    expect(url.origin).toBe('https://sandbox-api.polar.sh')
     expect(Object.fromEntries(url.searchParams)).toMatchObject({
       email: 'alice@example.com',
       active: 'false',
@@ -130,12 +129,12 @@ describe('generated customer commands', () => {
       'org-2',
     ])
     expect(url.searchParams.getAll('sorting')).toEqual(['-email', 'name'])
-    expect(auth.state.resolutions[0]!.environment).toBe('production')
+    expect(auth.state.resolutions[0]!.environment).toBe('sandbox')
     expect(requests[0]!.headers.get('Authorization')).toBe('Bearer token')
     expect(JSON.parse(cli.output())).toEqual({ id: 'customer-1' })
   })
 
-  test('omitted booleans stay omitted and sandbox is the default', async () => {
+  test('omitted booleans stay omitted', async () => {
     await run(['list']).promise
     const url = new URL(requests[0]!.url)
     expect(url.origin).toBe('https://sandbox-api.polar.sh')
@@ -205,7 +204,7 @@ describe('generated customer commands', () => {
     expect(cli.output()).toBe('')
   })
 
-  test.each(['not-json', '[]', 'null', '42'])(
+  test.each(['not-json', '[]', '[{}]', 'null', '42', 'true', '"text"'])(
     'rejects invalid --data %s without sending',
     async (data) => {
       await expect(run(['create', '-d', data]).promise).rejects.toThrow()

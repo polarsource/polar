@@ -58,6 +58,12 @@ CheckoutLinkNotFound = {
     summary="List Checkout Links",
     response_model=ListResource[CheckoutLinkSchema],
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "checkout_links_list",
+        "x-tool-title": "List checkout links",
+        "x-tool-description": "List checkout links.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.CheckoutLinkRead,
@@ -94,6 +100,12 @@ async def list(
     response_model=CheckoutLinkSchema,
     responses={404: CheckoutLinkNotFound},
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "checkout_links_get",
+        "x-tool-title": "Get checkout link",
+        "x-tool-description": "Get a checkout link by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     id: CheckoutLinkID,
@@ -116,7 +128,12 @@ async def get(
     summary="Create Checkout Link",
     responses={201: {"description": "Checkout link created."}},
     tags=[APITag.mcp, APITag.cli],
-    openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
+    openapi_extra={
+        "x-tool-name": "checkout_links_create",
+        "x-tool-title": "Create checkout link",
+        "x-tool-description": "Create a checkout link.",
+        "x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT},
+    },
 )
 async def create(
     checkout_link_create: CheckoutLinkCreate,
@@ -138,6 +155,11 @@ async def create(
         404: CheckoutLinkNotFound,
     },
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "checkout_links_update",
+        "x-tool-title": "Update checkout link",
+        "x-tool-description": "Update a checkout link.",
+    },
 )
 async def update(
     id: CheckoutLinkID,
@@ -165,6 +187,12 @@ async def update(
         404: CheckoutLinkNotFound,
     },
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "checkout_links_delete",
+        "x-tool-title": "Delete checkout link",
+        "x-tool-description": "Delete a checkout link.",
+        "x-tool-annotations": ["destructive", "idempotent"],
+    },
 )
 async def delete(
     id: CheckoutLinkID,

@@ -1336,7 +1336,7 @@ async def set_default_payment_method(
     tags=[APITag.private],
 )
 async def get_order_invoice(
-    authz: AuthorizeOrgManageUserRead,
+    authz: AuthorizeOrgManageRead,
     order_id: str,
 ) -> OrganizationOrderInvoice:
     """Get the invoice URL for a Polar order belonging to this organization."""

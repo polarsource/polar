@@ -629,6 +629,471 @@ class TestRevert:
         assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
         assert reverse_balance_polar.payment_transaction is None
 
+    async def test_valid_partial_refund(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        product: Product,
+        customer: Customer,
+        account: Account,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # Partial refund: 300 on a 1000 payment (75% balanced). create()
+        # proportionally allocates 75% * 300 = 225 to the merchant reversal, so
+        # the refund reversal outgoing is -225. On cancel, revert must restore
+        # the full 225 — not re-apply the proportional factor a second time.
+        charge = build_stripe_charge(amount=1000)
+        refund, order, payment = await create_order_and_refund(
+            save_fixture,
+            customer,
+            status=RefundStatus.succeeded,
+            subtotal_amount=charge.amount,
+            refund_subtotal_amount=300,
+        )
+        stripe_service_mock.get_balance_transaction.return_value = (
+            build_stripe_balance_transaction(amount=-charge.amount)
+        )
+
+        # Create the payment transaction
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=charge.amount,
+            account_currency=charge.currency,
+            account_amount=charge.amount,
+            tax_amount=0,
+            charge_id=charge.id,
+            order=order,
+            payment_customer=customer,
+        )
+        await save_fixture(payment_transaction)
+
+        # Balance the money to the organization account
+        outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=-charge.amount * 0.75,
+            account_currency=charge.currency,
+            account_amount=-charge.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=charge.currency,
+            amount=charge.amount * 0.75,
+            account_currency=charge.currency,
+            account_amount=charge.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance)
+        await save_fixture(incoming_balance)
+
+        # Refund this transaction. The refund reversal outgoing/incoming below
+        # carry the proportionally-allocated share (225) that create() would
+        # have produced for a 300 refund on the 750 outgoing split.
+        refund_transaction = await create_transaction(
+            save_fixture,
+            type=TransactionType.refund,
+            refund=refund,
+            amount=-300,
+        )
+
+        refund_outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=charge.currency,
+            amount=-225,
+            account_currency=charge.currency,
+            account_amount=-225,
+            tax_amount=0,
+            order=order,
+            balance_correlation_key="REFUND_BALANCE",
+            balance_reversal_transaction=incoming_balance,
+        )
+        refund_incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=225,
+            account_currency=charge.currency,
+            account_amount=225,
+            tax_amount=0,
+            order=order,
+            balance_correlation_key="REFUND_BALANCE",
+            balance_reversal_transaction=outgoing_balance,
+        )
+        await save_fixture(refund_outgoing_balance)
+        await save_fixture(refund_incoming_balance)
+
+        refund.status = RefundStatus.canceled
+        refund_reversal_transaction = await refund_transaction_service.revert(
+            session, refund
+        )
+
+        assert refund_reversal_transaction.type == TransactionType.refund_reversal
+        assert refund_reversal_transaction.processor == Processor.stripe
+        assert refund_reversal_transaction.amount == refund.amount
+        assert refund_reversal_transaction.account_currency == (
+            refund_transaction.account_currency
+        )
+        assert refund_reversal_transaction.account_amount == (
+            -refund_transaction.account_amount
+        )
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        balance_transactions = await balance_transaction_repository.get_all(
+            balance_transaction_repository.get_base_statement()
+            .order_by(Transaction.created_at.asc())
+            .options(
+                joinedload(Transaction.balance_reversal_transaction),
+                joinedload(Transaction.account),
+                joinedload(Transaction.payment_transaction),
+            )
+        )
+        assert len(balance_transactions) == 6
+
+        assert balance_transactions[0] == outgoing_balance  # From Polar...
+        assert balance_transactions[1] == incoming_balance  # ... to Account
+        assert balance_transactions[2] == refund_outgoing_balance  # From Account...
+        assert balance_transactions[3] == refund_incoming_balance  # ... to Polar
+
+        reverse_balance_account = balance_transactions[4]  # From Polar...
+        assert reverse_balance_account.account is None
+        assert reverse_balance_account.balance_reversal_transaction is not None
+        # Revert ties the restore back to the *original* payment balances, so
+        # the linked amount (-750) differs from the restore (-225) for a partial
+        # refund — only the merchant-side restore magnitude must match the
+        # refund withdrawal.
+        assert reverse_balance_account.balance_reversal_transaction == outgoing_balance
+        assert reverse_balance_account.amount < 0
+        assert reverse_balance_account.amount == -refund_incoming_balance.amount
+        assert reverse_balance_account.payment_transaction is None
+
+        reverse_balance_polar = balance_transactions[5]  # ... to Account
+        assert reverse_balance_polar.account is not None
+        assert reverse_balance_polar.balance_reversal_transaction is not None
+        assert reverse_balance_polar.balance_reversal_transaction == incoming_balance
+        # The revert restores exactly the 225 the refund withdrew — not the
+        # under-restored 67 the double-scaling bug produced.
+        assert reverse_balance_polar.amount == 225
+        assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
+        assert reverse_balance_polar.payment_transaction is None
+
+    async def test_valid_partial_refund_different_settlement_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        product: Product,
+        customer: Customer,
+        account: Account,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # Partial refund across currencies: 40% of a 1000+200 EUR payment settled
+        # in USD at 1.5. create() allocates 75% of the 450 settlement refund to
+        # the merchant reversal: 450. On cancel, revert must restore the full 450.
+        charge = build_stripe_charge(amount=1200, currency="eur")
+        refund, order, _ = await create_order_and_refund(
+            save_fixture,
+            customer,
+            status=RefundStatus.succeeded,
+            subtotal_amount=1000,
+            tax_amount=200,
+            currency="eur",
+            refund_subtotal_amount=400,
+            refund_tax_amount=80,
+        )
+
+        # Create the payment transaction
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=1000 * 1.5,
+            tax_amount=200 * 1.5,
+            account_currency="usd",
+            account_amount=1000 * 1.5,
+            presentment_currency="eur",
+            presentment_amount=1000,
+            presentment_tax_amount=200,
+            charge_id=charge.id,
+            order=order,
+        )
+        await save_fixture(payment_transaction)
+
+        # Balance the money to the organization account
+        outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=-payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=-payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance)
+        await save_fixture(incoming_balance)
+
+        # Refund this transaction. The settlement refund share is 450 (40% of
+        # the 1500 settlement amount, on the 75% outgoing split).
+        balance_transaction = build_stripe_balance_transaction(
+            amount=-720, currency="usd", exchange_rate=1.5
+        )
+        stripe_service_mock.get_balance_transaction.return_value = balance_transaction
+        refund_transaction = await create_transaction(
+            save_fixture,
+            type=TransactionType.refund,
+            refund=refund,
+            currency="usd",
+            amount=-600,
+            tax_amount=-120,
+            presentment_currency="eur",
+            presentment_amount=-400,
+            presentment_tax_amount=-80,
+        )
+
+        refund_outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=-450,
+            account_currency="usd",
+            account_amount=-450,
+            tax_amount=0,
+            order=order,
+            balance_correlation_key="REFUND_BALANCE",
+            balance_reversal_transaction=incoming_balance,
+        )
+        refund_incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=450,
+            account_currency="usd",
+            account_amount=450,
+            tax_amount=0,
+            order=order,
+            balance_correlation_key="REFUND_BALANCE",
+            balance_reversal_transaction=outgoing_balance,
+        )
+        await save_fixture(refund_outgoing_balance)
+        await save_fixture(refund_incoming_balance)
+
+        refund.status = RefundStatus.canceled
+        refund_reversal_transaction = await refund_transaction_service.revert(
+            session, refund
+        )
+
+        assert refund_reversal_transaction.type == TransactionType.refund_reversal
+        assert refund_reversal_transaction.processor == Processor.stripe
+        assert refund_reversal_transaction.currency == "usd"
+        assert refund_reversal_transaction.amount == 600
+        assert refund_reversal_transaction.tax_amount == 120
+        assert refund_reversal_transaction.presentment_currency == "eur"
+        assert refund_reversal_transaction.presentment_amount == 400
+        assert refund_reversal_transaction.presentment_tax_amount == 80
+
+        assert refund_reversal_transaction.account_currency == (
+            refund_transaction.account_currency
+        )
+        assert refund_reversal_transaction.account_amount == (
+            -refund_transaction.account_amount
+        )
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        balance_transactions = await balance_transaction_repository.get_all(
+            balance_transaction_repository.get_base_statement()
+            .order_by(Transaction.created_at.asc())
+            .options(
+                joinedload(Transaction.balance_reversal_transaction),
+                joinedload(Transaction.account),
+                joinedload(Transaction.payment_transaction),
+            )
+        )
+        assert len(balance_transactions) == 6
+
+        assert balance_transactions[0] == outgoing_balance  # From Polar...
+        assert balance_transactions[1] == incoming_balance  # ... to Account
+        assert balance_transactions[2] == refund_outgoing_balance  # From Account...
+        assert balance_transactions[3] == refund_incoming_balance  # ... to Polar
+
+        reverse_balance_account = balance_transactions[4]  # From Polar...
+        assert reverse_balance_account.account is None
+        assert reverse_balance_account.balance_reversal_transaction is not None
+        assert reverse_balance_account.balance_reversal_transaction == outgoing_balance
+        assert reverse_balance_account.amount < 0
+        assert reverse_balance_account.amount == -refund_incoming_balance.amount
+        assert reverse_balance_account.payment_transaction is None
+
+        reverse_balance_polar = balance_transactions[5]  # ... to Account
+        assert reverse_balance_polar.account is not None
+        assert reverse_balance_polar.balance_reversal_transaction is not None
+        assert reverse_balance_polar.balance_reversal_transaction == incoming_balance
+        # The revert restores exactly the 450 the refund withdrew.
+        assert reverse_balance_polar.amount == 450
+        assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
+        assert reverse_balance_polar.payment_transaction is None
+
+    async def test_round_trip_partial_refund(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        product: Product,
+        customer: Customer,
+        account: Account,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # End-to-end: create() a partial refund, then revert() it. The merchant
+        # must be made whole: revert() restores exactly what create() withdrew,
+        # so the refund→cancel cycle has zero net effect on the account balance.
+        charge = build_stripe_charge(amount=1000)
+        refund, order, _ = await create_order_and_refund(
+            save_fixture,
+            customer,
+            status=RefundStatus.succeeded,
+            subtotal_amount=charge.amount,
+            refund_subtotal_amount=300,
+        )
+        stripe_service_mock.get_balance_transaction.return_value = (
+            build_stripe_balance_transaction(amount=-300, currency=charge.currency)
+        )
+
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=charge.amount,
+            account_currency=charge.currency,
+            account_amount=charge.amount,
+            tax_amount=0,
+            charge_id=charge.id,
+            order=order,
+            payment_customer=customer,
+        )
+        await save_fixture(payment_transaction)
+
+        outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=-charge.amount * 0.75,
+            account_currency=charge.currency,
+            account_amount=-charge.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=charge.currency,
+            amount=charge.amount * 0.75,
+            account_currency=charge.currency,
+            account_amount=charge.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance)
+        await save_fixture(incoming_balance)
+
+        # create() allocates the refund across the payment balances: the 75%
+        # outgoing split receives abs(int(-750 * -300 / 1000)) == 225, so the
+        # merchant reversal outgoing is -225.
+        await refund_transaction_service.create(session, refund)
+
+        # The refund later transitions succeeded -> canceled (e.g. a Stripe
+        # failure) and is reverted.
+        refund.status = RefundStatus.canceled
+        refund_reversal_transaction = await refund_transaction_service.revert(
+            session, refund
+        )
+
+        assert refund_reversal_transaction.type == TransactionType.refund_reversal
+        assert refund_reversal_transaction.amount == refund.amount
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        balance_transactions = await balance_transaction_repository.get_all(
+            balance_transaction_repository.get_base_statement().options(
+                joinedload(Transaction.balance_reversal_transaction),
+                joinedload(Transaction.account),
+                joinedload(Transaction.payment_transaction),
+            )
+        )
+        # 2 original + 2 refund reversal + 2 revert restore
+        assert len(balance_transactions) == 6
+
+        # Original payment balances are tied to the payment transaction; the
+        # refund reversal and revert restore rows are not.
+        merchant_reversal_rows = [
+            t
+            for t in balance_transactions
+            if t.account is not None and t.payment_transaction_id is None
+        ]
+        withdrawals = [t for t in merchant_reversal_rows if t.amount < 0]
+        restores = [t for t in merchant_reversal_rows if t.amount > 0]
+        assert len(withdrawals) == 1
+        assert len(restores) == 1
+
+        # create() withdrew 225 from the merchant...
+        assert withdrawals[0].amount == -225
+        # ...and revert() restored exactly 225 (not the under-restored 67 the
+        # double-scaling bug produced).
+        assert restores[0].amount == 225
+        assert restores[0].amount == -withdrawals[0].amount
+
+        # Net effect of the refund→cancel cycle on the account is zero: the
+        # merchant keeps the original 750 balance allocation.
+        net_merchant_balance = sum(
+            t.amount for t in balance_transactions if t.account is not None
+        )
+        assert net_merchant_balance == charge.amount * 0.75
+
     async def test_valid_different_settlement_currency(
         self,
         session: AsyncSession,

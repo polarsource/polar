@@ -693,10 +693,10 @@ resource "tfe_variable" "private_backoffice_enabled_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
-resource "tfe_variable" "private_backoffice_tailscale_auth_key_production" {
-  key             = "private_backoffice_tailscale_auth_key"
+resource "tfe_variable" "private_backoffice_tailscale_oauth_client_secret_production" {
+  key             = "private_backoffice_tailscale_oauth_client_secret"
   category        = "terraform"
-  description     = "Tailscale auth key for the private backoffice replica in production"
+  description     = "Tailscale OAuth client secret for the private backoffice replica in production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
@@ -712,6 +712,6 @@ resource "tfe_variable" "private_backoffice_cloudflare_api_token_production" {
 resource "tfe_variable" "private_backoffice_tailscale_ip_production" {
   key             = "private_backoffice_tailscale_ip"
   category        = "terraform"
-  description     = "Assigned Tailscale IPv4 address for the private backoffice replica in production"
+  description     = "Stable Tailscale Service IPv4 address for the private backoffice replica in production"
   variable_set_id = tfe_variable_set.production.id
 }

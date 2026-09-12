@@ -118,7 +118,7 @@ module "test" {
   environment = "test"
   private_backoffice = var.private_backoffice_enabled ? {
     hostname             = local.private_backoffice_hostname
-    auth_key             = var.private_backoffice_tailscale_auth_key
+    oauth_client_secret  = var.private_backoffice_tailscale_oauth_client_secret
     cloudflare_api_token = var.private_backoffice_cloudflare_api_token
   } : null
   render_environment_id  = local.environment_id

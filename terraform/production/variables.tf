@@ -574,8 +574,8 @@ variable "private_backoffice_enabled" {
   default     = false
 }
 
-variable "private_backoffice_tailscale_auth_key" {
-  description = "Tailscale auth key for the private backoffice replica."
+variable "private_backoffice_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret for the private backoffice replica."
   type        = string
   sensitive   = true
   default     = ""
@@ -589,7 +589,7 @@ variable "private_backoffice_cloudflare_api_token" {
 }
 
 variable "private_backoffice_tailscale_ip" {
-  description = "Assigned Tailscale IPv4 address; leave empty until the node is provisioned."
+  description = "Stable TailVIP IPv4 address of the pre-created Tailscale Service."
   type        = string
   default     = ""
 

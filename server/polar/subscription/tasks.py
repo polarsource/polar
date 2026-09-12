@@ -19,7 +19,7 @@ from polar.worker import (
     enqueue_job,
 )
 
-from .service import SubscriptionUpdateContext
+from .service import CannotResumeSubscription, SubscriptionUpdateContext
 from .service import subscription as subscription_service
 
 log: Logger = structlog.get_logger()
@@ -207,10 +207,28 @@ async def subscription_resume(subscription_id: uuid.UUID) -> None:
             )
             return
 
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            await subscription_service.resume(session, ctx, subscription)
+        try:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.resume(session, ctx, subscription)
+        except CannotResumeSubscription:
+            # The customer already holds another billable subscription under
+            # ``allow_multiple_subscriptions = False``: resuming would create two
+            # concurrently active, concurrently billed subscriptions, so the resume
+            # guard in ``resume()`` aborted before any state mutation. Treat this as
+            # expected rather than a retriable failure: keep the subscription paused
+            # (it does not bill) and leave the scheduler lock held so the resume
+            # scheduler does not re-enqueue a tight retry loop. An operator can still
+            # resume it via the API once the conflicting subscription is revoked.
+            log.info(
+                "Subscription auto-resume skipped: customer already has an active "
+                "subscription",
+                subscription_id=subscription_id,
+                customer_id=subscription.customer_id,
+                organization_id=subscription.organization_id,
+            )
+            return
 
 
 @actor(

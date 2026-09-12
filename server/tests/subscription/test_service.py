@@ -87,6 +87,7 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
+    CannotResumeSubscription,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
@@ -4020,6 +4021,165 @@ class TestResume:
         ]
         assert len(cycle_entries) == 1
         assert cycle_entries[0].start_timestamp == frozen_time
+
+    @pytest.mark.parametrize(
+        "conflicting_status",
+        [
+            SubscriptionStatus.active,
+            SubscriptionStatus.trialing,
+            SubscriptionStatus.past_due,
+        ],
+    )
+    async def test_resume_blocked_when_billable_subscription_exists(
+        self,
+        conflicting_status: SubscriptionStatus,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # Default organization has ``allow_multiple_subscriptions = False``.
+        # The customer already holds another billable subscription for a different
+        # product in the same organization.
+        await create_subscription(
+            save_fixture,
+            status=conflicting_status,
+            product=product_second,
+            customer=customer,
+        )
+
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        subscription.resumes_at = frozen_time
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+
+        with pytest.raises(CannotResumeSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.resume(session, ctx, subscription)
+
+        # Nothing mutated: still paused, unchanged resume schedule, no cycle charge,
+        # no resumed/updated hooks (the context exits early on the raised exception).
+        assert subscription.status == SubscriptionStatus.paused
+        assert subscription.resumes_at == frozen_time
+        assert subscription.paused_at == frozen_time - timedelta(days=10)
+        enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
+        assert "order.create_subscription_order" not in enqueued
+        subscription_hooks.resumed.assert_not_called()
+        subscription_hooks.updated.assert_not_called()
+
+    async def test_resume_allowed_when_multiple_subscriptions_allowed(
+        self,
+        frozen_time: datetime,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        organization: Organization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+
+        await create_active_subscription(
+            save_fixture, product=product_second, customer=customer
+        )
+
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        subscription.resumes_at = frozen_time
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+        mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.resume(session, ctx, subscription)
+
+        # The guard is bypassed: resume proceeds normally and charges.
+        assert updated.status == SubscriptionStatus.active
+        assert updated.resumes_at is None
+        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            ANY,
+            cutoff=frozen_time.isoformat(),
+        )
+        assert_hooks_called_once(subscription_hooks, {"updated", "resumed"})
+
+    async def test_resume_not_blocked_by_indefinitely_paused_subscription(
+        self,
+        frozen_time: datetime,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # A second paused subscription (no scheduled resume) is not billable, so it
+        # does not conflict — resuming this one is allowed.
+        await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.paused,
+            product=product_second,
+            customer=customer,
+        )
+
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        subscription.resumes_at = frozen_time
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+        mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.resume(session, ctx, subscription)
+
+        assert updated.status == SubscriptionStatus.active
+        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            ANY,
+            cutoff=frozen_time.isoformat(),
+        )
+        assert_hooks_called_once(subscription_hooks, {"updated", "resumed"})
 
 
 @pytest.mark.asyncio

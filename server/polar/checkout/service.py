@@ -86,6 +86,7 @@ from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSource
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.observability.checkout_metrics import (
     CHECKOUT_CREATED_TOTAL,
@@ -2672,7 +2673,15 @@ class CheckoutService:
             .join(Product, onclause=Product.id == Subscription.product_id)
             .where(
                 Product.organization_id == organization.id,
-                Subscription.billable,
+                # Also block paused subscriptions scheduled to auto-resume: they are
+                # non-billable today but will become active again, so under
+                # ``allow_multiple_subscriptions = False`` they must keep blocking.
+                # Paused without ``resumes_at`` (indefinite pause, imports) stays excluded.
+                Subscription.billable
+                | (
+                    (Subscription.status == SubscriptionStatus.paused)
+                    & Subscription.resumes_at.is_not(None)
+                ),
             )
         )
         if checkout.customer is not None:

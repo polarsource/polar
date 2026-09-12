@@ -4102,6 +4102,7 @@ class TestUpdate:
         [
             SubscriptionStatus.active,
             SubscriptionStatus.past_due,
+            SubscriptionStatus.paused,
         ],
     )
     async def test_multiple_subscriptions_forbidden(
@@ -4120,12 +4121,17 @@ class TestUpdate:
         }
         await save_fixture(organization)
 
-        await create_subscription(
+        subscription = await create_subscription(
             save_fixture,
             status=subscription_status,
             product=checkout_recurring_fixed.product,
             customer=customer,
         )
+        # A paused subscription only blocks checkout when it is scheduled to
+        # auto-resume (``resumes_at`` set); mirror that lifecycle state here.
+        if subscription_status == SubscriptionStatus.paused:
+            subscription.resumes_at = datetime.now(UTC) + timedelta(days=30)
+            await save_fixture(subscription)
 
         # With email update
         with pytest.raises(AlreadyActiveSubscriptionError):
@@ -4143,6 +4149,37 @@ class TestUpdate:
             await checkout_service.update(
                 session, checkout_recurring_fixed, CheckoutUpdate()
             )
+
+    async def test_paused_without_resume_allows_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+        customer: Customer,
+    ) -> None:
+        assert has_product_checkout(checkout_recurring_fixed)
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": False,
+        }
+        await save_fixture(organization)
+
+        # An indefinitely paused subscription (no ``resumes_at``), e.g. an imported
+        # subscription, must NOT block a new checkout — it will never auto-resume.
+        await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.paused,
+            product=checkout_recurring_fixed.product,
+            customer=customer,
+        )
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_recurring_fixed,
+            CheckoutUpdate(customer_email=customer.email),
+        )
+        assert checkout.customer_email == customer.email
 
     async def test_update_seats_on_seat_based_price(
         self,

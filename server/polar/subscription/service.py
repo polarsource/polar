@@ -228,6 +228,16 @@ class NotPausedSubscription(SubscriptionError):
         super().__init__(message, 409)
 
 
+class CannotResumeSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            "This customer already has an active subscription, "
+            "so this paused subscription cannot be resumed."
+        )
+        super().__init__(message, 409)
+
+
 class CannotReinstateSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -2762,6 +2772,20 @@ class SubscriptionService:
             return await repository.update(
                 subscription, update_dict={"scheduler_locked_at": None}
             )
+
+        # Under ``allow_multiple_subscriptions = False`` the customer is meant to hold
+        # a single subscription. A paused subscription that auto-resumes while the
+        # customer already has another billable subscription would leave two
+        # concurrently active, concurrently billed subscriptions — so block the resume
+        # (and the immediate cycle charge it enqueues) at the source rather than let
+        # double billing begin. The guard runs after the renewals-disabled early return
+        # (which neither charges nor reactivates) and before any state mutation.
+        # ``list_billable_by_customer`` only returns ``{trialing, active, past_due}``
+        # rows, so the paused subscription being resumed is never counted itself.
+        if not subscription.organization.allow_multiple_subscriptions:
+            repository = SubscriptionRepository.from_session(session)
+            if await repository.list_billable_by_customer(subscription.customer_id):
+                raise CannotResumeSubscription(subscription)
 
         now = utc_now()
         subscription.status = SubscriptionStatus.active

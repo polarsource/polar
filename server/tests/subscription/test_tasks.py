@@ -11,7 +11,11 @@ from polar.models import Customer, Organization, Product, Subscription
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.subscription.service import SubscriptionMeterCycleLag, SubscriptionService
+from polar.subscription.service import (
+    CannotResumeSubscription,
+    SubscriptionMeterCycleLag,
+    SubscriptionService,
+)
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
@@ -255,6 +259,37 @@ class TestSubscriptionResume:
         await subscription_resume(subscription.id)
 
         resume_mock.assert_not_called()
+
+    async def test_uniqueness_conflict_is_skipped_gracefully(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.resumes_at = utc_now() - timedelta(hours=1)
+        await save_fixture(subscription)
+        # Simulate the resume() guard refusing: the customer already holds another
+        # billable subscription under ``allow_multiple_subscriptions = False``.
+        mocker.patch.object(
+            subscription_service,
+            "resume",
+            spec=SubscriptionService.resume,
+            side_effect=CannotResumeSubscription(subscription),
+        )
+        session.expunge_all()
+
+        # The actor must treat the uniqueness conflict as an expected skip rather
+        # than propagate it as a retriable failure (which would page and dead-letter).
+        await subscription_resume(subscription.id)
 
 
 @pytest.mark.asyncio

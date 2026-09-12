@@ -18,7 +18,7 @@ import {
   toggleRow,
 } from '../selection'
 import { SwitchPanelView } from './SwitchPanelView'
-import { SwitchFilter } from './switchCopy'
+import { SwitchFilter, switchRecordsParams } from './switchCopy'
 
 const initialSwitchSelection: SelectionState = {
   mode: 'none',
@@ -40,12 +40,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
   const running = switchReport.data?.running ?? false
   const records = useMigrationRecords(
     migrationId,
-    {
-      entity: 'subscriptions',
-      ...(filter !== 'all' ? { cutoverStatus: filter } : {}),
-      page,
-      limit: pageSize,
-    },
+    switchRecordsParams(filter, page, pageSize),
     running ? 3000 : false,
   )
   const startSwitch = useStartMigrationSwitch(migrationId)

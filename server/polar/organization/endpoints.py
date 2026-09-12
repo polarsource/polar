@@ -154,6 +154,12 @@ OrganizationNotFound = {
     response_model=ListResource[OrganizationSchema],
     tags=[APITag.public, APITag.mcp, APITag.cli],
     operation_id="organizations:list",
+    openapi_extra={
+        "x-tool-name": "organizations_list",
+        "x-tool-title": "List organizations",
+        "x-tool-description": "List organizations.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list_organizations(
     auth_subject: auth.OrganizationsRead,
@@ -184,6 +190,12 @@ async def list_organizations(
     response_model=OrganizationSchema,
     responses={404: OrganizationNotFound},
     tags=[APITag.public, APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "organizations_get",
+        "x-tool-title": "Get organization",
+        "x-tool-description": "Get an organization by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     authz: AuthorizeOrgAccess,

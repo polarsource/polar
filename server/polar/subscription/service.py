@@ -43,6 +43,7 @@ from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
+    SubscriptionMigratedMetadata,
     SubscriptionPastDueMetadata,
     SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
@@ -117,6 +118,7 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
+from polar.subscription.schemas import SubscriptionMigrated
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -917,6 +919,8 @@ class SubscriptionService:
         trial_end: datetime | None,
         anchor_day: int | None = None,
         payment_method: PaymentMethod,
+        stripe_subscription_id: str | None = None,
+        stripe_customer_id: str | None = None,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -954,6 +958,12 @@ class SubscriptionService:
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
+        await self._on_subscription_migrated(
+            session,
+            subscription,
+            stripe_subscription_id=stripe_subscription_id,
+            stripe_customer_id=stripe_customer_id,
+        )
         enqueue_job("customer.state_changed", subscription.customer_id)
 
         log.info(
@@ -3580,6 +3590,54 @@ class SubscriptionService:
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_updated
+        )
+
+    async def _on_subscription_migrated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        stripe_subscription_id: str | None,
+        stripe_customer_id: str | None,
+    ) -> None:
+        if not stripe_subscription_id or not stripe_customer_id:
+            return
+
+        repository = SubscriptionRepository.from_session(session)
+        loaded = await repository.get_by_id(
+            subscription.id, options=repository.get_eager_options()
+        )
+        if loaded is None:
+            return
+        subscription = loaded
+
+        metadata = SubscriptionMigratedMetadata(
+            subscription_id=str(subscription.id),
+            customer_id=str(subscription.customer_id),
+            product_id=str(subscription.product_id),
+            stripe_subscription_id=stripe_subscription_id,
+            stripe_customer_id=stripe_customer_id,
+        )
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_migrated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=metadata,
+            ),
+        )
+        await webhook_service.send(
+            session,
+            subscription.organization,
+            WebhookEventType.subscription_migrated,
+            SubscriptionMigrated(
+                id=subscription.id,
+                customer_id=subscription.customer_id,
+                product_id=subscription.product_id,
+                stripe_subscription_id=stripe_subscription_id,
+                stripe_customer_id=stripe_customer_id,
+            ),
         )
 
     async def _on_subscription_activated(

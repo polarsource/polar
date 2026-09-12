@@ -42,6 +42,7 @@ from polar.models.product_price import ProductPriceSource
 from polar.models.refund import RefundReason, RefundStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.subscription.schemas import SubscriptionMigrated
 from polar.version import CURRENT_API_VERSION
 from polar.webhook.webhooks import BaseWebhookPayload, WebhookPayloadTypeAdapter
 
@@ -217,6 +218,14 @@ class TriggerFixtures:
             case WebhookEventType.subscription_paused:
                 self.subscription.status = SubscriptionStatus.paused
                 return self.subscription
+            case WebhookEventType.subscription_migrated:
+                return SubscriptionMigrated(
+                    id=self.subscription.id,
+                    customer_id=self.customer.id,
+                    product_id=self.product.id,
+                    stripe_subscription_id="sub_1NqJ9K2eZvKYlo2C",
+                    stripe_customer_id="cus_NffrFeUfNV2Hib",
+                )
             case WebhookEventType.refund_created | WebhookEventType.refund_updated:
                 return self.refund
             case WebhookEventType.product_created | WebhookEventType.product_updated:

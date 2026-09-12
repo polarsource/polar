@@ -93,6 +93,10 @@ const timelineRenderers: TimelineRendererMap = {
   },
   'subscription.billing_period_updated': { importance: 'low' },
   'subscription.update_cleared': { importance: 'low' },
+  'subscription.migrated': {
+    importance: 'high',
+    summary: ({ metadata }) => metadata.stripe_subscription_id,
+  },
   'subscription.uncanceled': { importance: 'high' },
   'subscription.reactivated': { importance: 'high' },
   'subscription.reinstated': { importance: 'high' },

@@ -61,6 +61,9 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
+from polar.subscription.schemas import (
+    SubscriptionMigrated as SubscriptionMigratedSchema,
+)
 
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
@@ -88,6 +91,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_cycled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_migrated], SubscriptionMigratedSchema]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -1256,6 +1260,25 @@ class WebhookSubscriptionResumedPayload(WebhookSubscriptionUpdatedPayloadBase):
         return self._get_resumed_slack_payload(target)
 
 
+class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
+    """
+    Sent when a subscription is migrated from Stripe to Polar.
+
+    The payload maps Polar IDs to the original Stripe subscription and customer.
+
+    **Discord & Slack support:** None
+    """
+
+    type: Literal[WebhookEventType.subscription_migrated]
+    data: SubscriptionMigratedSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        raise SkipEvent(self.type, WebhookFormat.discord)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        raise SkipEvent(self.type, WebhookFormat.slack)
+
+
 class WebhookRefundBase(BaseWebhookPayload):
     """
     Base Refund
@@ -1544,6 +1567,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
     | WebhookSubscriptionResumedPayload
+    | WebhookSubscriptionMigratedPayload
     | WebhookRefundCreatedPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload

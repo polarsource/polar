@@ -176,6 +176,15 @@ In order to properly implement logic for handling subscriptions, you should look
   >
     Fired when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
   </Card>
+
+  <Card
+    title="subscription.migrated"
+    icon="link"
+    href="/api-reference/current/subscription_migrated"
+    horizontal
+  >
+    Fired when Polar takes over billing of a Stripe subscription. Maps Polar IDs to the original Stripe subscription and customer.
+  </Card>
 </Columns>
 
 #### Cancellation Sequences

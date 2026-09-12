@@ -20,6 +20,7 @@ from polar.models import (
     Customer,
     MerchantMigration,
     MerchantMigrationRecord,
+    MerchantMigrationSourcePlatform,
     PaymentMethod,
     Product,
     Subscription,
@@ -247,6 +248,7 @@ class SubscriptionCutover:
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
+        stripe_subscription_id, stripe_customer_id = self._stripe_ids(source)
         try:
             await subscription_service.activate_imported(
                 self.session,
@@ -256,6 +258,8 @@ class SubscriptionCutover:
                 trial_end=self._trial_end(source),
                 anchor_day=source.anchor_day,
                 payment_method=payment_method,
+                stripe_subscription_id=stripe_subscription_id,
+                stripe_customer_id=stripe_customer_id,
             )
         except Exception:
             # The source is stopped and this rolls back, ledger row included, so
@@ -390,6 +394,7 @@ class SubscriptionCutover:
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
+        stripe_subscription_id, stripe_customer_id = self._stripe_ids(source)
         try:
             await subscription_service.activate_imported(
                 self.session,
@@ -399,6 +404,8 @@ class SubscriptionCutover:
                 trial_end=self._trial_end(source),
                 anchor_day=source.anchor_day,
                 payment_method=payment_method,
+                stripe_subscription_id=stripe_subscription_id,
+                stripe_customer_id=stripe_customer_id,
             )
         except Exception:
             log.exception(
@@ -588,3 +595,10 @@ class SubscriptionCutover:
         if source.trial_end is None or source.trial_end <= utc_now():
             return None
         return source.trial_end
+
+    def _stripe_ids(
+        self, source: CanonicalSubscription
+    ) -> tuple[str | None, str | None]:
+        if self.migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            return None, None
+        return source.source_id, source.customer_source_id

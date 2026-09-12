@@ -4131,6 +4131,73 @@ class TestActivateImported:
 
         assert updated.anchor_day == 31
 
+    async def test_emits_subscription_migrated_with_stripe_ids(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        reset_hooks(subscription_hooks)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now(),
+            current_period_end=utc_now() + timedelta(days=30),
+            trial_end=None,
+            payment_method=payment_method,
+            stripe_subscription_id="sub_1NqJ9K2eZvKYlo2C",
+            stripe_customer_id="cus_NffrFeUfNV2Hib",
+        )
+
+        events = await get_all_by_name(session, SystemEvent.subscription_migrated)
+        assert len(events) == 1
+        assert events[0].customer_id == customer.id
+        assert events[0].user_metadata == {
+            "subscription_id": str(updated.id),
+            "customer_id": str(customer.id),
+            "product_id": str(product.id),
+            "stripe_subscription_id": "sub_1NqJ9K2eZvKYlo2C",
+            "stripe_customer_id": "cus_NffrFeUfNV2Hib",
+        }
+
+    async def test_skips_subscription_migrated_without_stripe_ids(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        reset_hooks(subscription_hooks)
+
+        await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now(),
+            current_period_end=utc_now() + timedelta(days=30),
+            trial_end=None,
+            payment_method=payment_method,
+        )
+
+        assert await get_all_by_name(session, SystemEvent.subscription_migrated) == []
+
 
 async def create_event_billing_entry(
     save_fixture: SaveFixture,

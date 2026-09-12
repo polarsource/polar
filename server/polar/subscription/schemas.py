@@ -23,6 +23,7 @@ from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     METER_ID_EXAMPLE,
     PRODUCT_ID_EXAMPLE,
+    SUBSCRIPTION_ID_EXAMPLE,
     IDSchema,
     Int32,
     MergeJSONSchema,
@@ -274,6 +275,31 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
             "Pending subscription update that will be applied at the beginning of the next period. "
             "If `null`, there is no pending update."
         )
+    )
+
+
+class SubscriptionMigrated(IDSchema):
+    """Mapping from a Stripe subscription Polar has taken over."""
+
+    id: UUID4 = Field(
+        description="The Polar subscription ID.",
+        examples=[SUBSCRIPTION_ID_EXAMPLE],
+    )
+    customer_id: UUID4 = Field(
+        description="The Polar customer ID.",
+        examples=[CUSTOMER_ID_EXAMPLE],
+    )
+    product_id: UUID4 = Field(
+        description="The Polar product ID.",
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
+    stripe_subscription_id: str = Field(
+        description="The original Stripe subscription ID.",
+        examples=["sub_1NqJ9K2eZvKYlo2C"],
+    )
+    stripe_customer_id: str = Field(
+        description="The original Stripe customer ID.",
+        examples=["cus_NffrFeUfNV2Hib"],
     )
 
 

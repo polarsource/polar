@@ -14,6 +14,8 @@ from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
 from polar.models.user_session import UserSession
+from polar.organization.repository import OrganizationRepository
+from polar.organization.schemas import Organization as OrganizationRead
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
 from polar.postgres import AsyncSession, get_db_session
@@ -657,3 +659,64 @@ class TestStatusCounts:
         # Active tab badge: the list treats a blank search as no search and
         # hides deleted organizations, so the counts must agree.
         assert 'badge badge-success ml-2">0<' in response.text
+
+
+@pytest.mark.asyncio
+class TestEditSocials:
+    async def test_threads_com_url_survives_api_read(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-socials",
+            data={"threads_url": "https://threads.com/@acme"},
+        )
+
+        assert response.status_code == 303
+
+        stored = await OrganizationRepository.from_session(session).get_by_id(
+            organization.id, include_blocked=True
+        )
+        assert stored is not None
+        assert stored.socials == [
+            {"platform": "threads", "url": "https://threads.com/@acme"}
+        ]
+
+        read = OrganizationRead.model_validate(stored, from_attributes=True)
+        assert read.socials[0].platform.value == "threads"
+
+    async def test_threads_net_legacy_url_survives_api_read(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-socials",
+            data={"threads_url": "https://threads.net/@acme"},
+        )
+
+        assert response.status_code == 303
+
+        stored = await OrganizationRepository.from_session(session).get_by_id(
+            organization.id, include_blocked=True
+        )
+        assert stored is not None
+
+        read = OrganizationRead.model_validate(stored, from_attributes=True)
+        assert read.socials[0].platform.value == "threads"
+
+    async def test_backoffice_form_renders_threads_com_placeholder(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/edit-socials"
+        )
+
+        assert response.status_code == 200
+        assert "https://threads.com/@username" in response.text
+        assert "https://threads.net/@username" not in response.text

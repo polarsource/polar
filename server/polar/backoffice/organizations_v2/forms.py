@@ -188,7 +188,7 @@ class UpdateOrganizationSocialsForm(forms.BaseForm):
     ]
     threads_url: Annotated[
         HttpUrlToStr | None,
-        forms.InputField(type="url", placeholder="https://threads.net/@username"),
+        forms.InputField(type="url", placeholder="https://threads.com/@username"),
         Field(
             None,
             title="Threads",

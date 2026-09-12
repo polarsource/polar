@@ -350,7 +350,7 @@ PLATFORM_DOMAINS = {
     "youtube": ["youtube.com", "youtu.be"],
     "tiktok": ["tiktok.com"],
     "linkedin": ["linkedin.com"],
-    "threads": ["threads.net"],
+    "threads": ["threads.net", "threads.com"],
     "discord": ["discord.gg", "discord.com"],
 }
 

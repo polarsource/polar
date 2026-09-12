@@ -7,37 +7,10 @@ import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { FormField } from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
+import { inferPlatformFromUrl } from '@/utils/socialPlatform'
 
-const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
-  'x.com': 'x',
-  'twitter.com': 'x',
-  'instagram.com': 'instagram',
-  'facebook.com': 'facebook',
-  'fb.com': 'facebook',
-  'youtube.com': 'youtube',
-  'youtu.be': 'youtube',
-  'linkedin.com': 'linkedin',
-  'github.com': 'github',
-  'threads.net': 'threads',
-  'tiktok.com': 'tiktok',
-  'discord.gg': 'discord',
-  'discord.com': 'discord',
-}
-
-const inferPlatformFromUrl = (
-  url: string,
-): schemas['OrganizationSocialPlatforms'] => {
-  try {
-    const parsed = new URL(url)
-    let hostname = parsed.hostname
-    if (hostname.startsWith('www.')) {
-      hostname = hostname.slice(4)
-    }
-    return (SOCIAL_PLATFORM_DOMAINS[hostname] ??
-      'other') as schemas['OrganizationSocialPlatforms']
-  } catch {
-    return 'other'
-  }
+interface Props {
+  required?: boolean
 }
 
 const normalizeUrl = (value: string): string => {
@@ -51,10 +24,6 @@ const normalizeUrl = (value: string): string => {
     value = 'https://' + value
   }
   return value
-}
-
-interface Props {
-  required?: boolean
 }
 
 export const SocialLinksField = ({ required }: Props) => {

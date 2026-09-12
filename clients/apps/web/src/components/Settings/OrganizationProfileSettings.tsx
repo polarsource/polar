@@ -4,6 +4,7 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import { containsBlockedWord } from '@/utils/blocked-words'
+import { inferPlatformFromUrl } from '@/utils/socialPlatform'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
@@ -39,22 +40,6 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
   readOnly: boolean
-}
-
-const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
-  'x.com': 'x',
-  'twitter.com': 'x',
-  'instagram.com': 'instagram',
-  'facebook.com': 'facebook',
-  'fb.com': 'facebook',
-  'youtube.com': 'youtube',
-  'youtu.be': 'youtube',
-  'linkedin.com': 'linkedin',
-  'github.com': 'github',
-  'threads.net': 'threads',
-  'tiktok.com': 'tiktok',
-  'discord.gg': 'discord',
-  'discord.com': 'discord',
 }
 
 interface OrganizationSocialLinksProps {
@@ -101,18 +86,7 @@ const OrganizationSocialLinks = ({
       value = 'https://' + value
     }
 
-    // Infer the platform from the URL
-    let newPlatform: schemas['OrganizationSocialPlatforms'] = 'other'
-    try {
-      const url = new URL(value)
-      let hostname = url.hostname
-      if (hostname.startsWith('www.')) {
-        hostname = hostname.slice(4)
-      }
-      newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
-        'other') as schemas['OrganizationSocialPlatforms']
-      // oxlint-disable-next-line no-empty
-    } catch {}
+    const newPlatform = inferPlatformFromUrl(value)
 
     // Update the socials array
     const updatedSocials = [...socials]

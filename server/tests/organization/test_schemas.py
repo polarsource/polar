@@ -1,13 +1,20 @@
 import pytest
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.schemas import Schema
 from polar.models.organization import (
     OrganizationSubscriptionSettings,
     resolve_default_customer_email_settings,
 )
-from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
+from polar.organization.schemas import (
+    OrganizationCreate,
+    OrganizationSocialLink,
+    OrganizationSocialPlatforms,
+    OrganizationUpdate,
+    detect_platform_from_url,
+)
 
 
 def test_reset_proration_behavior_accepted_in_schema() -> None:
@@ -144,3 +151,93 @@ class TestResolveCustomerEmailSettings:
         )
 
         assert resolved["order_confirmation"] is True
+
+
+class TestDetectPlatformFromUrl:
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("https://threads.com/@acme", "threads"),
+            ("https://www.threads.com/@acme", "threads"),
+            ("https://THREADS.COM/@Acme", "threads"),
+            ("https://threads.net/@acme", "threads"),
+            ("https://www.threads.net/@acme", "threads"),
+            ("https://twitter.com/polar", "x"),
+            ("https://www.x.com/polar", "x"),
+            ("https://github.com/polarsource", "github"),
+            ("https://facebook.com/polar", "facebook"),
+            ("https://fb.com/polar", "facebook"),
+            ("https://instagram.com/polar", "instagram"),
+            ("https://youtube.com/@polar", "youtube"),
+            ("https://youtu.be/dQw4w9WgXcQ", "youtube"),
+            ("https://tiktok.com/@polar", "tiktok"),
+            ("https://linkedin.com/company/polar", "linkedin"),
+            ("https://discord.gg/polar", "discord"),
+            ("https://discord.com/invite/polar", "discord"),
+            ("https://example.com/polar", None),
+            ("https://not-a-real-url", None),
+            ("", None),
+        ],
+    )
+    def test_detects_platform(self, url: str, expected: str | None) -> None:
+        assert detect_platform_from_url(url) == expected
+
+
+class TestOrganizationSocialLink:
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://threads.com/@acme",
+            "https://www.threads.com/@acme",
+            "https://threads.net/@acme",
+            "https://www.threads.net/@acme",
+        ],
+    )
+    def test_threads_url_classified_as_threads(self, url: str) -> None:
+        link = OrganizationSocialLink.model_validate(
+            {"platform": "threads", "url": url}
+        )
+        assert link.platform == OrganizationSocialPlatforms.threads
+
+    def test_threads_url_overrides_wrong_explicit_platform(self) -> None:
+        link = OrganizationSocialLink.model_validate(
+            {"platform": "other", "url": "https://threads.com/@acme"}
+        )
+        assert link.platform == OrganizationSocialPlatforms.threads
+
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("https://www.x.com/polar", OrganizationSocialPlatforms.x),
+            ("https://youtube.com/@polar", OrganizationSocialPlatforms.youtube),
+            ("https://github.com/polarsource", OrganizationSocialPlatforms.github),
+            ("https://discord.gg/polar", OrganizationSocialPlatforms.discord),
+        ],
+    )
+    def test_other_platforms_round_trip(
+        self, url: str, expected: OrganizationSocialPlatforms
+    ) -> None:
+        link = OrganizationSocialLink.model_validate({"platform": "other", "url": url})
+        assert link.platform == expected
+
+    def test_unknown_host_falls_back_to_other(self) -> None:
+        link = OrganizationSocialLink.model_validate(
+            {"platform": "threads", "url": "https://example.com/acme"}
+        )
+        assert link.platform == OrganizationSocialPlatforms.other
+
+    def test_backoffice_stored_threads_survives_from_attributes_read(self) -> None:
+        class MiniOrg(Schema):
+            socials: list[OrganizationSocialLink] = Field(default_factory=list)
+
+        class FakeOrg:
+            socials = [{"platform": "threads", "url": "https://www.threads.com/@acme"}]
+
+        org = MiniOrg.model_validate(FakeOrg(), from_attributes=True)
+        assert org.socials[0].platform == OrganizationSocialPlatforms.threads
+
+    def test_non_string_url_does_not_crash(self) -> None:
+        link = OrganizationSocialLink.model_validate(
+            {"platform": "threads", "url": "https://threads.com/@acme"}
+        )
+        assert link.platform == OrganizationSocialPlatforms.threads

@@ -38034,7 +38034,7 @@ export interface components {
       event: components['schemas']['WebhookEventType']
       /**
        * Overrides
-       * @description Payload fields to override, keyed by dotted path relative to the payload root, e.g. `data.amount`.
+       * @description Payload fields to override, keyed by dotted path relative to the payload root, e.g. `data.customer.email`.
        */
       overrides?: {
         [key: string]: unknown

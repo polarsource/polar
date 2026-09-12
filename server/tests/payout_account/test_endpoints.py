@@ -3,8 +3,10 @@ import uuid
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import READ_ONLY_SCOPES
+from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, PayoutAccount, User, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -299,3 +301,122 @@ class TestSync:
         )
 
         assert response.status_code == 404
+
+
+@pytest.fixture
+def stripe_service_mock(mocker: MockerFixture) -> StripeService:
+    mock = mocker.MagicMock(spec=StripeService)
+    mocker.patch("polar.payout_account.service.stripe", new=mock)
+    return mock
+
+
+@pytest.mark.asyncio
+class TestImpersonationCannotWrite:
+    """A ``payouts:read``-only subject must not reach the four per-account
+    write endpoints. Write endpoints require ``payouts:write``; a
+    ``READ_ONLY_SCOPES`` subject is rejected with ``403`` and never reaches
+    the Stripe side effects.
+    """
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_cannot_delete(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        # Unlink so the service would proceed to stripe.delete_account if the
+        # auth guard incorrectly admitted the read-only subject.
+        organization.payout_account = None
+        await save_fixture(organization)
+        stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 0)  # type: ignore[attr-defined]
+
+        response = await client.delete(f"/v1/payout-accounts/{payout_account.id}")
+
+        assert response.status_code == 403
+        stripe_service_mock.delete_account.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_cannot_sync(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        response = await client.post(f"/v1/payout-accounts/{payout_account.id}/sync")
+
+        assert response.status_code == 403
+        stripe_service_mock.retrieve_account.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_cannot_onboarding_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+            params={"return_path": "/finance/account"},
+        )
+
+        assert response.status_code == 403
+        stripe_service_mock.create_account_link.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_cannot_dashboard_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/dashboard-link"
+        )
+
+        assert response.status_code == 403
+        stripe_service_mock.create_login_link.assert_not_called()  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+class TestImpersonationCanRead:
+    """A ``payouts:read``-only subject can still read individual payout
+    accounts — the read guard accepts either ``payouts:read`` or
+    ``payouts:write``.
+    """
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_can_get(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        response = await client.get(f"/v1/payout-accounts/{payout_account.id}")
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(payout_account.id)

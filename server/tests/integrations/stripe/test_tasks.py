@@ -10,6 +10,7 @@ from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.tasks import (
     account_risk_signal,
+    charge_succeeded,
     payment_intent_succeeded,
     payment_method_automatically_updated,
     payment_method_detached,
@@ -18,10 +19,16 @@ from polar.models import (
     Customer,
     Organization,
     PaymentMethod,
+    Product,
+    Subscription,
     User,
 )
+from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.payment import PaymentStatus
+from polar.order.repository import OrderRepository
 from polar.organization.repository import OrganizationRepository
+from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -33,6 +40,7 @@ from tests.fixtures.random_objects import (
     create_payout_account,
     create_product,
 )
+from tests.fixtures.stripe import build_stripe_charge
 
 WEBSITE_EVENT_TYPE = "v2.core.account_signals.fraudulent_website_ready"
 
@@ -476,3 +484,110 @@ class TestPaymentMethodAutomaticallyUpdated:
         await payment_method_automatically_updated(uuid.uuid4())
 
         upsert_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestChargeSucceeded:
+    """Actor-level coverage for the `stripe.webhook.charge.succeeded` actor.
+
+    Specifically: a late `charge.succeeded` arriving against an order that has already
+    moved out of `pending` (e.g. a SEPA charge settling after a void) must be classified
+    as a benign, no-retry idempotency outcome, not an unexpected worker error that
+    retries and dead-letters. Because the actor returns normally, the session commits
+    and the upserted `Payment` row is kept (captured funds get a ledger entry).
+    """
+
+    @pytest.mark.parametrize("status", [OrderStatus.void, OrderStatus.refunded])
+    async def test_non_pending_order_is_benign_and_persists_payment(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+        status: OrderStatus,
+    ) -> None:
+        # Given: an order that has already moved out of `pending`
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=status,
+        )
+
+        charge = build_stripe_charge(
+            status="succeeded",
+            amount=2000,
+            metadata={
+                "order_id": str(order.id),
+                "organization_id": str(product.organization_id),
+            },
+            billing_details={"email": "test@example.com"},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        patch_stripe_event(mocker, charge)
+
+        # When: the webhook runs — it must NOT raise (no retry, no dead-letter)
+        await charge_succeeded(uuid.uuid4())
+
+        # Then: the captured funds have a ledger entry (session committed, not rolled back)
+        payment_repo = PaymentRepository.from_session(session)
+        payment = await payment_repo.get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert payment.status == PaymentStatus.succeeded
+        assert payment.order_id == order.id
+
+        # And: the actor does not transition the already-resolved order
+        order_repo = OrderRepository.from_session(session)
+        updated_order = await order_repo.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == status
+
+    async def test_pending_order_is_marked_paid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+    ) -> None:
+        # Regression: a `pending` order still gets paid normally; the new
+        # `except OrderNotPending` branch must not swallow the success path.
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        charge = build_stripe_charge(
+            status="succeeded",
+            amount=2000,
+            metadata={
+                "order_id": str(order.id),
+                "organization_id": str(product.organization_id),
+            },
+            billing_details={"email": "test@example.com"},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        patch_stripe_event(mocker, charge)
+
+        await charge_succeeded(uuid.uuid4())
+
+        order_repo = OrderRepository.from_session(session)
+        updated_order = await order_repo.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.paid
+
+        payment_repo = PaymentRepository.from_session(session)
+        payment = await payment_repo.get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert payment.status == PaymentStatus.succeeded

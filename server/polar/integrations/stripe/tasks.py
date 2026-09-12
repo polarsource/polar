@@ -14,6 +14,7 @@ from polar.external_event.service import external_event as external_event_servic
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models.dispute import DisputeStatus
+from polar.order.service import OrderNotPending
 from polar.organization.service import organization as organization_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
@@ -244,6 +245,17 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
                 # Raise the exception to be notified about it
                 else:
                     raise
+            except OrderNotPending as e:
+                # The order has already moved out of `pending` (e.g. a SEPA charge
+                # settling after a void, or a webhook racing the inline-finalize
+                # path). The success path is resolved; retrying would just bounce
+                # off the same raise. Log for visibility and terminate benignly,
+                # letting the session commit so any upserted `Payment` row is kept.
+                log.info(
+                    "charge.succeeded against already-resolved order",
+                    order_id=e.order.id,
+                    order_status=e.order.status,
+                )
 
 
 @actor(actor_name="stripe.webhook.charge.updated", priority=TaskPriority.HIGH)

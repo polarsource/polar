@@ -23,4 +23,6 @@ if __name__ == "__main__":
     if version_id:
         params["VersionId"] = version_id
     secret = boto3.client("secretsmanager").get_secret_value(**params)
-    print(export_secrets(secret["SecretString"]))  # lgtm[py/clear-text-logging-sensitive-data]
+    print(
+        export_secrets(secret["SecretString"])
+    )  # codeql[py/clear-text-logging-sensitive-data]

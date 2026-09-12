@@ -197,10 +197,13 @@ class PaymentService:
         payment.currency = payment_intent.currency
 
         payment_error = payment_intent.last_payment_error
-        payment_method = payment_error.payment_method
-        assert payment_method is not None
-        payment.method = payment_method.type
-        payment.method_metadata = dict(payment_method[payment_method.type])
+        payment_method = getattr(payment_error, "payment_method", None)
+        if payment_method is not None:
+            payment.method = payment_method.type
+            payment.method_metadata = dict(payment_method[payment_method.type])
+        else:
+            payment.method = "unknown"
+            payment.method_metadata = {}
         payment.customer_email = payment_intent.receipt_email
 
         payment.decline_reason = getattr(payment_error, "code", None)

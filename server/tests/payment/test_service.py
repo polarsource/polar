@@ -524,6 +524,84 @@ class TestUpsertFromStripePaymentIntent:
         assert payment.decline_reason is None
         assert payment.decline_message == "Generic error"
 
+    async def test_no_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_test123",
+            amount=1000,
+            currency="usd",
+            receipt_email="test@example.com",
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "card_declined",
+                "message": "Your card was declined",
+                "payment_method": None,
+            },
+        )
+
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, None, order
+        )
+
+        assert payment.processor == PaymentProcessor.stripe
+        assert payment.processor_id == "pi_test123"
+        assert payment.status == PaymentStatus.failed
+        assert payment.method == "unknown"
+        assert payment.method_metadata == {}
+        assert payment.customer_email == "test@example.com"
+        assert payment.decline_reason == "card_declined"
+        assert payment.decline_message == "Your card was declined"
+        assert payment.organization == organization
+
+    async def test_omitted_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_test123",
+            amount=1000,
+            currency="usd",
+            receipt_email="test@example.com",
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "card_declined",
+                "message": "Your card was declined",
+            },
+        )
+
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, None, order
+        )
+
+        assert payment.method == "unknown"
+        assert payment.method_metadata == {}
+        assert payment.decline_reason == "card_declined"
+        assert payment.decline_message == "Your card was declined"
+
     async def test_trigger_is_persisted(
         self,
         session: AsyncSession,

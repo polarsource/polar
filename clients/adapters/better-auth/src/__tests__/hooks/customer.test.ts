@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { onAfterUserCreate, onUserUpdate } from '../../hooks/customer'
+import type { AuthContext, User } from 'better-auth'
+import {
+  installUserDeletePrecondition,
+  onAfterUserCreate,
+  onUserUpdate,
+} from '../../hooks/customer'
+import { assertUserDeletionSoleCreatorInvariant } from '../../organization/lifecycle'
 import { createTestPolarOptions, mockApiError } from '../utils/helpers'
 import {
   createMockBetterAuthContext,
@@ -7,6 +13,12 @@ import {
   createMockPolarClient,
   createMockUser,
 } from '../utils/mocks'
+
+vi.mock('../../organization/lifecycle', () => ({
+  assertUserDeletionSoleCreatorInvariant: vi.fn(),
+  synchronizeUserDeletionMemberships: vi.fn(),
+  synchronizeUserOrganizationProfiles: vi.fn(),
+}))
 
 describe('customer hooks', () => {
   let mockClient: ReturnType<typeof createMockPolarClient>
@@ -249,5 +261,140 @@ describe('customer hooks', () => {
         'Polar customer update failed. Error: Network timeout',
       )
     })
+  })
+})
+
+describe('installUserDeletePrecondition', () => {
+  let mockClient: ReturnType<typeof createMockPolarClient>
+
+  beforeEach(() => {
+    mockClient = createMockPolarClient()
+    vi.clearAllMocks()
+  })
+
+  const createMockCtx = (overrides?: {
+    beforeDelete?: (user: User, request?: Request) => Promise<void>
+    hasDeleteUser?: boolean
+  }): AuthContext => {
+    const deleteUser =
+      overrides?.hasDeleteUser === false
+        ? undefined
+        : {
+            enabled: true as const,
+            ...(overrides?.beforeDelete
+              ? { beforeDelete: overrides.beforeDelete }
+              : {}),
+          }
+    return {
+      ...createMockBetterAuthContext(),
+      options: { user: deleteUser ? { deleteUser } : undefined },
+    } as unknown as AuthContext
+  }
+
+  it('no-ops when organization sync is disabled', () => {
+    const options = createTestPolarOptions({ client: mockClient })
+    const ctx = createMockCtx()
+
+    installUserDeletePrecondition(ctx, options)
+
+    expect(ctx.options.user?.deleteUser?.beforeDelete).toBeUndefined()
+  })
+
+  it('no-ops when deleteUser is not configured', () => {
+    const options = createTestPolarOptions({
+      client: mockClient,
+      experimental_organizationSync: { enabled: true },
+    })
+    const ctx = createMockCtx({ hasDeleteUser: false })
+
+    installUserDeletePrecondition(ctx, options)
+
+    expect(ctx.options.user?.deleteUser?.beforeDelete).toBeUndefined()
+  })
+
+  it('installs a beforeDelete that calls the sole-creator precondition', async () => {
+    const options = createTestPolarOptions({
+      client: mockClient,
+      experimental_organizationSync: { enabled: true },
+    })
+    const ctx = createMockCtx()
+    vi.mocked(assertUserDeletionSoleCreatorInvariant).mockResolvedValue()
+
+    installUserDeletePrecondition(ctx, options)
+
+    expect(typeof ctx.options.user?.deleteUser?.beforeDelete).toBe('function')
+    const beforeDelete = ctx.options.user?.deleteUser?.beforeDelete
+    if (!beforeDelete) throw new Error('beforeDelete was not installed')
+
+    const mockUser = createMockUser()
+    await beforeDelete(mockUser)
+
+    expect(assertUserDeletionSoleCreatorInvariant).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(assertUserDeletionSoleCreatorInvariant).mock.calls[0],
+    ).toEqual([ctx, mockClient, mockUser])
+  })
+
+  it('chains a host-supplied beforeDelete before the Polar precondition', async () => {
+    const hostBeforeDelete = vi.fn(async () => {})
+    const options = createTestPolarOptions({
+      client: mockClient,
+      experimental_organizationSync: { enabled: true },
+    })
+    const ctx = createMockCtx({ beforeDelete: hostBeforeDelete })
+    vi.mocked(assertUserDeletionSoleCreatorInvariant).mockResolvedValue()
+
+    installUserDeletePrecondition(ctx, options)
+
+    const beforeDelete = ctx.options.user?.deleteUser?.beforeDelete
+    if (!beforeDelete) throw new Error('beforeDelete was not installed')
+
+    const mockUser = createMockUser()
+    const mockRequest = new Request(
+      'http://localhost:3000/api/auth/delete-user',
+      {
+        method: 'POST',
+      },
+    )
+    await beforeDelete(mockUser, mockRequest)
+
+    expect(hostBeforeDelete).toHaveBeenCalledOnce()
+    expect(hostBeforeDelete).toHaveBeenCalledWith(mockUser, mockRequest)
+    expect(assertUserDeletionSoleCreatorInvariant).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(assertUserDeletionSoleCreatorInvariant).mock
+        .invocationCallOrder[0],
+    ).toBeGreaterThan(hostBeforeDelete.mock.invocationCallOrder[0])
+  })
+
+  it('does not call the Polar precondition when the host beforeDelete throws', async () => {
+    const hostError = new Error('host cleanup failed')
+    const hostBeforeDelete = vi.fn(async () => {
+      throw hostError
+    })
+    const options = createTestPolarOptions({
+      client: mockClient,
+      experimental_organizationSync: { enabled: true },
+    })
+    const ctx = createMockCtx({ beforeDelete: hostBeforeDelete })
+    vi.mocked(assertUserDeletionSoleCreatorInvariant).mockResolvedValue()
+
+    installUserDeletePrecondition(ctx, options)
+
+    const beforeDelete = ctx.options.user?.deleteUser?.beforeDelete
+    if (!beforeDelete) throw new Error('beforeDelete was not installed')
+
+    const mockRequest = new Request(
+      'http://localhost:3000/api/auth/delete-user',
+      {
+        method: 'POST',
+      },
+    )
+    await expect(beforeDelete(createMockUser(), mockRequest)).rejects.toBe(
+      hostError,
+    )
+
+    expect(hostBeforeDelete).toHaveBeenCalledOnce()
+    expect(assertUserDeletionSoleCreatorInvariant).not.toHaveBeenCalled()
   })
 })

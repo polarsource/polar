@@ -1,5 +1,6 @@
 import type { AuthContext, BetterAuthPlugin } from 'better-auth'
 import {
+  installUserDeletePrecondition,
   onAfterUserCreate,
   onBeforeUserDelete,
   onUserDelete,
@@ -47,6 +48,7 @@ export const polar = <O extends PolarOptions>(
     hooks: createOrganizationLifecycleHooks(options),
     init(ctx) {
       installOrganizationHooks(ctx, options)
+      installUserDeletePrecondition(ctx, options)
 
       return {
         options: {

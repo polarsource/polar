@@ -3,6 +3,7 @@ import type { Member, Organization } from 'better-auth/plugins/organization'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ORGANIZATION_LEAVE_PATH,
+  assertUserDeletionSoleCreatorInvariant,
   createOrganizationLifecycleHooks,
   removeOrganizationMemberMirror,
   synchronizeOrganizationLeave,
@@ -360,5 +361,72 @@ describe('organization lifecycle gaps', () => {
         .mocked(adapter.findMany)
         .mock.calls.filter(([call]) => call.model === 'member'),
     ).toHaveLength(2)
+  })
+})
+
+describe('assertUserDeletionSoleCreatorInvariant', () => {
+  let client: ReturnType<typeof createMockPolarClient>
+
+  beforeEach(() => {
+    client = createMockPolarClient()
+    vi.clearAllMocks()
+    vi.mocked(isTeamCustomerSynchronized).mockResolvedValue(true)
+  })
+
+  it('rejects when the user is the sole creator of a synced organization', async () => {
+    const ownerMembership = memberships[0]
+    if (!ownerMembership) throw new Error('Missing owner membership fixture')
+    const { context } = createAuthContext([ownerMembership])
+
+    await expect(
+      assertUserDeletionSoleCreatorInvariant(context, client, user),
+    ).rejects.toMatchObject({ status: 'BAD_REQUEST' })
+  })
+
+  it('does not reject when another creator (successor) remains', async () => {
+    const { context } = createAuthContext(memberships)
+
+    await assertUserDeletionSoleCreatorInvariant(context, client, user)
+  })
+
+  it('does not reject when the creator-membership organization is not synced', async () => {
+    const ownerMembership = memberships[0]
+    if (!ownerMembership) throw new Error('Missing owner membership fixture')
+    const { context } = createAuthContext([ownerMembership])
+    vi.mocked(isTeamCustomerSynchronized).mockResolvedValue(false)
+
+    await assertUserDeletionSoleCreatorInvariant(context, client, user)
+  })
+
+  it('does not reject when the user has no creator-role memberships', async () => {
+    const adminMembership = memberships[1]
+    if (!adminMembership) throw new Error('Missing admin membership fixture')
+    const { context } = createAuthContext([adminMembership])
+
+    await assertUserDeletionSoleCreatorInvariant(context, client, user)
+  })
+
+  it('does not reject when the user has no memberships at all', async () => {
+    const { context } = createAuthContext([])
+
+    await assertUserDeletionSoleCreatorInvariant(context, client, user)
+  })
+
+  it('checks every synced organization and rejects on the first sole-creator match', async () => {
+    const loneOwnerMembership: Member = {
+      id: 'member-lone',
+      organizationId: 'org-lone',
+      userId: user.id,
+      role: 'owner',
+      createdAt: new Date('2024-01-05'),
+    }
+    const { context } = createAuthContext([
+      memberships[1]!,
+      loneOwnerMembership,
+    ])
+
+    await expect(
+      assertUserDeletionSoleCreatorInvariant(context, client, user),
+    ).rejects.toMatchObject({ status: 'BAD_REQUEST' })
   })
 })

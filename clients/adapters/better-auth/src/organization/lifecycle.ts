@@ -334,3 +334,48 @@ export const synchronizeUserDeletionMemberships = async (
     }),
   )
 }
+
+/**
+ * Pre-destruction guard for the user delete route. Better Auth deletes
+ * credential `account` rows (and DB-stored `session` rows, where configured)
+ * before the `databaseHooks.user.delete.before` hook runs, so the sole-creator
+ * invariant enforced inside that hook fires too late — after the user is
+ * already partially destroyed and locked out. This check mirrors the
+ * invariant's creator-roster inspection but runs from
+ * `options.user.deleteUser.beforeDelete`, the only hook that fires while the
+ * user's auth state is still intact, and rejects with a clean `APIError`
+ * instead of letting a late `PolarOrganizationOwnerInvariantError` surface as
+ * an unformatted 500.
+ */
+export const assertUserDeletionSoleCreatorInvariant = async (
+  authContext: AuthContext,
+  client: PolarCore,
+  user: User,
+) => {
+  const memberships = await listBetterAuthMembershipsForUser(
+    authContext,
+    user.id,
+  )
+  const creatorRole = getBetterAuthCreatorRole(authContext)
+
+  for (const membership of memberships) {
+    if (!hasBetterAuthCreatorRole(membership.role, creatorRole)) continue
+    if (
+      !(await isTeamCustomerSynchronized(client, membership.organizationId))
+    ) {
+      continue
+    }
+
+    const successor = await findEarliestBetterAuthOwnerCandidate(
+      authContext,
+      membership.organizationId,
+      creatorRole,
+      user.id,
+    )
+    if (!successor) {
+      throw new APIError('BAD_REQUEST', {
+        message: `Cannot delete this account because it is the only member with the "${creatorRole}" role in the Polar-synchronized organization "${membership.organizationId}". Assign another member the "${creatorRole}" role before deleting this account.`,
+      })
+    }
+  }
+}

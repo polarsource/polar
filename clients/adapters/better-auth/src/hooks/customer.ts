@@ -8,6 +8,7 @@ import {
 import type { AuthContext, GenericEndpointContext, User } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import {
+  assertUserDeletionSoleCreatorInvariant,
   synchronizeUserDeletionMemberships,
   synchronizeUserOrganizationProfiles,
 } from '../organization/lifecycle'
@@ -165,3 +166,40 @@ export const onUserDelete =
       }
     }
   }
+
+/**
+ * Install a pre-destruction guard on the `user.deleteUser.beforeDelete` route
+ * hook so the sole-creator invariant is rejected with a clean `APIError`
+ * *before* Better Auth destroys credential `account` rows.
+ *
+ * Better Auth merges a plugin's `result.options` (other than `databaseHooks`)
+ * via `defu(options, restOpts)`, which only fills missing keys and silently
+ * discards a plugin-supplied `beforeDelete` whenever the host already declares
+ * one. To survive that merge, this installs the guard by mutating the
+ * context's `user.deleteUser` option directly at `init` time — the same
+ * mutation pattern `installOrganizationHooks` uses for organization hooks —
+ * and chains into any host-supplied `beforeDelete` so the adopter's existing
+ * handler still runs first.
+ */
+export const installUserDeletePrecondition = (
+  ctx: AuthContext,
+  options: PolarOptions,
+) => {
+  const organizationOptions = options.experimental_organizationSync
+  if (!organizationOptions?.enabled) {
+    return
+  }
+
+  const deleteUserOptions = ctx.options.user?.deleteUser
+  if (!deleteUserOptions) {
+    return
+  }
+
+  const existingBeforeDelete = deleteUserOptions.beforeDelete
+  deleteUserOptions.beforeDelete = async (user: User, request?: Request) => {
+    if (existingBeforeDelete) {
+      await existingBeforeDelete(user, request)
+    }
+    await assertUserDeletionSoleCreatorInvariant(ctx, options.client, user)
+  }
+}

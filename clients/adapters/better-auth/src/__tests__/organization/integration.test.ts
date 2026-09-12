@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { type MemoryDB, memoryAdapter } from 'better-auth/adapters/memory'
 import { organization } from 'better-auth/plugins'
 import { memberAc } from 'better-auth/plugins/organization/access'
+import type { User } from 'better-auth'
 import { describe, expect, it, vi } from 'vitest'
 import { errors, type models } from '@polar-sh/sdk/2026-04'
 import type {
@@ -50,6 +51,9 @@ interface IntegrationHarnessOptions {
   selectSeatProductsForMember?: SelectSeatProductsForMember
   checkout?: boolean
   checkoutSeatProduct?: boolean
+  beforeDelete?: (user: User, request?: Request) => Promise<void>
+  enableDeleteUser?: boolean
+  enableOrganizationSync?: boolean
 }
 
 const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
@@ -336,7 +340,17 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
     secret: 'better-auth-secret-that-is-long-enough-for-tests',
     database: memoryAdapter(database),
     emailAndPassword: { enabled: true },
-    user: { deleteUser: { enabled: true } },
+    user:
+      options.enableDeleteUser === false
+        ? undefined
+        : {
+            deleteUser: {
+              enabled: true,
+              ...(options.beforeDelete
+                ? { beforeDelete: options.beforeDelete }
+                : {}),
+            },
+          },
     rateLimit: { enabled: false },
     plugins: [
       organization({
@@ -354,12 +368,18 @@ const createIntegrationHarness = (options: IntegrationHarnessOptions = {}) => {
       polar({
         client,
         createCustomerOnSignUp: false,
-        experimental_organizationSync: {
-          enabled: true,
-          syncSeats: options.syncSeats,
-          mapBetterAuthRoleToPolarRole: options.mapBetterAuthRoleToPolarRole,
-          selectSeatProductsForMember: options.selectSeatProductsForMember,
-        },
+        ...(options.enableOrganizationSync === false
+          ? {}
+          : {
+              experimental_organizationSync: {
+                enabled: true,
+                syncSeats: options.syncSeats,
+                mapBetterAuthRoleToPolarRole:
+                  options.mapBetterAuthRoleToPolarRole,
+                selectSeatProductsForMember:
+                  options.selectSeatProductsForMember,
+              },
+            }),
         use: (options.checkout
           ? [
               checkout({
@@ -2181,5 +2201,293 @@ describe('organization seat integration', () => {
           .invocationCallOrder[deleteIndex] ?? 0,
       )
     }
+  })
+})
+
+describe('user delete sole-creator precondition', () => {
+  it('rejects deleting the sole creator of a lone-member Polar-synced org with BAD_REQUEST, leaving the user fully intact', async () => {
+    const { client, database, post, signUp, createOrganization } =
+      createIntegrationHarness()
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    const org = await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    vi.mocked(client.customers.members.deleteExternal).mockClear()
+    vi.mocked(client.customers.members.updateExternal).mockClear()
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      owner.sessionCookie,
+    )
+
+    expect(deleteResponse.status).toBe(400)
+    const errorBody = (await deleteResponse.json()) as {
+      message?: string
+      error?: { message?: string }
+    }
+    expect(errorBody.message ?? errorBody.error?.message ?? '').toMatch(/owner/)
+
+    expect(database.user.some((u) => u.id === owner.user.id)).toBe(true)
+    expect(
+      database.account.some(
+        (a) => a.userId === owner.user.id && a.providerId === 'credential',
+      ),
+    ).toBe(true)
+    expect(database.session.some((s) => s.userId === owner.user.id)).toBe(true)
+    expect(
+      database.member.some(
+        (m) =>
+          m.organizationId === org.id &&
+          m.userId === owner.user.id &&
+          m.role.includes('owner'),
+      ),
+    ).toBe(true)
+
+    expect(client.customers.members.deleteExternal).not.toHaveBeenCalled()
+    expect(client.customers.members.updateExternal).not.toHaveBeenCalled()
+
+    const signInResponse = await post('/sign-in/email', {
+      email: 'owner@example.com',
+      password: 'password123',
+    })
+    expect(signInResponse.ok).toBe(true)
+  })
+
+  it('rejects deleting the sole creator when only non-creator teammates remain', async () => {
+    const { auth, client, database, post, signUp, createOrganization } =
+      createIntegrationHarness()
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    const teammate = await signUp({
+      email: 'teammate@example.com',
+      password: 'password123',
+      name: 'Teammate',
+    })
+    const org = await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    await auth.api.addMember({
+      headers: new Headers({ cookie: owner.sessionCookie }),
+      body: {
+        organizationId: org.id,
+        userId: teammate.user.id,
+        role: 'member',
+      },
+    })
+    vi.mocked(client.customers.members.deleteExternal).mockClear()
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      owner.sessionCookie,
+    )
+
+    expect(deleteResponse.status).toBe(400)
+    expect(database.user.some((u) => u.id === owner.user.id)).toBe(true)
+    expect(database.account.some((a) => a.userId === owner.user.id)).toBe(true)
+    expect(client.customers.members.deleteExternal).not.toHaveBeenCalled()
+
+    const signInResponse = await post('/sign-in/email', {
+      email: 'owner@example.com',
+      password: 'password123',
+    })
+    expect(signInResponse.ok).toBe(true)
+  })
+
+  it('allows deleting a creator when another creator (successor) remains', async () => {
+    const { auth, client, database, post, signUp, createOrganization } =
+      createIntegrationHarness()
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    const successor = await signUp({
+      email: 'successor@example.com',
+      password: 'password123',
+      name: 'Successor',
+    })
+    const org = await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    const successorMember = await auth.api.addMember({
+      headers: new Headers({ cookie: owner.sessionCookie }),
+      body: {
+        organizationId: org.id,
+        userId: successor.user.id,
+        role: 'member',
+      },
+    })
+    if (!successorMember) throw new Error('Successor member was not added')
+    const promoteResponse = await post(
+      '/organization/update-member-role',
+      {
+        organizationId: org.id,
+        memberId: successorMember.id,
+        role: 'owner',
+      },
+      owner.sessionCookie,
+    )
+    if (!promoteResponse.ok) {
+      throw new Error(
+        `Successor promotion failed: ${await promoteResponse.text()}`,
+      )
+    }
+    vi.mocked(client.customers.members.deleteExternal).mockClear()
+    vi.mocked(client.customers.members.updateExternal).mockClear()
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      owner.sessionCookie,
+    )
+
+    expect(deleteResponse.ok).toBe(true)
+    expect(database.user.some((u) => u.id === owner.user.id)).toBe(false)
+    expect(client.customers.members.updateExternal).toHaveBeenCalledWith(
+      org.id,
+      successor.user.id,
+      { role: 'owner' },
+    )
+    expect(client.customers.members.deleteExternal).toHaveBeenCalledWith(
+      org.id,
+      owner.user.id,
+    )
+  })
+
+  it('still deletes a non-creator member without hitting the precondition', async () => {
+    const { auth, client, database, post, signUp, createOrganization } =
+      createIntegrationHarness()
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    const member = await signUp({
+      email: 'member@example.com',
+      password: 'password123',
+      name: 'Member',
+    })
+    const org = await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    await auth.api.addMember({
+      headers: new Headers({ cookie: owner.sessionCookie }),
+      body: {
+        organizationId: org.id,
+        userId: member.user.id,
+        role: 'member',
+      },
+    })
+    vi.mocked(client.customers.members.deleteExternal).mockClear()
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      member.sessionCookie,
+    )
+
+    expect(deleteResponse.ok).toBe(true)
+    expect(database.user.some((u) => u.id === member.user.id)).toBe(false)
+    expect(client.customers.members.deleteExternal).toHaveBeenCalledWith(
+      org.id,
+      member.user.id,
+    )
+  })
+
+  it('chains a host-supplied beforeDelete before the Polar precondition', async () => {
+    const beforeDelete = vi.fn(async () => {})
+    const { client, database, post, signUp, createOrganization } =
+      createIntegrationHarness({ beforeDelete })
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    vi.mocked(client.customers.members.deleteExternal).mockClear()
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      owner.sessionCookie,
+    )
+
+    expect(deleteResponse.status).toBe(400)
+    expect(beforeDelete).toHaveBeenCalledOnce()
+    expect(beforeDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ id: owner.user.id }),
+      expect.any(Request),
+    )
+    expect(database.user.some((u) => u.id === owner.user.id)).toBe(true)
+    expect(database.account.some((a) => a.userId === owner.user.id)).toBe(true)
+  })
+
+  it('propagates a host beforeDelete error without running the Polar precondition', async () => {
+    const beforeDelete = vi.fn(async () => {
+      throw new Error('host cleanup failed')
+    })
+    const { client, database, post, signUp, createOrganization } =
+      createIntegrationHarness({ beforeDelete })
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+    vi.mocked(client.customers.members.deleteExternal).mockClear()
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      owner.sessionCookie,
+    )
+
+    expect(deleteResponse.ok).toBe(false)
+    expect(beforeDelete).toHaveBeenCalledOnce()
+    expect(database.user.some((u) => u.id === owner.user.id)).toBe(true)
+    expect(database.account.some((a) => a.userId === owner.user.id)).toBe(true)
+    expect(client.customers.members.deleteExternal).not.toHaveBeenCalled()
+  })
+
+  it('does not install the precondition when organization sync is disabled', async () => {
+    const { database, post, signUp, createOrganization } =
+      createIntegrationHarness({ enableOrganizationSync: false })
+    const owner = await signUp({
+      email: 'owner@example.com',
+      password: 'password123',
+      name: 'Owner',
+    })
+    await createOrganization(owner.sessionCookie, {
+      name: 'Acme',
+      slug: 'acme',
+    })
+
+    const deleteResponse = await post(
+      '/delete-user',
+      { password: 'password123' },
+      owner.sessionCookie,
+    )
+
+    expect(deleteResponse.ok).toBe(true)
+    expect(database.user.some((u) => u.id === owner.user.id)).toBe(false)
   })
 })

@@ -143,7 +143,7 @@ const Checkout = ({
   const disableCheckout =
     shouldBlockCheckout &&
     (paymentStatus?.organization_status === 'denied' ||
-      checkout.is_payment_required)
+      checkout.is_payment_form_required)
 
   // Track payment not ready state
   useEffect(() => {

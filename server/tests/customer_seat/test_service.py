@@ -10,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
+from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.customer_seat.service import (
     CustomerNotFound,
     InvalidInvitationToken,
@@ -1994,19 +1996,109 @@ class TestRevokeSeat:
     async def test_revoke_seat_sends_webhook(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
-        with patch("polar.webhook.service.webhook.send") as mock_send:
-            mock_send.return_value = []
+        calls: list[tuple[Any, ...]] = []
+        payloads: list[dict[str, Any]] = []
+        pre_customer_id = customer_seat_claimed.customer_id
+        assert pre_customer_id is not None
+
+        async def fake_send(*args: Any, **kwargs: Any) -> list[Any]:
+            calls.append(args)
+            payloads.append(
+                CustomerSeatSchema.model_validate(args[3]).model_dump(mode="json")
+            )
+            return []
+
+        with patch("polar.webhook.service.webhook.send", new=fake_send):
             seat = await seat_service.revoke_seat(session, customer_seat_claimed)
 
-            mock_send.assert_called_once()
-            args = mock_send.call_args
-            assert customer_seat_claimed.subscription is not None
-            assert (
-                args[0][1].id
-                == customer_seat_claimed.subscription.product.organization.id
+        assert len(calls) == 1
+        args = calls[0]
+        assert customer_seat_claimed.subscription is not None
+        assert args[1].id == customer_seat_claimed.subscription.product.organization.id
+        assert args[2] == WebhookEventType.customer_seat_revoked
+        assert args[3].id == seat.id
+
+        payload = payloads[0]
+        assert payload["status"] == SeatStatus.revoked
+        assert payload["customer_id"] is not None
+        assert payload["customer_id"] == str(pre_customer_id)
+
+    @pytest.mark.asyncio
+    async def test_revoke_seat_webhook_preserves_identity(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        seat = await seat_service.assign_seat(
+            session,
+            subscription,
+            email="seat@example.com",
+            external_member_id="ext-member-revoke",
+            immediate_claim=True,
+        )
+
+        assert seat.customer_id is not None
+        assert seat.member_id is not None
+        assert seat.email == "seat@example.com"
+
+        repository = CustomerSeatRepository.from_session(session)
+        loaded = await repository.get_by_id(
+            seat.id, options=repository.get_eager_options()
+        )
+        assert loaded is not None
+        pre_customer_id = loaded.customer_id
+        pre_member_id = loaded.member_id
+        pre_email = loaded.email
+        assert pre_customer_id is not None
+        assert pre_member_id is not None
+        assert pre_email is not None
+
+        payloads: list[dict[str, Any]] = []
+
+        async def fake_send(*args: Any, **kwargs: Any) -> list[Any]:
+            payloads.append(
+                CustomerSeatSchema.model_validate(args[3]).model_dump(mode="json")
             )
-            assert args[0][2] == WebhookEventType.customer_seat_revoked
-            assert args[0][3].id == seat.id
+            return []
+
+        with patch("polar.webhook.service.webhook.send", new=fake_send):
+            revoked_seat = await seat_service.revoke_seat(session, loaded)
+
+        assert len(payloads) == 1
+        payload = payloads[0]
+        assert payload["status"] == SeatStatus.revoked
+        assert payload["customer_id"] == str(pre_customer_id)
+        assert payload["member_id"] == str(pre_member_id)
+        assert payload["email"] == pre_email
+        assert payload["member"] is not None
+        assert payload["member"]["id"] == str(pre_member_id)
+        assert payload["customer_email"] == pre_email
+
+        assert revoked_seat.status == SeatStatus.revoked
+        assert revoked_seat.customer_id is None
+        assert revoked_seat.member_id is None
+        assert revoked_seat.email is None
 
     @pytest.mark.asyncio
     async def test_revoke_seat_is_idempotent(

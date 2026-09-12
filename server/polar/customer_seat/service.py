@@ -605,9 +605,6 @@ class SeatService:
         seat.status = SeatStatus.revoked
         seat.revoked_at = datetime.now(UTC)
         seat.invitation_token = None
-        seat.customer_id = None
-        seat.member_id = None
-        seat.email = None
 
         await session.flush()
 
@@ -625,6 +622,12 @@ class SeatService:
             WebhookEventType.customer_seat_revoked,
             seat,
         )
+
+        seat.customer_id = None
+        seat.member_id = None
+        seat.email = None
+
+        await session.flush()
 
         return seat
 

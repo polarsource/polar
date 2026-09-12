@@ -284,7 +284,7 @@ async def webhook_event_publish(webhook_event_id: UUID, organization_id: UUID) -
 
     Args:
         webhook_event_id: ID of the webhook event to publish
-        organization_id: ID of the organization (used as signing secret)
+        organization_id: ID of the organization to publish the event to
     """
     async with AsyncSessionMaker() as session:
         return await _webhook_event_publish(

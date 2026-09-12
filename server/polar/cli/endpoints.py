@@ -1,4 +1,3 @@
-import base64
 import json
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -22,6 +21,7 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.webhook.service import generate_webhook_secret
 
 log = structlog.get_logger()
 
@@ -29,11 +29,11 @@ router = APIRouter(prefix="/cli", tags=["cli_router", APITag.private])
 
 
 async def transform_webhook_events(
-    organization_id: str, event_stream: AsyncGenerator[Any, Any]
+    webhook_secret: str, event_stream: AsyncGenerator[Any, Any]
 ) -> AsyncGenerator[Any, Any]:
     """
     Transform webhook events before sending to CLI client.
-    Adds signed headers using organization_id as the secret.
+    Adds signed headers using the per-session webhook secret.
     """
     async for message in event_stream:
         try:
@@ -48,13 +48,7 @@ async def transform_webhook_events(
                 if webhook_payload and webhook_event_id:
                     ts = utc_now()
 
-                    secret = str(organization_id).replace("-", "")
-
-                    # Use organization_id as the signing secret
-                    b64secret = base64.b64encode(secret.encode("utf-8")).decode("utf-8")
-
-                    # Sign the payload
-                    wh = StandardWebhook(b64secret)
+                    wh = StandardWebhook(webhook_secret)
                     signature = wh.sign(webhook_event_id, ts, webhook_payload)
 
                     # Add signed headers to the event
@@ -97,21 +91,20 @@ async def listen(
     # Close the session to avoid holding locks while listening for events
     await session.commit()
 
+    webhook_secret = generate_webhook_secret()
     receivers = Receivers(organization_id=org.id)
     event_stream = subscribe(
         redis, receivers.get_channels(), request, on_iteration=refresh_listener
     )
-    transformed_stream = transform_webhook_events(str(org.id), event_stream)
+    transformed_stream = transform_webhook_events(webhook_secret, event_stream)
 
     async def first_event_wrapper() -> AsyncGenerator[str]:
-        secret = str(org.id).replace("-", "")
-
         # Send a first event announcing connection established
         yield json.dumps(
             {
                 "key": "connected",
                 "ts": str(utc_now()),
-                "secret": secret,
+                "secret": webhook_secret,
             }
         )
 

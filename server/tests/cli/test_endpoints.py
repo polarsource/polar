@@ -222,7 +222,7 @@ class TestListenEndpoint:
         mock_auth_subject: AsyncMock,
         mock_request: AsyncMock,
     ) -> None:
-        """First SSE event is a 'connected' event with the secret."""
+        """First SSE event is a 'connected' event with a whsec_ per-session secret."""
         from polar.cli.endpoints import listen
 
         response = await listen(
@@ -238,5 +238,189 @@ class TestListenEndpoint:
         data = json.loads(first_event)
 
         assert data["key"] == "connected"
-        assert data["secret"] == str(org_id).replace("-", "")
+        assert data["secret"].startswith("whsec_")
+        assert data["secret"] != str(org_id).replace("-", "")
+        assert data["secret"] != str(org_id)
         assert "ts" in data
+
+    async def test_webhook_event_signature_verifies(
+        self,
+        redis: Redis,
+        org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
+        mock_auth_subject: AsyncMock,
+        mock_request: AsyncMock,
+        mocker: MockerFixture,
+    ) -> None:
+        """Forwarded webhook events are signed with the per-session whsec_ secret
+        and verifiable with the standardwebhooks library (Svix path)."""
+        from standardwebhooks.webhooks import Webhook as StandardWebhook
+
+        webhook_event_id = "evt_test_123"
+        webhook_payload = json.dumps({"type": "test.event", "data": {"id": "abc"}})
+
+        async def fake_subscribe(
+            redis: Any,
+            channels: list[str],
+            request: Any,
+            on_iteration: Any = None,
+        ) -> AsyncGenerator[Any, Any]:
+            if on_iteration is not None:
+                await on_iteration()
+            yield json.dumps(
+                {
+                    "key": "webhook.created",
+                    "payload": {
+                        "webhook_event_id": webhook_event_id,
+                        "payload": webhook_payload,
+                    },
+                }
+            )
+
+        mocker.patch("polar.cli.endpoints.subscribe", side_effect=fake_subscribe)
+
+        from polar.cli.endpoints import listen
+
+        response = await listen(
+            id=org_id,
+            request=mock_request,
+            auth_subject=mock_auth_subject,
+            redis=redis,
+            session=AsyncMock(),
+        )
+
+        events: list[str] = []
+        async for event in response.body_iterator:
+            events.append(event)
+
+        # First event is the "connected" event carrying the per-session secret
+        connected = json.loads(events[0])
+        assert connected["key"] == "connected"
+        secret = connected["secret"]
+        assert secret.startswith("whsec_")
+
+        # Second event is the signed webhook event
+        webhook_event = json.loads(events[1])
+        assert webhook_event["key"] == "webhook.created"
+        headers = webhook_event["headers"]
+
+        # The Svix standardwebhooks library must verify the genuine event
+        StandardWebhook(secret).verify(
+            webhook_payload,
+            {
+                "webhook-id": headers["webhook-id"],
+                "webhook-timestamp": headers["webhook-timestamp"],
+                "webhook-signature": headers["webhook-signature"],
+            },
+        )
+
+    async def test_signature_not_creatable_from_org_id(
+        self,
+        redis: Redis,
+        org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
+        mock_auth_subject: AsyncMock,
+        mock_request: AsyncMock,
+        mocker: MockerFixture,
+    ) -> None:
+        """An attacker who only knows the public org ID cannot verify (and thus
+        cannot forge) a valid signature."""
+        from standardwebhooks.webhooks import Webhook as StandardWebhook
+        from standardwebhooks.webhooks import WebhookVerificationError
+
+        webhook_event_id = "evt_test_456"
+        webhook_payload = json.dumps({"type": "test.event", "data": {"id": "xyz"}})
+
+        async def fake_subscribe(
+            redis: Any,
+            channels: list[str],
+            request: Any,
+            on_iteration: Any = None,
+        ) -> AsyncGenerator[Any, Any]:
+            if on_iteration is not None:
+                await on_iteration()
+            yield json.dumps(
+                {
+                    "key": "webhook.created",
+                    "payload": {
+                        "webhook_event_id": webhook_event_id,
+                        "payload": webhook_payload,
+                    },
+                }
+            )
+
+        mocker.patch("polar.cli.endpoints.subscribe", side_effect=fake_subscribe)
+
+        from polar.cli.endpoints import listen
+
+        response = await listen(
+            id=org_id,
+            request=mock_request,
+            auth_subject=mock_auth_subject,
+            redis=redis,
+            session=AsyncMock(),
+        )
+
+        events: list[str] = []
+        async for event in response.body_iterator:
+            events.append(event)
+
+        connected = json.loads(events[0])
+        real_secret = connected["secret"]
+
+        webhook_event = json.loads(events[1])
+        headers = webhook_event["headers"]
+
+        # Verifying with the public org ID (bare hex) must fail
+        attacker_secret = str(org_id).replace("-", "")
+        with pytest.raises(WebhookVerificationError):
+            StandardWebhook(attacker_secret).verify(
+                webhook_payload,
+                {
+                    "webhook-id": headers["webhook-id"],
+                    "webhook-timestamp": headers["webhook-timestamp"],
+                    "webhook-signature": headers["webhook-signature"],
+                },
+            )
+
+        # Sanity: the real per-session secret does verify
+        StandardWebhook(real_secret).verify(
+            webhook_payload,
+            {
+                "webhook-id": headers["webhook-id"],
+                "webhook-timestamp": headers["webhook-timestamp"],
+                "webhook-signature": headers["webhook-signature"],
+            },
+        )
+
+    async def test_two_sessions_get_different_secrets(
+        self,
+        redis: Redis,
+        org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
+        mock_subscribe: MagicMock,
+        mock_auth_subject: AsyncMock,
+        mock_request: AsyncMock,
+    ) -> None:
+        """Each listen() session generates a fresh per-session secret."""
+        from polar.cli.endpoints import listen
+
+        secrets: list[str] = []
+        for _ in range(2):
+            response = await listen(
+                id=org_id,
+                request=mock_request,
+                auth_subject=mock_auth_subject,
+                redis=redis,
+                session=AsyncMock(),
+            )
+            first_event = await anext(aiter(response.body_iterator))
+            data = json.loads(first_event)
+            secrets.append(data["secret"])
+            # Consume remaining to trigger cleanup
+            async for _ in response.body_iterator:
+                break
+
+        assert secrets[0].startswith("whsec_")
+        assert secrets[1].startswith("whsec_")
+        assert secrets[0] != secrets[1]

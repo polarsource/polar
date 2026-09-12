@@ -20,7 +20,7 @@ class TriggerRequest(Schema):
         default_factory=dict,
         description=(
             "Payload fields to override, keyed by dotted path "
-            "relative to the payload root, e.g. `data.amount`."
+            "relative to the payload root, e.g. `data.customer.email`."
         ),
     )
     seed: int | None = Field(

@@ -299,3 +299,78 @@ class TestTriggerEvent:
                     deliver=False,
                 ),
             )
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "data.amount",
+            "data.from_balance_amount",
+            "data.refundable_amount",
+            "data.refundable_tax_amount",
+        ],
+    )
+    async def test_rejects_overrides_to_computed_fields_on_order(
+        self, redis: Redis, organization: Organization, path: str
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as error:
+            await trigger_event(
+                redis,
+                organization,
+                TriggerRequest(
+                    event=WebhookEventType.order_paid,
+                    overrides={path: "9999"},
+                    deliver=False,
+                ),
+            )
+
+        message = str(error.value.errors())
+        assert path in message
+        assert "read-only" in message
+
+    async def test_rejects_override_to_computed_subtotal_amount_on_checkout(
+        self, redis: Redis, organization: Organization
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as error:
+            await trigger_event(
+                redis,
+                organization,
+                TriggerRequest(
+                    event=WebhookEventType.checkout_created,
+                    overrides={"data.subtotal_amount": "9999"},
+                    deliver=False,
+                ),
+            )
+
+        message = str(error.value.errors())
+        assert "data.subtotal_amount" in message
+        assert "read-only" in message
+
+    async def test_allows_overriding_writable_amount_on_checkout(
+        self, redis: Redis, organization: Organization
+    ) -> None:
+        response = await trigger_event(
+            redis,
+            organization,
+            TriggerRequest(
+                event=WebhookEventType.checkout_created,
+                overrides={"data.amount": "9999"},
+                deliver=False,
+            ),
+        )
+
+        assert response.payload["data"]["amount"] == 9999
+
+    async def test_allows_overriding_writable_net_amount_on_order(
+        self, redis: Redis, organization: Organization
+    ) -> None:
+        response = await trigger_event(
+            redis,
+            organization,
+            TriggerRequest(
+                event=WebhookEventType.order_paid,
+                overrides={"data.net_amount": "9999"},
+                deliver=False,
+            ),
+        )
+
+        assert response.payload["data"]["net_amount"] == 9999

@@ -113,22 +113,36 @@ def _lookup(payload: Any, path: str) -> Any:
 
 
 def _reject_dropped_overrides(
-    serialized: dict[str, Any], overrides: dict[str, Any]
+    serialized: dict[str, Any],
+    overrides: dict[str, Any],
+    serialized_without_overrides: dict[str, Any],
 ) -> None:
     for path, value in overrides.items():
         try:
-            _lookup(serialized, path)
+            after = _lookup(serialized, path)
         except KeyError, IndexError, ValueError:
             raise _override_error(
                 path, value, f"{path!r} is not a field of this payload"
             ) from None
+        try:
+            before = _lookup(serialized_without_overrides, path)
+        except KeyError, IndexError, ValueError:
+            continue
+        if after == before:
+            raise _override_error(
+                path,
+                value,
+                f"{path!r} is read-only and cannot be overridden",
+            )
 
 
 async def trigger_event(
     redis: Redis, organization: Organization, request: TriggerRequest
 ) -> TriggerResponse:
     fixtures = TriggerFixtures(organization, seed=request.seed)
-    payload = json.loads(fixtures.build(request.event).get_raw_payload())
+    raw_fixture = fixtures.build(request.event).get_raw_payload()
+    serialized_without_overrides = json.loads(raw_fixture)
+    payload = json.loads(raw_fixture)
     apply_overrides(payload, request.overrides)
 
     try:
@@ -148,7 +162,9 @@ async def trigger_event(
 
     raw_payload = validated.get_raw_payload()
     serialized = json.loads(raw_payload)
-    _reject_dropped_overrides(serialized, request.overrides)
+    _reject_dropped_overrides(
+        serialized, request.overrides, serialized_without_overrides
+    )
 
     webhook_event_id: UUID = generate_uuid()
     if request.deliver:

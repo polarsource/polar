@@ -11,7 +11,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
-from polar.member.service import member_service
+from polar.member.service import MemberExternalIDConflict, member_service
 from polar.models import (
     CustomerSeat,
     Member,
@@ -652,6 +652,183 @@ class TestCreate:
         assert call_count == 2  # initial lookup + re-query after rollback
 
         # The session recovered from the failed flush and is still usable.
+        await session.flush()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_duplicate_external_id_different_email_raises_conflict(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """A duplicate external_id with a *different* email is a client
+        conflict (409), not an unhandled IntegrityError (500). The email
+        idempotency check returns None because no member has the new email, so
+        the external_id pre-check must surface the conflict."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Existing",
+            external_id="ext_dup",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        with pytest.raises(MemberExternalIDConflict) as exc_info:
+            await member_service.create(
+                session,
+                auth_subject,
+                customer_id=customer.id,
+                email="new@example.com",
+                external_id="ext_dup",
+                name="New Member",
+                role=MemberRole.member,
+            )
+
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.external_id == "ext_dup"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_same_email_same_external_id_returns_existing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """A re-POST with the *same* email and external_id is idempotent: the
+        email pre-check short-circuits before the external_id pre-check, so the
+        existing member is returned (201) rather than a 409 conflict."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="dup@example.com",
+            name="Existing",
+            external_id="ext_dup",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.create(
+            session,
+            auth_subject,
+            customer_id=customer.id,
+            email="dup@example.com",
+            external_id="ext_dup",
+            name="Existing",
+            role=MemberRole.member,
+        )
+
+        assert member.id == existing.id
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_concurrent_duplicate_external_id_returns_conflict(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Regression for the race backstop: two requests with distinct emails
+        but the same external_id both pass the pre-checks before either
+        serializes its INSERT, so the loser trips the external_id partial unique
+        index. The IntegrityError handler must degrade to a 409 conflict rather
+        than re-raising as an unhandled 500."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # The member a concurrent request already committed: distinct email,
+        # same external_id.
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Existing",
+            external_id="ext_dup",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        # Force the external_id pre-check to pass (as if the row didn't exist
+        # yet at check time) so the real flush hits the unique index, then the
+        # backstop re-query returns the committed row.
+        original_get_external = MemberRepository.get_by_customer_id_and_external_id
+        call_count = 0
+
+        async def mock_get_external(
+            self: Any, customer_id: Any, external_id: Any
+        ) -> Member | None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return None
+            return await original_get_external(self, customer_id, external_id)
+
+        mocker.patch.object(
+            MemberRepository,
+            "get_by_customer_id_and_external_id",
+            mock_get_external,
+        )
+
+        with pytest.raises(MemberExternalIDConflict) as exc_info:
+            await member_service.create(
+                session,
+                auth_subject,
+                customer_id=customer.id,
+                email="new@example.com",
+                external_id="ext_dup",
+                name="New Member",
+                role=MemberRole.member,
+            )
+
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.external_id == "ext_dup"
+
+        # The session recovered from the failed flush and is still usable:
+        # the savepoint rollback (PR #14370) must protect the enclosing
+        # transaction even when the backstop raises instead of returning.
         await session.flush()
 
 

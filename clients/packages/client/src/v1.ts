@@ -24787,6 +24787,17 @@ export interface components {
        */
       role: 'member' | 'billing_manager'
     }
+    /** MemberExternalIDConflict */
+    MemberExternalIDConflict: {
+      /**
+       * Error
+       * @example MemberExternalIDConflict
+       * @constant
+       */
+      error: 'MemberExternalIDConflict'
+      /** Detail */
+      detail: string
+    }
     /** MemberOrganization */
     MemberOrganization: {
       /**
@@ -52092,6 +52103,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description A member with this external ID already exists for this customer. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MemberExternalIDConflict']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -52458,6 +52478,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description A member with this external ID already exists for this customer. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MemberExternalIDConflict']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -52571,13 +52600,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The external customer ID matches customers in several accessible organizations. */
+      /** @description The external customer ID is ambiguous, or a member with this external ID already exists for this customer. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+          'application/json':
+            | components['schemas']['AmbiguousExternalCustomerID']
+            | components['schemas']['MemberExternalIDConflict']
         }
       }
       /** @description Validation Error */

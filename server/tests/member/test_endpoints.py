@@ -363,6 +363,53 @@ class TestCreateMember:
         assert json["id"] == str(member.id)
 
     @pytest.mark.auth
+    async def test_create_member_duplicate_external_id_different_email(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        # Set customer type to team to allow multiple members
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="a@example.com",
+            external_id="ext_dup",
+            role="member",
+        )
+        await save_fixture(existing)
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "b@example.com",
+                "external_id": "ext_dup",
+                "role": "member",
+            },
+        )
+
+        assert response.status_code == 409
+        json = response.json()
+        assert json["error"] == "MemberExternalIDConflict"
+        assert (
+            json["detail"]
+            == "A member with this external ID already exists for this customer."
+        )
+
+    @pytest.mark.auth
     async def test_create_member_customer_not_found(
         self,
         save_fixture: SaveFixture,
@@ -1755,6 +1802,134 @@ class TestCreateCustomerMember:
             json={"email": "member@example.com"},
         )
         assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_duplicate_external_id_different_email(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="a@example.com",
+            external_id="ext_dup",
+            role="member",
+        )
+        await save_fixture(existing)
+
+        response = await client.post(
+            f"/v1/customers/{customer.id}/members",
+            json={"email": "b@example.com", "external_id": "ext_dup", "role": "member"},
+        )
+
+        assert response.status_code == 409
+        json = response.json()
+        assert json["error"] == "MemberExternalIDConflict"
+        assert (
+            json["detail"]
+            == "A member with this external ID already exists for this customer."
+        )
+
+    @pytest.mark.auth
+    async def test_external_duplicate_external_id_different_email(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="cus_ext_dup",
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="a@example.com",
+            external_id="ext_dup",
+            role="member",
+        )
+        await save_fixture(existing)
+
+        response = await client.post(
+            "/v1/customers/external/cus_ext_dup/members",
+            json={"email": "b@example.com", "external_id": "ext_dup", "role": "member"},
+        )
+
+        assert response.status_code == 409
+        json = response.json()
+        assert json["error"] == "MemberExternalIDConflict"
+        assert (
+            json["detail"]
+            == "A member with this external ID already exists for this customer."
+        )
+
+    @pytest.mark.auth
+    async def test_duplicate_external_id_same_email_idempotent(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """A re-POST with the same email *and* the same external_id must remain
+        idempotent (201 returning the existing member), not turn into a 409.
+        Guards the email-before-external_id ordering of the pre-checks."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="dup@example.com",
+            external_id="ext_dup",
+            role="member",
+        )
+        await save_fixture(existing)
+
+        response = await client.post(
+            f"/v1/customers/{customer.id}/members",
+            json={
+                "email": "dup@example.com",
+                "external_id": "ext_dup",
+                "role": "member",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["id"] == str(existing.id)
+        assert json["external_id"] == "ext_dup"
 
 
 @pytest.mark.asyncio

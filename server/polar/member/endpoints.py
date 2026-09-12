@@ -23,7 +23,11 @@ from .schemas import (
     MemberCreateFromCustomer,
     MemberUpdate,
 )
-from .service import AmbiguousExternalCustomerID, member_service
+from .service import (
+    AmbiguousExternalCustomerID,
+    MemberExternalIDConflict,
+    member_service,
+)
 
 router = APIRouter(
     prefix="/members",
@@ -57,6 +61,11 @@ AmbiguousExternalCustomer = {
     "description": "The external customer ID matches customers in several "
     "accessible organizations.",
     "model": AmbiguousExternalCustomerID.schema(),
+}
+
+MemberExternalIDConflictResponse = {
+    "description": "A member with this external ID already exists for this customer.",
+    "model": MemberExternalIDConflict.schema(),
 }
 
 
@@ -212,6 +221,7 @@ async def list_external(
         201: {"description": "Member created."},
         403: NotPermittedToAddMembers,
         404: CustomerNotFound,
+        409: MemberExternalIDConflictResponse,
     },
 )
 async def create(
@@ -248,7 +258,15 @@ async def create(
         201: {"description": "Member created."},
         403: NotPermittedToAddMembers,
         404: CustomerNotFound,
-        409: AmbiguousExternalCustomer,
+        409: {
+            "description": (
+                "The external customer ID is ambiguous, or a member with this "
+                "external ID already exists for this customer."
+            ),
+            "model": (
+                AmbiguousExternalCustomerID.schema() | MemberExternalIDConflict.schema()
+            ),
+        },
     },
 )
 async def create_external(
@@ -467,6 +485,7 @@ async def delete_external(
         201: {"description": "Member created."},
         403: {"description": "Not permitted to add members."},
         404: MemberNotFound,
+        409: MemberExternalIDConflictResponse,
     },
 )
 async def create_member(

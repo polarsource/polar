@@ -48,6 +48,15 @@ class AmbiguousExternalCustomerID(PolarError):
         )
 
 
+class MemberExternalIDConflict(PolarError):
+    def __init__(self, external_id: str) -> None:
+        self.external_id = external_id
+        super().__init__(
+            "A member with this external ID already exists for this customer.",
+            409,
+        )
+
+
 class MemberService:
     async def list(
         self,
@@ -636,6 +645,8 @@ class MemberService:
         Raises:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If no permission to add members
+            MemberExternalIDConflict: If a member with this external_id already
+                exists for this customer
         """
         org_ids = await get_accessible_org_ids(session, auth_subject)
         customer = await self._get_readable_customer(
@@ -675,6 +686,21 @@ class MemberService:
             )
             return existing_member
 
+        # external_id is documented as unique within the customer and enforced
+        # by the members_customer_id_external_id_active_key partial index. The
+        # email idempotency check above already short-circuited the same-email
+        # re-POST, so reaching here with an existing external_id means a
+        # different-email request is reusing it: a client conflict (409), not a
+        # 500 from an unhandled IntegrityError.
+        if external_id is not None:
+            existing_by_external_id = (
+                await repository.get_by_customer_id_and_external_id(
+                    customer_id, external_id
+                )
+            )
+            if existing_by_external_id is not None:
+                raise MemberExternalIDConflict(external_id)
+
         member = Member(
             customer_id=customer_id,
             organization_id=customer.organization_id,
@@ -706,6 +732,20 @@ class MemberService:
                     member_id=existing_member.id,
                 )
                 return existing_member
+            # Backstop for a concurrent race on the external_id uniqueness
+            # constraint: both requests passed the email and external_id
+            # pre-checks before either serialized its INSERT, so the loser
+            # trips members_customer_id_external_id_active_key. Surface it as a
+            # 409 conflict rather than letting the IntegrityError escape as a
+            # 500 (no handler recovers sqlalchemy.exc.IntegrityError).
+            if external_id is not None:
+                existing_by_external_id = (
+                    await repository.get_by_customer_id_and_external_id(
+                        customer_id, external_id
+                    )
+                )
+                if existing_by_external_id is not None:
+                    raise MemberExternalIDConflict(external_id) from e
             raise
         else:
             log.info(

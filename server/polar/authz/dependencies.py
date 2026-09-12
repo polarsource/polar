@@ -402,25 +402,31 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     return dependency
 
 
-def PayoutAccountPolicyGuard() -> Any:
+def PayoutAccountPolicyGuard(
+    required_scopes: set[Scope] | None = None,
+) -> Any:
     """FastAPI dependency: resolve payout account by {id}, verify ownership.
 
     Payout accounts are user-owned resources (via ``admin_id``); access
     is granted only to the owning user. There's no role-permission layer
-    above ownership, so a single check covers both read and write.
+    above ownership, so a single ownership check covers both read and write.
+    The read/write gate is enforced via ``required_scopes``: read endpoints
+    accept either ``payouts:read`` or ``payouts:write``; write endpoints
+    must pass ``{Scope.payouts_write}`` so a ``payouts:read``-only credential
+    is rejected with 403.
 
     Raises:
         Unauthorized (401): No valid credentials.
+        InsufficientScopeError (403): The token lacks the required scopes.
         ResourceNotFound (404): Payout account not found or the
             authenticated user isn't the account's admin.
     """
 
+    _scopes = required_scopes or {Scope.payouts_read, Scope.payouts_write}
+
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes={
-            Scope.payouts_read,
-            Scope.payouts_write,
-        },
+        required_scopes=_scopes,
     )
 
     async def dependency(
@@ -453,5 +459,5 @@ AuthorizePayoutAccountRead = Annotated[
 ]
 AuthorizePayoutAccountWrite = Annotated[
     AuthorizedPayoutAccount,
-    Depends(PayoutAccountPolicyGuard()),
+    Depends(PayoutAccountPolicyGuard({Scope.payouts_write})),
 ]

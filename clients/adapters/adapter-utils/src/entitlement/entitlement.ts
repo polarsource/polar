@@ -66,13 +66,13 @@ export class EntitlementStrategy<T extends EntitlementProperties> {
 }
 
 export class Entitlements {
-  static handlers = [] as EntitlementHandler[]
+  static handlers = new Map<string, EntitlementHandler>()
 
   static use<T extends EntitlementProperties = EntitlementProperties>(
     slug: string,
     strategy: EntitlementStrategy<T>,
   ) {
-    this.handlers.push(strategy.handler(slug))
+    this.handlers.set(slug, strategy.handler(slug))
 
     return this
   }

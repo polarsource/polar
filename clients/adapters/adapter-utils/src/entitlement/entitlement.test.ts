@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { models, webhooks } from '@polar-sh/sdk/2026-04'
-import { EntitlementStrategy } from './entitlement'
+import { Entitlements, EntitlementStrategy } from './entitlement'
+import { handleWebhookPayload } from '../webhooks/webhooks'
 
 describe('EntitlementStrategy', () => {
   it('should run grant on handler', () => {
@@ -101,5 +102,105 @@ describe('EntitlementStrategy', () => {
       customer: payload.data.customer,
       properties: payload.data.properties,
     })
+  })
+})
+
+const buildGrantPayload = (slug: string) =>
+  ({
+    type: 'benefit_grant.created',
+    data: {
+      customer: {},
+      benefit: { description: slug, properties: {} },
+      properties: {},
+    },
+  }) as unknown as webhooks.WebhookBenefitGrantCreatedPayload
+
+const buildRevokePayload = (slug: string) =>
+  ({
+    type: 'benefit_grant.revoked',
+    data: {
+      customer: {},
+      benefit: { description: slug },
+    },
+  }) as unknown as webhooks.WebhookBenefitGrantRevokedPayload
+
+describe('Entitlements static registry', () => {
+  beforeEach(() => {
+    Entitlements.handlers.clear()
+  })
+
+  it('fires the grant callback exactly once per webhook after repeated use calls', async () => {
+    const onGrant = vi.fn()
+    const strategy = new EntitlementStrategy().grant(onGrant)
+
+    Entitlements.use('slug-a', strategy)
+    Entitlements.use('slug-a', strategy)
+    Entitlements.use('slug-a', strategy)
+
+    await handleWebhookPayload(buildGrantPayload('slug-a'), {
+      webhookSecret: 'test',
+      entitlements: Entitlements,
+    })
+
+    expect(onGrant).toHaveBeenCalledTimes(1)
+  })
+
+  it('fires the revoke callback exactly once per webhook after repeated use calls', async () => {
+    const onRevoke = vi.fn()
+    const strategy = new EntitlementStrategy().revoke(onRevoke)
+
+    Entitlements.use('slug-a', strategy)
+    Entitlements.use('slug-a', strategy)
+
+    await handleWebhookPayload(buildRevokePayload('slug-a'), {
+      webhookSecret: 'test',
+      entitlements: Entitlements,
+    })
+
+    expect(onRevoke).toHaveBeenCalledTimes(1)
+  })
+
+  it('overwrites the handler when use is called again with the same slug', async () => {
+    const onGrantA = vi.fn()
+    const onGrantB = vi.fn()
+
+    Entitlements.use('slug-a', new EntitlementStrategy().grant(onGrantA))
+    Entitlements.use('slug-a', new EntitlementStrategy().grant(onGrantB))
+
+    expect(Entitlements.handlers.size).toBe(1)
+
+    await handleWebhookPayload(buildGrantPayload('slug-a'), {
+      webhookSecret: 'test',
+      entitlements: Entitlements,
+    })
+
+    expect(onGrantA).not.toHaveBeenCalled()
+    expect(onGrantB).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers and dispatches distinct handlers for distinct slugs', async () => {
+    const onGrantA = vi.fn()
+    const onGrantB = vi.fn()
+
+    Entitlements.use('slug-a', new EntitlementStrategy().grant(onGrantA))
+    Entitlements.use('slug-b', new EntitlementStrategy().grant(onGrantB))
+
+    expect(Entitlements.handlers.size).toBe(2)
+
+    await handleWebhookPayload(buildGrantPayload('slug-a'), {
+      webhookSecret: 'test',
+      entitlements: Entitlements,
+    })
+
+    expect(onGrantA).toHaveBeenCalledTimes(1)
+    expect(onGrantB).not.toHaveBeenCalled()
+
+    await handleWebhookPayload(buildGrantPayload('slug-b'), {
+      webhookSecret: 'test',
+      entitlements: Entitlements,
+    })
+
+    expect(onGrantA).toHaveBeenCalledTimes(1)
+    expect(onGrantB).toHaveBeenCalledTimes(1)
   })
 })

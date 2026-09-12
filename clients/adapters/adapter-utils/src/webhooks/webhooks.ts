@@ -355,7 +355,7 @@ export const handleWebhookPayload = async (
     case 'benefit_grant.created':
     case 'benefit_grant.revoked':
       if (entitlements) {
-        for (const handler of entitlements.handlers) {
+        for (const handler of entitlements.handlers.values()) {
           promises.push(handler(payload))
         }
       }

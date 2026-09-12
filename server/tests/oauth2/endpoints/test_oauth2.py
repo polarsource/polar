@@ -29,6 +29,7 @@ from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_servi
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_account, create_organization
 
 from ..conftest import create_oauth2_authorization_code, create_oauth2_token
 
@@ -925,6 +926,148 @@ class TestOAuth2Consent:
         assert [
             scope.organization_id for scope in authorization_code.organization_scopes
         ] == [organization.id]
+
+    @pytest.mark.auth
+    async def test_consent_form_organizations_overrides_query_when_both_present(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        # The consent-screen checkbox selection (form body) must win over a
+        # client-planted `organizations` query parameter: the token is scoped
+        # to the user's selection only, never the union of both sources.
+        for org in (organization, organization_second):
+            await save_fixture(
+                UserOrganization(
+                    user=user, organization=org, role=OrganizationRole.member
+                )
+            )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "organizations": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent",
+            params=params,
+            data={"action": "allow", "organizations": str(organization_second.id)},
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        code = parse_qs(urlparse(location).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert {
+            scope.organization_id for scope in authorization_code.organization_scopes
+        } == {organization_second.id}
+
+    @pytest.mark.auth
+    async def test_consent_form_organizations_multi_value_overrides_query(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        # A multi-select consent (form body carries repeated `organizations`)
+        # restricts the token to the selected set; a client-planted query value
+        # is dropped rather than unioned in.
+        account_third = await create_account(save_fixture, user)
+        organization_third = await create_organization(save_fixture, account_third)
+        for org in (organization, organization_second, organization_third):
+            await save_fixture(
+                UserOrganization(
+                    user=user, organization=org, role=OrganizationRole.member
+                )
+            )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "organizations": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent",
+            params=params,
+            data={
+                "action": "allow",
+                "organizations": [
+                    str(organization_second.id),
+                    str(organization_third.id),
+                ],
+            },
+        )
+
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert {
+            scope.organization_id for scope in authorization_code.organization_scopes
+        } == {organization_second.id, organization_third.id}
+
+    @pytest.mark.auth
+    async def test_consent_form_organizations_inaccessible_rejected(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent",
+            params=params,
+            data={"action": "allow", "organizations": str(organization_second.id)},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_request"
 
     @pytest.mark.auth
     async def test_organization_sub_type_issues_user_down_scope(

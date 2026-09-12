@@ -38,6 +38,12 @@ class StarletteOAuth2Payload(OAuth2Payload):
         self._datalist: dict[str, list[str]] = dict(datalist)
         self._data = {k: v[0] for k, v in self._datalist.items()}
 
+        self._form_organizations: list[str] = []
+        if request._form is not None:
+            for key, value in request._form.multi_items():
+                if key == "organizations" and not isinstance(value, UploadFile):
+                    self._form_organizations.append(value)
+
     @property
     def data(self) -> dict[str, str]:
         return self._data
@@ -45,6 +51,10 @@ class StarletteOAuth2Payload(OAuth2Payload):
     @property
     def datalist(self) -> dict[str, list[str]]:
         return self._datalist
+
+    @property
+    def form_organizations(self) -> list[str]:
+        return self._form_organizations
 
 
 class StarletteOAuth2Request(RequestPathParamsMixin, OAuth2Request):

@@ -158,9 +158,14 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         )
 
         try:
-            selected = {
-                uuid.UUID(value) for value in payload.datalist.get("organizations", [])
-            }
+            form_organizations = payload.form_organizations
+            if form_organizations:
+                selected = {uuid.UUID(value) for value in form_organizations}
+            else:
+                selected = {
+                    uuid.UUID(value)
+                    for value in payload.datalist.get("organizations", [])
+                }
         except ValueError as e:
             raise InvalidRequestError("Invalid 'organizations' UUID") from e
 

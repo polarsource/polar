@@ -147,11 +147,17 @@ class OrganizationRepository(
         return await self.get_one_or_none(statement)
 
     async def get_by_slug(
-        self, slug: str, include_deleted: bool = False
+        self,
+        slug: str,
+        *,
+        include_deleted: bool = False,
+        include_blocked: bool = False,
     ) -> Organization | None:
         statement = self.get_base_statement(include_deleted=include_deleted).where(
             Organization.slug == slug
         )
+        if not include_blocked:
+            statement = statement.where(self.model.status != OrganizationStatus.BLOCKED)
         return await self.get_one_or_none(statement)
 
     async def slug_exists(self, slug: str) -> bool:

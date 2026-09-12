@@ -3381,7 +3381,7 @@ async def edit_organization(
             slug_changed = form.slug != organization.slug
             if slug_changed:
                 existing_slug = await repository.get_by_slug(
-                    form.slug, include_deleted=True
+                    form.slug, include_deleted=True, include_blocked=True
                 )
                 if existing_slug is not None and existing_slug.id != organization.id:
                     raise ValidationError.from_exception_data(

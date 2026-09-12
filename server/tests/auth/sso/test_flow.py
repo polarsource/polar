@@ -23,6 +23,7 @@ from polar.models import (
     UserSession,
     UserSessionOrganization,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OIDCConfiguration,
@@ -570,4 +571,80 @@ class TestSSOJITProvisioning:
             )
 
         assert "error=" in callback.headers["location"]
+        assert await _get_user_by_email(session, NEWCOMER_EMAIL) is None
+
+
+@pytest.mark.asyncio
+class TestSSOBlockedOrganization:
+    async def test_start_rejects_blocked_organization(
+        self,
+        sso_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_sso_connection(save_fixture, organization)
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        response = await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+
+        assert response.status_code == 404
+
+    async def test_blocked_organization_provisions_no_membership(
+        self,
+        sso_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_sso_connection(save_fixture, organization)
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        # The flow is rejected at the very first step, so no IdP call is made
+        # and no user or membership can be provisioned.
+        response = await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+        assert response.status_code == 404
+
+        assert await _get_user_by_email(session, NEWCOMER_EMAIL) is None
+        memberships = (
+            (
+                await session.execute(
+                    select(UserOrganization).where(
+                        UserOrganization.organization_id == organization.id
+                    )
+                )
+            )
+            .scalars()
+            .unique()
+            .all()
+        )
+        assert memberships == []
+
+    async def test_authorize_rejects_organization_blocked_after_start(
+        self,
+        sso_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+
+        start = await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+        assert start.status_code == 201
+
+        # The organization is blocked between `start` and `authorize`. Every
+        # slug-scoped dependency resolves the org via `get_by_slug`, which now
+        # excludes blocked orgs, so the in-flight flow is rejected before it
+        # ever reaches the IdP.
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        authorize = await sso_client.get(
+            f"/v1/auth/{organization.slug}/sso/{connection.id}/authorize"
+        )
+        assert authorize.status_code == 404
+
+        # No user was provisioned for a would-be newcomer.
         assert await _get_user_by_email(session, NEWCOMER_EMAIL) is None

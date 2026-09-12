@@ -84,7 +84,7 @@ def assign_owner(
             organization = (
                 await org_repository.get_by_id(org_id)
                 if org_id is not None
-                else await org_repository.get_by_slug(org)
+                else await org_repository.get_by_slug(org, include_blocked=True)
             )
             if organization is None:
                 typer.echo(f"Organization '{org}' not found.")

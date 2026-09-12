@@ -56,6 +56,88 @@ class TestGetOwnerUser:
         assert owner_after_removal is None
 
 
+@pytest.mark.asyncio
+class TestGetBySlug:
+    async def test_returns_active_org_by_default(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationRepository.from_session(session)
+        result = await repo.get_by_slug(organization.slug)
+        assert result is not None
+        assert result.id == organization.id
+
+    async def test_excludes_blocked_org_by_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        repo = OrganizationRepository.from_session(session)
+        assert await repo.get_by_slug(organization.slug) is None
+
+    async def test_include_blocked_returns_blocked_org(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        repo = OrganizationRepository.from_session(session)
+        result = await repo.get_by_slug(organization.slug, include_blocked=True)
+        assert result is not None
+        assert result.id == organization.id
+
+    async def test_excludes_soft_deleted_org_by_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_deleted_at()
+        await save_fixture(organization)
+
+        repo = OrganizationRepository.from_session(session)
+        assert await repo.get_by_slug(organization.slug) is None
+
+    async def test_include_deleted_returns_soft_deleted_org(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_deleted_at()
+        await save_fixture(organization)
+
+        repo = OrganizationRepository.from_session(session)
+        result = await repo.get_by_slug(organization.slug, include_deleted=True)
+        assert result is not None
+        assert result.id == organization.id
+
+    async def test_include_deleted_and_blocked_returns_blocked_soft_deleted_org(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.BLOCKED)
+        organization.set_deleted_at()
+        await save_fixture(organization)
+
+        repo = OrganizationRepository.from_session(session)
+        result = await repo.get_by_slug(
+            organization.slug, include_deleted=True, include_blocked=True
+        )
+        assert result is not None
+        assert result.id == organization.id
+
+
 async def _set_status(
     save_fixture: SaveFixture,
     organization: Organization,

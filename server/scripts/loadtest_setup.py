@@ -45,7 +45,9 @@ async def create_loadtest_data(
     """Create load test data in the specified organization."""
     # Get organization
     org_repository = OrganizationRepository.from_session(session)
-    organization = await org_repository.get_by_slug(organization_slug)
+    organization = await org_repository.get_by_slug(
+        organization_slug, include_blocked=True
+    )
     if organization is None:
         typer.echo(f"Error: Organization '{organization_slug}' not found", err=True)
         raise typer.Exit(1)

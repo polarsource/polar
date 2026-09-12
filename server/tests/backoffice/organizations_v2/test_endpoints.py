@@ -520,6 +520,62 @@ class TestEditOrganization:
         assert organization.name == "A New Organization Name"
         enqueue_update_customer_slug_mock.assert_not_called()
 
+    async def test_rejects_slug_already_taken_by_active_org(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        organization.slug = "first-org-slug"
+        await save_fixture(organization)
+        organization_second.slug = "taken-slug"
+        await save_fixture(organization_second)
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit",
+            data={
+                "name": organization.name,
+                "slug": "taken-slug",
+                "customer_invoice_prefix": organization.customer_invoice_prefix,
+            },
+        )
+
+        # The slug-collision validation fires (422-shaped form error re-rendered
+        # as 200), and the organization keeps its original slug.
+        assert response.status_code == 200
+        assert "An organization with this slug already exists." in response.text
+        assert organization.slug == "first-org-slug"
+
+    async def test_rejects_slug_already_taken_by_blocked_org(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        organization.slug = "first-org-slug"
+        await save_fixture(organization)
+        organization_second.set_status(OrganizationStatus.BLOCKED)
+        organization_second.slug = "blocked-slug"
+        await save_fixture(organization_second)
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit",
+            data={
+                "name": organization.name,
+                "slug": "blocked-slug",
+                "customer_invoice_prefix": organization.customer_invoice_prefix,
+            },
+        )
+
+        # The uniqueness check passes include_blocked=True, so a blocked org's
+        # slug still collides and the validation error fires instead of an
+        # unhandled IntegrityError at commit.
+        assert response.status_code == 200
+        assert "An organization with this slug already exists." in response.text
+        assert organization.slug == "first-org-slug"
+
 
 @pytest.mark.asyncio
 class TestOverviewLazyCards:

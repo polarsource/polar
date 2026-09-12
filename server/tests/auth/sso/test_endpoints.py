@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from polar.auth.sso.endpoints import get_sso_connection
 from polar.exceptions import ResourceNotFound
 from polar.models import Organization, OrganizationSSOConnection
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OIDCConfiguration,
@@ -102,6 +103,23 @@ class TestGetSSOConnection:
         )
 
         assert result.id == connection.id
+
+    async def test_blocked_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        with pytest.raises(ResourceNotFound):
+            await get_sso_connection(
+                slug=organization.slug,
+                connection_id=connection.id,
+                session=session,
+            )
 
 
 @pytest.mark.asyncio

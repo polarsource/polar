@@ -2387,6 +2387,81 @@ class TestBackfillBenefitGrantsDuplicates:
         assert refreshed2.deleted_at is None
         assert refreshed2.member_id == owner_member.id
 
+    async def test_skips_same_order_duplicate_grant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A revoked NULL-member grant plus a member-linked re-grant for the
+        SAME one-off order must not both be stamped with member_id — that
+        would collide on ix_benefit_grants_scope_unique. Backfill detects
+        the full-scope conflict and leaves the stale grant unlinked."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="same-order-dup@test.com",
+            stripe_customer_id="stripe_same_order_dup",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+        order = await create_order(save_fixture, customer=customer, product=product)
+
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Old grant: revoked but not soft-deleted (member_id stays NULL).
+        old_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            order=order,
+        )
+        assert old_grant.member_id is None
+        assert old_grant.is_revoked
+        assert old_grant.deleted_at is None
+
+        # New grant: member-linked re-grant for the same order, granted.
+        new_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            member=owner_member,
+            order=order,
+        )
+        assert new_grant.member_id == owner_member.id
+        assert new_grant.is_granted
+
+        session.expunge_all()
+        # Before the fix this raised IntegrityError on ix_benefit_grants_scope_unique.
+        await backfill_members(organization.id)
+
+        # The stale revoked grant is left unlinked, not stamped a second member_id.
+        refreshed_old = await session.get(BenefitGrant, old_grant.id)
+        assert refreshed_old is not None
+        assert refreshed_old.member_id is None
+        assert refreshed_old.deleted_at is None
+
+        # The member-linked re-grant is untouched.
+        refreshed_new = await session.get(BenefitGrant, new_grant.id)
+        assert refreshed_new is not None
+        assert refreshed_new.member_id == owner_member.id
+        assert refreshed_new.deleted_at is None
+
     async def test_no_duplicate_links_normally_when_no_conflict(
         self,
         session: AsyncSession,

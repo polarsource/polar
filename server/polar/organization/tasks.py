@@ -692,9 +692,24 @@ async def _backfill_benefit_grants(
                 )
                 if existing_id is not None:
                     if grant.order_id is not None:
-                        # One-off order — each purchase is distinct, keep both
-                        grant.member_id = target_member_id
-                        count += 1
+                        # One-off order — each distinct order keeps its own grant,
+                        # but skip when an identical-scope grant already exists
+                        # (e.g. a re-grant for the same order) to avoid colliding
+                        # on ix_benefit_grants_scope_unique.
+                        scope_conflict_id = await session.scalar(
+                            select(BenefitGrant.id).where(
+                                BenefitGrant.customer_id == grant.customer_id,
+                                BenefitGrant.benefit_id == grant.benefit_id,
+                                BenefitGrant.member_id == target_member_id,
+                                BenefitGrant.subscription_id == grant.subscription_id,
+                                BenefitGrant.order_id == grant.order_id,
+                                BenefitGrant.id != grant.id,
+                                ~BenefitGrant.is_deleted,
+                            )
+                        )
+                        if scope_conflict_id is None:
+                            grant.member_id = target_member_id
+                            count += 1
                     else:
                         # The existing member-linked grant is the one the system
                         # actively manages. The old unlinked grant is stale

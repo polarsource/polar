@@ -671,7 +671,11 @@ class OrganizationService:
 
         if update_schema.details:
             organization.details = cast(
-                OrganizationDetails, update_schema.details.model_dump()
+                OrganizationDetails,
+                {
+                    **organization.details,
+                    **update_schema.details.model_dump(mode="json", exclude_unset=True),
+                },
             )
 
         previous_website = organization.website

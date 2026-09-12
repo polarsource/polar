@@ -514,6 +514,83 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
     @pytest.mark.auth
+    async def test_update_details_partial_preserves_omitted_fields(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A PATCH sending only `product_description` must merge onto the stored
+        # KYC details rather than replacing them with Pydantic defaults. The
+        # follow-up GET to the KYC endpoint reads from the database, so it
+        # covers persistence too.
+        organization.details = {
+            "product_description": "Original SaaS for teams.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": True,
+            "switching_from": "stripe",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"details": {"product_description": "Updated description."}},
+        )
+        assert response.status_code == 200
+
+        response = await client.get(f"/v1/organizations/{organization.id}/kyc")
+        assert response.status_code == 200
+        details = response.json()["details"]
+        assert details["product_description"] == "Updated description."
+        assert details["selling_categories"] == ["Software / SaaS"]
+        assert details["pricing_models"] == ["Subscription"]
+        assert details["switching"] is True
+        assert details["switching_from"] == "stripe"
+
+    @pytest.mark.auth
+    async def test_update_details_partial_explicit_values_override_stored(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Fields the caller explicitly sends overwrite the stored value, even
+        # when sent as a default (switching=False, switching_from=None), while
+        # omitted fields are preserved.
+        organization.details = {
+            "product_description": "Original SaaS for teams.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": True,
+            "switching_from": "stripe",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "details": {
+                    "selling_categories": ["Other"],
+                    "switching": False,
+                    "switching_from": None,
+                }
+            },
+        )
+        assert response.status_code == 200
+
+        response = await client.get(f"/v1/organizations/{organization.id}/kyc")
+        assert response.status_code == 200
+        details = response.json()["details"]
+        assert details["selling_categories"] == ["Other"]
+        assert details["switching"] is False
+        assert details["switching_from"] is None
+        assert details["product_description"] == "Original SaaS for teams."
+        assert details["pricing_models"] == ["Subscription"]
+
+    @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(
         self,
         client: AsyncClient,

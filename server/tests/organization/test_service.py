@@ -534,6 +534,108 @@ class TestUpdateReviewSubmission:
         assert result.details["pricing_models"] == ["One-time"]
         assert result.details["switching"] is True
 
+    @pytest.mark.auth
+    async def test_update_details_partial_preserves_omitted_fields(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # A PATCH sending only `product_description` must merge onto the stored
+        # details rather than replacing them with Pydantic defaults.
+        organization.details = {
+            "product_description": "Original SaaS for teams.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": True,
+            "switching_from": "stripe",
+        }
+        organization.status = OrganizationStatus.ACTIVE
+        session.add(organization)
+        await session.flush()
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {"details": {"product_description": "Updated description."}}
+            ),
+        )
+
+        assert result.details is not None
+        assert result.details["product_description"] == "Updated description."
+        assert result.details["selling_categories"] == ["Software / SaaS"]
+        assert result.details["pricing_models"] == ["Subscription"]
+        assert result.details["switching"] is True
+        assert result.details["switching_from"] == "stripe"
+
+    @pytest.mark.auth
+    async def test_update_details_partial_explicit_values_override_stored(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Fields the caller explicitly sends overwrite the stored value, even
+        # when sent as a default (switching=False, switching_from=None).
+        organization.details = {
+            "product_description": "Original SaaS for teams.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": True,
+            "switching_from": "stripe",
+        }
+        organization.status = OrganizationStatus.ACTIVE
+        session.add(organization)
+        await session.flush()
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {
+                    "details": {
+                        "selling_categories": ["Other"],
+                        "switching": False,
+                        "switching_from": None,
+                    }
+                }
+            ),
+        )
+
+        assert result.details is not None
+        assert result.details["selling_categories"] == ["Other"]
+        assert result.details["switching"] is False
+        assert result.details["switching_from"] is None
+        # omitted fields are preserved
+        assert result.details["product_description"] == "Original SaaS for teams."
+        assert result.details["pricing_models"] == ["Subscription"]
+
+    @pytest.mark.auth
+    async def test_update_details_partial_when_stored_empty(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # The merge must work when no details are stored yet (default {}), so
+        # the initial onboarding write still behaves as a partial PATCH.
+        organization.details = {}
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {"details": {"product_description": "First description here."}}
+            ),
+        )
+
+        assert result.details is not None
+        assert result.details["product_description"] == "First description here."
+        # fields the caller did not send are simply absent, not defaulted
+        assert "selling_categories" not in result.details
+        assert "switching" not in result.details
+
 
 @pytest.mark.asyncio
 async def test_get_next_invoice_number_organization(

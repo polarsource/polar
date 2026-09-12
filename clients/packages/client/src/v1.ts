@@ -6586,6 +6586,10 @@ export interface webhooks {
      * @description Sent when a customer seat is revoked.
      *
      *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+     *
+     *     `data` carries the seat's identity fields (`customer_id`, `member_id`, `email`) as they
+     *     were at the moment of revocation; a subsequent fetch of the seat will return these fields
+     *     as `None`.
      */
     post: operations['_endpointcustomer_seat_revoked_post']
     delete?: never
@@ -39164,6 +39168,10 @@ export interface components {
      * @description Sent when a customer seat is revoked.
      *
      *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+     *
+     *     `data` carries the seat's identity fields (`customer_id`, `member_id`, `email`) as they
+     *     were at the moment of revocation; a subsequent fetch of the seat will return these fields
+     *     as `None`.
      */
     WebhookCustomerSeatRevokedPayload: {
       /**

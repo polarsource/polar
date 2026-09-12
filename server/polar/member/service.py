@@ -503,6 +503,7 @@ class MemberService:
         name: str | None = None,
         external_id: str | None = None,
         role: MemberRole = MemberRole.member,
+        send_webhook: bool = False,
     ) -> Member:
         """
         Get or create a member by email under a customer.
@@ -511,6 +512,10 @@ class MemberService:
         - Returning existing active members
         - Race condition retries on IntegrityError
         - Email normalization (strip whitespace)
+
+        Only the create branch may emit ``member.created`` (when
+        ``send_webhook`` is set); the dedup branches never emit, mirroring
+        ``MemberService.create``.
         """
         email = email.strip()
 
@@ -550,6 +555,16 @@ class MemberService:
                 organization_id=organization_id,
                 email=email,
             )
+            if send_webhook:
+                organization_repository = OrganizationRepository.from_session(session)
+                organization = await organization_repository.get_by_id(organization_id)
+                if organization:
+                    await webhook_service.send(
+                        session,
+                        organization,
+                        WebhookEventType.member_created,
+                        created,
+                    )
             return created
 
     async def list_by_customer(
@@ -582,6 +597,10 @@ class MemberService:
         """
         Add a member to a customer.
 
+        Emits ``member.created`` when a new member is created, mirroring the
+        admin ``create`` path. An existing member is returned unchanged with
+        no webhook.
+
         Args:
             session: Database session
             customer: Customer to add member to
@@ -599,6 +618,7 @@ class MemberService:
             email=email,
             name=name,
             role=role,
+            send_webhook=True,
         )
 
     async def create(

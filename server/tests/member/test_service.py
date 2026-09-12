@@ -1810,3 +1810,240 @@ class TestGetOrCreateByEmail:
         )
 
         assert member.role == MemberRole.owner
+
+    async def test_create_emits_webhook_when_send_webhook_true(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A newly created member emits ``member.created`` when ``send_webhook``
+        is set, mirroring the admin ``create`` path."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="new@example.com",
+            name="New Member",
+            send_webhook=True,
+        )
+
+        webhook_send_mock.assert_called_once()
+        call = webhook_send_mock.call_args
+        assert call.args[1].id == organization.id
+        assert call.args[2] == WebhookEventType.member_created
+        assert call.args[3].id == member.id
+
+    async def test_create_does_not_emit_webhook_by_default(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Without ``send_webhook`` (the default, used by seat-claim/backfill
+        callers) creating a member emits no webhook."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="new@example.com",
+        )
+
+        webhook_send_mock.assert_not_called()
+
+    async def test_existing_member_does_not_emit_webhook(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """The dedup branch returns the existing member unchanged and never
+        emits ``member.created``, even when ``send_webhook`` is set."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Existing",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            send_webhook=True,
+        )
+
+        assert member.id == existing.id
+        webhook_send_mock.assert_not_called()
+
+    async def test_integrity_error_race_does_not_emit_webhook(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """When a concurrent insert trips the unique index, the retry returns
+        the existing member and emits no ``member.created`` even with
+        ``send_webhook`` set — the member was not created by this call."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+            name="Racer",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        original_get = MemberRepository.get_by_customer_id_and_email
+        call_count = 0
+
+        async def mock_get(self: Any, customer_id: Any, email: Any) -> Member | None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return None
+            return await original_get(self, customer_id, email)
+
+        mocker.patch.object(MemberRepository, "get_by_customer_id_and_email", mock_get)
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+            send_webhook=True,
+        )
+
+        assert member.id == existing.id
+        webhook_send_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestAddToCustomer:
+    async def test_new_member_emits_member_created_webhook(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Adding a new member through the customer-portal add path emits
+        ``member.created``, matching the admin ``create`` path."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = await member_service.add_to_customer(
+            session,
+            customer,
+            email="new@example.com",
+            name="New Member",
+        )
+
+        webhook_send_mock.assert_called_once()
+        call = webhook_send_mock.call_args
+        assert call.args[1].id == organization.id
+        assert call.args[2] == WebhookEventType.member_created
+        assert call.args[3].id == member.id
+
+    async def test_existing_member_does_not_emit_webhook(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Adding an email that already maps to a member returns it unchanged
+        and emits no ``member.created``."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        existing = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="existing@example.com",
+            role=MemberRole.member,
+        )
+
+        member = await member_service.add_to_customer(
+            session,
+            customer,
+            email="existing@example.com",
+        )
+
+        assert member.id == existing.id
+        webhook_send_mock.assert_not_called()
+
+    async def test_billing_manager_role_preserved(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """The created member carries the requested role through to the
+        webhook payload."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = await member_service.add_to_customer(
+            session,
+            customer,
+            email="billing@example.com",
+            role=MemberRole.billing_manager,
+        )
+
+        assert member.role == MemberRole.billing_manager
+        call = webhook_send_mock.call_args
+        assert call.args[3].role == MemberRole.billing_manager

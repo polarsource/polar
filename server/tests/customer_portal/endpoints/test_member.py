@@ -2,10 +2,12 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.models import Customer, Member, Organization
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
     CUSTOMER_AUTH_SUBJECT,
@@ -286,6 +288,107 @@ class TestAddMember:
             json={"email": "new@example.com"},
         )
         assert response.status_code == 201
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_add_new_member_emits_member_created_webhook(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Adding a new member via the portal emits ``member.created``."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com", "name": "New Member"},
+        )
+        assert response.status_code == 201
+        new_member_id = response.json()["id"]
+
+        member_created_calls = [
+            call
+            for call in webhook_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.member_created
+        ]
+        assert len(member_created_calls) == 1
+        assert str(member_created_calls[0].args[3].id) == new_member_id
+        assert member_created_calls[0].args[1].id == organization.id
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_add_existing_member_does_not_emit_webhook(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Adding an email that already maps to a member returns it unchanged
+        and emits no ``member.created``."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Existing Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "existing@example.com"},
+        )
+        assert response.status_code == 201
+        assert response.json()["id"] == str(existing.id)
+
+        webhook_send_mock.assert_not_called()
+
+    @pytest.mark.auth(MEMBER_BILLING_MANAGER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_billing_manager_add_emits_member_created_webhook(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_billing_manager: Member,
+    ) -> None:
+        """A billing manager adding a new member also emits
+        ``member.created``."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com", "role": "billing_manager"},
+        )
+        assert response.status_code == 201
+
+        member_created_calls = [
+            call
+            for call in webhook_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.member_created
+        ]
+        assert len(member_created_calls) == 1
+        assert response.json()["role"] == "billing_manager"
 
 
 @pytest.mark.asyncio

@@ -16,6 +16,7 @@ from polar.models import Account, Organization, User, UserOrganization
 from polar.models.member import MemberRole
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
+from polar.user_organization.repository import UserOrganizationRepository
 from polar.user_organization.service import (
     AlreadyOwner,
     CannotRemoveOrganizationOwner,
@@ -645,6 +646,176 @@ class TestSetRoleTransferOwnershipRace:
             assert admin_uo is not None
             assert admin_uo.role == OrganizationRole.owner
             assert owner_count == 1
+        finally:
+            async with sessionmaker() as cleanup_session:
+                await cleanup_session.execute(
+                    delete(UserOrganization).where(
+                        UserOrganization.organization_id == organization.id
+                    )
+                )
+                await cleanup_session.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Account).where(Account.id == account.id)
+                )
+                await cleanup_session.execute(
+                    delete(User).where(User.id.in_([owner.id, admin.id]))
+                )
+                await cleanup_session.commit()
+            await engine.dispose()
+
+
+def _install_gated_lock(
+    mocker: MockerFixture,
+    *,
+    staged_event: asyncio.Event,
+    proceed_event: asyncio.Event,
+) -> None:
+    """
+    Park the first ``UserOrganizationRepository.lock_members_for_update``
+    call so a concurrent ``remove_member`` can commit a soft-delete of the
+    transfer target *before* ``transfer_ownership`` takes any row locks.
+
+    With the fix, ``lock_members_for_update`` is the first DB operation
+    in ``transfer_ownership`` — gating it pins the worst-case interleaving
+    where the target was removed before the lock is acquired.
+    """
+    original_lock = UserOrganizationRepository.lock_members_for_update
+    call_count = 0
+
+    async def gated_lock(
+        self: UserOrganizationRepository, organization_id: UUID
+    ) -> None:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            staged_event.set()
+            await proceed_event.wait()
+        await original_lock(self, organization_id)
+
+    mocker.patch.object(
+        UserOrganizationRepository,
+        "lock_members_for_update",
+        new=gated_lock,
+    )
+
+
+@pytest.mark.asyncio
+class TestTransferOwnershipRemoveRace:
+    async def test_concurrent_remove_of_new_owner_preserves_previous_owner(
+        self, worker_id: str, mocker: MockerFixture
+    ) -> None:
+        # Reproduces the TOCTOU race between `transfer_ownership` and a
+        # concurrent `remove_member` of the new-owner target. With the
+        # fix, the transfer must fail loudly (UserNotMemberOfOrganization)
+        # instead of silently committing an ownerless org.
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_transfer_remove_toctou",
+            pool_size=4,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+
+        async with sessionmaker() as setup_session:
+            save_fixture = save_fixture_factory(setup_session)
+            owner = await create_user(save_fixture)
+            admin = await create_user(save_fixture)
+            admin.identity_verification_status = IdentityVerificationStatus.verified
+            await save_fixture(admin)
+            account = await create_account(save_fixture, owner)
+            organization = await create_organization(save_fixture, account)
+            setup_session.add(
+                UserOrganization(
+                    user=owner,
+                    organization=organization,
+                    role=OrganizationRole.owner,
+                )
+            )
+            setup_session.add(
+                UserOrganization(
+                    user=admin,
+                    organization=organization,
+                    role=OrganizationRole.admin,
+                )
+            )
+            await setup_session.commit()
+
+        staged_event = asyncio.Event()
+        proceed_event = asyncio.Event()
+        _install_gated_lock(
+            mocker, staged_event=staged_event, proceed_event=proceed_event
+        )
+
+        try:
+            # `transfer_ownership(admin)` parks at the gated
+            # `lock_members_for_update` *before* taking any row locks.
+            transfer_task = asyncio.create_task(
+                _attempt_transfer_ownership(
+                    sessionmaker,
+                    new_owner_user_id=admin.id,
+                    organization_id=organization.id,
+                )
+            )
+            await staged_event.wait()
+
+            # `remove_member(admin)` commits first, soft-deleting the
+            # transfer target while `transfer_ownership` is parked.
+            removed = await _attempt_member_removal(
+                sessionmaker, admin.id, organization.id
+            )
+            assert removed is True
+
+            # Release the gate so `transfer_ownership` takes the locks
+            # and re-reads the (now soft-deleted) target.
+            proceed_event.set()
+            succeeded_transfer, transfer_exc = await transfer_task
+
+            async with sessionmaker() as verify_session:
+                previous_uo = await user_organization_service.get_by_user_and_org(
+                    verify_session, owner.id, organization.id
+                )
+                new_uo = await user_organization_service.get_by_user_and_org(
+                    verify_session, admin.id, organization.id
+                )
+                owner_count = await _owner_count(verify_session, organization.id)
+
+                # Inspect the soft-deleted "shadow" row directly, bypassing
+                # the `~is_deleted` filter, to confirm `promote_to_owner`
+                # did NOT stamp `owner` onto it.
+                shadow_result = await verify_session.execute(
+                    select(UserOrganization.role).where(
+                        UserOrganization.user_id == admin.id,
+                        UserOrganization.organization_id == organization.id,
+                        UserOrganization.deleted_at.is_not(None),
+                    )
+                )
+                shadow_role = shadow_result.scalar_one_or_none()
+
+            # The transfer must NOT report silent success — it must fail
+            # because the target is no longer a live member.
+            assert succeeded_transfer is False, (
+                "transfer_ownership must fail when its target is removed "
+                "concurrently, not commit an ownerless state"
+            )
+            assert transfer_exc is UserNotMemberOfOrganization
+
+            # Previous owner is preserved — the row was not demoted.
+            assert previous_uo is not None
+            assert previous_uo.role == OrganizationRole.owner
+
+            # The target's membership is gone from the live view.
+            assert new_uo is None
+
+            # The org still has exactly one live owner.
+            assert owner_count == 1
+
+            # Defense-in-depth: the soft-deleted row's role was NOT stamped
+            # with `owner` by `promote_to_owner`'s `~is_deleted` guard.
+            assert shadow_role is not None
+            assert shadow_role != OrganizationRole.owner
+            assert shadow_role == OrganizationRole.admin
         finally:
             async with sessionmaker() as cleanup_session:
                 await cleanup_session.execute(

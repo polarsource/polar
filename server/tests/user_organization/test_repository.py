@@ -1,9 +1,11 @@
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
+from polar.models.user_organization import OrganizationRole
 from polar.user_organization.repository import UserOrganizationRepository
 from tests.fixtures.database import SaveFixture
 
@@ -55,3 +57,65 @@ class TestGetOrganizationsWithRole:
         result = await repository.get_organizations_with_role(user_second.id)
 
         assert result == []
+
+
+@pytest.mark.asyncio
+class TestPromoteToOwner:
+    async def test_promotes_live_member(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        account: Account,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        relation = UserOrganization(
+            user_id=user_second.id, organization_id=organization.id
+        )
+        await save_fixture(relation)
+
+        repository = UserOrganizationRepository.from_session(session)
+        promoted = await repository.promote_to_owner(organization.id, user_second.id)
+
+        assert promoted == user_second.id
+
+        result = await session.execute(
+            select(UserOrganization.role).where(
+                UserOrganization.user_id == user_second.id,
+                UserOrganization.organization_id == organization.id,
+            )
+        )
+        assert result.scalar_one() == OrganizationRole.owner
+
+    async def test_refuses_soft_deleted_member(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        account: Account,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        from polar.kit.utils import utc_now
+
+        relation = UserOrganization(
+            user_id=user_second.id, organization_id=organization.id
+        )
+        await save_fixture(relation)
+
+        relation.deleted_at = utc_now()
+        await session.flush()
+
+        repository = UserOrganizationRepository.from_session(session)
+        promoted = await repository.promote_to_owner(organization.id, user_second.id)
+
+        # No live row was promoted.
+        assert promoted is None
+
+        result = await session.execute(
+            select(UserOrganization.role).where(
+                UserOrganization.user_id == user_second.id,
+                UserOrganization.organization_id == organization.id,
+            )
+        )
+        # `role='owner'` was NOT stamped onto the soft-deleted row.
+        assert result.scalar_one() == OrganizationRole.member

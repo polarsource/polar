@@ -85,13 +85,24 @@ class UserOrganizationRepository:
         )
         return result.scalar_one_or_none()
 
-    async def promote_to_owner(self, organization_id: UUID, user_id: UUID) -> None:
-        """Promote `user_id` on the org to `owner`."""
-        await self.session.execute(
+    async def promote_to_owner(
+        self, organization_id: UUID, user_id: UUID
+    ) -> UUID | None:
+        """Promote `user_id` on the org to `owner`.
+
+        Returns the promoted user's id, or `None` if the membership row
+        is not live (e.g. soft-deleted by a concurrent removal). The caller
+        must treat `None` as a failure — never stamp `owner` onto a
+        soft-deleted row.
+        """
+        result = await self.session.execute(
             update(UserOrganization)
             .where(
                 UserOrganization.organization_id == organization_id,
                 UserOrganization.user_id == user_id,
+                ~UserOrganization.is_deleted,
             )
             .values(role=OrganizationRole.owner)
+            .returning(UserOrganization.user_id)
         )
+        return result.scalar_one_or_none()

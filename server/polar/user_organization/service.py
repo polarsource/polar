@@ -271,7 +271,14 @@ class UserOrganizationService:
         Fires the `IdentityVerificationStatus.verified` gate on the new
         owner, since payouts route through whoever holds `owner`. The gate
         is skipped in the sandbox environment.
+
+        Members are locked with `FOR UPDATE` *before* reading the new
+        owner's membership row so that a concurrent `remove_member` cannot
+        soft-delete the target between the read and the demote/promote
+        (which would leave the org with no live owner).
         """
+        repository = UserOrganizationRepository.from_session(session)
+        await repository.lock_members_for_update(organization_id)
         new_owner_user_org = await self.get_by_user_and_org(
             session, new_owner_user_id, organization_id
         )
@@ -292,11 +299,13 @@ class UserOrganizationService:
                 new_owner_user_id, new_owner_user.identity_verification_status
             )
 
-        repository = UserOrganizationRepository.from_session(session)
-        await repository.lock_members_for_update(organization_id)
         previous_owner_user_id = await repository.demote_current_owner(organization_id)
         try:
-            await repository.promote_to_owner(organization_id, new_owner_user_id)
+            promoted_user_id = await repository.promote_to_owner(
+                organization_id, new_owner_user_id
+            )
+            if promoted_user_id is None:
+                raise UserNotMemberOfOrganization(new_owner_user_id, organization_id)
             await session.flush()
         except IntegrityError as e:
             # Partial unique index `ix_user_organizations_owner_per_org`

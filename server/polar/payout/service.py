@@ -18,7 +18,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
-from polar.kit.currency import format_currency
+from polar.kit.currency import format_currency, get_currency_decimal_factor
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -951,6 +951,12 @@ class PayoutService:
         )
         assert payout_transaction is not None
 
+        account_currency_factor = (
+            get_currency_decimal_factor(payout.account_currency)
+            if payout_transaction.transfer_id is not None
+            else 100
+        )
+
         transaction_repository = TransactionRepository.from_session(session)
         statement = transaction_repository.get_paid_transactions_statement(
             payout_transaction.id
@@ -1010,7 +1016,7 @@ class PayoutService:
                         transaction.amount / 100,
                         abs(payout.amount / 100),
                         payout.account_currency,
-                        abs(payout.account_amount / 100),
+                        abs(payout.account_amount / account_currency_factor),
                     )
                 )
 

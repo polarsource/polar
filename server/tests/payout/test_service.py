@@ -1,4 +1,6 @@
+import csv
 import datetime
+import io
 import uuid
 from datetime import timedelta
 from functools import partial
@@ -7,12 +9,14 @@ from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Account, Organization, Payout, Transaction, User
@@ -1750,3 +1754,141 @@ class TestCountPendingByPayoutAccount:
 
         # held + pending + in_transit reserve funds; succeeded/canceled do not.
         assert count == 3
+
+
+def _parse_csv(rows: list[str]) -> tuple[list[str], list[list[str]]]:
+    reader = csv.reader(io.StringIO("".join(rows)))
+    header = next(reader)
+    return header, list(reader)
+
+
+async def _collect_payout_csv(
+    session: AsyncSession, payout: Payout
+) -> tuple[list[str], list[list[str]]]:
+    sessionmaker: AsyncSessionMaker = async_sessionmaker(  # type: ignore[assignment]
+        bind=session.bind, expire_on_commit=False
+    )
+    rows = [row async for row in payout_service.get_csv(session, sessionmaker, payout)]
+    return _parse_csv(rows)
+
+
+@pytest.mark.asyncio
+class TestGetCSV:
+    @pytest.mark.parametrize(
+        ("account_currency", "country", "stripe_amount", "expected_total"),
+        [
+            pytest.param("jpy", "JP", 150000, 150000.0, id="jpy"),
+            pytest.param("krw", "KR", 1300000, 1300000.0, id="krw"),
+            pytest.param("clp", "CL", 80000, 80000.0, id="clp"),
+            pytest.param("eur", "DE", 92000, 920.0, id="eur"),
+            pytest.param("isk", "IS", 12300, 123.0, id="isk"),
+        ],
+    )
+    async def test_account_payout_total_after_transfer(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        account_currency: str,
+        country: str,
+        stripe_amount: int,
+        expected_total: float,
+    ) -> None:
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID",
+            destination_payment="py_123",
+        )
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            balance_transaction=SimpleNamespace(amount=stripe_amount)
+        )
+
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture,
+            organization,
+            user,
+            type=PayoutAccountType.stripe,
+            country=country,
+            currency=account_currency,
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            currency="usd",
+            amount=100000,
+            account_currency=account_currency,
+            account_amount=100000,
+        )
+        payout_transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account_currency,
+            payout=payout,
+        )
+        await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.balance,
+            amount=100000,
+            payout_transaction=payout_transaction,
+        )
+        await session.flush()
+
+        payout = await payout_service.transfer_stripe(session, payout)
+        assert payout.account_amount == stripe_amount
+
+        header, data_rows = await _collect_payout_csv(session, payout)
+        idx = header.index("Account Payout Total")
+        assert float(data_rows[0][idx]) == expected_total
+
+    async def test_account_payout_total_before_transfer_keeps_cents_divisor(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account_currency = "jpy"
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture,
+            organization,
+            user,
+            type=PayoutAccountType.stripe,
+            country="JP",
+            currency=account_currency,
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            currency="usd",
+            amount=100000,
+            account_currency=account_currency,
+            account_amount=100000,
+        )
+        payout_transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account_currency,
+            payout=payout,
+        )
+        await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.balance,
+            amount=100000,
+            payout_transaction=payout_transaction,
+        )
+        await session.flush()
+
+        header, data_rows = await _collect_payout_csv(session, payout)
+        idx = header.index("Account Payout Total")
+        assert float(data_rows[0][idx]) == 1000.0

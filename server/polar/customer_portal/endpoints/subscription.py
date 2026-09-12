@@ -187,7 +187,8 @@ async def get_cancel_preview(
     responses={
         403: {
             "description": "Previewing this change is not allowed.",
-            "model": AlreadyCanceledSubscription.schema()
+            "model": NotPermitted.schema()
+            | AlreadyCanceledSubscription.schema()
             | UpdateSubscriptionPlanNotAllowed.schema()
             | UpdateSubscriptionSeatsNotAllowed.schema()
             | UpdateSubscriptionUnitsNotAllowed.schema(),
@@ -232,7 +233,8 @@ async def preview_change(
                 "the user lacks billing permissions, "
                 "or pausing/resuming is not enabled for the organization."
             ),
-            "model": AlreadyCanceledSubscription.schema()
+            "model": NotPermitted.schema()
+            | AlreadyCanceledSubscription.schema()
             | PauseResumeNotAllowed.schema()
             | UpdateSubscriptionPlanNotAllowed.schema()
             | UpdateSubscriptionSeatsNotAllowed.schema()
@@ -286,7 +288,7 @@ async def update(
                 "or will be at the end of the period, "
                 "or the user lacks billing permissions."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": NotPermitted.schema() | AlreadyCanceledSubscription.schema(),
         },
         404: SubscriptionNotFound,
     },

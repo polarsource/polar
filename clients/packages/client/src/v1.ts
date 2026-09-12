@@ -55043,7 +55043,9 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['AlreadyCanceledSubscription']
         }
       }
       /** @description Customer subscription was not found. */
@@ -55107,6 +55109,7 @@ export interface operations {
         }
         content: {
           'application/json':
+            | components['schemas']['NotPermitted']
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['PauseResumeNotAllowed']
             | components['schemas']['UpdateSubscriptionPlanNotAllowed']
@@ -55259,6 +55262,7 @@ export interface operations {
         }
         content: {
           'application/json':
+            | components['schemas']['NotPermitted']
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']

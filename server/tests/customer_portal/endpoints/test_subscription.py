@@ -803,6 +803,7 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
 
         assert response.status_code == 403
         error = response.json()
+        assert error["error"] == "NotPermitted"
         assert any(
             word in error["detail"].lower() for word in ["billing", "permission"]
         )
@@ -888,6 +889,109 @@ class TestMemberRoleEnforcementSubscriptionCancel:
 
         assert response.status_code == 403
         error = response.json()
+        assert error["error"] == "NotPermitted"
+        assert any(
+            word in error["detail"].lower() for word in ["billing", "permission"]
+        )
+
+
+@pytest.mark.asyncio
+class TestMemberRoleEnforcementSubscriptionChangePreview:
+    """Tests for role-based access control on subscription change-preview endpoint.
+
+    Verifies that:
+    - Owner members can preview subscription changes
+    - Billing manager members can preview subscription changes
+    - Regular members (read-only) cannot preview subscription changes (403)
+    """
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    async def test_owner_can_preview_change(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Owner members should be able to preview subscription changes."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=product.recurring_interval,
+            prices=[(5000, "usd")],
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/change-preview",
+            json={"product_id": str(new_product.id)},
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()["prorations"]) == 2
+
+    @pytest.mark.auth(MEMBER_BILLING_MANAGER_AUTH_SUBJECT)
+    async def test_billing_manager_can_preview_change(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        member_billing_manager: Member,
+    ) -> None:
+        """Billing manager members should be able to preview subscription changes."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=product.recurring_interval,
+            prices=[(5000, "usd")],
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/change-preview",
+            json={"product_id": str(new_product.id)},
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()["prorations"]) == 2
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_regular_member_cannot_preview_change(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        """Regular members (read-only) should NOT be able to preview subscription
+        changes."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/change-preview",
+            json={"product_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 403
+        error = response.json()
+        assert error["error"] == "NotPermitted"
         assert any(
             word in error["detail"].lower() for word in ["billing", "permission"]
         )

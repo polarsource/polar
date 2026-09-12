@@ -533,3 +533,46 @@ def test_generator_renders_amounts_in_primary_font_after_cjk(
 )
 def test_escape_markdown(text: str, expected: str) -> None:
     assert escape_markdown(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("net_amount", "tax_amount", "applied_balance_amount", "expected_to_be_paid"),
+    [
+        pytest.param(-50_00, 0, 50, 0, id="credit_order_partial_debt_clearing"),
+        pytest.param(-50_00, 0, 50_00, 0, id="credit_order_full_debt_clearing"),
+        pytest.param(90_00, 18_00, -50_00, 58_00, id="positive_order_partial_credit"),
+        pytest.param(90_00, 18_00, -108_00, 0, id="positive_order_full_credit"),
+    ],
+)
+def test_totals_items_to_be_paid_never_negative(
+    invoice: Invoice,
+    net_amount: int,
+    tax_amount: int,
+    applied_balance_amount: int,
+    expected_to_be_paid: int,
+) -> None:
+    """The invoice "To be paid" line must mirror ``Order.due_amount`` (clamped
+    at zero) and never render a negative amount, even for credit orders that
+    partially clear wallet debt."""
+    totals_invoice = invoice.model_copy(
+        update={
+            "net_amount": net_amount,
+            "tax_amount": tax_amount,
+            "tax_breakdown": [],
+            "applied_balance_amount": applied_balance_amount,
+        }
+    )
+
+    to_be_paid = next(
+        item for item in totals_invoice.totals_items if item.label == "To be paid"
+    )
+
+    assert to_be_paid.amount == expected_to_be_paid
+
+
+def test_totals_items_omits_balance_rows_without_applied_balance(
+    invoice: Invoice,
+) -> None:
+    labels = [item.label for item in invoice.totals_items]
+    assert "Applied balance" not in labels
+    assert "To be paid" not in labels

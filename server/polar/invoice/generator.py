@@ -206,7 +206,7 @@ class Invoice(BaseModel):
             items.append(
                 InvoiceTotalsItem(
                     label="To be paid",
-                    amount=total + self.applied_balance_amount,
+                    amount=max(0, total + self.applied_balance_amount),
                     currency=self.currency,
                 )
             )

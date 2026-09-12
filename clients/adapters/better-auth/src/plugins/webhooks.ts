@@ -91,6 +91,7 @@ export const webhooks =
             })
           }
 
+          let seatsSyncError: unknown
           try {
             const organizationOptions =
               rootOptions?.experimental_organizationSync
@@ -151,7 +152,20 @@ export const webhooks =
                 }
               }
             }
+          } catch (e: unknown) {
+            seatsSyncError = e
+            if (e instanceof Error) {
+              ctx.context.logger.error(
+                `Polar organization seat sync failed. Error: ${e.message}`,
+              )
+            } else {
+              ctx.context.logger.error(
+                `Polar organization seat sync failed. Error: ${e}`,
+              )
+            }
+          }
 
+          try {
             await handleWebhookPayload(event, {
               webhookSecret: secret,
               ...eventHandlers,
@@ -165,6 +179,12 @@ export const webhooks =
               ctx.context.logger.error(`Polar webhook failed. Error: ${e}`)
             }
 
+            throw new APIError('INTERNAL_SERVER_ERROR', {
+              message: 'Webhook error: See server logs for more information.',
+            })
+          }
+
+          if (seatsSyncError) {
             throw new APIError('INTERNAL_SERVER_ERROR', {
               message: 'Webhook error: See server logs for more information.',
             })

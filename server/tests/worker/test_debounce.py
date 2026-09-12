@@ -1,11 +1,14 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
+import dramatiq
 import pytest
-from fakeredis import FakeAsyncRedis
+from fakeredis import FakeAsyncRedis, FakeRedis
 
 from polar.worker._debounce import (
+    DEBOUNCE_KEY_TTL,
     DebounceContext,
+    DebounceMiddleware,
     check_debounce,
     finalize_debounce,
     now_timestamp,
@@ -203,3 +206,56 @@ class TestFinalizeDebounce:
         await finalize_debounce(fake_redis, actor, context, None)
 
         assert await fake_redis.exists("debounce:test:key") == 0
+
+
+class TestDebounceMiddleware:
+    """Tests for the sync DebounceMiddleware (standard dramatiq-redis worker path)."""
+
+    DEBOUNCE_KEY = "debounce:test:key"
+
+    def _make_message(self) -> dramatiq.MessageProxy:
+        return dramatiq.MessageProxy(
+            dramatiq.Message(
+                queue_name="low_priority",
+                actor_name="dummy",
+                args=(),
+                kwargs={},
+                options={"debounce_key": self.DEBOUNCE_KEY},
+                message_id="owner",
+            )
+        )
+
+    def test_expired_hash_success_no_key_leak(self) -> None:
+        redis = FakeRedis()
+        mw = DebounceMiddleware(redis.connection_pool)
+        proxy = self._make_message()
+
+        mw.before_process_message(dramatiq.get_broker(), proxy)
+        mw.after_process_message(
+            dramatiq.get_broker(), proxy, result=None, exception=None
+        )
+
+        assert redis.keys() == []
+
+    def test_success_marks_executed(self) -> None:
+        redis = FakeRedis()
+        mw = DebounceMiddleware(redis.connection_pool)
+        redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": str(now_timestamp() - 5),
+                "message_id": "owner",
+                "executed": "0",
+            },
+        )
+        redis.expire(self.DEBOUNCE_KEY, DEBOUNCE_KEY_TTL)
+        proxy = self._make_message()
+
+        mw.before_process_message(dramatiq.get_broker(), proxy)
+        mw.after_process_message(
+            dramatiq.get_broker(), proxy, result=None, exception=None
+        )
+
+        assert redis.hget(self.DEBOUNCE_KEY, "executed") == b"1"
+        assert not redis.hexists(self.DEBOUNCE_KEY, "enqueue_timestamp")
+        assert redis.ttl(self.DEBOUNCE_KEY) > 0

@@ -250,7 +250,7 @@ class DebounceMiddleware(dramatiq.Middleware):
             return
 
         enqueue_timestamp: int | None = message.options.pop(
-            "debounce_enqueue_timestamp"
+            "debounce_enqueue_timestamp", None
         )
         if enqueue_timestamp is not None:
             delay = now_timestamp() - enqueue_timestamp
@@ -267,7 +267,7 @@ class DebounceMiddleware(dramatiq.Middleware):
                 )
                 pipe.hset(debounce_key, "enqueue_timestamp", now_timestamp())
                 pipe.expire(debounce_key, DEBOUNCE_KEY_TTL)
-            elif exception is None:
+            elif exception is None and enqueue_timestamp is not None:
                 log.debug("Marking debounce key as executed", debounce_key=debounce_key)
                 pipe.hset(debounce_key, "executed", 1)
                 pipe.hdel(debounce_key, "enqueue_timestamp")

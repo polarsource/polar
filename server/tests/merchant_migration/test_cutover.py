@@ -8,6 +8,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -42,6 +43,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_customer,
     create_payment_method,
@@ -231,6 +233,16 @@ class TestRun:
         assert subscription.customer_id == imported_customer.id
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
+        events = await get_all_by_name(session, SystemEvent.subscription_migrated)
+        assert len(events) == 1
+        assert events[0].customer_id == imported_customer.id
+        assert events[0].user_metadata == {
+            "subscription_id": str(subscription.id),
+            "customer_id": str(imported_customer.id),
+            "product_id": str(subscription.product_id),
+            "stripe_subscription_id": "sub_1",
+            "stripe_customer_id": "cus_1",
+        }
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,

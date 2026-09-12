@@ -35,6 +35,7 @@ class SystemEvent(StrEnum):
     subscription_units_updated = "subscription.units_updated"
     subscription_billing_period_updated = "subscription.billing_period_updated"
     subscription_update_cleared = "subscription.update_cleared"
+    subscription_migrated = "subscription.migrated"
     order_paid = "order.paid"
     order_refunded = "order.refunded"
     order_voided = "order.voided"
@@ -77,6 +78,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.units_updated": "Subscription Units Updated",
     "subscription.billing_period_updated": "Subscription Billing Period Updated",
     "subscription.update_cleared": "Subscription Update Cleared",
+    "subscription.migrated": "Subscription Migrated",
     "customer.created": "Customer Created",
     "customer.updated": "Customer Updated",
     "customer.deleted": "Customer Deleted",
@@ -455,6 +457,21 @@ class SubscriptionUpdateClearedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_update_cleared]]
         user_metadata: Mapped[SubscriptionUpdateClearedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionMigratedMetadata(TypedDict):
+    subscription_id: str
+    customer_id: str
+    product_id: str
+    stripe_subscription_id: str
+    stripe_customer_id: str
+
+
+class SubscriptionMigratedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_migrated]]
+        user_metadata: Mapped[SubscriptionMigratedMetadata]  # type: ignore[assignment]
 
 
 class OrderPaidMetadata(TypedDict):
@@ -872,6 +889,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionUpdateClearedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_migrated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionMigratedMetadata,
 ) -> Event: ...
 
 

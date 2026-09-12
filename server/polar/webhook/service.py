@@ -54,6 +54,7 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.organization.resolver import get_payload_organization
+from polar.subscription.schemas import SubscriptionMigrated
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -734,6 +735,15 @@ class WebhookService:
         target: Organization,
         event: Literal[WebhookEventType.subscription_resumed],
         data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_migrated],
+        data: SubscriptionMigrated,
     ) -> list[WebhookEvent]: ...
 
     @overload

@@ -35,6 +35,7 @@ from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
+    SubscriptionMigratedMetadata,
     SubscriptionPastDueMetadata,
     SubscriptionPausedMetadata,
     SubscriptionProductUpdatedMetadata,
@@ -452,6 +453,17 @@ class SubscriptionResumedEvent(SystemEventBase):
     )
 
 
+class SubscriptionMigratedEvent(SystemEventBase):
+    """An event created by Polar when a subscription is migrated from Stripe."""
+
+    name: Literal[SystemEventEnum.subscription_migrated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionMigratedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionProductUpdatedEvent(SystemEventBase):
     """An event created by Polar when a subscription changes the product."""
 
@@ -666,6 +678,7 @@ SystemEvent = Annotated[
     | SubscriptionReinstatedEvent
     | SubscriptionPausedEvent
     | SubscriptionResumedEvent
+    | SubscriptionMigratedEvent
     | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent

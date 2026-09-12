@@ -1,11 +1,11 @@
 'use client'
 
 import {
+  invalidateMigrationRecords,
   useMigrationRecords,
   useMigrationSwitch,
   useStartMigrationSwitch,
 } from '@/hooks/queries/merchantMigrations'
-import { getQueryClient } from '@/utils/api/query'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -53,9 +53,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
   const wasRunning = useRef(false)
   useEffect(() => {
     if (wasRunning.current && !running) {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords', { id: migrationId }],
-      })
+      invalidateMigrationRecords(migrationId)
     }
     wasRunning.current = running
   }, [running, migrationId])

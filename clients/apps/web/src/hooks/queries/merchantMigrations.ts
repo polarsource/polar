@@ -56,7 +56,9 @@ export const useCreateMerchantMigration = (organizationId: string) =>
     },
   })
 
-// The listing and its counts live behind separate keys but are one unit.
+// The record listing, its counts, and the migrations list — whose cards draw
+// their position from `migration.step` — live behind separate keys but are one
+// unit, so every step transition refreshes the list alongside the detail.
 export const invalidateMigrationRecords = (id: string) => {
   const client = getQueryClient()
   client.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
@@ -64,6 +66,7 @@ export const invalidateMigrationRecords = (id: string) => {
   client.invalidateQueries({
     queryKey: ['merchantMigrationRecordSummary', { id }],
   })
+  client.invalidateQueries({ queryKey: ['merchantMigrations'] })
 }
 
 export const useRunMerchantMigrationPrecheck = (id: string) =>

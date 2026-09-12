@@ -289,7 +289,7 @@ class TestListenEndpoint:
             session=AsyncMock(),
         )
 
-        events: list[str] = []
+        events: list[Any] = []
         async for event in response.body_iterator:
             events.append(event)
 
@@ -361,7 +361,7 @@ class TestListenEndpoint:
             session=AsyncMock(),
         )
 
-        events: list[str] = []
+        events: list[Any] = []
         async for event in response.body_iterator:
             events.append(event)
 
@@ -415,6 +415,7 @@ class TestListenEndpoint:
                 session=AsyncMock(),
             )
             first_event = await anext(aiter(response.body_iterator))
+            assert isinstance(first_event, str)
             data = json.loads(first_event)
             secrets.append(data["secret"])
             # Consume remaining to trigger cleanup

@@ -3006,6 +3006,55 @@ class TestCheckoutLinkCreate:
         assert checkout.custom_field_data == {"company": "Acme Inc"}
         assert "invalid_field" not in checkout.custom_field_data
 
+    async def test_query_prefill_discount_code_when_disallowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+        checkout_link.allow_discount_codes = False
+        await save_fixture(checkout_link)
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"discount_code": discount_fixed_once.code},
+        )
+
+        assert checkout.allow_discount_codes is False
+        assert checkout.discount is None
+
+    async def test_query_prefill_discount_code_overwrites_preset_when_disallowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+        discount_percentage_50: Discount,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time],
+            discount=discount_percentage_50,
+        )
+        checkout_link.allow_discount_codes = False
+        await save_fixture(checkout_link)
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"discount_code": discount_fixed_once.code},
+        )
+
+        assert checkout.allow_discount_codes is False
+        # Preset discount should survive; customer code should NOT be applied
+        assert checkout.discount == discount_percentage_50
+        assert checkout.discount != discount_fixed_once
+
     @pytest.mark.parametrize(
         ("ip_country", "product_currencies", "expected_currency"),
         [

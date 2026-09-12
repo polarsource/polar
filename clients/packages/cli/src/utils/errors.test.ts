@@ -64,6 +64,14 @@ describe('describeError', () => {
     })
   })
 
+  test('uses a custom hint on update errors when provided', () => {
+    expect(
+      describeError(
+        new UpdateError({ message: 'Not compiled', hint: 'Build first' }),
+      ),
+    ).toEqual({ title: 'Not compiled', hint: 'Build first' })
+  })
+
   test('prefixes GitHub release errors', () => {
     expect(
       describeError(new GitHubReleaseError({ message: 'rate limited' })),

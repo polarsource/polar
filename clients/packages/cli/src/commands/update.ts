@@ -8,12 +8,14 @@ import {
   getLatestRelease,
   isNewerVersion,
 } from '@/services/github-releases'
+import { isCompiledBinary } from '@/services/telemetry'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{
   message: string
   cause?: unknown
+  hint?: string
 }> {}
 
 export const replaceBinary = (
@@ -274,6 +276,13 @@ export const downloadAndUpdate = (
 
 export const update = Command.make('update', {}, () =>
   Effect.gen(function* () {
+    if (!isCompiledBinary()) {
+      return yield* new UpdateError({
+        message: 'polar update only works on the compiled CLI binary',
+        hint: 'Build the binary with `pnpm build:binary` or install via the installer, then run `polar update`.',
+      })
+    }
+
     yield* Console.log(ui.blank)
     yield* Console.log(ui.step('Checking for updates...'))
 

@@ -21,9 +21,15 @@ import {
   update,
 } from '@/commands/update'
 import type { CLIRelease } from '@/services/github-releases'
+import { isCompiledBinary } from '@/services/telemetry'
 import { captureConsole, runCli } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
+
+vi.mock('@/services/telemetry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/telemetry')>()
+  return { ...actual, isCompiledBinary: vi.fn(() => true) }
+})
 
 const makeTemp = () => mkdtemp(join(tmpdir(), 'polar-test-'))
 
@@ -167,6 +173,10 @@ describe('replaceBinary', () => {
 })
 
 describe('update command', () => {
+  afterEach(() => {
+    vi.mocked(isCompiledBinary).mockReturnValue(true)
+  })
+
   test('reports when the CLI is already up to date', async () => {
     const http = fakeHttp({
       'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1':
@@ -184,6 +194,17 @@ describe('update command', () => {
 
     expect(cli.output()).toContain('Checking for updates...')
     expect(cli.output()).toContain(`Already up to date ${VERSION}`)
+  })
+
+  test('refuses to update when not running a compiled binary', async () => {
+    vi.mocked(isCompiledBinary).mockReturnValue(false)
+    const http = fakeHttp()
+    const cli = runCli(update, [])
+
+    await expect(
+      Effect.runPromise(cli.effect.pipe(Effect.provide(http.layer))),
+    ).rejects.toThrow('only works on the compiled CLI binary')
+    expect(http.requests).toHaveLength(0)
   })
 })
 

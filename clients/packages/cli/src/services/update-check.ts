@@ -7,6 +7,7 @@ import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
+import { isCompiledBinary } from '@/services/telemetry'
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -25,6 +26,7 @@ const stateFile = (home: string) => join(home, '.polar', 'update-check.json')
 export function showUpdateNotice({
   home = homedir(),
 }: UpdateCheckOptions = {}): void {
+  if (!isCompiledBinary()) return
   try {
     const file = stateFile(home)
     if (!existsSync(file)) return
@@ -55,6 +57,7 @@ export function checkForUpdateInBackground({
   home = homedir(),
   http = FetchHttpClient.layer,
 }: UpdateCheckOptions = {}): void {
+  if (!isCompiledBinary()) return
   try {
     const file = stateFile(home)
     let shouldCheck = true

@@ -63,7 +63,7 @@ export const describeError = (error: unknown): ErrorDescription => {
       return hint ? { title: error.message, hint } : { title: error.message }
     }
     case 'UpdateError':
-      return { title: error.message, hint: releasesHint }
+      return { title: error.message, hint: error.hint ?? releasesHint }
     case 'GitHubReleaseError':
       return {
         title: `Could not check for updates: ${error.message}`,

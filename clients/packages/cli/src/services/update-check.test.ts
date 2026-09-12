@@ -7,9 +7,15 @@ import {
   checkForUpdateInBackground,
   showUpdateNotice,
 } from '@/services/update-check'
+import { isCompiledBinary } from '@/services/telemetry'
 import { stripAnsi } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
+
+vi.mock('@/services/telemetry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/telemetry')>()
+  return { ...actual, isCompiledBinary: vi.fn(() => true) }
+})
 
 const releasesUrl =
   'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1'
@@ -52,6 +58,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  vi.mocked(isCompiledBinary).mockReturnValue(true)
   await rm(home, { recursive: true, force: true })
 })
 
@@ -82,6 +89,16 @@ describe('showUpdateNotice', () => {
 
   test('ignores a corrupt cache', async () => {
     await writeState('not json')
+    showUpdateNotice({ home })
+    expect(stderr).toEqual([])
+  })
+
+  test('stays silent when not running a compiled binary', async () => {
+    vi.mocked(isCompiledBinary).mockReturnValue(false)
+    await writeState({
+      lastChecked: new Date().toISOString(),
+      latestVersion: 'v99.0.0',
+    })
     showUpdateNotice({ home })
     expect(stderr).toEqual([])
   })
@@ -142,6 +159,16 @@ describe('checkForUpdateInBackground', () => {
 
     await vi.waitFor(() => expect(http.requests).toHaveLength(1))
     await settle()
+    expect(existsSync(stateFile())).toBe(false)
+  })
+
+  test('skips the check when not running a compiled binary', async () => {
+    vi.mocked(isCompiledBinary).mockReturnValue(false)
+    http.routes[releasesUrl] = release('9.9.9')
+    checkForUpdateInBackground({ home, http: http.layer })
+
+    await settle()
+    expect(http.requests).toHaveLength(0)
     expect(existsSync(stateFile())).toBe(false)
   })
 })

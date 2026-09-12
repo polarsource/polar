@@ -295,22 +295,32 @@ const assignSubscriptionSeat = async (
   subscriptionId: string,
   externalMemberId: string,
   seats: readonly models.CustomerSeat[],
-): Promise<void> => {
-  if (findActiveSeatForMember(seats, externalMemberId)) return
+): Promise<boolean> => {
+  if (findActiveSeatForMember(seats, externalMemberId)) return false
   await assignSeatCustomerSeats(client)({
     subscription_id: subscriptionId,
     external_member_id: externalMemberId,
     immediate_claim: true,
   })
+  return true
 }
 
 const updateSubscriptionSeatCount = async (
   client: PolarCore,
   subscriptionId: string,
   seats: number,
-): Promise<void> => {
-  await updateSubscriptions(client)(subscriptionId, { seats })
-}
+): Promise<models.Subscription> =>
+  updateSubscriptions(client)(subscriptionId, { seats })
+
+const countHeldSeats = (
+  seats: readonly models.CustomerSeat[],
+  memberIds: ReadonlySet<string>,
+): number =>
+  seats.filter(
+    (seat) =>
+      ACTIVE_SEAT_STATUSES.has(seat.status) &&
+      memberIds.has(seat.member?.external_id ?? ''),
+  ).length
 
 const synchronizeOrganizationSubscriptionSeats = async (
   client: PolarCore,
@@ -322,8 +332,21 @@ const synchronizeOrganizationSubscriptionSeats = async (
     allocation.memberIds.size,
     allocation.minimumSeats,
   )
+
+  // Under `next_period` proration the server stages a seat increase into
+  // `subscription.pending_update` and leaves the live `subscription.seats`
+  // unchanged; assign only against the live capacity returned by the update
+  // so the sync completes without raising `SeatNotAvailable`. Members beyond
+  // the live capacity are seated on the next sync, after the next cycle applies
+  // the pending update.
+  let liveSeats = currentQuantity
   if (targetQuantity > currentQuantity) {
-    await updateSubscriptionSeatCount(client, subscription.id, targetQuantity)
+    const updated = await updateSubscriptionSeatCount(
+      client,
+      subscription.id,
+      targetQuantity,
+    )
+    liveSeats = updated.seats ?? currentQuantity
   }
 
   const { seats } = await listSeatsCustomerSeats(client)({
@@ -338,8 +361,19 @@ const synchronizeOrganizationSubscriptionSeats = async (
       await revokeSeatCustomerSeats(client)(seat.id)
     }
   }
+
+  // Revoking departed members frees live capacity; the seats still held by the
+  // roster after revocation count toward it. Only assign new seats that fit
+  // within the remaining capacity — when the increase was staged, this defers
+  // the members the staged seats were meant to cover.
+  let assignableSeats = liveSeats - countHeldSeats(seats, allocation.memberIds)
   for (const memberId of allocation.memberIds) {
-    await assignSubscriptionSeat(client, subscription.id, memberId, seats)
+    if (assignableSeats <= 0) break
+    if (
+      await assignSubscriptionSeat(client, subscription.id, memberId, seats)
+    ) {
+      assignableSeats--
+    }
   }
 
   if (targetQuantity < currentQuantity) {

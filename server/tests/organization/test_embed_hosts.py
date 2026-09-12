@@ -5,6 +5,7 @@ import pytest
 from polar.organization.embed_hosts import (
     InvalidEmbedHost,
     csp_frame_ancestors,
+    host_for_origin,
     is_shared_host,
     match_origin,
     parse_origin,
@@ -156,7 +157,7 @@ class TestValidateHostPattern:
     @pytest.mark.parametrize(
         ("value", "expected"),
         [
-            ("example.com.", "example.com."),
+            ("example.com.", "example.com"),
             ("my-shop.example.com", "my-shop.example.com"),
             ("[::1]", "[::1]"),
             ("[::1]:3000", "[::1]:3000"),
@@ -213,6 +214,8 @@ class TestMatchOrigin:
             ("https://example.com:8443", "example.com:8443"),
             ("https://a.xn--exmple-cua.com", "*.exämple.com"),
             ("chrome-extension://abcdef", "chrome-extension://abcdef"),
+            ("https://example.com", "example.com."),
+            ("https://www.example.com", "*.example.com."),
         ],
     )
     def test_allowed(self, origin: str, entry: str) -> None:
@@ -261,12 +264,33 @@ class TestMatchOrigin:
         assert match_origin("https://example.com", []) is None
 
 
+class TestHostForOrigin:
+    @pytest.mark.parametrize(
+        ("origin", "entry"),
+        [
+            ("https://example.com", "example.com."),
+            ("https://example.com", "example.com"),
+        ],
+    )
+    def test_trailing_dot_entry_aligned_with_dotted_origin_suggestion(
+        self, origin: str, entry: str
+    ) -> None:
+        parsed = parse_origin(origin)
+        assert parsed is not None
+        assert host_for_origin(parsed) == validate_host_pattern(entry)
+
+
 class TestUncoveredHosts:
     def test_host_the_allowlist_admits_is_left_out(self) -> None:
         observed = [("https://example.com", 3, SEEN)]
 
         assert uncovered_hosts(observed, ["example.com"]) == []
         assert uncovered_hosts(observed, ["*.example.com"]) != []
+
+    def test_trailing_dot_entry_covers_dotless_origin(self) -> None:
+        observed = [("https://example.com", 5, SEEN)]
+
+        assert uncovered_hosts(observed, ["example.com."]) == []
 
     def test_suggests_the_entry_admitting_the_origin(self) -> None:
         observed = [
@@ -356,6 +380,8 @@ class TestCspFrameAncestors:
             ("*.example.com", ["https://*.example.com"]),
             ("example.com:8443", ["https://example.com:8443"]),
             ("chrome-extension://abcdef", ["chrome-extension://abcdef"]),
+            ("example.com.", ["https://example.com"]),
+            ("*.example.com.", ["https://*.example.com"]),
         ],
     )
     def test_source(self, entry: str, expected: list[str]) -> None:

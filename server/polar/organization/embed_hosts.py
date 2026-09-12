@@ -174,6 +174,7 @@ def parse_host_pattern(value: str) -> HostPattern | None:
         return None
 
     parsed_host = url.host.removeprefix(f"{_WILDCARD_LABEL}.") if wildcard else url.host
+    parsed_host = parsed_host.removesuffix(".")
     if len(parsed_host) > MAX_HOST_LENGTH:
         return None
 

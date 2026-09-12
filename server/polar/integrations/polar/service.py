@@ -22,7 +22,8 @@ from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.startup_program.service import (
-    StartupProgramError,
+    StartupProgramNotClaimable,
+    StartupProgramNotConfigured,
 )
 from polar.startup_program.service import (
     startup_program as startup_program_service,
@@ -455,7 +456,7 @@ class PolarSelfService:
         if not self.is_configured:
             raise PolarSelfNotConfigured()
         if not settings.STARTUP_PROGRAM_ENABLED:
-            raise StartupProgramError("Startup Program is not configured.")
+            raise StartupProgramNotConfigured()
         await self._require_approval(session, organization_id=organization_id)
 
         discount_id = await startup_program_service.resolve_checkout_discount_id(
@@ -463,10 +464,7 @@ class PolarSelfService:
             product_id=settings.POLAR_SCALE_PRODUCT_ID,
         )
         if discount_id is None:
-            raise StartupProgramError(
-                "Organization has no claimable Startup Program discount "
-                f"(organization_id={organization_id})."
-            )
+            raise StartupProgramNotClaimable(organization_id)
 
         client = get_client()
         subscription = await client.get_active_subscription(

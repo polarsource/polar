@@ -80,7 +80,8 @@ from polar.postgres import (
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.startup_program.service import (
-    StartupProgramError,
+    StartupProgramNotClaimable,
+    StartupProgramNotConfigured,
 )
 from polar.startup_program.service import (
     startup_program as startup_program_service,
@@ -1103,7 +1104,11 @@ async def cancel_subscription_endpoint(
     "/{id}/startup-program/claim",
     response_model=OrganizationStartupProgramClaimResponse,
     summary="Claim Startup Program Discount",
-    responses={404: OrganizationNotFound},
+    responses={
+        404: OrganizationNotFound,
+        409: {"model": StartupProgramNotClaimable.schema()},
+        503: {"model": StartupProgramNotConfigured.schema()},
+    },
     tags=[APITag.private],
 )
 async def claim_startup_program(
@@ -1125,26 +1130,14 @@ async def claim_startup_program(
     used on the Free-plan branch.
     """
     customer_ip_address = get_ip_address(request)
-    try:
-        subscription, checkout = await polar_self_service.claim_startup_program(
-            session=session,
-            organization_id=authz.organization.id,
-            customer_ip_address=customer_ip_address,
-            success_url=body.success_url,
-            return_url=body.return_url,
-            embed_origin=body.embed_origin,
-        )
-    except StartupProgramError as e:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body",),
-                    "msg": str(e),
-                    "input": None,
-                }
-            ]
-        ) from e
+    subscription, checkout = await polar_self_service.claim_startup_program(
+        session=session,
+        organization_id=authz.organization.id,
+        customer_ip_address=customer_ip_address,
+        success_url=body.success_url,
+        return_url=body.return_url,
+        embed_origin=body.embed_origin,
+    )
 
     response = OrganizationStartupProgramClaimResponse()
     if checkout is not None:

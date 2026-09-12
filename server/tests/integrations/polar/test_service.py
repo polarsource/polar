@@ -42,6 +42,10 @@ from polar.integrations.polar.service import polar_self
 from polar.models.member import MemberRole
 from polar.models.organization import Organization, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.startup_program.service import (
+    StartupProgramNotClaimable,
+    StartupProgramNotConfigured,
+)
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 ORG_A = uuid.UUID("00000000-0000-0000-0000-00000000000a")
@@ -2096,7 +2100,7 @@ class TestClaimStartupProgram:
         client_mock.update_subscription_product.assert_not_awaited()
         client_mock.update_subscription_discount.assert_not_awaited()
 
-    async def test_raises_when_not_invited(
+    async def test_raises_when_startup_program_not_configured(
         self,
         configured: None,
         client_mock: MagicMock,
@@ -2104,8 +2108,35 @@ class TestClaimStartupProgram:
         mocker: MockerFixture,
         read_session_mock: AsyncReadSession,
     ) -> None:
-        from polar.startup_program.service import StartupProgramError
+        """Feature flag off → 503, before any SDK / approval calls."""
+        mocker.patch(
+            "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
+            False,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
+        )
 
+        with pytest.raises(StartupProgramNotConfigured) as exc_info:
+            await polar_self.claim_startup_program(
+                session=read_session_mock, organization_id=ORG_A
+            )
+
+        assert exc_info.value.status_code == 503
+        assert str(exc_info.value) == "Startup Program is not configured."
+        client_mock.get_active_subscription.assert_not_awaited()
+        client_mock.update_subscription_product.assert_not_awaited()
+        client_mock.update_subscription_discount.assert_not_awaited()
+
+    async def test_raises_when_not_claimable(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
         mocker.patch(
             "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
             True,
@@ -2120,11 +2151,13 @@ class TestClaimStartupProgram:
             AsyncMock(return_value=None),
         )
 
-        with pytest.raises(StartupProgramError, match="claimable"):
+        with pytest.raises(StartupProgramNotClaimable, match="claimable") as exc_info:
             await polar_self.claim_startup_program(
                 session=read_session_mock, organization_id=ORG_A
             )
 
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.organization_id == ORG_A
         client_mock.get_active_subscription.assert_not_awaited()
         client_mock.update_subscription_product.assert_not_awaited()
         client_mock.update_subscription_discount.assert_not_awaited()

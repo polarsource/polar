@@ -34607,6 +34607,28 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** StartupProgramNotClaimable */
+    StartupProgramNotClaimable: {
+      /**
+       * Error
+       * @example StartupProgramNotClaimable
+       * @constant
+       */
+      error: 'StartupProgramNotClaimable'
+      /** Detail */
+      detail: string
+    }
+    /** StartupProgramNotConfigured */
+    StartupProgramNotConfigured: {
+      /**
+       * Error
+       * @example StartupProgramNotConfigured
+       * @constant
+       */
+      error: 'StartupProgramNotConfigured'
+      /** Detail */
+      detail: string
+    }
     /**
      * StatisticsPeriod
      * @description Event statistics for a single time period.
@@ -42748,6 +42770,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StartupProgramNotClaimable']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -42755,6 +42786,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['StartupProgramNotConfigured']
         }
       }
     }

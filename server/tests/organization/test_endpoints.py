@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import AsyncClient
@@ -7,6 +8,10 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.integrations.polar.exceptions import (
+    PolarSelfNotApproved,
+    PolarSelfNotConfigured,
+)
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
@@ -25,6 +30,10 @@ from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
 from polar.organization_review.schemas import ReviewContext
 from polar.payout_account.service import PayoutAccountServiceError
 from polar.postgres import AsyncSession
+from polar.startup_program.service import (
+    StartupProgramNotClaimable,
+    StartupProgramNotConfigured,
+)
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -1752,3 +1761,124 @@ class TestUpdateSSOEnforced:
 
         assert response.status_code == 200
         assert response.json()["sso_enforced"] is False
+
+
+@pytest.mark.asyncio
+class TestClaimStartupProgramEndpoint:
+    """E2E: the ``/{id}/startup-program/claim`` route renders conflict errors
+    with their own status codes (409/503/404/403) and never flattens them to
+    422 payload-validation errors.
+    """
+
+    @pytest.mark.auth
+    async def test_not_configured_returns_503(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.organization.endpoints.polar_self_service.claim_startup_program",
+            new=AsyncMock(side_effect=StartupProgramNotConfigured()),
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/startup-program/claim", json={}
+        )
+
+        assert response.status_code == 503
+        json = response.json()
+        assert json["error"] == "StartupProgramNotConfigured"
+        assert json["detail"] == "Startup Program is not configured."
+        # 409/503 conflicts render detail as a string, not a 422 array.
+        assert not isinstance(json["detail"], list)
+
+    @pytest.mark.auth
+    async def test_not_claimable_returns_409(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.organization.endpoints.polar_self_service.claim_startup_program",
+            new=AsyncMock(side_effect=StartupProgramNotClaimable(organization.id)),
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/startup-program/claim", json={}
+        )
+
+        assert response.status_code == 409
+        json = response.json()
+        assert json["error"] == "StartupProgramNotClaimable"
+        assert "claimable" in json["detail"]
+        assert str(organization.id) in json["detail"]
+        assert not isinstance(json["detail"], list)
+
+    @pytest.mark.auth
+    async def test_polar_self_not_configured_returns_404(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.organization.endpoints.polar_self_service.claim_startup_program",
+            new=AsyncMock(side_effect=PolarSelfNotConfigured()),
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/startup-program/claim", json={}
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_approved_returns_403(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.organization.endpoints.polar_self_service.claim_startup_program",
+            new=AsyncMock(side_effect=PolarSelfNotApproved(organization.id)),
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/startup-program/claim", json={}
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_free_org_returns_checkout(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        checkout = MagicMock()
+        checkout.id = "chk_1"
+        checkout.url = "https://checkout.example/chk_1"
+        checkout.expires_at = "2026-01-01T00:00:00Z"
+        mocker.patch(
+            "polar.organization.endpoints.polar_self_service.claim_startup_program",
+            new=AsyncMock(return_value=(None, checkout)),
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/startup-program/claim", json={}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["checkout"]["checkout_id"] == "chk_1"
+        assert json["checkout"]["url"] == "https://checkout.example/chk_1"
+        assert "subscription" not in json or json["subscription"] is None

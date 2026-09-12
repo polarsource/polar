@@ -42,6 +42,21 @@ DISCOUNT_MAX_REDEMPTIONS = 1
 class StartupProgramError(PolarError): ...
 
 
+class StartupProgramNotConfigured(StartupProgramError):
+    def __init__(self) -> None:
+        super().__init__("Startup Program is not configured.", status_code=503)
+
+
+class StartupProgramNotClaimable(StartupProgramError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            "Organization has no claimable Startup Program discount "
+            f"(organization_id={organization_id}).",
+            status_code=409,
+        )
+        self.organization_id = organization_id
+
+
 class StartupProgramService:
     """Startup Program logic, driven entirely through the Polar API.
 

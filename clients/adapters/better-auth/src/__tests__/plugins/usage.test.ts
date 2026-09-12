@@ -184,6 +184,46 @@ describe('usage plugin', () => {
       await expect(handler(ctx)).rejects.toThrow('User not found')
     })
 
+    it('rejects an anonymous user before calling Polar', async () => {
+      const ctx = {
+        context: {
+          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
+        },
+        query: {},
+        json: vi.fn(),
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Anonymous users cannot access usage meters',
+      })
+      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
+      expect(mockClient.customerSessions.create).not.toHaveBeenCalled()
+      expect(
+        mockClient.customerPortal.customerMeters.list,
+      ).not.toHaveBeenCalled()
+    })
+
+    it('rejects an anonymous organization request before resolving the principal', async () => {
+      const ctx = {
+        context: {
+          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
+        },
+        query: { organizationId: 'organization-123' },
+        json: vi.fn(),
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Anonymous users cannot access usage meters',
+      })
+      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
+      expect(mockClient.customerSessions.create).not.toHaveBeenCalled()
+      expect(
+        mockClient.customerPortal.customerMeters.list,
+      ).not.toHaveBeenCalled()
+    })
+
     it('should handle customer session creation failure', async () => {
       vi.mocked(mockClient.customerSessions.create).mockRejectedValue(
         mockApiError(400, 'Customer not found'),

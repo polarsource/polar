@@ -43,6 +43,12 @@ export const usage =
             })
           }
 
+          if (ctx.context.session.user['isAnonymous']) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Anonymous users cannot access usage meters',
+            })
+          }
+
           const principal = ctx.query?.organizationId
             ? await resolveBillingPrincipal({
                 context: ctx.context,

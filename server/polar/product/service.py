@@ -326,25 +326,42 @@ class ProductService:
             )
             errors.extend(prices_errors)
 
-        # Prevent non-legacy products from changing their recurring interval
+        # Prevent non-legacy products from changing their recurring interval.
+        # This covers both setting it to a different value and clearing it to
+        # `None` via an explicit `null` in the PATCH body (which Pydantic marks
+        # as "set" in `model_fields_set`): clearing is a change too, and is
+        # forbidden by the field's documented contract ("Once set, it can't be
+        # changed.").
         if (
             (
-                update_schema.recurring_interval is not None
-                or update_schema.recurring_interval_count is not None
-            )
-            and (
                 (
                     update_schema.recurring_interval is not None
-                    and update_schema.recurring_interval != product.recurring_interval
+                    or update_schema.recurring_interval_count is not None
                 )
-                or (
-                    update_schema.recurring_interval_count is not None
-                    and update_schema.recurring_interval_count
-                    != product.recurring_interval_count
+                and (
+                    (
+                        update_schema.recurring_interval is not None
+                        and update_schema.recurring_interval
+                        != product.recurring_interval
+                    )
+                    or (
+                        update_schema.recurring_interval_count is not None
+                        and update_schema.recurring_interval_count
+                        != product.recurring_interval_count
+                    )
                 )
             )
-            and not all(is_legacy_price(price) for price in product.prices)
-        ):
+            or (
+                "recurring_interval" in update_schema.model_fields_set
+                and update_schema.recurring_interval is None
+                and product.recurring_interval is not None
+            )
+            or (
+                "recurring_interval_count" in update_schema.model_fields_set
+                and update_schema.recurring_interval_count is None
+                and product.recurring_interval_count is not None
+            )
+        ) and not all(is_legacy_price(price) for price in product.prices):
             errors.append(
                 {
                     "type": "value_error",

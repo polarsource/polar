@@ -2194,6 +2194,117 @@ class TestUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_invalid_null_recurring_interval_on_non_legacy_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert product.recurring_interval == SubscriptionRecurringInterval.month
+        assert product.is_recurring is True
+        update_schema = ProductUpdate(recurring_interval=None)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await product_service.update(
+                session,
+                product,
+                update_schema,
+                auth_subject,
+            )
+
+        assert (
+            exc_info.value.errors()[0]["msg"] == "Recurring interval cannot be changed."
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_null_recurring_interval_count_on_non_legacy_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert product.recurring_interval_count == 1
+        assert product.is_recurring is True
+        update_schema = ProductUpdate(recurring_interval_count=None)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await product_service.update(
+                session,
+                product,
+                update_schema,
+                auth_subject,
+            )
+
+        assert (
+            exc_info.value.errors()[0]["msg"] == "Recurring interval cannot be changed."
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_null_recurring_interval_on_one_time_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert product_one_time.recurring_interval is None
+        assert product_one_time.is_recurring is False
+        update_schema = ProductUpdate(recurring_interval=None)
+
+        updated_product = await product_service.update(
+            session,
+            product_one_time,
+            update_schema,
+            auth_subject,
+        )
+
+        assert updated_product.recurring_interval is None
+        assert updated_product.is_recurring is False
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_null_recurring_interval_on_legacy_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User | Organization],
+        product_recurring_monthly_and_yearly: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Legacy products keep their recurring interval writable, including
+        # clearing it via an explicit `null` — the guard exempts them via the
+        # `not all(is_legacy_price(...))` clause.
+        product_recurring_monthly_and_yearly.recurring_interval = (
+            SubscriptionRecurringInterval.month
+        )
+        product_recurring_monthly_and_yearly.recurring_interval_count = 1
+        await save_fixture(product_recurring_monthly_and_yearly)
+
+        update_schema = ProductUpdate(recurring_interval=None)
+
+        updated_product = await product_service.update(
+            session,
+            product_recurring_monthly_and_yearly,
+            update_schema,
+            auth_subject,
+        )
+
+        assert updated_product.recurring_interval is None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid_unchanged_recurring_interval_count_on_non_legacy_product(
         self,
         session: AsyncSession,

@@ -13,6 +13,7 @@ from polar.base import (
 from polar.v2026_10.errors import (
     HTTPValidationError,
     MissingInvoiceBillingDetails,
+    OffSessionChargesNotEnabled,
     OrderNotDraft,
     OrderNotEligibleForInvoice,
     OrdersFinalize402Error,
@@ -229,6 +230,7 @@ class OrdersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            OffSessionChargesNotEnabled: Off-session charges are not enabled for this organization.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -245,6 +247,7 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: OffSessionChargesNotEnabled,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Order, method_errors)
@@ -771,6 +774,7 @@ class OrdersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            OffSessionChargesNotEnabled: Off-session charges are not enabled for this organization.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -787,6 +791,7 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: OffSessionChargesNotEnabled,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Order, method_errors)

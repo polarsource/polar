@@ -784,6 +784,7 @@ class TestCreateOrder:
             },
         )
         assert response.status_code == 403
+        assert response.json()["error"] == "OffSessionChargesNotEnabled"
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_valid(

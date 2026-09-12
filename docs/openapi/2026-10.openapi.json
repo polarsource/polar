@@ -5559,6 +5559,16 @@
               }
             }
           },
+          "403": {
+            "description": "Off-session charges are not enabled for this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffSessionChargesNotEnabled"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {

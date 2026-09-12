@@ -17,6 +17,7 @@ import type {
 import {
   HTTPValidationError,
   MissingInvoiceBillingDetails,
+  OffSessionChargesNotEnabled,
   OrderNotDraft,
   OrderNotEligibleForInvoice,
   OrdersFinalize402Error,
@@ -150,6 +151,7 @@ export const createOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {OffSessionChargesNotEnabled} Off-session charges are not enabled for this organization.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: OrderCreate, requestOptions?: RequestOptions): Promise<Order> => {
@@ -158,6 +160,7 @@ export const createOrders = (client: ClientBase) => {
     const request = client.buildRequest("POST", "/v1/orders/", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Order>(response, "json", {
+      403: OffSessionChargesNotEnabled,
       422: HTTPValidationError,
     });
   };

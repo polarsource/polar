@@ -257,6 +257,14 @@ async def get(
     status_code=201,
     summary="Create Order",
     response_model=OrderSchema,
+    responses={
+        403: {
+            "description": (
+                "Off-session charges are not enabled for this organization."
+            ),
+            "model": OffSessionChargesNotEnabled.schema(),
+        },
+    },
 )
 async def create(
     order_create: OrderCreate,

@@ -228,6 +228,17 @@ class NotPermitted(PolarClientError):
         super().__init__(status_code, error)
 
 
+class OffSessionChargesNotEnabled(PolarClientError):
+    error_type = OffSessionChargesNotEnabledModel
+    error: OffSessionChargesNotEnabledModel
+
+    def __init__(
+        self, status_code: int, error: OffSessionChargesNotEnabledModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
 class OrdersFinalize402Error(PolarClientError):
     error_type = PaymentFailedModel | PaymentActionRequiredModel
     error: PaymentFailedModel | PaymentActionRequiredModel

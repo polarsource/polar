@@ -177,6 +177,18 @@ export class NotPermitted extends PolarClientError<NotPermittedModel> {
   }
 }
 /**
+ * Off-session charges are not enabled for this organization.
+ */
+export class OffSessionChargesNotEnabled extends PolarClientError<OffSessionChargesNotEnabledModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: OffSessionChargesNotEnabledModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OffSessionChargesNotEnabled";
+  }
+}
+/**
  * The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
  */
 export class OrdersFinalize402Error extends PolarClientError<

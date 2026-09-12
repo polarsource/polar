@@ -46538,6 +46538,15 @@ export interface operations {
           'application/json': components['schemas']['Order']
         }
       }
+      /** @description Off-session charges are not enabled for this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OffSessionChargesNotEnabled']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {

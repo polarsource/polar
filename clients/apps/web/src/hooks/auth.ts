@@ -1,7 +1,6 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/client'
-import { CONFIG } from '@/utils/config'
 import { schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -63,7 +62,11 @@ export const useLogout = (): (() => void) => {
 
   return useCallback(() => {
     posthog.reset()
-    window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
+    // Route through the Next.js logout endpoint so the httpOnly MCP session
+    // cookies (org-scoped OAuth access token cache) are cleared on the same
+    // origin before redirecting to the server-side logout that drops the
+    // user session. Without this, the cached org token survives logout.
+    window.location.href = `/api/mcp-logout`
   }, [posthog])
 }
 

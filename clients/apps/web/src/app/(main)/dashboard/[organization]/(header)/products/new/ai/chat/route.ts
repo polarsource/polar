@@ -1,8 +1,11 @@
 'use server'
 
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
+import {
+  generateMCPAccessToken,
+  hasMCPSessionForOrganization,
+} from '@/utils/mcp-session'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { experimental_createMCPClient } from '@ai-sdk/mcp'
@@ -17,7 +20,6 @@ import {
   tool,
   UIMessage,
 } from 'ai'
-import { cookies } from 'next/headers'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
 
@@ -224,64 +226,8 @@ The user will now describe their product and you will start the configuration as
 `
 }
 
-async function generateOAT(
-  userId: string,
-  organizationId: string,
-): Promise<string> {
-  const requestCookies = await cookies()
-
-  if (requestCookies.has(CONFIG.AUTH_MCP_COOKIE_KEY)) {
-    return requestCookies.get(CONFIG.AUTH_MCP_COOKIE_KEY)!.value
-  }
-
-  const userSessionToken = requestCookies.get(CONFIG.AUTH_COOKIE_KEY)
-  if (!userSessionToken) {
-    throw new Error('No user session cookie found')
-  }
-
-  const client = await getServerSideAPI()
-  const { data, error } = await client.POST('/v1/oauth2/token', {
-    body: {
-      grant_type: 'web',
-      client_id: process.env.MCP_OAUTH2_CLIENT_ID!,
-      client_secret: process.env.MCP_OAUTH2_CLIENT_SECRET!,
-      session_token: userSessionToken.value,
-      sub_type: 'organization',
-      sub: organizationId,
-      scope: null,
-    },
-    bodySerializer(body) {
-      const fd = new FormData()
-      for (const [key, value] of Object.entries(body)) {
-        if (value) {
-          fd.append(key, value)
-        }
-      }
-      return fd
-    },
-  })
-
-  if (error) {
-    throw new Error('Failed to generate OAT')
-  }
-
-  const accessToken = data.access_token
-
-  if (!accessToken) {
-    throw new Error('Failed to generate OAT')
-  }
-
-  requestCookies.set(CONFIG.AUTH_MCP_COOKIE_KEY, accessToken, {
-    httpOnly: true,
-    secure: true,
-    expires: new Date(Date.now() + data.expires_in * 1000),
-  })
-
-  return accessToken
-}
-
-async function getMCPClient(userId: string, organizationId: string) {
-  const oat = await generateOAT(userId, organizationId)
+async function getMCPClient(organizationId: string) {
+  const oat = await generateMCPAccessToken(organizationId)
 
   const httpTransport = new StreamableHTTPClientTransport(
     new URL('https://app.getgram.ai/mcp/polar-onboarding-assistant'),
@@ -317,15 +263,15 @@ export async function POST(req: Request) {
   }: { messages: UIMessage[]; organizationId: string; conversationId: string } =
     await req.json()
 
-  const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
+  if (!organizationId) {
+    return new Response('Organization ID is required', { status: 400 })
+  }
+
+  const hasToolAccess = await hasMCPSessionForOrganization(organizationId)
   let requiresToolAccess = false
   let requiresManualSetup = false
   let isRelevant = true
   let requiresClarification = true
-
-  if (!organizationId) {
-    return new Response('Organization ID is required', { status: 400 })
-  }
 
   const api = await getServerSideAPI()
   const { data: organization, error: orgError } = await api.GET(
@@ -431,7 +377,7 @@ export async function POST(req: Request) {
   }
 
   if (shouldSetupTools) {
-    const mcpClient = await getMCPClient(user.id, organizationId)
+    const mcpClient = await getMCPClient(organizationId)
     tools = await mcpClient.tools()
   }
 

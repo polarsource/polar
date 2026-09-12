@@ -100,7 +100,10 @@ export const Checkout = ({
       return NextResponse.redirect(redirectUrl.toString())
     } catch (error) {
       console.error(error)
-      return NextResponse.error()
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 },
+      )
     }
   }
 }

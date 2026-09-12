@@ -165,7 +165,7 @@ locals {
     {
       POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_URL      = "${var.prometheus_config.url}/api/prom/push"
       POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME = var.prometheus_config.username
-      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = var.prometheus_config.interval
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = tostring(var.prometheus_config.interval)
     },
     var.prometheus_config.query_key != null ? {
       POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_URL  = "${var.prometheus_config.url}/api/prom"

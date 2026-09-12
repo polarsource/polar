@@ -942,7 +942,11 @@ class CheckoutService:
                 checkout.customer_name = customer_name
 
             discount_code = query_prefill.get("discount_code")
-            if discount_code is not None and isinstance(discount_code, str):
+            if (
+                discount_code is not None
+                and isinstance(discount_code, str)
+                and checkout_link.allow_discount_codes
+            ):
                 try:
                     discount = await self._get_validated_discount(
                         session,

@@ -6,7 +6,7 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
-from polar.integrations.slack.client import SlackClient
+from polar.integrations.slack.client import SlackClient, SlackClientResponseError
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.locker import Locker, TimeoutLockError
 from polar.logging import Logger
@@ -625,7 +625,7 @@ class BenefitSlackSharedChannelService(
             await self._client.chat_post_message(
                 bot_token=bot_token, channel=channel, text=text
             )
-        except httpx.HTTPError as e:
+        except (httpx.HTTPError, SlackClientResponseError) as e:
             bound_logger.warning("Slack welcome post failed", error=str(e))
 
     async def _invite_shared(

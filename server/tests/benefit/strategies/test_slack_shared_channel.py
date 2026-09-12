@@ -23,6 +23,7 @@ from polar.benefit.strategies.slack_shared_channel.schemas import (
 from polar.benefit.strategies.slack_shared_channel.service import (
     BenefitSlackSharedChannelService,
 )
+from polar.integrations.slack.client import SlackClientResponseError
 from polar.locker import Locker
 from polar.models import (
     Benefit,
@@ -1715,6 +1716,79 @@ class TestSlackSharedChannelGrant:
         client.chat_post_message.assert_awaited_once_with(
             bot_token="xoxb-test-token", channel="C123", text="Welcome!"
         )
+
+    async def test_grant_welcome_message_api_error_is_swallowed(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={**_BASE_PROPERTIES, "welcome_message": "Welcome!"},
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(mocker)
+        client.chat_post_message = AsyncMock(
+            side_effect=SlackClientResponseError(
+                {"ok": False, "error": "invalid_param"}
+            )
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        client.chat_post_message.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="C123", text="Welcome!"
+        )
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="C123", email="admin@customer.example"
+        )
+        assert result["channel_id"] == "C123"
+        assert result["invite_id"] == "I123"
+        assert result["invite_url"] == "https://slack.com/share/I123"
+
+    async def test_grant_welcome_message_http_error_is_swallowed(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={**_BASE_PROPERTIES, "welcome_message": "Welcome!"},
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(mocker)
+        client.chat_post_message = AsyncMock(side_effect=httpx.ConnectError("boom"))
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        client.chat_post_message.assert_awaited_once()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="C123", email="admin@customer.example"
+        )
+        assert result["channel_id"] == "C123"
+        assert result["invite_id"] == "I123"
 
     async def test_grant_invite_http_error_is_retriable(
         self,

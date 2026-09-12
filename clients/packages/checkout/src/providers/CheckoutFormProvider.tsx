@@ -324,21 +324,23 @@ export const CheckoutFormProvider = ({
         updatedCheckout.payment_processor_metadata
 
       let currentIntentStatus = intent_status
-      while (currentIntentStatus === 'requires_action') {
-        const { error, paymentIntent, setupIntent } =
-          await stripe.handleNextAction({
-            clientSecret: intent_client_secret,
-          })
-        if (error) {
-          setLoading(false)
-          setError('root', { message: error.message })
-          throw new Error(error.message)
+      try {
+        while (currentIntentStatus === 'requires_action') {
+          const { error, paymentIntent, setupIntent } =
+            await stripe.handleNextAction({
+              clientSecret: intent_client_secret,
+            })
+          if (error) {
+            setError('root', { message: error.message })
+            throw new Error(error.message)
+          }
+          currentIntentStatus =
+            paymentIntent?.status || setupIntent?.status || intent_status
         }
-        currentIntentStatus =
-          paymentIntent?.status || setupIntent?.status || intent_status
+      } finally {
+        setLoading(false)
       }
 
-      setLoading(false)
       return updatedCheckout
     },
     [checkout, setError, _confirm, t, setTrialUnavailable],

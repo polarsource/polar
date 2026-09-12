@@ -675,4 +675,154 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().trialUnavailable).toBe(false)
     })
   })
+
+  describe('confirm (payment-required path: requires_action loop)', () => {
+    const confirmedWithActionResult = (): ConfirmResult =>
+      ({
+        ok: true,
+        value: {
+          id: 'ch_confirmed',
+          status: 'confirmed',
+          payment_processor_metadata: {
+            intent_status: 'requires_action',
+            intent_client_secret: 'pi_secret',
+          },
+        },
+      }) as unknown as ConfirmResult
+
+    type ConfirmedCheckout = Awaited<
+      ReturnType<CheckoutFormContextProps['confirm']>
+    >
+
+    const makeElements = () =>
+      ({ submit: vi.fn(async () => ({})) }) as unknown as StripeElements
+
+    const makeStripe = (
+      handleNextAction: (...args: unknown[]) => unknown,
+    ): Stripe =>
+      ({
+        createConfirmationToken: vi.fn(async () => ({
+          confirmationToken: { id: 'ctoken' },
+          error: undefined,
+        })),
+        handleNextAction: vi.fn(handleNextAction),
+      }) as unknown as Stripe
+
+    const renderPaymentConfirm = (
+      handleNextAction: (...args: unknown[]) => unknown,
+    ) => {
+      const confirm = vi.fn<CheckoutContextProps['confirm']>(async () =>
+        confirmedWithActionResult(),
+      )
+      const getCtx = renderWithCheckout({
+        checkout: {
+          is_payment_form_required: true,
+          is_payment_required: true,
+        },
+        update: vi.fn(),
+        confirm,
+      })
+      const stripe = makeStripe(handleNextAction)
+      const elements = makeElements()
+      return { getCtx, confirm, stripe, elements }
+    }
+
+    it('resolves and resets loading when handleNextAction returns succeeded', async () => {
+      const { getCtx, stripe, elements } = renderPaymentConfirm(async () => ({
+        paymentIntent: { status: 'succeeded' },
+      }))
+
+      let result: ConfirmedCheckout | undefined
+      await act(async () => {
+        result = await getCtx().confirm(
+          { customer_email: 'a@b.com' },
+          stripe,
+          elements,
+        )
+      })
+
+      expect(result).toMatchObject({ id: 'ch_confirmed' })
+      expect(getCtx().loading).toBe(false)
+      expect(stripe.handleNextAction).toHaveBeenCalledTimes(1)
+    })
+
+    it('resets loading=false and sets root error when handleNextAction returns an error field', async () => {
+      const { getCtx, stripe, elements } = renderPaymentConfirm(async () => ({
+        error: { message: '3DS authentication failed' },
+      }))
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
+        ).rejects.toThrow('3DS authentication failed')
+      })
+
+      expect(getCtx().loading).toBe(false)
+      expect(getCtx().form.formState.errors.root?.message).toBe(
+        '3DS authentication failed',
+      )
+    })
+
+    it('resets loading=false when stripe.handleNextAction rejects', async () => {
+      const { getCtx, stripe, elements } = renderPaymentConfirm(async () => {
+        const err = new Error(
+          'This PaymentIntent is not in the requires_action state.',
+        )
+        err.name = 'IntegrationError'
+        throw err
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
+        ).rejects.toThrow('not in the requires_action state')
+      })
+
+      expect(getCtx().loading).toBe(false)
+    })
+
+    it('reprompts while the intent still requires_action then resolves', async () => {
+      let calls = 0
+      const { getCtx, stripe, elements } = renderPaymentConfirm(async () => {
+        calls += 1
+        if (calls === 1) {
+          return { paymentIntent: { status: 'requires_action' } }
+        }
+        return { paymentIntent: { status: 'succeeded' } }
+      })
+
+      let result: ConfirmedCheckout | undefined
+      await act(async () => {
+        result = await getCtx().confirm(
+          { customer_email: 'a@b.com' },
+          stripe,
+          elements,
+        )
+      })
+
+      expect(result).toMatchObject({ id: 'ch_confirmed' })
+      expect(getCtx().loading).toBe(false)
+      expect(stripe.handleNextAction).toHaveBeenCalledTimes(2)
+    })
+
+    it('resets loading=false when handleNextAction rejects on a subsequent iteration', async () => {
+      let calls = 0
+      const { getCtx, stripe, elements } = renderPaymentConfirm(async () => {
+        calls += 1
+        if (calls === 1) {
+          return { paymentIntent: { status: 'requires_action' } }
+        }
+        throw new Error('network interrupted during 3DS challenge')
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
+        ).rejects.toThrow('network interrupted during 3DS challenge')
+      })
+
+      expect(getCtx().loading).toBe(false)
+      expect(stripe.handleNextAction).toHaveBeenCalledTimes(2)
+    })
+  })
 })

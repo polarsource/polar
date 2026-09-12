@@ -129,6 +129,17 @@ interface EmbedPaymentMethodCreateOptions {
    * Convenience callback fired once when the embed has loaded.
    */
   onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
+  /**
+   * Convenience callback for the `error` event. Fires when the
+   * iframe can't render the form or the payment-method flow fails.
+   *
+   * Registered before the iframe loads, so this fires even for
+   * init failures (expired/rejected token) posted before the
+   * `loaded` event. Equivalent to
+   * `embed.addEventListener('error', …)` but available without
+   * awaiting `create()`.
+   */
+  onError?: (event: CustomEvent<EmbedPaymentMethodMessageError>) => void
 }
 
 interface EmbedPaymentMethodCreateInlineOptions {
@@ -163,6 +174,17 @@ interface EmbedPaymentMethodCreateInlineOptions {
    * Convenience callback fired once when the embed has loaded.
    */
   onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
+  /**
+   * Convenience callback for the `error` event. Fires when the
+   * iframe can't render the form or the payment-method flow fails.
+   *
+   * Registered before the iframe loads, so this fires even for
+   * init failures (expired/rejected token) posted before the
+   * `loaded` event. Equivalent to
+   * `embed.addEventListener('error', …)` but available before
+   * the iframe posts anything.
+   */
+  onError?: (event: CustomEvent<EmbedPaymentMethodMessageError>) => void
 }
 
 const resolveEmbedBaseURL = (): string => {
@@ -242,6 +264,9 @@ class EmbedPaymentMethod {
    * const embed = await PolarEmbedPaymentMethod.create({
    *   sessionToken: 'polar_cst_xxx',
    *   theme: 'dark',
+   *   onError: (event) => {
+   *     console.error('Init failed:', event.detail.code)
+   *   },
    * })
    *
    * embed.addEventListener('success', (event) => {
@@ -252,8 +277,15 @@ class EmbedPaymentMethod {
   public static create(
     options: EmbedPaymentMethodCreateOptions,
   ): Promise<EmbedPaymentMethod> {
-    const { sessionToken, theme, setAsDefault, returnUrl, locale, onLoaded } =
-      options
+    const {
+      sessionToken,
+      theme,
+      setAsDefault,
+      returnUrl,
+      locale,
+      onLoaded,
+      onError,
+    } = options
 
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
@@ -334,6 +366,10 @@ class EmbedPaymentMethod {
       embed.addEventListener('loaded', onLoaded, { once: true })
     }
 
+    if (onError) {
+      embed.addEventListener('error', onError)
+    }
+
     return new Promise((resolve) => {
       embed.addEventListener('loaded', () => resolve(embed), { once: true })
     })
@@ -345,8 +381,15 @@ class EmbedPaymentMethod {
   public static createInline(
     options: EmbedPaymentMethodCreateInlineOptions,
   ): EmbedPaymentMethod {
-    const { sessionToken, element, theme, setAsDefault, locale, onLoaded } =
-      options
+    const {
+      sessionToken,
+      element,
+      theme,
+      setAsDefault,
+      locale,
+      onLoaded,
+      onError,
+    } = options
 
     const embedURL = new URL(EMBED_PATH, resolveEmbedBaseURL())
     embedURL.searchParams.set('session_token', sessionToken)
@@ -378,6 +421,10 @@ class EmbedPaymentMethod {
 
     if (onLoaded) {
       embed.addEventListener('loaded', onLoaded, { once: true })
+    }
+
+    if (onError) {
+      embed.addEventListener('error', onError)
     }
 
     return embed

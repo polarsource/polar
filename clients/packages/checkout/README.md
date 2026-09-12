@@ -23,6 +23,9 @@ const session = await polar.customerSessions.create({
 
 const embed = await PolarEmbedPaymentMethod.create({
   sessionToken: session.token,
+  onError: (event) => {
+    console.error('Embed failed:', event.detail.code)
+  },
 })
 
 embed.addEventListener('success', (event) => {
@@ -32,14 +35,15 @@ embed.addEventListener('success', (event) => {
 
 #### `create()` options
 
-| Option         | Type                           | Default     | Description                                                                                                                                                           |
-| -------------- | ------------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionToken` | `string`                       | —           | **Required.** Session token from `POST /v1/customer-sessions` (`polar_cst_*` or `polar_mst_*`).                                                                       |
-| `theme`        | `'light' \| 'dark'`            | `light`     | Colour scheme for the embed.                                                                                                                                          |
-| `setAsDefault` | `boolean`                      | `true`      | Whether the new card should become the customer's default payment method.                                                                                             |
-| `returnUrl`    | `string`                       | current URL | Where to return the customer after a redirect-based payment method (Amazon Pay etc). Defaults to `window.location.href`. See [Redirect re-entry](#redirect-re-entry). |
-| `locale`       | `string`                       | `'en'`      | BCP47 locale for the embed UI and Stripe Elements (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.                                                 |
-| `onLoaded`     | `(event: CustomEvent) => void` | —           | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`.                                                                     |
+| Option         | Type                           | Default     | Description                                                                                                                                                                                                             |
+| -------------- | ------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessionToken` | `string`                       | —           | **Required.** Session token from `POST /v1/customer-sessions` (`polar_cst_*` or `polar_mst_*`).                                                                                                                         |
+| `theme`        | `'light' \| 'dark'`            | `light`     | Colour scheme for the embed.                                                                                                                                                                                            |
+| `setAsDefault` | `boolean`                      | `true`      | Whether the new card should become the customer's default payment method.                                                                                                                                               |
+| `returnUrl`    | `string`                       | current URL | Where to return the customer after a redirect-based payment method (Amazon Pay etc). Defaults to `window.location.href`. See [Redirect re-entry](#redirect-re-entry).                                                   |
+| `locale`       | `string`                       | `'en'`      | BCP47 locale for the embed UI and Stripe Elements (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.                                                                                                   |
+| `onLoaded`     | `(event: CustomEvent) => void` | —           | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`.                                                                                                                       |
+| `onError`      | `(event: CustomEvent) => void` | —           | Convenience callback for the `error` event. Registered before the iframe loads, so it fires even for init failures (expired/rejected token) posted before `loaded`. Equivalent to `embed.addEventListener('error', …)`. |
 
 #### Inline
 
@@ -66,14 +70,15 @@ embed.addEventListener('success', (event) => {
 
 #### `createInline()` options
 
-| Option         | Type                           | Default | Description                                                                                       |
-| -------------- | ------------------------------ | ------- | ------------------------------------------------------------------------------------------------- |
-| `sessionToken` | `string`                       | —       | **Required.** Session token from `POST /v1/customer-sessions` (`polar_cst_*` or `polar_mst_*`).   |
-| `element`      | `HTMLElement`                  | —       | **Required.** The element to mount the embed into. Any existing children are replaced.            |
-| `theme`        | `'light' \| 'dark'`            | `light` | Colour scheme for the embed.                                                                      |
-| `setAsDefault` | `boolean`                      | `true`  | Whether the new card should become the customer's default payment method.                         |
-| `locale`       | `string`                       | `'en'`  | BCP47 locale for the embed UI and Stripe Elements. Unsupported locales fall back to English.      |
-| `onLoaded`     | `(event: CustomEvent) => void` | —       | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`. |
+| Option         | Type                           | Default | Description                                                                                                                                                                                                             |
+| -------------- | ------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessionToken` | `string`                       | —       | **Required.** Session token from `POST /v1/customer-sessions` (`polar_cst_*` or `polar_mst_*`).                                                                                                                         |
+| `element`      | `HTMLElement`                  | —       | **Required.** The element to mount the embed into. Any existing children are replaced.                                                                                                                                  |
+| `theme`        | `'light' \| 'dark'`            | `light` | Colour scheme for the embed.                                                                                                                                                                                            |
+| `setAsDefault` | `boolean`                      | `true`  | Whether the new card should become the customer's default payment method.                                                                                                                                               |
+| `locale`       | `string`                       | `'en'`  | BCP47 locale for the embed UI and Stripe Elements. Unsupported locales fall back to English.                                                                                                                            |
+| `onLoaded`     | `(event: CustomEvent) => void` | —       | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`.                                                                                                                       |
+| `onError`      | `(event: CustomEvent) => void` | —       | Convenience callback for the `error` event. Registered before the iframe loads, so it fires even for init failures (expired/rejected token) posted before `loaded`. Equivalent to `embed.addEventListener('error', …)`. |
 
 #### Events
 

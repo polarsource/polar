@@ -1,5 +1,8 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { PolarEmbedPaymentMethod } from './payment-method'
+import {
+  PolarEmbedPaymentMethod,
+  type EmbedPaymentMethodErrorCode,
+} from './payment-method'
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:3000'
 const CUSTOMER_SESSION_TOKEN = 'polar_cst_test_token'
@@ -21,6 +24,15 @@ const dispatchLoaded = () => {
     new MessageEvent('message', {
       origin: ALLOWED_ORIGIN,
       data: { type: 'POLAR_PAYMENT_METHOD', event: 'loaded' },
+    }),
+  )
+}
+
+const dispatchError = (code: EmbedPaymentMethodErrorCode) => {
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: ALLOWED_ORIGIN,
+      data: { type: 'POLAR_PAYMENT_METHOD', event: 'error', code },
     }),
   )
 }
@@ -186,6 +198,91 @@ describe('PolarEmbedPaymentMethod', () => {
       const embed = await promise
 
       expect(onLoaded).toHaveBeenCalledTimes(1)
+      embed.close()
+    })
+
+    it('calls onError callback for a pre-loaded error posted before loaded', async () => {
+      const onError = vi.fn()
+
+      const promise = PolarEmbedPaymentMethod.create({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+        onError,
+      })
+
+      dispatchError('unauthorized')
+      dispatchLoaded()
+      const embed = await promise
+
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect((onError.mock.calls[0][0] as CustomEvent).detail.code).toBe(
+        'unauthorized',
+      )
+      embed.close()
+    })
+
+    it('onError is not once-only — it fires for post-loaded errors too', async () => {
+      const onError = vi.fn()
+
+      const promise = PolarEmbedPaymentMethod.create({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+        onError,
+      })
+
+      dispatchError('unauthorized')
+      dispatchLoaded()
+      const embed = await promise
+
+      dispatchError('processing_failed')
+
+      expect(onError).toHaveBeenCalledTimes(2)
+      expect((onError.mock.calls[0][0] as CustomEvent).detail.code).toBe(
+        'unauthorized',
+      )
+      expect((onError.mock.calls[1][0] as CustomEvent).detail.code).toBe(
+        'processing_failed',
+      )
+      embed.close()
+    })
+
+    it('create() promise still resolves on loaded when a pre-loaded error fires', async () => {
+      const onError = vi.fn()
+
+      const promise = PolarEmbedPaymentMethod.create({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+        onError,
+      })
+
+      dispatchError('unknown')
+      dispatchLoaded()
+      const embed = await promise
+
+      expect(embed).toBeInstanceOf(Object)
+      expect(onError).toHaveBeenCalledTimes(1)
+      embed.close()
+    })
+  })
+
+  describe('createInline', () => {
+    afterEach(cleanupDom)
+
+    it('calls onError callback for a pre-loaded error posted before loaded', () => {
+      const onError = vi.fn()
+      const container = document.createElement('div')
+      document.body.appendChild(container)
+
+      const embed = PolarEmbedPaymentMethod.createInline({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+        element: container,
+        onError,
+      })
+
+      dispatchError('unauthorized')
+      dispatchLoaded()
+
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect((onError.mock.calls[0][0] as CustomEvent).detail.code).toBe(
+        'unauthorized',
+      )
       embed.close()
     })
   })

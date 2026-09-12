@@ -1,5 +1,7 @@
+import asyncio
 import base64
 import binascii
+import time
 from typing import Annotated, Any, Literal, Protocol, TypedDict
 
 from cryptography.exceptions import InvalidSignature as CryptographyInvalidSignature
@@ -10,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BeforeValidator, TypeAdapter, ValidationError
 
 from polar.auth.service import auth as auth_service
+from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.enums import TokenType
 from polar.exceptions import PolarError
@@ -27,7 +30,7 @@ from polar.personal_access_token.service import (
 )
 from polar.postgres import AsyncSession
 
-from ..client import GitHub
+from ..client import get_app_client
 
 
 class GitHubSecretScanningPublicKey(TypedDict):
@@ -114,6 +117,13 @@ class InvalidSignature(GitHubSecretScanningError):
         super().__init__(message, status_code=403)
 
 
+# GitHub rotates the secret scanning public keys rarely, so the fetched list is
+# cached in-process to avoid an authenticated API call on every webhook delivery.
+# (timestamp, {key_identifier: key})
+_public_keys_cache: tuple[float, dict[str, str]] | None = None
+_public_keys_cache_lock = asyncio.Lock()
+
+
 class GitHubSecretScanningService:
     async def verify_signature(
         self, payload: str, signature: str, key_identifier: str
@@ -163,15 +173,45 @@ class GitHubSecretScanningService:
         }
 
     async def _get_public_key(self, key_identifier: str) -> str:
-        client = GitHub()
+        cached_key = self._lookup_cached_key(key_identifier)
+        if cached_key is not None:
+            return cached_key
+
+        async with _public_keys_cache_lock:
+            # Double-checked: another coroutine may have refreshed while we waited.
+            cached_key = self._lookup_cached_key(key_identifier)
+            if cached_key is not None:
+                return cached_key
+
+            public_keys = await self._fetch_public_keys()
+            global _public_keys_cache
+            _public_keys_cache = (time.monotonic(), public_keys)
+
+        try:
+            return public_keys[key_identifier]
+        except KeyError as e:
+            raise PublicKeyNotFound(key_identifier) from e
+
+    def _lookup_cached_key(self, key_identifier: str) -> str | None:
+        cached = _public_keys_cache
+        if cached is None:
+            return None
+        timestamp, public_keys = cached
+        ttl = settings.GITHUB_SECRET_SCANNING_PUBLIC_KEYS_CACHE_TTL_SECONDS
+        if time.monotonic() - timestamp >= ttl:
+            return None
+        # A missing key triggers a refresh: GitHub may have rotated in a new one.
+        return public_keys.get(key_identifier)
+
+    async def _fetch_public_keys(self) -> dict[str, str]:
+        client = get_app_client()
         response = await client.arequest("GET", "/meta/public_keys/secret_scanning")
 
         data: GitHubSecretScanningPublicKeyList = response.json()
-        for public_key in data["public_keys"]:
-            if public_key["key_identifier"] == key_identifier:
-                return public_key["key"]
-
-        raise PublicKeyNotFound(key_identifier)
+        return {
+            public_key["key_identifier"]: public_key["key"]
+            for public_key in data["public_keys"]
+        }
 
 
 secret_scanning = GitHubSecretScanningService()

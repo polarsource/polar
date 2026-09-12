@@ -109,4 +109,48 @@ describe('isOrderSummaryCollapsible', () => {
     })
     expect(isOrderSummaryCollapsible(checkout)).toBe(false)
   })
+
+  it('collapses when only the checkout-currency prices are eligible', () => {
+    const legacyUsdPrice = createPrice({
+      id: 'price_legacy_usd',
+      legacy: true,
+      recurring_interval: 'month',
+      price_currency: 'usd',
+    })
+    const newEurPrice = createPrice({
+      id: 'price_new_eur',
+      price_currency: 'eur',
+    })
+    delete (newEurPrice as Record<string, unknown>).legacy
+
+    const checkout = createCheckout({
+      currency: 'eur',
+      product_price: newEurPrice,
+      prices: { prod_1: [legacyUsdPrice, newEurPrice] },
+    })
+
+    expect(isOrderSummaryCollapsible(checkout)).toBe(true)
+  })
+
+  it('keeps open when the checkout-currency price is legacy', () => {
+    const legacyEurPrice = createPrice({
+      id: 'price_legacy_eur',
+      legacy: true,
+      recurring_interval: 'month',
+      price_currency: 'eur',
+    })
+    const newUsdPrice = createPrice({
+      id: 'price_new_usd',
+      price_currency: 'usd',
+    })
+    delete (newUsdPrice as Record<string, unknown>).legacy
+
+    const checkout = createCheckout({
+      currency: 'eur',
+      product_price: legacyEurPrice,
+      prices: { prod_1: [legacyEurPrice, newUsdPrice] },
+    })
+
+    expect(isOrderSummaryCollapsible(checkout)).toBe(false)
+  })
 })

@@ -342,4 +342,56 @@ describe('auth logout', () => {
     expect(output()).toContain('POLAR_ACCESS_TOKEN remains active')
     expect(output()).toContain('Logged out of Polar')
   })
+
+  test('offers saved sessions interactively under a token override', async () => {
+    auth.state.credential = overrideCredential()
+    auth.state.environment = 'production'
+    auth.state.sessions = ['sandbox']
+
+    const { promise, output, terminal } = run(['logout'], {
+      interactive: true,
+      input: [keys.enter],
+    })
+    await promise
+
+    expect(output()).toContain('POLAR_ACCESS_TOKEN remains active')
+    expect(terminal()).toContain('Which session do you want to log out of?')
+    expect(terminal()).toContain('Sandbox')
+    expect(terminal()).not.toContain('Production')
+    expect(output()).toContain('Logged out of Polar sandbox')
+    expect(output()).not.toContain('Already logged out of production')
+    expect(auth.state.sessions).toEqual([])
+  })
+
+  test('offers all saved sessions and the all option under a token override', async () => {
+    auth.state.credential = overrideCredential()
+    auth.state.environment = 'production'
+    auth.state.sessions = ['sandbox', 'production']
+
+    const { promise, output, terminal } = run(['logout'], {
+      interactive: true,
+      input: [keys.down, keys.down, keys.enter],
+    })
+    await promise
+
+    expect(terminal()).toContain('Which session do you want to log out of?')
+    expect(terminal()).toContain('All sessions')
+    expect(output()).toContain('Logged out of Polar sandbox')
+    expect(output()).toContain('Logged out of Polar production')
+    expect(auth.state.sessions).toEqual([])
+  })
+
+  test('reports nothing to log out of under a token override with no saved sessions', async () => {
+    auth.state.credential = overrideCredential()
+    auth.state.environment = 'production'
+    auth.state.sessions = []
+
+    const { promise, output } = run(['logout'], {
+      interactive: true,
+    })
+    await promise
+
+    expect(output()).toContain('POLAR_ACCESS_TOKEN remains active')
+    expect(output()).toContain('Already logged out')
+  })
 })

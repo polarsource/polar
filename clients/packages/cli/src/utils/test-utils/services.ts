@@ -80,6 +80,11 @@ export const fakeAuth = (
               : [...state.sessions],
           ),
     ),
+    savedEnvironments: Effect.suspend(() =>
+      state.failure
+        ? Effect.fail(state.failure)
+        : Effect.succeed([...state.sessions]),
+    ),
     resolve: (environment, rejected) =>
       Effect.suspend(() => {
         state.resolutions.push({ environment, rejected })

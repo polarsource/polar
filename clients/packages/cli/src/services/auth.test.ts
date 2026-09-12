@@ -119,6 +119,20 @@ describe('saved sessions', () => {
     expect(await Effect.runPromise(auth.environments)).toEqual([])
   })
 
+  test('savedEnvironments reports environments with a saved session', async () => {
+    const auth = await Effect.runPromise(authEffect())
+    expect(await Effect.runPromise(auth.savedEnvironments)).toEqual([
+      'sandbox',
+      'production',
+    ])
+    delete credentials.state.sessions.sandbox
+    expect(await Effect.runPromise(auth.savedEnvironments)).toEqual([
+      'production',
+    ])
+    delete credentials.state.sessions.production
+    expect(await Effect.runPromise(auth.savedEnvironments)).toEqual([])
+  })
+
   test('missing sessions provide environment-specific login guidance, never a browser', async () => {
     delete credentials.state.sessions.production
     const auth = await Effect.runPromise(authEffect())
@@ -243,5 +257,19 @@ describe('token override', () => {
     expect(credentials.state.sessions).toEqual({})
     expect(override).toBe('ci-secret')
     expect(oauth.state.logins + oauth.state.refreshes).toBe(0)
+  })
+
+  test('savedEnvironments reports saved sessions regardless of the override', async () => {
+    override = 'ci-secret'
+    const auth = await Effect.runPromise(authEffect())
+    expect(await Effect.runPromise(auth.environments)).toEqual(['production'])
+    expect(await Effect.runPromise(auth.savedEnvironments)).toEqual([
+      'sandbox',
+      'production',
+    ])
+    delete credentials.state.sessions.sandbox
+    expect(await Effect.runPromise(auth.savedEnvironments)).toEqual([
+      'production',
+    ])
   })
 })

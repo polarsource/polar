@@ -268,7 +268,7 @@ const logoutTargets = (flags: {
       })
     }
     const auth = yield* Auth
-    const sessions = yield* auth.environments
+    const sessions = yield* auth.savedEnvironments
     if (sessions.length === 0) return []
     const choices = sessions.map((environment) => ({
       title: environment === 'production' ? 'Production' : 'Sandbox',

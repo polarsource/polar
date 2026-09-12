@@ -32,6 +32,7 @@ export class Auth extends Context.Service<
     ) => Effect.Effect<PolarEnvironment[], AuthError>
     override: Effect.Effect<boolean>
     environments: Effect.Effect<PolarEnvironment[], AuthError>
+    savedEnvironments: Effect.Effect<PolarEnvironment[], AuthError>
   }
 >()('Auth') {}
 
@@ -123,16 +124,20 @@ export const make = (
           }),
         )
       })
+    const savedEnvironments = Effect.gen(function* () {
+      const available: PolarEnvironment[] = []
+      for (const environment of environments) {
+        if (yield* store.read(environment)) available.push(environment)
+      }
+      return available
+    })
     return Auth.of({
       override,
       resolve,
+      savedEnvironments,
       environments: Effect.gen(function* () {
         if (yield* override) return [yield* overrideEnvironment]
-        const available: PolarEnvironment[] = []
-        for (const environment of environments) {
-          if (yield* store.read(environment)) available.push(environment)
-        }
-        return available
+        return yield* savedEnvironments
       }),
       login: (environment, newSession) =>
         Effect.gen(function* () {

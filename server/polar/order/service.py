@@ -490,7 +490,10 @@ class OrderService:
 
         billing_address = order_update.billing_address
         if billing_address is not None and order.billing_address is not None:
-            if str(billing_address.country) != str(order.billing_address.country):
+            set_fields = billing_address.__pydantic_fields_set__
+            if "country" in set_fields and str(billing_address.country) != str(
+                order.billing_address.country
+            ):
                 errors.append(
                     {
                         "loc": ("body", "billing_address", "country"),
@@ -499,7 +502,10 @@ class OrderService:
                         "input": billing_address.country,
                     }
                 )
-            if billing_address.state != order.billing_address.state:
+            if (
+                "state" in set_fields
+                and billing_address.state != order.billing_address.state
+            ):
                 errors.append(
                     {
                         "loc": ("body", "billing_address", "state"),
@@ -512,9 +518,21 @@ class OrderService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        order = await repository.update(
-            order, update_dict=order_update.model_dump(exclude_unset=True)
-        )
+        update_dict = order_update.model_dump(exclude_unset=True)
+        if (
+            billing_address is not None
+            and "billing_address" in update_dict
+            and order.billing_address is not None
+        ):
+            set_address_fields = billing_address.model_dump(
+                exclude_unset=True, exclude_none=False
+            )
+            set_address_fields.pop("country", None)
+            update_dict["billing_address"] = order.billing_address.model_copy(
+                update=set_address_fields
+            ).model_dump(exclude_none=True)
+
+        order = await repository.update(order, update_dict=update_dict)
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 

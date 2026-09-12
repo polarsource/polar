@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.kit.address import Address
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
@@ -606,6 +607,63 @@ class TestUpdateOrder:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.orders_write}),
+    )
+    async def test_partial_billing_address_preserves_omitted_state(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_address=Address.model_validate(
+                {"country": "US", "state": "CA", "line1": "old street"}
+            ),
+        )
+
+        response = await client.patch(
+            f"/v1/orders/{order.id}",
+            json={"billing_address": {"country": "US", "line1": "new street"}},
+        )
+
+        assert response.status_code == 200
+        billing_address = response.json()["billing_address"]
+        assert billing_address["state"] == "US-CA"
+        assert billing_address["line1"] == "new street"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.orders_write}),
+    )
+    async def test_partial_billing_address_rejects_explicit_state_change(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_address=Address.model_validate(
+                {"country": "US", "state": "CA", "line1": "old street"}
+            ),
+        )
+
+        response = await client.patch(
+            f"/v1/orders/{order.id}",
+            json={"billing_address": {"country": "US", "state": "NY"}},
+        )
+
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

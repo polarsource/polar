@@ -539,6 +539,94 @@ class TestUpdate:
         assert updated_order.billing_address.country == "FR"
         assert updated_order.billing_address.line1 == "Rue de la Paix"
 
+    async def test_partial_billing_address_update_omitting_state_preserves_state(
+        self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_address=Address.model_validate(
+                {"country": "US", "state": "CA", "line1": "old street"}
+            ),
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_address=AddressInput.model_validate(
+                    {"country": "US", "line1": "new street"}
+                ),
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_order)
+
+        assert updated_order.billing_address is not None
+        assert updated_order.billing_address.country == "US"
+        assert updated_order.billing_address.state == "US-CA"
+        assert updated_order.billing_address.line1 == "new street"
+
+    async def test_partial_billing_address_update_preserves_omitted_fields(
+        self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_address=Address.model_validate(
+                {
+                    "country": "US",
+                    "state": "CA",
+                    "line1": "old street",
+                    "line2": "apt 5",
+                    "postal_code": "94101",
+                    "city": "San Francisco",
+                }
+            ),
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_address=AddressInput.model_validate(
+                    {"country": "US", "line1": "new street"}
+                ),
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_order)
+
+        assert updated_order.billing_address is not None
+        assert updated_order.billing_address.line1 == "new street"
+        assert updated_order.billing_address.state == "US-CA"
+        assert updated_order.billing_address.line2 == "apt 5"
+        assert updated_order.billing_address.postal_code == "94101"
+        assert updated_order.billing_address.city == "San Francisco"
+        assert updated_order.billing_address.country == "US"
+
+    async def test_partial_billing_address_update_explicit_null_state_rejected(
+        self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_address=Address.model_validate(
+                {"country": "US", "state": "CA", "line1": "old street"}
+            ),
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(
+                    billing_address=AddressInput.model_validate(
+                        {"country": "US", "state": None, "line1": "new street"}
+                    ),
+                ),
+            )
+
 
 @pytest.mark.asyncio
 class TestCreateFromCheckoutOneTime:

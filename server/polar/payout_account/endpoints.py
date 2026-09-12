@@ -57,7 +57,7 @@ async def create(
     auth_subject: AuthorizeWebPayoutsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> PayoutAccount:
-    return await payout_account_service.create(
+    return await payout_account_service.create_or_resume(
         auth_subject, session, payout_account_create
     )
 

@@ -102,4 +102,178 @@ describe('EntitlementStrategy', () => {
       properties: payload.data.properties,
     })
   })
+
+  it('should run grant when slug matches benefit_id even if description differs', async () => {
+    const onGrant = vi.fn()
+    const onRevoke = vi.fn()
+
+    const entitlement = new EntitlementStrategy<{ test: string }>()
+      .grant(onGrant)
+      .revoke(onRevoke)
+
+    const payload = {
+      type: 'benefit_grant.created',
+      timestamp: new Date().toISOString(),
+      data: {
+        id: '123',
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        is_granted: true,
+        benefit_id: 'benefit-uuid-123',
+        customer_id: '123',
+        subscription_id: '123',
+        order_id: '123',
+        user_id: '123',
+        is_revoked: false,
+        properties: { test: 'test' },
+        customer: {
+          email: 'test@test.com',
+          id: '123',
+          created_at: new Date().toISOString(),
+          modified_at: new Date().toISOString(),
+          deleted_at: null,
+          metadata: {},
+          email_verified: true,
+          billing_address: {
+            line1: '123',
+            line2: '123',
+            city: '123',
+            state: '123',
+            postal_code: '123',
+            country: 'US',
+          },
+          name: 'Test',
+          tax_id: ['123'],
+          organization_id: '123',
+          avatar_url: '123',
+        },
+        benefit: {
+          id: 'benefit-uuid-123',
+          created_at: new Date().toISOString(),
+          modified_at: new Date().toISOString(),
+          selectable: true,
+          description: 'Edited description',
+        } as unknown as models.Benefit,
+      },
+    } as unknown as webhooks.WebhookBenefitGrantCreatedPayload
+
+    await entitlement.handler('benefit-uuid-123')(payload)
+
+    expect(onGrant).toHaveBeenCalledWith({
+      payload,
+      customer: payload.data.customer,
+      properties: payload.data.properties,
+    })
+
+    expect(onRevoke).not.toHaveBeenCalled()
+  })
+
+  it('should run revoke when slug matches benefit_id even if description differs', async () => {
+    const onGrant = vi.fn()
+    const onRevoke = vi.fn()
+
+    const entitlement = new EntitlementStrategy<{ test: string }>()
+      .grant(onGrant)
+      .revoke(onRevoke)
+
+    const payload = {
+      type: 'benefit_grant.revoked',
+      timestamp: new Date().toISOString(),
+      data: {
+        id: '123',
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        is_granted: false,
+        benefit_id: 'benefit-uuid-123',
+        customer_id: '123',
+        benefit: { description: 'Edited description' },
+      },
+    } as unknown as webhooks.WebhookBenefitGrantRevokedPayload
+
+    await entitlement.handler('benefit-uuid-123')(payload)
+
+    expect(onGrant).not.toHaveBeenCalled()
+
+    expect(onRevoke).toHaveBeenCalledWith({
+      payload,
+      customer: payload.data.customer,
+      properties: payload.data.properties,
+    })
+  })
+
+  it('should not run any callback when slug matches neither description nor benefit_id', async () => {
+    const onGrant = vi.fn()
+    const onRevoke = vi.fn()
+
+    const entitlement = new EntitlementStrategy<{ test: string }>()
+      .grant(onGrant)
+      .revoke(onRevoke)
+
+    const grantPayload = {
+      type: 'benefit_grant.created',
+      timestamp: new Date().toISOString(),
+      data: {
+        id: '123',
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        is_granted: true,
+        benefit_id: 'benefit-uuid-123',
+        customer_id: '123',
+        subscription_id: '123',
+        order_id: '123',
+        user_id: '123',
+        is_revoked: false,
+        properties: { test: 'test' },
+        customer: {
+          email: 'test@test.com',
+          id: '123',
+          created_at: new Date().toISOString(),
+          modified_at: new Date().toISOString(),
+          deleted_at: null,
+          metadata: {},
+          email_verified: true,
+          billing_address: {
+            line1: '123',
+            line2: '123',
+            city: '123',
+            state: '123',
+            postal_code: '123',
+            country: 'US',
+          },
+          name: 'Test',
+          tax_id: ['123'],
+          organization_id: '123',
+          avatar_url: '123',
+        },
+        benefit: {
+          id: 'benefit-uuid-123',
+          created_at: new Date().toISOString(),
+          modified_at: new Date().toISOString(),
+          selectable: true,
+          description: 'Some other description',
+        } as unknown as models.Benefit,
+      },
+    } as unknown as webhooks.WebhookBenefitGrantCreatedPayload
+
+    await entitlement.handler('unrelated-slug')(grantPayload)
+
+    const revokePayload = {
+      type: 'benefit_grant.revoked',
+      timestamp: new Date().toISOString(),
+      data: {
+        id: '123',
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        is_granted: false,
+        benefit_id: 'benefit-uuid-123',
+        customer_id: '123',
+        benefit: { description: 'Some other description' },
+      },
+    } as unknown as webhooks.WebhookBenefitGrantRevokedPayload
+
+    await entitlement.handler('unrelated-slug')(revokePayload)
+
+    expect(onGrant).not.toHaveBeenCalled()
+    expect(onRevoke).not.toHaveBeenCalled()
+  })
 })

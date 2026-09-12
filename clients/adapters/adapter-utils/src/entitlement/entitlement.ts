@@ -35,7 +35,10 @@ export class EntitlementStrategy<T extends EntitlementProperties> {
 
   public handler(slug: string): EntitlementHandler {
     return async (payload: EntitlementPayload) => {
-      if (payload.data.benefit.description === slug) {
+      if (
+        payload.data.benefit.description === slug ||
+        payload.data.benefit_id === slug
+      ) {
         switch (payload.type) {
           case 'benefit_grant.created':
             await Promise.all(

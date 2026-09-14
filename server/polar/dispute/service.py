@@ -453,6 +453,9 @@ class DisputeService:
         ):
             dispute.status = DisputeStatus.prevented
             await self._revoke(session, dispute)
+            case = await dispute_case_service.get_case(session, dispute)
+            if case is not None and await dispute_case_service.is_open(session, case):
+                await dispute_case_service.prevent(session, case)
 
         return await repository.update(dispute)
 

@@ -1420,6 +1420,54 @@ class TestUpsertFromChargebackStop:
         )
         assert updated_dispute.dispute_alert_processor_id == alert["id"]
 
+    async def test_prevented_closes_the_open_case(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment_intent_id = "STRIPE_PAYMENT_INTENT_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        amount = order.subtotal_amount + order.tax_amount
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=amount,
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, needs_response)
+
+        payment_intent = build_stripe_payment_intent(
+            id=payment_intent_id, latest_charge=charge_id
+        )
+        mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent",
+            return_value=payment_intent,
+        )
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=payment_intent_id,
+            transaction_refund_outcome="REFUNDED",
+            transaction_amount_in_cents=amount,
+        )
+
+        dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert dispute.status == DisputeStatus.prevented
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert not await dispute_case_service.is_open(session, case)
+        types = await _message_types(session, case)
+        assert types.count(SupportCaseMessageType.dispute_prevented) == 1
+        assert types.index(SupportCaseMessageType.dispute_prevented) < types.index(
+            SupportCaseMessageType.closed
+        )
+
     async def test_retracted_alert_does_not_prevent(
         self,
         save_fixture: SaveFixture,

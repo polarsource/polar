@@ -2,7 +2,7 @@ variable "private_backoffice" {
   description = "Optional private replica using the existing admin sessions."
   type = object({
     hostname             = string
-    auth_key             = string
+    oauth_client_secret  = string
     cloudflare_api_token = string
     tags                 = optional(string, "tag:backoffice")
     plan                 = optional(string, "standard")
@@ -37,9 +37,13 @@ resource "render_private_service" "backoffice" {
   secret_files = {
     "tailscale-serve.json" = {
       content = jsonencode({
-        TCP = {
-          "443" = {
-            TCPForward = "127.0.0.1:8443"
+        Services = {
+          "svc:polar-backoffice-${var.environment}" = {
+            TCP = {
+              "443" = {
+                TCPForward = "127.0.0.1:8443"
+              }
+            }
           }
         }
       })
@@ -90,12 +94,12 @@ resource "render_private_service" "backoffice" {
     POLAR_ALLOWED_HOSTS      = { value = jsonencode(distinct(concat(jsondecode(var.api_service_config.allowed_hosts), [var.private_backoffice.hostname]))) }
     POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
     POLAR_DATABASE_POOL_SIZE = { value = "5" }
-    TS_AUTHKEY               = { value = var.private_backoffice.auth_key }
+    TS_AUTHKEY               = { value = "${var.private_backoffice.oauth_client_secret}?ephemeral=true&preauthorized=true" }
     TS_HOSTNAME              = { value = "polar-backoffice-${var.environment}" }
-    TS_STATE_DIR             = { value = "/var/lib/backoffice/tailscale" }
+    TS_STATE_DIR             = { value = "" }
     TS_USERSPACE             = { value = "true" }
     TS_ACCEPT_DNS            = { value = "false" }
-    TS_EXTRA_ARGS            = { value = "--advertise-tags=${var.private_backoffice.tags} --accept-routes=false" }
+    TS_EXTRA_ARGS            = { value = "--advertise-tags=${var.private_backoffice.tags},tag:${var.environment} --accept-routes=false" }
     TS_SERVE_CONFIG          = { value = "/etc/secrets/tailscale-serve.json" }
     TS_ENABLE_HEALTH_CHECK   = { value = "true" }
     TS_LOCAL_ADDR_PORT       = { value = "127.0.0.1:9002" }

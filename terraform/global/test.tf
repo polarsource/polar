@@ -553,10 +553,10 @@ resource "tfe_variable" "private_backoffice_enabled_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
-resource "tfe_variable" "private_backoffice_tailscale_auth_key_test" {
-  key             = "private_backoffice_tailscale_auth_key"
+resource "tfe_variable" "private_backoffice_tailscale_oauth_client_secret_test" {
+  key             = "private_backoffice_tailscale_oauth_client_secret"
   category        = "terraform"
-  description     = "Tailscale auth key for the private backoffice replica in test"
+  description     = "Tailscale OAuth client secret for the private backoffice replica in test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
@@ -572,6 +572,6 @@ resource "tfe_variable" "private_backoffice_cloudflare_api_token_test" {
 resource "tfe_variable" "private_backoffice_tailscale_ip_test" {
   key             = "private_backoffice_tailscale_ip"
   category        = "terraform"
-  description     = "Assigned Tailscale IPv4 address for the private backoffice replica in test"
+  description     = "Stable Tailscale Service IPv4 address for the private backoffice replica in test"
   variable_set_id = tfe_variable_set.test.id
 }

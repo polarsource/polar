@@ -70,14 +70,18 @@ BetterStack reacts to these sources of data:
 
 ## How and when to escalate?
 
+Every incident gets a severity level. Set it in the incident channel with `@incident sev 1`, `sev 2` or `sev 3`.
+
 **When?**
 
-- For minor incidents – do try and resolve yourself, but if you’re unable to resolve and the incident is ongoing do escalate. If the incident resolves itself we can investigate the following day.
-- For major incidents – i.e. all of Polar is down or we’ve had more than 5 minutes of checkout downtime then always escalate to other team members – don’t try to be the hero.
+- **SEV1 – Critical:** all of Polar is down, checkout is down or badly degraded, money moved incorrectly, merchant data was lost, or there’s a suspected security incident. Always escalate and tell leadership right away – don’t try to be the hero.
+- **SEV2 – Major:** an important feature is broken or degraded for some merchants, for example webhooks, payouts or the dashboard. If you’re unable to resolve it, escalate. Tell leadership if it lasts more than an hour.
+- **SEV3 – Minor:** limited impact, like an error spike, a few merchants or internal tools only. Do try and resolve it yourself. Outside working hours, the fix can wait until the morning.
 
 **How?**
 
-- In BetterStack use the “Escalate” button to escalate to Birk and François. If that doesn’t work use the [BetterStack team page](https://betterstack.com/settings/teams/118853/team-members) and call the phone numbers listed there. Note that BetterStack’s own escalation mechanism is preferred as those calls and notifications are more likely to come through.
+- To bring in help, page the person you need from the incident channel with `@incident betterstack page @person`. The incident handbook’s “People of interest” list shows who knows what.
+- If paging doesn’t work, use the [BetterStack team page](https://betterstack.com/settings/teams/118853/team-members) and call the phone numbers listed there. BetterStack’s own paging is preferred, as those calls and notifications are more likely to come through.
 
 ## Support
 

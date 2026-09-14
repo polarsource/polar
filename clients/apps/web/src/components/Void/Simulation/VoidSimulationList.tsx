@@ -77,7 +77,7 @@ const ScenarioCard = ({ card, href }: { card: Card; href: string }) => {
           <Delta delta={delta} ratio={ratio} suffix="over 30 days" />
         </Box>
 
-        <Box marginHorizontal="-xl" marginBottom="-xl">
+        <Box marginHorizontal="-xl" marginBottom="-2xl">
           <ScenarioChart
             data={card.daily}
             keys={['baseline', 'scenario']}

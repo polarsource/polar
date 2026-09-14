@@ -2,144 +2,91 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  Button,
-  DataTable,
-  DataTableColumnDef,
-  Status,
-  Text,
-} from '@polar-sh/orbit'
+import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useContext, useMemo } from 'react'
+import { useModal } from '@/components/Modal/useModal'
 import { changedLevers } from './baseline'
 import { replay } from './engine'
-import { deltaColor, shortDate, signedPct, signedUsd, usd } from './format'
+import { Delta } from './Delta'
+import { shortDate, usd } from './format'
+import { ScenarioModal } from './ScenarioModal'
+import { ScenarioChart } from './ScenarioChart'
 import { useScenarios } from './store'
-import { Scenario } from './types'
+import { DailyPoint, Scenario } from './types'
 
-interface Row {
+interface Card {
   id: string
   name: string
-  description: string
   basedOn: string
   changes: number
   promotedAs: string | null
   baseline: number
   scenario: number
-  expected: number
-  up: number
-  down: number
-  atRisk: number
+  daily: DailyPoint[]
   updatedAt: string
 }
 
-const columns: DataTableColumnDef<Row>[] = [
-  {
-    accessorKey: 'name',
-    enableSorting: false,
-    header: 'Scenario',
-    cell: ({ row: { original } }) => (
-      <Box flexDirection="column" minWidth={0}>
-        <Box alignItems="center" columnGap="s">
-          <Text truncate>{original.name}</Text>
-          {original.promotedAs ? (
-            <Status status={original.promotedAs} color="green" size="small" />
-          ) : null}
-        </Box>
-        <Text truncate color="muted" variant="caption">
-          {original.description ||
-            `${original.changes} ${original.changes === 1 ? 'lever' : 'levers'} changed`}
-        </Text>
-      </Box>
-    ),
-  },
-  {
-    accessorKey: 'basedOn',
-    enableSorting: false,
-    header: 'Based on',
-  },
-  {
-    accessorKey: 'scenario',
-    enableSorting: false,
-    header: 'Revenue / 30d',
-    cell: ({ row: { original } }) => {
-      const delta = original.scenario - original.baseline
-      return (
-        <Box flexDirection="column">
-          <Text>{usd(original.scenario)}</Text>
-          <Text color={deltaColor(delta)} variant="caption">
-            {signedUsd(delta)} (
-            {signedPct(
-              original.baseline > 0 ? delta / original.baseline : null,
-            )}
-            )
-          </Text>
-        </Box>
-      )
-    },
-  },
-  {
-    accessorKey: 'expected',
-    enableSorting: false,
-    header: 'Risk-adjusted',
-    cell: ({ row: { original } }) => {
-      const delta = original.expected - original.baseline
-      return (
-        <Box flexDirection="column">
-          <Text>{usd(original.expected)}</Text>
-          <Text color={deltaColor(delta)} variant="caption">
-            {signedUsd(delta)}
-          </Text>
-        </Box>
-      )
-    },
-  },
-  {
-    id: 'customers',
-    enableSorting: false,
-    header: 'Customers',
-    cell: ({ row: { original } }) => (
-      <Box flexDirection="column">
-        <Text>
-          {original.up} up, {original.down} down
-        </Text>
-        <Text
-          color={original.atRisk > 0 ? 'warning' : 'muted'}
-          variant="caption"
-        >
-          {original.atRisk > 0
-            ? `${original.atRisk} at risk of churning`
-            : 'None past tolerance'}
-        </Text>
-      </Box>
-    ),
-  },
-  {
-    accessorKey: 'updatedAt',
-    enableSorting: false,
-    header: 'Updated',
-    cell: ({ getValue }) => shortDate(getValue() as string),
-  },
-]
-
-const toRow = (scenario: Scenario): Row => {
-  const { totals, counts } = replay(scenario.levers)
+const toCard = (scenario: Scenario): Card => {
+  const { totals, daily } = replay(scenario.levers)
   return {
     id: scenario.id,
     name: scenario.name,
-    description: scenario.description,
     basedOn: `${scenario.basedOn.definition} · ${scenario.basedOn.version}`,
     changes: changedLevers(scenario.levers).length,
     promotedAs: scenario.promotedAs,
     baseline: totals.baseline,
     scenario: totals.scenario,
-    expected: totals.expected,
-    up: counts.up,
-    down: counts.down,
-    atRisk: counts.atRisk,
+    daily,
     updatedAt: scenario.updatedAt,
   }
+}
+
+const ScenarioCard = ({ card, href }: { card: Card; href: string }) => {
+  const delta = card.scenario - card.baseline
+  const ratio = card.baseline > 0 ? delta / card.baseline : null
+  return (
+    <Link href={href}>
+      <Box
+        flexDirection="column"
+        rowGap="l"
+        height="100%"
+        padding="2xl"
+        borderRadius="xl"
+        backgroundColor="background-card"
+        transitionProperty="colors"
+        transitionDuration="fast"
+        cursor="pointer"
+      >
+        <Box flexDirection="column" flexGrow={1} rowGap="2xl">
+          <Box flexDirection="column" rowGap="m">
+            <Box alignItems="baseline" justifyContent="between" columnGap="s">
+              <Text truncate variant="heading-xxs">
+                {card.name}
+              </Text>
+              <Text color="muted" variant="body">
+                {card.basedOn}
+              </Text>
+            </Box>
+          </Box>
+        </Box>
+        <Box flexDirection="column" rowGap="s">
+          <Text variant="heading-s">{usd(card.scenario)}</Text>
+          <Delta delta={delta} ratio={ratio} suffix="over 30 days" />
+        </Box>
+
+        <ScenarioChart
+          data={card.daily}
+          keys={['baseline', 'scenario']}
+          xAxisFormatter={shortDate}
+          height={96}
+          simple
+        />
+      </Box>
+    </Link>
+  )
 }
 
 export const VoidSimulationList = () => {
@@ -147,36 +94,33 @@ export const VoidSimulationList = () => {
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}/definition/simulate`
   const { scenarios, create } = useScenarios()
-  const rows = useMemo(() => scenarios.map(toRow), [scenarios])
+  const cards = useMemo(() => scenarios.map(toCard), [scenarios])
+  const { isShown, show, hide } = useModal()
 
   return (
     <DashboardBody
       title="Simulate"
-      titleActions={
-        <Button
-          onClick={() => {
-            const scenario = create(`Scenario ${scenarios.length + 1}`)
-            router.push(`${base}/${scenario.id}`)
-          }}
-        >
-          New scenario
-        </Button>
-      }
+      header={<Button onClick={show}>New scenario</Button>}
     >
-      <Box flexDirection="column" rowGap="2xl">
-        <Text color="muted">
-          Branch the active definition, change its prices and allowances, and
-          replay the last 30 days of real usage through it. Every number here is
-          what customers would actually have been billed.
-        </Text>
-        <DataTable
-          columns={columns}
-          data={rows}
-          isLoading={false}
-          getRowId={(row) => row.id}
-          onRowClick={(row) => router.push(`${base}/${row.original.id}`)}
-        />
-      </Box>
+      <ScenarioModal
+        isShown={isShown}
+        hide={hide}
+        title="New scenario"
+        submitLabel="Create scenario"
+        onSubmit={(input) => router.push(`${base}/${create(input).id}`)}
+      />
+      <Grid
+        templateColumns={{
+          base: 'minmax(0, 1fr)',
+          md: 'repeat(2, minmax(0, 1fr))',
+          xl: 'repeat(3, minmax(0, 1fr))',
+        }}
+        gap="xl"
+      >
+        {cards.map((card) => (
+          <ScenarioCard key={card.id} card={card} href={`${base}/${card.id}`} />
+        ))}
+      </Grid>
     </DashboardBody>
   )
 }

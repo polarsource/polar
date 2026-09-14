@@ -9,7 +9,8 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { deltaColor, signedPct, signedUsd, usd } from './format'
+import { Delta } from './Delta'
+import { usd } from './format'
 import { CustomerResult, ReplayResult } from './types'
 
 const riskLabel = (risk: number) =>
@@ -49,14 +50,7 @@ const columns: DataTableColumnDef<CustomerResult>[] = [
     enableSorting: false,
     header: 'Change',
     cell: ({ row: { original } }) => (
-      <Box flexDirection="column">
-        <Text color={deltaColor(original.delta)}>
-          {signedUsd(original.delta)}
-        </Text>
-        <Text color="muted" variant="caption">
-          {signedPct(original.deltaPct)}
-        </Text>
-      </Box>
+      <Delta delta={original.delta} ratio={original.deltaPct} />
     ),
   },
   {
@@ -96,8 +90,7 @@ export const ScenarioCustomers = ({
           Customers
         </Text>
         <Text color="muted">
-          Every customer rebilled under the scenario, largest change first.{' '}
-          {counts.up} up, {counts.down} down, {counts.flat} unchanged.
+          {counts.up} up, {counts.down} down, {counts.atRisk} at risk.
         </Text>
       </Box>
       <DataTable

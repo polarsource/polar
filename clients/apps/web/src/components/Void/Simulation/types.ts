@@ -37,7 +37,6 @@ export interface ScenarioLevers {
 export interface Scenario {
   id: string
   name: string
-  description: string
   basedOn: { definition: string; version: string }
   createdAt: string
   updatedAt: string

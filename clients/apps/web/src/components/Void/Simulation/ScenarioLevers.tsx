@@ -85,13 +85,11 @@ const Group = ({
     className="dark:border-polar-700 rounded-none! border-b border-gray-200 px-0!"
   >
     <AccordionTrigger className="py-4 text-left hover:no-underline">
-      <Box flexDirection="column" rowGap="xs">
+      <Box flexDirection="column">
         <Text variant="title" as="h3">
           {title}
         </Text>
-        <Text color="muted" variant="caption">
-          {caption}
-        </Text>
+        <Text color="muted">{caption}</Text>
       </Box>
     </AccordionTrigger>
     <AccordionContent>
@@ -111,19 +109,16 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
   return (
     <Box flexDirection="column" rowGap="l" padding="xl">
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xxs" as="h2">
-          Levers
-        </Text>
-        <Text color="muted" variant="caption">
-          Every change rebills the last 30 days instantly.
+        <Text variant="body" as="h2">
+          Simulation Levers
         </Text>
       </Box>
-      <Accordion type="multiple" className="flex flex-col">
-        <Group
-          id="plans"
-          title="Plans"
-          caption="Monthly fee and the usage it includes."
-        >
+      <Accordion
+        type="multiple"
+        className="flex flex-col"
+        defaultValue={['plans']}
+      >
+        <Group id="plans" title="Plans" caption="Monthly fee and allowance">
           {levers.plans.map((plan, index) => (
             <Box key={plan.id} flexDirection="column" rowGap="l">
               <LeverField
@@ -158,7 +153,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
         <Group
           id="meters"
           title="Meters"
-          caption="What one unit of usage costs above the allowance."
+          caption="Price per unit above the allowance"
         >
           {levers.meters.map((meter, index) => (
             <LeverField
@@ -181,7 +176,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
         <Group
           id="assumptions"
           title="Assumptions"
-          caption="Drive the projection and the churn risk model."
+          caption="Growth and churn model"
         >
           <LeverField
             label="Usage growth"

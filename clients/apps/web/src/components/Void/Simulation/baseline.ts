@@ -58,8 +58,6 @@ export const PRESET_SCENARIOS: Scenario[] = [
   {
     id: 'usage-first',
     name: 'Usage-first',
-    description:
-      'Halve the Scale fee, drop allowances and price output tokens up.',
     basedOn: BASED_ON,
     createdAt: at(6),
     updatedAt: at(1),
@@ -76,8 +74,6 @@ export const PRESET_SCENARIOS: Scenario[] = [
   {
     id: 'enterprise-uplift',
     name: 'Enterprise uplift',
-    description:
-      'Raise Scale to $799 with a $500 allowance to reward heavy users.',
     basedOn: BASED_ON,
     createdAt: at(3),
     updatedAt: at(2),
@@ -93,7 +89,6 @@ export const PRESET_SCENARIOS: Scenario[] = [
   {
     id: 'free-starter',
     name: 'Free Starter',
-    description: 'Make Starter free with a small allowance, lift Team to $129.',
     basedOn: BASED_ON,
     createdAt: at(12),
     updatedAt: at(9),
@@ -112,7 +107,6 @@ export const PRESET_SCENARIOS: Scenario[] = [
 export const blankScenario = (id: string, name: string): Scenario => ({
   id,
   name,
-  description: '',
   basedOn: BASED_ON,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

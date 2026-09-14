@@ -8,11 +8,34 @@ import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import { usd } from './format'
 
+export type SeriesKey = 'baseline' | 'scenario' | 'expected'
+
+export const SERIES_LABEL: Record<SeriesKey, string> = {
+  baseline: 'Baseline',
+  scenario: 'Scenario',
+  expected: 'Risk-adjusted',
+}
+
+export const useSeriesColors = (): Record<SeriesKey, string> => {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+  return useMemo(
+    () => ({
+      baseline: isDark ? '#4b4c56' : '#c4c6cf',
+      scenario: '#2563eb',
+      expected: '#14b8a6',
+    }),
+    [isDark],
+  )
+}
+
 interface ScenarioChartProps<T extends Record<string, unknown>> {
   data: T[]
-  keys: { key: keyof T & string; label: string }[]
+  keys: SeriesKey[]
   xAxisFormatter: (value: string) => string
   height?: number
+  simple?: boolean
+  legend?: boolean
 }
 
 export const ScenarioChart = <T extends Record<string, unknown>>({
@@ -20,18 +43,19 @@ export const ScenarioChart = <T extends Record<string, unknown>>({
   keys,
   xAxisFormatter,
   height = 280,
+  simple = false,
+  legend = false,
 }: ScenarioChartProps<T>) => {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
-
-  const series = useMemo<GenericChartSeries[]>(() => {
-    const palette = [isDark ? '#4b4c56' : '#c4c6cf', '#2563eb', '#14b8a6']
-    return keys.map(({ key, label }, index) => ({
-      key,
-      label,
-      color: palette[index % palette.length],
-    }))
-  }, [keys, isDark])
+  const colors = useSeriesColors()
+  const series = useMemo<GenericChartSeries[]>(
+    () =>
+      keys.map((key) => ({
+        key,
+        label: SERIES_LABEL[key],
+        color: colors[key],
+      })),
+    [keys, colors],
+  )
 
   return (
     <GenericChart
@@ -41,7 +65,8 @@ export const ScenarioChart = <T extends Record<string, unknown>>({
       xAxisFormatter={xAxisFormatter}
       valueFormatter={(value) => usd(value)}
       height={height}
-      showLegend
+      showLegend={legend && !simple}
+      simple={simple}
       chartType="line"
     />
   )

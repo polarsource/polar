@@ -50,9 +50,11 @@ const slugify = (name: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 
-const create = (name: string): Scenario => {
-  const id = `${slugify(name) || 'scenario'}-${Date.now().toString(36)}`
-  const scenario = blankScenario(id, name)
+export type NewScenario = Pick<Scenario, 'name' | 'basedOn'>
+
+const create = (input: NewScenario): Scenario => {
+  const id = `${slugify(input.name) || 'scenario'}-${Date.now().toString(36)}`
+  const scenario = { ...blankScenario(id, input.name), ...input }
   commit([scenario, ...getSnapshot()])
   return scenario
 }

@@ -9,8 +9,10 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo, useState } from 'react'
-import { deltaColor, shortDate, signedPct, signedUsd, usd } from './format'
+import { Delta } from './Delta'
+import { shortDate, usd } from './format'
 import { ScenarioChart } from './ScenarioChart'
+import { SeriesLegend } from './SeriesLegend'
 import { ComponentResult, ReplayResult } from './types'
 
 type View = 'daily' | 'cumulative'
@@ -47,17 +49,14 @@ const columns: DataTableColumnDef<ComponentResult>[] = [
     header: 'Change',
     cell: ({ row: { original } }) => {
       const delta = original.scenario - original.baseline
-      return <Text color={deltaColor(delta)}>{signedUsd(delta)}</Text>
+      return <Delta delta={delta} />
     },
   },
 ]
 
 export const ScenarioReplay = ({ result }: { result: ReplayResult }) => {
   const [view, setView] = useState<View>('daily')
-  const { totals, counts } = result
-  const delta = totals.scenario - totals.baseline
-  const ratio = totals.baseline > 0 ? delta / totals.baseline : null
-  const expectedDelta = totals.expected - totals.baseline
+  const { totals } = result
 
   const points = useMemo(() => {
     if (view === 'daily') return result.daily
@@ -72,19 +71,11 @@ export const ScenarioReplay = ({ result }: { result: ReplayResult }) => {
 
   return (
     <Box flexDirection="column" rowGap="xl">
-      <Box flexDirection="column" rowGap="s">
+      <Box alignItems="baseline" justifyContent="between" columnGap="l">
         <Text variant="heading-xs" as="h2">
-          Revenue would have been {usd(totals.scenario)}, {signedPct(ratio)}{' '}
-          against {usd(totals.baseline)}
+          Revenue
         </Text>
-        <Text color="muted">
-          Rebilled from the last 30 days of real usage. After expected churn,{' '}
-          {usd(totals.expected)} ({signedUsd(expectedDelta)}). {counts.up}{' '}
-          customers pay more, {counts.down} pay less
-          {counts.atRisk > 0
-            ? `, ${counts.atRisk} above the churn tolerance.`
-            : '.'}
-        </Text>
+        <Text color="muted">Last 30 days</Text>
       </Box>
 
       <Box
@@ -96,10 +87,13 @@ export const ScenarioReplay = ({ result }: { result: ReplayResult }) => {
         borderRadius="l"
         padding="l"
       >
-        <Box alignItems="center" justifyContent="between" columnGap="l">
-          <Text color="muted" variant="caption">
-            Revenue per day, baseline against scenario
-          </Text>
+        <Box
+          alignItems={{ base: 'start', md: 'center' }}
+          justifyContent="between"
+          flexDirection={{ base: 'column', md: 'row' }}
+          gap="l"
+        >
+          <SeriesLegend values={totals} />
           <SegmentedControl<View>
             size="sm"
             value={view}
@@ -112,20 +106,17 @@ export const ScenarioReplay = ({ result }: { result: ReplayResult }) => {
         </Box>
         <ScenarioChart
           data={points}
-          keys={[
-            { key: 'baseline', label: 'Baseline' },
-            { key: 'scenario', label: 'Scenario' },
-          ]}
+          keys={['baseline', 'scenario']}
           xAxisFormatter={shortDate}
         />
       </Box>
 
       <Box flexDirection="column" rowGap="l">
         <Box alignItems="baseline" justifyContent="between" columnGap="l">
-          <Text variant="title" as="h3">
-            Where the change comes from
+          <Text variant="heading-xxs" as="h3">
+            Breakdown
           </Text>
-          <Text color="muted" variant="caption">
+          <Text color="muted">
             {formatPercentage(
               totals.scenario > 0
                 ? result.components

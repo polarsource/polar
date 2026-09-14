@@ -15,7 +15,10 @@ from polar.customer.repository import CustomerRepository
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
-from polar.integrations.chargeback_stop.types import ChargebackStopAlert
+from polar.integrations.chargeback_stop.types import (
+    RETRACTED_ALERT_STATUS,
+    ChargebackStopAlert,
+)
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.math import polar_round
@@ -444,11 +447,15 @@ class DisputeService:
         # We refunded the transaction before the dispute could be escalated:
         # the customer got their money back, so their access goes too.
         if (
-            alert["transaction_refund_outcome"] == "REFUNDED"
+            alert.get("status") != RETRACTED_ALERT_STATUS
+            and alert["transaction_refund_outcome"] == "REFUNDED"
             and dispute.status != DisputeStatus.prevented
         ):
             dispute.status = DisputeStatus.prevented
             await self._revoke(session, dispute)
+            case = await dispute_case_service.get_case(session, dispute)
+            if case is not None and await dispute_case_service.is_open(session, case):
+                await dispute_case_service.prevent(session, case)
 
         return await repository.update(dispute)
 

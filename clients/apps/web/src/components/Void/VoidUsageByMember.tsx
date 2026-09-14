@@ -9,14 +9,10 @@ import { IdentityNode, walk } from './identities'
 
 const credits = (value: number) => `${value.toLocaleString('en-US')} credits`
 
-const ShareBar = ({ share, muted }: { share: number; muted?: boolean }) => (
-  <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
+const ShareBar = ({ share }: { share: number }) => (
+  <div className="dark:bg-polar-700 h-1 w-full overflow-hidden bg-gray-200">
     <div
-      className={
-        muted
-          ? 'h-full rounded-full bg-gray-400 dark:bg-white/30'
-          : 'h-full rounded-full bg-blue-500'
-      }
+      className="h-full bg-black dark:bg-white"
       style={{ width: `${Math.max(1, Math.round(share * 100))}%` }}
     />
   </div>
@@ -129,8 +125,10 @@ export const VoidUsageByMember = ({
                       justifyContent="center"
                       width={32}
                       height={32}
-                      borderRadius="m"
+                      borderRadius="s"
                       backgroundColor="background-card"
+                      borderColor="border-primary"
+                      borderWidth={1}
                       flexShrink={0}
                     >
                       <Gauge size={14} />
@@ -156,7 +154,7 @@ export const VoidUsageByMember = ({
                           </Text>
                         </Box>
                       </Box>
-                      <ShareBar share={meter.credits / total} muted />
+                      <ShareBar share={meter.credits / total} />
                     </Box>
                   </Box>
                 ))}

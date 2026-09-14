@@ -107,11 +107,9 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
       title={
         <Box flexDirection="column" rowGap="xs">
           <Link href={`${base}/identities`}>
-            <Text color="muted" variant="caption">
-              Identities
-            </Text>
+            <Text color="muted">Identities</Text>
           </Link>
-          <Text variant="heading-xs" as="h1">
+          <Text variant="heading-s" as="h1">
             {focused.name}
           </Text>
           <Text color="muted">{meta.join(' · ')}</Text>
@@ -166,9 +164,7 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
           </StatisticCard>
         </Box>
 
-        {isRoot ? (
-          <VoidIdentityUsage root={root} rolled={rolled} base={base} />
-        ) : null}
+        <VoidIdentityUsage root={focusedNode} rolled={rolled} base={base} />
 
         {isRoot ? (
           <MetricChartBox

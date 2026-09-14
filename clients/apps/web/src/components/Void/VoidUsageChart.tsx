@@ -90,14 +90,13 @@ export const VoidUsageChart = ({
           content={(props) => <UsageTooltip {...props} labels={chartConfig} />}
         />
         <ChartLegend content={<ChartLegendContent />} />
-        {keys.map((key, index) => (
+        {keys.map((key) => (
           <Bar
             key={key}
             dataKey={key}
             stackId="usage"
             fill={`var(--color-${key})`}
-            maxBarSize={28}
-            radius={index === keys.length - 1 ? [3, 3, 0, 0] : 0}
+            maxBarSize={8}
           />
         ))}
       </BarChart>

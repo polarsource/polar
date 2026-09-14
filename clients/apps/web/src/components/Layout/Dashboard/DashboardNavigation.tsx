@@ -22,6 +22,7 @@ import {
   useIsVoidDestination,
   useVoidRoutes,
 } from '../../Dashboard/navigationVoid'
+import { VoidDefinitionSelector } from '@/components/Void/VoidDefinitionSelector'
 import { NavList } from './NavList'
 
 export const OrganizationNavigation = ({
@@ -49,7 +50,12 @@ const VoidNavigation = ({
   organization: schemas['Organization']
 }) => {
   const routes = useVoidRoutes(organization)
-  return <NavList routes={routes} navType="organization" />
+  return (
+    <div className="flex w-full flex-col gap-4">
+      <VoidDefinitionSelector />
+      <NavList routes={routes} navType="organization" />
+    </div>
+  )
 }
 
 const LegacyOrganizationNavigation = ({

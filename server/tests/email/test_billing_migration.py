@@ -3,6 +3,7 @@ import pytest_asyncio
 
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailTemplate
+from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal
@@ -70,6 +71,20 @@ class TestPreviousBillingProviderForNotice:
             == "Stripe"
         )
 
+    async def test_lifecycle_email_skips_notice(
+        self,
+        session: AsyncSession,
+        moved_subscription: Subscription,
+    ) -> None:
+        assert (
+            await previous_billing_provider_for_notice(
+                session,
+                moved_subscription,
+                EmailTemplate.subscription_cancellation,
+            )
+            is None
+        )
+
     async def test_later_cycle(
         self,
         save_fixture: SaveFixture,
@@ -90,6 +105,59 @@ class TestPreviousBillingProviderForNotice:
         assert (
             await previous_billing_provider_for_notice(
                 session, moved_subscription, EmailTemplate.subscription_cycled
+            )
+            is None
+        )
+
+    async def test_create_order_does_not_hide_reminder(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        moved_subscription: Subscription,
+    ) -> None:
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=moved_subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_create,
+        )
+
+        assert (
+            await previous_billing_provider_for_notice(
+                session,
+                moved_subscription,
+                EmailTemplate.subscription_renewal_reminder,
+            )
+            == "Stripe"
+        )
+
+    async def test_soft_deleted_migration(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            subscription,
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+        )
+        await MerchantMigrationRepository.from_session(session).soft_delete(migration)
+
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.subscription_renewal_reminder
             )
             is None
         )

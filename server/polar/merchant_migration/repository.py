@@ -134,12 +134,18 @@ class MerchantMigrationRecordRepository(
     async def has_moved_subscription(self, subscription_id: UUID) -> bool:
         statement = select(
             self.get_base_statement()
+            .join(
+                MerchantMigration,
+                onclause=MerchantMigration.id
+                == MerchantMigrationRecord.merchant_migration_id,
+            )
             .where(
                 MerchantMigrationRecord.type
                 == MerchantMigrationRecordType.subscription,
                 MerchantMigrationRecord.target_id == subscription_id,
                 MerchantMigrationRecord.cutover_status
                 == MerchantMigrationCutoverStatus.moved,
+                MerchantMigration.deleted_at.is_(None),
             )
             .exists()
         )

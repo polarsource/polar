@@ -133,6 +133,130 @@ class TestAccountRiskSignal:
 
         handle_mock.assert_not_called()
 
+    async def test_merchant_thin_event_fetches_account_signal(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_123"
+        )
+
+        event_mock = mocker.MagicMock()
+        event_mock.data = {
+            "id": "evt_merchant",
+            "type": "v2.signals.account_signal.fraudulent_merchant_ready",
+            "data": {},
+            "related_object": {
+                "id": "acctsig_123",
+                "type": "v2.signals.account_signal",
+                "url": "/v2/signals/account_signals/acctsig_123",
+            },
+        }
+        context_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
+        )
+        context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
+        context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        event_fetch = mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_risk_event",
+            new=AsyncMock(),
+        )
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_signal",
+            new=AsyncMock(
+                return_value={
+                    "id": "acctsig_123",
+                    "type": "fraudulent_merchant",
+                    "account_details": {"account": "acct_123"},
+                    "fraudulent_merchant": {
+                        "risk_level": "highest",
+                        "probability": "91.2",
+                        "indicators": [
+                            {
+                                "indicator": "disputes",
+                                "impact": "strong_increase",
+                                "explanation": "Dispute rate spiked.",
+                            }
+                        ],
+                    },
+                }
+            ),
+        )
+
+        await account_risk_signal(uuid.uuid4())
+
+        event_fetch.assert_not_called()
+        organization_repository = OrganizationRepository.from_session(session)
+        updated = await organization_repository.get_by_id(organization.id)
+        assert updated is not None
+        assert updated.status == OrganizationStatus.REVIEW
+
+    async def test_merchant_fetches_signal_from_full_event_when_related_object_missing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_123"
+        )
+
+        event_mock = mocker.MagicMock()
+        event_mock.data = {
+            "id": "evt_merchant",
+            "type": "v2.signals.account_signal.fraudulent_merchant_ready",
+            "data": {},
+        }
+        context_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
+        )
+        context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
+        context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_risk_event",
+            new=AsyncMock(
+                return_value={
+                    "id": "evt_merchant",
+                    "type": "v2.signals.account_signal.fraudulent_merchant_ready",
+                    "data": {},
+                    "related_object": {"id": "acctsig_123"},
+                }
+            ),
+        )
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_signal",
+            new=AsyncMock(
+                return_value={
+                    "id": "acctsig_123",
+                    "type": "fraudulent_merchant",
+                    "account_details": {"account": "acct_123"},
+                    "fraudulent_merchant": {
+                        "risk_level": "elevated",
+                        "probability": "60",
+                    },
+                }
+            ),
+        )
+
+        await account_risk_signal(uuid.uuid4())
+
+        organization_repository = OrganizationRepository.from_session(session)
+        updated = await organization_repository.get_by_id(organization.id)
+        assert updated is not None
+        assert updated.status == OrganizationStatus.REVIEW
+
 
 @pytest.mark.asyncio
 class TestPaymentIntentSucceeded:

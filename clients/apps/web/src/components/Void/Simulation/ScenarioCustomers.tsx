@@ -86,7 +86,7 @@ export const ScenarioCustomers = ({
   return (
     <Box flexDirection="column" rowGap="xl">
       <Box flexDirection="column" rowGap="s">
-        <Text variant="heading-xs" as="h2">
+        <Text variant="heading-xxs" as="h2">
           Customers
         </Text>
         <Text color="muted">

@@ -72,7 +72,7 @@ export const ScenarioReplay = ({ result }: { result: ReplayResult }) => {
   return (
     <Box flexDirection="column" rowGap="xl">
       <Box alignItems="baseline" justifyContent="between" columnGap="l">
-        <Text variant="heading-xs" as="h2">
+        <Text variant="heading-xxs" as="h2">
           Revenue
         </Text>
         <Text color="muted">Last 30 days</Text>

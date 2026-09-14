@@ -19,7 +19,7 @@ export const ScenarioProjection = ({
   return (
     <Box flexDirection="column" rowGap="xl">
       <Box alignItems="baseline" justifyContent="between" columnGap="l">
-        <Text variant="heading-xs" as="h2">
+        <Text variant="heading-xxs" as="h2">
           Projection
         </Text>
         <Text color="muted">

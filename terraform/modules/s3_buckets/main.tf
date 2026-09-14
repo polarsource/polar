@@ -284,7 +284,7 @@ resource "aws_s3_bucket_policy" "files" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = concat(
-      lookup(local.app_access_statements, "files", []),
+      try(local.app_access_statements["files"], []),
       lookup(local.malware_scan_tbac_statements, "files", []),
     )
   })
@@ -365,7 +365,7 @@ resource "aws_s3_bucket_policy" "public_files" {
           Resource  = "${aws_s3_bucket.public_files.arn}/*"
         }
       ],
-      lookup(local.app_access_statements, "public_files", []),
+      try(local.app_access_statements["public_files"], []),
       lookup(local.malware_scan_tbac_statements, "public_files", []),
     )
   })

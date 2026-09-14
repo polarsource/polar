@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   Divider,
@@ -18,6 +19,7 @@ export function SubscriptionConfirmation({
   product,
   order,
   url,
+  previous_billing_provider,
 }: schemas['SubscriptionConfirmationProps']) {
   return (
     <WrapperOrganization
@@ -38,6 +40,12 @@ export function SubscriptionConfirmation({
           </>
         )}
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Button href={url}>Access purchase</Button>
       <Divider />
@@ -52,6 +60,7 @@ SubscriptionConfirmation.PreviewProps = {
   organization,
   product,
   order,
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

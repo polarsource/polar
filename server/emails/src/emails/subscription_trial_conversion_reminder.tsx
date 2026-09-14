@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -14,6 +15,7 @@ export function SubscriptionTrialConversionReminder({
   product,
   url,
   conversion_date,
+  previous_billing_provider,
 }: schemas['SubscriptionTrialConversionReminderProps']) {
   return (
     <WrapperOrganization
@@ -31,6 +33,12 @@ export function SubscriptionTrialConversionReminder({
         </Text>{' '}
         and your subscription will convert to a paid plan.
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Text>
         If you&rsquo;d like to make any changes or cancel before your trial
         ends, you can do so from your customer portal.
@@ -50,6 +58,7 @@ SubscriptionTrialConversionReminder.PreviewProps = {
     status: 'trialing',
   },
   conversion_date: 'March 17, 2026',
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

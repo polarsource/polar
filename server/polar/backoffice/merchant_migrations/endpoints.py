@@ -280,7 +280,7 @@ class SourcePlatformItem(description_list.DescriptionListItem[MerchantMigration]
     def render(
         self, request: Request, item: MerchantMigration
     ) -> Generator[None] | None:
-        text(views.SOURCE_PLATFORM_LABELS[item.source_platform])
+        text(item.source_platform.label)
         return None
 
 

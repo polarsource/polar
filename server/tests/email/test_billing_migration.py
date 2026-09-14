@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailTemplate
@@ -14,7 +15,8 @@ from tests.merchant_migration._helpers import (
 )
 
 
-async def _moved_subscription(
+@pytest_asyncio.fixture
+async def moved_subscription(
     save_fixture: SaveFixture,
     organization: Organization,
     product: Product,
@@ -56,19 +58,14 @@ class TestPreviousBillingProviderForNotice:
 
     async def test_moved_from_stripe(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
+        moved_subscription: Subscription,
     ) -> None:
-        subscription = await _moved_subscription(
-            save_fixture, organization, product, customer
-        )
-
         assert (
             await previous_billing_provider_for_notice(
-                session, subscription, EmailTemplate.subscription_renewal_reminder
+                session,
+                moved_subscription,
+                EmailTemplate.subscription_renewal_reminder,
             )
             == "Stripe"
         )
@@ -77,25 +74,22 @@ class TestPreviousBillingProviderForNotice:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        organization: Organization,
         product: Product,
         customer: Customer,
+        moved_subscription: Subscription,
     ) -> None:
-        subscription = await _moved_subscription(
-            save_fixture, organization, product, customer
-        )
         for _ in range(2):
             await create_order(
                 save_fixture,
                 product=product,
                 customer=customer,
-                subscription=subscription,
+                subscription=moved_subscription,
                 billing_reason=OrderBillingReasonInternal.subscription_cycle,
             )
 
         assert (
             await previous_billing_provider_for_notice(
-                session, subscription, EmailTemplate.subscription_cycled
+                session, moved_subscription, EmailTemplate.subscription_cycled
             )
             is None
         )

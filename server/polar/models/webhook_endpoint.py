@@ -43,7 +43,7 @@ class WebhookEventType(StrEnum):
     subscription_past_due = "subscription.past_due"
     subscription_paused = "subscription.paused"
     subscription_resumed = "subscription.resumed"
-    subscription_imported = "subscription.imported"
+    subscription_migrated = "subscription.migrated"
     refund_created = "refund.created"
     refund_updated = "refund.updated"
     product_created = "product.created"

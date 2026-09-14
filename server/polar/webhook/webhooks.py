@@ -89,7 +89,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_cycled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
-    | tuple[Literal[WebhookEventType.subscription_imported], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_migrated], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -1134,9 +1134,9 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
         return self._get_uncanceled_slack_payload(target)
 
 
-class WebhookSubscriptionImportedPayload(BaseWebhookPayload):
+class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
     """
-    Sent when Polar takes over billing of a subscription imported from another platform.
+    Sent when Polar takes over billing of a subscription migrated from another platform.
 
     This fires at cutover, once the subscription is live on Polar. `platform` and
     `external_id` identify the subscription on the source platform so you can
@@ -1147,10 +1147,10 @@ class WebhookSubscriptionImportedPayload(BaseWebhookPayload):
     **Discord & Slack support:** Full
     """
 
-    type: Literal[WebhookEventType.subscription_imported]
+    type: Literal[WebhookEventType.subscription_migrated]
     data: SubscriptionSchema
     platform: str = Field(
-        description="The billing platform the subscription was imported from.",
+        description="The billing platform the subscription was migrated from.",
         examples=["stripe"],
     )
     external_id: str = Field(
@@ -1176,13 +1176,13 @@ class WebhookSubscriptionImportedPayload(BaseWebhookPayload):
             {"name": "External ID", "value": self.external_id},
         ]
         payload: DiscordPayload = {
-            "content": "Imported Subscription",
+            "content": "Migrated Subscription",
             "embeds": [
                 get_branded_discord_embed(
                     {
-                        "title": "Imported Subscription",
+                        "title": "Migrated Subscription",
                         "description": (
-                            f"A subscription imported from {self.platform} "
+                            f"A subscription migrated from {self.platform} "
                             f"is now billed by {target.name}."
                         ),
                         "fields": fields,
@@ -1210,14 +1210,14 @@ class WebhookSubscriptionImportedPayload(BaseWebhookPayload):
         ]
         payload: SlackPayload = get_branded_slack_payload(
             {
-                "text": "Imported Subscription",
+                "text": "Migrated Subscription",
                 "blocks": [
                     {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
                             "text": (
-                                f"A subscription imported from {self.platform} "
+                                f"A subscription migrated from {self.platform} "
                                 f"is now billed by {target.name}."
                             ),
                         },
@@ -1642,7 +1642,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
     | WebhookSubscriptionResumedPayload
-    | WebhookSubscriptionImportedPayload
+    | WebhookSubscriptionMigratedPayload
     | WebhookRefundCreatedPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload

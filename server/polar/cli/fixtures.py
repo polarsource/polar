@@ -129,7 +129,7 @@ class TriggerFixtures:
             "api_version": CURRENT_API_VERSION,
             "data": self._data_for(event),
         }
-        if event is WebhookEventType.subscription_imported:
+        if event is WebhookEventType.subscription_migrated:
             payload["platform"] = "stripe"
             payload["external_id"] = "sub_123"
         return WebhookPayloadTypeAdapter.validate_python(
@@ -196,7 +196,7 @@ class TriggerFixtures:
                 | WebhookEventType.subscription_active
                 | WebhookEventType.subscription_uncanceled
                 | WebhookEventType.subscription_resumed
-                | WebhookEventType.subscription_imported
+                | WebhookEventType.subscription_migrated
             ):
                 return self.subscription
             case WebhookEventType.subscription_canceled:

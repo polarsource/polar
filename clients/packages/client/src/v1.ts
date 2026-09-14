@@ -7029,7 +7029,7 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
-  'subscription.imported': {
+  'subscription.migrated': {
     parameters: {
       query?: never
       header?: never
@@ -7039,8 +7039,8 @@ export interface webhooks {
     get?: never
     put?: never
     /**
-     * subscription_imported
-     * @description Sent when Polar takes over billing of a subscription imported from another platform.
+     * subscription_migrated
+     * @description Sent when Polar takes over billing of a subscription migrated from another platform.
      *
      *     This fires at cutover, once the subscription is live on Polar. `platform` and
      *     `external_id` identify the subscription on the source platform so you can
@@ -7050,7 +7050,7 @@ export interface webhooks {
      *
      *     **Discord & Slack support:** Full
      */
-    post: operations['_endpointsubscription_imported_post']
+    post: operations['_endpointsubscription_migrated_post']
     delete?: never
     options?: never
     head?: never
@@ -39599,7 +39599,7 @@ export interface components {
       | 'subscription.past_due'
       | 'subscription.paused'
       | 'subscription.resumed'
-      | 'subscription.imported'
+      | 'subscription.migrated'
       | 'refund.created'
       | 'refund.updated'
       | 'product.created'
@@ -40028,8 +40028,8 @@ export interface components {
       data: components['schemas']['Subscription']
     }
     /**
-     * WebhookSubscriptionImportedPayload
-     * @description Sent when Polar takes over billing of a subscription imported from another platform.
+     * WebhookSubscriptionMigratedPayload
+     * @description Sent when Polar takes over billing of a subscription migrated from another platform.
      *
      *     This fires at cutover, once the subscription is live on Polar. `platform` and
      *     `external_id` identify the subscription on the source platform so you can
@@ -40039,13 +40039,13 @@ export interface components {
      *
      *     **Discord & Slack support:** Full
      */
-    WebhookSubscriptionImportedPayload: {
+    WebhookSubscriptionMigratedPayload: {
       /**
        * Type
-       * @example subscription.imported
+       * @example subscription.migrated
        * @constant
        */
-      type: 'subscription.imported'
+      type: 'subscription.migrated'
       /**
        * Timestamp
        * Format: date-time
@@ -40057,7 +40057,7 @@ export interface components {
       data: components['schemas']['Subscription']
       /**
        * Platform
-       * @description The billing platform the subscription was imported from.
+       * @description The billing platform the subscription was migrated from.
        * @example stripe
        */
       platform: string
@@ -62337,7 +62337,7 @@ export interface operations {
       }
     }
   }
-  _endpointsubscription_imported_post: {
+  _endpointsubscription_migrated_post: {
     parameters: {
       query?: never
       header?: never
@@ -62346,7 +62346,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['WebhookSubscriptionImportedPayload']
+        'application/json': components['schemas']['WebhookSubscriptionMigratedPayload']
       }
     }
     responses: {
@@ -72667,7 +72667,7 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.past_due',
   'subscription.paused',
   'subscription.resumed',
-  'subscription.imported',
+  'subscription.migrated',
   'refund.created',
   'refund.updated',
   'product.created',

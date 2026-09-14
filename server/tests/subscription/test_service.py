@@ -4137,7 +4137,7 @@ class TestActivateImported:
 
         assert updated.anchor_day == 31
 
-    async def test_notifies_merchants_the_subscription_was_imported(
+    async def test_notifies_merchants_the_subscription_was_migrated(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -4168,7 +4168,7 @@ class TestActivateImported:
         webhook_service_send_mock.assert_any_call(
             ANY,
             product.organization,
-            WebhookEventType.subscription_imported,
+            WebhookEventType.subscription_migrated,
             ANY,
             platform="paddle",
             external_id="sub_ext_1",

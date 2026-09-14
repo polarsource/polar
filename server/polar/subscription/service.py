@@ -956,7 +956,7 @@ class SubscriptionService:
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
-        await self._send_imported_webhook(
+        await self._send_migrated_webhook(
             session,
             subscription,
             platform=platform,
@@ -3900,7 +3900,7 @@ class SubscriptionService:
                 session, product.organization, event_type, subscription
             )
 
-    async def _send_imported_webhook(
+    async def _send_migrated_webhook(
         self,
         session: AsyncSession,
         subscription: Subscription,
@@ -3923,7 +3923,7 @@ class SubscriptionService:
             await webhook_service.send(
                 session,
                 product.organization,
-                WebhookEventType.subscription_imported,
+                WebhookEventType.subscription_migrated,
                 subscription,
                 platform=platform,
                 external_id=external_id,

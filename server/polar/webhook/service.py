@@ -741,7 +741,7 @@ class WebhookService:
         self,
         session: AsyncSession,
         target: Organization,
-        event: Literal[WebhookEventType.subscription_imported],
+        event: Literal[WebhookEventType.subscription_migrated],
         data: Subscription,
         *,
         platform: str,

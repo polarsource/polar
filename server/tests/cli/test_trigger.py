@@ -57,7 +57,7 @@ class TestTriggerFixtures:
         raw = json.loads(payload.get_raw_payload())
         assert raw["type"] == event
         assert raw["data"]["id"]
-        if event is WebhookEventType.subscription_imported:
+        if event is WebhookEventType.subscription_migrated:
             assert raw["platform"] == "stripe"
             assert raw["external_id"] == "sub_123"
             assert "stripe_subscription_id" not in raw

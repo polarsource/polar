@@ -528,7 +528,7 @@
                         "group": "Subscriptions",
                         "pages": [
                           "webhook subscription.created",
-                          "webhook subscription.imported",
+                          "webhook subscription.migrated",
                           "webhook subscription.active",
                           "webhook subscription.updated",
                           "webhook subscription.canceled",
@@ -937,7 +937,7 @@
                         "group": "Subscriptions",
                         "pages": [
                           "webhook subscription.created",
-                          "webhook subscription.imported",
+                          "webhook subscription.migrated",
                           "webhook subscription.active",
                           "webhook subscription.updated",
                           "webhook subscription.canceled",
@@ -1824,8 +1824,8 @@
       "destination": "/api-reference/current/subscription_created"
     },
     {
-      "source": "/api-reference/webhooks/subscription.imported",
-      "destination": "/api-reference/current/subscription_imported"
+      "source": "/api-reference/webhooks/subscription.migrated",
+      "destination": "/api-reference/current/subscription_migrated"
     },
     {
       "source": "/api-reference/webhooks/subscription.past_due",
@@ -2456,8 +2456,8 @@
       "destination": "/api-reference/2026-04/subscription_resumed"
     },
     {
-      "source": "/api-reference/2026-04/subscriptionimported",
-      "destination": "/api-reference/2026-04/subscription_imported"
+      "source": "/api-reference/2026-04/subscriptionmigrated",
+      "destination": "/api-reference/2026-04/subscription_migrated"
     },
     {
       "source": "/api-reference/2026-04/refundcreated",
@@ -2624,8 +2624,8 @@
       "destination": "/api-reference/2026-10/subscription_resumed"
     },
     {
-      "source": "/api-reference/2026-10/subscriptionimported",
-      "destination": "/api-reference/2026-10/subscription_imported"
+      "source": "/api-reference/2026-10/subscriptionmigrated",
+      "destination": "/api-reference/2026-10/subscription_migrated"
     },
     {
       "source": "/api-reference/2026-10/refundcreated",

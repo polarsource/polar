@@ -13,13 +13,13 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "tailscale_auth_key_secret_arn" {
-  description = "ARN of a Secrets Manager secret in the provider region whose SecretString is the raw Tailscale auth key."
+variable "tailscale_oauth_secret_arn" {
+  description = "ARN of a Secrets Manager secret in the provider region whose SecretString is the raw Tailscale OAuth client secret."
   type        = string
 }
 
-variable "tailscale_auth_key_kms_key_arn" {
-  description = "Customer-managed KMS key encrypting the auth key secret, if used."
+variable "tailscale_oauth_secret_kms_key_arn" {
+  description = "Customer-managed KMS key encrypting the OAuth client secret, if used."
   type        = string
   default     = null
 }
@@ -63,6 +63,11 @@ variable "advertise_routes" {
     condition     = alltrue([for route in var.advertise_routes : can(cidrnetmask(route))])
     error_message = "advertise_routes must contain valid IPv4 CIDRs."
   }
+}
+
+variable "advertise_tags" {
+  description = "Tailscale tags assigned to the router. The OAuth client must have Auth Keys write permission for these tags."
+  type        = list(string)
 }
 
 variable "permissions_boundary_arn" {

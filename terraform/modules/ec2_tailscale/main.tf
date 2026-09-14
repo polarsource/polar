@@ -30,11 +30,11 @@ resource "aws_iam_role" "this" {
 data "aws_iam_policy_document" "auth_key" {
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [var.tailscale_auth_key_secret_arn]
+    resources = [var.tailscale_oauth_secret_arn]
   }
 
   dynamic "statement" {
-    for_each = var.tailscale_auth_key_kms_key_arn == null ? [] : [var.tailscale_auth_key_kms_key_arn]
+    for_each = var.tailscale_oauth_secret_kms_key_arn == null ? [] : [var.tailscale_oauth_secret_kms_key_arn]
 
     content {
       actions   = ["kms:Decrypt"]
@@ -95,10 +95,11 @@ resource "aws_instance" "this" {
     runcmd = [[
       "/usr/local/sbin/tailscale-init",
       data.aws_region.current.name,
-      var.tailscale_auth_key_secret_arn,
+      var.tailscale_oauth_secret_arn,
       var.name,
       tostring(var.tailscale_ssh),
       join(",", var.advertise_routes),
+      join(",", var.advertise_tags),
     ]]
   })}"
 

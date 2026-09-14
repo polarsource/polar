@@ -2,6 +2,7 @@ import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AltRouteOutlined from '@mui/icons-material/AltRouteOutlined'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
 import FunctionsOutlined from '@mui/icons-material/FunctionsOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
@@ -24,6 +25,13 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
       link: base,
       checkIsActive: (path) => path === base,
       if: true,
+    },
+    {
+      id: 'void-compass',
+      title: 'Compass',
+      icon: <ExploreOutlined fontSize="inherit" />,
+      link: `${base}/compass`,
+      if: !!org?.feature_settings?.compass_enabled,
     },
     {
       id: 'void-definition',

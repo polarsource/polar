@@ -7,6 +7,7 @@ import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { InsightCardGrid } from './InsightCardGrid'
+import { useCompassBase } from './useCompassBase'
 
 const SEVERITY_SECTIONS: {
   severity: schemas['InsightSeverity']
@@ -75,6 +76,7 @@ export const CompassWidget = ({
   columns = 3,
   groupBySeverity = false,
 }: CompassWidgetProps) => {
+  const compassBase = useCompassBase(organization)
   const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
   const compassEnabled =
     !!organization.feature_settings?.compass_enabled && canReadAnalytics
@@ -129,7 +131,7 @@ export const CompassWidget = ({
               Compass
             </Text>
           </Box>
-          <Link href={`/dashboard/${organization.slug}/compass`}>
+          <Link href={compassBase}>
             <Text color="muted">View all</Text>
           </Link>
         </Box>

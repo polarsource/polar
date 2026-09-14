@@ -46,7 +46,8 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.files.list(query),
+        invoke: (client, organizationId) =>
+          client.files.list({ organization_id: organizationId, ...query }),
       })
     }),
 ).pipe(Command.withDescription('List files.'))

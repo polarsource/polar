@@ -43,14 +43,21 @@ bun src/cli.ts customers get_external <external-id>
 bun src/cli.ts customers delete <id> --confirm
 ```
 
-Requests default to sandbox. Add `--production` for production. Existing saved
-OAuth credentials or `POLAR_ACCESS_TOKEN` are reused. These are real API calls,
-including mutations: use sandbox when experimenting.
+Requests use the organization selected with `polar auth org`, including its
+sandbox or production environment and saved OAuth credentials. Resource commands
+have no environment flags. These are real API calls, including mutations: select
+a sandbox organization when experimenting.
+
+With `POLAR_ACCESS_TOKEN`, the CLI uses the token's sole accessible organization
+and `POLAR_ENVIRONMENT` (production by default), rather than the saved selection.
+The token must have a single accessible organization.
 
 Also available: `get`, `get_state`, `get_state_external`, `update_external`,
 `delete_external`, `list_payment_methods`, and `list_payment_methods_external`.
-`--org` aliases the operation's organization input; repeat it on `list` to filter
-multiple organizations. It does not automatically use the saved active organization.
+Organization inputs default to the selected organization's ID. `--org` aliases
+that API input; explicit flags and `--data` values are preserved, but never change
+which environment or credentials are used. Commands without an organization input
+use the selected environment and the resource ID you supply.
 
 `--data` / `-d` accepts a single JSON object. It supplies query parameters on
 query-bearing commands and body fields on create/update. Explicit flags replace

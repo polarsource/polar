@@ -44,7 +44,11 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.webhooks.listWebhookEndpoints(query),
+        invoke: (client, organizationId) =>
+          client.webhooks.listWebhookEndpoints({
+            organization_id: organizationId,
+            ...query,
+          }),
       })
     }),
 ).pipe(Command.withDescription('List webhook endpoints.'))

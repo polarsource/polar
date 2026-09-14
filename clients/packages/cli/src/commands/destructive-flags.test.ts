@@ -4,9 +4,10 @@ import { Prompt } from 'effect/unstable/cli'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import * as ApiRuntime from '@/services/api-runtime'
 import { Auth } from '@/services/auth'
+import { Organizations } from '@/services/organizations'
 import * as Polar from '@/services/polar'
 import { runCli } from '@/utils/test-utils/cli'
-import { fakeAuth } from '@/utils/test-utils/services'
+import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 
 vi.mock('effect/unstable/cli', async (importOriginal) => {
   const cli = await importOriginal<typeof import('effect/unstable/cli')>()
@@ -37,7 +38,22 @@ const run = (args: string[], interactive = false) => {
   const cli = runCli(products, ['update', 'product-1', ...args], {
     interactive,
   })
+  const organization = {
+    id: 'org-1',
+    name: 'Selected',
+    slug: 'selected',
+    environment: 'production' as const,
+  }
   const runtime = ApiRuntime.layer.pipe(
+    Layer.provide(
+      Layer.succeed(
+        Organizations,
+        fakeOrganizations({
+          items: [organization],
+          selected: organization,
+        }).organizations,
+      ),
+    ),
     Layer.provide(Polar.layer),
     Layer.provide(Layer.succeed(Auth, auth.auth)),
   )

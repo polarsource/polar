@@ -78,7 +78,11 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.customFields.list(query),
+        invoke: (client, organizationId) =>
+          client.customFields.list({
+            organization_id: organizationId,
+            ...query,
+          }),
       })
     }),
 ).pipe(Command.withDescription('List custom fields.'))

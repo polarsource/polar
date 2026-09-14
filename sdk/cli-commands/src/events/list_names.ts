@@ -80,7 +80,11 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.events.listNames(query),
+        invoke: (client, organizationId) =>
+          client.events.listNames({
+            organization_id: organizationId,
+            ...query,
+          }),
       })
     }),
 ).pipe(Command.withDescription('List event names.'))

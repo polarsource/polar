@@ -107,7 +107,11 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.webhooks.createWebhookEndpoint(body),
+        invoke: (client, organizationId) =>
+          client.webhooks.createWebhookEndpoint({
+            organization_id: organizationId,
+            ...body,
+          }),
       })
     }),
 ).pipe(Command.withDescription('Create a webhook endpoint.'))

@@ -77,7 +77,8 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.meters.create(body),
+        invoke: (client, organizationId) =>
+          client.meters.create({ organization_id: organizationId, ...body }),
       })
     }),
 ).pipe(Command.withDescription('Create a meter.'))

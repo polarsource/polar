@@ -4,9 +4,10 @@ import { Command, Prompt } from 'effect/unstable/cli'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import * as ApiRuntime from '@/services/api-runtime'
 import { Auth } from '@/services/auth'
+import { Organizations } from '@/services/organizations'
 import * as Polar from '@/services/polar'
 import { runCli, type RunCliOptions } from '@/utils/test-utils/cli'
-import { fakeAuth } from '@/utils/test-utils/services'
+import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 
 vi.mock('effect/unstable/cli', async (importOriginal) => {
   const cli = await importOriginal<typeof import('effect/unstable/cli')>()
@@ -33,7 +34,22 @@ afterEach(() => {
 
 const run = (args: string[], options: RunCliOptions = {}) => {
   const cli = runCli(root, args, options)
+  const organization = {
+    id: 'org-1',
+    name: 'Selected',
+    slug: 'selected',
+    environment: 'production' as const,
+  }
   const runtime = ApiRuntime.layer.pipe(
+    Layer.provide(
+      Layer.succeed(
+        Organizations,
+        fakeOrganizations({
+          items: [organization],
+          selected: organization,
+        }).organizations,
+      ),
+    ),
     Layer.provide(Polar.layer),
     Layer.provide(Layer.succeed(Auth, auth.auth)),
   )
@@ -111,6 +127,7 @@ describe('CLI-tagged API commands', () => {
         '--properties={}',
       ]).promise
       expect(await requests[0]!.json()).toEqual({
+        ...(operation === 'create' ? { organization_id: 'org-1' } : {}),
         type: 'custom',
         description: 'A custom benefit',
         properties: {},
@@ -163,7 +180,7 @@ describe('CLI-tagged API commands', () => {
     vi.mocked(Prompt.run).mockReturnValue(Effect.succeed('yes'))
     await expect(
       run(['customers', 'delete', 'missing-id'], { interactive: true }).promise,
-    ).rejects.toThrow('Resource does not exist.')
+    ).rejects.toThrow('Resource does not exist in production.')
     expect(Prompt.run).not.toHaveBeenCalled()
     expect(requests.map((request) => request.method)).toEqual(['GET'])
   })

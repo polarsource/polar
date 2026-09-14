@@ -78,7 +78,7 @@ export const command = Command.make(
         invoke: (client) => {{ preview.invoke }},
       },
 {% endif %}
-      invoke: (client) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
+      invoke: (client{% if has_organization %}, organizationId{% endif %}) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
     })
   }),
 ).pipe(Command.withDescription({{ description | quote }}))

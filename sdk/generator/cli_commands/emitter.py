@@ -204,9 +204,15 @@ class CLICommandsEmitter(EmitterBase):
         if any("jsonFlag(" in field["expression"] for field in generated_fields):
             helpers.append("jsonFlag")
 
+        has_organization = any(field.name == "organization_id" for field in fields)
         arguments = [f"config.path.{p.name}" for p in method.path_params]
         if input_type:
-            arguments.append(input_type.lower())
+            input_name = input_type.lower()
+            arguments.append(
+                f"{{ organization_id: organizationId, ...{input_name} }}"
+                if has_organization
+                else input_name
+            )
 
         return {
             "api": api,
@@ -216,6 +222,7 @@ class CLICommandsEmitter(EmitterBase):
             "sdk_type": "Polar" + "".join(f"[{json.dumps(p)}]" for p in service_path),
             "runtime_path": "../" * len(service_path),
             "input_type": input_type,
+            "has_organization": has_organization,
             "input_index": len(method.path_params),
             "fields": generated_fields,
             "helpers": helpers,

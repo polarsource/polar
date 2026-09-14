@@ -1,4 +1,4 @@
-import type { Environment, Polar } from '@polar-sh/sdk/2026-04'
+import type { Polar } from '@polar-sh/sdk/2026-04'
 import { Context, Data, type Effect, type Stdio } from 'effect'
 import type { Prompt } from 'effect/unstable/cli'
 
@@ -21,11 +21,10 @@ export interface ApiPreview {
 export interface ApiOperation<A> {
   operationId: string
   method: string
-  environment?: Environment
   requiresConfirmation: boolean
   confirm: boolean
   preview?: ApiPreview
-  invoke: (client: Polar) => Promise<A>
+  invoke: (client: Polar, organizationId: string) => Promise<A>
 }
 
 export class ApiRuntime extends Context.Service<

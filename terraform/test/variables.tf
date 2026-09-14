@@ -118,6 +118,12 @@ variable "lambda_worker_tailscale_token" {
   sensitive   = true
 }
 
+variable "ec2_tailscale_authkey" {
+  description = "Reusable, pre-authorized Tailscale auth key for the AWS subnet router"
+  type        = string
+  sensitive   = true
+}
+
 # AWS S3
 variable "aws_access_key_id" {
   description = "AWS Access Key ID for production"

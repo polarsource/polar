@@ -575,3 +575,11 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_test" {
   description     = "Stable Tailscale Service IPv4 address for the private backoffice replica in test"
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "ec2_tailscale_authkey_test" {
+  key             = "ec2_tailscale_authkey"
+  category        = "terraform"
+  description     = "Reusable, pre-authorized Tailscale auth key for the test AWS subnet router"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}

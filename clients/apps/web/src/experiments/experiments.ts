@@ -14,9 +14,8 @@
  * }
  */
 export const experiments = {
-  checkout_collapsed_order_summary: {
-    description:
-      'Collapse the order summary on mobile hosted checkouts so the CTA moves above the fold',
+  test_experiment: {
+    description: 'Placeholder that keeps the registry non-empty',
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },

@@ -103,8 +103,8 @@ variable "aws_s3_config" {
 
 variable "aws_s3_secrets" {
   type = object({
-    access_key_id         = string
-    secret_access_key     = string
+    access_key_id         = optional(string)
+    secret_access_key     = optional(string)
     files_download_salt   = string
     files_download_secret = string
   })

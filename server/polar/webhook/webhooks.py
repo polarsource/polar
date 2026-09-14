@@ -1139,7 +1139,7 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
     Sent when Polar takes over billing of a subscription migrated from another platform.
 
     This fires at cutover, once the subscription is live on Polar. `platform` and
-    `external_id` identify the subscription on the source platform so you can
+    `source_id` identify the subscription on the source platform so you can
     correlate the two.
 
     A `subscription.updated` event is also sent.
@@ -1153,7 +1153,7 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
         description="The billing platform the subscription was migrated from.",
         examples=["stripe"],
     )
-    external_id: str = Field(
+    source_id: str = Field(
         description="The identifier of the subscription on the source platform.",
         examples=["sub_1Sabc2Def3Ghi"],
     )
@@ -1173,7 +1173,7 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
                 or "Team Customer",
             },
             {"name": "Platform", "value": self.platform},
-            {"name": "External ID", "value": self.external_id},
+            {"name": "Source ID", "value": self.source_id},
         ]
         payload: DiscordPayload = {
             "content": "Migrated Subscription",
@@ -1206,7 +1206,7 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
                 "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
             },
             {"type": "mrkdwn", "text": f"*Platform*\n{self.platform}"},
-            {"type": "mrkdwn", "text": f"*External ID*\n{self.external_id}"},
+            {"type": "mrkdwn", "text": f"*Source ID*\n{self.source_id}"},
         ]
         payload: SlackPayload = get_branded_slack_payload(
             {

@@ -257,7 +257,7 @@ class SubscriptionCutover:
                 anchor_day=source.anchor_day,
                 payment_method=payment_method,
                 platform=self.migration.source_platform,
-                external_id=record.source_id,
+                source_id=record.source_id,
             )
         except Exception:
             # The source is stopped and this rolls back, ledger row included, so
@@ -407,7 +407,7 @@ class SubscriptionCutover:
                 anchor_day=source.anchor_day,
                 payment_method=payment_method,
                 platform=self.migration.source_platform,
-                external_id=record.source_id,
+                source_id=record.source_id,
             )
         except Exception:
             log.exception(

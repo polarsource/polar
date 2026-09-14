@@ -122,7 +122,7 @@ async def create_imported_subscription(
         anchor_day=subscription.anchor_day,
         user_metadata={
             "platform": platform,
-            "external_id": subscription.source_id,
+            "source_id": subscription.source_id,
         },
     )
 

@@ -918,7 +918,7 @@ class SubscriptionService:
         anchor_day: int | None = None,
         payment_method: PaymentMethod,
         platform: str,
-        external_id: str,
+        source_id: str,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -960,7 +960,7 @@ class SubscriptionService:
             session,
             subscription,
             platform=platform,
-            external_id=external_id,
+            source_id=source_id,
         )
         enqueue_job("customer.state_changed", subscription.customer_id)
 
@@ -3906,7 +3906,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         platform: str,
-        external_id: str,
+        source_id: str,
     ) -> None:
         repository = SubscriptionRepository.from_session(session)
         subscription = cast(
@@ -3915,19 +3915,14 @@ class SubscriptionService:
                 subscription.id, options=repository.get_eager_options()
             ),
         )
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(
-            subscription.product_id, options=product_repository.get_eager_options()
+        await webhook_service.send(
+            session,
+            subscription.organization,
+            WebhookEventType.subscription_migrated,
+            subscription,
+            platform=platform,
+            source_id=source_id,
         )
-        if product is not None:
-            await webhook_service.send(
-                session,
-                product.organization,
-                WebhookEventType.subscription_migrated,
-                subscription,
-                platform=platform,
-                external_id=external_id,
-            )
 
     async def _is_within_revocation_grace_period(
         self,

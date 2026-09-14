@@ -4057,7 +4057,7 @@ class TestActivateImported:
             trial_end=None,
             payment_method=payment_method,
             platform="stripe",
-            external_id="sub_1",
+            source_id="sub_1",
         )
 
         assert updated.status == SubscriptionStatus.active
@@ -4098,7 +4098,7 @@ class TestActivateImported:
             trial_end=None,
             payment_method=payment_method,
             platform="stripe",
-            external_id="sub_1",
+            source_id="sub_1",
         )
 
         assert_hooks_called_once(subscription_hooks, {"updated"})
@@ -4132,7 +4132,7 @@ class TestActivateImported:
             trial_end=None,
             payment_method=payment_method,
             platform="stripe",
-            external_id="sub_1",
+            source_id="sub_1",
         )
 
         assert updated.anchor_day == 31
@@ -4162,7 +4162,7 @@ class TestActivateImported:
             trial_end=None,
             payment_method=payment_method,
             platform="paddle",
-            external_id="sub_ext_1",
+            source_id="sub_ext_1",
         )
 
         webhook_service_send_mock.assert_any_call(
@@ -4171,7 +4171,7 @@ class TestActivateImported:
             WebhookEventType.subscription_migrated,
             ANY,
             platform="paddle",
-            external_id="sub_ext_1",
+            source_id="sub_ext_1",
         )
         assert_webhook_sent_once(
             webhook_service_send_mock,

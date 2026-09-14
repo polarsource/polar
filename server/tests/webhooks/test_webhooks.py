@@ -312,7 +312,7 @@ async def test_webhook_send_subscription_migrated(
         WebhookEventType.subscription_migrated,
         subscription,
         platform="stripe",
-        external_id="sub_123",
+        source_id="sub_123",
     )
     assert len(events) == 1
 
@@ -321,7 +321,7 @@ async def test_webhook_send_subscription_migrated(
     payload = json.loads(raw_payload)
     assert payload["type"] == "subscription.migrated"
     assert payload["platform"] == "stripe"
-    assert payload["external_id"] == "sub_123"
+    assert payload["source_id"] == "sub_123"
     assert "stripe_subscription_id" not in payload
     assert payload["data"]["id"] == str(subscription.id)
 

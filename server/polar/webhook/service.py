@@ -745,7 +745,7 @@ class WebhookService:
         data: Subscription,
         *,
         platform: str,
-        external_id: str,
+        source_id: str,
     ) -> list[WebhookEvent]: ...
 
     @overload

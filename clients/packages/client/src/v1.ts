@@ -7043,7 +7043,7 @@ export interface webhooks {
      * @description Sent when Polar takes over billing of a subscription migrated from another platform.
      *
      *     This fires at cutover, once the subscription is live on Polar. `platform` and
-     *     `external_id` identify the subscription on the source platform so you can
+     *     `source_id` identify the subscription on the source platform so you can
      *     correlate the two.
      *
      *     A `subscription.updated` event is also sent.
@@ -40032,7 +40032,7 @@ export interface components {
      * @description Sent when Polar takes over billing of a subscription migrated from another platform.
      *
      *     This fires at cutover, once the subscription is live on Polar. `platform` and
-     *     `external_id` identify the subscription on the source platform so you can
+     *     `source_id` identify the subscription on the source platform so you can
      *     correlate the two.
      *
      *     A `subscription.updated` event is also sent.
@@ -40062,11 +40062,11 @@ export interface components {
        */
       platform: string
       /**
-       * External Id
+       * Source Id
        * @description The identifier of the subscription on the source platform.
        * @example sub_1Sabc2Def3Ghi
        */
-      external_id: string
+      source_id: string
     }
     /**
      * WebhookSubscriptionPastDuePayload

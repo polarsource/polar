@@ -47,6 +47,7 @@ RUN download-cjk-fonts
 # Caddy needs the Cloudflare module to issue certificates through DNS challenges.
 FROM caddy:2.11.4-builder AS build-backoffice-proxy
 RUN xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
+RUN setcap -r /usr/bin/caddy
 
 # Assemble the shared application files independently of either Python runtime.
 FROM scratch AS application

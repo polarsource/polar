@@ -389,12 +389,9 @@ class InvoiceGenerator(FPDF):
     ) -> None:
         super().__init__()
 
-        # To use a font we first add the font to fpdf, and then we set the
-        # fallback order. Here we load all of the fonts. CJK fonts are
-        # downloaded in the Dockerfile build stage and may be absent in
-        # dev/CI, so skip any family whose files aren't present.
         self.loaded_font_families: set[str] = set()
-        for family, (regular, bold) in self.font_files.items():
+        for family in (self.font_name, self.hebrew_font_name, self.arabic_font_name):
+            regular, bold = self.font_files[family]
             if not (regular.exists() and bold.exists()):
                 continue
             self.add_font(family, fname=regular)
@@ -406,36 +403,51 @@ class InvoiceGenerator(FPDF):
         self.add_font(self.font_name, fname=regular, style="I")
         self.add_font(self.font_name, fname=bold, style="BI")
 
-        # Fallback order: Hebrew, Arabic, then CJK with the customer's script
-        # first so shared Han chars get the right regional glyph form.
-        # customer locale/country first, and then all other scripts.
         customer_script = self.cjk_script_from_locale(
             data.customer_locale
         ) or self.resolve_cjk_script(
             data.customer_address.country if data.customer_address else None
         )
 
-        fallback_fonts = [
+        self.fallback_font_families = [
             family
-            for family in [
-                self.hebrew_font_name,
-                self.arabic_font_name,
-                self.cjk_font_name_for_script(customer_script),
-                *(
-                    self.cjk_font_name_for_script(s)
-                    for s in self.cjk_scripts
-                    if s != customer_script
-                ),
-            ]
+            for family in (self.hebrew_font_name, self.arabic_font_name)
             if family in self.loaded_font_families
         ]
-        self.set_fallback_fonts(fallback_fonts, exact_match=False)
+        self.remaining_cjk_font_families = iter(
+            [
+                self.cjk_font_name_for_script(script)
+                for script in (
+                    customer_script,
+                    *(s for s in self.cjk_scripts if s != customer_script),
+                )
+            ]
+        )
+        self.set_fallback_fonts(self.fallback_font_families, exact_match=False)
         self.set_font(self.font_name, size=self.base_font_size)
 
         self.alias_nb_pages()
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
+
+    def get_fallback_font(self, char: str, style: str = "") -> str | None:
+        if font := super().get_fallback_font(char, style):
+            return font
+
+        for family in self.remaining_cjk_font_families:
+            regular, bold = self.font_files[family]
+            if not (regular.exists() and bold.exists()):
+                continue
+            self.add_font(family, fname=regular)
+            self.add_font(family, fname=bold, style="B")
+            self.loaded_font_families.add(family)
+            self.fallback_font_families.append(family)
+            self.set_fallback_fonts(self.fallback_font_families, exact_match=False)
+            if font := super().get_fallback_font(char, style):
+                return font
+
+        return None
 
     def set_font(
         self,

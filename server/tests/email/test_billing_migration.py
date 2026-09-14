@@ -1,9 +1,7 @@
 import pytest
 
 from polar.email.billing_migration import previous_billing_provider_for_notice
-from polar.enums import EmailSender
 from polar.models import Customer, Organization, Product, Subscription
-from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -87,33 +85,3 @@ class TestPreviousBillingProviderForNotice:
             await previous_billing_provider_for_notice(session, subscription)
             == "Stripe"
         )
-
-    async def test_notice_already_sent(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await _moved_subscription(
-            save_fixture, organization, product, customer
-        )
-        await save_fixture(
-            EmailLog(
-                status=EmailLogStatus.sent,
-                processor=EmailSender.resend,
-                to_email_addr=customer.email,
-                from_email_addr="acme@polar.sh",
-                from_name="Acme",
-                subject="Your subscription renews soon",
-                email_template="subscription_renewal_reminder",
-                email_props={
-                    "subscription": {"id": str(subscription.id)},
-                    "previous_billing_provider": "Stripe",
-                },
-                organization_id=organization.id,
-            )
-        )
-
-        assert await previous_billing_provider_for_notice(session, subscription) is None

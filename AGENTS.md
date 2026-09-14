@@ -12,6 +12,9 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Use meaningful variable and function names.
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
+- Do not create GitHub pull requests unless the user explicitly asks. Commit and
+  push the branch as needed; leave opening the PR to the user. If asked to open
+  a PR, make sure tests, lint, and type-check pass first.
 
 ## Architecture
 

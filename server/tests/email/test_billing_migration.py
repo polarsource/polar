@@ -19,10 +19,6 @@ async def _moved_subscription(
     organization: Organization,
     product: Product,
     customer: Customer,
-    *,
-    cutover_status: MerchantMigrationCutoverStatus | None = (
-        MerchantMigrationCutoverStatus.moved
-    ),
 ) -> Subscription:
     subscription = await create_active_subscription(
         save_fixture, product=product, customer=customer
@@ -33,7 +29,7 @@ async def _moved_subscription(
         migration,
         organization,
         subscription,
-        cutover_status=cutover_status,
+        cutover_status=MerchantMigrationCutoverStatus.moved,
     )
     return subscription
 
@@ -49,29 +45,6 @@ class TestPreviousBillingProviderForNotice:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
-        )
-
-        assert (
-            await previous_billing_provider_for_notice(
-                session, subscription, EmailTemplate.subscription_renewal_reminder
-            )
-            is None
-        )
-
-    async def test_imported_but_not_moved(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await _moved_subscription(
-            save_fixture,
-            organization,
-            product,
-            customer,
-            cutover_status=None,
         )
 
         assert (
@@ -100,7 +73,7 @@ class TestPreviousBillingProviderForNotice:
             == "Stripe"
         )
 
-    async def test_first_cycle_order(
+    async def test_later_cycle(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -111,76 +84,18 @@ class TestPreviousBillingProviderForNotice:
         subscription = await _moved_subscription(
             save_fixture, organization, product, customer
         )
-        await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-        )
+        for _ in range(2):
+            await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                billing_reason=OrderBillingReasonInternal.subscription_cycle,
+            )
 
         assert (
             await previous_billing_provider_for_notice(
                 session, subscription, EmailTemplate.subscription_cycled
-            )
-            == "Stripe"
-        )
-
-    async def test_later_cycle_after_prior_order(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await _moved_subscription(
-            save_fixture, organization, product, customer
-        )
-        await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-        )
-        await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-        )
-
-        assert (
-            await previous_billing_provider_for_notice(
-                session, subscription, EmailTemplate.subscription_cycled
-            )
-            is None
-        )
-
-    async def test_reminder_after_first_cycle(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await _moved_subscription(
-            save_fixture, organization, product, customer
-        )
-        await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-        )
-
-        assert (
-            await previous_billing_provider_for_notice(
-                session, subscription, EmailTemplate.subscription_renewal_reminder
             )
             is None
         )

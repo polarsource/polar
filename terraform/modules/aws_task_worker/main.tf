@@ -92,6 +92,8 @@ resource "aws_iam_role" "lambda" {
 }
 
 data "aws_iam_policy_document" "lambda" {
+  source_policy_documents = var.additional_policy_documents
+
   statement {
     sid = "Logs"
     actions = [

@@ -9,6 +9,7 @@ module "sandbox_s3_buckets" {
   public_files_bucket_name    = "polar-public-sandbox-files"
   malware_protection_enabled  = true
   malware_protection_role_arn = module.sandbox_malware_protection.role_arn
+  app_access_account_id       = local.workload_accounts.sandbox.id
 }
 
 module "sandbox_malware_protection" {

@@ -22,7 +22,13 @@ from polar.metrics.service import metrics as metrics_service
 
 from ..schemas import InsightCategory
 from ..service import compass as compass_service
-from .blocks import InsightCardsBlock, MetricChartBlock, MetricChartPoint
+from .blocks import (
+    InsightCardsBlock,
+    MetricChartBlock,
+    MetricChartPoint,
+    SimulationBlock,
+    SimulationChange,
+)
 from .deps import AssistantDeps
 
 _METRIC_BY_SLUG = {metric.slug: metric for metric in METRICS}
@@ -232,8 +238,53 @@ async def show_insights(
     )
 
 
+_MAX_SIMULATION_CHANGES = 8
+
+
+async def propose_simulation(
+    ctx: RunContext[AssistantDeps],
+    title: str,
+    changes: list[SimulationChange],
+) -> str:
+    """Prepare a pricing scenario the user can open in Simulate, where
+    their real usage is rebilled under the changed prices.
+
+    Use it when the user asks what would happen if a plan's price or
+    allowance, or a meter's unit price, were different. Pass every change the
+    user described, and nothing they did not ask for. Amounts are in cents.
+
+    Args:
+        title: Short scenario name, e.g. `Scale at $49`.
+        changes: The pricing levers to change, in the user's words.
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.metrics_read):
+        return denial
+    if not changes:
+        return "Ask the user which price or allowance they want to change."
+    if len(changes) > _MAX_SIMULATION_CHANGES:
+        return (
+            f"At most {_MAX_SIMULATION_CHANGES} changes fit in one scenario; "
+            "ask the user to narrow it down."
+        )
+
+    marker = deps.emit(SimulationBlock(title=title, changes=changes))
+    described = ", ".join(
+        f"{change.name} {change.kind.value.replace('_', ' ')} to "
+        f"${change.amount / 100:,.2f}"
+        for change in changes
+    )
+    return (
+        f"Prepared the scenario '{title}' ({described}); place it with "
+        f"[block:{marker}]. Tell the user it opens in Simulate, where the last "
+        "30 days of real usage are rebilled under these prices. Do not guess "
+        "the revenue impact yourself."
+    )
+
+
 TOOLS_WITH_SCOPES: list[tuple[object, Scope]] = [
     (get_metrics, Scope.metrics_read),
     (get_insights, Scope.metrics_read),
     (show_insights, Scope.metrics_read),
+    (propose_simulation, Scope.metrics_read),
 ]

@@ -8123,6 +8123,7 @@ export interface components {
         | components['schemas']['EntityListBlock']
         | components['schemas']['DataTableBlock']
         | components['schemas']['CustomerCardBlock']
+        | components['schemas']['SimulationBlock']
     }
     /**
      * AssistantTextPart
@@ -34283,6 +34284,45 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * SimulationBlock
+     * @description A proposed pricing scenario the user can open in Simulate, which
+     *     rebills their real usage under the changed levers.
+     */
+    SimulationBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'simulation'
+      /**
+       * Title
+       * @description Short scenario name, e.g. `Scale at $49`.
+       */
+      title: string
+      /** Changes */
+      changes: components['schemas']['SimulationChange'][]
+    }
+    /** SimulationChange */
+    SimulationChange: {
+      /** @description `plan_price` changes a plan's monthly fee, `plan_allowance` the usage it includes, `meter_price` a meter's unit price. */
+      kind: components['schemas']['SimulationChangeKind']
+      /**
+       * Name
+       * @description Plan or meter name exactly as the user said it.
+       */
+      name: string
+      /**
+       * Amount
+       * @description New value, in cents.
+       */
+      amount: number
+    }
+    /**
+     * SimulationChangeKind
+     * @enum {string}
+     */
+    SimulationChangeKind: 'plan_price' | 'plan_allowance' | 'meter_price'
     /** SlackIntegration */
     SlackIntegration: {
       /**
@@ -71844,6 +71884,12 @@ export const seatStatusValues: ReadonlyArray<
 export const seatTierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatTierType']
 > = ['volume', 'graduated']
+export const simulationBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SimulationBlock']['type']
+> = ['simulation']
+export const simulationChangeKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SimulationChangeKind']
+> = ['plan_price', 'plan_allowance', 'meter_price']
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [

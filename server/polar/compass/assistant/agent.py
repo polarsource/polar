@@ -52,6 +52,11 @@ How to answer:
   call `show_insights` with the one or two ids that directly support your
   main claims. Only render more cards when the user explicitly asks to see
   all insights, and never use cards as a substitute for an answer.
+- Pricing what-ifs ("what if Scale cost $49?", "what happens if I raise
+  the token price?") are answered with `propose_simulation`: pass the exact
+  changes the user described, place the block, and say it opens in Simulate
+  where their real usage is rebilled. Never estimate the revenue impact in
+  prose; the simulation computes it.
 - If none of your tools can answer the question, say so plainly in one
   sentence, then name the closest related thing you CAN show and offer it.
   Do not substitute unrelated data for an answer.

@@ -16,6 +16,8 @@ from polar.compass.assistant.blocks import (
     InsightCardsBlock,
     MetricChartBlock,
     MetricChartPoint,
+    SimulationChange,
+    SimulationChangeKind,
     TextBlock,
 )
 from polar.compass.assistant.customer_tools import get_customer_overview
@@ -35,7 +37,12 @@ from polar.compass.assistant.entity_tools import (
     top_customers_by_revenue,
     top_products_by_revenue,
 )
-from polar.compass.assistant.tools import get_insights, get_metrics, show_insights
+from polar.compass.assistant.tools import (
+    get_insights,
+    get_metrics,
+    propose_simulation,
+    show_insights,
+)
 from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
@@ -71,6 +78,7 @@ class TestToolsForScopes:
         assert get_metrics in tools
         assert get_insights in tools
         assert show_insights in tools
+        assert propose_simulation in tools
         assert top_products_by_revenue in tools
 
     def test_scopes_grant_exactly_their_tools(self) -> None:
@@ -122,6 +130,14 @@ class TestToolScopeGuards:
         deps = _deps(scopes=set())
 
         result = await show_insights(_ctx(deps), ["x"])
+
+        assert "Permission denied" in result
+        assert deps.blocks == []
+
+    async def test_propose_simulation_denies_without_scope(self) -> None:
+        deps = _deps(scopes=set())
+
+        result = await propose_simulation(_ctx(deps), "Scale at $49", [])
 
         assert "Permission denied" in result
         assert deps.blocks == []
@@ -188,6 +204,40 @@ def _live_deps(
         timezone=ZoneInfo("UTC"),
         today=utc_now().date(),
     )
+
+
+@pytest.mark.asyncio
+class TestProposeSimulation:
+    async def test_emits_a_simulation_block(self) -> None:
+        deps = _deps(scopes={Scope.metrics_read})
+        changes = [
+            SimulationChange(
+                kind=SimulationChangeKind.plan_price, name="Scale", amount=4_900
+            ),
+            SimulationChange(
+                kind=SimulationChangeKind.meter_price,
+                name="Output tokens",
+                amount=1_200,
+            ),
+        ]
+
+        result = await propose_simulation(_ctx(deps), "Scale at $49", changes)
+
+        assert "[block:1]" in result
+        assert "$49.00" in result
+        assert len(deps.blocks) == 1
+        block = deps.blocks[0]
+        assert block.type == "simulation"
+        assert block.title == "Scale at $49"
+        assert block.changes == changes
+
+    async def test_rejects_no_changes(self) -> None:
+        deps = _deps(scopes={Scope.metrics_read})
+
+        result = await propose_simulation(_ctx(deps), "Nothing", [])
+
+        assert "which price" in result
+        assert deps.blocks == []
 
 
 @pytest.mark.asyncio

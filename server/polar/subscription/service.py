@@ -956,10 +956,9 @@ class SubscriptionService:
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
-        await self._send_webhook(
+        await self._send_imported_webhook(
             session,
             subscription,
-            WebhookEventType.subscription_imported,
             platform=platform,
             external_id=external_id,
         )
@@ -3883,9 +3882,31 @@ class SubscriptionService:
             WebhookEventType.subscription_past_due,
             WebhookEventType.subscription_paused,
             WebhookEventType.subscription_resumed,
-            WebhookEventType.subscription_imported,
         ],
-        **payload_fields: object,
+    ) -> None:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = cast(
+            Subscription,
+            await repository.get_by_id(
+                subscription.id, options=repository.get_eager_options()
+            ),
+        )
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            subscription.product_id, options=product_repository.get_eager_options()
+        )
+        if product is not None:
+            await webhook_service.send(
+                session, product.organization, event_type, subscription
+            )
+
+    async def _send_imported_webhook(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        platform: str,
+        external_id: str,
     ) -> None:
         repository = SubscriptionRepository.from_session(session)
         subscription = cast(
@@ -3902,9 +3923,10 @@ class SubscriptionService:
             await webhook_service.send(
                 session,
                 product.organization,
-                event_type,
+                WebhookEventType.subscription_imported,
                 subscription,
-                **payload_fields,
+                platform=platform,
+                external_id=external_id,
             )
 
     async def _is_within_revocation_grace_period(

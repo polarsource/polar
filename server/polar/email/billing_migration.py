@@ -22,11 +22,12 @@ async def previous_billing_provider_for_notice(
     if not await records.has_moved_subscription(subscription.id):
         return None
 
-    billed_cycles = 1 if template == EmailTemplate.subscription_renewal_reminder else 2
     orders = OrderRepository.from_session(session)
-    if await orders.has_at_least_subscription_cycle_orders(
-        subscription.id, billed_cycles
-    ):
+    cycle_orders = await orders.count_subscription_cycle_orders(subscription.id)
+    if template == EmailTemplate.subscription_renewal_reminder:
+        if cycle_orders > 0:
+            return None
+    elif cycle_orders > 1:
         return None
     return MerchantMigrationSourcePlatform.stripe.label
 

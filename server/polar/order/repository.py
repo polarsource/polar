@@ -336,10 +336,8 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def has_at_least_subscription_cycle_orders(
-        self, subscription_id: UUID, n: int
-    ) -> bool:
-        statement = select(
+    async def count_subscription_cycle_orders(self, subscription_id: UUID) -> int:
+        statement = (
             self.get_base_statement()
             .where(
                 Order.subscription_id == subscription_id,
@@ -350,11 +348,10 @@ class OrderRepository(
                     )
                 ),
             )
-            .offset(n - 1)
-            .limit(1)
-            .exists()
+            .with_only_columns(func.count())
         )
-        return bool(await self.session.scalar(statement))
+        result = await self.session.execute(statement)
+        return result.scalar_one()
 
     async def get_pending_orders_for_subscription(
         self, subscription_id: UUID, *, options: Options = ()

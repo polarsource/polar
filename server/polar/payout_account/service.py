@@ -128,6 +128,11 @@ class PayoutAccountService:
             session, auth_subject, payout_account_create
         )
 
+        current = None
+        if organization.payout_account_id is not None:
+            repository = PayoutAccountRepository.from_session(session)
+            current = await repository.get_by_id(organization.payout_account_id)
+
         payout_account = await self._create_stripe_account(
             session,
             auth_subject.subject,
@@ -135,14 +140,18 @@ class PayoutAccountService:
             organization.name,
         )
 
-        organization_repository = OrganizationRepository.from_session(session)
-        organization.payout_account = payout_account
-        await organization_repository.update(organization)
+        # Don't make it active while a ready account is still paying them out.
+        if current is None or not current.is_payout_ready:
+            organization_repository = OrganizationRepository.from_session(session)
+            organization.payout_account = payout_account
+            await organization_repository.update(organization)
 
-        # Stripe reads the organization's website off the connected account.
+        # Stripe reads the website off the account during onboarding, so the new one
+        # needs it even when the organization stayed on its old account.
         enqueue_job(
             "organization.sync_payout_account_website",
             organization_id=organization.id,
+            payout_account_id=payout_account.id,
         )
 
         return payout_account

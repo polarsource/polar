@@ -1009,6 +1009,11 @@ class OrganizationService:
                 payout_account_id=previous_payout_account_id,
             )
 
+        enqueue_job(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
+
         # Reusing an already-ready payout account doesn't fire a Stripe
         # `account.updated` webhook, so attempt activation here too.
         await self.maybe_activate(session, organization)
@@ -1815,15 +1820,20 @@ class OrganizationService:
         return organization
 
     async def sync_payout_account_website(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        payout_account_id: uuid.UUID | None = None,
     ) -> str | None:
-        """Put the organization's website on its Stripe connected account.
+        """Put the organization's website on a Stripe connected account.
 
         Stripe requires one connected account per website, and reads that
-        website from the account itself. Returns the Stripe account id the
-        website was pushed to.
+        website from the account itself. Defaults to the account the
+        organization currently uses. Returns the Stripe account id the website
+        was pushed to.
         """
-        if organization.payout_account_id is None:
+        payout_account_id = payout_account_id or organization.payout_account_id
+        if payout_account_id is None:
             log.info(
                 "organization.sync_payout_account_website.skipped",
                 reason="no_payout_account",
@@ -1841,9 +1851,7 @@ class OrganizationService:
             return None
 
         payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id
-        )
+        payout_account = await payout_account_repository.get_by_id(payout_account_id)
         if payout_account is None or payout_account.stripe_id is None:
             log.info(
                 "organization.sync_payout_account_website.skipped",

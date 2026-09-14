@@ -1,6 +1,7 @@
 import { ApiCommandError, ApiRuntime } from '@polar-sh/cli-commands'
 import { Console, Effect, Layer, Result, Stdio, Terminal } from 'effect'
 import { Prompt } from 'effect/unstable/cli'
+import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { formatRecordPreview } from '@/utils/api-preview'
 import * as ui from '@/utils/ui'
@@ -9,13 +10,20 @@ export const layer = Layer.effect(
   ApiRuntime,
   Effect.gen(function* () {
     const polar = yield* Polar
+    const organizations = yield* Organizations
 
     return ApiRuntime.of({
       execute: (operation) =>
         Effect.gen(function* () {
-          const environmentContext = operation.environment
-            ? ` in ${operation.environment}`
-            : ''
+          const organization = yield* organizations
+            .resolve()
+            .pipe(
+              Effect.mapError(
+                (error) => new ApiCommandError({ message: error.message }),
+              ),
+            )
+          const { environment } = organization
+          const environmentContext = ` in ${environment}`
 
           if (operation.requiresConfirmation && !operation.confirm) {
             const stdio = yield* Stdio.Stdio
@@ -35,9 +43,8 @@ export const layer = Layer.effect(
                 ui.blank,
                 ui.keyValue([
                   ['Operation', ui.command(operation.operationId)],
-                  ...(operation.environment
-                    ? [['Environment', ui.bold(operation.environment)] as const]
-                    : []),
+                  ['Organization', ui.bold(organization.name)],
+                  ['Environment', ui.bold(environment)],
                 ]),
                 ui.blank,
               ].join('\n'),
@@ -52,7 +59,7 @@ export const layer = Layer.effect(
                   ? `${formatRecordPreview(fields, columns)}\n\n`
                   : ''
               const previewRequest = polar
-                .use(invoke, operation.environment, { timeout: 1 })
+                .use(invoke, environment, { timeout: 1 })
                 .pipe(Effect.timeout('1 second'), Effect.result)
               const preview = yield* Effect.acquireUseRelease(
                 terminal.display(loadingPreview).pipe(Effect.orDie),
@@ -105,7 +112,10 @@ export const layer = Layer.effect(
           }
 
           const result = yield* polar
-            .use(operation.invoke, operation.environment)
+            .use(
+              (client) => operation.invoke(client, organization.id),
+              environment,
+            )
             .pipe(
               Effect.mapError(
                 (error) => new ApiCommandError({ message: error.message }),

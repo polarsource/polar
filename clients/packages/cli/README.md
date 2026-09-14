@@ -104,9 +104,10 @@ bun src/cli.ts customers create --email=alice@example.com --org=<organization-id
 bun src/cli.ts customers update <id> -d '{"name":"Alice"}'
 ```
 
-These make real requests, defaulting to sandbox. The prototype covers 12 customer
-operations; see [its README](../../../sdk/cli-commands/README.md) for the generated
-files, setup, and limitations. Generation is explicit for now, and generated files
+These make real requests using the organization selected with `polar auth org`
+and its environment. Organization inputs default to that selection; explicit
+`--org` filters do not change the environment or credentials. See [the package README](../../../sdk/cli-commands/README.md)
+for the generated files, setup, and limitations. Generation is explicit for now, and generated files
 are committed. Start with `sdk/cli-commands/src/customers/list.ts` to inspect the
 emitted Effect command.
 

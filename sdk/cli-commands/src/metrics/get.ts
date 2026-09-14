@@ -685,7 +685,8 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.metrics.get(query),
+        invoke: (client, organizationId) =>
+          client.metrics.get({ organization_id: organizationId, ...query }),
       })
     }),
 ).pipe(

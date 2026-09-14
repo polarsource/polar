@@ -64,7 +64,11 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.checkoutLinks.list(query),
+        invoke: (client, organizationId) =>
+          client.checkoutLinks.list({
+            organization_id: organizationId,
+            ...query,
+          }),
       })
     }),
 ).pipe(Command.withDescription('List checkout links.'))

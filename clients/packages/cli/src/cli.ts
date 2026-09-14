@@ -48,7 +48,9 @@ const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
 const services = Layer.mergeAll(
-  ApiRuntime.layer.pipe(Layer.provide(polarLayer)),
+  ApiRuntime.layer.pipe(
+    Layer.provide(Layer.mergeAll(polarLayer, organizationsLayer)),
+  ),
   authLayer,
   polarLayer,
   organizationsLayer,

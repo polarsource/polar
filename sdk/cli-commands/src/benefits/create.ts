@@ -73,7 +73,8 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.benefits.create(body),
+        invoke: (client, organizationId) =>
+          client.benefits.create({ organization_id: organizationId, ...body }),
       })
     }),
 ).pipe(Command.withDescription('Create a benefit.'))

@@ -329,6 +329,32 @@ def test_confirmation_one_of_checks_enum_values(
         )
 
 
+@pytest.mark.parametrize("method", ["get", "patch"])
+def test_organization_inputs_default_to_the_resolved_organization(
+    cli_spec: dict, tmp_path: pathlib.Path, method: str
+) -> None:
+    if method == "get":
+        cli_spec["paths"]["/widgets/{id}"][method]["parameters"] = [
+            *cli_spec["paths"]["/widgets/{id}"][method]["parameters"],
+            {
+                "name": "organization_id",
+                "in": "query",
+                "schema": {"type": "string"},
+            },
+        ]
+    else:
+        cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"][
+            "organization_id"
+        ] = {"type": "string"}
+    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
+        tmp_path
+    )
+    command, input_name = ("get", "query") if method == "get" else ("update", "body")
+    source = (tmp_path / f"src/widgets/{command}.ts").read_text()
+    assert "invoke: (client, organizationId)" in source
+    assert f"{{ organization_id: organizationId, ...{input_name} }}" in source
+
+
 def test_untagged_spec_fails_before_writing(tmp_path: pathlib.Path) -> None:
     spec = op.OpenAPI.model_validate(
         {"openapi": "3.1.0", "info": {"title": "Old snapshot", "version": "2026-04"}}

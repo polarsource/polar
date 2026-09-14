@@ -77,13 +77,16 @@ const ScenarioCard = ({ card, href }: { card: Card; href: string }) => {
           <Delta delta={delta} ratio={ratio} suffix="over 30 days" />
         </Box>
 
-        <ScenarioChart
-          data={card.daily}
-          keys={['baseline', 'scenario']}
-          xAxisFormatter={shortDate}
-          height={96}
-          simple
-        />
+        <Box marginHorizontal="-xl" marginBottom="-xl">
+          <ScenarioChart
+            data={card.daily}
+            keys={['baseline', 'scenario']}
+            xAxisFormatter={shortDate}
+            height={96}
+            simple
+            bare
+          />
+        </Box>
       </Box>
     </Link>
   )

@@ -36,6 +36,8 @@ interface ScenarioChartProps<T extends Record<string, unknown>> {
   height?: number
   simple?: boolean
   legend?: boolean
+  /** Hides the x-axis labels, for sparklines that bleed to the edges. */
+  bare?: boolean
 }
 
 export const ScenarioChart = <T extends Record<string, unknown>>({
@@ -45,6 +47,7 @@ export const ScenarioChart = <T extends Record<string, unknown>>({
   height = 280,
   simple = false,
   legend = false,
+  bare = false,
 }: ScenarioChartProps<T>) => {
   const colors = useSeriesColors()
   const series = useMemo<GenericChartSeries[]>(
@@ -67,6 +70,7 @@ export const ScenarioChart = <T extends Record<string, unknown>>({
       height={height}
       showLegend={legend && !simple}
       simple={simple}
+      ticks={bare ? [] : undefined}
       chartType="line"
     />
   )

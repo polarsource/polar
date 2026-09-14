@@ -125,6 +125,12 @@ variable "kms_key_arn" {
   default     = null
 }
 
+variable "additional_policy_documents" {
+  description = "Extra IAM policy documents merged into the execution role's inline policy."
+  type        = list(string)
+  default     = []
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention in days."
   type        = number

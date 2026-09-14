@@ -98,6 +98,55 @@ class TestRenderRiskSignalsCard:
         assert "Strong increase" in html
         assert "Login country mismatch." in html
 
+    def test_merchant_explanation_field_is_rendered(self) -> None:
+        html = render(
+            build_signal(
+                OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                {
+                    "account_details": {"account": "acct_123"},
+                    "id": "acctsig_123",
+                    "fraudulent_merchant": {
+                        "probability": "53.75",
+                        "indicators": [
+                            {
+                                "indicator": "owner_email",
+                                "impact": "slight_increase",
+                                "explanation": "Shares an owner email with a suspicious account.",
+                            }
+                        ],
+                    },
+                },
+            )
+        )
+
+        assert "Fraud probability: 53.75%" in html
+        assert "Owner email" in html
+        assert "Shares an owner email with a suspicious account." in html
+
+    def test_website_nested_details_are_rendered(self) -> None:
+        html = render(
+            build_signal(
+                OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                {
+                    "account_details": {"account": "acct_456"},
+                    "id": "acctsig_456",
+                    "fraudulent_website": {
+                        "risk_level": "elevated",
+                        "details": (
+                            "No verifiable identity.\n"
+                            "\n"
+                            "NOTES: The contact page is empty [1].\n"
+                            "\n"
+                            "[1] https://example.com/contact"
+                        ),
+                    },
+                },
+            )
+        )
+
+        assert "No verifiable identity." in html
+        assert 'href="https://example.com/contact"' in html
+
     def test_unparsable_payload_falls_back_to_the_description(self) -> None:
         html = render(
             build_signal(

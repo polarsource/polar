@@ -57,6 +57,8 @@ stripe_lib.default_http_client = stripe_http_client
 
 # Radar for Platforms account risk signals live behind this preview version.
 STRIPE_ACCOUNT_RISK_API_VERSION = "2026-03-25.preview"
+# Account Signal resources (v2.signals.account_signal.*) are on a later preview.
+STRIPE_ACCOUNT_SIGNALS_API_VERSION = "2026-08-26.preview"
 stripe_risk_client = stripe_lib.StripeClient(
     settings.STRIPE_SECRET_KEY, http_client=stripe_http_client
 )
@@ -638,6 +640,15 @@ class StripeService:
             "get",
             f"/v2/core/events/{event_id}",
             stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,
+        )
+        return cast(dict[str, Any], json.loads(response.body))
+
+    async def get_account_signal(self, signal_id: str) -> dict[str, Any]:
+        """Fetch a Radar Account Signal by id (thin events only carry related_object)."""
+        response = await stripe_risk_client.raw_request_async(
+            "get",
+            f"/v2/signals/account_signals/{signal_id}",
+            stripe_version=STRIPE_ACCOUNT_SIGNALS_API_VERSION,
         )
         return cast(dict[str, Any], json.loads(response.body))
 

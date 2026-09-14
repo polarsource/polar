@@ -123,13 +123,17 @@ class TriggerFixtures:
         self.personas = self.random.sample(PERSONAS, 2)
 
     def build(self, event: WebhookEventType) -> BaseWebhookPayload:
+        payload: dict[str, Any] = {
+            "type": event,
+            "timestamp": self.now,
+            "api_version": CURRENT_API_VERSION,
+            "data": self._data_for(event),
+        }
+        if event is WebhookEventType.subscription_imported:
+            payload["platform"] = "stripe"
+            payload["external_id"] = "sub_123"
         return WebhookPayloadTypeAdapter.validate_python(
-            {
-                "type": event,
-                "timestamp": self.now,
-                "api_version": CURRENT_API_VERSION,
-                "data": self._data_for(event),
-            },
+            payload,
             from_attributes=True,
         )
 
@@ -192,6 +196,7 @@ class TriggerFixtures:
                 | WebhookEventType.subscription_active
                 | WebhookEventType.subscription_uncanceled
                 | WebhookEventType.subscription_resumed
+                | WebhookEventType.subscription_imported
             ):
                 return self.subscription
             case WebhookEventType.subscription_canceled:

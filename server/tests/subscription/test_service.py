@@ -4056,6 +4056,8 @@ class TestActivateImported:
             current_period_end=period_end,
             trial_end=None,
             payment_method=payment_method,
+            platform="stripe",
+            external_id="sub_1",
         )
 
         assert updated.status == SubscriptionStatus.active
@@ -4095,6 +4097,8 @@ class TestActivateImported:
             current_period_end=utc_now() + timedelta(days=30),
             trial_end=None,
             payment_method=payment_method,
+            platform="stripe",
+            external_id="sub_1",
         )
 
         assert_hooks_called_once(subscription_hooks, {"updated"})
@@ -4127,9 +4131,60 @@ class TestActivateImported:
             current_period_end=datetime(2026, 3, 31, tzinfo=UTC),
             trial_end=None,
             payment_method=payment_method,
+            platform="stripe",
+            external_id="sub_1",
         )
 
         assert updated.anchor_day == 31
+
+    async def test_notifies_merchants_the_subscription_was_imported(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now(),
+            current_period_end=utc_now() + timedelta(days=30),
+            trial_end=None,
+            payment_method=payment_method,
+            platform="paddle",
+            external_id="sub_ext_1",
+        )
+
+        webhook_service_send_mock.assert_any_call(
+            ANY,
+            product.organization,
+            WebhookEventType.subscription_imported,
+            ANY,
+            platform="paddle",
+            external_id="sub_ext_1",
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            product.organization,
+            subscription,
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_created
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_active
+        )
 
 
 async def create_event_billing_entry(

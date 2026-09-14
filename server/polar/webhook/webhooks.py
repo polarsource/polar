@@ -11,6 +11,7 @@ from fastapi.routing import APIRoute
 from makefun import with_signature
 from pydantic import (
     Discriminator,
+    Field,
     GetJsonSchemaHandler,
     TypeAdapter,
 )
@@ -88,6 +89,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_cycled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_imported], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -1132,6 +1134,102 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
         return self._get_uncanceled_slack_payload(target)
 
 
+class WebhookSubscriptionImportedPayload(BaseWebhookPayload):
+    """
+    Sent when Polar takes over billing of a subscription imported from another platform.
+
+    This fires at cutover, once the subscription is live on Polar. `platform` and
+    `external_id` identify the subscription on the source platform so you can
+    correlate the two.
+
+    A `subscription.updated` event is also sent.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_imported]
+    data: SubscriptionSchema
+    platform: str = Field(
+        description="The billing platform the subscription was imported from.",
+        examples=["stripe"],
+    )
+    external_id: str = Field(
+        description="The identifier of the subscription on the source platform.",
+        examples=["sub_1Sabc2Def3Ghi"],
+    )
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        amount_display = self.data.get_amount_display()
+        fields: list[DiscordEmbedField] = [
+            {"name": "Product", "value": self.data.product.name},
+            {"name": "Amount", "value": amount_display},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
+            {"name": "Platform", "value": self.platform},
+            {"name": "External ID", "value": self.external_id},
+        ]
+        payload: DiscordPayload = {
+            "content": "Imported Subscription",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Imported Subscription",
+                        "description": (
+                            f"A subscription imported from {self.platform} "
+                            f"is now billed by {target.name}."
+                        ),
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        amount_display = self.data.get_amount_display()
+        fields: list[SlackText] = [
+            {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
+            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
+            {
+                "type": "mrkdwn",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
+            },
+            {"type": "mrkdwn", "text": f"*Platform*\n{self.platform}"},
+            {"type": "mrkdwn", "text": f"*External ID*\n{self.external_id}"},
+        ]
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Imported Subscription",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": (
+                                f"A subscription imported from {self.platform} "
+                                f"is now billed by {target.name}."
+                            ),
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+
 class WebhookSubscriptionCycledPayload(BaseWebhookPayload):
     """
     Sent when a subscription enters a new billing period.
@@ -1544,6 +1642,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
     | WebhookSubscriptionResumedPayload
+    | WebhookSubscriptionImportedPayload
     | WebhookRefundCreatedPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload

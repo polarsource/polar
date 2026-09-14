@@ -1918,7 +1918,8 @@ class TestImportCatalog:
         )
         assert subscription is not None
         assert subscription.status == SubscriptionStatus.active
-        assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
+        assert subscription.user_metadata["platform"] == "stripe"
+        assert subscription.user_metadata["external_id"] == "sub_1"
 
     @pytest.mark.auth
     async def test_excluded_product_id_is_ignored_when_subscriptions_exist(

@@ -1,4 +1,5 @@
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import AltRouteOutlined from '@mui/icons-material/AltRouteOutlined'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import FunctionsOutlined from '@mui/icons-material/FunctionsOutlined'
@@ -50,6 +51,11 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
           title: 'Meters',
           link: `${base}/definition/meters`,
           icon: <DonutLargeOutlined fontSize="inherit" />,
+        },
+        {
+          title: 'Simulate',
+          link: `${base}/definition/simulate`,
+          icon: <AltRouteOutlined fontSize="inherit" />,
         },
       ],
     },

@@ -26,10 +26,7 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
-from polar.email.billing_migration import (
-    is_billing_migration_notice_template,
-    previous_billing_provider_for_notice,
-)
+from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.enums import (
@@ -2598,9 +2595,7 @@ class OrderService:
             ]
 
         previous_billing_provider: str | None = None
-        if subscription is not None and is_billing_migration_notice_template(
-            template_name
-        ):
+        if subscription is not None and template_name != "order_confirmation":
             previous_billing_provider = await previous_billing_provider_for_notice(
                 session, subscription, EmailTemplate(template_name)
             )
@@ -2639,7 +2634,7 @@ class OrderService:
                 "subscription": subscription,
                 "url": url,
             }
-            if is_billing_migration_notice_template(template_name):
+            if subscription is not None and template_name != "order_confirmation":
                 props["previous_billing_provider"] = previous_billing_provider
             email = EmailAdapter.validate_python(
                 {

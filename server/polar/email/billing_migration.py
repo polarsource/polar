@@ -4,17 +4,6 @@ from polar.models import MerchantMigrationSourcePlatform, Subscription
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 
-BILLING_MIGRATION_NOTICE_TEMPLATES: frozenset[EmailTemplate] = frozenset(
-    {
-        EmailTemplate.subscription_renewal_reminder,
-        EmailTemplate.subscription_trial_conversion_reminder,
-        EmailTemplate.subscription_cycled,
-        EmailTemplate.subscription_cycled_after_trial,
-        EmailTemplate.subscription_past_due,
-        EmailTemplate.subscription_updated,
-    }
-)
-
 PRE_BILLING_NOTICE_TEMPLATES: frozenset[EmailTemplate] = frozenset(
     {
         EmailTemplate.subscription_renewal_reminder,
@@ -26,9 +15,6 @@ PRE_BILLING_NOTICE_TEMPLATES: frozenset[EmailTemplate] = frozenset(
 async def previous_billing_provider_for_notice(
     session: AsyncSession, subscription: Subscription, template: EmailTemplate
 ) -> str | None:
-    if template not in BILLING_MIGRATION_NOTICE_TEMPLATES:
-        return None
-
     records = MerchantMigrationRecordRepository.from_session(session)
     if not await records.has_moved_subscription(subscription.id):
         return None
@@ -40,7 +26,3 @@ async def previous_billing_provider_for_notice(
     ) or polar_orders > 1:
         return None
     return MerchantMigrationSourcePlatform.stripe.label
-
-
-def is_billing_migration_notice_template(template: str) -> bool:
-    return template in BILLING_MIGRATION_NOTICE_TEMPLATES

@@ -71,20 +71,6 @@ class TestPreviousBillingProviderForNotice:
             == "Stripe"
         )
 
-    async def test_lifecycle_email_skips_notice(
-        self,
-        session: AsyncSession,
-        moved_subscription: Subscription,
-    ) -> None:
-        assert (
-            await previous_billing_provider_for_notice(
-                session,
-                moved_subscription,
-                EmailTemplate.subscription_cancellation,
-            )
-            is None
-        )
-
     async def test_later_cycle(
         self,
         save_fixture: SaveFixture,

@@ -14,6 +14,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from polar.config import settings
+from polar.kit.aws import get_credentials
 from polar.kit.json import json_obj_serializer
 from polar.logging import Logger
 
@@ -78,13 +79,10 @@ class SQSSendError(Exception):
 def get_sqs_client() -> "SQSClient":
     access_key_id = settings.WORKER_SQS_AWS_ACCESS_KEY_ID
     secret_access_key = settings.WORKER_SQS_AWS_SECRET_ACCESS_KEY
-    if access_key_id is None and (
-        settings.SQS_ENDPOINT_URL is not None
-        or settings.is_development()
-        or settings.is_testing()
-    ):
-        access_key_id = settings.AWS_ACCESS_KEY_ID
-        secret_access_key = settings.AWS_SECRET_ACCESS_KEY
+    if access_key_id is None:
+        access_key_id, secret_access_key = get_credentials(
+            endpoint_url=settings.SQS_ENDPOINT_URL
+        )
     # None credentials: boto3's default chain assumes the Render OIDC role (AWS_ROLE_ARN).
     return boto3.client(
         "sqs",

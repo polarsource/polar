@@ -83,7 +83,7 @@ export const VoidUsageChart = ({
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          width={44}
+          width={56}
           tickFormatter={(value: number) => formatHumanFriendlyScalar(value)}
         />
         <ChartTooltip

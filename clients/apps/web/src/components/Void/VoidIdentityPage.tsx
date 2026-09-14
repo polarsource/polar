@@ -1,6 +1,6 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
@@ -11,7 +11,6 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { subDays } from 'date-fns'
 import { Users } from 'lucide-react'
-import Link from 'next/link'
 import { useContext, useMemo } from 'react'
 import {
   buildTree,
@@ -63,13 +62,19 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
 
   if (!focused || !root || !rootIdentity) {
     return (
-      <DashboardBody title="Identity">
+      <MasterDetailLayoutContent
+        header={
+          <Text variant="heading-xs" as="h1">
+            Identity
+          </Text>
+        }
+      >
         <EmptyState
           icon={<Users />}
           title="Unknown identity"
           description="No identity with this id exists in the tree."
         />
-      </DashboardBody>
+      </MasterDetailLayoutContent>
     )
   }
 
@@ -103,13 +108,10 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
       ]
 
   return (
-    <DashboardBody
-      title={
+    <MasterDetailLayoutContent
+      header={
         <Box flexDirection="column" rowGap="xs">
-          <Link href={`${base}/identities`}>
-            <Text color="muted">Identities</Text>
-          </Link>
-          <Text variant="heading-s" as="h1">
+          <Text variant="heading-xs" as="h1">
             {focused.name}
           </Text>
           <Text color="muted">{meta.join(' · ')}</Text>
@@ -212,6 +214,6 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
           <EventsTable rows={events} />
         </TableSection>
       </Box>
-    </DashboardBody>
+    </MasterDetailLayoutContent>
   )
 }

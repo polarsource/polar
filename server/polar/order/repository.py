@@ -40,11 +40,6 @@ from polar.models import (
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.subscription import SubscriptionStatus
 
-_SUBSCRIPTION_CYCLE_REASONS = (
-    OrderBillingReasonInternal.subscription_cycle,
-    OrderBillingReasonInternal.subscription_cycle_after_trial,
-)
-
 from .sorting import OrderSortProperty
 
 if TYPE_CHECKING:
@@ -341,39 +336,25 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def has_other_subscription_cycle_order(
-        self,
-        subscription_id: UUID,
-        *,
-        exclude_order_id: UUID | None = None,
+    async def has_subscription_cycle_order(
+        self, subscription_id: UUID, *, offset: int = 0
     ) -> bool:
-        statement = (
+        statement = select(
             self.get_base_statement()
             .where(
                 Order.subscription_id == subscription_id,
-                Order.billing_reason.in_(_SUBSCRIPTION_CYCLE_REASONS),
+                Order.billing_reason.in_(
+                    (
+                        OrderBillingReasonInternal.subscription_cycle,
+                        OrderBillingReasonInternal.subscription_cycle_after_trial,
+                    )
+                ),
             )
-            .with_only_columns(Order.id)
+            .offset(offset)
             .limit(1)
+            .exists()
         )
-        if exclude_order_id is not None:
-            statement = statement.where(Order.id != exclude_order_id)
-        return await self.session.scalar(statement) is not None
-
-    async def get_latest_subscription_cycle_order_id(
-        self, subscription_id: UUID
-    ) -> UUID | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Order.subscription_id == subscription_id,
-                Order.billing_reason.in_(_SUBSCRIPTION_CYCLE_REASONS),
-            )
-            .with_only_columns(Order.id)
-            .order_by(Order.created_at.desc())
-            .limit(1)
-        )
-        return await self.session.scalar(statement)
+        return bool(await self.session.scalar(statement))
 
     async def get_pending_orders_for_subscription(
         self, subscription_id: UUID, *, options: Options = ()

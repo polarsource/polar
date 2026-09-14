@@ -1,6 +1,7 @@
 import pytest
 
 from polar.email.billing_migration import previous_billing_provider_for_notice
+from polar.email.schemas import EmailTemplate
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal
@@ -50,7 +51,12 @@ class TestPreviousBillingProviderForNotice:
             save_fixture, product=product, customer=customer
         )
 
-        assert await previous_billing_provider_for_notice(session, subscription) is None
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.subscription_renewal_reminder
+            )
+            is None
+        )
 
     async def test_imported_but_not_moved(
         self,
@@ -68,7 +74,12 @@ class TestPreviousBillingProviderForNotice:
             cutover_status=None,
         )
 
-        assert await previous_billing_provider_for_notice(session, subscription) is None
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.subscription_renewal_reminder
+            )
+            is None
+        )
 
     async def test_moved_from_stripe(
         self,
@@ -83,7 +94,9 @@ class TestPreviousBillingProviderForNotice:
         )
 
         assert (
-            await previous_billing_provider_for_notice(session, subscription)
+            await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.subscription_renewal_reminder
+            )
             == "Stripe"
         )
 
@@ -98,7 +111,7 @@ class TestPreviousBillingProviderForNotice:
         subscription = await _moved_subscription(
             save_fixture, organization, product, customer
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -108,7 +121,7 @@ class TestPreviousBillingProviderForNotice:
 
         assert (
             await previous_billing_provider_for_notice(
-                session, subscription, current_order_id=order.id
+                session, subscription, EmailTemplate.subscription_cycled
             )
             == "Stripe"
         )
@@ -131,7 +144,7 @@ class TestPreviousBillingProviderForNotice:
             subscription=subscription,
             billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
-        later_order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -141,7 +154,7 @@ class TestPreviousBillingProviderForNotice:
 
         assert (
             await previous_billing_provider_for_notice(
-                session, subscription, current_order_id=later_order.id
+                session, subscription, EmailTemplate.subscription_cycled
             )
             is None
         )
@@ -165,4 +178,9 @@ class TestPreviousBillingProviderForNotice:
             billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
 
-        assert await previous_billing_provider_for_notice(session, subscription) is None
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.subscription_renewal_reminder
+            )
+            is None
+        )

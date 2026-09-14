@@ -3,9 +3,10 @@ import pytest
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
+from polar.models.order import OrderBillingReasonInternal
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_active_subscription
+from tests.fixtures.random_objects import create_active_subscription, create_order
 from tests.merchant_migration._helpers import (
     build_connected_migration,
     stage_subscription_record,
@@ -85,3 +86,83 @@ class TestPreviousBillingProviderForNotice:
             await previous_billing_provider_for_notice(session, subscription)
             == "Stripe"
         )
+
+    async def test_first_cycle_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await _moved_subscription(
+            save_fixture, organization, product, customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, current_order_id=order.id
+            )
+            == "Stripe"
+        )
+
+    async def test_later_cycle_after_prior_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await _moved_subscription(
+            save_fixture, organization, product, customer
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+        later_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert (
+            await previous_billing_provider_for_notice(
+                session, subscription, current_order_id=later_order.id
+            )
+            is None
+        )
+
+    async def test_reminder_after_first_cycle(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await _moved_subscription(
+            save_fixture, organization, product, customer
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert await previous_billing_provider_for_notice(session, subscription) is None

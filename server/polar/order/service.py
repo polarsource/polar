@@ -2603,7 +2603,7 @@ class OrderService:
             and subscription is not None
         ):
             previous_billing_provider = await previous_billing_provider_for_notice(
-                session, subscription
+                session, subscription, current_order_id=order.id
             )
 
         for recipient_email in recipients:

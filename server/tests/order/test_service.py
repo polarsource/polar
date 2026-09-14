@@ -3209,6 +3209,53 @@ class TestSendConfirmationEmail:
         assert isinstance(email, SubscriptionCycledEmail)
         assert email.props.previous_billing_provider == "Stripe"
 
+    async def test_later_cycle_skips_stripe_migration_notice(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            subscription,
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+        later_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, later_order)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionCycledEmail)
+        assert email.props.previous_billing_provider is None
+
 
 @pytest.mark.asyncio
 class TestTriggerInvoiceGeneration:

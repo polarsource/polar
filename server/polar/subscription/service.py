@@ -4215,9 +4215,19 @@ class SubscriptionService:
             is_billing_migration_notice_template(template_name)
             and "previous_billing_provider" not in extra_context
         ):
+            current_order_id = None
+            if template_name == "subscription_past_due":
+                order_repository = OrderRepository.from_session(session)
+                current_order_id = (
+                    await order_repository.get_latest_subscription_cycle_order_id(
+                        subscription.id
+                    )
+                )
             extra_context[
                 "previous_billing_provider"
-            ] = await previous_billing_provider_for_notice(session, subscription)
+            ] = await previous_billing_provider_for_notice(
+                session, subscription, current_order_id=current_order_id
+            )
 
         async def send_to_recipients(recipients: Sequence[str]) -> None:
             for recipient_email in recipients:

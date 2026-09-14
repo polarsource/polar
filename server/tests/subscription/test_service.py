@@ -7280,6 +7280,42 @@ async def test_send_renewal_reminder_email_mentions_stripe_migration(
 
 
 @pytest.mark.asyncio
+async def test_send_renewal_reminder_email_skips_notice_after_first_cycle(
+    enqueue_email_mock: MagicMock,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    organization: Organization,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_active_subscription(
+        save_fixture, product=product, customer=customer
+    )
+    migration = await build_connected_migration(save_fixture, organization)
+    await stage_subscription_record(
+        save_fixture,
+        migration,
+        organization,
+        subscription,
+        cutover_status=MerchantMigrationCutoverStatus.moved,
+    )
+    await create_order(
+        save_fixture,
+        product=product,
+        customer=customer,
+        subscription=subscription,
+        billing_reason=OrderBillingReasonInternal.subscription_cycle,
+    )
+
+    await subscription_service.send_renewal_reminder_email(session, subscription)
+
+    enqueue_email_mock.assert_called_once()
+    email = enqueue_email_mock.call_args[0][0]
+    assert isinstance(email, SubscriptionRenewalReminderEmail)
+    assert email.props.previous_billing_provider is None
+
+
+@pytest.mark.asyncio
 async def test_send_past_due_email_mentions_stripe_migration(
     enqueue_email_mock: MagicMock,
     save_fixture: SaveFixture,

@@ -336,8 +336,8 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def has_subscription_cycle_order(
-        self, subscription_id: UUID, *, offset: int = 0
+    async def has_at_least_subscription_cycle_orders(
+        self, subscription_id: UUID, n: int
     ) -> bool:
         statement = select(
             self.get_base_statement()
@@ -350,7 +350,7 @@ class OrderRepository(
                     )
                 ),
             )
-            .offset(offset)
+            .offset(n - 1)
             .limit(1)
             .exists()
         )

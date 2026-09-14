@@ -21,3 +21,20 @@ export const SWITCH_INTRO =
 
 export const SWITCH_UNDONE_WARNING =
   'Polar stops these subscriptions on Stripe and starts billing them. This cannot be undone.'
+
+// Always scoped to prepared subscriptions (customer + product already in
+// Polar). The cutover report uses the same set; listing every staged row
+// would fill the All tab with subscriptions that cannot be switched.
+export function switchRecordsParams(
+  filter: SwitchFilter,
+  page: number,
+  pageSize: number,
+) {
+  return {
+    entity: 'subscriptions' as const,
+    dependenciesImported: true as const,
+    ...(filter !== 'all' ? { cutoverStatus: filter } : {}),
+    page,
+    limit: pageSize,
+  }
+}

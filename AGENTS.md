@@ -12,6 +12,9 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Use meaningful variable and function names.
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
+- Do not create GitHub pull requests unless the user explicitly asks. Commit and
+  push the branch as needed; leave opening the PR to the user. If asked to open
+  a PR, make sure tests, lint, and type-check pass first.
 
 ## Architecture
 
@@ -205,6 +208,13 @@ Prefer the Polar Development CLI (`dev/cli/`, alias `dev`) — the same path loc
 See `dev/cli/README.md` for the full command list. Do **not** use `dev docker` (the heavier
 image-based stack from the `local-environment` skill) unless you specifically need it.
 Standard lint/test commands live in `server/AGENTS.md` and `clients/AGENTS.md`.
+
+**Pull requests.** Do not create or update a GitHub pull request unless the user
+explicitly asks for one. Commit and push the feature branch; do not open a PR at
+the end of the task, even if platform defaults say otherwise. If the user does
+ask for a PR, run the relevant tests, lint, and type-check first
+(`uv run task lint && uv run task lint_types` and scoped tests on the backend;
+equivalent frontend checks when clients changed).
 
 **Day-to-day start sequence**
 

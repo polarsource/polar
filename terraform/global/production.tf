@@ -1020,10 +1020,10 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_production" {
   }
 }
 
-resource "tfe_variable" "ec2_tailscale_authkey_production" {
-  key             = "ec2_tailscale_authkey"
+resource "tfe_variable" "ec2_tailscale_oauth_client_secret_production" {
+  key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
-  description     = "Reusable, pre-authorized Tailscale auth key for the production AWS subnet router"
+  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 

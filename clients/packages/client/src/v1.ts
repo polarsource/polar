@@ -6268,7 +6268,7 @@ export interface paths {
     post?: never
     /**
      * Delete
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     delete: operations['payout_accounts:delete']
     options?: never
@@ -6287,7 +6287,7 @@ export interface paths {
     put?: never
     /**
      * Sync
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     post: operations['payout_accounts:sync']
     delete?: never
@@ -6307,7 +6307,7 @@ export interface paths {
     put?: never
     /**
      * Onboarding Link
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     post: operations['payout_accounts:onboarding_link']
     delete?: never
@@ -6327,7 +6327,7 @@ export interface paths {
     put?: never
     /**
      * Dashboard Link
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     post: operations['payout_accounts:dashboard_link']
     delete?: never

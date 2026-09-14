@@ -22,6 +22,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
+    from polar.models.backoffice_user import BackofficeUser
     from polar.models.customer import Customer
     from polar.models.dispute import Dispute
     from polar.models.file import File
@@ -150,6 +151,13 @@ class SupportCase(RecordModel):
         index=True,
     )
 
+    backoffice_assigned_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("backoffice_users.id", ondelete="set null"),
+        nullable=True,
+        default=None,
+    )
+
     __mapper_args__ = {"polymorphic_on": "type"}
 
     @declared_attr
@@ -171,6 +179,10 @@ class SupportCase(RecordModel):
     @declared_attr
     def assigned_user(cls) -> Mapped["User | None"]:
         return relationship("User", lazy="raise")
+
+    @declared_attr
+    def backoffice_assigned_user(cls) -> Mapped["BackofficeUser | None"]:
+        return relationship("BackofficeUser", lazy="raise")
 
 
 class ReviewAppealSupportCase(SupportCase):
@@ -301,6 +313,12 @@ class SupportCaseParticipant(RecordModel):
     platform_user_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True, default=None
     )
+    backoffice_platform_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("backoffice_users.id", ondelete="cascade"),
+        nullable=True,
+        default=None,
+    )
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("customers.id", ondelete="cascade"),
@@ -322,6 +340,10 @@ class SupportCaseParticipant(RecordModel):
     @declared_attr
     def platform_user(cls) -> Mapped["User | None"]:
         return relationship("User", lazy="raise")
+
+    @declared_attr
+    def backoffice_platform_user(cls) -> Mapped["BackofficeUser | None"]:
+        return relationship("BackofficeUser", lazy="raise")
 
     @declared_attr
     def customer(cls) -> Mapped["Customer | None"]:
@@ -359,6 +381,9 @@ class SupportCaseMessage(RecordModel):
     author_user_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id"), nullable=True, default=None
     )
+    backoffice_author_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("backoffice_users.id"), nullable=True, default=None
+    )
     body: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     audience: Mapped[list[SupportCaseAudience]] = mapped_column(
         ARRAY(StringEnum(SupportCaseAudience, length=16)),
@@ -373,6 +398,10 @@ class SupportCaseMessage(RecordModel):
     @declared_attr
     def author_user(cls) -> Mapped["User | None"]:
         return relationship("User", lazy="raise")
+
+    @declared_attr
+    def backoffice_author_user(cls) -> Mapped["BackofficeUser | None"]:
+        return relationship("BackofficeUser", lazy="raise")
 
 
 class SupportCaseAttachment(RecordModel):

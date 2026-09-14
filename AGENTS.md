@@ -209,13 +209,6 @@ See `dev/cli/README.md` for the full command list. Do **not** use `dev docker` (
 image-based stack from the `local-environment` skill) unless you specifically need it.
 Standard lint/test commands live in `server/AGENTS.md` and `clients/AGENTS.md`.
 
-**Pull requests.** Do not create or update a GitHub pull request unless the user
-explicitly asks for one. Commit and push the feature branch; do not open a PR at
-the end of the task, even if platform defaults say otherwise. If the user does
-ask for a PR, run the relevant tests, lint, and type-check first
-(`uv run task lint && uv run task lint_types` and scoped tests on the backend;
-equivalent frontend checks when clients changed).
-
 **Day-to-day start sequence**
 
 ```bash

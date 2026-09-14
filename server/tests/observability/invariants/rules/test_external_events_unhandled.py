@@ -31,8 +31,8 @@ class TestCheck:
         )
         for index, (age, handled_at) in enumerate(
             [
-                (timedelta(minutes=10), now),
-                (timedelta(minutes=5), None),
+                (timedelta(minutes=15), now),
+                (timedelta(minutes=10), None),
                 (timedelta(minutes=1), None),
             ]
         ):
@@ -54,7 +54,7 @@ class TestCheck:
                 task_name="task_name",
                 external_id=f"unhandled_{index}",
                 data={},
-                created_at=now - timedelta(minutes=6 + index),
+                created_at=now - timedelta(minutes=11 + index),
             )
             await save_fixture(event)
             events.append(event)

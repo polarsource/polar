@@ -11,7 +11,7 @@ class ExternalEventsUnhandledInvariantError(InvariantError):
     def __init__(self, count: int, external_events: list[uuid.UUID]) -> None:
         super().__init__(
             ExternalEventsUnhandledInvariant,
-            f"Found {count} external events unhandled for more than 5 minutes after creation.",
+            f"Found {count} external events unhandled for more than 10 minutes after creation.",
             {
                 "count": count,
                 "external_events": {
@@ -23,7 +23,7 @@ class ExternalEventsUnhandledInvariantError(InvariantError):
 
 
 class ExternalEventsUnhandledInvariant(Invariant):
-    LEEWAY = timedelta(minutes=5)
+    LEEWAY = timedelta(minutes=10)
     LIMIT = 10
 
     async def check(self) -> None:

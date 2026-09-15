@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -35,7 +36,7 @@ from polar.models.merchant_migration_record import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_payment_method
-from tests.merchant_migration._helpers import canonical_subscription
+from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
 
 
 async def _create_migration(
@@ -257,6 +258,26 @@ class TestUpsert:
         assert [price["source_id"] for price in reused.canonical["prices"]] == [
             "price_current"
         ]
+
+    async def test_merges_promotion_codes_onto_a_pending_coupon(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = canonical_discount(code=None)
+        await repository.upsert(migration, organization, coupon)
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="LAUNCH")
+        )
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="SAVE")
+        )
+
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["extra_codes"] == 1
 
 
 @pytest.mark.asyncio

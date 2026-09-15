@@ -102,10 +102,12 @@ locals {
   }
 
   aws_s3_secrets = {
-    POLAR_AWS_ACCESS_KEY_ID        = var.aws_s3_secrets.access_key_id
-    POLAR_AWS_SECRET_ACCESS_KEY    = var.aws_s3_secrets.secret_access_key
-    POLAR_S3_FILES_DOWNLOAD_SALT   = var.aws_s3_secrets.files_download_salt
-    POLAR_S3_FILES_DOWNLOAD_SECRET = var.aws_s3_secrets.files_download_secret
+    for key, value in {
+      POLAR_AWS_ACCESS_KEY_ID        = var.aws_s3_secrets.access_key_id
+      POLAR_AWS_SECRET_ACCESS_KEY    = var.aws_s3_secrets.secret_access_key
+      POLAR_S3_FILES_DOWNLOAD_SALT   = var.aws_s3_secrets.files_download_salt
+      POLAR_S3_FILES_DOWNLOAD_SECRET = var.aws_s3_secrets.files_download_secret
+    } : key => value if value != null
   }
 
   secrets_kms_environment_variables = {

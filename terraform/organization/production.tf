@@ -359,23 +359,6 @@ module "production_github_oidc_backup" {
   permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
-module "production_application_access" {
-  source = "../modules/application_access"
-  providers = {
-    aws = aws.us_east_2
-  }
-
-  username = "polar-production-files"
-  buckets = {
-    customer_invoices = { name = "polar-customer-invoices" }
-    customer_receipts = { name = "polar-customer-receipts" }
-    payout_invoices   = { name = "polar-payout-invoices" }
-    files             = { name = "polar-production-files", description = "Policy used by our app for downloadable benefits. Keep permissions to a bare minimum." }
-    public_files      = { name = "polar-public-files", description = "Policy used by our app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
-    logs              = { name = "polar-production-logs", description = "Policy used by our app to write OpenTelemetry spans to S3 for long-term backup." }
-  }
-}
-
 module "production_athena_spans" {
   source = "../modules/athena_spans"
   providers = {
@@ -697,71 +680,6 @@ import {
 import {
   to = module.production_github_oidc_backup.aws_iam_role_policy_attachment.policies["e2e_reports"]
   id = "github-actions-backup/arn:aws:iam::975049931254:policy/e2e-reports-upload"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user.this
-  id = "polar-production-files"
-}
-
-import {
-  to = module.production_application_access.aws_iam_policy.customer_invoices
-  id = "arn:aws:iam::975049931254:policy/polar-customer-invoices"
-}
-
-import {
-  to = module.production_application_access.aws_iam_policy.customer_receipts
-  id = "arn:aws:iam::975049931254:policy/polar-customer-receipts"
-}
-
-import {
-  to = module.production_application_access.aws_iam_policy.files
-  id = "arn:aws:iam::975049931254:policy/polar-production-files"
-}
-
-import {
-  to = module.production_application_access.aws_iam_policy.logs
-  id = "arn:aws:iam::975049931254:policy/polar-production-logs"
-}
-
-import {
-  to = module.production_application_access.aws_iam_policy.payout_invoices
-  id = "arn:aws:iam::975049931254:policy/polar-payout-invoices"
-}
-
-import {
-  to = module.production_application_access.aws_iam_policy.public_files
-  id = "arn:aws:iam::975049931254:policy/polar-public-files"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user_policy_attachment.customer_invoices
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-customer-invoices"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user_policy_attachment.customer_receipts
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-customer-receipts"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user_policy_attachment.files
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-production-files"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user_policy_attachment.logs
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-production-logs"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user_policy_attachment.payout_invoices
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-payout-invoices"
-}
-
-import {
-  to = module.production_application_access.aws_iam_user_policy_attachment.public_files
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-public-files"
 }
 
 import {

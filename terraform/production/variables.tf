@@ -152,18 +152,6 @@ variable "backend_jwks_production" {
 }
 
 # AWS S3 - Production
-variable "aws_access_key_id_production" {
-  description = "AWS Access Key ID for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "aws_secret_access_key_production" {
-  description = "AWS Secret Access Key for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "s3_files_download_salt_production" {
   description = "S3 Files Download Salt for production"
   type        = string

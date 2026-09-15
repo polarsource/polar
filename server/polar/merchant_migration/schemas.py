@@ -53,6 +53,7 @@ class PrecheckEntity(StrEnum):
     products = "products"
     prices = "prices"
     customers = "customers"
+    discounts = "discounts"
     subscriptions = "subscriptions"
 
 
@@ -152,6 +153,18 @@ class MerchantMigrationRecordItem(Schema):
         description=(
             "Whether the source computed tax on this subscription. None for "
             "non-subscription rows, or when the source doesn't say."
+        ),
+    )
+    discount_name: str | None = Field(
+        description=(
+            "The coupon Polar will keep on this subscription. None for "
+            "non-subscription rows, or when the subscription has no importable coupon."
+        ),
+    )
+    discount_code: str | None = Field(
+        description=(
+            "The checkout code of the coupon Polar will keep on this subscription. "
+            "None when there is no coupon, or the coupon has no Polar-valid code."
         ),
     )
     status: PrecheckRecordStatus = Field(

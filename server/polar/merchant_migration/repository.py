@@ -32,6 +32,7 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import (
+    CanonicalDiscount,
     CanonicalProduct,
     CanonicalRecord,
     canonical_price_key,
@@ -647,6 +648,14 @@ class MerchantMigrationRecordRepository(
                         )
                         record = replace(record, prices=list(prices.values()))
                         canonical = serialize(record)
+                if (
+                    existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalDiscount)
+                ):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalDiscount):
+                        record = self._merge_discount_code(current, record)
+                        canonical = serialize(record)
                 return await self.update(
                     existing,
                     update_dict={
@@ -666,3 +675,19 @@ class MerchantMigrationRecordRepository(
             ),
             flush=True,
         )
+
+    @staticmethod
+    def _merge_discount_code(
+        current: CanonicalDiscount, incoming: CanonicalDiscount
+    ) -> CanonicalDiscount:
+        """Keep the coupon terms already staged and attach the first Polar-valid
+        promotion code. Extra codes are counted so the precheck can warn."""
+        if incoming.code is None:
+            return current
+        if current.code is None:
+            return replace(
+                current, code=incoming.code, max_redemptions=incoming.max_redemptions
+            )
+        if current.code != incoming.code:
+            return replace(current, extra_codes=current.extra_codes + 1)
+        return current

@@ -107,12 +107,18 @@ IMPORTABLE_STEPS = {
 }
 
 # Entities whose records map 1:1 to a ledger row. Prices live inside a product
-# record and are excluded.
+# record and are excluded. Discounts are listed when asked for by entity.
 _ENTITY_RECORD_TYPE = {
     PrecheckEntity.products: MerchantMigrationRecordType.product,
     PrecheckEntity.customers: MerchantMigrationRecordType.customer,
+    PrecheckEntity.discounts: MerchantMigrationRecordType.discount,
     PrecheckEntity.subscriptions: MerchantMigrationRecordType.subscription,
 }
+_REVIEW_ENTITIES = (
+    PrecheckEntity.products,
+    PrecheckEntity.customers,
+    PrecheckEntity.subscriptions,
+)
 
 SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
@@ -1433,7 +1439,7 @@ class MerchantMigrationService:
         separates subscriptions ready to switch from those still needing
         preparation. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
+        entities = [entity] if entity is not None else list(_REVIEW_ENTITIES)
         items = await self._classify_staged(session, migration, entities)
         await self._attach_cutover_coverage(session, migration, items)
 
@@ -1502,6 +1508,7 @@ class MerchantMigrationService:
         if (
             PrecheckEntity.subscriptions in entities
             or PrecheckEntity.customers in entities
+            or PrecheckEntity.discounts in entities
         ):
             extra_dependencies = (
                 await record_repository.list_imported_catalog_dependencies(
@@ -1530,6 +1537,7 @@ class MerchantMigrationService:
             if entity_type in {
                 PrecheckEntity.customers,
                 PrecheckEntity.subscriptions,
+                PrecheckEntity.discounts,
             }:
                 classified_from = [*extra_canonicals, *records]
             entity_items = classify_records(
@@ -1548,6 +1556,17 @@ class MerchantMigrationService:
                     item
                     for item in entity_items
                     if item.source_id in staged_customer_source_ids
+                ]
+            elif entity_type == PrecheckEntity.discounts:
+                staged_discount_source_ids = {
+                    record.source_id
+                    for record in staged
+                    if record.type == MerchantMigrationRecordType.discount
+                }
+                entity_items = [
+                    item
+                    for item in entity_items
+                    if item.source_id in staged_discount_source_ids
                 ]
             self._attach_record_ids(
                 entity_items, staged, entity_type, extra_dependencies

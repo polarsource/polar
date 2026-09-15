@@ -1,0 +1,140 @@
+---
+title: "Multi-product subscriptions"
+description: "Proposal for how to make it possible for customers to pay recurringly for many products with one invoice per cycle"
+---
+
+import { OpenQuestion } from "/snippets/open-question.jsx";
+
+<Info>
+**Status**: Draft
+
+**Created**: 2026-09-10
+</Info>
+
+## Background
+
+Merchants should be able to bundle multiple products into a single subscription so customers
+only get invoiced and charged once per cycle for all of those products.
+
+It's common for B2B SaaS to mix and match pricing: keep a base subscription for the core offering,
+tacking on optional add-ons for extra parts of the product. Think Sentry: a per-seat base fee,
+metered overage pricing, per-unit charges for uptime and cron monitors, $40/seat/mo extra for
+their AI debugger, …
+
+Read more in the [Linear project](https://linear.app/polarsh/project/add-ons-bundled-subscriptions-f027967eb7ae/overview).
+
+## Proposal
+
+We solve for this by introducing **add-on products**.
+Add-ons are ordinary products, flagged `is_add_on` and attached to the primary products that accept
+them. They can be added or removed mid-cycle with the same proration as any other subscription
+change, and their benefits and meter credits merge into what the subscription already grants.
+
+A subscription still has one primary product but can also hold priced lines for each add-on
+product the customer takes. One cycle therefore still produces one order, one invoice and one
+payment, and cancelling still cancels everything — the subscription stays a single managed unit
+for both the customer and the merchant, whether zero or twelve add-ons are involved.
+
+### Model changes
+
+#### New field `Product.is_add_on`
+
+A boolean indicating whether a product is a regular, standalone product or an _add-on_ product.
+Add-on products must be recurring, and are never purchasable on their own.
+
+Requirements:
+
+- Add-ons cannot have a seat-based price. A seat belongs to a single product, so an add-on charged
+  per seat uses a per-unit price instead.
+
+This leaves the add-on's unit count and the primary's seat count as independent numbers, and we
+deliberately do not tie them together. **Add-on benefits are never granted per seat** — see
+[Benefits](#benefits). Polar bills a per-unit add-on on a seat-based subscription but does not
+entitle individual seats to it; a merchant wanting per-user gating enforces that in their own app
+from the unit count. Per-add-on seat assignment is the "seat management gets hairy" the brief
+rules out, so the two counts drifting is a merchant pricing concern, not a Polar correctness one.
+
+#### New model `ProductAddOn`
+
+Records which add-ons each primary product accepts (if any).
+This allows for an add-on product to be configured once but attached to many standalone products.
+Has fields `product_id` & `add_on_product_id`, possibly also `order`
+(integer indicating internal add-on order for a given standalone product).
+
+Requirements:
+
+- Same org (obvious but should still be mentioned)
+- No nesting; add-ons can only be attached to primary (i.e. non-add-on) products
+- Same interval and interval count on both primary and add-ons
+- Same meter cadence on both primary and add-ons, if set
+- Meters must be unique across add-ons and primary, since usage resolves to one price per meter
+  per customer
+
+#### New field `SubscriptionProductPrice.units`
+
+The unit count of a line whose price is unit-based.
+
+#### New model `SubscriptionUpdateAddOn`
+
+The add-on equivalence of `SubscriptionUpdate`, to carry any pending changes to the add-on
+products associated with the subscription.
+
+#### New models `CheckoutLinkAddOn` & `CheckoutAddOn`
+
+We'll need these to model specific add-on configurations made for checkout links and
+actual checkouts. The former is decided by the merchant, the latter by the customer.
+Basically we'll mirror `CheckoutLinkProduct` and `CheckoutProduct`.
+
+### Benefits
+
+- A subscription grants the union of its primary product's benefits and those of its add-ons, and
+  meter credits from both stack.
+- Add-on benefits are only granted to/on the subscription scope, not to claimed seats.
+  If the primary product is seat based then only the primary product's benefits are granted to the
+  claimed seats.
+- If two benefits manipulate the same external resource, that resource is resolved from **all** of
+  the subscription's granted benefits rather than from one grant in isolation:
+    - A GitHub repository takes the highest permission granted for it, so `pull` on the primary
+      plus `push` on an add-on gives `push` — and removing the add-on drops back to `pull`.
+    - A Discord revoke removes only its own role, and if configured to kick member on revoke,
+      only kicks the member from the guild if/once no granted benefit needs that guild.
+
+### Checkouts
+
+Hosted/embedded checkouts default to not showing/including any add-ons at all, but merchants can
+opt-in to including one or more available add-ons via checkout links and/or by creating checkouts
+via our API. The customer chooses which of the offered add-ons to take, and sets unit counts for
+those priced per unit.
+
+### Customer portal
+
+Customers should be able to add and remove add-ons on a live subscription themselves, as well as
+updating unit counts.
+
+### Proration
+
+An add-on change is prorated like any other subscription change. Specifically these are the
+default proration behaviors:
+- _Add an add-on:_ charged immediately for the remaining time in the cycle.
+- _Remove an add-on:_ scheduled for the next cycle so the current invoice still bills it.
+  Removing immediately credits the unused time.
+- _Change add-on unit count:_ the difference is prorated for the remaining time, for that add-on
+  only.
+
+A subscription-level discount now applies to the whole subscription, add-ons included.
+
+<OpenQuestion>
+Should discounts restricted to particular products be evaluated against the primary product only or
+also checked against each individual add-on product?
+</OpenQuestion>
+
+## Rollout
+
+We'll guard roll-out behind a new feature flag: `add_on_products_enabled`.
+
+## Security considerations
+
+- No new personal data and no new secrets are stored
+- A customer's add-on selection must be validated server-side the same way the existing product
+  and seat selection currently is, checked against that checkout's configured add-ons and
+  with amounts and tax recomputed

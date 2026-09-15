@@ -14,7 +14,12 @@ from polar.external_event.service import external_event as external_event_servic
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models.dispute import DisputeStatus
-from polar.organization.service import organization as organization_service
+from polar.organization.service import (
+    UnknownAccountRiskEvaluation,
+)
+from polar.organization.service import (
+    organization as organization_service,
+)
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
@@ -95,7 +100,12 @@ async def account_risk_signal(event_id: uuid.UUID) -> None:
                 )
                 return
 
-            await organization_service.handle_account_risk_signal(session, signal)
+            try:
+                await organization_service.handle_account_risk_signal(session, signal)
+            except UnknownAccountRiskEvaluation as e:
+                if can_retry():
+                    raise Retry() from e
+                raise
 
 
 @actor(actor_name="stripe.webhook.payment_intent.succeeded", priority=TaskPriority.HIGH)

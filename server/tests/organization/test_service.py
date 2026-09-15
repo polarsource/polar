@@ -71,6 +71,7 @@ from polar.organization.service import (
     CannotCreateOrganizationError,
     OrganizationError,
     PayoutAccountAlreadyLinked,
+    UnknownAccountRiskEvaluation,
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -1985,7 +1986,10 @@ class TestHandleAccountRiskSignal:
             website_url=website_url,
             evaluation_id=evaluation_id,
             description=description,
-            payload={"account": account_id} if account_id else {},
+            payload={
+                **({"account": account_id} if account_id else {}),
+                **({"account_evaluation": evaluation_id} if evaluation_id else {}),
+            },
         )
 
     async def _signals(
@@ -2178,6 +2182,12 @@ class TestHandleAccountRiskSignal:
         signals = await self._signals(session, organization)
         assert len(signals) == 1
         assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_456")
+        assert pending is not None
+        assert pending.id == signals[0].id
+        assert pending.payload.get("account_evaluation") == "acctevl_456"
 
         await session.refresh(organization_second)
         assert organization_second.status == OrganizationStatus.ACTIVE
@@ -2206,7 +2216,7 @@ class TestHandleAccountRiskSignal:
         assert organization.status == OrganizationStatus.ACTIVE
         assert await self._signals(session, organization) == []
 
-    async def test_unknown_evaluation_id_does_nothing(
+    async def test_unknown_evaluation_id_raises(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2218,18 +2228,23 @@ class TestHandleAccountRiskSignal:
         await self._pending_website_eval(save_fixture, organization, "acctevl_ours")
         mocker.patch("polar.organization.service.enqueue_job")
 
-        await organization_service.handle_account_risk_signal(
-            session,
-            self._signal(
-                None,
-                StripeAccountRiskLevel.HIGHEST,
-                website_url="https://example.com",
-                evaluation_id="acctevl_unknown",
-            ),
-        )
+        with pytest.raises(UnknownAccountRiskEvaluation):
+            await organization_service.handle_account_risk_signal(
+                session,
+                self._signal(
+                    None,
+                    StripeAccountRiskLevel.HIGHEST,
+                    website_url="https://example.com",
+                    evaluation_id="acctevl_unknown",
+                ),
+            )
 
         assert organization.status == OrganizationStatus.ACTIVE
         assert await self._signals(session, organization) == []
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_ours")
+        assert pending is not None
 
     async def test_non_actionable_evaluation_drops_pending(
         self,

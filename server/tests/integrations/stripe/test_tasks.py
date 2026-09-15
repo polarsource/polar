@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import stripe as stripe_lib
+from dramatiq import Retry
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import selectinload
 
@@ -23,6 +24,7 @@ from polar.models import (
 )
 from polar.models.organization import OrganizationStatus
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import UnknownAccountRiskEvaluation
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -77,6 +79,30 @@ class TestAccountRiskSignal:
         )
         context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
         context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    def _mock_unmatched_website_signal(self, mocker: MockerFixture) -> None:
+        self._mock_event(
+            mocker,
+            {
+                "id": "evt_website",
+                "type": "v2.signals.account_signal.fraudulent_website_ready",
+                "related_object": {"id": "acctsig_789"},
+            },
+        )
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_signal",
+            new=AsyncMock(
+                return_value={
+                    "id": "acctsig_789",
+                    "type": "fraudulent_website",
+                    "account_evaluation": "acctevl_missing",
+                    "fraudulent_website": {
+                        "risk_level": "highest",
+                        "details": "Deceptive website",
+                    },
+                }
+            ),
+        )
 
     async def test_website_signal_matches_org_by_evaluation_id(
         self,
@@ -197,6 +223,26 @@ class TestAccountRiskSignal:
         await account_risk_signal(uuid.uuid4())
 
         handle_mock.assert_not_called()
+
+    async def test_unmatched_evaluation_retries(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        self._mock_unmatched_website_signal(mocker)
+        mocker.patch("polar.integrations.stripe.tasks.can_retry", return_value=True)
+
+        with pytest.raises(Retry):
+            await account_risk_signal(uuid.uuid4())
+
+    async def test_unmatched_evaluation_raises_when_retries_exhausted(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        self._mock_unmatched_website_signal(mocker)
+        mocker.patch("polar.integrations.stripe.tasks.can_retry", return_value=False)
+
+        with pytest.raises(UnknownAccountRiskEvaluation):
+            await account_risk_signal(uuid.uuid4())
 
 
 @pytest.mark.asyncio

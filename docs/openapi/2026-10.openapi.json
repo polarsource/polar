@@ -25,7 +25,9 @@
       "get": {
         "tags": [
           "organizations",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Organizations",
         "description": "List organizations.\n\n**Scopes**: `organizations:read` `organizations:write`",
@@ -267,7 +269,9 @@
       "get": {
         "tags": [
           "organizations",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Organization",
         "description": "Get an organization by ID.\n\n**Scopes**: `organizations:read` `organizations:write`",
@@ -490,7 +494,9 @@
       "get": {
         "tags": [
           "subscriptions",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Subscriptions",
         "description": "List subscriptions.\n\n**Scopes**: `subscriptions:read` `subscriptions:write`",
@@ -1283,7 +1289,9 @@
       "get": {
         "tags": [
           "subscriptions",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Subscription",
         "description": "Get a subscription by ID.\n\n**Scopes**: `subscriptions:read` `subscriptions:write`",
@@ -1374,7 +1382,9 @@
       "patch": {
         "tags": [
           "subscriptions",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Subscription",
         "description": "Update a subscription.\n\n**Scopes**: `subscriptions:write`",
@@ -1518,7 +1528,9 @@
       "delete": {
         "tags": [
           "subscriptions",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Revoke Subscription",
         "description": "Revoke a subscription, i.e cancel immediately.\n\n**Scopes**: `subscriptions:write`",
@@ -2150,7 +2162,9 @@
       "get": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Benefits",
         "description": "List benefits.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -2436,7 +2450,9 @@
       "post": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Benefit",
         "description": "Create a benefit.\n\n**Scopes**: `benefits:write`",
@@ -2513,7 +2529,9 @@
       "get": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Benefit",
         "description": "Get a benefit by ID.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -2604,7 +2622,9 @@
       "patch": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Benefit",
         "description": "Update a benefit.\n\n**Scopes**: `benefits:write`",
@@ -2728,7 +2748,9 @@
       "delete": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Benefit",
         "description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.\n\n**Scopes**: `benefits:write`",
@@ -2820,7 +2842,9 @@
       "get": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Benefit Files",
         "description": "List the downloadable files for a benefit with their download statistics.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -2963,7 +2987,9 @@
       "get": {
         "tags": [
           "benefits",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Benefit Grants",
         "description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -3178,7 +3204,9 @@
       "get": {
         "tags": [
           "benefit-grants",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Benefit Grants",
         "description": "List benefit grants across all benefits accessible to the authenticated subject.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -3430,7 +3458,9 @@
       "get": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Webhook Endpoints",
         "description": "List webhook endpoints.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
@@ -3584,7 +3614,9 @@
       "post": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Webhook Endpoint",
         "description": "Create a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
@@ -3660,7 +3692,9 @@
       "get": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Webhook Endpoint",
         "description": "Get a webhook endpoint by ID.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
@@ -3751,7 +3785,9 @@
       "patch": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Webhook Endpoint",
         "description": "Update a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
@@ -3849,7 +3885,9 @@
       "delete": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Webhook Endpoint",
         "description": "Delete a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
@@ -3932,7 +3970,9 @@
       "patch": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Reset Webhook Endpoint Secret",
         "description": "Regenerate a webhook endpoint secret.\n\n**Scopes**: `webhooks:write`",
@@ -4022,7 +4062,9 @@
       "get": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Webhook Deliveries",
         "description": "List webhook deliveries.\n\nDeliveries are all the attempts to deliver a webhook event to an endpoint.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
@@ -4292,7 +4334,9 @@
       "post": {
         "tags": [
           "webhooks",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Redeliver Webhook Event",
         "description": "Schedule the re-delivery of a webhook event.\n\n**Scopes**: `webhooks:write`",
@@ -4380,7 +4424,9 @@
       "get": {
         "tags": [
           "products",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Products",
         "description": "List products.\n\n**Scopes**: `products:read` `products:write`",
@@ -4699,7 +4745,9 @@
       "post": {
         "tags": [
           "products",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Product",
         "description": "Create a product.\n\n**Scopes**: `products:write`",
@@ -4775,7 +4823,9 @@
       "get": {
         "tags": [
           "products",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Product",
         "description": "Get a product by ID.\n\n**Scopes**: `products:read` `products:write`",
@@ -4865,7 +4915,9 @@
       "patch": {
         "tags": [
           "products",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Product",
         "description": "Update a product.\n\n**Scopes**: `products:write`",
@@ -4974,7 +5026,9 @@
       "post": {
         "tags": [
           "products",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Product Benefits",
         "description": "Update benefits granted by a product.\n\n**Scopes**: `products:write`",
@@ -5083,7 +5137,9 @@
       "get": {
         "tags": [
           "orders",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Orders",
         "description": "List orders.\n\n**Scopes**: `orders:read`",
@@ -5820,7 +5876,9 @@
       "get": {
         "tags": [
           "orders",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Order",
         "description": "Get an order by ID.\n\n**Scopes**: `orders:read`",
@@ -5908,7 +5966,9 @@
       "patch": {
         "tags": [
           "orders",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Order",
         "description": "Update an order.\n\n**Scopes**: `orders:write`",
@@ -6154,7 +6214,9 @@
       "post": {
         "tags": [
           "orders",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Generate Order Invoice",
         "description": "Trigger generation of an order's invoice.\n\n**Scopes**: `orders:read`",
@@ -6253,7 +6315,9 @@
       "get": {
         "tags": [
           "orders",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Order Invoice",
         "description": "Get an order's invoice data.\n\n**Scopes**: `orders:read`",
@@ -6346,7 +6410,9 @@
       "get": {
         "tags": [
           "orders",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Order Receipt",
         "description": "Get a presigned URL to download an order's receipt PDF.\n\n**Scopes**: `orders:read`",
@@ -6439,7 +6505,9 @@
       "get": {
         "tags": [
           "refunds",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Refunds",
         "description": "List refunds.\n\n**Scopes**: `refunds:read` `refunds:write`",
@@ -6773,7 +6841,9 @@
       "post": {
         "tags": [
           "refunds",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Refund",
         "description": "Create a refund.\n\n**Scopes**: `refunds:write`",
@@ -7284,7 +7354,9 @@
       "get": {
         "tags": [
           "checkouts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Checkout Sessions",
         "description": "List checkout sessions.\n\n**Scopes**: `checkouts:read` `checkouts:write`",
@@ -7662,7 +7734,9 @@
       "get": {
         "tags": [
           "checkouts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Checkout Session",
         "description": "Get a checkout session by ID.\n\n**Scopes**: `checkouts:read` `checkouts:write`",
@@ -8157,7 +8231,9 @@
       "get": {
         "tags": [
           "files",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Files",
         "description": "List files.\n\n**Scopes**: `files:read` `files:write`",
@@ -8631,7 +8707,9 @@
       "delete": {
         "tags": [
           "files",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete File",
         "description": "Delete a file.\n\n**Scopes**: `files:write`",
@@ -8722,7 +8800,9 @@
       "get": {
         "tags": [
           "metrics",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Metrics",
         "description": "Get metrics about your orders and subscriptions.\n\nCurrency values are output in cents.\n\n**Scopes**: `metrics:read`",
@@ -10422,7 +10502,9 @@
       "get": {
         "tags": [
           "metrics",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Metrics Limits",
         "description": "Get the interval limits for the metrics endpoint.\n\n**Scopes**: `metrics:read`",
@@ -10897,7 +10979,9 @@
       "get": {
         "tags": [
           "license_keys",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List License Keys",
         "description": "Get license keys connected to the given organization & filters.\n\n**Scopes**: `license_keys:read` `license_keys:write`",
@@ -11125,7 +11209,9 @@
       "get": {
         "tags": [
           "license_keys",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get License Key",
         "description": "Get a license key.\n\n**Scopes**: `license_keys:read` `license_keys:write`",
@@ -11224,7 +11310,9 @@
       "patch": {
         "tags": [
           "license_keys",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update License Key",
         "description": "Update a license key.\n\n**Scopes**: `license_keys:write`",
@@ -11332,7 +11420,9 @@
       "post": {
         "tags": [
           "license_keys",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Rotate License Key",
         "description": "Rotate a license key.\n\nGenerates a new key string for the same license key record. The previous\nkey string immediately stops validating. Status, usage, limits, expiry,\nand activations are preserved.\n\n**Scopes**: `license_keys:write`",
@@ -11440,7 +11530,9 @@
       "get": {
         "tags": [
           "license_keys",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Activation",
         "description": "Get a license key activation.\n\n**Scopes**: `license_keys:read` `license_keys:write`",
@@ -11812,7 +11904,11 @@
       "get": {
         "tags": [
           "checkout-links",
-          "public"
+          "public",
+          "mcp",
+          "cli",
+          "mcp",
+          "cli"
         ],
         "summary": "List Checkout Links",
         "description": "List checkout links.\n\n**Scopes**: `checkout_links:read` `checkout_links:write`",
@@ -12018,7 +12114,11 @@
       "post": {
         "tags": [
           "checkout-links",
-          "public"
+          "public",
+          "mcp",
+          "cli",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Checkout Link",
         "description": "Create a checkout link.\n\n**Scopes**: `checkout_links:write`",
@@ -12097,7 +12197,11 @@
       "get": {
         "tags": [
           "checkout-links",
-          "public"
+          "public",
+          "mcp",
+          "cli",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Checkout Link",
         "description": "Get a checkout link by ID.\n\n**Scopes**: `checkout_links:read` `checkout_links:write`",
@@ -12188,7 +12292,11 @@
       "patch": {
         "tags": [
           "checkout-links",
-          "public"
+          "public",
+          "mcp",
+          "cli",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Checkout Link",
         "description": "Update a checkout link.\n\n**Scopes**: `checkout_links:write`",
@@ -12286,7 +12394,11 @@
       "delete": {
         "tags": [
           "checkout-links",
-          "public"
+          "public",
+          "mcp",
+          "cli",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Checkout Link",
         "description": "Delete a checkout link.\n\n**Scopes**: `checkout_links:write`",
@@ -12369,7 +12481,9 @@
       "get": {
         "tags": [
           "custom-fields",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Custom Fields",
         "description": "List custom fields.\n\n**Scopes**: `custom_fields:read` `custom_fields:write`",
@@ -12589,7 +12703,9 @@
       "post": {
         "tags": [
           "custom-fields",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Custom Field",
         "description": "Create a custom field.\n\n**Scopes**: `custom_fields:write`",
@@ -12666,7 +12782,9 @@
       "get": {
         "tags": [
           "custom-fields",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Custom Field",
         "description": "Get a custom field by ID.\n\n**Scopes**: `custom_fields:read` `custom_fields:write`",
@@ -12758,7 +12876,9 @@
       "patch": {
         "tags": [
           "custom-fields",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Custom Field",
         "description": "Update a custom field.\n\n**Scopes**: `custom_fields:write`",
@@ -12857,7 +12977,9 @@
       "delete": {
         "tags": [
           "custom-fields",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Custom Field",
         "description": "Delete a custom field.\n\n**Scopes**: `custom_fields:write`",
@@ -12940,7 +13062,9 @@
       "get": {
         "tags": [
           "discounts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Discounts",
         "description": "List discounts.\n\n**Scopes**: `discounts:read` `discounts:write`",
@@ -13136,7 +13260,9 @@
       "post": {
         "tags": [
           "discounts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Discount",
         "description": "Create a discount.\n\n**Scopes**: `discounts:write`",
@@ -13213,7 +13339,9 @@
       "get": {
         "tags": [
           "discounts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Discount",
         "description": "Get a discount by ID.\n\n**Scopes**: `discounts:read` `discounts:write`",
@@ -13305,7 +13433,9 @@
       "patch": {
         "tags": [
           "discounts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Discount",
         "description": "Update a discount.\n\n**Scopes**: `discounts:write`",
@@ -13404,7 +13534,9 @@
       "delete": {
         "tags": [
           "discounts",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Discount",
         "description": "Delete a discount.\n\n**Scopes**: `discounts:write`",
@@ -13487,7 +13619,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Customers",
         "description": "List customers.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -13729,7 +13863,9 @@
       "post": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Customer",
         "description": "Create a customer.\n\n**Scopes**: `customers:write`",
@@ -13910,7 +14046,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Customer",
         "description": "Get a customer by ID.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -14001,7 +14139,9 @@
       "patch": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Customer",
         "description": "Update a customer.\n\n**Scopes**: `customers:write`",
@@ -14099,7 +14239,9 @@
       "delete": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Customer",
         "description": "Delete a customer.\n\nThis action cannot be undone and will immediately:\n- Cancel any active subscriptions for the customer\n- Revoke all their benefits\n- Clear any `external_id`\n\nUse it only in the context of deleting a user within your\nown service. Otherwise, use more granular API endpoints to cancel\na specific subscription or revoke certain benefits.\n\nNote: The customers information will nonetheless be retained for historic\norders and subscriptions.\n\nSet `anonymize=true` to also anonymize PII for GDPR compliance.\n\n**Scopes**: `customers:write`",
@@ -14194,7 +14336,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Customer by External ID",
         "description": "Get a customer by external ID.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -14284,7 +14428,9 @@
       "patch": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Customer by External ID",
         "description": "Update a customer by external ID.\n\n**Scopes**: `customers:write`",
@@ -14381,7 +14527,9 @@
       "delete": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Customer by External ID",
         "description": "Delete a customer by external ID.\n\nImmediately cancels any active subscriptions and revokes any active benefits.\n\nSet `anonymize=true` to also anonymize PII for GDPR compliance.\n\n**Scopes**: `customers:write`",
@@ -14475,7 +14623,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Customer State",
         "description": "Get a customer state by ID.\n\nThe customer state includes information about\nthe customer's active subscriptions and benefits.\n\nIt's the ideal endpoint to use when you need to get a full overview\nof a customer's status.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -14568,7 +14718,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Customer State by External ID",
         "description": "Get a customer state by external ID.\n\nThe customer state includes information about\nthe customer's active subscriptions and benefits.\n\nIt's the ideal endpoint to use when you need to get a full overview\nof a customer's status.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -14660,7 +14812,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Customer Payment Methods",
         "description": "Get saved payment methods of a customer.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -14804,7 +14958,9 @@
       "get": {
         "tags": [
           "customers",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Customer Payment Methods by External ID",
         "description": "Get saved payment methods of a customer by external ID.\n\n**Scopes**: `customers:read` `customers:write`",
@@ -14948,7 +15104,11 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli",
+          "mcp",
+          "cli"
         ],
         "summary": "List Members",
         "description": "List the members of a customer.\n\n**Scopes**: `members:read` `members:write`",
@@ -15133,7 +15293,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Member",
         "description": "Create a new member for a customer.\n\nOnly B2B customers with the member management feature enabled can add members.\nThe authenticated user or organization must have access to the customer's organization.\n\n**Scopes**: `members:write`",
@@ -15244,7 +15406,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Members by Customer External ID",
         "description": "List the members of a customer identified by its external ID.\n\n**Scopes**: `members:read` `members:write`",
@@ -15438,7 +15602,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Member by Customer External ID",
         "description": "Create a new member for a customer identified by its external ID.\n\n**Scopes**: `members:write`",
@@ -15558,7 +15724,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Member",
         "description": "Get a member of a customer by its ID.\n\n**Scopes**: `members:read` `members:write`",
@@ -15660,7 +15828,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Member",
         "description": "Update a member of a customer.\n\nOnly name, email and role can be updated.\n\n**Scopes**: `members:write`",
@@ -15769,7 +15939,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Member",
         "description": "Delete a member of a customer.\n\n**Scopes**: `members:write`",
@@ -15863,7 +16035,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Member by External ID",
         "description": "Get a member by external ID for a customer identified by its external ID.\n\n**Scopes**: `members:read` `members:write`",
@@ -15975,7 +16149,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Member by External ID",
         "description": "Update a member by external ID for a customer identified by its external ID.\n\n**Scopes**: `members:write`",
@@ -16094,7 +16270,9 @@
         "tags": [
           "customers",
           "members",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Delete Member by External ID",
         "description": "Delete a member by external ID for a customer identified by its external ID.\n\n**Scopes**: `members:write`",
@@ -20931,7 +21109,9 @@
       "post": {
         "tags": [
           "customer-seats",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Assign Seat",
         "description": "**Scopes**: `customer_seats:write`",
@@ -21017,7 +21197,9 @@
       "get": {
         "tags": [
           "customer-seats",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Seats",
         "description": "**Scopes**: `customer_seats:read`",
@@ -21128,7 +21310,9 @@
       "delete": {
         "tags": [
           "customer-seats",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Revoke Seat",
         "description": "**Scopes**: `customer_seats:write`",
@@ -21215,7 +21399,9 @@
       "post": {
         "tags": [
           "customer-seats",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Resend Invitation",
         "description": "**Scopes**: `customer_seats:write`",
@@ -21305,7 +21491,9 @@
       "get": {
         "tags": [
           "customer-seats",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Claim Info",
         "operationId": "customer-seats:get_claim_info",
@@ -21369,7 +21557,9 @@
       "post": {
         "tags": [
           "customer-seats",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Claim Seat",
         "operationId": "customer-seats:claim_seat",
@@ -21930,7 +22120,9 @@
       "get": {
         "tags": [
           "events",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Event Names",
         "description": "List event names.\n\n**Scopes**: `events:read` `events:write`",
@@ -22204,7 +22396,9 @@
       "get": {
         "tags": [
           "events",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Event",
         "description": "Get an event by ID.\n\n**Scopes**: `events:read` `events:write`",
@@ -22373,7 +22567,9 @@
       "get": {
         "tags": [
           "event-types",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Event Types",
         "description": "List event types with aggregated statistics.\n\n**Scopes**: `events:read` `events:write`",
@@ -22672,7 +22868,9 @@
       "patch": {
         "tags": [
           "event-types",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Event Type",
         "description": "Update an event type's label.\n\n**Scopes**: `events:write`",
@@ -22765,7 +22963,9 @@
       "get": {
         "tags": [
           "meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Meters",
         "description": "List meters.\n\n**Scopes**: `meters:read` `meters:write`",
@@ -22989,7 +23189,9 @@
       "post": {
         "tags": [
           "meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Create Meter",
         "description": "Create a meter.\n\n**Scopes**: `meters:write`",
@@ -23065,7 +23267,9 @@
       "get": {
         "tags": [
           "meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Meter",
         "description": "Get a meter by ID.\n\n**Scopes**: `meters:read` `meters:write`",
@@ -23156,7 +23360,9 @@
       "patch": {
         "tags": [
           "meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Update Meter",
         "description": "Update a meter.\n\n**Scopes**: `meters:write`",
@@ -23256,7 +23462,9 @@
       "get": {
         "tags": [
           "meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Meter Quantities",
         "description": "Get quantities of a meter over a time period.\n\n**Scopes**: `meters:read` `meters:write`",
@@ -24076,7 +24284,9 @@
       "get": {
         "tags": [
           "customer_meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Customer Meters",
         "description": "List customer meters.\n\n**Scopes**: `customer_meters:read`",
@@ -24333,7 +24543,9 @@
       "get": {
         "tags": [
           "customer_meters",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Customer Meter",
         "description": "Get a customer meter by ID.\n\n**Scopes**: `customer_meters:read`",
@@ -24423,7 +24635,9 @@
       "get": {
         "tags": [
           "payments",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "List Payments",
         "description": "List payments.\n\n**Scopes**: `payments:read`",
@@ -24752,7 +24966,9 @@
       "get": {
         "tags": [
           "payments",
-          "public"
+          "public",
+          "mcp",
+          "cli"
         ],
         "summary": "Get Payment",
         "description": "Get a payment by ID.\n\n**Scopes**: `payments:read`",
@@ -61672,6 +61888,40 @@
         ],
         "title": "LicenseKeyDeactivate"
       },
+      "LicenseKeyMember": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "The email address of the seat member."
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The external ID of the seat member, if set."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "external_id"
+        ],
+        "title": "LicenseKeyMember"
+      },
       "LicenseKeyRead": {
         "properties": {
           "id": {
@@ -61717,6 +61967,30 @@
           },
           "customer": {
             "$ref": "#/components/schemas/LicenseKeyCustomer"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
           },
           "benefit_id": {
             "type": "string",
@@ -62074,6 +62348,30 @@
           },
           "customer": {
             "$ref": "#/components/schemas/LicenseKeyCustomer"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
           },
           "benefit_id": {
             "type": "string",
@@ -93475,6 +93773,30 @@
           "customer": {
             "$ref": "#/components/schemas/LicenseKeyCustomer"
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
+          },
           "benefit_id": {
             "type": "string",
             "format": "uuid4",
@@ -96182,6 +96504,14 @@
     {
       "name": "private",
       "description": "Endpoints that should appear in the schema only in development to generate our internal JS SDK."
+    },
+    {
+      "name": "mcp",
+      "description": "Endpoints supported by Polar's MCP server."
+    },
+    {
+      "name": "cli",
+      "description": "Endpoints exposed as commands by Polar's CLI."
     }
   ]
 }

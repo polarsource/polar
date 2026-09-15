@@ -4,6 +4,8 @@ sidebarTitle: "Migrate to Polar"
 description: "Move new sales and existing subscriptions from Stripe to Polar without a big-bang cutover."
 ---
 
+import { MigrationFlow } from "/snippets/migration-flow.jsx"
+
 You do not need to move everything on one cutover day. Start by using Polar for
 new sales while Stripe continues to renew existing subscriptions. Then prepare
 and switch those subscriptions when they are ready.
@@ -38,22 +40,7 @@ migration path.
 During the migration, new and existing customers can follow different billing
 paths:
 
-```mermaid
-flowchart TB
-    start{"When did billing start?"}
-    start -->|"After your Polar launch"| polar["Polar owns the checkout,<br/>order, and subscription"]
-    start -->|"Before your Polar launch"| stripe["Stripe keeps renewing<br/>the existing subscription"]
-    stripe --> ready{"Ready to switch?"}
-    ready -->|"Not yet"| stripe
-    ready -->|"Yes"| cutover["Switch in Polar"]
-    cutover --> polar
-    history["Past Stripe payments"] --> stays["Stay in Stripe for<br/>refunds, disputes, and reporting"]
-
-    classDef polar fill:#18181b,stroke:#18181b,color:#ffffff
-    classDef stripe fill:#635bff,stroke:#635bff,color:#ffffff
-    class polar,cutover polar
-    class stripe stripe
-```
+<MigrationFlow />
 
 <Warning>
 **Never let the same subscription renew in both systems.** Use the switch in

@@ -100,27 +100,24 @@ def _coerce_risk_level(value: Any) -> StripeAccountRiskLevel:
         return StripeAccountRiskLevel.UNKNOWN
 
 
-def _at(payload: Mapping[str, Any], *keys: str) -> Any:
-    current: Any = payload
-    for key in keys:
-        if not isinstance(current, Mapping):
-            return None
-        current = current.get(key)
-    return current
-
-
 def _nested(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
-    inner = _at(payload, key)
+    inner = payload.get(key)
     return inner if isinstance(inner, Mapping) else {}
 
 
 def _account_id(payload: Mapping[str, Any]) -> str | None:
-    account = payload.get("account") or _at(payload, "account_details", "account")
+    account = payload.get("account")
+    if not account:
+        details = payload.get("account_details")
+        account = details.get("account") if isinstance(details, Mapping) else None
     return str(account) if account else None
 
 
 def _website_url(payload: Mapping[str, Any]) -> str | None:
-    url = _at(payload, "account_details", "data", "defaults", "profile", "business_url")
+    try:
+        url = payload["account_details"]["data"]["defaults"]["profile"]["business_url"]
+    except KeyError, TypeError:
+        return None
     return str(url) if url else None
 
 
@@ -171,11 +168,13 @@ def parse_account_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None
         if not account_id:
             return None
         description = _merchant_description(inner)
-    else:
-        if not account_id and not website_url and not evaluation_id:
+    elif signal_type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE:
+        if not (account_id or website_url or evaluation_id):
             return None
         details = inner.get("details")
         description = str(details) if details is not None else None
+    else:
+        return None
 
     return AccountRiskSignal(
         type=signal_type,

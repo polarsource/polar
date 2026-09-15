@@ -1890,19 +1890,23 @@ class OrganizationService:
             )
             return
 
-        # Stripe evaluates the website attached to the account, so sync it first.
-        stripe_id = await self.sync_payout_account_website(session, organization)
-        if stripe_id is None:
+        website = organization.website.strip() if organization.website else ""
+        if not website:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_website",
+                organization_id=str(organization.id),
+            )
             return
 
         try:
-            await stripe_service.create_website_risk_evaluation(stripe_id)
+            await stripe_service.create_website_risk_evaluation(website)
         except stripe_lib.InvalidRequestError as e:
             log.warning(
                 "organization.evaluate_website_risk.rejected",
                 step="create_evaluation",
                 organization_id=str(organization.id),
-                stripe_account_id=stripe_id,
+                website=website,
                 error=str(e),
             )
 
@@ -1920,20 +1924,28 @@ class OrganizationService:
         if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
             return
 
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_stripe_id(
-            signal.account_id
-        )
-        if payout_account is None:
+        repository = OrganizationRepository.from_session(session)
+        organizations: Sequence[Organization] = []
+        if signal.account_id:
+            payout_account_repository = PayoutAccountRepository.from_session(session)
+            payout_account = await payout_account_repository.get_by_stripe_id(
+                signal.account_id
+            )
+            if payout_account is not None:
+                organizations = await repository.get_all_by_payout_account(
+                    payout_account.id
+                )
+        if not organizations and signal.website_url:
+            organizations = await repository.get_all_by_website(signal.website_url)
+        if not organizations:
             log.warning(
-                "Risk signal for unknown payout account",
+                "Risk signal for unknown organization",
                 stripe_account_id=signal.account_id,
+                website_url=signal.website_url,
                 signal_type=signal.type,
             )
             return
 
-        repository = OrganizationRepository.from_session(session)
-        organizations = await repository.get_all_by_payout_account(payout_account.id)
         for organization in organizations:
             await risk_signal_service.record(
                 session,

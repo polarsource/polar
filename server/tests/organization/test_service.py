@@ -1968,20 +1968,29 @@ class TestSetOrganizationUnderReview:
 class TestHandleAccountRiskSignal:
     def _signal(
         self,
-        account_id: str,
         level: StripeAccountRiskLevel,
         *,
+        account_id: str | None = None,
+        website_url: str | None = None,
         type: OrganizationRiskSignal.Type = (
             OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
         ),
         description: str | None = "Deceptive website",
     ) -> AccountRiskSignal:
+        payload: dict[str, object] = {}
+        if account_id:
+            payload["account"] = account_id
+        if website_url:
+            payload["account_details"] = {
+                "data": {"defaults": {"profile": {"business_url": website_url}}}
+            }
         return AccountRiskSignal(
             type=type,
-            account_id=account_id,
             risk_level=level,
+            account_id=account_id,
+            website_url=website_url,
             description=description,
-            payload={"account": account_id},
+            payload=payload,
         )
 
     async def _signals(
@@ -2006,7 +2015,8 @@ class TestHandleAccountRiskSignal:
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_risk", StripeAccountRiskLevel.HIGHEST)
+            session,
+            self._signal(StripeAccountRiskLevel.HIGHEST, account_id="acct_risk"),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2043,8 +2053,8 @@ class TestHandleAccountRiskSignal:
         await organization_service.handle_account_risk_signal(
             session,
             self._signal(
-                "acct_risk",
                 StripeAccountRiskLevel.ELEVATED,
+                account_id="acct_risk",
                 type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
                 description="Indicators: disputes",
             ),
@@ -2071,7 +2081,8 @@ class TestHandleAccountRiskSignal:
         mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_risk", StripeAccountRiskLevel.LOW)
+            session,
+            self._signal(StripeAccountRiskLevel.LOW, account_id="acct_risk"),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE
@@ -2094,7 +2105,8 @@ class TestHandleAccountRiskSignal:
         mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_risk", StripeAccountRiskLevel.HIGHEST)
+            session,
+            self._signal(StripeAccountRiskLevel.HIGHEST, account_id="acct_risk"),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2110,7 +2122,53 @@ class TestHandleAccountRiskSignal:
         mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_missing", StripeAccountRiskLevel.HIGHEST)
+            session,
+            self._signal(StripeAccountRiskLevel.HIGHEST, account_id="acct_missing"),
+        )
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization) == []
+
+    async def test_actionable_website_matches_org_by_url(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session,
+            self._signal(
+                StripeAccountRiskLevel.HIGHEST,
+                website_url="https://example.com/",
+            ),
+        )
+
+        assert organization.status == OrganizationStatus.REVIEW
+        signals = await self._signals(session, organization)
+        assert len(signals) == 1
+        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+
+    async def test_unknown_website_does_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session,
+            self._signal(
+                StripeAccountRiskLevel.HIGHEST,
+                website_url="https://missing.example",
+            ),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE

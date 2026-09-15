@@ -93,6 +93,26 @@ WEBSITE_SIGNAL = {
     },
 }
 
+WEBSITE_SIGNAL_ENTITYLESS = {
+    "id": "acctsig_789",
+    "object": "v2.signals.account_signal",
+    "type": "fraudulent_website",
+    "account_details": {
+        "account": None,
+        "data": {
+            "defaults": {
+                "profile": {"business_url": "https://example.com"},
+            }
+        },
+    },
+    "account_evaluation": "acctevl_789",
+    "created": "2026-08-14T13:54:35.801Z",
+    "fraudulent_website": {
+        "risk_level": "elevated",
+        "details": WEBSITE_PAYLOAD["details"],
+    },
+}
+
 
 class TestIsAccountRiskEvent:
     def test_website(self) -> None:
@@ -189,6 +209,15 @@ class TestParseAccountRiskEvent:
         assert result.account_id == "acct_456"
         assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
 
+    def test_website_entity_less_event(self) -> None:
+        result = parse_account_risk_event(
+            {"type": WEBSITE_SIGNALS, "data": WEBSITE_SIGNAL_ENTITYLESS}
+        )
+        assert result is not None
+        assert result.account_id is None
+        assert result.website_url == "https://example.com"
+        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+
     def test_empty_data_returns_none(self) -> None:
         assert parse_account_risk_event({"type": MERCHANT, "data": {}}) is None
 
@@ -216,6 +245,15 @@ class TestParseAccountSignal:
         assert result.description is not None
         assert "no verifiable identity" in result.description
 
+    def test_website_entity_less_uses_business_url(self) -> None:
+        result = parse_account_signal(WEBSITE_SIGNAL_ENTITYLESS)
+
+        assert result is not None
+        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+        assert result.account_id is None
+        assert result.website_url == "https://example.com"
+        assert result.risk_level == StripeAccountRiskLevel.ELEVATED
+
     def test_unknown_type_returns_none(self) -> None:
         assert parse_account_signal({"type": "merchant_delinquency"}) is None
 
@@ -226,6 +264,9 @@ class TestParseAccountSignal:
             )
             is None
         )
+
+    def test_website_without_account_or_url_returns_none(self) -> None:
+        assert parse_account_signal({"type": "fraudulent_website"}) is None
 
 
 class TestRelatedObjectId:

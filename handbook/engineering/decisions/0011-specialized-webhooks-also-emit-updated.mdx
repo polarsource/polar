@@ -16,8 +16,8 @@ description: "A resource change that has a specialized webhook also fires the ge
 Outgoing Polar webhooks come in two shapes: a catch-all `*.updated` (`subscription.updated`,
 `order.updated`, …) and specialized siblings for a particular transition (`subscription.canceled`,
 `order.paid`, `subscription.migrated`). Merchants often subscribe only to the catch-all and treat
-it as “anything changed on this resource.” Stripe sometimes sends a specialized event without
-the generic updated one; Polar merchants who copied that pattern then miss the change.
+it as “anything changed on this resource.” A specialized event without the catch-all leaves
+those subscribers with no signal.
 
 The public [webhook events docs](https://docs.polar.sh/integrate/webhooks/events) already describe
 `subscription.updated` as a catch-all for the specialized subscription events. That contract was
@@ -39,8 +39,8 @@ The same pairing applies to other resources that already follow it (`order.updat
 `order.paid` via `_on_order_updated`). Resources with no catch-all (`customer_seat.*`) are out of
 scope until they get one.
 
-`*.created` is a birth event, not an update. Firing `*.updated` after create is a
-resource-specific compatibility choice (subscriptions do it), not required by this ADR.
+`*.created` is a birth event, not an update. Only subscriptions currently also fire
+`subscription.updated` after create; this ADR does not require that of other resources.
 
 ## Consequences
 
@@ -55,8 +55,7 @@ resource-specific compatibility choice (subscriptions do it), not required by th
 
 ## Alternatives considered
 
-- **Specialized event only**: fewer deliveries, but catch-all subscribers miss the change — the
-  Stripe behavior we are explicitly not copying.
+- **Specialized event only**: fewer deliveries, but catch-all subscribers miss the change.
 - **Catch-all only**: merchants cannot subscribe to a precise transition.
 - **Let each flow decide**: the contract drifts, which is how `subscription.migrated` almost
   shipped without `subscription.updated`.

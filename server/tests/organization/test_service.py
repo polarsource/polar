@@ -2109,14 +2109,20 @@ class TestHandleAccountRiskSignal:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
+        organization.website = "https://example.com"
+        await save_fixture(organization)
         mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._signal("acct_missing", StripeAccountRiskLevel.HIGHEST),
+            self._signal(
+                "acct_missing",
+                StripeAccountRiskLevel.HIGHEST,
+                website_url="https://example.com",
+            ),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE

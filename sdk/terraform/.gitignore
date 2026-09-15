@@ -1,0 +1,6 @@
+dist/
+terraform-provider-polar
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl

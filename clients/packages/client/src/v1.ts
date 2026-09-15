@@ -7029,34 +7029,6 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
-  'subscription.migrated': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * subscription_migrated
-     * @description Sent when Polar takes over billing of a subscription migrated from another platform.
-     *
-     *     This fires at cutover, once the subscription is live on Polar. `platform` and
-     *     `source_id` identify the subscription on the source platform so you can
-     *     correlate the two.
-     *
-     *     A `subscription.updated` event is also sent.
-     *
-     *     **Discord & Slack support:** Full
-     */
-    post: operations['_endpointsubscription_migrated_post']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   'refund.created': {
     parameters: {
       query?: never
@@ -35792,6 +35764,101 @@ export interface components {
       /** @description The meter associated with this subscription. */
       meter: components['schemas']['Meter']
     }
+    /**
+     * SubscriptionMigratedEvent
+     * @description An event created by Polar when a subscription is migrated to Polar.
+     */
+    SubscriptionMigratedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.migrated'
+      metadata: components['schemas']['SubscriptionMigratedMetadata']
+    }
+    /** SubscriptionMigratedMetadata */
+    SubscriptionMigratedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Platform */
+      platform: string
+      /** Source Id */
+      source_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
+    }
     /** SubscriptionNotScheduledToCancel */
     SubscriptionNotScheduledToCancel: {
       /**
@@ -37347,6 +37414,7 @@ export interface components {
       | components['schemas']['SubscriptionReinstatedEvent']
       | components['schemas']['SubscriptionPausedEvent']
       | components['schemas']['SubscriptionResumedEvent']
+      | components['schemas']['SubscriptionMigratedEvent']
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
@@ -40026,47 +40094,6 @@ export interface components {
       /** Api Version */
       api_version: string
       data: components['schemas']['Subscription']
-    }
-    /**
-     * WebhookSubscriptionMigratedPayload
-     * @description Sent when Polar takes over billing of a subscription migrated from another platform.
-     *
-     *     This fires at cutover, once the subscription is live on Polar. `platform` and
-     *     `source_id` identify the subscription on the source platform so you can
-     *     correlate the two.
-     *
-     *     A `subscription.updated` event is also sent.
-     *
-     *     **Discord & Slack support:** Full
-     */
-    WebhookSubscriptionMigratedPayload: {
-      /**
-       * Type
-       * @example subscription.migrated
-       * @constant
-       */
-      type: 'subscription.migrated'
-      /**
-       * Timestamp
-       * Format: date-time
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      timestamp: string
-      /** Api Version */
-      api_version: string
-      data: components['schemas']['Subscription']
-      /**
-       * Platform
-       * @description The billing platform the subscription was migrated from.
-       * @example stripe
-       */
-      platform: string
-      /**
-       * Source Id
-       * @description The identifier of the subscription on the source platform.
-       * @example sub_1Sabc2Def3Ghi
-       */
-      source_id: string
     }
     /**
      * WebhookSubscriptionPastDuePayload
@@ -62337,39 +62364,6 @@ export interface operations {
       }
     }
   }
-  _endpointsubscription_migrated_post: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['WebhookSubscriptionMigratedPayload']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   _endpointrefund_created_post: {
     parameters: {
       query?: never
@@ -72111,6 +72105,9 @@ export const subscriptionExportColumnValues: ReadonlyArray<
   'trial_start',
   'trial_end',
 ]
+export const subscriptionMigratedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionMigratedEvent']['name']
+> = ['subscription.migrated']
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']

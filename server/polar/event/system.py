@@ -29,6 +29,7 @@ class SystemEvent(StrEnum):
     subscription_reinstated = "subscription.reinstated"
     subscription_paused = "subscription.paused"
     subscription_resumed = "subscription.resumed"
+    subscription_migrated = "subscription.migrated"
     subscription_uncanceled = "subscription.uncanceled"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
@@ -66,6 +67,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.reinstated": "Subscription Reinstated",
     "subscription.paused": "Subscription Paused",
     "subscription.resumed": "Subscription Resumed",
+    "subscription.migrated": "Subscription Migrated",
     "subscription.uncanceled": "Subscription Uncanceled",
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
@@ -374,6 +376,24 @@ class SubscriptionResumedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_resumed]]
         user_metadata: Mapped[SubscriptionResumedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionMigratedMetadata(TypedDict):
+    subscription_id: str
+    platform: str
+    source_id: str
+    product_id: NotRequired[str]
+    amount: NotRequired[int]
+    currency: NotRequired[str]
+    recurring_interval: NotRequired[str]
+    recurring_interval_count: NotRequired[int]
+
+
+class SubscriptionMigratedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_migrated]]
+        user_metadata: Mapped[SubscriptionMigratedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionUncanceledMetadata(TypedDict):
@@ -818,6 +838,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionResumedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_migrated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionMigratedMetadata,
 ) -> Event: ...
 
 

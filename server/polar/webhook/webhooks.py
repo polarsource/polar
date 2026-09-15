@@ -4,7 +4,15 @@ import typing
 from collections.abc import Sequence
 from datetime import datetime
 from inspect import Parameter, Signature
-from typing import Annotated, Any, Literal, assert_never, get_args, get_origin
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Literal,
+    assert_never,
+    get_args,
+    get_origin,
+)
 
 from babel.dates import format_date
 from fastapi.routing import APIRoute
@@ -62,6 +70,7 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
+from polar.version import V2026_10
 
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
@@ -129,6 +138,8 @@ class SkipEvent(PolarError):
 
 
 class BaseWebhookPayload(Schema):
+    __api_starting_from__: ClassVar[APIVersion | None] = None
+
     type: WebhookEventType
     timestamp: datetime
     api_version: APIVersion
@@ -697,6 +708,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         WebhookEventType.subscription_past_due,
         WebhookEventType.subscription_paused,
         WebhookEventType.subscription_resumed,
+        WebhookEventType.subscription_migrated,
     ]
     data: SubscriptionSchema
 
@@ -1134,7 +1146,7 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
         return self._get_uncanceled_slack_payload(target)
 
 
-class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
+class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
     Sent when Polar takes over billing of a subscription migrated from another platform.
 
@@ -1142,10 +1154,10 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
     `source_id` identify the subscription on the source platform so you can
     correlate the two.
 
-    A `subscription.updated` event is also sent.
-
     **Discord & Slack support:** Full
     """
+
+    __api_starting_from__ = V2026_10
 
     type: Literal[WebhookEventType.subscription_migrated]
     data: SubscriptionSchema
@@ -1162,19 +1174,13 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
 
-        amount_display = self.data.get_amount_display()
-        fields: list[DiscordEmbedField] = [
-            {"name": "Product", "value": self.data.product.name},
-            {"name": "Amount", "value": amount_display},
-            {
-                "name": "Customer",
-                "value": self.data.customer.email
-                or self.data.customer.name
-                or "Team Customer",
-            },
-            {"name": "Platform", "value": self.platform},
-            {"name": "Source ID", "value": self.source_id},
-        ]
+        fields = self._get_discord_fields(target)
+        fields.extend(
+            [
+                {"name": "Platform", "value": self.platform},
+                {"name": "Source ID", "value": self.source_id},
+            ]
+        )
         payload: DiscordPayload = {
             "content": "Migrated Subscription",
             "embeds": [
@@ -1197,17 +1203,13 @@ class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
-        amount_display = self.data.get_amount_display()
-        fields: list[SlackText] = [
-            {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
-            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {
-                "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
-            },
-            {"type": "mrkdwn", "text": f"*Platform*\n{self.platform}"},
-            {"type": "mrkdwn", "text": f"*Source ID*\n{self.source_id}"},
-        ]
+        fields = self._get_slack_fields(target)
+        fields.extend(
+            [
+                {"type": "mrkdwn", "text": f"*Platform*\n{self.platform}"},
+                {"type": "mrkdwn", "text": f"*Source ID*\n{self.source_id}"},
+            ]
+        )
         payload: SlackPayload = get_branded_slack_payload(
             {
                 "text": "Migrated Subscription",
@@ -1674,10 +1676,20 @@ class WebhookAPIRoute(APIRoute):
     prevent Pydantic to generate the `-Input` and `-Output` variants.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        webhook_schema: type[BaseWebhookPayload],
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
+        self.webhook_schema = webhook_schema
         if self.body_field is not None:
             self.body_field.mode = "serialization"
+
+    def is_available_in(self, version: APIVersion) -> bool:
+        starting_from = self.webhook_schema.__api_starting_from__
+        return starting_from is None or version >= starting_from
 
 
 def get_webhook_routes() -> Sequence[WebhookAPIRoute]:
@@ -1715,6 +1727,7 @@ def get_webhook_routes() -> Sequence[WebhookAPIRoute]:
                 methods=["POST"],
                 summary=event_type.name,
                 description=inspect.getdoc(webhook_schema),
+                webhook_schema=webhook_schema,
                 openapi_extra={
                     "x-mint": {
                         "metadata": {

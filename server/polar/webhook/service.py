@@ -901,10 +901,13 @@ class WebhookService:
             payload=payload.get_raw_payload(),
         )
 
+        starting_from = getattr(type(payload), "__api_starting_from__", None)
         events: list[WebhookEvent] = []
         for endpoint in await self._get_event_target_endpoints(
             session, event=event, target=target
         ):
+            if starting_from is not None and endpoint.api_version < starting_from:
+                continue
             endpoint_payload = payload.model_copy(
                 update={"api_version": endpoint.api_version}
             )

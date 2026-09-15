@@ -43,6 +43,7 @@ from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
+    SubscriptionMigratedMetadata,
     SubscriptionPastDueMetadata,
     SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
@@ -955,8 +956,7 @@ class SubscriptionService:
         subscription = await repository.update(subscription, flush=True)
 
         await self.enqueue_benefits_grants(session, subscription)
-        await self._on_subscription_updated(session, subscription)
-        await self._send_migrated_webhook(
+        await self._on_subscription_migrated(
             session,
             subscription,
             platform=platform,
@@ -3900,7 +3900,7 @@ class SubscriptionService:
                 session, product.organization, event_type, subscription
             )
 
-    async def _send_migrated_webhook(
+    async def _on_subscription_migrated(
         self,
         session: AsyncSession,
         subscription: Subscription,
@@ -3922,6 +3922,24 @@ class SubscriptionService:
             subscription,
             platform=platform,
             source_id=source_id,
+        )
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_migrated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionMigratedMetadata(
+                    subscription_id=str(subscription.id),
+                    platform=platform,
+                    source_id=source_id,
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
         )
 
     async def _is_within_revocation_grace_period(

@@ -42,6 +42,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    Event,
     Meter,
     Organization,
     PaymentMethod,
@@ -4173,11 +4174,8 @@ class TestActivateImported:
             platform="paddle",
             source_id="sub_ext_1",
         )
-        assert_webhook_sent_once(
-            webhook_service_send_mock,
-            WebhookEventType.subscription_updated,
-            product.organization,
-            subscription,
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_updated
         )
         assert_webhook_not_sent(
             webhook_service_send_mock, WebhookEventType.subscription_created
@@ -4185,6 +4183,24 @@ class TestActivateImported:
         assert_webhook_not_sent(
             webhook_service_send_mock, WebhookEventType.subscription_active
         )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all(
+            event_repository.get_base_statement().where(
+                Event.name == SystemEvent.subscription_migrated
+            )
+        )
+        assert len(events) == 1
+        assert events[0].user_metadata == {
+            "subscription_id": str(subscription.id),
+            "platform": "paddle",
+            "source_id": "sub_ext_1",
+            "product_id": str(product.id),
+            "amount": subscription.amount,
+            "currency": subscription.currency,
+            "recurring_interval": subscription.recurring_interval.value,
+            "recurring_interval_count": subscription.recurring_interval_count,
+        }
 
 
 async def create_event_billing_entry(

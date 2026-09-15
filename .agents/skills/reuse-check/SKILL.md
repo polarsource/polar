@@ -67,6 +67,10 @@ finding. Always show what you searched for, so a false positive is cheap to dism
 - A country-code table or slug regex instead of `pycountry` / `slugify`.
 - A hand-built HTMX form in a new backoffice view.
 - A hand-styled div that duplicates an Orbit primitive.
+- A second HTTP client, or a custom cache around GitHub, instead of the existing
+  module-scoped client and githubkit's built-in cache. (#14015)
+- A new service path that duplicates `_create_subscription_update_order` (or a sibling)
+  plus an inline import. Factorize; keep imports at module top. (#14148)
 
 ## Output
 

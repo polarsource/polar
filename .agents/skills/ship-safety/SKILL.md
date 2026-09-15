@@ -21,7 +21,7 @@ state can still take production down on the way there.
 
 Diffs touching `server/migrations/versions/`, `**/tasks.py`, `polar/models/`,
 `server/scripts/`; or that remove or rename an endpoint; or that span `server/` and `clients/`
-with a dependency between them.
+with a dependency between them; or that stop dual-writing / cut over encrypted secrets.
 
 **Owned elsewhere.** `ADR-0006` covers the migration rules — lock timeout, nullable → batched
 `run_batched_update` script → NOT NULL across separate PRs, the unconditional `UPDATE` in the
@@ -52,6 +52,9 @@ Ask of every schema change: *is the currently-deployed code still correct agains
 - For NOT NULL on a large table, prefer `CHECK ... NOT VALID` then `VALIDATE CONSTRAINT`, so
   Postgres skips the full-table lock. On a small table this is ceremony — say which you think
   applies.
+- **Do not assume a backfill finished.** Cite a real `COUNT(*)` (or equivalent) against
+  the table before enforcing NOT NULL. `webhook_events` is tens of millions of rows; a
+  "should already be backfilled" claim has been wrong in review. (#14063)
 - New foreign keys on money tables get `ondelete="restrict"`.
 
 ### 3. Tasks already in flight
@@ -81,7 +84,23 @@ When the PR merges, the queues hold jobs enqueued by the old code.
 - Loading every matching row into memory does not survive production volume.
 - A scheduled sweep that scans an entire busy table needs an index or a bounded window.
 
-### 5. Split this PR
+### 5. Dual-write and encryption cutovers
+
+Stopping dual-write of a secret or token is not done until every reader of the legacy
+field is updated — including internal clients that are easy to miss. Grep the old
+column/attribute name across `server/` and `clients/` and list what still reads it.
+(#14217)
+
+### 6. Extra commits and replica lag
+
+`TransactionalMiddleware` commits on `http.response.start`, before a 307/redirect body
+is sent. An extra `session.commit()` on a write endpoint is a no-op. A follow-up GET on
+a read session that misses the row is replica lag, not a missing commit. (#14073)
+
+For a compare-and-set `UPDATE ... WHERE`, `rowcount == 0` *is* the conflict. Do not
+refresh the row and reclassify; that opens another race. (#14199)
+
+### 7. Split this PR
 
 Flag for splitting when the diff:
 

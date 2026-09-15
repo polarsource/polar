@@ -1,6 +1,6 @@
 ---
 name: api-surface-review
-description: Review changes to Polar's API contract — Pydantic schemas, FastAPI endpoints, OpenAPI output and the generated SDKs. Checks public vs private exposure, schema shape and naming, and whether the change breaks merchants or the generated clients. Use when a diff touches schemas.py, endpoints.py, docs/openapi.json or sdk/, or when the user asks whether an API change is breaking.
+description: Review changes to Polar's API contract — Pydantic schemas, FastAPI endpoints, OpenAPI output, the generated SDKs, and published checkout/adapter packages. Checks public vs private exposure, schema shape and naming, and whether the change breaks merchants or the generated clients. Use when a diff touches schemas.py, endpoints.py, docs/openapi.json, sdk/, checkout, or adapters, or when the user asks whether an API change is breaking.
 license: MIT
 metadata:
   author: polar
@@ -19,7 +19,11 @@ SDKs under `sdk/`, and out to merchants who already wrote code against it.
 ## Scope
 
 Diffs touching `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`,
-`sdk/`, `clients/packages/client/`.
+`sdk/`, `clients/packages/client/`, `clients/packages/checkout/`, `clients/adapters/`.
+
+Checkout and adapters are published packages consumed outside this repo. Treat their
+exports, types, error shapes, and runtime/browser requirements as public API — monorepo
+usage is not evidence that a change is safe. (#14061)
 
 **CI already does part of this job.** The `OpenAPI Diff` workflow posts the schema delta as a
 PR comment, and `OpenAPI Client Regeneration Check` fails if the client is stale. Do not
@@ -66,6 +70,12 @@ and in the SDKs.
   lands in OpenAPI properly.
 - Do not over-constrain fields fed by a payment processor. *"We'll never know what Stripe or
   other payment processor will send us."*
+- A custom value type on a Pydantic schema (dataclass, `APIVersion`, similar) needs
+  `__get_pydantic_core_schema__` (or equivalent) so it wires as the intended scalar.
+  Without the hook, OpenAPI exposes the internal fields as a nested object. (#14067)
+- `additionalProperties` / metadata maps generate a native dict or `TypedDict` with
+  `extra_items`, not a nested `.additional_properties` wrapper. Merchants write
+  `customer.metadata["foo"]`. (#14134)
 
 ### 3. Naming
 
@@ -89,6 +99,13 @@ Before removing a field or behaviour:
 3. If it is genuinely breaking, say so plainly. That is a human decision, not something to
    wave through.
 
+- **Customer-state schemas are versioned.** A shape change (new fields on the
+  entitlement snapshot) bumps the version and its discriminator together. Do not
+  publish a changed payload under an unchanged `CustomerState` version. (#14124)
+- **Secret fields on PATCH.** The dashboard sends the full object. Presence of
+  `secret` (or similar) is not an intentional rotation — drop unchanged secrets
+  from the wire, do not treat "field is set" as "rotate now". (#14065)
+
 ### 5. Route shape
 
 Only the parts `AGENTS.md` does not already cover:
@@ -100,6 +117,9 @@ Only the parts `AGENTS.md` does not already cover:
   is wrong and it wants its own route.
 - Removing an endpoint and updating its frontend caller in one PR is a deploy hazard →
   `ship-safety` owns the split.
+- A new checkout-path request that blocks render (proxy, middleware, extra GET before
+  first paint) needs a reason it cannot live on an already-fetched schema such as
+  `CheckoutPublic`. Flag TTFB. (#14234)
 
 ## Output
 

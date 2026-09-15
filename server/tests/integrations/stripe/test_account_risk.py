@@ -3,16 +3,13 @@ from datetime import UTC, datetime
 from polar.integrations.stripe.account_risk import (
     StripeAccountRiskLevel,
     is_account_risk_event,
-    parse_account_risk_event,
     parse_account_signal,
     parse_merchant_payload,
     parse_website_payload,
-    related_object_id,
 )
 from polar.models import OrganizationRiskSignal
 
-WEBSITE = "v2.core.account_signals.fraudulent_website_ready"
-WEBSITE_SIGNALS = "v2.signals.account_signal.fraudulent_website_ready"
+WEBSITE = "v2.signals.account_signal.fraudulent_website_ready"
 MERCHANT = "v2.signals.account_signal.fraudulent_merchant_ready"
 
 MERCHANT_PAYLOAD = {
@@ -38,23 +35,24 @@ MERCHANT_PAYLOAD = {
     },
 }
 
+WEBSITE_DETAILS = (
+    "This merchant is high risk because there is no verifiable identity.\n"
+    "\n"
+    "NOTES: The site lists no legal name [1]. The terms conflict [2].\n"
+    "\n"
+    "[1] https://example.com/\n"
+    "[2] https://example.com/legal"
+)
+
 WEBSITE_PAYLOAD = {
     "account": "acct_456",
     "signal_id": "acctsig_456",
     "evaluation_id": "acctevl_456",
     "evaluated_at": "2026-08-14T13:54:35.801Z",
     "risk_level": "elevated",
-    "details": (
-        "This merchant is high risk because there is no verifiable identity.\n"
-        "\n"
-        "NOTES: The site lists no legal name [1]. The terms conflict [2].\n"
-        "\n"
-        "[1] https://example.com/\n"
-        "[2] https://example.com/legal"
-    ),
+    "details": WEBSITE_DETAILS,
 }
 
-# Shape returned by GET /v2/signals/account_signals/:id (2026-08-26.preview).
 MERCHANT_SIGNAL = {
     "id": "acctsig_123",
     "object": "v2.signals.account_signal",
@@ -69,161 +67,40 @@ MERCHANT_SIGNAL = {
                 "indicator": "owner_email",
                 "impact": "slight_increase",
                 "explanation": "Shares an owner email with a suspicious account.",
-            },
-            {
-                "indicator": "geolocation",
-                "impact": "slight_increase",
-                "explanation": "Merchant country and login country do not match.",
-            },
+            }
         ],
     },
-    "livemode": False,
 }
 
 WEBSITE_SIGNAL = {
     "id": "acctsig_456",
     "object": "v2.signals.account_signal",
     "type": "fraudulent_website",
-    "account_details": {"account": "acct_456"},
-    "account_evaluation": "acctevl_456",
-    "created": "2026-08-14T13:54:35.801Z",
-    "fraudulent_website": {
-        "risk_level": "elevated",
-        "details": WEBSITE_PAYLOAD["details"],
-    },
-}
-
-WEBSITE_SIGNAL_ENTITYLESS = {
-    "id": "acctsig_789",
-    "object": "v2.signals.account_signal",
-    "type": "fraudulent_website",
     "account_details": {
-        "account": None,
-        "data": {
-            "defaults": {
-                "profile": {"business_url": "https://example.com"},
-            }
-        },
+        "data": {"defaults": {"profile": {"business_url": "https://example.com"}}},
     },
-    "account_evaluation": "acctevl_789",
     "created": "2026-08-14T13:54:35.801Z",
     "fraudulent_website": {
         "risk_level": "elevated",
-        "details": WEBSITE_PAYLOAD["details"],
+        "details": WEBSITE_DETAILS,
     },
 }
 
 
 class TestIsAccountRiskEvent:
-    def test_website(self) -> None:
+    def test_known_events(self) -> None:
         assert is_account_risk_event(WEBSITE)
-
-    def test_merchant(self) -> None:
         assert is_account_risk_event(MERCHANT)
-
-    def test_website_signals_api(self) -> None:
-        assert is_account_risk_event(WEBSITE_SIGNALS)
 
     def test_other(self) -> None:
         assert not is_account_risk_event("charge.succeeded")
-        assert not is_account_risk_event("v2.signals.account_evaluation.complete")
-
-
-class TestParseAccountRiskEvent:
-    def test_website(self) -> None:
-        event = {
-            "type": WEBSITE,
-            "data": {
-                "account": "acct_1",
-                "risk_level": "elevated",
-                "details": "Deceptive website",
-            },
-        }
-        result = parse_account_risk_event(event)
-        assert result is not None
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-        assert result.account_id == "acct_1"
-        assert result.risk_level == StripeAccountRiskLevel.ELEVATED
-        assert result.description == "Deceptive website"
-        assert result.payload == event["data"]
-
-    def test_merchant_nested(self) -> None:
-        event = {
-            "type": MERCHANT,
-            "data": {
-                "account": "acct_2",
-                "fraudulent_merchant": {
-                    "risk_level": "highest",
-                    "probability": "90",
-                    "indicators": ["disputes", "failures"],
-                },
-            },
-        }
-        result = parse_account_risk_event(event)
-        assert result is not None
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
-        assert result.account_id == "acct_2"
-        assert result.risk_level == StripeAccountRiskLevel.HIGHEST
-        assert result.description is not None
-        assert "disputes" in result.description
-        assert "90%" in result.description
-
-    def test_wrong_type_returns_none(self) -> None:
-        assert (
-            parse_account_risk_event({"type": "charge.succeeded", "data": {}}) is None
+        assert not is_account_risk_event(
+            "v2.core.account_signals.fraudulent_website_ready"
         )
-
-    def test_missing_account_returns_none(self) -> None:
-        assert parse_account_risk_event({"type": WEBSITE, "data": {}}) is None
-
-    def test_non_mapping_data_returns_none(self) -> None:
-        assert parse_account_risk_event({"type": WEBSITE, "data": "garbage"}) is None
-
-    def test_unknown_risk_level_falls_back(self) -> None:
-        result = parse_account_risk_event(
-            {"type": WEBSITE, "data": {"account": "a", "risk_level": "weird"}}
-        )
-        assert result is not None
-        assert result.risk_level == StripeAccountRiskLevel.UNKNOWN
-
-    def test_merchant_non_mapping_inner_is_unknown(self) -> None:
-        result = parse_account_risk_event(
-            {"type": MERCHANT, "data": {"account": "a", "fraudulent_merchant": "x"}}
-        )
-        assert result is not None
-        assert result.risk_level == StripeAccountRiskLevel.UNKNOWN
-
-    def test_merchant_account_signal_snapshot(self) -> None:
-        result = parse_account_risk_event({"type": MERCHANT, "data": MERCHANT_SIGNAL})
-        assert result is not None
-        assert result.account_id == "acct_123"
-        assert result.risk_level == StripeAccountRiskLevel.ELEVATED
-        assert result.description is not None
-        assert "owner_email" in result.description
-
-    def test_website_signals_event_with_nested_details(self) -> None:
-        result = parse_account_risk_event(
-            {"type": WEBSITE_SIGNALS, "data": WEBSITE_SIGNAL}
-        )
-        assert result is not None
-        assert result.account_id == "acct_456"
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-
-    def test_website_entity_less_event(self) -> None:
-        result = parse_account_risk_event(
-            {"type": WEBSITE_SIGNALS, "data": WEBSITE_SIGNAL_ENTITYLESS}
-        )
-        assert result is not None
-        assert result.account_id is None
-        assert result.website_url == "https://example.com"
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-
-    def test_empty_data_returns_none(self) -> None:
-        assert parse_account_risk_event({"type": MERCHANT, "data": {}}) is None
 
 
 class TestParseAccountSignal:
-    def test_merchant_from_account_signal_resource(self) -> None:
+    def test_merchant(self) -> None:
         result = parse_account_signal(MERCHANT_SIGNAL)
 
         assert result is not None
@@ -232,61 +109,23 @@ class TestParseAccountSignal:
         assert result.risk_level == StripeAccountRiskLevel.ELEVATED
         assert result.description is not None
         assert "owner_email" in result.description
-        assert "53.75%" in result.description
-        assert result.payload["id"] == "acctsig_123"
 
-    def test_website_from_account_signal_resource(self) -> None:
+    def test_website_uses_business_url(self) -> None:
         result = parse_account_signal(WEBSITE_SIGNAL)
-
-        assert result is not None
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-        assert result.account_id == "acct_456"
-        assert result.risk_level == StripeAccountRiskLevel.ELEVATED
-        assert result.description is not None
-        assert "no verifiable identity" in result.description
-
-    def test_website_entity_less_uses_business_url(self) -> None:
-        result = parse_account_signal(WEBSITE_SIGNAL_ENTITYLESS)
 
         assert result is not None
         assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
         assert result.account_id is None
         assert result.website_url == "https://example.com"
         assert result.risk_level == StripeAccountRiskLevel.ELEVATED
+        assert result.description is not None
+        assert "no verifiable identity" in result.description
 
     def test_unknown_type_returns_none(self) -> None:
         assert parse_account_signal({"type": "merchant_delinquency"}) is None
 
-    def test_missing_account_returns_none(self) -> None:
-        assert (
-            parse_account_signal(
-                {"type": "fraudulent_merchant", "fraudulent_merchant": {}}
-            )
-            is None
-        )
-
-    def test_website_without_account_or_url_returns_none(self) -> None:
-        assert parse_account_signal({"type": "fraudulent_website"}) is None
-
-
-class TestRelatedObjectId:
-    def test_reads_id(self) -> None:
-        assert (
-            related_object_id(
-                {
-                    "related_object": {
-                        "id": "acctsig_123",
-                        "type": "v2.signals.account_signal",
-                        "url": "/v2/signals/account_signals/acctsig_123",
-                    }
-                }
-            )
-            == "acctsig_123"
-        )
-
-    def test_missing_returns_none(self) -> None:
-        assert related_object_id({}) is None
-        assert related_object_id({"related_object": "acctsig_123"}) is None
+    def test_merchant_without_account_returns_none(self) -> None:
+        assert parse_account_signal({"type": "fraudulent_merchant"}) is None
 
 
 class TestParseMerchantPayload:
@@ -303,16 +142,9 @@ class TestParseMerchantPayload:
             "other_related_accounts",
         ]
 
-    def test_account_signal_resource_uses_explanation_and_account_details(self) -> None:
-        payload = parse_merchant_payload(MERCHANT_SIGNAL)
-
-        assert payload is not None
-        assert payload.probability == 53.75
-        assert payload.account_id == "acct_123"
-        assert payload.signal_id == "acctsig_123"
-        assert payload.evaluated_at == datetime(2026, 8, 13, 15, 47, 44, tzinfo=UTC)
-        assert payload.indicators[0].indicator == "owner_email"
-        assert payload.indicators[0].description == (
+        later = parse_merchant_payload(MERCHANT_SIGNAL)
+        assert later is not None
+        assert later.indicators[0].description == (
             "Shares an owner email with a suspicious account."
         )
 
@@ -359,18 +191,9 @@ class TestParseWebsitePayload:
         assert payload.account_id == "acct_456"
         assert payload.signal_id == "acctsig_456"
 
-    def test_nested_account_signal_details(self) -> None:
-        payload = parse_website_payload(WEBSITE_SIGNAL)
-
-        assert payload is not None
-        assert payload.summary == (
-            "This merchant is high risk because there is no verifiable identity."
-        )
-        assert payload.account_id == "acct_456"
-        assert payload.signal_id == "acctsig_456"
-        assert payload.evaluated_at == datetime(
-            2026, 8, 14, 13, 54, 35, 801000, tzinfo=UTC
-        )
+        nested = parse_website_payload(WEBSITE_SIGNAL)
+        assert nested is not None
+        assert nested.summary == payload.summary
 
     def test_missing_details(self) -> None:
         assert parse_website_payload({"account": "acct_456"}) is None

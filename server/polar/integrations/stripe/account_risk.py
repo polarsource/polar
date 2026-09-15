@@ -1,24 +1,9 @@
 """Stripe Radar for Platforms account risk signals (private preview).
 
-Normalizes the two live signals (fraudulent website, fraudulent merchant) into
-one small shape.
-
-Merchant and website evaluations on the Signals API arrive as thin
-``v2.signals.account_signal.*`` notifications. ``data`` is empty;
-``related_object.id`` is an Account Signal (``acctsig_…``) fetched from
-``/v2/signals/account_signals/:id``. Older website snapshots
-(``v2.core.account_signals.*``) still carry fields under ``data``.
-
-That resource nests type-specific fields (``fraudulent_merchant``,
-``fraudulent_website``). Merchant signals put the connected account on
-``account_details.account``. Website evaluations are requested with the URL
-itself, so the signal may have no account and instead echo the URL under
-``account_details.data.defaults.profile.business_url``.
-
-``data`` / the Account Signal is stored verbatim as
-``OrganizationRiskSignal.payload``. ``parse_merchant_payload`` and
-``parse_website_payload`` read it back for the backoffice, so the Stripe shape
-is described once.
+Normalizes the two live signals (fraudulent website, fraudulent merchant).
+Thin ``v2.signals.account_signal.*`` events point at an Account Signal
+resource; this module parses that resource and stored payloads for the
+backoffice.
 """
 
 import re
@@ -50,24 +35,11 @@ ACTIONABLE_RISK_LEVELS: frozenset[StripeAccountRiskLevel] = frozenset(
 )
 
 
-# Confirmed against a live sandbox and current Stripe docs (2026-08-26.preview).
 ACCOUNT_RISK_EVENT_TYPES: dict[str, OrganizationRiskSignal.Type] = {
-    "v2.core.account_signals.fraudulent_website_ready": (
-        OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-    ),
     "v2.signals.account_signal.fraudulent_website_ready": (
         OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
     ),
     "v2.signals.account_signal.fraudulent_merchant_ready": (
-        OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
-    ),
-}
-
-ACCOUNT_SIGNAL_OBJECT_TYPES: dict[str, OrganizationRiskSignal.Type] = {
-    OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE.value: (
-        OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-    ),
-    OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT.value: (
         OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
     ),
 }
@@ -113,14 +85,6 @@ def is_account_risk_event(event_type: str) -> bool:
     return event_type in ACCOUNT_RISK_EVENT_TYPES
 
 
-def related_object_id(event: Mapping[str, Any]) -> str | None:
-    related = event.get("related_object")
-    if not isinstance(related, Mapping):
-        return None
-    object_id = related.get("id")
-    return str(object_id) if object_id else None
-
-
 def _coerce_risk_level(value: Any) -> StripeAccountRiskLevel:
     try:
         return StripeAccountRiskLevel(value)
@@ -128,36 +92,28 @@ def _coerce_risk_level(value: Any) -> StripeAccountRiskLevel:
         return StripeAccountRiskLevel.UNKNOWN
 
 
-def _account_id(data: Mapping[str, Any]) -> str | None:
-    account = data.get("account")
-    if account:
-        return str(account)
-    details = data.get("account_details")
-    if isinstance(details, Mapping) and details.get("account"):
-        return str(details["account"])
-    return None
+def _at(payload: Mapping[str, Any], *keys: str) -> Any:
+    current: Any = payload
+    for key in keys:
+        if not isinstance(current, Mapping):
+            return None
+        current = current.get(key)
+    return current
 
 
-def _website_url(data: Mapping[str, Any]) -> str | None:
-    details = data.get("account_details")
-    if not isinstance(details, Mapping):
-        return None
-    extra = details.get("data")
-    profile_source = extra if isinstance(extra, Mapping) else details
-    defaults = profile_source.get("defaults")
-    if not isinstance(defaults, Mapping):
-        return None
-    profile = defaults.get("profile")
-    if isinstance(profile, Mapping) and profile.get("business_url"):
-        return str(profile["business_url"])
-    return None
+def _nested(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
+    inner = _at(payload, key)
+    return inner if isinstance(inner, Mapping) else {}
 
 
-def _signal_inner(
-    signal_type: OrganizationRiskSignal.Type, data: Mapping[str, Any]
-) -> Mapping[str, Any]:
-    nested = data.get(signal_type.value)
-    return nested if isinstance(nested, Mapping) else {}
+def _account_id(payload: Mapping[str, Any]) -> str | None:
+    account = payload.get("account") or _at(payload, "account_details", "account")
+    return str(account) if account else None
+
+
+def _website_url(payload: Mapping[str, Any]) -> str | None:
+    url = _at(payload, "account_details", "data", "defaults", "profile", "business_url")
+    return str(url) if url else None
 
 
 def _parse_indicators(raw: Any) -> list[SignalIndicator]:
@@ -175,17 +131,16 @@ def _parse_indicators(raw: Any) -> list[SignalIndicator]:
                     ),
                 )
             )
-        elif item:
-            indicators.append(
-                SignalIndicator(indicator=str(item), impact="", description="")
-            )
     return indicators
 
 
 def _merchant_description(inner: Mapping[str, Any]) -> str | None:
     parts: list[str] = []
-    indicators = _parse_indicators(inner.get("indicators"))
-    names = [item.indicator for item in indicators if item.indicator]
+    names = [
+        item.indicator
+        for item in _parse_indicators(inner.get("indicators"))
+        if item.indicator
+    ]
     if names:
         parts.append("Indicators: " + ", ".join(names))
     probability = inner.get("probability")
@@ -194,57 +149,34 @@ def _merchant_description(inner: Mapping[str, Any]) -> str | None:
     return ". ".join(parts) or None
 
 
-def _parse_payload(
-    signal_type: OrganizationRiskSignal.Type, data: Mapping[str, Any]
-) -> AccountRiskSignal | None:
-    account_id = _account_id(data)
-    website_url = _website_url(data)
+def parse_account_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None:
+    """Read a fetched Account Signal resource, or None if it can't be used."""
+    try:
+        signal_type = OrganizationRiskSignal.Type(str(payload.get("type")))
+    except ValueError:
+        return None
+
+    account_id = _account_id(payload)
+    website_url = _website_url(payload)
+    inner = _nested(payload, signal_type.value)
     if signal_type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT:
         if not account_id:
             return None
-    elif not account_id and not website_url:
-        return None
-
-    inner = _signal_inner(signal_type, data)
-    risk_level = _coerce_risk_level(inner.get("risk_level") or data.get("risk_level"))
-    if signal_type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT:
         description = _merchant_description(inner)
     else:
-        details = inner.get("details", data.get("details"))
+        if not account_id and not website_url:
+            return None
+        details = inner.get("details")
         description = str(details) if details is not None else None
 
     return AccountRiskSignal(
         type=signal_type,
-        risk_level=risk_level,
+        risk_level=_coerce_risk_level(inner.get("risk_level")),
         account_id=account_id,
         website_url=website_url,
         description=description,
-        payload=dict(data),
+        payload=dict(payload),
     )
-
-
-def parse_account_risk_event(event: Mapping[str, Any]) -> AccountRiskSignal | None:
-    """Read a fetched risk event, or None if it can't be used.
-
-    Returns None when the event isn't a known signal or has no account or website.
-    """
-    signal_type = ACCOUNT_RISK_EVENT_TYPES.get(str(event.get("type")))
-    if signal_type is None:
-        return None
-
-    data = event.get("data")
-    if not isinstance(data, Mapping):
-        return None
-
-    return _parse_payload(signal_type, data)
-
-
-def parse_account_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None:
-    """Read a fetched Account Signal resource, or None if it can't be used."""
-    signal_type = ACCOUNT_SIGNAL_OBJECT_TYPES.get(str(payload.get("type")))
-    if signal_type is None:
-        return None
-    return _parse_payload(signal_type, payload)
 
 
 def _optional_str(value: Any) -> str | None:
@@ -270,17 +202,9 @@ def _optional_datetime(value: Any) -> datetime | None:
     return parsed.astimezone(UTC)
 
 
-def _payload_signal_id(payload: Mapping[str, Any]) -> str | None:
-    return _optional_str(payload.get("id") or payload.get("signal_id"))
-
-
-def _payload_evaluated_at(payload: Mapping[str, Any]) -> datetime | None:
-    return _optional_datetime(payload.get("evaluated_at") or payload.get("created"))
-
-
 def parse_merchant_payload(payload: Mapping[str, Any]) -> MerchantSignalPayload | None:
     """Read a stored fraudulent merchant payload, or None if it can't be used."""
-    inner = _signal_inner(OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT, payload)
+    inner = _nested(payload, OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT.value)
     indicators = _parse_indicators(inner.get("indicators"))
     probability = _optional_float(inner.get("probability"))
     if not indicators and probability is None:
@@ -290,8 +214,10 @@ def parse_merchant_payload(payload: Mapping[str, Any]) -> MerchantSignalPayload 
         indicators=indicators,
         probability=probability,
         account_id=_account_id(payload),
-        signal_id=_payload_signal_id(payload),
-        evaluated_at=_payload_evaluated_at(payload),
+        signal_id=_optional_str(payload.get("id") or payload.get("signal_id")),
+        evaluated_at=_optional_datetime(
+            payload.get("evaluated_at") or payload.get("created")
+        ),
     )
 
 
@@ -303,7 +229,7 @@ def parse_website_payload(payload: Mapping[str, Any]) -> WebsiteSignalPayload | 
     aren't web links stay in the text instead of becoming references, so the
     backoffice never turns them into links.
     """
-    inner = _signal_inner(OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE, payload)
+    inner = _nested(payload, OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE.value)
     details = inner.get("details", payload.get("details"))
     if not isinstance(details, str) or not details.strip():
         return None
@@ -324,6 +250,8 @@ def parse_website_payload(payload: Mapping[str, Any]) -> WebsiteSignalPayload | 
         notes=[block.strip() for block in notes.split("\n\n") if block.strip()],
         references=references,
         account_id=_account_id(payload),
-        signal_id=_payload_signal_id(payload),
-        evaluated_at=_payload_evaluated_at(payload),
+        signal_id=_optional_str(payload.get("id") or payload.get("signal_id")),
+        evaluated_at=_optional_datetime(
+            payload.get("evaluated_at") or payload.get("created")
+        ),
     )

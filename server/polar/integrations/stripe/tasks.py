@@ -1,7 +1,7 @@
 import functools
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
-from typing import Any, ParamSpec, cast
+from typing import ParamSpec, cast
 
 import stripe as stripe_lib
 import structlog
@@ -32,12 +32,7 @@ from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
 
 from . import payment
-from .account_risk import (
-    AccountRiskSignal,
-    parse_account_risk_event,
-    parse_account_signal,
-    related_object_id,
-)
+from .account_risk import parse_account_signal
 
 log: Logger = structlog.get_logger()
 
@@ -75,58 +70,28 @@ async def account_updated(event_id: uuid.UUID) -> None:
             )
 
 
-async def _resolve_account_risk_signal(
-    payload: Mapping[str, Any],
-) -> AccountRiskSignal | None:
-    """Turn a stored thin event into a parsed signal.
-
-    ``v2.signals.account_signal.*`` events leave ``data`` empty; the Account
-    Signal lives at ``related_object``. Older core snapshot events have usable
-    ``data`` once the full event is fetched.
-    """
-    parsed = parse_account_risk_event(payload)
-    if parsed is not None:
-        return parsed
-
-    related_id = related_object_id(payload)
-    if related_id is not None:
-        parsed = parse_account_signal(
-            await stripe_service.get_account_signal(related_id)
-        )
-        if parsed is not None:
-            return parsed
-
-    stripe_event_id = payload.get("id")
-    if not stripe_event_id:
-        return None
-
-    full_event = await stripe_service.get_account_risk_event(str(stripe_event_id))
-    parsed = parse_account_risk_event(full_event)
-    if parsed is not None:
-        return parsed
-
-    related_id = related_object_id(full_event)
-    if related_id is None:
-        return None
-
-    return parse_account_signal(await stripe_service.get_account_signal(related_id))
-
-
 @actor(actor_name="stripe.account_risk_signal", priority=TaskPriority.MEDIUM)
 @stripe_api_connection_error_retry
 async def account_risk_signal(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
-            stripe_event_id = event.data.get("id")
-            if not stripe_event_id:
-                log.warning("Stripe risk event without id")
+            related = event.data.get("related_object")
+            related_id = related.get("id") if isinstance(related, Mapping) else None
+            if not related_id:
+                log.warning(
+                    "Stripe risk event without related Account Signal",
+                    stripe_event_id=event.data.get("id"),
+                )
                 return
 
-            signal = await _resolve_account_risk_signal(event.data)
+            signal = parse_account_signal(
+                await stripe_service.get_account_signal(str(related_id))
+            )
             if signal is None:
                 log.warning(
-                    "Unparseable Stripe risk event",
-                    stripe_event_id=stripe_event_id,
+                    "Unparseable Stripe Account Signal",
+                    stripe_event_id=event.data.get("id"),
+                    related_object_id=str(related_id),
                 )
                 return
 

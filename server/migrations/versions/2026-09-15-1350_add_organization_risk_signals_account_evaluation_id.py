@@ -30,33 +30,41 @@ def upgrade() -> None:
     )
 
     with op.get_context().autocommit_block():
-        # Drop any INVALID leftover from an interrupted concurrent build first.
-        op.drop_index(
-            INDEX_NAME,
-            table_name="organization_risk_signals",
-            postgresql_concurrently=True,
-            if_exists=True,
-        )
-        op.create_index(
-            INDEX_NAME,
-            "organization_risk_signals",
-            ["account_evaluation_id"],
-            unique=True,
-            postgresql_where=sa.text(
-                "account_evaluation_id IS NOT NULL AND deleted_at IS NULL"
-            ),
-            postgresql_concurrently=True,
-        )
+        op.execute("SET lock_timeout = '5s'")
+        try:
+            # Drop any INVALID leftover from an interrupted concurrent build first.
+            op.drop_index(
+                INDEX_NAME,
+                table_name="organization_risk_signals",
+                postgresql_concurrently=True,
+                if_exists=True,
+            )
+            op.create_index(
+                INDEX_NAME,
+                "organization_risk_signals",
+                ["account_evaluation_id"],
+                unique=True,
+                postgresql_where=sa.text(
+                    "account_evaluation_id IS NOT NULL AND deleted_at IS NULL"
+                ),
+                postgresql_concurrently=True,
+            )
+        finally:
+            op.execute("RESET lock_timeout")
 
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
-        op.drop_index(
-            INDEX_NAME,
-            table_name="organization_risk_signals",
-            postgresql_concurrently=True,
-            if_exists=True,
-        )
+        op.execute("SET lock_timeout = '5s'")
+        try:
+            op.drop_index(
+                INDEX_NAME,
+                table_name="organization_risk_signals",
+                postgresql_concurrently=True,
+                if_exists=True,
+            )
+        finally:
+            op.execute("RESET lock_timeout")
 
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.drop_column("organization_risk_signals", "account_evaluation_id")

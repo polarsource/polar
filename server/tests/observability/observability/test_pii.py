@@ -1,5 +1,6 @@
 import logging
 import re
+from enum import StrEnum
 
 import pytest
 
@@ -74,6 +75,14 @@ class TestScrubEvent:
 
 
 class TestScrubValue:
+    def test_string_enums(self) -> None:
+        class Value(StrEnum):
+            EMAIL = "alice@example.com"
+            SAFE = "ok"
+
+        assert scrub_value(Value.EMAIL) == REDACTED
+        assert scrub_value(Value.SAFE) == "ok"
+
     def test_sensitive_key_redacts_wholesale(self) -> None:
         assert scrub_value({"line1": "1 Main St"}, key="billing_address") == REDACTED
 

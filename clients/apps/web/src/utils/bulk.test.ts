@@ -10,7 +10,7 @@ const account = <T>(result: {
     ...result.succeeded.map((entry) => entry.item),
     ...result.failed.map((entry) => entry.item),
     ...result.cancelled,
-  ].toSorted()
+  ].sort()
 
 describe('runBulk', () => {
   it('accounts for every input on success and failure', async () => {
@@ -69,7 +69,7 @@ describe('runBulk', () => {
 
     expect(result.succeeded).toEqual([{ item: 1, value: 1 }])
     expect(result.failed).toEqual([])
-    expect(result.cancelled.toSorted()).toEqual([2, 3, 4])
+    expect([...result.cancelled].sort()).toEqual([2, 3, 4])
     expect(account(result)).toEqual([1, 2, 3, 4])
   })
 

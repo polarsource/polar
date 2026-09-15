@@ -4,9 +4,104 @@ Void is being moved from `polarsource/void` at
 `495330f3f00e157f6cd034562cfecfb55075d517` into Polar. The SDK and CLI live in
 `clients/packages/void-sdk`. Its README contains the local login instructions.
 
+## Standalone development and smoke test
+
+Prerequisites: Docker with Compose v2, uv with Python 3.14, Node.js 24, and the
+pnpm version declared in `clients/package.json`. Run from this Polar checkout;
+the original Void repository and frontend applications are not needed.
+
+```sh
+# Install backend and SDK dependencies, without building the frontend workspace.
+cd server
+uv sync --frozen
+cd ../clients
+pnpm install --frozen-lockfile --ignore-scripts --filter @void/sdk... --filter polar
+cd ../server
+
+# Start real services, run the CLI/SDK acceptance scenario, then stop services.
+uv run task void_dev smoke
+
+# Keep the API and Void worker running for development. Ctrl-C stops them.
+uv run task void_dev run
+```
+
+The runner builds Polar's backend email renderer on first use if it is missing.
+It generates a private JWKS, migrates its own database, seeds the
+`void-development` organization, deploys the Void Tinybird resources, and starts
+the normal Polar API and dedicated Temporal worker. It reads no existing `.env`
+file or frontend configuration. Logs and development credentials live in the
+ignored `server/.void-dev/` directory. The environment file has mode 0600 and its
+token expires after 24 hours; running the setup again refreshes it.
+
+Default ports are API 8010, PostgreSQL 5544, Redis 6384, Minio 9180, Tinybird 7281,
+Temporal 7333, and Temporal UI 8333. All are bound to localhost. Use flags such as
+`--api-port 8011 --postgres-port 5545` to change them. `--state-dir /path/to/empty-dir`
+creates a separate Docker project and data volumes. The runner rejects a
+nonempty directory that it did not create.
+
+While `void_dev run` is running, use another terminal from `clients/`:
+
+```sh
+source ../server/.void-dev/environment.env
+pnpm --filter @void/sdk void login
+pnpm --filter @void/sdk void plan --config scripts/smoke.config.ts
+pnpm --filter @void/sdk smoke
+```
+
+The smoke script uses a temporary credential file and unique customer/event IDs.
+It verifies headless login, planning without definition writes, repeated deploys,
+customer/root/child binding, usage reduction, inherited entitlements and limits,
+offline reconciliation, prepaid credits, a billing boundary, price preview, and
+cancel/revoke behavior. The runner triggers the meter schedule at the scenario's
+billing checkpoint; a smoke script run on its own waits for the normal five-minute
+schedule. Ordinary Polar background jobs remain queued in the isolated Redis;
+this workflow runs the Void worker and exercises no external payment integrations.
+
+Shutdown preserves this setup's database and event history so repeated runs can
+exercise the same installation. To remove its development data explicitly:
+
+```sh
+# Stop the running command with Ctrl-C first.
+uv run task void_dev down --remove-volumes
+```
+
+To seed an existing local Polar database instead, use its usual development
+configuration and run:
+
+```sh
+uv run task void_seed --output /tmp/void-local.env --api-url http://127.0.0.1:8000
+source /tmp/void-local.env
+```
+
+The seed reuses its dedicated organization and account and refuses conflicting
+records. Start the API and worker with the resulting allowlist settings. It never
+creates a native paid subscription or configures Stripe.
+
+## Continuous integration
+
+`.github/workflows/test_void.yaml` runs for changes to the backend, Void SDK, or
+shared client tooling. It checks backend types/lint, Void and native customer,
+event, meter, subscription and authentication tests, SDK/CLI tests and types,
+exact OpenAPI parity, deterministic generation, and the live smoke command above.
+The migration job upgrades and downgrades the isolated Void revisions while
+comparing the existing Polar schema, then upgrades to head and checks for drift.
+CI supplies an email-renderer placeholder because the smoke scenario renders no
+email. Normal development uses the real backend renderer.
+
+## Deployment and disablement
+
+Deploy database migrations first, then the dedicated Tinybird project, then
+compatible API and worker binaries. Finally enable Void for the chosen
+organization IDs. Keep its Tinybird workspace separate from Polar billing.
+To disable it, set `POLAR_VOID_ENABLED=false` on the API and stop the dedicated
+Void workers. Also pause the `polar-void-dispatch-events`,
+`polar-void-dispatch-reducers`, and `polar-void-dispatch-meter-cycles` schedules in
+Temporal. Resuming the worker preserves durable events and queued computation.
+Use the configured task queue prefix if it differs from `polar-void`.
+
 ## Current stage
 
-Stages 1–7 provide the SDK/CLI, gated Polar organization-token login, isolated
+Stages 1–8 provide the SDK/CLI, gated Polar organization-token login, isolated
 persistence, identity trees, bindings to Polar customers, event processing, configuration deployment, and the complete backend runtime.
 Live routes are:
 
@@ -172,8 +267,7 @@ Temporal uses `POLAR_VOID_TEMPORAL_ADDRESS`, `POLAR_VOID_TEMPORAL_NAMESPACE`, an
 `POLAR_VOID_TEMPORAL_TASK_QUEUE`. Hosted Temporal also supports
 `POLAR_VOID_TEMPORAL_TLS` and `POLAR_VOID_TEMPORAL_API_KEY`. Start one or more
 `uv run task void_worker` processes with the same settings. Schedules are created
-idempotently when the worker starts. This stage does not run subscription or meter
-cycle workflows.
+idempotently when the worker starts, including meter-cycle processing.
 
 ## Identity and customer rules
 

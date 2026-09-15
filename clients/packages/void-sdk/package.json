@@ -18,7 +18,8 @@
     "lint": "oxlint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "void": "node ./bin/void.mjs"
+    "void": "node ./bin/void.mjs",
+    "smoke": "node --import tsx scripts/smoke.ts"
   },
   "devDependencies": {
     "@effect/openapi-generator": "4.0.0-beta.107",

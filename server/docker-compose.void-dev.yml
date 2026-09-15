@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:15.1-bullseye
+    command: ["postgres", "-c", "max_locks_per_transaction=256"]
+    environment:
+      POSTGRES_USER: polar
+      POSTGRES_PASSWORD: polar
+      POSTGRES_DB: polar_void_dev
+    ports:
+      - "127.0.0.1:${POLAR_VOID_DEV_POSTGRES_PORT:-5544}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "polar", "-d", "polar_void_dev"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:${POLAR_VOID_DEV_REDIS_PORT:-6384}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  minio:
+    image: bitnamilegacy/minio:2024.5.28
+    environment:
+      MINIO_ROOT_USER: polar
+      MINIO_ROOT_PASSWORD: polarpolar
+    ports:
+      - "127.0.0.1:${POLAR_VOID_DEV_MINIO_PORT:-9180}:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  temporal:
+    extends:
+      file: docker-compose.void.yml
+      service: temporal
+
+  tinybird:
+    extends:
+      file: docker-compose.void.yml
+      service: tinybird
+
+volumes:
+  postgres_data:
+  temporal_data:
+  tinybird_clickhouse:
+  tinybird_redis:
+  tinybird_minio:

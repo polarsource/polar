@@ -1,0 +1,295 @@
+name: Void
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      void: ${{ steps.filter.outputs.void }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dorny/paths-filter@v4.0.3
+        id: filter
+        with:
+          filters: |
+            void:
+              - 'server/**'
+              - 'clients/packages/void-sdk/**'
+              - 'clients/packages/client/**'
+              - 'clients/packages/typescript-config/**'
+              - 'clients/package.json'
+              - 'clients/pnpm-lock.yaml'
+              - 'clients/pnpm-workspace.yaml'
+              - 'clients/patches/**'
+              - 'clients/.node-version'
+              - 'clients/.nvmrc'
+              - 'clients/.npmrc'
+              - 'clients/.oxlintrc.json'
+              - 'clients/.oxfmtrc.json'
+              - 'clients/tsconfig.json'
+              - 'clients/turbo.json'
+              - '.github/workflows/test_void.yaml'
+
+  backend:
+    name: "Void: Backend and native regressions"
+    needs: changes
+    if: needs.changes.outputs.void == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 30
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
+      POLAR_POSTGRES_DATABASE: polar_test
+      POLAR_TEST_DATABASE_TEMPLATE: polar_test
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U polar -d polar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://127.0.0.1:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+          - 7182:7182
+        options: >-
+          --health-cmd "curl -f http://127.0.0.1:7181/tokens"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: server/pyproject.toml
+      - name: Install server dependencies
+        working-directory: server
+        run: |
+          touch /tmp/email-renderer
+          uv sync --dev --frozen
+          uv run task generate_dev_jwks
+      - name: Configure MinIO
+        working-directory: server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          PUBLIC_BUCKET_NAME: polar-s3-public
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+      - name: Install Tinybird CLI
+        run: |
+          curl -fsSL https://tinybird.co/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Prepare native Polar Tinybird test workspace
+        working-directory: server
+        run: |
+          token=$(uv run python -m scripts.tinybird_test_workspace)
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+      - name: Verify additive Void migrations and schema drift
+        working-directory: server
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          uv run alembic upgrade 38a9961f9d09
+          docker exec "$POSTGRES_CONTAINER_ID" pg_dump -U polar -d polar_test \
+            --schema-only --no-owner --no-privileges \
+            --exclude-table='public.void_*' --exclude-table=public.alembic_version \
+            > /tmp/polar-before-void.sql
+          uv run alembic upgrade b2c26017068c
+          docker exec "$POSTGRES_CONTAINER_ID" pg_dump -U polar -d polar_test \
+            --schema-only --no-owner --no-privileges \
+            --exclude-table='public.void_*' --exclude-table=public.alembic_version \
+            > /tmp/polar-after-void.sql
+          diff -u /tmp/polar-before-void.sql /tmp/polar-after-void.sql
+          uv run alembic downgrade 38a9961f9d09
+          docker exec "$POSTGRES_CONTAINER_ID" pg_dump -U polar -d polar_test \
+            --schema-only --no-owner --no-privileges \
+            --exclude-table='public.void_*' --exclude-table=public.alembic_version \
+            > /tmp/polar-after-downgrade.sql
+          diff -u /tmp/polar-before-void.sql /tmp/polar-after-downgrade.sql
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Lint and type check server
+        working-directory: server
+        run: |
+          uv run task lint_check
+          uv run task lint_types
+      - name: Test Void and native customer, event, meter, subscription and authentication behavior
+        working-directory: server
+        run: |
+          uv run python -m pytest --no-cov -n auto \
+            tests/void tests/customer tests/event tests/meter tests/subscription \
+            tests/auth/test_middlewares.py tests/organization_access_token tests/test_openapi.py
+
+  sdk:
+    name: "Void: SDK, CLI and generated contracts"
+    needs: changes
+    if: needs.changes.outputs.void == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: server/pyproject.toml
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+      - name: Install server dependencies
+        working-directory: server
+        run: |
+          touch /tmp/email-renderer
+          uv sync --dev --frozen
+          uv run task generate_dev_jwks
+      - name: Install SDK and generator dependencies without workspace builds
+        working-directory: clients
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @void/sdk... --filter @polar-sh/client... --filter polar
+      - name: Check SDK formatting, lint, types and tests
+        working-directory: clients
+        run: |
+          pnpm --filter @void/sdk format:check
+          pnpm --filter @void/sdk lint
+          pnpm --filter @void/sdk typecheck
+          pnpm --filter @void/sdk test
+          pnpm --filter @void/sdk void --help
+      - name: Verify live Void contract and generated SDK
+        working-directory: server
+        run: uv run python -m scripts.check_void_contract
+      - name: Regenerate Void and native Polar clients
+        working-directory: clients
+        run: |
+          pnpm --filter @void/sdk generate
+          POLAR_ENV=development POLAR_PYDANTIC_AI_GATEWAY_API_KEY=void-ci-unused pnpm --filter @polar-sh/client generate
+          git diff --exit-code -- packages/void-sdk/openapi.json packages/void-sdk/src/api/generated.ts packages/client/src
+
+  smoke:
+    name: "Void: Live API, worker and CLI"
+    needs: changes
+    if: needs.changes.outputs.void == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 25
+    env:
+      POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: server/pyproject.toml
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          package_json_file: clients/package.json
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+      - name: Install server dependencies
+        working-directory: server
+        run: |
+          touch /tmp/email-renderer
+          uv sync --dev --frozen
+      - name: Install SDK dependencies without workspace builds
+        working-directory: clients
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @void/sdk... --filter polar
+      - name: Validate Void resources and run the full stack smoke test
+        working-directory: server
+        run: uv run python -m scripts.void_dev smoke --state-dir /tmp/polar-void-ci --remove-volumes
+      - name: Upload smoke logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: void-smoke-logs
+          path: /tmp/polar-void-ci/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  status:
+    name: "Void: Checks"
+    needs: [changes, backend, sdk, smoke]
+    if: always()
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Check required results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          RELEVANT: ${{ needs.changes.outputs.void }}
+          BACKEND: ${{ needs.backend.result }}
+          SDK: ${{ needs.sdk.result }}
+          SMOKE: ${{ needs.smoke.result }}
+        run: |
+          test "$CHANGES" = success
+          if [ "$RELEVANT" != true ]; then
+            exit 0
+          fi
+          test "$BACKEND" = success
+          test "$SDK" = success
+          test "$SMOKE" = success

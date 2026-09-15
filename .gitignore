@@ -177,3 +177,6 @@ clients/apps/web/src/app/(main)/onboarding/validate-description/acceptable-use-p
 screenshots/runs/
 
 sdk/code-samples/
+
+# Isolated Void development state and credentials
+server/.void-dev/

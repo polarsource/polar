@@ -22,6 +22,13 @@ delivers events and recomputes reducers, so event listings and metrics update
 asynchronously. Run the worker and its Temporal/Tinybird services as described in
 [`server/polar/void/README.md`](../../../server/polar/void/README.md).
 
+### Run the full stack
+
+The backend guide has a [standalone development and smoke-test sequence](../../../server/polar/void/README.md#standalone-development-and-smoke-test).
+From `server/`, run `uv run task void_dev smoke` after installing dependencies.
+It starts the real Polar API, local data services, and Void worker, then exercises
+this SDK and CLI end to end. Use `uv run task void_dev run` to keep the stack running.
+
 ### Try login locally
 
 Use a local Polar database with an existing organization. Start the server from

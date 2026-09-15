@@ -206,6 +206,43 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
+    async def get_active_seat_in_scope(
+        self,
+        customer_id: UUID,
+        *,
+        subscription_id: UUID | None = None,
+        order_id: UUID | None = None,
+    ) -> CustomerSeat | None:
+        """The customer's active seat on this subscription or order."""
+        if subscription_id is None and order_id is None:
+            return None
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                CustomerSeat.customer_id == customer_id,
+                CustomerSeat.status != SeatStatus.revoked,
+            )
+            .order_by(CustomerSeat.created_at)
+        )
+        if subscription_id is not None:
+            statement = statement.where(CustomerSeat.subscription_id == subscription_id)
+        else:
+            statement = statement.where(CustomerSeat.order_id == order_id)
+        return await self.get_one_or_none(statement.limit(1))
+
+    async def get_buyer_customer_id(self, seat: CustomerSeat) -> UUID | None:
+        """The customer who bought the seat, which is not the seat holder."""
+        if seat.subscription_id is not None:
+            statement = select(Subscription.customer_id).where(
+                Subscription.id == seat.subscription_id
+            )
+        elif seat.order_id is not None:
+            statement = select(Order.customer_id).where(Order.id == seat.order_id)
+        else:
+            return None
+        return await self.session.scalar(statement)
+
     async def list_active_by_member_id(
         self, member_id: UUID, *, options: Options = ()
     ) -> Sequence[CustomerSeat]:

@@ -138,10 +138,12 @@ async def benefit_grant(
 
         resolved_scope = await resolve_scope(session, scope)
 
+        subscription = resolved_scope.get("subscription")
+        order = resolved_scope.get("order")
         product = None
-        if subscription := resolved_scope.get("subscription"):
+        if subscription is not None:
             product = subscription.product
-        elif order := resolved_scope.get("order"):
+        elif order is not None:
             product = order.product
         is_seat_based = product.has_seat_based_price if product else False
 
@@ -151,6 +153,8 @@ async def benefit_grant(
             organization=benefit.organization,
             member_id=member_id,
             is_seat_based=is_seat_based,
+            subscription_id=subscription.id if subscription else None,
+            order_id=order.id if order else None,
         )
 
         try:
@@ -212,10 +216,12 @@ async def benefit_revoke(
 
         resolved_scope = await resolve_scope(session, scope)
 
+        subscription = resolved_scope.get("subscription")
+        order = resolved_scope.get("order")
         product = None
-        if subscription := resolved_scope.get("subscription"):
+        if subscription is not None:
             product = subscription.product
-        elif order := resolved_scope.get("order"):
+        elif order is not None:
             product = order.product
         is_seat_based = product.has_seat_based_price if product else False
 
@@ -225,6 +231,8 @@ async def benefit_revoke(
             organization=benefit.organization,
             member_id=member_id,
             is_seat_based=is_seat_based,
+            subscription_id=subscription.id if subscription else None,
+            order_id=order.id if order else None,
             include_deleted=True,
         )
 

@@ -40,6 +40,9 @@ locals {
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
     },
+    var.backend_config.backoffice_host != null ? {
+      POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
+    } : {},
     var.backend_config.plain_default_tier_external_id != "" ? {
       POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = var.backend_config.plain_default_tier_external_id
     } : {},
@@ -74,7 +77,6 @@ locals {
   )
 
   backend_production_environment_variables = var.environment == "production" ? {
-    POLAR_BACKOFFICE_HOST    = var.backend_config.backoffice_host
     POLAR_CHECKOUT_LINK_HOST = var.backend_config.checkout_link_host
   } : {}
 

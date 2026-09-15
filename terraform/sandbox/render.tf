@@ -137,7 +137,7 @@ module "sandbox" {
   }
 
   api_service_config = {
-    allowed_hosts          = "[\"sandbox.polar.sh\"]"
+    allowed_hosts          = jsonencode(["sandbox.polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"

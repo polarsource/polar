@@ -160,7 +160,7 @@ module "production" {
   api_service_config = {
     postgres_database      = "polar_cpit_p9lf"
     postgres_read_database = "polar_cpit_p9lf"
-    allowed_hosts          = "[\"polar.sh\", \"backoffice.polar.sh\"]"
+    allowed_hosts          = jsonencode(["polar.sh", "backoffice.polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     plan                   = "pro_plus"

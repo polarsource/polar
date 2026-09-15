@@ -1,6 +1,7 @@
 locals {
   backend_config = {
     base_url                                         = "https://sandbox-api.polar.sh"
+    backoffice_host                                  = local.private_backoffice_hostname
     user_session_cookie_domain                       = "polar.sh"
     user_session_cookie_key                          = "polar_sandbox_session"
     authentication_session_cookie_domain             = "polar.sh"

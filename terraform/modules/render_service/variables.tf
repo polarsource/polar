@@ -101,6 +101,7 @@ variable "environment_groups" {
       POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN = string
       POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = string
       POLAR_BASE_URL                             = string
+      POLAR_BACKOFFICE_HOST                      = optional(string)
       POLAR_DEBUG                                = string
       POLAR_EMAIL_SENDER                         = string
       POLAR_EMAIL_FROM_NAME                      = string
@@ -139,7 +140,6 @@ variable "environment_groups" {
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
     })
     backend_production = object({
-      POLAR_BACKOFFICE_HOST                = string
       POLAR_CHECKOUT_LINK_HOST             = string
       POLAR_DISCORD_WEBHOOK_URL            = string
       POLAR_POSTHOG_PROJECT_API_KEY        = string

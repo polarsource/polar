@@ -123,6 +123,9 @@
 }
 
 .migration-flow__node {
+  /* Cards sit above the connectors so a line or pill can never cover text. */
+  position: relative;
+  z-index: 2;
   padding: 0.75rem 0.875rem;
   background: #fafafa;
   border: 1px solid #e4e4e7;
@@ -239,10 +242,13 @@
 
 .migration-flow__link {
   position: relative;
+  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 2.75rem;
+  /* Keeps a travelling pill inside its lane. */
+  overflow: hidden;
 }
 
 .migration-flow__link-line {
@@ -255,7 +261,7 @@
 .migration-flow__packet {
   position: absolute;
   z-index: 1;
-  max-width: 100%;
+  max-width: calc(100% - 0.5rem);
   padding: 0.25rem 0.5rem;
   color: #ffffff;
   font-size: 0.625rem;
@@ -510,7 +516,7 @@
 @keyframes migration-slide {
   0% {
     opacity: 0;
-    transform: translateX(-2.75rem);
+    transform: translateX(-1.25rem);
   }
 
   18%,
@@ -520,7 +526,7 @@
 
   100% {
     opacity: 0;
-    transform: translateX(2.75rem);
+    transform: translateX(1.25rem);
   }
 }
 

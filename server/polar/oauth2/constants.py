@@ -18,15 +18,10 @@ REFRESH_TOKEN_PREFIX: dict[SubType, str] = {
 ISSUER = settings.BASE_URL
 SERVICE_DOCUMENTATION = "https://polar.sh/docs"
 SUBJECT_TYPES_SUPPORTED = ["public"]
-ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED = ["RS256"]
+ID_TOKEN_SIGNING_ALG = "RS256"
+ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED = [ID_TOKEN_SIGNING_ALG]
+ID_TOKEN_EXPIRES_IN = 3600
 CLAIMS_SUPPORTED = ["sub", "name", "email", "email_verified"]
-
-JWT_CONFIG = {
-    "key": settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID),
-    "alg": "RS256",
-    "iss": ISSUER,
-    "exp": 3600,
-}
 
 
 def is_registration_token_prefix(value: str) -> bool:

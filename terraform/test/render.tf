@@ -151,7 +151,7 @@ module "test" {
   }
 
   api_service_config = {
-    allowed_hosts          = "[\"test.polar.sh\"]"
+    allowed_hosts          = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"

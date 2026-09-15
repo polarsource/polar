@@ -1,7 +1,7 @@
 locals {
   backend_config = {
     base_url                             = "https://api.polar.sh"
-    backoffice_host                      = "backoffice.polar.sh"
+    backoffice_host                      = local.private_backoffice_hostname
     checkout_link_host                   = "buy.polar.sh"
     user_session_cookie_domain           = "polar.sh"
     authentication_session_cookie_domain = "polar.sh"

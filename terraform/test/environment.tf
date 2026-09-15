@@ -2,6 +2,7 @@ locals {
   backend_config = {
     environment                          = "test"
     base_url                             = "https://test-api.polar.sh"
+    backoffice_host                      = local.private_backoffice_hostname
     user_session_cookie_domain           = "polar.sh"
     user_session_cookie_key              = "polar_test_session"
     authentication_session_cookie_domain = "polar.sh"

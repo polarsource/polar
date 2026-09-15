@@ -3,6 +3,7 @@
 import { schemas } from '@polar-sh/client'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
+import { useCompassBase } from './useCompassBase'
 
 export type CompassTab = 'assistant' | 'insights'
 
@@ -18,14 +19,16 @@ export const CompassTabs = ({
   organization: schemas['Organization']
   active: CompassTab
 }) => {
+  const compassBase = useCompassBase(organization)
   const router = useRouter()
-  const base = `/dashboard/${organization.slug}/compass`
 
   return (
     <Tabs
       value={active}
       onValueChange={(value) =>
-        router.push(value === 'insights' ? `${base}/insights` : base)
+        router.push(
+          value === 'insights' ? `${compassBase}/insights` : compassBase,
+        )
       }
     >
       <TabsList>

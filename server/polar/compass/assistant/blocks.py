@@ -26,6 +26,7 @@ class BlockType(StrEnum):
     entity_list = "entity_list"
     data_table = "data_table"
     customer_card = "customer_card"
+    simulation = "simulation"
 
 
 class TextBlock(Schema):
@@ -106,12 +107,39 @@ class CustomerCardBlock(Schema):
     created_at: datetime
 
 
+class SimulationChangeKind(StrEnum):
+    plan_price = "plan_price"
+    plan_allowance = "plan_allowance"
+    meter_price = "meter_price"
+
+
+class SimulationChange(Schema):
+    kind: SimulationChangeKind = Field(
+        description=(
+            "`plan_price` changes a plan's monthly fee, `plan_allowance` the "
+            "usage it includes, `meter_price` a meter's unit price."
+        )
+    )
+    name: str = Field(description="Plan or meter name exactly as the user said it.")
+    amount: int = Field(ge=0, description="New value, in cents.")
+
+
+class SimulationBlock(Schema):
+    """A proposed pricing scenario the user can open in Simulate, which
+    rebills their real usage under the changed levers."""
+
+    type: Literal[BlockType.simulation] = BlockType.simulation
+    title: str = Field(description="Short scenario name, e.g. `Scale at $49`.")
+    changes: list[SimulationChange]
+
+
 AssistantBlock = Annotated[
     TextBlock
     | MetricChartBlock
     | InsightCardsBlock
     | EntityListBlock
     | DataTableBlock
-    | CustomerCardBlock,
+    | CustomerCardBlock
+    | SimulationBlock,
     Discriminator("type"),
 ]

@@ -281,30 +281,6 @@ resource "tfe_variable" "backend_jwks_production" {
   }
 }
 
-resource "tfe_variable" "aws_access_key_id_production" {
-  key             = "aws_access_key_id_production"
-  category        = "terraform"
-  description     = "AWS Access Key ID for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "aws_secret_access_key_production" {
-  key             = "aws_secret_access_key_production"
-  category        = "terraform"
-  description     = "AWS Secret Access Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "s3_files_download_salt_production" {
   key             = "s3_files_download_salt_production"
   category        = "terraform"

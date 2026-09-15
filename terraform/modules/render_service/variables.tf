@@ -160,8 +160,8 @@ variable "environment_groups" {
       POLAR_S3_CUSTOMER_RECEIPTS_BUCKET_NAME = string
       POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME   = string
       POLAR_S3_LOGS_BUCKET_NAME              = string
-      POLAR_AWS_ACCESS_KEY_ID                = string
-      POLAR_AWS_SECRET_ACCESS_KEY            = string
+      POLAR_AWS_ACCESS_KEY_ID                = optional(string)
+      POLAR_AWS_SECRET_ACCESS_KEY            = optional(string)
       POLAR_S3_FILES_DOWNLOAD_SALT           = string
       POLAR_S3_FILES_DOWNLOAD_SECRET         = string
     })

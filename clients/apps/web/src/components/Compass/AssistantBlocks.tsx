@@ -15,6 +15,7 @@ import {
   EntityTableView,
 } from './AssistantEntities'
 import { InsightCard } from './InsightCard'
+import { SimulationBlockView } from './SimulationBlockView'
 
 const MetricChartView = ({
   block,
@@ -138,6 +139,8 @@ const BlockBody = ({
       return <EntityTableView block={block} answeredAt={answeredAt} />
     case 'customer_card':
       return <CustomerCardView block={block} />
+    case 'simulation':
+      return <SimulationBlockView block={block} organization={organization} />
     default:
       return null
   }

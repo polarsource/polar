@@ -18,6 +18,7 @@ import { ComponentType, RefObject, useEffect } from 'react'
 import { CompassInputBar } from './CompassInputBar'
 import { CompassMessageList } from './CompassMessageList'
 import { CompassWidget } from './CompassWidget'
+import { useCompassBase } from './useCompassBase'
 
 interface CompassConversationProps {
   organization: schemas['Organization']
@@ -101,6 +102,7 @@ export const CompassConversation = ({
   onAsk,
   inputRef,
 }: CompassConversationProps) => {
+  const compassBase = useCompassBase(organization)
   const empty = messages.length === 0
   const { contentRef, scrollToBottom } = useStickToBottom<HTMLDivElement>()
 
@@ -178,10 +180,7 @@ export const CompassConversation = ({
               <Box display="flex" flexDirection="column" rowGap="m">
                 <Box flexDirection="row" justifyContent="between" gap="l">
                   <Text variant="heading-xxs">Insights</Text>
-                  <Link
-                    href={`/dashboard/${organization.slug}/compass/insights`}
-                    className="self-end"
-                  >
+                  <Link href={`${compassBase}/insights`} className="self-end">
                     <Box
                       color={{ base: 'text-secondary', hover: 'text-primary' }}
                       transitionProperty="colors"

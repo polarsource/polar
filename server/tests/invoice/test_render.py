@@ -1,19 +1,21 @@
+import asyncio
 import datetime
-import os
-import subprocess
-import sys
-from collections.abc import Mapping
+import multiprocessing
+from io import BytesIO
 
+import anyio
 import pytest
+from pypdf import PdfReader
 
 from polar.invoice.generator import Invoice, InvoiceItem
 from polar.invoice.render import (
-    SERVER_DIRECTORY,
     InvoiceRenderError,
-    build_invoice_renderer_env,
+    InvoiceRenderRequest,
     render_invoice_pdf,
 )
 from polar.kit.address import Address, CountryAlpha2
+from polar.receipt.generator import Receipt
+from polar.receipt.render import render_receipt_pdf
 
 
 @pytest.fixture
@@ -55,51 +57,36 @@ def invoice() -> Invoice:
 
 
 @pytest.mark.asyncio
-async def test_render_invoice_pdf(invoice: Invoice) -> None:
-    pdf = await render_invoice_pdf(invoice)
+class TestRenderInvoicePDF:
+    async def test_concurrent_document_types(self, invoice: Invoice) -> None:
+        pdfs = await asyncio.gather(
+            render_invoice_pdf(invoice),
+            render_invoice_pdf(invoice, heading_title="Reverse Invoice"),
+            render_receipt_pdf(Receipt.model_validate(invoice.model_dump())),
+        )
 
-    assert pdf.startswith(b"%PDF")
+        for pdf, heading in zip(pdfs, ("Invoice", "Reverse Invoice", "Receipt")):
+            text = PdfReader(BytesIO(pdf)).pages[0].extract_text()
+            assert text.splitlines()[0] == heading
+            assert invoice.customer_name in text
+        assert not multiprocessing.active_children()
 
+    async def test_renderer_error(
+        self, invoice: Invoice, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(InvoiceRenderRequest, "model_dump_json", lambda self: "{}")
 
-def test_build_invoice_renderer_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PATH", os.environ.get("PATH", ""))
-    monkeypatch.setenv("POLAR_ENV", "testing")
-    monkeypatch.setenv("POLAR_CUSTOM_OVERRIDE", "1")
-    monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", "/tmp/should-not-leak")
-    monkeypatch.setenv("UNRELATED_RUNTIME_VAR", "ignore-me")
+        with pytest.raises(InvoiceRenderError, match="Invoice renderer failed:"):
+            await render_invoice_pdf(invoice)
 
-    env = build_invoice_renderer_env()
+        assert not multiprocessing.active_children()
 
-    assert env["POLAR_ENV"] == "testing"
-    assert env["POLAR_CUSTOM_OVERRIDE"] == "1"
-    assert "PATH" in env
-    assert "PROMETHEUS_MULTIPROC_DIR" not in env
-    assert "UNRELATED_RUNTIME_VAR" not in env
+    async def test_cancellation_kills_renderer(self, invoice: Invoice) -> None:
+        with anyio.move_on_after(0.001) as scope:
+            await render_invoice_pdf(invoice)
 
+        assert scope.cancel_called
+        assert not multiprocessing.active_children()
 
-@pytest.mark.asyncio
-async def test_render_invoice_pdf_raises_on_subprocess_failure(
-    invoice: Invoice, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("POLAR_ENV", "testing")
-    monkeypatch.setenv("POLAR_CUSTOM_OVERRIDE", "1")
-    monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", "/tmp/does-not-exist")
-
-    async def run_process(
-        command: list[str], **kwargs: object
-    ) -> subprocess.CompletedProcess[bytes]:
-        assert command == [sys.executable, "-m", "polar.invoice.render"]
-        assert kwargs["input"]
-        assert kwargs["check"] is False
-        assert kwargs["cwd"] == SERVER_DIRECTORY
-        env = kwargs["env"]
-        assert isinstance(env, Mapping)
-        assert env["POLAR_ENV"] == "testing"
-        assert env["POLAR_CUSTOM_OVERRIDE"] == "1"
-        assert "PROMETHEUS_MULTIPROC_DIR" not in env
-        return subprocess.CompletedProcess(command, 1, stdout=b"", stderr=b"boom")
-
-    monkeypatch.setattr("polar.invoice.render.anyio.run_process", run_process)
-
-    with pytest.raises(InvoiceRenderError, match="Invoice renderer failed: boom"):
-        await render_invoice_pdf(invoice)
+        pdf = await render_invoice_pdf(invoice)
+        assert pdf.startswith(b"%PDF")

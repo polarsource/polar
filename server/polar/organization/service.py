@@ -1894,7 +1894,8 @@ class OrganizationService:
             )
             return
 
-        if not organization.website:
+        website = organization.website.strip() if organization.website else ""
+        if not website:
             log.info(
                 "organization.evaluate_website_risk.skipped",
                 reason="no_website",
@@ -1903,15 +1904,13 @@ class OrganizationService:
             return
 
         try:
-            result = await stripe_service.create_website_risk_evaluation(
-                organization.website
-            )
+            result = await stripe_service.create_website_risk_evaluation(website)
         except stripe_lib.InvalidRequestError as e:
             log.warning(
                 "organization.evaluate_website_risk.rejected",
                 step="create_evaluation",
                 organization_id=str(organization.id),
-                website=organization.website,
+                website=website,
                 error=str(e),
             )
             return
@@ -1921,7 +1920,7 @@ class OrganizationService:
             log.warning(
                 "organization.evaluate_website_risk.missing_id",
                 organization_id=str(organization.id),
-                website=organization.website,
+                website=website,
             )
             return
 

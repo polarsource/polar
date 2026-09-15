@@ -43,6 +43,7 @@ from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
+    SubscriptionMigratedMetadata,
     SubscriptionPastDueMetadata,
     SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
@@ -917,6 +918,8 @@ class SubscriptionService:
         trial_end: datetime | None,
         anchor_day: int | None = None,
         payment_method: PaymentMethod,
+        provider: str,
+        provider_subscription_id: str,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -954,6 +957,12 @@ class SubscriptionService:
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
+        await self._on_subscription_migrated(
+            session,
+            subscription,
+            provider=provider,
+            provider_subscription_id=provider_subscription_id,
+        )
         enqueue_job("customer.state_changed", subscription.customer_id)
 
         log.info(
@@ -3891,6 +3900,44 @@ class SubscriptionService:
             await webhook_service.send(
                 session, product.organization, event_type, subscription
             )
+
+    async def _on_subscription_migrated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        provider: str,
+        provider_subscription_id: str,
+    ) -> None:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = cast(
+            Subscription,
+            await repository.get_by_id(
+                subscription.id, options=repository.get_eager_options()
+            ),
+        )
+        await webhook_service.send(
+            session,
+            subscription.organization,
+            WebhookEventType.subscription_migrated,
+            subscription,
+            provider=provider,
+            provider_subscription_id=provider_subscription_id,
+        )
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_migrated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionMigratedMetadata(
+                    subscription_id=str(subscription.id),
+                    provider=provider,
+                    provider_subscription_id=provider_subscription_id,
+                    product_id=str(subscription.product_id),
+                ),
+            ),
+        )
 
     async def _is_within_revocation_grace_period(
         self,

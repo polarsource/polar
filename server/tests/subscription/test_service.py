@@ -42,6 +42,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    Event,
     Meter,
     Organization,
     PaymentMethod,
@@ -125,7 +126,8 @@ from tests.fixtures.random_objects import (
 )
 
 Hooks = namedtuple(
-    "Hooks", "updated activated canceled uncanceled revoked paused resumed"
+    "Hooks",
+    "updated activated canceled uncanceled revoked paused resumed migrated",
 )
 HookNames = frozenset(Hooks._fields)
 
@@ -207,6 +209,7 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
     revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
     paused = mocker.patch.object(subscription_service, "_on_subscription_paused")
     resumed = mocker.patch.object(subscription_service, "_on_subscription_resumed")
+    migrated = mocker.patch.object(subscription_service, "_on_subscription_migrated")
     return Hooks(
         updated=updated,
         activated=activated,
@@ -215,6 +218,7 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
         revoked=revoked,
         paused=paused,
         resumed=resumed,
+        migrated=migrated,
     )
 
 
@@ -4056,6 +4060,8 @@ class TestActivateImported:
             current_period_end=period_end,
             trial_end=None,
             payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
         )
 
         assert updated.status == SubscriptionStatus.active
@@ -4095,9 +4101,11 @@ class TestActivateImported:
             current_period_end=utc_now() + timedelta(days=30),
             trial_end=None,
             payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
         )
 
-        assert_hooks_called_once(subscription_hooks, {"updated"})
+        assert_hooks_called_once(subscription_hooks, {"migrated", "updated"})
 
     async def test_keeps_the_billing_anchor_the_import_captured(
         self,
@@ -4127,9 +4135,74 @@ class TestActivateImported:
             current_period_end=datetime(2026, 3, 31, tzinfo=UTC),
             trial_end=None,
             payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
         )
 
         assert updated.anchor_day == 31
+
+    async def test_notifies_merchants_the_subscription_was_migrated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now(),
+            current_period_end=utc_now() + timedelta(days=30),
+            trial_end=None,
+            payment_method=payment_method,
+            provider="paddle",
+            provider_subscription_id="sub_ext_1",
+        )
+
+        webhook_service_send_mock.assert_any_call(
+            ANY,
+            product.organization,
+            WebhookEventType.subscription_migrated,
+            ANY,
+            provider="paddle",
+            provider_subscription_id="sub_ext_1",
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            product.organization,
+            subscription,
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_created
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_active
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all(
+            event_repository.get_base_statement().where(
+                Event.name == SystemEvent.subscription_migrated
+            )
+        )
+        assert len(events) == 1
+        assert events[0].user_metadata == {
+            "subscription_id": str(subscription.id),
+            "provider": "paddle",
+            "provider_subscription_id": "sub_ext_1",
+            "product_id": str(product.id),
+        }
 
 
 async def create_event_billing_entry(

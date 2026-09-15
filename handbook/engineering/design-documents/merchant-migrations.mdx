@@ -288,7 +288,7 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 | email / name / address / tax id | `Customer` fields (`billing_address`, `tax_id`) | unique per org by lower-cased email. Carry over `tax_ids` / `tax_exempt` for B2B reverse-charge (see *Taxes*); default a missing country from the card. |
 | Product + Price (`unit_amount`, `currency`) | `Product` + `ProductPriceFixed` | |
 | `recurring.interval[_count]` | interval on the **`Product`** | recurrence lives on the product. |
-| `sub_…` | `user_metadata['stripe_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
+| `sub_…` | `user_metadata['provider']` + `user_metadata['provider_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
 | `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2026-01-28.clover`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
 | `trial_*`, `cancel_at_period_end`, `default_payment_method` | same fields | |
 | tax behavior (`default_tax_rates` / inclusive / none) | `subscription.tax_behavior` (+ `tax_exempted`) | set explicitly per source bucket at import (see *Taxes*). |

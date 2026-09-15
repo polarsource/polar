@@ -290,6 +290,47 @@ async def test_webhook_send(
 
 
 @pytest.mark.asyncio
+async def test_webhook_send_subscription_migrated(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    enqueue_job_mock: MagicMock,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_migrated],
+        api_version=CURRENT_API_VERSION,
+    )
+    await save_fixture(endpoint)
+
+    events = await webhook_service.send(
+        session,
+        organization,
+        WebhookEventType.subscription_migrated,
+        subscription,
+        provider="stripe",
+        provider_subscription_id="sub_123",
+    )
+    assert len(events) == 1
+
+    raw_payload = events[0].payload
+    assert raw_payload is not None
+    payload = json.loads(raw_payload)
+    assert payload["type"] == "subscription.migrated"
+    assert payload["provider"] == "stripe"
+    assert payload["provider_subscription_id"] == "sub_123"
+    assert payload["data"]["id"] == str(subscription.id)
+
+    enqueue_job_mock.assert_called_once_with(
+        "webhook_event.send", webhook_event_id=events[0].id
+    )
+
+
+@pytest.mark.asyncio
 async def test_webhook_send_not_subscribed_to_event(
     session: AsyncSession,
     save_fixture: SaveFixture,

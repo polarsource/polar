@@ -499,7 +499,8 @@ class OrganizationRiskSignalRepository(
             self.get_base_statement()
             .where(
                 OrganizationRiskSignal.organization_id == organization_id,
-                OrganizationRiskSignal.risk_level != "unknown",
+                OrganizationRiskSignal.risk_level
+                != OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
             )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)

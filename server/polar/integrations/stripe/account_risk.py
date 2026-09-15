@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
+from polar.exceptions import PolarError
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 
 _REFERENCE_LINE = re.compile(r"^\[(\d+)\]\s+(\S+)$")
@@ -33,6 +34,12 @@ class StripeAccountRiskLevel(StrEnum):
 ACTIONABLE_RISK_LEVELS: frozenset[StripeAccountRiskLevel] = frozenset(
     {StripeAccountRiskLevel.ELEVATED, StripeAccountRiskLevel.HIGHEST}
 )
+
+
+class UnknownAccountRiskEvaluation(PolarError):
+    def __init__(self, evaluation_id: str) -> None:
+        self.evaluation_id = evaluation_id
+        super().__init__(f"No pending website evaluation for {evaluation_id}.")
 
 
 ACCOUNT_RISK_EVENT_TYPES: dict[str, OrganizationRiskSignal.Type] = {

@@ -20,6 +20,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.account_risk import (
     AccountRiskSignal,
     StripeAccountRiskLevel,
+    UnknownAccountRiskEvaluation,
 )
 from polar.kit.http import UrlReachability
 from polar.models import (
@@ -71,7 +72,6 @@ from polar.organization.service import (
     CannotCreateOrganizationError,
     OrganizationError,
     PayoutAccountAlreadyLinked,
-    UnknownAccountRiskEvaluation,
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -2008,7 +2008,7 @@ class TestHandleAccountRiskSignal:
             organization=organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=StripeAccountRiskLevel.UNKNOWN.value,
+            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
             payload={"account_evaluation": evaluation_id},
         )
         await save_fixture(signal)

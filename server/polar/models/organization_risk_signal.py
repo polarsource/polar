@@ -31,6 +31,7 @@ class OrganizationRiskSignal(RecordModel):
     # risk_level is a free-form string so future sources can use their own
     # vocabulary; this is the one value all consumers treat as most severe.
     HIGHEST_RISK_LEVEL = "highest"
+    UNKNOWN_RISK_LEVEL = "unknown"
 
     __tablename__ = "organization_risk_signals"
 

@@ -8,8 +8,15 @@ import structlog
 from logfire.integrations.structlog import LogfireProcessor
 
 from polar.config import settings
+from polar.observability.pii import scrub_event
 
 Logger = structlog.stdlib.BoundLogger
+
+
+def scrub_pii(
+    _logger: logging.Logger, _method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    return scrub_event(event_dict)
 
 
 def _map_critical_to_fatal(
@@ -48,6 +55,7 @@ class Logging[RendererType]:
             cls.timestamper,
             structlog.processors.UnicodeDecoder(),
             structlog.processors.StackInfoRenderer(),
+            scrub_pii,
             *([_map_critical_to_fatal, LogfireProcessor()] if logfire else []),
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ]
@@ -68,6 +76,8 @@ class Logging[RendererType]:
                         "()": structlog.stdlib.ProcessorFormatter,
                         "processors": [
                             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                            structlog.processors.format_exc_info,
+                            scrub_pii,
                             cls.get_renderer(),
                         ],
                         "foreign_pre_chain": [
@@ -79,6 +89,7 @@ class Logging[RendererType]:
                             cls.timestamper,
                             structlog.processors.UnicodeDecoder(),
                             structlog.processors.StackInfoRenderer(),
+                            scrub_pii,
                             *(
                                 [_map_critical_to_fatal, LogfireProcessor()]
                                 if logfire

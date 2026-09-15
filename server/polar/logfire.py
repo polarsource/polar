@@ -7,7 +7,7 @@ import logfire
 from fastapi import FastAPI
 from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
+from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
@@ -29,6 +29,13 @@ from polar.config import settings
 from polar.kit.aws import get_credentials
 from polar.kit.db.postgres import Engine
 from polar.observability.otel_prometheus import PrometheusMeterProvider
+from polar.observability.pii import (
+    LOGFIRE_EXTRA_PATTERNS,
+    REDACTED,
+    SAFE_KEYS,
+    scrub_value,
+)
+from polar.observability.pii_span_processor import PiiSpanProcessor
 
 Matcher = Callable[[str, "Attributes | None"], bool]
 
@@ -113,19 +120,10 @@ class LevelSampler(Sampler):
 
 
 def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
-    # Don't scrub auth subject in log messages
-    if match.path == ("attributes", "subject"):
-        return match.value
-    # Don't scrub thread stacks from the event loop watchdog — they contain
-    # "session" via SQLAlchemy frames which triggers the default scrubber,
-    # but these are stack traces, not secrets.
-    if match.path == ("attributes", "thread_stacks"):
-        return match.value
-    if match.path == ("attributes", "event_loop_stack"):
-        return match.value
-    if match.path == ("attributes", "asyncio_tasks"):
-        return match.value
-    return None
+    key = match.path[-1] if match.path else None
+    if isinstance(key, str) and key in SAFE_KEYS:
+        return scrub_value(match.value, key=key)
+    return REDACTED
 
 
 class PidSpanProcessor(SpanProcessor):
@@ -179,25 +177,13 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                     aws_access_key_id=access_key_id,
                     aws_secret_access_key=secret_access_key,
                     region_name=settings.AWS_REGION,
-                    scrub_patterns=[
-                        r"email",
-                        r"user\.?name",
-                        r"full\.?name",
-                        r"first\.?name",
-                        r"last\.?name",
-                        r"phone",
-                        r"address",
-                        r"ip_?address",
-                        r"cookie",
-                        r"^http\.url$",
-                    ],
                 ),
                 max_export_batch_size=2048,
                 schedule_delay_millis=60_000,
             )
         )
 
-    logfire.configure(
+    instance = logfire.configure(
         send_to_logfire="if-token-present",
         token=settings.LOGFIRE_TOKEN,
         environment=settings.ENV,
@@ -218,8 +204,19 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
-        scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
+        scrubbing=logfire.ScrubbingOptions(
+            extra_patterns=LOGFIRE_EXTRA_PATTERNS,
+            callback=_scrubbing_callback,
+        ),
         additional_span_processors=additional_span_processors or None,
+    )
+    provider = instance.config.get_tracer_provider().provider
+    assert isinstance(provider, TracerProvider)
+    # Additional processors run after Logfire's scrubber. Keep the root identity
+    # for cached tracers, but wrap its children to redact before Logfire runs.
+    root_processor = provider._active_span_processor
+    root_processor._span_processors = (
+        PiiSpanProcessor(*root_processor._span_processors),
     )
 
 

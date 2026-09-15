@@ -19,6 +19,21 @@ from shared import (
 NAME = "Waiting for services to be ready"
 
 
+def wait_for_temporal(timeout: int = 60) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        result = run_command(
+            ["docker", "compose", "exec", "-T", "temporal", "temporal", "operator", "cluster", "health"],
+            cwd=SERVER_DIR,
+            capture=True,
+            timeout=5,
+        )
+        if result and result.returncode == 0:
+            return True
+        time.sleep(1)
+    return False
+
+
 def wait_for_postgres(timeout: int = 60) -> bool:
     """Wait for PostgreSQL to be ready."""
     start_time = time.time()
@@ -138,5 +153,13 @@ def run(ctx: Context) -> bool:
         else:
             step_status(False, "Tinybird", "timeout - continuing without it")
             # Don't fail the whole setup for tinybird
+
+    if ctx.void:
+        with step_spinner("Waiting for Temporal..."):
+            if wait_for_temporal(timeout=60):
+                step_status(True, "Temporal", "ready")
+            else:
+                _report_service_timeout("Temporal", "temporal", 60)
+                return False
 
     return True

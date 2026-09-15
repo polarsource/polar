@@ -12,6 +12,7 @@ from shared import (
     find_available_port,
     is_port_in_use,
 )
+from void_local import environment
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
@@ -45,4 +46,5 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         ]
 
         os.environ["AUTHLIB_INSECURE_TRANSPORT"] = "true"
+        os.environ.update(environment())
         os.execvp(cmd[0], cmd)

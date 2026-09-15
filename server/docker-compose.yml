@@ -1,4 +1,21 @@
 services:
+  temporal:
+    image: temporalio/temporal:latest
+    user: root
+    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/data/temporal.db"]
+    ports:
+      - "127.0.0.1:${POLAR_VOID_TEMPORAL_PORT:-7233}:7233"
+      - "127.0.0.1:${POLAR_VOID_TEMPORAL_UI_PORT:-8233}:8233"
+    volumes:
+      - temporal_data:/data
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health"]
+      interval: 2s
+      timeout: 10s
+      retries: 30
+    profiles:
+      - void
+
   redis:
     image: redis:alpine
     ports:
@@ -115,10 +132,11 @@ services:
       - "${TINYBIRD_ADMIN_PORT:-7182}:7182"
     volumes:
       - ./tinybird:/tinybird:ro
+      - ./void-tinybird:/void-tinybird:ro
       - ../dev/docker/scripts/tinybird-setup.sh:/scripts/tinybird-setup.sh:ro
     command: ["bash", "/scripts/tinybird-setup.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7181/"]
+      test: ["CMD-SHELL", "test -f /tmp/tinybird-ready && curl -f -o /dev/null http://localhost:7181/tokens"]
       interval: 5s
       timeout: 10s
       retries: 30
@@ -150,6 +168,7 @@ services:
       - sqs
 
 volumes:
+  temporal_data:
   postgres_data:
   minio_data:
     driver: local

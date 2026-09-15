@@ -9,7 +9,6 @@ from starlette.types import Scope as ASGIScope
 
 from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.middlewares import AuthSubjectMiddleware
-from polar.config import settings
 from polar.models import Organization
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -20,7 +19,6 @@ from tests.fixtures.base import IsolatedSessionTestClient
 async def enable_void(
     monkeypatch: pytest.MonkeyPatch, organization: Organization, session: AsyncSession
 ) -> None:
-    monkeypatch.setattr(settings, "VOID_ENABLED", True)
     organization.feature_settings = {
         **organization.feature_settings,
         "void_enabled": True,

@@ -1,12 +1,9 @@
-from unittest.mock import AsyncMock
-
 import httpx
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.void.tinybird import TinybirdApi, VoidInfrastructureUnavailable, get_token
-from polar.void.worker import EventActivities, main
 
 
 class TestTinybirdDelivery:
@@ -73,24 +70,3 @@ class TestTinybirdDelivery:
         with pytest.raises(VoidInfrastructureUnavailable):
             get_token()
         request.assert_not_called()
-
-
-@pytest.mark.asyncio
-class TestWorkerGating:
-    async def test_disabled_worker_does_not_connect(
-        self, mocker: MockerFixture
-    ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", False)
-        connect = mocker.patch("polar.void.worker.connect", new_callable=AsyncMock)
-        with pytest.raises(RuntimeError, match="Enable Void"):
-            await main()
-        connect.assert_not_called()
-
-    async def test_disabled_event_delivery_does_not_open_session(
-        self, mocker: MockerFixture
-    ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", False)
-        sessionmaker = mocker.Mock()
-        activities = EventActivities(sessionmaker, mocker.Mock(), mocker.Mock())
-        assert await activities.dispatch_events() == 0
-        sessionmaker.assert_not_called()

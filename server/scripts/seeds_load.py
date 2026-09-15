@@ -99,7 +99,7 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.models.user import IdentityVerificationStatus, User
-from polar.models.user_organization import UserOrganization
+from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
     WebhookEventType,
@@ -124,6 +124,8 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
+from polar.void.development.service import development as void_development_service
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
 from scripts.seed_polar_for_polar import (
@@ -2375,18 +2377,40 @@ async def _simple_seed_is_complete(session: AsyncSession) -> bool:
     return True
 
 
+async def seed_void_organization(session: AsyncSession) -> bool:
+    organization, created = await void_development_service.seed(session)
+    user, _ = await user_service.get_by_email_or_create(
+        session=session, email="void@polar.sh"
+    )
+    membership = await UserOrganizationRepository.from_session(
+        session
+    ).get_by_user_and_organization(user.id, organization.id)
+    if membership is None:
+        session.add(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.admin
+            )
+        )
+        await session.flush()
+        return True
+    return created
+
+
 async def create_simple_seed_data(session: AsyncSession, redis: Redis) -> bool:
     if await _simple_seed_is_complete(session):
+        void_created = await seed_void_organization(session)
+        await session.commit()
         print(
             "seed.phase.simple status=complete action=skip "
             f"organizations={len(EXPECTED_ORGANIZATION_SLUGS)}"
         )
-        return False
+        return void_created
 
     started_at = monotonic()
     print("seed.phase.simple status=pending")
     try:
         await _create_simple_fixture_graph(session)
+        await seed_void_organization(session)
         await session.commit()
     except Exception:
         await session.rollback()

@@ -38,6 +38,7 @@ class Context:
     clean: bool = False
     skip_integrations: bool = False
     database_name: str | None = None
+    void: bool = False
     state: dict = field(default_factory=dict)
 
 

@@ -52,7 +52,6 @@ class TestDevelopmentSeed:
         session: AsyncSession,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        monkeypatch.setattr(settings, "VOID_ENABLED", False)
         before = utc_now()
         first_id, first_token, created = await seed_token(session)
         second_id, second_token, repeated_created = await seed_token(session)
@@ -60,7 +59,6 @@ class TestDevelopmentSeed:
         assert not repeated_created
         assert first_id == second_id == ORGANIZATION_ID
         assert first_token != second_token
-        assert not settings.VOID_ENABLED
         assert (
             await session.scalar(
                 select(func.count())
@@ -172,7 +170,6 @@ class TestCredentialFile:
             for line in output.read_text().splitlines()
         )
         assert values == {
-            "POLAR_VOID_ENABLED": "true",
             "VOID_TOKEN": "new'secret$",
             "VOID_API_URL": "http://127.0.0.1:9001",
         }

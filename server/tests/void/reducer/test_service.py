@@ -6,7 +6,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncConnection
 from temporalio.exceptions import ApplicationError
 
-from polar.config import settings
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization, VoidEvent, VoidReducerBucket, VoidReducerJob
@@ -304,15 +303,12 @@ class TestRecords:
 
 @pytest.mark.asyncio
 class TestWorkerGates:
-    @pytest.mark.parametrize("enabled", [True, False])
     async def test_inactive_organization_does_no_work(
         self,
         organization: Organization,
         monkeypatch: pytest.MonkeyPatch,
-        enabled: bool,
         session: AsyncSession,
     ) -> None:
-        monkeypatch.setattr(settings, "VOID_ENABLED", enabled)
         organization.feature_settings = {
             **organization.feature_settings,
             "void_enabled": False,

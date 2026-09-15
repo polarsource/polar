@@ -30,7 +30,6 @@ class TestGenerateVoidToken:
         identifier: str,
         customers: bool,
     ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", True)
         organization.feature_settings = {
             **organization.feature_settings,
             "void_enabled": True,
@@ -68,25 +67,18 @@ class TestGenerateVoidToken:
         with pytest.raises(ValueError, match="development or testing"):
             await generate_void_token(session, "acme")
 
-    async def test_disabled(self, session: AsyncSession, mocker: MockerFixture) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", False)
-        with pytest.raises(ValueError, match="must be enabled"):
-            await generate_void_token(session, "acme")
-
     async def test_organization_not_enabled(
         self,
         session: AsyncSession,
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", True)
         with pytest.raises(ValueError, match="not enabled for this organization"):
             await generate_void_token(session, organization.slug)
 
     async def test_unknown_organization(
         self, session: AsyncSession, mocker: MockerFixture
     ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", True)
         with pytest.raises(ValueError, match="Organization not found"):
             await generate_void_token(session, "nonexistent-void-organization")
 
@@ -96,7 +88,6 @@ class TestGenerateVoidToken:
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", True)
         organization.feature_settings = {
             **organization.feature_settings,
             "void_enabled": True,

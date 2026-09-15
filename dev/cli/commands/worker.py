@@ -5,6 +5,7 @@ import os
 import typer
 
 from shared import SERVER_DIR, console
+from void_local import environment
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
@@ -26,4 +27,5 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             "polar.worker.run",
         ]
 
+        os.environ.update(environment())
         os.execvp(cmd[0], cmd)

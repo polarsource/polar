@@ -48,8 +48,6 @@ class EventActivities:
 
     @activity.defn
     async def dispatch_events(self) -> int:
-        if not settings.VOID_ENABLED:
-            return 0
         async with self.sessionmaker() as session:
             count = await event_service.deliver_pending(
                 session,
@@ -115,8 +113,6 @@ def create_worker(
 
 
 async def main() -> None:
-    if not settings.VOID_ENABLED:
-        raise RuntimeError("Enable Void before starting its worker")
     tinybird = create_client()
     engine = create_async_engine("worker", pool_logging_name="void_worker")
     try:

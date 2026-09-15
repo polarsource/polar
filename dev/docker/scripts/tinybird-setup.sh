@@ -6,6 +6,7 @@ set -euo pipefail
 
 TINYBIRD_API="http://localhost:7181"
 DATA_PROJECT_DIR="/tinybird"
+rm -f /tmp/tinybird-ready
 
 # Start supervisord (the default CMD) in the background
 /usr/bin/supervisord &
@@ -61,12 +62,17 @@ done
 if [[ -d "${DATA_PROJECT_DIR}" ]]; then
     # Copy to writable dir (tb writes .tinyb file)
     WORK_DIR="/tmp/tinybird-deploy"
-    cp -r "${DATA_PROJECT_DIR}" "${WORK_DIR}"
+    mkdir -p "${WORK_DIR}"
+    cp -r "${DATA_PROJECT_DIR}/." "${WORK_DIR}/"
+    if [[ -d /void-tinybird ]]; then
+        cp -r /void-tinybird/. "${WORK_DIR}/"
+    fi
     cd "${WORK_DIR}"
 
     echo "=== Tinybird Setup: building data project ==="
     if tb --host "${TINYBIRD_API}" --token "${TOKEN}" build; then
         echo "=== Tinybird Setup: data project built successfully ==="
+        touch /tmp/tinybird-ready
     else
         echo "WARNING: Tinybird data project build failed, continuing anyway"
     fi

@@ -4,6 +4,21 @@ Void is being moved from `polarsource/void` at
 `495330f3f00e157f6cd034562cfecfb55075d517` into Polar. The SDK and CLI live in
 `clients/packages/void-sdk`. Its README contains the local login instructions.
 
+## Local development with Polar
+
+Start Docker Desktop. From the repo root:
+
+```sh
+dev up --void
+dev seed
+dev start
+```
+
+Sign in at http://127.0.0.1:3000 with `void@polar.sh`. Get the login code from
+the API pane. Select the empty `void-development` organization.
+
+See [SDK login, ports, and shutdown](../../../dev/cli/README.md#void-development).
+
 ## Standalone development and smoke test
 
 Prerequisites: Docker with Compose v2, uv with Python 3.14, Node.js 24, and the
@@ -93,8 +108,8 @@ email. Normal development uses the real backend renderer.
 
 Deploy database migrations first, then the dedicated Tinybird project, then
 compatible API and worker binaries. Finally enable Void for the chosen
-organizations using `organizations.feature_settings["void_enabled"] = true` in the database. The global `POLAR_VOID_ENABLED` switch must also be enabled. Existing environment allowlists are no longer used; set the database flags before deploying this change. Keep its Tinybird workspace separate from Polar billing.
-To disable it, set `POLAR_VOID_ENABLED=false` on the API and stop the dedicated
+organizations using `organizations.feature_settings["void_enabled"] = true` in the database. Existing environment allowlists are no longer used; set the database flags before deploying this change. Keep its Tinybird workspace separate from Polar billing.
+To disable it, clear the organizations’ `void_enabled` feature flags and stop the dedicated
 Void workers. Also pause the `polar-void-dispatch-events`,
 `polar-void-dispatch-reducers`, and `polar-void-dispatch-meter-cycles` schedules in
 Temporal. Resuming the worker preserves durable events and queued computation.
@@ -240,18 +255,18 @@ turning off Void entirely.
 From `server/`, alongside the normal Polar database and API infrastructure:
 
 ```sh
-docker compose -f docker-compose.void.yml up -d
-export POLAR_VOID_ENABLED=true
+docker compose up -d tinybird temporal
 # Enable organizations.feature_settings["void_enabled"] in the database first.
 uv run alembic upgrade head
-uv run task void_tb_deploy --local
-export POLAR_VOID_TINYBIRD_API_TOKEN="$(curl -fsS http://localhost:7281/tokens | jq -r .admin_token)"
+uv run task void_tb_deploy --local --shared
+export POLAR_VOID_TINYBIRD_API_TOKEN="$(curl -fsS http://localhost:7181/tokens | jq -r .admin_token)"
 uv run task void_worker
 ```
 
 Start `uv run task api` in another terminal with the same Void environment values.
-The dedicated development services use Tinybird port 7281 and Temporal port 7333,
-with Temporal's UI on 8333. They have a separate Compose project and volumes.
+Local development shares Polar's Tinybird on port 7181. Temporal uses port 7233,
+with its UI on 8233, in the same Compose project as Polar's other services. From the repo root,
+`dev up --void` configures these services and `dev void` launches the Void worker.
 For custom ports also set `POLAR_VOID_TINYBIRD_API_URL` and
 `POLAR_VOID_TEMPORAL_ADDRESS` on the API and worker.
 
@@ -405,5 +420,5 @@ a historical preview at the proposed rate produced $0.80 for the same 200 units.
 The normal Polar API client regenerated without changes, and Alembic found no
 schema drift.
 
-Disable runtime access with `POLAR_VOID_ENABLED=false`. A schema downgrade drops
+Disable runtime access by clearing the organization’s `void_enabled` feature flag. A schema downgrade drops
 the Void tables and their data; it is not the runtime disable mechanism.

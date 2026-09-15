@@ -2,7 +2,6 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import Organization, VoidBillingIdentity
 from tests.fixtures.database import SaveFixture
@@ -220,23 +219,17 @@ class TestListAndGet:
         response = await void_client.get(path)
         assert response.status_code == 401
 
-    @pytest.mark.parametrize(
-        ("enabled", "organization_enabled"), [(False, True), (True, False)]
-    )
     async def test_gate(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         monkeypatch: pytest.MonkeyPatch,
-        enabled: bool,
-        organization_enabled: bool,
     ) -> None:
         await create_token(save_fixture, organization, scopes={Scope.void_write})
-        monkeypatch.setattr(settings, "VOID_ENABLED", enabled)
         organization.feature_settings = {
             **organization.feature_settings,
-            "void_enabled": organization_enabled,
+            "void_enabled": False,
         }
         await save_fixture(organization)
         assert (await void_client.get(PATH, headers=HEADERS)).status_code == 404

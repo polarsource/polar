@@ -20,8 +20,6 @@ async def generate_void_token(
 ) -> str:
     if not (settings.is_development() or settings.is_testing()):
         raise ValueError("Void tokens can only be issued in development or testing")
-    if not settings.VOID_ENABLED:
-        raise ValueError("Void must be enabled before issuing a token")
 
     repository = OrganizationRepository.from_session(session)
     try:

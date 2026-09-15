@@ -56,8 +56,6 @@ class ReducerActivities:
 
     @activity.defn
     async def dispatch_derived(self) -> int:
-        if not settings.VOID_ENABLED:
-            return 0
         assert self.temporal is not None
         async with self.sessionmaker() as session:
             jobs = await ReducerRepository.from_session(session).pending_jobs(
@@ -83,9 +81,9 @@ class ReducerActivities:
     async def require_enabled(
         self, session: AsyncSession, organization_id: uuid.UUID
     ) -> None:
-        if not settings.VOID_ENABLED or not await OrganizationRepository.from_session(
-            session
-        ).is_enabled(organization_id):
+        if not await OrganizationRepository.from_session(session).is_enabled(
+            organization_id
+        ):
             raise ApplicationError(
                 "Void processing is paused for this organization",
                 type="VoidOrganizationPaused",

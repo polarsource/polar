@@ -10,7 +10,6 @@ from temporalio.client import (
     ScheduleAlreadyRunningError,
 )
 
-from polar.config import settings
 from polar.void.meter.activities import MeterActivities
 from polar.void.meter.service import meter as meter_service
 from polar.void.meter.workflows import MeterCycleWorkflow
@@ -21,19 +20,11 @@ from polar.void.worker import create_worker, ensure_schedules
 
 @pytest.mark.asyncio
 class TestMeterActivities:
-    async def test_disabled_does_not_open_session(self, mocker: MockerFixture) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", False)
-        sessionmaker = mocker.Mock()
-        activities = MeterActivities(sessionmaker, mocker.Mock())
-        assert await activities.cycle_meters() == 0
-        sessionmaker.assert_not_called()
-
     async def test_allowed_organizations_commit_independently(
         self,
         mocker: MockerFixture,
     ) -> None:
         first, second = UUID(int=1), UUID(int=2)
-        mocker.patch.object(settings, "VOID_ENABLED", True)
         mocker.patch.object(
             OrganizationRepository,
             "enabled_ids",
@@ -68,7 +59,6 @@ class TestMeterActivities:
         self,
         mocker: MockerFixture,
     ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", True)
         mocker.patch.object(
             OrganizationRepository,
             "enabled_ids",

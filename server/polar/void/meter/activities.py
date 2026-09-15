@@ -1,6 +1,5 @@
 from temporalio import activity
 
-from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.void.organization.repository import OrganizationRepository
 from polar.void.tinybird import TinybirdApi
@@ -15,8 +14,6 @@ class MeterActivities:
 
     @activity.defn
     async def cycle_meters(self) -> int:
-        if not settings.VOID_ENABLED:
-            return 0
         count = 0
         async with self.sessionmaker() as session:
             organization_ids = await OrganizationRepository.from_session(

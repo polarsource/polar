@@ -5,21 +5,14 @@ from fastapi import Depends
 from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.customer.auth import CustomerRead, CustomerWrite
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.models import Organization, OrganizationAccessToken
 
 
-def require_void_enabled() -> None:
-    if not settings.VOID_ENABLED:
-        raise ResourceNotFound()
-
-
 def _require_void_organization(
     auth_subject: AuthSubject[Organization],
 ) -> AuthSubject[Organization]:
-    require_void_enabled()
     if not isinstance(auth_subject.session, OrganizationAccessToken):
         raise Unauthorized()
     if not auth_subject.subject.is_void_enabled:

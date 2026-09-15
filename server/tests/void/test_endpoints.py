@@ -76,22 +76,6 @@ class TestCurrentOrganization:
         )
         assert response.headers[VERSION_HEADER] == str(version or CURRENT_API_VERSION)
 
-    async def test_disabled(
-        self,
-        void_client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        await create_token(save_fixture, organization)
-        monkeypatch.setattr(settings, "VOID_ENABLED", False)
-
-        response = await void_client.get(
-            PATH, headers={"Authorization": f"Bearer {TOKEN}"}
-        )
-
-        assert response.status_code == 404
-
     async def test_organization_feature_disabled(
         self,
         void_client: AsyncClient,

@@ -5,7 +5,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from .auth import VoidRead, VoidWrite, require_void_enabled
+from .auth import VoidRead, VoidWrite
 from .customer.endpoints import router as customer_router
 from .deploy.endpoints import router as deploy_router
 from .entitlement.endpoints import router as entitlement_router
@@ -24,7 +24,6 @@ from .subscription.endpoints import router as subscription_router
 router = APIRouter(
     prefix="/void",
     tags=["void", APITag.private],
-    dependencies=[Depends(require_void_enabled)],
     include_in_schema=False,
 )
 

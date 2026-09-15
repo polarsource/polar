@@ -21,7 +21,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         if not volumes:
             remove_volumes = typer.confirm("Also remove volumes (database data)?", default=False)
 
-        cmd = ["docker", "compose", "down"]
+        cmd = ["docker", "compose", "--profile", "void", "down"]
         if remove_volumes:
             cmd.append("-v")
             console.print("[yellow]Removing containers and volumes...[/yellow]")

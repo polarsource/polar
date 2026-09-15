@@ -7,7 +7,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
-from polar.config import settings
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.postgres import AsyncSession, create_async_engine
 from polar.void.development.service import (
@@ -36,18 +35,12 @@ def api_origin(value: str) -> str:
 
 async def seed_token(session: AsyncSession) -> tuple[UUID, str, bool]:
     organization, created = await development_service.seed(session)
-    previous_enabled = settings.VOID_ENABLED
-    try:
-        settings.VOID_ENABLED = True
-        token = await generate_void_token(session, str(organization.id), customers=True)
-    finally:
-        settings.VOID_ENABLED = previous_enabled
+    token = await generate_void_token(session, str(organization.id), customers=True)
     return organization.id, token, created
 
 
 def write_environment(output: Path, token: str, api_url: str) -> None:
     values = {
-        "POLAR_VOID_ENABLED": "true",
         "VOID_TOKEN": token,
         "VOID_API_URL": api_url,
     }

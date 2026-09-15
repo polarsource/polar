@@ -15,8 +15,11 @@ PROJECT = Path(__file__).resolve().parents[1] / "void-tinybird"
 
 
 @cli.command()
-def deploy(local: bool = False) -> None:
-    """Deploy only to a dedicated Void Tinybird workspace."""
+def deploy(local: bool = False, shared: bool = False) -> None:
+    """Deploy Void resources locally or to a dedicated hosted workspace."""
+    if shared and not local:
+        raise ValueError("Shared builds are only supported with --local")
+    projects = [PROJECT, PROJECT.parent / "tinybird"] if shared else [PROJECT]
     token = get_token(local=local)
     host = settings.VOID_TINYBIRD_API_URL
     if local:
@@ -32,18 +35,12 @@ def deploy(local: bool = False) -> None:
             headers={"Authorization": f"Bearer {token}"},
             timeout=120,
         ) as client:
-            response = client.get("/v0/datasources")
-            response.raise_for_status()
-            if any(
-                not item["name"].startswith("void_")
-                for item in response.json()["datasources"]
-            ):
-                raise RuntimeError("Void requires a dedicated Tinybird workspace")
             response = client.post(
                 "/v1/build",
                 files=[
                     ("data_project://", (path.name, path.read_bytes(), "text/plain"))
-                    for path in sorted(PROJECT.rglob("*"))
+                    for project in projects
+                    for path in sorted(project.rglob("*"))
                     if path.suffix in {".datasource", ".pipe"}
                 ],
             )

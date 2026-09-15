@@ -32,6 +32,7 @@ To disable analytics, set either environment variable:
 
 ```bash
 dev up                  # Full setup: install deps, start infra, run migrations
+dev up --void           # Also configure Void infrastructure, resources, and seed data
 dev up --clean          # Clean setup (re-runs all steps)
 dev down                # Stop all infrastructure
 dev down --volumes      # Stop and remove all data
@@ -42,17 +43,54 @@ dev reset --force       # Reset without confirmation
 ### Running Services
 
 ```bash
-dev start               # Start all services (api, worker, web, stripe) in tmux
+dev start               # Start all services (api, worker, web, stripe, void) in tmux
 dev stop                # Stop all services (kills the tmux session)
 dev api                 # Start backend API (port 8000)
 dev api --port 8080     # Start on custom port
 dev web                 # Start frontend (port 3000)
 dev web --port 3001     # Start on custom port
 dev worker              # Start background job worker
+dev void                # Start Void infrastructure and its Temporal worker
 dev switch my-branch    # Stop web, checkout branch, wipe .next, relaunch web
 dev switch -b my-branch # ...creating the branch (git checkout -b)
 dev switch -i my-branch # ...and reinstall JS deps (skips package prebuilds)
 ```
+
+### Void development
+
+Start Docker Desktop. From the repo root:
+
+```bash
+dev up --void
+dev seed
+dev start
+```
+
+Sign in at http://127.0.0.1:3000 with `void@polar.sh`. Get the login code from
+the API pane. Select `void-development`, which has Void enabled and no sample data.
+
+For SDK login, open another terminal from the repo root:
+
+```bash
+cd clients
+source ../server/.env.void
+pnpm --filter @void/sdk void login
+```
+
+Rerun `dev up --void` and source the file again when the token expires after 24 hours.
+Skip smoke tests to keep the organization empty.
+
+| Service | Port |
+| --- | --- |
+| Dashboard | 3000 |
+| API | 8000 |
+| Temporal | 7233 |
+| Temporal UI | 8233 |
+| Shared Tinybird | 7181 |
+
+Run `dev stop` to stop all five tmux services. Run `dev down` to stop Docker
+services; decline volume removal to keep data. To recreate an existing tmux
+session, run `dev stop` then `dev start`.
 
 ### Database
 

@@ -33,17 +33,14 @@ def get_docker_compose_status() -> dict[str, bool]:
 
 def run(ctx: Context) -> bool:
     """Start Docker containers."""
-    docker_status = get_docker_compose_status()
-    all_running = bool(docker_status) and all(docker_status.values())
-
-    if all_running and not ctx.clean:
-        step_status(True, "Docker containers", "already running")
-        return True
-
     compose_cmd = ["docker", "compose"]
+    if ctx.void:
+        compose_cmd.extend(["--profile", "void"])
     compose_cmd.extend(["up", "-d"])
 
     service_name = "PostgreSQL, Redis, Minio, Tinybird"
+    if ctx.void:
+        service_name += ", Temporal"
 
     with step_spinner(f"Starting {service_name}..."):
         result = run_command(

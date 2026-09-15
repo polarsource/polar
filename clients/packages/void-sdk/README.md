@@ -24,10 +24,27 @@ asynchronously. Run the worker and its Temporal/Tinybird services as described i
 
 ### Run the full stack
 
-The backend guide has a [standalone development and smoke-test sequence](../../../server/polar/void/README.md#standalone-development-and-smoke-test).
-From `server/`, run `uv run task void_dev smoke` after installing dependencies.
-It starts the real Polar API, local data services, and Void worker, then exercises
-this SDK and CLI end to end. Use `uv run task void_dev run` to keep the stack running.
+Start Docker Desktop. From the repo root:
+
+```sh
+dev up --void
+dev seed
+dev start
+```
+
+For SDK login, open another terminal from the repo root:
+
+```sh
+cd clients
+source ../server/.env.void
+pnpm --filter @void/sdk void login
+```
+
+Rerun setup and source the file again to refresh the 24-hour token.
+Use the [isolated smoke-test runner](../../../server/polar/void/README.md#standalone-development-and-smoke-test)
+to keep this organization empty.
+
+See [dashboard login, ports, and shutdown](../../../dev/cli/README.md#void-development).
 
 ### Try login locally
 
@@ -35,7 +52,6 @@ Use a local Polar database with an existing organization. Start the server from
 `server/` with the Void route enabled for that organization:
 
 ```sh
-export POLAR_VOID_ENABLED=true
 uv run task api
 ```
 
@@ -47,7 +63,7 @@ SET feature_settings = feature_settings || '{"void_enabled": true}'::jsonb
 WHERE id = '<organization-uuid>';
 ```
 
-This uses the existing organization feature settings. No migration or frontend change is required. Set the value to `false` to pause that organization's Void API access and queued processing. Already-running work may finish. The global `POLAR_VOID_ENABLED` switch must also be enabled. `POLAR_VOID_ORGANIZATION_IDS` is no longer used; enable previously allowlisted organizations in the database before deploying this change.
+This uses the existing organization feature settings. No migration or frontend change is required. Set the value to `false` to pause that organization's Void API access and queued processing. Already-running work may finish. `POLAR_VOID_ORGANIZATION_IDS` is no longer used; enable previously allowlisted organizations in the database before deploying this change.
 
 In another terminal from `server/`, set the same environment variables and create
 a development token:

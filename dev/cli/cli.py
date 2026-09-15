@@ -160,6 +160,9 @@ def _track_up_step(step: str, started_at: float, success: bool, clean: bool) -> 
 
 @app.command()
 def up(
+    void: Annotated[
+        bool, typer.Option("--void", help="Also configure local Void services and seed data")
+    ] = False,
     clean: Annotated[
         bool, typer.Option("--clean", help="Force re-run all steps")
     ] = False,
@@ -186,6 +189,7 @@ def up(
         clean=clean,
         skip_integrations=skip_integrations,
         database_name=database_name,
+        void=void,
     )
     steps = discover_steps()
     total = len(steps)
@@ -213,7 +217,7 @@ def up(
     next_steps.add_row("dev seed", "Load sample data")
     next_steps.add_row()
     next_steps.add_row("[dim]Start all services", "")
-    next_steps.add_row("dev start", "API, worker, web, and Stripe in a tmux session")
+    next_steps.add_row("dev start", "API, worker, web, Stripe, and Void in a tmux session")
     next_steps.add_row("dev stop", "Stop all services")
     next_steps.add_row()
     next_steps.add_row("[dim]Start specific services", "")
@@ -221,6 +225,8 @@ def up(
     next_steps.add_row("dev worker", "Background worker")
     next_steps.add_row("dev web", "Frontend dev server")
     next_steps.add_row("dev stripe", "Stripe webhook listener")
+    if void:
+        next_steps.add_row("dev void", "Void infrastructure and Temporal worker")
     next_steps.add_row()
     next_steps.add_row("[dim]Need assistance?", "")
     next_steps.add_row("dev help", "Show all available commands")

@@ -16,6 +16,7 @@ class RiskSignalService:
         type: OrganizationRiskSignal.Type,
         risk_level: str,
         description: str | None = None,
+        account_evaluation_id: str | None = None,
         payload: dict[str, Any] | None = None,
     ) -> OrganizationRiskSignal:
         repository = OrganizationRiskSignalRepository.from_session(session)
@@ -26,6 +27,7 @@ class RiskSignalService:
                 type=type,
                 risk_level=risk_level,
                 description=description,
+                account_evaluation_id=account_evaluation_id,
                 payload=payload or {},
             )
         )

@@ -1930,7 +1930,7 @@ class OrganizationService:
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
             risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
-            payload={"account_evaluation": evaluation_id},
+            account_evaluation_id=evaluation_id,
         )
 
     async def handle_account_risk_signal(

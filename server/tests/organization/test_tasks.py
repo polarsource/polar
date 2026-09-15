@@ -240,7 +240,7 @@ class TestEvaluateWebsiteRisk:
         ).get_by_account_evaluation("acctevl_123")
         assert pending is not None
         assert pending.organization_id == organization.id
-        assert pending.payload["account_evaluation"] == "acctevl_123"
+        assert pending.account_evaluation_id == "acctevl_123"
 
     async def test_noop_without_website(
         self,

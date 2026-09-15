@@ -512,7 +512,6 @@ class OrganizationRiskSignalRepository(
         self, evaluation_id: str
     ) -> OrganizationRiskSignal | None:
         statement = self.get_base_statement().where(
-            OrganizationRiskSignal.payload["account_evaluation"].as_string()
-            == evaluation_id,
+            OrganizationRiskSignal.account_evaluation_id == evaluation_id,
         )
         return await self.get_one_or_none(statement)

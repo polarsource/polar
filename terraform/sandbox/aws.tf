@@ -11,6 +11,13 @@ module "secrets_kms" {
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
+module "jwks_signing_key" {
+  source = "../modules/jwks_signing_key"
+
+  environment = "sandbox"
+  role_name   = module.secrets_kms.role_name
+}
+
 module "lambda_worker_ecr" {
   source = "../modules/ecr_repository"
 

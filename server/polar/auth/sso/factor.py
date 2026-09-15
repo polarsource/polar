@@ -4,6 +4,7 @@ from typing import Any, cast
 import jwt
 from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
 from reauth.factors.oauth2.oidc import (
+    JWKSSigner,
     OIDCExtraParams,
     OIDCFactor,
     OIDCFactorBase,
@@ -104,8 +105,10 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         super().__init__(
             identifier=str(connection_id),
             client_id=client_id,
-            jwks=jwt.PyJWKSet.from_dict(settings.JWKS.as_dict(is_private=True)),
-            kid=settings.CURRENT_JWK_KID,
+            signer=JWKSSigner(
+                jwt.PyJWKSet.from_dict(settings.JWKS.as_dict(is_private=True)),
+                settings.CURRENT_JWK_KID,
+            ),
             discovery_endpoint=_discovery_endpoint(issuer),
             state_service=state_service,
             advance_by=2,

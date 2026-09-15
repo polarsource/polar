@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Sequence
 from itertools import batched
 from uuid import UUID
@@ -15,7 +16,7 @@ from polar.kit.repository import (
 from polar.models import Account, Order, Payment, Transaction
 from polar.models.transaction import PlatformFeeType, TransactionType
 
-from .diagnostics import payout_query_diagnostics
+from .diagnostics import payout_query_diagnostics, resolve_driver_connection
 
 _PAYOUT_UPDATE_BATCH_SIZE = 500
 
@@ -76,13 +77,21 @@ class TransactionRepository(
                 "select_unpaid_transactions_for_update",
                 db_backend_pid=backend_pid,
             ) as select_span:
-                async with payout_query_diagnostics.watch(
-                    backend_pid=backend_pid,
-                    span=select_span,
-                    phase="select_for_update",
-                ):
-                    transaction_ids = (await self.session.scalars(statement)).all()
+                try:
+                    async with payout_query_diagnostics.watch(
+                        backend_pid=backend_pid,
+                        span=select_span,
+                        phase="select_for_update",
+                    ):
+                        transaction_ids = (await self.session.scalars(statement)).all()
+                except asyncio.CancelledError:
+                    select_span.set_attribute("outcome", "cancelled")
+                    raise
+                except Exception:
+                    select_span.set_attribute("outcome", "error")
+                    raise
                 select_span.set_attribute("selected_rows", len(transaction_ids))
+                select_span.set_attribute("outcome", "success")
 
             batch_count = -(-len(transaction_ids) // _PAYOUT_UPDATE_BATCH_SIZE)
             span.set_attributes(
@@ -108,23 +117,41 @@ class TransactionRepository(
                         .values(payout_transaction_id=payout_transaction_id)
                         .execution_options(synchronize_session=False)
                     )
-                    async with payout_query_diagnostics.watch(
-                        backend_pid=backend_pid,
-                        span=batch_span,
-                        phase="update_batch",
-                        batch_ordinal=ordinal,
-                    ):
-                        await self.session.execute(update_statement)
+                    try:
+                        async with payout_query_diagnostics.watch(
+                            backend_pid=backend_pid,
+                            span=batch_span,
+                            phase="update_batch",
+                            batch_ordinal=ordinal,
+                        ):
+                            await self.session.execute(update_statement)
+                    except asyncio.CancelledError:
+                        batch_span.set_attribute("outcome", "cancelled")
+                        raise
+                    except Exception:
+                        batch_span.set_attribute("outcome", "error")
+                        raise
                     batch_span.set_attribute("outcome", "success")
 
     async def _get_backend_pid(self) -> int | None:
         """Postgres backend PID of the payout session, for span correlation.
 
+        Read from the asyncpg driver connection's startup metadata rather than
+        issuing SQL: a probe query on the payout session could trigger an
+        autoflush of pending ORM state and, on failure, leave the payout
+        transaction aborted. Reading the cached backend PID touches no server.
         Best-effort: instrumentation must never break the payout, so any failure
         is swallowed and correlation is simply omitted.
         """
         try:
-            return await self.session.scalar(select(func.pg_backend_pid()))
+            connection = await self.session.connection()
+            driver_connection = resolve_driver_connection(connection)
+            if driver_connection is None:
+                return None
+            get_server_pid = getattr(driver_connection, "get_server_pid", None)
+            if get_server_pid is None:
+                return None
+            return int(get_server_pid())
         except Exception:
             return None
 

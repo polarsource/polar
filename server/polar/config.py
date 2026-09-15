@@ -206,8 +206,16 @@ class Settings(BaseSettings):
     # never exhaust the pool or hang: a dedicated NullPool engine is used.
     PAYOUT_QUERY_DIAGNOSTICS_CONNECT_TIMEOUT_SECONDS: float = 5.0
     PAYOUT_QUERY_DIAGNOSTICS_STATEMENT_TIMEOUT_SECONDS: float = 5.0
+    # Client-side command timeout margin over the server statement_timeout, so
+    # the server cancels the diagnostic query first (a clean 57014 error) before
+    # the asyncpg client gives up and has to tear the connection down.
+    PAYOUT_QUERY_DIAGNOSTICS_COMMAND_TIMEOUT_MARGIN_SECONDS: float = 2.0
     # Cap the number of blocking backends whose (allowlisted) metadata is read.
     PAYOUT_QUERY_DIAGNOSTICS_MAX_BLOCKERS: int = 5
+    # Cap concurrent live sampling connections per process, so a burst of slow
+    # payouts can't open one NullPool connection each. Excess samples are skipped
+    # (recorded as `db.sample.status = skipped_busy`), never queued.
+    PAYOUT_QUERY_DIAGNOSTICS_MAX_CONCURRENCY: int = 4
 
     POSTGRES_READ_USER: str | None = None
     POSTGRES_READ_PWD: str | None = None

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any
+from typing import Any, Self
 
 import pytest
 from pytest_mock import MockerFixture
@@ -162,3 +162,147 @@ class TestSetUnpaidTransactionsPayout:
             await repository.set_unpaid_transactions_payout(
                 account.id, payout_transaction.id
             )
+
+
+@pytest.mark.asyncio
+class TestGetBackendPid:
+    async def test_returns_session_backend_pid(self, session: AsyncSession) -> None:
+        repository = TransactionRepository.from_session(session)
+        pid = await repository._get_backend_pid()
+        assert isinstance(pid, int)
+
+    async def test_does_not_flush_pending_orm_state(
+        self, session: AsyncSession
+    ) -> None:
+        # The PID is read from the driver connection's startup metadata, never a
+        # probe query: a probe would autoflush pending ORM state (and, on error,
+        # could leave the payout transaction aborted). Assert no flush happens.
+        repository = TransactionRepository.from_session(session)
+        pending = Transaction()  # missing NOT NULL columns -> would fail on flush
+        session.add(pending)
+
+        pid = await repository._get_backend_pid()
+
+        assert isinstance(pid, int)
+        assert pending in session.new  # still pending: it was never flushed
+        session.expunge(pending)
+
+    async def test_probe_failure_returns_none(
+        self, session: AsyncSession, mocker: MockerFixture
+    ) -> None:
+        repository = TransactionRepository.from_session(session)
+        mocker.patch.object(
+            session, "connection", side_effect=RuntimeError("no connection")
+        )
+
+        assert await repository._get_backend_pid() is None
+
+    async def test_payout_succeeds_when_pid_unavailable(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        mocker: MockerFixture,
+    ) -> None:
+        payout_transaction = await _create_payout_target(save_fixture, account)
+        eligible = await create_balance_transaction(
+            save_fixture, account=account, created_at=ten_days_ago
+        )
+        repository = TransactionRepository.from_session(session)
+        mocker.patch.object(repository, "_get_backend_pid", return_value=None)
+
+        await repository.set_unpaid_transactions_payout(
+            account.id, payout_transaction.id
+        )
+
+        await session.refresh(eligible)
+        assert eligible.payout_transaction_id == payout_transaction.id
+
+
+class _FakeSpan:
+    def __init__(self, name: str, attributes: dict[str, Any]) -> None:
+        self.name = name
+        self.attributes = attributes
+
+    def set_attribute(self, key: str, value: Any) -> None:
+        self.attributes[key] = value
+
+    def set_attributes(self, values: dict[str, Any]) -> None:
+        self.attributes.update(values)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+
+def _patch_spans(mocker: MockerFixture) -> list[_FakeSpan]:
+    spans: list[_FakeSpan] = []
+
+    def _span(name: str, **kwargs: Any) -> _FakeSpan:
+        span = _FakeSpan(name, dict(kwargs))
+        spans.append(span)
+        return span
+
+    mocker.patch("polar.transaction.repository.logfire.span", side_effect=_span)
+    return spans
+
+
+@pytest.mark.asyncio
+class TestPayoutQueryOutcomes:
+    async def test_success_outcome_on_spans(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        mocker: MockerFixture,
+    ) -> None:
+        spans = _patch_spans(mocker)
+        payout_transaction = await _create_payout_target(save_fixture, account)
+        await create_balance_transaction(
+            save_fixture, account=account, created_at=ten_days_ago
+        )
+
+        repository = TransactionRepository.from_session(session)
+        await repository.set_unpaid_transactions_payout(
+            account.id, payout_transaction.id
+        )
+
+        select_span = next(
+            s for s in spans if s.name == "select_unpaid_transactions_for_update"
+        )
+        batch_span = next(s for s in spans if s.name == "update_payout_batch")
+        assert select_span.attributes["outcome"] == "success"
+        assert batch_span.attributes["outcome"] == "success"
+
+    async def test_error_outcome_on_spans(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        mocker: MockerFixture,
+    ) -> None:
+        spans = _patch_spans(mocker)
+        payout_transaction = await _create_payout_target(save_fixture, account)
+        await create_balance_transaction(
+            save_fixture, account=account, created_at=ten_days_ago
+        )
+
+        original_execute = session.execute
+
+        async def failing_execute(*args: Any, **kwargs: Any) -> Any:
+            if args and isinstance(args[0], Update):
+                raise RuntimeError("update failed")
+            return await original_execute(*args, **kwargs)
+
+        mocker.patch.object(session, "execute", side_effect=failing_execute)
+
+        repository = TransactionRepository.from_session(session)
+        with pytest.raises(RuntimeError, match="update failed"):
+            await repository.set_unpaid_transactions_payout(
+                account.id, payout_transaction.id
+            )
+
+        batch_span = next(s for s in spans if s.name == "update_payout_batch")
+        assert batch_span.attributes["outcome"] == "error"

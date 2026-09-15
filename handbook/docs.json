@@ -109,7 +109,8 @@
               "engineering/decisions/0007-no-default-in-output-schemas",
               "engineering/decisions/0008-encrypt-secrets-at-rest",
               "engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates",
-              "engineering/decisions/0010-jwks-signing-keys-in-kms"
+              "engineering/decisions/0010-jwks-signing-keys-in-kms",
+              "engineering/decisions/0011-specialized-webhooks-also-emit-updated"
             ]
           },
           "engineering/tech-notes",

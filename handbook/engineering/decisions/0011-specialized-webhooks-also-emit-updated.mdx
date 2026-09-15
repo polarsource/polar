@@ -1,0 +1,72 @@
+---
+title: "ADR-0011: Specialized webhook events also emit the catch-all updated"
+description: "A resource change that has a specialized webhook also fires the generic *.updated event, so catch-all subscribers never miss it."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-09-15
+</Info>
+
+## Context
+
+Outgoing Polar webhooks come in two shapes: a catch-all `*.updated` (`subscription.updated`,
+`order.updated`, …) and specialized siblings for a particular transition (`subscription.canceled`,
+`order.paid`, `subscription.migrated`). Merchants often subscribe only to the catch-all and treat
+it as “anything changed on this resource.” A specialized event without the catch-all leaves
+those subscribers with no signal.
+
+The public [webhook events docs](https://docs.polar.sh/integrate/webhooks/events) already describe
+`subscription.updated` as a catch-all for the specialized subscription events. That contract was
+implicit in code (`_after_subscription_updated` always fires `subscription.updated` first) and
+easy to drop when adding a new specialized type.
+
+## Decision
+
+When a webhook resource has a catch-all `*.updated` and a more specific sibling for the same
+change, **emit both**. Never replace the catch-all with the specialized event. The specialized
+event is optional precision; the catch-all is the signal that something changed.
+
+```python
+await self._on_subscription_updated(session, subscription)
+await self._on_subscription_migrated(session, subscription, provider, provider_subscription_id)
+```
+
+The same pairing applies to other resources that already follow it (`order.updated` then
+`order.paid` via `_on_order_updated`). Resources with no catch-all (`customer_seat.*`) are out of
+scope until they get one.
+
+`*.created` is a birth event, not an update. Only subscriptions currently also fire
+`subscription.updated` after create; this ADR does not require that of other resources.
+
+## Consequences
+
+- Merchants who listen only to `*.updated` keep seeing every mutation, including new specialized
+  transitions such as a migrated subscription.
+- New specialized webhook types must call the catch-all sender as well. Do not drop an existing
+  `*.updated` when adding a specialized event.
+- Merchants subscribed to both events receive two deliveries with the same resource payload.
+  That duplication is the accepted cost.
+- Existing specialized-only senders (`order.refunded`, `checkout.expired`) should grow a matching
+  `*.updated` the next time that path is touched.
+
+## Alternatives considered
+
+- **Specialized event only**: fewer deliveries, but catch-all subscribers miss the change.
+- **Catch-all only**: merchants cannot subscribe to a precise transition.
+- **Let each flow decide**: the contract drifts, which is how `subscription.migrated` almost
+  shipped without `subscription.updated`.
+
+## References
+
+- [Webhook events](https://docs.polar.sh/integrate/webhooks/events) — `subscription.updated` as
+  catch-all; cancellation, renewal, and pause sequences always list `subscription.updated`
+  alongside the specialized event.
+- `server/polar/subscription/service.py` — `_after_subscription_updated` fires
+  `subscription.updated` before specialized handlers.
+- `server/polar/order/service.py` — `_on_order_updated` fires `order.updated` then `order.paid`.
+- [PR #14508](https://github.com/polarsource/polar/pull/14508#discussion_r4016359549) — review
+  that recorded this convention for `subscription.migrated`.

@@ -14,20 +14,15 @@ from polar.config import settings
 from polar.void.meter.activities import MeterActivities
 from polar.void.meter.service import meter as meter_service
 from polar.void.meter.workflows import MeterCycleWorkflow
+from polar.void.organization.repository import OrganizationRepository
 from polar.void.temporal import TASK_QUEUE
 from polar.void.worker import create_worker, ensure_schedules
 
 
 @pytest.mark.asyncio
 class TestMeterActivities:
-    @pytest.mark.parametrize("enabled", [False, True])
-    async def test_disabled_or_empty_allowlist_does_not_open_session(
-        self,
-        mocker: MockerFixture,
-        enabled: bool,
-    ) -> None:
-        mocker.patch.object(settings, "VOID_ENABLED", enabled)
-        mocker.patch.object(settings, "VOID_ORGANIZATION_IDS", set())
+    async def test_disabled_does_not_open_session(self, mocker: MockerFixture) -> None:
+        mocker.patch.object(settings, "VOID_ENABLED", False)
         sessionmaker = mocker.Mock()
         activities = MeterActivities(sessionmaker, mocker.Mock())
         assert await activities.cycle_meters() == 0
@@ -39,8 +34,19 @@ class TestMeterActivities:
     ) -> None:
         first, second = UUID(int=1), UUID(int=2)
         mocker.patch.object(settings, "VOID_ENABLED", True)
-        mocker.patch.object(settings, "VOID_ORGANIZATION_IDS", {second, first})
-        sessions = [AsyncMock(), AsyncMock()]
+        mocker.patch.object(
+            OrganizationRepository,
+            "enabled_ids",
+            new_callable=AsyncMock,
+            return_value={second, first},
+        )
+        mocker.patch.object(
+            OrganizationRepository,
+            "is_enabled",
+            new_callable=AsyncMock,
+            return_value=True,
+        )
+        sessions = [AsyncMock(), AsyncMock(), AsyncMock()]
         for session in sessions:
             session.__aenter__.return_value = session
         sessionmaker = mocker.Mock(side_effect=sessions)
@@ -51,10 +57,10 @@ class TestMeterActivities:
         activities = MeterActivities(sessionmaker, tinybird)
         assert await activities.cycle_meters() == 5
         assert cycle.await_args_list == [
-            mocker.call(sessions[0], tinybird, first),
-            mocker.call(sessions[1], tinybird, second),
+            mocker.call(sessions[1], tinybird, first),
+            mocker.call(sessions[2], tinybird, second),
         ]
-        for session in sessions:
+        for session in sessions[1:]:
             session.commit.assert_awaited_once()
             session.__aexit__.assert_awaited_once()
 
@@ -63,7 +69,18 @@ class TestMeterActivities:
         mocker: MockerFixture,
     ) -> None:
         mocker.patch.object(settings, "VOID_ENABLED", True)
-        mocker.patch.object(settings, "VOID_ORGANIZATION_IDS", {UUID(int=1)})
+        mocker.patch.object(
+            OrganizationRepository,
+            "enabled_ids",
+            new_callable=AsyncMock,
+            return_value={UUID(int=1)},
+        )
+        mocker.patch.object(
+            OrganizationRepository,
+            "is_enabled",
+            new_callable=AsyncMock,
+            return_value=True,
+        )
         session = AsyncMock()
         session.__aenter__.return_value = session
         mocker.patch.object(
@@ -77,7 +94,7 @@ class TestMeterActivities:
                 mocker.Mock(return_value=session), mocker.Mock()
             ).cycle_meters()
         session.commit.assert_not_awaited()
-        session.__aexit__.assert_awaited_once()
+        assert session.__aexit__.await_count == 2
 
 
 @pytest.mark.asyncio

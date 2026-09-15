@@ -8,7 +8,6 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import Organization, VoidEvent, VoidSubscription
 from polar.postgres import AsyncSession
@@ -239,7 +238,11 @@ class TestIdentitySnapshot:
             scopes={Scope.void_read, Scope.customers_read},
             token=token,
         )
-        settings.VOID_ORGANIZATION_IDS.add(organization_second.id)
+        organization_second.feature_settings = {
+            **organization_second.feature_settings,
+            "void_enabled": True,
+        }
+        await save_fixture(organization_second)
         for path in ("customers/root/state", "identities/child/snapshot"):
             response = await state_client.get(
                 f"/v1/void/{path}", headers={"Authorization": f"Bearer {token}"}

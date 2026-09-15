@@ -16,10 +16,16 @@ from polar.redis import Redis
 from tests.fixtures.base import IsolatedSessionTestClient
 
 
-@pytest.fixture
-def enable_void(monkeypatch: pytest.MonkeyPatch, organization: Organization) -> None:
+@pytest_asyncio.fixture
+async def enable_void(
+    monkeypatch: pytest.MonkeyPatch, organization: Organization, session: AsyncSession
+) -> None:
     monkeypatch.setattr(settings, "VOID_ENABLED", True)
-    monkeypatch.setattr(settings, "VOID_ORGANIZATION_IDS", {organization.id})
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "void_enabled": True,
+    }
+    await session.flush()
 
 
 @pytest_asyncio.fixture

@@ -220,7 +220,9 @@ class TestListAndGet:
         response = await void_client.get(path)
         assert response.status_code == 401
 
-    @pytest.mark.parametrize(("enabled", "allowlisted"), [(False, True), (True, False)])
+    @pytest.mark.parametrize(
+        ("enabled", "organization_enabled"), [(False, True), (True, False)]
+    )
     async def test_gate(
         self,
         void_client: AsyncClient,
@@ -228,15 +230,15 @@ class TestListAndGet:
         organization: Organization,
         monkeypatch: pytest.MonkeyPatch,
         enabled: bool,
-        allowlisted: bool,
+        organization_enabled: bool,
     ) -> None:
         await create_token(save_fixture, organization, scopes={Scope.void_write})
         monkeypatch.setattr(settings, "VOID_ENABLED", enabled)
-        monkeypatch.setattr(
-            settings,
-            "VOID_ORGANIZATION_IDS",
-            {organization.id} if allowlisted else set(),
-        )
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "void_enabled": organization_enabled,
+        }
+        await save_fixture(organization)
         assert (await void_client.get(PATH, headers=HEADERS)).status_code == 404
         assert (
             await void_client.post(PATH, headers=HEADERS, json={"external_id": "root"})

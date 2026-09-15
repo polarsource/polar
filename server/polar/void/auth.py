@@ -22,7 +22,7 @@ def _require_void_organization(
     require_void_enabled()
     if not isinstance(auth_subject.session, OrganizationAccessToken):
         raise Unauthorized()
-    if auth_subject.subject.id not in settings.VOID_ORGANIZATION_IDS:
+    if not auth_subject.subject.is_void_enabled:
         raise ResourceNotFound()
     return auth_subject
 

@@ -4,7 +4,6 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.models import Organization
 from tests.fixtures.database import SaveFixture
 from tests.void.test_endpoints import TOKEN, create_token
@@ -112,7 +111,11 @@ class TestDefinitionRoutes:
         assert response.json()[0]["archived_at"] is not None
         second_token = f"{TOKEN}_second"
         await create_token(save_fixture, organization_second, token=second_token)
-        settings.VOID_ORGANIZATION_IDS.add(organization_second.id)
+        organization_second.feature_settings = {
+            **organization_second.feature_settings,
+            "void_enabled": True,
+        }
+        await save_fixture(organization_second)
         second_headers = {"Authorization": f"Bearer {second_token}"}
         for resource, row in (
             ("meters", meter),

@@ -74,7 +74,7 @@ def get_void_openapi(version: APIVersion = CURRENT_API_VERSION) -> dict[str, Any
     oat_scheme = schema["components"]["securitySchemes"]["oat"]
     oat_scheme["description"] = (
         "An organization access token with Void scopes. For local development, "
-        "use scripts.generate_void_token for an allowlisted organization."
+        "use scripts.generate_void_token for a Void-enabled organization."
     )
     schema["components"]["securitySchemes"] = {"oat": oat_scheme}
     return schema

@@ -47,6 +47,11 @@ class DevelopmentService:
                 or account.currency != "usd"
             ):
                 raise DevelopmentSeedConflict()
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "void_enabled": True,
+            }
+            await session.flush()
             return organization, False
         if account is not None:
             raise DevelopmentSeedConflict()
@@ -60,6 +65,7 @@ class DevelopmentService:
             ),
             status=OrganizationStatus.ACTIVE,
             capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
+            feature_settings={"void_enabled": True},
         )
         await repository.create(organization, flush=True)
         return organization, True

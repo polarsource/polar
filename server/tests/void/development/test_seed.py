@@ -1,10 +1,8 @@
 import argparse
-import json
 import shlex
 from datetime import timedelta
 from pathlib import Path
 from stat import S_IMODE
-from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -39,7 +37,6 @@ class TestDevelopmentSeed:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         organization_id, token, _ = await seed_token(session)
-        monkeypatch.setattr(settings, "VOID_ORGANIZATION_IDS", {organization_id})
         response = await void_client.get(
             "/v1/void/organizations/current",
             headers={"Authorization": f"Bearer {token}"},
@@ -55,9 +52,7 @@ class TestDevelopmentSeed:
         session: AsyncSession,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        previous_allowlist = {uuid4()}
         monkeypatch.setattr(settings, "VOID_ENABLED", False)
-        monkeypatch.setattr(settings, "VOID_ORGANIZATION_IDS", previous_allowlist)
         before = utc_now()
         first_id, first_token, created = await seed_token(session)
         second_id, second_token, repeated_created = await seed_token(session)
@@ -66,7 +61,6 @@ class TestDevelopmentSeed:
         assert first_id == second_id == ORGANIZATION_ID
         assert first_token != second_token
         assert not settings.VOID_ENABLED
-        assert settings.VOID_ORGANIZATION_IDS is previous_allowlist
         assert (
             await session.scalar(
                 select(func.count())
@@ -101,6 +95,7 @@ class TestDevelopmentSeed:
         )
         assert token.organization.account_id == ACCOUNT_ID
         assert token.organization.status == OrganizationStatus.ACTIVE
+        assert token.organization.is_void_enabled
 
     @pytest.mark.parametrize("change", ["slug", "status", "capabilities", "deleted"])
     async def test_preserves_incompatible_existing_organization(
@@ -168,13 +163,9 @@ class TestDevelopmentSeed:
 class TestCredentialFile:
     def test_atomic_replacement_is_private_and_sourceable(self, tmp_path: Path) -> None:
         output = tmp_path / "credentials" / "void.env"
-        write_environment(
-            output, ORGANIZATION_ID, "first-secret", "http://127.0.0.1:8000"
-        )
+        write_environment(output, "first-secret", "http://127.0.0.1:8000")
         output.chmod(0o644)
-        write_environment(
-            output, ORGANIZATION_ID, "new'secret$", "http://127.0.0.1:9001"
-        )
+        write_environment(output, "new'secret$", "http://127.0.0.1:9001")
         assert S_IMODE(output.stat().st_mode) == 0o600
         values = dict(
             shlex.split(line)[1].split("=", 1)
@@ -182,7 +173,6 @@ class TestCredentialFile:
         )
         assert values == {
             "POLAR_VOID_ENABLED": "true",
-            "POLAR_VOID_ORGANIZATION_IDS": json.dumps([str(ORGANIZATION_ID)]),
             "VOID_TOKEN": "new'secret$",
             "VOID_API_URL": "http://127.0.0.1:9001",
         }

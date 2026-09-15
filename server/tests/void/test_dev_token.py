@@ -31,7 +31,11 @@ class TestGenerateVoidToken:
         customers: bool,
     ) -> None:
         mocker.patch.object(settings, "VOID_ENABLED", True)
-        mocker.patch.object(settings, "VOID_ORGANIZATION_IDS", {organization.id})
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "void_enabled": True,
+        }
+        await session.flush()
         before = utc_now()
         token = await generate_void_token(
             session, str(getattr(organization, identifier)), customers=customers
@@ -69,15 +73,14 @@ class TestGenerateVoidToken:
         with pytest.raises(ValueError, match="must be enabled"):
             await generate_void_token(session, "acme")
 
-    async def test_not_allowlisted(
+    async def test_organization_not_enabled(
         self,
         session: AsyncSession,
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
         mocker.patch.object(settings, "VOID_ENABLED", True)
-        mocker.patch.object(settings, "VOID_ORGANIZATION_IDS", set())
-        with pytest.raises(ValueError, match="not allowlisted"):
+        with pytest.raises(ValueError, match="not enabled for this organization"):
             await generate_void_token(session, organization.slug)
 
     async def test_unknown_organization(
@@ -94,7 +97,11 @@ class TestGenerateVoidToken:
         mocker: MockerFixture,
     ) -> None:
         mocker.patch.object(settings, "VOID_ENABLED", True)
-        mocker.patch.object(settings, "VOID_ORGANIZATION_IDS", {organization.id})
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "void_enabled": True,
+        }
+        await session.flush()
         organization.capabilities = {**organization.capabilities, "api_access": False}
         await session.flush()
         with pytest.raises(ValueError, match="cannot authenticate"):

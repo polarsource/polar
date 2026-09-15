@@ -32,8 +32,8 @@ async def generate_void_token(
         resolved_organization = await repository.get_by_id(organization_id)
     if resolved_organization is None:
         raise ValueError("Organization not found")
-    if resolved_organization.id not in settings.VOID_ORGANIZATION_IDS:
-        raise ValueError("Organization is not allowlisted for Void")
+    if not resolved_organization.is_void_enabled:
+        raise ValueError("Void is not enabled for this organization")
     if not resolved_organization.can_authenticate:
         raise ValueError("Organization cannot authenticate")
 

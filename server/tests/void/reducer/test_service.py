@@ -306,11 +306,21 @@ class TestRecords:
 class TestWorkerGates:
     @pytest.mark.parametrize("enabled", [True, False])
     async def test_inactive_organization_does_no_work(
-        self, organization: Organization, monkeypatch: pytest.MonkeyPatch, enabled: bool
+        self,
+        organization: Organization,
+        monkeypatch: pytest.MonkeyPatch,
+        enabled: bool,
+        session: AsyncSession,
     ) -> None:
         monkeypatch.setattr(settings, "VOID_ENABLED", enabled)
-        monkeypatch.setattr(settings, "VOID_ORGANIZATION_IDS", set())
-        maker = Mock()
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "void_enabled": False,
+        }
+        await session.flush()
+        context = AsyncMock()
+        context.__aenter__.return_value = session
+        maker = Mock(return_value=context)
         activities = ReducerActivities(maker, Mock(), Mock())
         with pytest.raises(ApplicationError) as listed:
             await activities.list_reducers(str(organization.id))
@@ -323,4 +333,3 @@ class TestWorkerGates:
             )
         assert not recomputed.value.non_retryable
         assert await activities.dispatch_derived() == 0
-        maker.assert_not_called()

@@ -8,6 +8,8 @@ from temporalio.exceptions import ApplicationError
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker
+from polar.postgres import AsyncSession
+from polar.void.organization.repository import OrganizationRepository
 from polar.void.temporal import TASK_QUEUE
 from polar.void.tinybird import TinybirdApi
 
@@ -29,15 +31,8 @@ class ReducerActivities:
 
     @activity.defn
     async def list_reducers(self, organization_id: str) -> list[str]:
-        if (
-            not settings.VOID_ENABLED
-            or uuid.UUID(organization_id) not in settings.VOID_ORGANIZATION_IDS
-        ):
-            raise ApplicationError(
-                "Void processing is paused for this organization",
-                type="VoidOrganizationPaused",
-            )
         async with self.sessionmaker() as session:
+            await self.require_enabled(session, uuid.UUID(organization_id))
             repository = ReducerRepository.from_session(session)
             await repository.lock_definitions(uuid.UUID(organization_id), shared=True)
             ids = await repository.event_reducer_ids(uuid.UUID(organization_id))
@@ -45,17 +40,10 @@ class ReducerActivities:
 
     @activity.defn
     async def recompute_bucket(self, input: RecomputeBucketInput) -> int:
-        if (
-            not settings.VOID_ENABLED
-            or uuid.UUID(input.organization_id) not in settings.VOID_ORGANIZATION_IDS
-        ):
-            raise ApplicationError(
-                "Void processing is paused for this organization",
-                type="VoidOrganizationPaused",
-            )
         if settings.VOID_REDUCER_PROCESSING_DELAY_SECONDS:
             await asyncio.sleep(settings.VOID_REDUCER_PROCESSING_DELAY_SECONDS)
         async with self.sessionmaker() as session:
+            await self.require_enabled(session, uuid.UUID(input.organization_id))
             count = await reducer_service.recompute_bucket(
                 session,
                 self.tinybird,
@@ -68,12 +56,12 @@ class ReducerActivities:
 
     @activity.defn
     async def dispatch_derived(self) -> int:
-        if not settings.VOID_ENABLED or not settings.VOID_ORGANIZATION_IDS:
+        if not settings.VOID_ENABLED:
             return 0
         assert self.temporal is not None
         async with self.sessionmaker() as session:
             jobs = await ReducerRepository.from_session(session).pending_jobs(
-                settings.VOID_ORGANIZATION_IDS
+                await OrganizationRepository.from_session(session).enabled_ids()
             )
             # Keep locks until delivery and deletion commit. A crash replays
             # notifications; a concurrent source update leaves another job.
@@ -91,3 +79,14 @@ class ReducerActivities:
                 await session.delete(job)
             await session.commit()
             return len(jobs)
+
+    async def require_enabled(
+        self, session: AsyncSession, organization_id: uuid.UUID
+    ) -> None:
+        if not settings.VOID_ENABLED or not await OrganizationRepository.from_session(
+            session
+        ).is_enabled(organization_id):
+            raise ApplicationError(
+                "Void processing is paused for this organization",
+                type="VoidOrganizationPaused",
+            )

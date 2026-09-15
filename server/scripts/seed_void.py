@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import json
 import os
 import shlex
 import tempfile
@@ -38,23 +37,17 @@ def api_origin(value: str) -> str:
 async def seed_token(session: AsyncSession) -> tuple[UUID, str, bool]:
     organization, created = await development_service.seed(session)
     previous_enabled = settings.VOID_ENABLED
-    previous_organizations = settings.VOID_ORGANIZATION_IDS
     try:
         settings.VOID_ENABLED = True
-        settings.VOID_ORGANIZATION_IDS = {organization.id}
         token = await generate_void_token(session, str(organization.id), customers=True)
     finally:
         settings.VOID_ENABLED = previous_enabled
-        settings.VOID_ORGANIZATION_IDS = previous_organizations
     return organization.id, token, created
 
 
-def write_environment(
-    output: Path, organization_id: UUID, token: str, api_url: str
-) -> None:
+def write_environment(output: Path, token: str, api_url: str) -> None:
     values = {
         "POLAR_VOID_ENABLED": "true",
-        "POLAR_VOID_ORGANIZATION_IDS": json.dumps([str(organization_id)]),
         "VOID_TOKEN": token,
         "VOID_API_URL": api_url,
     }
@@ -80,8 +73,8 @@ async def run(output: Path, api_url: str) -> bool:
     try:
         sessionmaker = create_async_sessionmaker(engine)
         async with sessionmaker() as session, session.begin():
-            organization_id, token, created = await seed_token(session)
-        write_environment(output, organization_id, token, api_url)
+            _, token, created = await seed_token(session)
+        write_environment(output, token, api_url)
         return created
     finally:
         await engine.dispose()

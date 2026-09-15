@@ -2,7 +2,6 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { NodeServices } from '@effect/platform-node'
 import {
-  Config as EnvConfig,
   ConfigProvider,
   Console,
   Effect,
@@ -11,25 +10,27 @@ import {
   Redacted,
   Schema,
 } from 'effect'
-import { Command, Flag, Prompt } from 'effect/unstable/cli'
+import { Command, Flag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { Api } from '../api/index'
 import { apiLayer } from '../api/layers'
 import { checksum, compile } from '../config/compile'
 import type { Config } from '../config/config'
 import type { PricePreviewWindow } from '../api/generated'
-import { describePlan, describeSummary, describeTarget } from './format'
+import { describePlan, describeSummary } from './format'
 import { PreviewError, previewWindow } from './preview'
 import { soft, styleEnabled } from './style'
 
+import { resolveCredentials } from './credentials'
 import {
-  CredentialsError,
-  normalizeApiUrl,
-  readLogin,
-  removeLogin,
-  resolveCredentials,
-  saveLogin,
-} from './credentials'
+  authFlags,
+  login,
+  logout,
+  profiles,
+  showTarget,
+  switchProfile,
+  whoami,
+} from './auth'
 
 const CONFIG_FILES = ['void.ts', 'void.config.ts', 'void.mts']
 
@@ -150,16 +151,7 @@ const flags = {
     Flag.withDescription('Config module; defaults to void.ts'),
     Flag.optional,
   ),
-  apiUrl: Flag.string('api-url').pipe(
-    Flag.withDescription('Server URL'),
-    Flag.withFallbackConfig(EnvConfig.string('VOID_API_URL')),
-    Flag.optional,
-  ),
-  token: Flag.redacted('token').pipe(
-    Flag.withDescription('Organization token'),
-    Flag.withFallbackConfig(EnvConfig.redacted('VOID_TOKEN')),
-    Flag.optional,
-  ),
+  ...authFlags,
 }
 
 const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
@@ -192,6 +184,7 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
       config: file,
       apiUrl,
       token,
+      profile,
       from,
       to,
       preview: requestedPreview,
@@ -216,9 +209,10 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
         const credentials = yield* resolveCredentials(
           Option.getOrUndefined(apiUrl),
           Option.getOrUndefined(token),
+          Option.getOrUndefined(profile),
         )
         yield* Effect.gen(function* () {
-          yield* showTarget(credentials.apiUrl)
+          yield* showTarget(credentials)
           yield* reconcile(name, config, preview)
         }).pipe(
           Effect.provide(
@@ -231,77 +225,15 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
       }),
   ).pipe(Command.withDescription(description))
 
-const showTarget = Effect.fn('cli.showTarget')(function* (apiUrl: string) {
-  const api = yield* Api
-  const organization = yield* api.organizationsCurrent(undefined)
-  yield* Console.log(
-    describeTarget(
-      organization.name,
-      organization.slug,
-      apiUrl,
-      styleEnabled(),
-    ),
-  )
-  return organization
-})
-
-const login = Command.make(
-  'login',
-  { apiUrl: flags.apiUrl, token: flags.token },
-  ({ apiUrl, token }) =>
-    Effect.gen(function* () {
-      let url = Option.getOrUndefined(apiUrl)
-      if (url === undefined) url = (yield* readLogin())?.apiUrl
-      if (url === undefined) {
-        if (!process.stdin.isTTY)
-          return yield* new CredentialsError({
-            message:
-              'Login needs --api-url or VOID_API_URL when not running in a terminal.',
-          })
-        url = yield* Prompt.text({ message: 'Void server URL' })
-      }
-      const target = yield* normalizeApiUrl(url)
-      let accessToken = Option.getOrUndefined(token)
-      if (accessToken === undefined) {
-        if (!process.stdin.isTTY)
-          return yield* new CredentialsError({
-            message:
-              'Login needs --token or VOID_TOKEN when not running in a terminal.',
-          })
-        accessToken = yield* Prompt.password({
-          message: 'Organization access token',
-        })
-      }
-      if (Redacted.value(accessToken).trim() === '')
-        return yield* new CredentialsError({
-          message: 'An organization access token is required.',
-        })
-      const credentials = { apiUrl: target, token: accessToken }
-      const organization = yield* showTarget(target).pipe(
-        Effect.provide(
-          apiLayer({ apiUrl: target, token: Redacted.value(accessToken) }),
-        ),
-      )
-      yield* saveLogin(credentials, organization)
-      yield* Console.log('Logged in.')
-    }),
-).pipe(
-  Command.withDescription('Validate and save an organization access token'),
-)
-
-const logout = Command.make('logout', {}, () =>
-  Effect.gen(function* () {
-    yield* removeLogin()
-    yield* Console.log('Saved login removed. Environment tokens are unchanged.')
-  }),
-).pipe(Command.withDescription('Remove the saved login from this computer'))
-
 const cli = (load: Loader) =>
   Command.make('void').pipe(
     Command.withDescription('Deploy a void config'),
     Command.withSubcommands([
       login,
       logout,
+      whoami,
+      profiles,
+      switchProfile,
       command('plan', 'Show config changes; writes nothing', load),
       command(
         'deploy',

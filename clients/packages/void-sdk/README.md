@@ -36,9 +36,18 @@ Use a local Polar database with an existing organization. Start the server from
 
 ```sh
 export POLAR_VOID_ENABLED=true
-export POLAR_VOID_ORGANIZATION_IDS='["<organization-uuid>"]'
 uv run task api
 ```
+
+Enable the organization in the Polar database:
+
+```sql
+UPDATE organizations
+SET feature_settings = feature_settings || '{"void_enabled": true}'::jsonb
+WHERE id = '<organization-uuid>';
+```
+
+This uses the existing organization feature settings. No migration or frontend change is required. Set the value to `false` to pause that organization's Void API access and queued processing. Already-running work may finish. The global `POLAR_VOID_ENABLED` switch must also be enabled. `POLAR_VOID_ORGANIZATION_IDS` is no longer used; enable previously allowlisted organizations in the database before deploying this change.
 
 In another terminal from `server/`, set the same environment variables and create
 a development token:
@@ -49,7 +58,7 @@ uv run python -m scripts.generate_void_token <organization-uuid-or-slug>
 
 The helper creates a token that expires after 24 hours and is limited to local
 development and testing. Login requires an organization access token with either
-`void:read` or `void:write`. The organization must also be allowlisted; enabling
+`void:read` or `void:write`. The organization must also have its `void_enabled` feature flag set; enabling
 the route alone grants no access.
 
 From `clients/`, run:
@@ -153,24 +162,29 @@ Config contains no Void organization ID, API token, or server URL. The same conf
 ### CLI login and deployment
 
 ```sh
-void login --api-url http://localhost:8000
+void login --profile development --api-url http://localhost:8000
 # Paste an existing organization access token into the masked prompt.
-void plan
-void deploy
-void logout
+void profiles
+void whoami
+void switch development
+void plan --profile development
+void deploy --profile development
+void logout --profile development
 ```
 
-`void login` validates the token with `GET /v1/void/organizations/current`, prints the organization, and saves the token, server URL, and organization details outside the repository. It does not create an account or issue a token. For local Polar development, use the token helper described above.
+`void login` stays in the terminal. It validates the token with `GET /v1/void/organizations/current`, displays the organization and server, and saves a named profile. It does not create an account or issue a token. Without `--profile`, the name defaults to `<organization-slug>@<server-host>`. Logging in activates the profile. An existing profile can receive a replacement token for the same organization and server; a different target requires a different name.
 
-You can also supply `--token` or `VOID_TOKEN` to login without a prompt. Login prompts for the server URL when none is supplied or saved. Noninteractive login requires a server URL and token through flags or environment variables, with a saved server URL also usable.
+Supply `--token` or `VOID_TOKEN` for noninteractive login. Otherwise, login uses a masked token prompt. The server URL comes from `--api-url`, `VOID_API_URL`, the named or active saved profile, or an interactive prompt. For local Polar development, use the token helper above.
 
-`void plan` and `void deploy` load the config, resolve credentials, and revalidate the token to display the current organization before sending the deployment request. Invalid or revoked tokens stop the command before deployment. The API uses the authenticated organization; config contains no separate target to compare against it.
+`void profiles` lists saved organizations and marks the active profile. `void switch <profile>` validates its token before changing the active profile; without a name, it offers an interactive selection. `void whoami` verifies and displays the current organization, UUID, server, and saved profile when applicable. It needs no config file.
 
-Credential precedence is **flags → environment variables → saved login**. Use `--api-url` / `VOID_API_URL` and `--token` / `VOID_TOKEN`. A saved token is used only when the resolved server URL matches its saved URL. CI supplies its own server URL and secret token and needs no saved login.
+`void plan` and `void deploy` revalidate credentials and display the target before sending a deployment request. A revoked token or a mismatch between the token's organization and its saved profile stops the command. Config files contain no organization target.
 
-One active login is stored at `$XDG_CONFIG_HOME/void/credentials.json`, or `~/.config/void/credentials.json` when unset. `VOID_CREDENTIALS_FILE` overrides the file location. The token is stored as plaintext in an atomically replaced file with mode `0600`; newly created directories use mode `0700`. Failed authentication leaves an existing login intact. `void logout` removes the saved file without revoking the token or changing environment variables.
+Without `--profile`, credential precedence remains **flags → environment variables → active profile**. A saved token is used only for its saved server URL. Explicit `--profile` selects saved credentials and rejects `--api-url`, `--token`, `VOID_API_URL`, or `VOID_TOKEN` overrides. CI can supply its own server URL and secret token without any saved profiles. Switching profiles warns when environment credentials would override the selection.
 
-The server must include the `/v1/void/organizations/current` endpoint before using these CLI commands. Tokens stay outside config and source control.
+Profiles are stored at `$XDG_CONFIG_HOME/void/credentials.json`, or `~/.config/void/credentials.json` when unset. `VOID_CREDENTIALS_FILE` overrides this path. Tokens are plaintext in an atomically replaced file with mode `0600`; newly created directories use mode `0700`. Existing single-login files are read as a profile named `default` and converted when next saved. Failed authentication preserves saved profiles.
+
+`void logout` removes the active profile, `void logout --profile <name>` removes one profile, and `void logout --all` removes the file. Removing the active profile leaves no active selection; it does not silently select another organization. Logout does not revoke tokens or change environment variables.
 
 Applications provide their own credentials to `createVoid`:
 

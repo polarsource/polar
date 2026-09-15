@@ -25,6 +25,7 @@ from polar.void.event.service import event as event_service
 from polar.void.event.workflows import EventDispatchWorkflow
 from polar.void.meter.activities import MeterActivities
 from polar.void.meter.workflows import MeterCycleWorkflow
+from polar.void.organization.repository import OrganizationRepository
 from polar.void.reducer.activities import ReducerActivities
 from polar.void.reducer.workflows import (
     DerivedDispatchWorkflow,
@@ -54,7 +55,7 @@ class EventActivities:
                 session,
                 self.tinybird,
                 self.temporal,
-                settings.VOID_ORGANIZATION_IDS,
+                await OrganizationRepository.from_session(session).enabled_ids(),
             )
             await session.commit()
             return count
@@ -114,10 +115,8 @@ def create_worker(
 
 
 async def main() -> None:
-    if not settings.VOID_ENABLED or not settings.VOID_ORGANIZATION_IDS:
-        raise RuntimeError(
-            "Enable Void and allowlist organizations before starting its worker"
-        )
+    if not settings.VOID_ENABLED:
+        raise RuntimeError("Enable Void before starting its worker")
     tinybird = create_client()
     engine = create_async_engine("worker", pool_logging_name="void_worker")
     try:

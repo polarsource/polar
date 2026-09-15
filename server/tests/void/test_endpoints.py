@@ -13,6 +13,7 @@ from polar.models import OAuth2Token, Organization, OrganizationAccessToken
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
 from polar.oauth2.sub_type import SubType
 from polar.organization_access_token.service import TOKEN_PREFIX
+from polar.postgres import AsyncSession
 from polar.version import CURRENT_API_VERSION, VERSIONS
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -91,7 +92,7 @@ class TestCurrentOrganization:
 
         assert response.status_code == 404
 
-    async def test_empty_allowlist(
+    async def test_organization_feature_disabled(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
@@ -99,7 +100,11 @@ class TestCurrentOrganization:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         await create_token(save_fixture, organization)
-        monkeypatch.setattr(settings, "VOID_ORGANIZATION_IDS", set())
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "void_enabled": False,
+        }
+        await save_fixture(organization)
 
         response = await void_client.get(
             PATH, headers={"Authorization": f"Bearer {TOKEN}"}
@@ -107,7 +112,27 @@ class TestCurrentOrganization:
 
         assert response.status_code == 404
 
-    async def test_other_organization_cannot_select_allowlisted_organization(
+    async def test_database_flag_changes_apply_to_existing_token(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+    ) -> None:
+        await create_token(save_fixture, organization)
+        for enabled in (True, False, True):
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "void_enabled": enabled,
+            }
+            await session.merge(organization)
+            await session.flush()
+            response = await void_client.get(
+                PATH, headers={"Authorization": f"Bearer {TOKEN}"}
+            )
+            assert response.status_code == (200 if enabled else 404)
+
+    async def test_other_organization_cannot_select_enabled_organization(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
@@ -132,9 +157,11 @@ class TestCurrentOrganization:
         organization_second: Organization,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        monkeypatch.setattr(
-            settings, "VOID_ORGANIZATION_IDS", {organization.id, organization_second.id}
-        )
+        organization_second.feature_settings = {
+            **organization_second.feature_settings,
+            "void_enabled": True,
+        }
+        await save_fixture(organization_second)
         await create_token(save_fixture, organization)
         second_token = f"{TOKEN_PREFIX}second_void_test"
         await create_token(save_fixture, organization_second, token=second_token)

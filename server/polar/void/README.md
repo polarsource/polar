@@ -74,7 +74,7 @@ source /tmp/void-local.env
 ```
 
 The seed reuses its dedicated organization and account and refuses conflicting
-records. Start the API and worker with the resulting allowlist settings. It never
+records. It enables `feature_settings["void_enabled"]` on its dedicated organization. Start the API and worker with the resulting environment settings. It never
 creates a native paid subscription or configures Stripe.
 
 ## Continuous integration
@@ -93,7 +93,7 @@ email. Normal development uses the real backend renderer.
 
 Deploy database migrations first, then the dedicated Tinybird project, then
 compatible API and worker binaries. Finally enable Void for the chosen
-organization IDs. Keep its Tinybird workspace separate from Polar billing.
+organizations using `organizations.feature_settings["void_enabled"] = true` in the database. The global `POLAR_VOID_ENABLED` switch must also be enabled. Existing environment allowlists are no longer used; set the database flags before deploying this change. Keep its Tinybird workspace separate from Polar billing.
 To disable it, set `POLAR_VOID_ENABLED=false` on the API and stop the dedicated
 Void workers. Also pause the `polar-void-dispatch-events`,
 `polar-void-dispatch-reducers`, and `polar-void-dispatch-meter-cycles` schedules in
@@ -231,8 +231,7 @@ computing totals, so ratios aggregate correctly across actors and periods.
 
 Void keeps its Temporal worker separate from Polar's Dramatiq worker. Workflow IDs,
 schedules, and the default task queue use the `polar-void` prefix. API startup does
-not connect to Temporal or build Tinybird resources. Workers process only enabled,
-allowlisted organizations. Removing an organization pauses queued computation;
+not connect to Temporal or build Tinybird resources. Workers query the database for organizations with `feature_settings["void_enabled"]` set to `true` and permission to authenticate. Disabling the flag pauses new API requests and queued computation without a worker restart. Already-running work may finish;
 retryable activities retain it until access is restored. Stop the worker when
 turning off Void entirely.
 
@@ -243,7 +242,7 @@ From `server/`, alongside the normal Polar database and API infrastructure:
 ```sh
 docker compose -f docker-compose.void.yml up -d
 export POLAR_VOID_ENABLED=true
-export POLAR_VOID_ORGANIZATION_IDS='["<organization-uuid>"]'
+# Enable organizations.feature_settings["void_enabled"] in the database first.
 uv run alembic upgrade head
 uv run task void_tb_deploy --local
 export POLAR_VOID_TINYBIRD_API_TOKEN="$(curl -fsS http://localhost:7281/tokens | jq -r .admin_token)"

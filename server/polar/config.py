@@ -6,7 +6,6 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
-from uuid import UUID
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, model_validator
@@ -66,7 +65,6 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     VOID_ENABLED: bool = False
-    VOID_ORGANIZATION_IDS: set[UUID] = set()
     VOID_TEMPORAL_ADDRESS: str = "localhost:7333"
     VOID_TEMPORAL_NAMESPACE: str = "default"
     VOID_TEMPORAL_TASK_QUEUE: str = "polar-void"

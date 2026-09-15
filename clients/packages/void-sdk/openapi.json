@@ -7028,7 +7028,7 @@
     "securitySchemes": {
       "oat": {
         "type": "http",
-        "description": "An organization access token with Void scopes. For local development, use scripts.generate_void_token for an allowlisted organization.",
+        "description": "An organization access token with Void scopes. For local development, use scripts.generate_void_token for a Void-enabled organization.",
         "scheme": "bearer"
       }
     }

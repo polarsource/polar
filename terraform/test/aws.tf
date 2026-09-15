@@ -19,6 +19,14 @@ module "secrets_kms" {
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
+module "jwks_signing_key" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/jwks_signing_key"
+
+  environment = "test"
+  role_name   = module.secrets_kms[0].role_name
+}
+
 module "redis" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/aws_redis"

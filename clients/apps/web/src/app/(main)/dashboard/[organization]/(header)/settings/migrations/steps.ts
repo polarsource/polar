@@ -36,7 +36,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     owner: 'polar',
     title: 'Assess & import your catalog',
     description:
-      'Polar checks what can move — including coupons — then imports the products and customers your subscriptions need.',
+      'Polar checks what can move, then imports the products, discounts and customers your subscriptions need.',
     steps: ['pre_check'],
   },
   {

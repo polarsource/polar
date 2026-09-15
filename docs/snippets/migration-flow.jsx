@@ -1,77 +1,79 @@
-const MIGRATION_STAGES = [
-  {
-    key: 'new-sales',
-    short: 'New sales',
-    eyebrow: 'Start safely',
-    title: 'Polar handles every new checkout',
-    description:
-      'New customers enter through Polar while existing subscriptions keep renewing in Stripe.',
-    packet: 'New checkout',
-    stripeTitle: 'Existing subscriptions',
-    stripeStatus: 'Renewing',
-    polarTitle: 'New sales',
-    polarStatus: 'Live',
-    owner: 'Existing → Stripe · New → Polar',
-  },
-  {
-    key: 'prepare',
-    short: 'Prepare',
-    eyebrow: 'Build the bridge',
-    title: 'Prepare the catalog and customer map',
-    description:
-      'Polar imports the products and customers needed by the subscriptions you select. Billing does not move yet.',
-    packet: 'Products + customers',
-    stripeTitle: 'Subscriptions',
-    stripeStatus: 'Unchanged',
-    polarTitle: 'Catalog + customers',
-    polarStatus: 'Prepared',
-    owner: 'Existing renewals → Stripe',
-  },
-  {
-    key: 'cards',
-    short: 'Move cards',
-    eyebrow: 'Secure transfer',
-    title: 'Stripe copies saved cards account to account',
-    description:
-      'Card details move directly between Stripe accounts. Polar verifies which subscriptions have a usable card.',
-    packet: 'Saved cards',
-    stripeTitle: 'Card vault',
-    stripeStatus: 'Copying',
-    polarTitle: 'Payment methods',
-    polarStatus: 'Verifying',
-    owner: 'Existing renewals → Stripe',
-  },
-  {
-    key: 'cutover',
-    short: 'Cutover',
-    eyebrow: 'Change ownership',
-    title: 'Selected subscriptions switch to Polar',
-    description:
-      'Polar preserves the paid period, stops the Stripe subscription, and activates the matching Polar subscription.',
-    packet: 'Billing owner',
-    stripeTitle: 'Selected subscriptions',
-    stripeStatus: 'Stopping',
-    polarTitle: 'Same paid periods',
-    polarStatus: 'Activating',
-    owner: 'Switched renewals → Polar',
-  },
-  {
-    key: 'reconcile',
-    short: 'Reconcile',
-    eyebrow: 'Verify and clean up',
-    title: 'Every subscription finishes with one owner',
-    description:
-      'Moved subscriptions renew in Polar. Historical payments and intentional exceptions remain in Stripe.',
-    packet: 'Verified',
-    stripeTitle: 'History + exceptions',
-    stripeStatus: 'Retained',
-    polarTitle: 'Moved subscriptions',
-    polarStatus: 'Renewing',
-    owner: 'Exactly one owner per subscription',
-  },
-]
-
 export const MigrationFlow = () => {
+  // Mintlify inlines only this export into the MDX module, so stage data
+  // must live inside the component — a file-level const is dropped.
+  const MIGRATION_STAGES = [
+    {
+      key: 'new-sales',
+      short: 'New sales',
+      eyebrow: 'Start safely',
+      title: 'Polar handles every new checkout',
+      description:
+        'New customers enter through Polar while existing subscriptions keep renewing in Stripe.',
+      packet: 'New checkout',
+      stripeTitle: 'Existing subscriptions',
+      stripeStatus: 'Renewing',
+      polarTitle: 'New sales',
+      polarStatus: 'Live',
+      owner: 'Existing → Stripe · New → Polar',
+    },
+    {
+      key: 'prepare',
+      short: 'Prepare',
+      eyebrow: 'Build the bridge',
+      title: 'Prepare the catalog and customer map',
+      description:
+        'Polar imports the products and customers needed by the subscriptions you select. Billing does not move yet.',
+      packet: 'Products + customers',
+      stripeTitle: 'Subscriptions',
+      stripeStatus: 'Unchanged',
+      polarTitle: 'Catalog + customers',
+      polarStatus: 'Prepared',
+      owner: 'Existing renewals → Stripe',
+    },
+    {
+      key: 'cards',
+      short: 'Move cards',
+      eyebrow: 'Secure transfer',
+      title: 'Stripe copies saved cards account to account',
+      description:
+        'Card details move directly between Stripe accounts. Polar verifies which subscriptions have a usable card.',
+      packet: 'Saved cards',
+      stripeTitle: 'Card vault',
+      stripeStatus: 'Copying',
+      polarTitle: 'Payment methods',
+      polarStatus: 'Verifying',
+      owner: 'Existing renewals → Stripe',
+    },
+    {
+      key: 'cutover',
+      short: 'Cutover',
+      eyebrow: 'Change ownership',
+      title: 'Selected subscriptions switch to Polar',
+      description:
+        'Polar preserves the paid period, stops the Stripe subscription, and activates the matching Polar subscription.',
+      packet: 'Billing owner',
+      stripeTitle: 'Selected subscriptions',
+      stripeStatus: 'Stopping',
+      polarTitle: 'Same paid periods',
+      polarStatus: 'Activating',
+      owner: 'Switched renewals → Polar',
+    },
+    {
+      key: 'reconcile',
+      short: 'Reconcile',
+      eyebrow: 'Verify and clean up',
+      title: 'Every subscription finishes with one owner',
+      description:
+        'Moved subscriptions renew in Polar. Historical payments and intentional exceptions remain in Stripe.',
+      packet: 'Verified',
+      stripeTitle: 'History + exceptions',
+      stripeStatus: 'Retained',
+      polarTitle: 'Moved subscriptions',
+      polarStatus: 'Renewing',
+      owner: 'Exactly one owner per subscription',
+    },
+  ]
+
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [isVisible, setIsVisible] = useState(false)

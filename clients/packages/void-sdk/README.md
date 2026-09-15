@@ -6,10 +6,45 @@ This private package contains the SDK and CLI imported from
 [`polarsource/void` at `495330f3`](https://github.com/polarsource/void/tree/495330f3f00e157f6cd034562cfecfb55075d517/packages/sdk).
 It keeps the `@void/sdk` imports and the `void` command.
 
-The backend has not moved into Polar yet. Network operations still require the
-standalone Void server and its existing `/v1/...` API. The next migration stage
-adds `/v1/void` routes and Polar authentication; Polar's current server cannot run
-these CLI login, plan, or deploy operations.
+Polar now serves `GET /v1/void/organizations/current` for CLI login. The SDK
+sends all requests to `/v1/void/...` with a Polar organization access token and
+`Polar-Version: 2026-04`. Set `apiUrl` to the server origin, without `/v1/void`.
+
+The remaining SDK operations are preserved for later migration stages and are
+not implemented in Polar yet. `plan`, `deploy`, ingestion, and runtime queries
+will return 404 after login. The examples below describe the full imported SDK;
+only login, logout, local config compilation, and tests are available at this stage.
+
+### Try login locally
+
+Use a local Polar database with an existing organization. Start the server from
+`server/` with the Void route enabled for that organization:
+
+```sh
+export POLAR_VOID_ENABLED=true
+export POLAR_VOID_ORGANIZATION_IDS='["<organization-uuid>"]'
+uv run task api
+```
+
+In another terminal from `server/`, set the same environment variables and create
+a development token:
+
+```sh
+uv run python -m scripts.generate_void_token <organization-uuid-or-slug>
+```
+
+The helper creates a token that expires after 24 hours and is limited to local
+development and testing. Login requires an organization access token with either
+`void:read` or `void:write`. The organization must also be allowlisted; enabling
+the route alone grants no access.
+
+From `clients/`, run:
+
+```sh
+pnpm --filter @void/sdk void login --api-url http://127.0.0.1:8000
+# Paste the token into the masked prompt.
+pnpm --filter @void/sdk void logout
+```
 
 From the Polar `clients/` directory:
 
@@ -24,9 +59,15 @@ pnpm --filter @void/sdk generate
 ```
 
 `generate` uses the checked-in `openapi.json` and requires no running server or
-Python environment. To replace the contract with a separately exported document,
-run `pnpm --filter @void/sdk generate /absolute/path/to/openapi.json`. Review both
-the contract and generated client changes together.
+Python environment. This is a migration compatibility contract that retains the
+imported SDK API. Each operation has `x-void-migration-status` set to `implemented`
+or `pending`; only `organizations:current` is implemented.
+
+Export the live backend contract from `server/` with
+`uv run python -m scripts.generate_void_openapi 2026-04`. Use it to verify migrated
+operations. Do not replace the SDK contract with this partial export: doing so
+would remove pending operations still referenced by the imported runtime. Update
+migrated operations in the compatibility contract and regenerate together.
 
 The default test suite runs without services. PostgreSQL and Redis integration
 tests skip unless their test connection variables are set. The shared backend
@@ -65,7 +106,7 @@ void deploy
 void logout
 ```
 
-`void login` validates the token with `GET /v1/organizations/current`, prints the organization, and saves the token, server URL, and organization details outside the repository. It does not create an account or issue a token. For the standalone Void server, generate a token with `uv run --directory server -m scripts.generate_token <organization-slug>` from the original Void checkout.
+`void login` validates the token with `GET /v1/void/organizations/current`, prints the organization, and saves the token, server URL, and organization details outside the repository. It does not create an account or issue a token. For local Polar development, use the token helper described above.
 
 You can also supply `--token` or `VOID_TOKEN` to login without a prompt. Login prompts for the server URL when none is supplied or saved. Noninteractive login requires a server URL and token through flags or environment variables, with a saved server URL also usable.
 
@@ -75,7 +116,7 @@ Credential precedence is **flags → environment variables → saved login**. Us
 
 One active login is stored at `$XDG_CONFIG_HOME/void/credentials.json`, or `~/.config/void/credentials.json` when unset. `VOID_CREDENTIALS_FILE` overrides the file location. The token is stored as plaintext in an atomically replaced file with mode `0600`; newly created directories use mode `0700`. Failed authentication leaves an existing login intact. `void logout` removes the saved file without revoking the token or changing environment variables.
 
-The server must include the `/v1/organizations/current` endpoint before using these CLI commands. Tokens stay outside config and source control.
+The server must include the `/v1/void/organizations/current` endpoint before using these CLI commands. Tokens stay outside config and source control.
 
 Applications provide their own credentials to `createVoid`:
 
@@ -473,7 +514,7 @@ The builder example has been migrated from `customer().track()` to identity scop
 
 The first argument to `meter('tokens', ...)` is its stable slug. Deployment and SDK resolution match this slug across generations, independently of the display name. Compiled meter entries now use `slug` instead of `name`; run `void deploy` against the updated server. Existing meters whose name and slug match retain their identity.
 
-Run `pnpm --filter @void/sdk generate` from Polar's `clients/` directory to regenerate the schemas, HTTP client, and grouped Promise API in `src/api/generated.ts` from the checked-in `openapi.json`. Resource groups and methods come from the server's `resource:action` operation IDs; input types come directly from the generated HTTP client. No endpoint registry is maintained in the SDK.
+Run `pnpm --filter @void/sdk generate` from Polar's `clients/` directory to regenerate the schemas, HTTP client, and grouped Promise API in `src/api/generated.ts` from the checked-in migration compatibility contract, `openapi.json`. Resource groups and methods come from its `resource:action` operation IDs; input types come directly from the generated HTTP client. No endpoint registry is maintained in the SDK.
 
 ## Runtime architecture
 

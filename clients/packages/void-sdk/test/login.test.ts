@@ -38,7 +38,7 @@ beforeEach(async () => {
         { status: 401 },
       )
     }
-    if (new URL(request.url).pathname === '/v1/organizations/current') {
+    if (new URL(request.url).pathname === '/v1/void/organizations/current') {
       return Response.json(token === 'Bearer first-secret' ? first : second)
     }
     return Response.json(
@@ -77,11 +77,11 @@ it('login validates and saves private credentials; plan and deploy revalidate an
   assert.deepEqual(
     requests.map((r) => new URL(r.url).pathname),
     [
-      '/v1/organizations/current',
-      '/v1/organizations/current',
-      '/v1/deploys',
-      '/v1/organizations/current',
-      '/v1/deploys',
+      '/v1/void/organizations/current',
+      '/v1/void/organizations/current',
+      '/v1/void/deploys',
+      '/v1/void/organizations/current',
+      '/v1/void/deploys',
     ],
   )
   assert.ok(
@@ -89,6 +89,12 @@ it('login validates and saves private credentials; plan and deploy revalidate an
       (r) => r.headers.get('authorization') === 'Bearer first-secret',
     ),
   )
+  assert.ok(
+    requests.every(
+      (request) => request.headers.get('Polar-Version') === '2026-04',
+    ),
+  )
+  assert.equal(requests[0]!.headers.get('x-void-config'), null)
   assert.equal((await requests[2]!.json()).dry_run, true)
   assert.equal((await requests[4]!.json()).dry_run, false)
   const output = vi.mocked(console.log).mock.calls.flat().join('\n')
@@ -156,7 +162,10 @@ it('failed login preserves existing credentials and revoked credentials cannot d
     /Revoked token/,
   )
   assert.equal(requests.length, 1)
-  assert.equal(new URL(requests[0]!.url).pathname, '/v1/organizations/current')
+  assert.equal(
+    new URL(requests[0]!.url).pathname,
+    '/v1/void/organizations/current',
+  )
   assert.ok(
     !vi
       .mocked(console.error)

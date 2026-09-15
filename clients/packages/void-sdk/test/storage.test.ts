@@ -58,14 +58,14 @@ const setup = (
         const request = new Request(input, init)
         const path = new URL(request.url).pathname
         requests.push(path)
-        if (path === '/v1/organizations/current')
+        if (path === '/v1/void/organizations/current')
           return Response.json({
             id: options.organizationId ?? 'org_1',
             name: 'Demo',
             slug: 'demo',
             created_at: '2026-09-07T00:00:00Z',
           })
-        if (path !== '/v1/events')
+        if (path !== '/v1/void/events')
           throw new Error(`Unexpected request: ${path}`)
         const events = (await request.json()) as Wire.EventsIngestRequestJson
         await options.beforeIngest?.(events)
@@ -244,7 +244,7 @@ it('does not touch storage for an empty batch', async () => {
     },
   ])
   await client.api.events.ingest([])
-  expect(requests).toEqual(['/v1/events'])
+  expect(requests).toEqual(['/v1/void/events'])
 })
 
 it('commits to a file before HTTP and retains events after closing and reopening', async () => {

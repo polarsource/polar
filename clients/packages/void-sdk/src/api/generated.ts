@@ -468,13 +468,13 @@ export const make = (
       )
   return {
     httpClient,
-    "organizationsList": (options) => HttpClientRequest.get(`/v1/organizations`).pipe(
+    "organizationsList": (options) => HttpClientRequest.get(`/v1/void/organizations`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(OrganizationsList200),
       orElse: unexpectedStatus
     }))
   ),
-    "organizationsCreate": (options) => HttpClientRequest.post(`/v1/organizations`).pipe(
+    "organizationsCreate": (options) => HttpClientRequest.post(`/v1/void/organizations`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(OrganizationsCreate201),
@@ -482,13 +482,13 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "organizationsCurrent": (options) => HttpClientRequest.get(`/v1/organizations/current`).pipe(
+    "organizationsCurrent": (options) => HttpClientRequest.get(`/v1/void/organizations/current`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(OrganizationsCurrent200),
       orElse: unexpectedStatus
     }))
   ),
-    "organizationsUpdateCurrent": (options) => HttpClientRequest.patch(`/v1/organizations/current`).pipe(
+    "organizationsUpdateCurrent": (options) => HttpClientRequest.patch(`/v1/void/organizations/current`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(OrganizationsUpdateCurrent200),
@@ -496,14 +496,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "organizationsGet": (id, options) => HttpClientRequest.get(`/v1/organizations/${id}`).pipe(
+    "organizationsGet": (id, options) => HttpClientRequest.get(`/v1/void/organizations/${id}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(OrganizationsGet200),
       "422": decodeError("OrganizationsGet422", OrganizationsGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "identitiesList": (options) => HttpClientRequest.get(`/v1/identities`).pipe(
+    "identitiesList": (options) => HttpClientRequest.get(`/v1/void/identities`).pipe(
     HttpClientRequest.setUrlParams({ "parent": options?.params?.["parent"] as any, "root": options?.params?.["root"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesList200),
@@ -511,7 +511,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "identitiesEnsure": (options) => HttpClientRequest.post(`/v1/identities`).pipe(
+    "identitiesEnsure": (options) => HttpClientRequest.post(`/v1/void/identities`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesEnsure200),
@@ -519,14 +519,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "identitiesGet": (externalId, options) => HttpClientRequest.get(`/v1/identities/${externalId}`).pipe(
+    "identitiesGet": (externalId, options) => HttpClientRequest.get(`/v1/void/identities/${externalId}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesGet200),
       "422": decodeError("IdentitiesGet422", IdentitiesGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "identitiesSnapshot": (externalId, options) => HttpClientRequest.get(`/v1/identities/${externalId}/snapshot`).pipe(
+    "identitiesSnapshot": (externalId, options) => HttpClientRequest.get(`/v1/void/identities/${externalId}/snapshot`).pipe(
     HttpClientRequest.setUrlParams({ "variant_id": options?.params?.["variant_id"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesSnapshot200),
@@ -534,14 +534,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "identitiesEntitlements": (externalId, options) => HttpClientRequest.get(`/v1/identities/${externalId}/entitlements`).pipe(
+    "identitiesEntitlements": (externalId, options) => HttpClientRequest.get(`/v1/void/identities/${externalId}/entitlements`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesEntitlements200),
       "422": decodeError("IdentitiesEntitlements422", IdentitiesEntitlements422),
       orElse: unexpectedStatus
     }))
   ),
-    "identitiesAssignEntitlements": (externalId, options) => HttpClientRequest.put(`/v1/identities/${externalId}/entitlements`).pipe(
+    "identitiesAssignEntitlements": (externalId, options) => HttpClientRequest.put(`/v1/void/identities/${externalId}/entitlements`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesAssignEntitlements200),
@@ -549,13 +549,13 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "customersList": (options) => HttpClientRequest.get(`/v1/customers`).pipe(
+    "customersList": (options) => HttpClientRequest.get(`/v1/void/customers`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersList200),
       orElse: unexpectedStatus
     }))
   ),
-    "customersCreate": (options) => HttpClientRequest.post(`/v1/customers`).pipe(
+    "customersCreate": (options) => HttpClientRequest.post(`/v1/void/customers`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersCreate201),
@@ -563,14 +563,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "customersGet": (externalId, options) => HttpClientRequest.get(`/v1/customers/${externalId}`).pipe(
+    "customersGet": (externalId, options) => HttpClientRequest.get(`/v1/void/customers/${externalId}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersGet200),
       "422": decodeError("CustomersGet422", CustomersGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "customersState": (externalId, options) => HttpClientRequest.get(`/v1/customers/${externalId}/state`).pipe(
+    "customersState": (externalId, options) => HttpClientRequest.get(`/v1/void/customers/${externalId}/state`).pipe(
     HttpClientRequest.setUrlParams({ "since": options?.params?.["since"] as any, "variant_id": options?.params?.["variant_id"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersState200),
@@ -578,7 +578,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "eventsList": (options) => HttpClientRequest.get(`/v1/events`).pipe(
+    "eventsList": (options) => HttpClientRequest.get(`/v1/void/events`).pipe(
     HttpClientRequest.setUrlParams({ "limit": options?.params?.["limit"] as any, "name": options?.params?.["name"] as any, "external_identity_id": options?.params?.["external_identity_id"] as any, "external_root_id": options?.params?.["external_root_id"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EventsList200),
@@ -586,7 +586,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "eventsIngest": (options) => HttpClientRequest.post(`/v1/events`).pipe(
+    "eventsIngest": (options) => HttpClientRequest.post(`/v1/void/events`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EventsIngest202),
@@ -594,13 +594,13 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "reducersList": (options) => HttpClientRequest.get(`/v1/reducers`).pipe(
+    "reducersList": (options) => HttpClientRequest.get(`/v1/void/reducers`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ReducersList200),
       orElse: unexpectedStatus
     }))
   ),
-    "reducersCreate": (options) => HttpClientRequest.post(`/v1/reducers`).pipe(
+    "reducersCreate": (options) => HttpClientRequest.post(`/v1/void/reducers`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ReducersCreate201),
@@ -608,14 +608,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "reducersGet": (id, options) => HttpClientRequest.get(`/v1/reducers/${id}`).pipe(
+    "reducersGet": (id, options) => HttpClientRequest.get(`/v1/void/reducers/${id}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ReducersGet200),
       "422": decodeError("ReducersGet422", ReducersGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "reducersRecords": (id, options) => HttpClientRequest.get(`/v1/reducers/${id}/records`).pipe(
+    "reducersRecords": (id, options) => HttpClientRequest.get(`/v1/void/reducers/${id}/records`).pipe(
     HttpClientRequest.setUrlParams({ "external_identity_id": options?.params?.["external_identity_id"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ReducersRecords200),
@@ -623,13 +623,13 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "metersList": (options) => HttpClientRequest.get(`/v1/meters`).pipe(
+    "metersList": (options) => HttpClientRequest.get(`/v1/void/meters`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetersList200),
       orElse: unexpectedStatus
     }))
   ),
-    "metersCreate": (options) => HttpClientRequest.post(`/v1/meters`).pipe(
+    "metersCreate": (options) => HttpClientRequest.post(`/v1/void/meters`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetersCreate201),
@@ -637,14 +637,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "metersGet": (id, options) => HttpClientRequest.get(`/v1/meters/${id}`).pipe(
+    "metersGet": (id, options) => HttpClientRequest.get(`/v1/void/meters/${id}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetersGet200),
       "422": decodeError("MetersGet422", MetersGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "metersBalance": (id, options) => HttpClientRequest.get(`/v1/meters/${id}/balance`).pipe(
+    "metersBalance": (id, options) => HttpClientRequest.get(`/v1/void/meters/${id}/balance`).pipe(
     HttpClientRequest.setUrlParams({ "external_identity_id": options.params["external_identity_id"] as any, "at": options.params["at"] as any }),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetersBalance200),
@@ -652,7 +652,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "metersCheck": (id, options) => HttpClientRequest.get(`/v1/meters/${id}/check`).pipe(
+    "metersCheck": (id, options) => HttpClientRequest.get(`/v1/void/meters/${id}/check`).pipe(
     HttpClientRequest.setUrlParams({ "external_identity_id": options.params["external_identity_id"] as any, "size": options.params["size"] as any }),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetersCheck200),
@@ -660,7 +660,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "metricsCompare": (options) => HttpClientRequest.get(`/v1/metrics/compare`).pipe(
+    "metricsCompare": (options) => HttpClientRequest.get(`/v1/void/metrics/compare`).pipe(
     HttpClientRequest.setUrlParams({ "baseline": options.params["baseline"] as any, "candidate": options.params["candidate"] as any, "start": options.params["start"] as any, "end": options.params["end"] as any }),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetricsCompare200),
@@ -668,7 +668,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "metricsGet": (options) => HttpClientRequest.get(`/v1/metrics`).pipe(
+    "metricsGet": (options) => HttpClientRequest.get(`/v1/void/metrics`).pipe(
     HttpClientRequest.setUrlParams({ "reducer_id": options.params["reducer_id"] as any, "start": options.params["start"] as any, "end": options.params["end"] as any, "interval": options.params["interval"] as any, "external_identity_id": options.params["external_identity_id"] as any, "group_by": options.params["group_by"] as any, "cumulative": options.params["cumulative"] as any }),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetricsGet200),
@@ -676,13 +676,13 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "entitlementsList": (options) => HttpClientRequest.get(`/v1/entitlements`).pipe(
+    "entitlementsList": (options) => HttpClientRequest.get(`/v1/void/entitlements`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EntitlementsList200),
       orElse: unexpectedStatus
     }))
   ),
-    "entitlementsCreate": (options) => HttpClientRequest.post(`/v1/entitlements`).pipe(
+    "entitlementsCreate": (options) => HttpClientRequest.post(`/v1/void/entitlements`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EntitlementsCreate201),
@@ -690,14 +690,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "entitlementsGet": (id, options) => HttpClientRequest.get(`/v1/entitlements/${id}`).pipe(
+    "entitlementsGet": (id, options) => HttpClientRequest.get(`/v1/void/entitlements/${id}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EntitlementsGet200),
       "422": decodeError("EntitlementsGet422", EntitlementsGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "productsList": (options) => HttpClientRequest.get(`/v1/products`).pipe(
+    "productsList": (options) => HttpClientRequest.get(`/v1/void/products`).pipe(
     HttpClientRequest.setUrlParams({ "include_archived": options?.params?.["include_archived"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ProductsList200),
@@ -705,7 +705,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "productsCreate": (options) => HttpClientRequest.post(`/v1/products`).pipe(
+    "productsCreate": (options) => HttpClientRequest.post(`/v1/void/products`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ProductsCreate201),
@@ -713,14 +713,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "productsGet": (id, options) => HttpClientRequest.get(`/v1/products/${id}`).pipe(
+    "productsGet": (id, options) => HttpClientRequest.get(`/v1/void/products/${id}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ProductsGet200),
       "422": decodeError("ProductsGet422", ProductsGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsList": (options) => HttpClientRequest.get(`/v1/subscriptions`).pipe(
+    "subscriptionsList": (options) => HttpClientRequest.get(`/v1/void/subscriptions`).pipe(
     HttpClientRequest.setUrlParams({ "external_identity_id": options?.params?.["external_identity_id"] as any, "active": options?.params?.["active"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsList200),
@@ -728,7 +728,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsCreate": (options) => HttpClientRequest.post(`/v1/subscriptions`).pipe(
+    "subscriptionsCreate": (options) => HttpClientRequest.post(`/v1/void/subscriptions`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsCreate201),
@@ -736,7 +736,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsRebuild": (options) => HttpClientRequest.post(`/v1/subscriptions/rebuild`).pipe(
+    "subscriptionsRebuild": (options) => HttpClientRequest.post(`/v1/void/subscriptions/rebuild`).pipe(
     HttpClientRequest.setUrlParams({ "dry_run": options?.params?.["dry_run"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsRebuild200),
@@ -744,14 +744,14 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsGet": (id, options) => HttpClientRequest.get(`/v1/subscriptions/${id}`).pipe(
+    "subscriptionsGet": (id, options) => HttpClientRequest.get(`/v1/void/subscriptions/${id}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsGet200),
       "422": decodeError("SubscriptionsGet422", SubscriptionsGet422),
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsCancel": (id, options) => HttpClientRequest.post(`/v1/subscriptions/${id}/cancel`).pipe(
+    "subscriptionsCancel": (id, options) => HttpClientRequest.post(`/v1/void/subscriptions/${id}/cancel`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsCancel200),
@@ -759,21 +759,21 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsRevoke": (id, options) => HttpClientRequest.post(`/v1/subscriptions/${id}/revoke`).pipe(
+    "subscriptionsRevoke": (id, options) => HttpClientRequest.post(`/v1/void/subscriptions/${id}/revoke`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsRevoke200),
       "422": decodeError("SubscriptionsRevoke422", SubscriptionsRevoke422),
       orElse: unexpectedStatus
     }))
   ),
-    "subscriptionsCycles": (id, options) => HttpClientRequest.get(`/v1/subscriptions/${id}/cycles`).pipe(
+    "subscriptionsCycles": (id, options) => HttpClientRequest.get(`/v1/void/subscriptions/${id}/cycles`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(SubscriptionsCycles200),
       "422": decodeError("SubscriptionsCycles422", SubscriptionsCycles422),
       orElse: unexpectedStatus
     }))
   ),
-    "deploysCreate": (options) => HttpClientRequest.post(`/v1/deploys`).pipe(
+    "deploysCreate": (options) => HttpClientRequest.post(`/v1/void/deploys`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(DeploysCreate201),
@@ -781,7 +781,7 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
-    "deploysLatest": (options) => HttpClientRequest.get(`/v1/deploys/latest`).pipe(
+    "deploysLatest": (options) => HttpClientRequest.get(`/v1/void/deploys/latest`).pipe(
     HttpClientRequest.setUrlParams({ "variant_id": options?.params?.["variant_id"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(DeploysLatest200),

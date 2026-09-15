@@ -267,7 +267,7 @@ const login = Command.make(
         ),
       )
       yield* saveLogin(credentials, organization)
-      yield* Console.log('Logged in. Run void plan to preview your config.')
+      yield* Console.log('Logged in.')
     }),
 ).pipe(
   Command.withDescription('Validate and save an organization access token'),

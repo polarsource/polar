@@ -133,7 +133,7 @@ const serve = () => {
     const { pathname, searchParams } = new URL(
       input instanceof Request ? input.url : input,
     )
-    const path = pathname.replace(/^\/v1/, '')
+    const path = pathname.replace(/^\/v1\/void(?=\/|$)/, '')
     const raw = init?.body
     const text =
       typeof raw === 'string'
@@ -1041,7 +1041,7 @@ it('records typed identity entitlements with a stable retry id', async () => {
     )
   expect(requests).toHaveLength(1)
   expect(new URL(requests[0]!.url).pathname).toBe(
-    '/v1/identities/member_1/entitlements',
+    '/v1/void/identities/member_1/entitlements',
   )
   expect(requests[0]!.method).toBe('PUT')
   expect(await requests[0]!.json()).toEqual({
@@ -1058,7 +1058,7 @@ const entitlementServer = (initial: JsonObject) => {
   const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = new Request(input, init)
     const path = new URL(request.url).pathname
-    if (path === '/v1/identities' && request.method === 'POST') {
+    if (path === '/v1/void/identities' && request.method === 'POST') {
       const body = object((await request.json()) as Json)
       return Response.json({
         id: 'i',
@@ -1069,7 +1069,7 @@ const entitlementServer = (initial: JsonObject) => {
       })
     }
     if (path.endsWith('/entitlements') && request.method === 'GET') {
-      const id = path.split('/')[3]!
+      const id = path.split('/').at(-2)!
       return Response.json({
         external_identity_id: id,
         at: 't',

@@ -60,7 +60,7 @@ const serve = (initial: number) => {
     const { pathname, searchParams } = new URL(
       input instanceof Request ? input.url : input,
     )
-    const path = pathname.replace(/^\/v1/, '')
+    const path = pathname.replace(/^\/v1\/void(?=\/|$)/, '')
     const method = init?.method ?? 'GET'
     const raw = init?.body
     const text =

@@ -8238,6 +8238,8 @@ export interface components {
        *       "email": "Read your email address",
        *       "user:read": "Read your user account",
        *       "user:write": "Manage your user account",
+       *       "void:read": "Read Void resources",
+       *       "void:write": "Create or modify Void resources",
        *       "organizations:read": "Read your organizations",
        *       "organizations:write": "Create or modify organizations",
        *       "custom_fields:read": "Read custom fields",
@@ -8328,6 +8330,8 @@ export interface components {
        *       "email": "Read your email address",
        *       "user:read": "Read your user account",
        *       "user:write": "Manage your user account",
+       *       "void:read": "Read Void resources",
+       *       "void:write": "Create or modify Void resources",
        *       "organizations:read": "Read your organizations",
        *       "organizations:write": "Create or modify organizations",
        *       "custom_fields:read": "Read custom fields",
@@ -33997,6 +34001,8 @@ export interface components {
       | 'email'
       | 'user:read'
       | 'user:write'
+      | 'void:read'
+      | 'void:write'
       | 'organizations:read'
       | 'organizations:write'
       | 'custom_fields:read'
@@ -71767,6 +71773,8 @@ export const scopeValues: ReadonlyArray<
   'email',
   'user:read',
   'user:write',
+  'void:read',
+  'void:write',
   'organizations:read',
   'organizations:write',
   'custom_fields:read',

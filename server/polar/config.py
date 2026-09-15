@@ -6,6 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
+from uuid import UUID
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, model_validator
@@ -63,6 +64,9 @@ class Settings(BaseSettings):
     POSTHOG_DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
+
+    VOID_ENABLED: bool = False
+    VOID_ORGANIZATION_IDS: set[UUID] = set()
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20

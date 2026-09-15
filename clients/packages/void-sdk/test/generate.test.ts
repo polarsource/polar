@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { assert, it } from '@effect/vitest'
 import { promiseClientSource, type OpenApi } from '../scripts/promise-client'
 
-it('the checked-in Promise API matches the server OpenAPI document', () => {
+it('the checked-in Promise API matches the migration compatibility contract', () => {
   const spec: OpenApi = JSON.parse(
     readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'),
   )
@@ -17,14 +17,14 @@ it('the checked-in Promise API matches the server OpenAPI document', () => {
 it('new resources and actions derive methods and types without an endpoint registry', () => {
   const source = promiseClientSource({
     paths: {
-      '/v1/widgets': {
+      '/v1/void/widgets': {
         get: { operationId: 'widgets:list', parameters: [{ in: 'query' }] },
         post: {
           operationId: 'widgets:create',
           requestBody: { required: true },
         },
       },
-      '/v1/widgets/{id}/parts/{part}': {
+      '/v1/void/widgets/{id}/parts/{part}': {
         delete: {
           operationId: 'widgets:removePart',
           parameters: [
@@ -51,7 +51,7 @@ it('rejects operation IDs that cannot be grouped instead of silently omitting en
   assert.throws(
     () =>
       promiseClientSource({
-        paths: { '/v1/widgets': { get: { operationId: 'listWidgets' } } },
+        paths: { '/v1/void/widgets': { get: { operationId: 'listWidgets' } } },
       }),
     /resource:action/,
   )

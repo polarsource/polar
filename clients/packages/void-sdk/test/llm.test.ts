@@ -119,7 +119,7 @@ const serve = (remaining: Record<string, number>) => {
     const { pathname, searchParams } = new URL(
       input instanceof Request ? input.url : input,
     )
-    const path = pathname.replace(/^\/v1/, '')
+    const path = pathname.replace(/^\/v1\/void(?=\/|$)/, '')
     const raw = init?.body
     const text =
       typeof raw === 'string'
@@ -818,7 +818,7 @@ it('capture: false leaves only the wrapped model recording', async () => {
   const fetch = async (input: string | URL | Request, init?: RequestInit) => {
     const path = new URL(
       input instanceof Request ? input.url : input,
-    ).pathname.replace(/^\/v1/, '')
+    ).pathname.replace(/^\/v1\/void(?=\/|$)/, '')
     const json = (data: unknown, status = 200) =>
       new Response(JSON.stringify(data), { status })
     if (path === '/reducers')
@@ -892,7 +892,7 @@ const serveFor = (
     const { pathname, searchParams } = new URL(
       input instanceof Request ? input.url : input,
     )
-    const path = pathname.replace(/^\/v1/, '')
+    const path = pathname.replace(/^\/v1\/void(?=\/|$)/, '')
     if (path === '/reducers')
       return json(
         own.reducers.map((r) => ({

@@ -64,6 +64,7 @@ from polar.support_case.endpoints import router as support_case_router
 from polar.tax.endpoints import router as tax_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
+from polar.void.endpoints import router as void_router
 from polar.wallet.endpoints import router as wallet_router
 from polar.webhook.endpoints import router as webhook_router
 
@@ -185,3 +186,5 @@ router.include_router(polar_self_router)
 router.include_router(payout_account_router)
 # /feedbacks
 router.include_router(feedback_router)
+
+router.include_router(void_router)

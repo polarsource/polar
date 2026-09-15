@@ -18,7 +18,7 @@ it('organization operations use the configured client without resolver requests'
     fetch: async (input, init) => {
       const request = new Request(input, init)
       calls.push(request)
-      if (new URL(request.url).pathname === '/v1/customers/customer_1') {
+      if (new URL(request.url).pathname === '/v1/void/customers/customer_1') {
         return Response.json({
           id: 'c1',
           external_id: 'customer_1',
@@ -50,7 +50,7 @@ it('organization operations use the configured client without resolver requests'
     assert.equal(deployment.applied, true)
     assert.deepEqual(
       calls.map((request) => new URL(request.url).pathname),
-      ['/v1/customers/customer_1', '/v1/deploys'],
+      ['/v1/void/customers/customer_1', '/v1/void/deploys'],
     )
     for (const request of calls) {
       assert.equal(

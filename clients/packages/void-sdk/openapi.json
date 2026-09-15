@@ -3,16 +3,17 @@
   "info": {
     "title": "Void API",
     "summary": "Void HTTP API",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "Void migration compatibility contract. Only GET /v1/void/organizations/current is implemented in Polar at this stage. Other operations preserve the imported SDK API for later backend migration."
   },
   "servers": [
     {
-      "url": "http://127.0.0.1:8001",
-      "x-speakeasy-server-id": "production"
+      "url": "http://127.0.0.1:8000",
+      "description": "Local Polar server with the Void API enabled"
     }
   ],
   "paths": {
-    "/v1/organizations": {
+    "/v1/void/organizations": {
       "get": {
         "tags": ["organizations"],
         "summary": "List",
@@ -32,7 +33,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["organizations"],
@@ -69,10 +71,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/organizations/current": {
+    "/v1/void/organizations/current": {
       "get": {
         "tags": ["organizations"],
         "summary": "Current",
@@ -92,9 +95,13 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
-        ]
+        ],
+        "x-void-migration-status": "implemented"
       },
       "patch": {
         "tags": ["organizations"],
@@ -137,10 +144,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/organizations/{id}": {
+    "/v1/void/organizations/{id}": {
       "get": {
         "tags": ["organizations"],
         "summary": "Get",
@@ -178,10 +186,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/identities": {
+    "/v1/void/identities": {
       "get": {
         "tags": ["identities"],
         "summary": "List",
@@ -248,7 +257,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["identities"],
@@ -291,10 +301,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/identities/{external_id}": {
+    "/v1/void/identities/{external_id}": {
       "get": {
         "tags": ["identities"],
         "summary": "Get",
@@ -336,10 +347,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/identities/{external_id}/snapshot": {
+    "/v1/void/identities/{external_id}/snapshot": {
       "get": {
         "tags": ["identities"],
         "summary": "Snapshot",
@@ -398,10 +410,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/identities/{external_id}/entitlements": {
+    "/v1/void/identities/{external_id}/entitlements": {
       "get": {
         "tags": ["identities"],
         "summary": "Entitlements",
@@ -444,7 +457,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       },
       "put": {
         "tags": ["identities"],
@@ -498,10 +512,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/customers": {
+    "/v1/void/customers": {
       "get": {
         "tags": ["customers"],
         "summary": "List",
@@ -526,7 +541,8 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["customers"],
@@ -568,10 +584,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/customers/{external_id}": {
+    "/v1/void/customers/{external_id}": {
       "get": {
         "tags": ["customers"],
         "summary": "Get",
@@ -613,10 +630,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/customers/{external_id}/state": {
+    "/v1/void/customers/{external_id}/state": {
       "get": {
         "tags": ["customers"],
         "summary": "State",
@@ -691,10 +709,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/events": {
+    "/v1/void/events": {
       "get": {
         "tags": ["events"],
         "summary": "List",
@@ -793,7 +812,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["events"],
@@ -839,10 +859,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/reducers": {
+    "/v1/void/reducers": {
       "get": {
         "tags": ["reducers"],
         "summary": "List",
@@ -867,7 +888,8 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["reducers"],
@@ -909,10 +931,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/reducers/{id}": {
+    "/v1/void/reducers/{id}": {
       "get": {
         "tags": ["reducers"],
         "summary": "Get",
@@ -955,10 +978,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/reducers/{id}/records": {
+    "/v1/void/reducers/{id}/records": {
       "get": {
         "tags": ["reducers"],
         "summary": "Records",
@@ -1021,10 +1045,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/meters": {
+    "/v1/void/meters": {
       "get": {
         "tags": ["meters"],
         "summary": "List",
@@ -1049,7 +1074,8 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["meters"],
@@ -1091,10 +1117,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/meters/{id}": {
+    "/v1/void/meters/{id}": {
       "get": {
         "tags": ["meters"],
         "summary": "Get",
@@ -1137,10 +1164,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/meters/{id}/balance": {
+    "/v1/void/meters/{id}/balance": {
       "get": {
         "tags": ["meters"],
         "summary": "Balance",
@@ -1209,10 +1237,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/meters/{id}/check": {
+    "/v1/void/meters/{id}/check": {
       "get": {
         "tags": ["meters"],
         "summary": "Check",
@@ -1274,10 +1303,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/metrics/compare": {
+    "/v1/void/metrics/compare": {
       "get": {
         "tags": ["metrics"],
         "summary": "Compare",
@@ -1352,10 +1382,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/metrics": {
+    "/v1/void/metrics": {
       "get": {
         "tags": ["metrics"],
         "summary": "Get",
@@ -1472,10 +1503,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/entitlements": {
+    "/v1/void/entitlements": {
       "get": {
         "tags": ["entitlements"],
         "summary": "List",
@@ -1500,7 +1532,8 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["entitlements"],
@@ -1543,10 +1576,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/entitlements/{id}": {
+    "/v1/void/entitlements/{id}": {
       "get": {
         "tags": ["entitlements"],
         "summary": "Get",
@@ -1589,10 +1623,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/products": {
+    "/v1/void/products": {
       "get": {
         "tags": ["products"],
         "summary": "List",
@@ -1640,7 +1675,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["products"],
@@ -1683,10 +1719,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/products/{id}": {
+    "/v1/void/products/{id}": {
       "get": {
         "tags": ["products"],
         "summary": "Get",
@@ -1729,10 +1766,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/subscriptions": {
+    "/v1/void/subscriptions": {
       "get": {
         "tags": ["subscriptions"],
         "summary": "List",
@@ -1796,7 +1834,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       },
       "post": {
         "tags": ["subscriptions"],
@@ -1839,10 +1878,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/subscriptions/rebuild": {
+    "/v1/void/subscriptions/rebuild": {
       "post": {
         "tags": ["subscriptions"],
         "summary": "Rebuild",
@@ -1886,10 +1926,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/subscriptions/{id}": {
+    "/v1/void/subscriptions/{id}": {
       "get": {
         "tags": ["subscriptions"],
         "summary": "Get",
@@ -1932,10 +1973,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/subscriptions/{id}/cancel": {
+    "/v1/void/subscriptions/{id}/cancel": {
       "post": {
         "tags": ["subscriptions"],
         "summary": "Cancel",
@@ -1988,10 +2030,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/subscriptions/{id}/revoke": {
+    "/v1/void/subscriptions/{id}/revoke": {
       "post": {
         "tags": ["subscriptions"],
         "summary": "Revoke",
@@ -2035,10 +2078,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/subscriptions/{id}/cycles": {
+    "/v1/void/subscriptions/{id}/cycles": {
       "get": {
         "tags": ["subscriptions"],
         "summary": "Cycles",
@@ -2086,10 +2130,11 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/deploys": {
+    "/v1/void/deploys": {
       "post": {
         "tags": ["deploys"],
         "summary": "Create",
@@ -2131,10 +2176,11 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "x-void-migration-status": "pending"
       }
     },
-    "/v1/deploys/latest": {
+    "/v1/void/deploys/latest": {
       "get": {
         "tags": ["deploys"],
         "summary": "Latest",
@@ -2183,7 +2229,8 @@
               }
             }
           }
-        }
+        },
+        "x-void-migration-status": "pending"
       }
     }
   },
@@ -5671,6 +5718,11 @@
     "securitySchemes": {
       "HTTPBearer": {
         "type": "http",
+        "scheme": "bearer"
+      },
+      "oat": {
+        "type": "http",
+        "description": "An organization access token with Void scopes. For local development, use scripts.generate_void_token for an allowlisted organization.",
         "scheme": "bearer"
       }
     }

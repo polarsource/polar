@@ -68,9 +68,19 @@ const toApiError = (
       const envelope = Option.getOrUndefined(decodeEnvelope(body))
       return new VoidHttpError({
         status: reason.response.status,
-        path: new URL(reason.request.url).pathname.replace(/^\/v1/, ''),
+        path: new URL(reason.request.url).pathname.replace(
+          /^\/v1\/void(?=\/|$)/,
+          '',
+        ),
         code: envelope?.error ?? 'Unknown',
         detail: envelope?.detail ?? body,
+      })
+    }
+    if (reason._tag === 'InvalidUrlError') {
+      return new VoidError({
+        reason: 'invalid_argument',
+        message: reason.description ?? 'void: invalid request URL',
+        cause: error,
       })
     }
     return new VoidError({
@@ -87,6 +97,28 @@ const toApiError = (
     message: `void: ${error._tag}`,
     cause: error,
   })
+}
+
+const requireVoidPath = (
+  request: HttpClientRequest.HttpClientRequest,
+): Effect.Effect<
+  HttpClientRequest.HttpClientRequest,
+  HttpClientError.HttpClientError
+> => {
+  if (
+    !URL.canParse(request.url) ||
+    !new URL(request.url).pathname.startsWith('/v1/void/')
+  ) {
+    return Effect.fail(
+      new HttpClientError.HttpClientError({
+        reason: new HttpClientError.InvalidUrlError({
+          request,
+          description: 'void: request URL must stay under /v1/void/',
+        }),
+      }),
+    )
+  }
+  return Effect.succeed(request)
 }
 
 /** Like `HttpClient.filterStatusOk`, but keeps the body so `toApiError` can read the envelope. */
@@ -141,10 +173,14 @@ export const ApiLive = Layer.effect(Api)(
       eventChanges,
     } = yield* VoidConfig
     const httpClient = (yield* HttpClient.HttpClient).pipe(
+      HttpClient.mapRequest(
+        HttpClientRequest.prependUrl(apiUrl.replace(/\/$/, '')),
+      ),
+      HttpClient.mapRequestEffect(requireVoidPath),
       HttpClient.mapRequest((request) =>
         request.pipe(
-          HttpClientRequest.prependUrl(apiUrl.replace(/\/$/, '')),
           HttpClientRequest.bearerToken(token),
+          HttpClientRequest.setHeader('Polar-Version', '2026-04'),
           checksum === undefined
             ? (request) => request
             : HttpClientRequest.setHeader('x-void-config', checksum),

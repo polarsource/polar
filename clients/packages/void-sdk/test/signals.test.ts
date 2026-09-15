@@ -122,14 +122,14 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
     fetch: async (input, init) => {
       const request = new Request(input, init)
       const path = new URL(request.url).pathname
-      if (path === '/v1/organizations/current')
+      if (path === '/v1/void/organizations/current')
         return Response.json({
           id: 'org',
           name: 'Org',
           slug: 'org',
           created_at: snapshot.at,
         })
-      if (path === '/v1/identities/root')
+      if (path === '/v1/void/identities/root')
         return Response.json({
           id: 'identity',
           external_id: 'root',
@@ -139,7 +139,7 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
           created_at: snapshot.at,
           metadata: {},
         })
-      if (path === '/v1/customers/root/state') {
+      if (path === '/v1/void/customers/root/state') {
         reads++
         return stateStatus === 200
           ? Response.json(snapshot)
@@ -148,7 +148,7 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
               { status: stateStatus },
             )
       }
-      if (path === '/v1/events') {
+      if (path === '/v1/void/events') {
         await hold
         return status === 202
           ? Response.json({ saved: 1, ignored: 0 }, { status })

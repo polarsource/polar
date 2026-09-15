@@ -311,7 +311,7 @@ it.each([null, 'c'.repeat(64)])(
           expect(request.method).toBe('GET')
           const url = new URL(request.url)
           requests.push(url)
-          if (url.pathname === '/v1/organizations/current')
+          if (url.pathname === '/v1/void/organizations/current')
             return Response.json({
               id: 'org',
               name: 'Org',
@@ -319,7 +319,7 @@ it.each([null, 'c'.repeat(64)])(
               created_at: at,
               default_variant_id: variantId,
             })
-          if (url.pathname === '/v1/identities/root')
+          if (url.pathname === '/v1/void/identities/root')
             return Response.json({
               id: 'root',
               external_id: 'root',
@@ -329,7 +329,7 @@ it.each([null, 'c'.repeat(64)])(
               chain: ['root'],
               children: [],
             })
-          if (url.pathname === '/v1/customers/root/state') {
+          if (url.pathname === '/v1/void/customers/root/state') {
             expect(url.searchParams.get('variant_id')).toBe(variantId ?? '')
             if (unavailable)
               return Response.json(
@@ -338,9 +338,9 @@ it.each([null, 'c'.repeat(64)])(
               )
             return Response.json(scopedSnapshot())
           }
-          if (url.pathname === '/v1/meters')
+          if (url.pathname === '/v1/void/meters')
             return Response.json([scopedSnapshot().meters[0].meter])
-          if (url.pathname === '/v1/meters/meter/balance')
+          if (url.pathname === '/v1/void/meters/meter/balance')
             return Response.json({
               ...scopedSnapshot().meters[0].holders[0].balance,
               meter_id: 'meter',
@@ -379,7 +379,7 @@ it.each([null, 'c'.repeat(64)])(
         period: null,
       }
       expect(await meter.balance({ reconcile: false })).toEqual(remote)
-      expect(requests.at(-1)?.pathname).toBe('/v1/meters/meter/balance')
+      expect(requests.at(-1)?.pathname).toBe('/v1/void/meters/meter/balance')
       for (const options of [new Date(at), { at: new Date(at) }]) {
         expect(await meter.balance(options)).toEqual(remote)
         expect(requests.at(-1)?.searchParams.get('at')).toBe(at)
@@ -391,7 +391,7 @@ it.each([null, 'c'.repeat(64)])(
       expect(requests).toHaveLength(count)
       unavailable = true
       await expect(meter.balance()).rejects.toMatchObject({ status: 503 })
-      expect(requests.at(-1)?.pathname).toBe('/v1/customers/root/state')
+      expect(requests.at(-1)?.pathname).toBe('/v1/void/customers/root/state')
     } finally {
       await client.dispose()
       db.close()
@@ -565,7 +565,7 @@ it('the public check reads SQLite, applies the estimate and never calls the remo
       fetch: async (input, init) => {
         const path = new URL(new Request(input, init).url).pathname
         paths.push(path)
-        if (path === '/v1/organizations/current')
+        if (path === '/v1/void/organizations/current')
           return Response.json({
             id: 'org',
             name: 'Org',
@@ -573,7 +573,7 @@ it('the public check reads SQLite, applies the estimate and never calls the remo
             created_at: at,
             default_variant_id: null,
           })
-        if (path === '/v1/identities/root')
+        if (path === '/v1/void/identities/root')
           return Response.json({
             id: 'root',
             external_id: 'root',
@@ -583,7 +583,7 @@ it('the public check reads SQLite, applies the estimate and never calls the remo
             chain: ['root'],
             children: [],
           })
-        if (path === '/v1/customers/root/state')
+        if (path === '/v1/void/customers/root/state')
           return Response.json(snapshot())
         throw Error(`Unexpected request ${path}`)
       },
@@ -597,10 +597,10 @@ it('the public check reads SQLite, applies the estimate and never calls the remo
     await client.as('root').meters.credits.check({ estimate: 50 }),
   ).toMatchObject({ allowed: false, remaining: 30, reason: 'cap' })
   expect(paths).toEqual([
-    '/v1/organizations/current',
-    '/v1/identities/root',
-    '/v1/customers/root/state',
-    '/v1/customers/root/state',
+    '/v1/void/organizations/current',
+    '/v1/void/identities/root',
+    '/v1/void/customers/root/state',
+    '/v1/void/customers/root/state',
   ])
 })
 
@@ -657,7 +657,7 @@ it.each(['check', 'balance'] as const)(
           token: 'token',
           fetch: async (input, init) => {
             const url = new URL(new Request(input, init).url)
-            if (url.pathname === '/v1/organizations/current')
+            if (url.pathname === '/v1/void/organizations/current')
               return Response.json({
                 id: 'org',
                 name: 'Org',
@@ -665,7 +665,7 @@ it.each(['check', 'balance'] as const)(
                 created_at: at,
                 default_variant_id: null,
               })
-            if (url.pathname === '/v1/identities/root')
+            if (url.pathname === '/v1/void/identities/root')
               return Response.json({
                 id: 'root',
                 external_id: 'root',
@@ -675,7 +675,7 @@ it.each(['check', 'balance'] as const)(
                 chain: ['root'],
                 children: [],
               })
-            if (url.pathname === '/v1/customers/root/state') {
+            if (url.pathname === '/v1/void/customers/root/state') {
               const since = url.searchParams.get('since')
               windows.push(since)
               const state = snapshot()

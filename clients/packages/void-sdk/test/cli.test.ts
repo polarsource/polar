@@ -131,7 +131,7 @@ const DeployBody = Schema.Struct({
 layer(
   apiWith((method, path, raw) => {
     assert.equal(method, 'POST')
-    assert.equal(path, '/v1/deploys')
+    assert.equal(path, '/v1/void/deploys')
     const body = Schema.decodeUnknownSync(DeployBody)(raw)
     assert.equal(body.dry_run, false)
     assert.equal(body.checksum, checksum(ir))
@@ -166,7 +166,7 @@ layer(NodeServices.layer)((it) => {
           const [method, path, raw] = posted[0] ?? ['', '', undefined]
           const body = yield* Schema.decodeUnknownEffect(DeployBody)(raw)
           assert.equal(method, 'POST')
-          assert.equal(path, '/v1/deploys')
+          assert.equal(path, '/v1/void/deploys')
           assert.equal(body.dry_run, true)
           assert.equal(body.checksum, checksum(ir))
           assert.equal(body.reducers.length, 2)
@@ -211,7 +211,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async (input, init) => {
       const request = new Request(input, init)
-      if (new URL(request.url).pathname === '/v1/organizations/current') {
+      if (new URL(request.url).pathname === '/v1/void/organizations/current') {
         return Response.json({
           id: 'org1',
           name: 'Test',
@@ -255,7 +255,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
         request.headers.get('authorization'),
         `Bearer ${command}-organization-token`,
       )
-      assert.equal(request.url, 'http://void/v1/deploys')
+      assert.equal(request.url, 'http://void/v1/void/deploys')
       assert.deepEqual(await request.json(), {
         checksum: checksum(ir),
         dry_run: command === 'plan',
@@ -279,7 +279,7 @@ it('plan --no-preview sends the existing dry-run payload', async () => {
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async (input, init) => {
       const request = new Request(input, init)
-      if (new URL(request.url).pathname === '/v1/organizations/current')
+      if (new URL(request.url).pathname === '/v1/void/organizations/current')
         return Response.json({
           id: 'org1',
           name: 'Test',
@@ -335,7 +335,7 @@ it('rejects conflicting preview flags before loading config or making requests',
 layer(
   apiWith((method, path, body) => {
     assert.equal(method, 'POST')
-    assert.equal(path, '/v1/deploys')
+    assert.equal(path, '/v1/void/deploys')
     assert.notProperty(body, 'variant_id')
     assert.notProperty(body, 'signals')
     expect(body).toMatchObject({

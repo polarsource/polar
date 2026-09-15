@@ -1932,7 +1932,7 @@ class OrganizationService:
                 organizations = await repository.get_all_by_payout_account(
                     payout_account.id
                 )
-        if not organizations and signal.website_url:
+        if not organizations and signal.account_id is None and signal.website_url:
             organizations = await repository.get_all_by_website(signal.website_url)
         if not organizations:
             log.warning(

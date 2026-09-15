@@ -15,24 +15,36 @@ class TestGetVoidOpenAPI:
 
         assert schema["info"]["version"] == str(version)
         assert set(schema["paths"]) == {
-            "/v1/void/organizations/current",
-            "/v1/void/identities",
-            "/v1/void/identities/{external_id}",
-            "/v1/void/customers",
-            "/v1/void/customers/{external_id}",
-            "/v1/void/events",
-            "/v1/void/reducers",
-            "/v1/void/reducers/{id}",
-            "/v1/void/reducers/{id}/records",
-            "/v1/void/metrics",
-            "/v1/void/deploys",
-            "/v1/void/deploys/latest",
-            "/v1/void/meters",
-            "/v1/void/meters/{id}",
-            "/v1/void/products",
+            "/v1/void/meters/{id}/check",
             "/v1/void/products/{id}",
+            "/v1/void/identities/{external_id}",
+            "/v1/void/customers/{external_id}/state",
+            "/v1/void/reducers",
+            "/v1/void/reducers/{id}/records",
+            "/v1/void/meters/{id}",
+            "/v1/void/customers",
             "/v1/void/entitlements",
+            "/v1/void/deploys",
             "/v1/void/entitlements/{id}",
+            "/v1/void/subscriptions/rebuild",
+            "/v1/void/identities",
+            "/v1/void/identities/{external_id}/snapshot",
+            "/v1/void/subscriptions/{id}/cycles",
+            "/v1/void/subscriptions",
+            "/v1/void/deploys/latest",
+            "/v1/void/products",
+            "/v1/void/identities/{external_id}/entitlements",
+            "/v1/void/meters",
+            "/v1/void/metrics",
+            "/v1/void/events",
+            "/v1/void/subscriptions/{id}",
+            "/v1/void/organizations/current",
+            "/v1/void/subscriptions/{id}/cancel",
+            "/v1/void/customers/{external_id}",
+            "/v1/void/subscriptions/{id}/revoke",
+            "/v1/void/reducers/{id}",
+            "/v1/void/metrics/compare",
+            "/v1/void/meters/{id}/balance",
         }
         operation = schema["paths"]["/v1/void/organizations/current"]["get"]
         assert operation["operationId"] == "organizations:current"
@@ -64,7 +76,13 @@ class TestGetVoidOpenAPI:
             for void in ("void:read", "void:write")
             for customer in ("customers:read", "customers:write")
         }
-        for path in ("/v1/void/customers", "/v1/void/customers/{external_id}"):
+        for path in (
+            "/v1/void/customers",
+            "/v1/void/customers/{external_id}",
+            "/v1/void/customers/{external_id}/state",
+            "/v1/void/identities/{external_id}/snapshot",
+            "/v1/void/metrics/compare",
+        ):
             assert {
                 frozenset(item["oat"]) for item in paths[path]["get"]["security"]
             } == expected_read

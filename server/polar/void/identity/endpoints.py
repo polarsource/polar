@@ -11,11 +11,26 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
-from polar.void.auth import VoidRead, VoidWrite
+from polar.void.auth import VoidCustomerRead, VoidRead, VoidWrite
+from polar.void.entitlement.schemas import (
+    EntitlementAssignmentRead,
+    EntitlementUpdate,
+    IdentityEntitlements,
+)
+from polar.void.entitlement.service import (
+    EntitlementAssignmentConflict,
+    EntitlementAssignmentInvalid,
+)
+from polar.void.entitlement.service import entitlement as entitlement_service
+from polar.void.organization.service import selected_variant
+from polar.void.postgres import get_snapshot_session
+from polar.void.subscription.service import subscription as subscription_service
+from polar.void.tinybird import TinybirdClient
 
-from .schemas import Identity, IdentityCreate, IdentityDetail
+from .schemas import Identity, IdentityCreate, IdentityDetail, IdentitySnapshot
 from .service import DeletedIdentityConflict, IdentityHierarchyConflict
 from .service import identity as identity_service
+from .snapshot import snapshot as snapshot_service
 
 router = APIRouter(prefix="/identities", tags=["identities"], include_in_schema=False)
 
@@ -83,3 +98,72 @@ async def get_identity(
             "children": children,
         }
     )
+
+
+@router.get(
+    "/{external_id}/snapshot",
+    response_model=IdentitySnapshot,
+    operation_id="identities:snapshot",
+    responses={
+        404: {"model": ResourceNotFound.schema()},
+        409: {"model": IdentityHierarchyConflict.schema()},
+    },
+)
+async def snapshot(
+    external_id: str,
+    auth_subject: VoidCustomerRead,
+    tinybird: TinybirdClient,
+    variant_id: str | None = None,
+    session: AsyncSession = Depends(get_snapshot_session),
+) -> IdentitySnapshot:
+    return await snapshot_service.get(
+        session,
+        tinybird,
+        auth_subject,
+        external_id,
+        await selected_variant(session, auth_subject.subject.id, variant_id),
+    )
+
+
+@router.get(
+    "/{external_id}/entitlements",
+    response_model=IdentityEntitlements,
+    operation_id="identities:entitlements",
+    responses={
+        404: {"model": ResourceNotFound.schema()},
+        409: {"model": IdentityHierarchyConflict.schema()},
+    },
+)
+async def entitlements(
+    external_id: str,
+    auth_subject: VoidRead,
+    session: AsyncSession = Depends(get_snapshot_session),
+) -> IdentityEntitlements:
+    return await subscription_service.held(
+        session, auth_subject.subject.id, external_id
+    )
+
+
+@router.put(
+    "/{external_id}/entitlements",
+    response_model=EntitlementAssignmentRead,
+    operation_id="identities:assignEntitlements",
+    responses={
+        400: {"model": EntitlementAssignmentInvalid.schema()},
+        404: {"model": ResourceNotFound.schema()},
+        409: {
+            "model": EntitlementAssignmentConflict.schema()
+            | IdentityHierarchyConflict.schema()
+        },
+    },
+)
+async def assign_entitlements(
+    external_id: str,
+    body: EntitlementUpdate,
+    auth_subject: VoidWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> EntitlementAssignmentRead:
+    assignment = await entitlement_service.assign(
+        session, auth_subject.subject.id, external_id, body
+    )
+    return EntitlementAssignmentRead.model_validate(assignment.model_dump())

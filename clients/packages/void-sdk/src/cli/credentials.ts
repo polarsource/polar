@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { Effect, Option, Redacted, Schema } from 'effect'
-import type { Organization } from '../api/generated'
+import type { VoidOrganization } from '../api/generated'
 
 export class CredentialsError extends Schema.TaggedError<CredentialsError>()(
   'CredentialsError',
@@ -95,7 +95,7 @@ export const readLogin = Effect.fn('cli.readLogin')(function* () {
 
 export const saveLogin = (
   credentials: Credentials,
-  organization: Organization,
+  organization: VoidOrganization,
 ) =>
   Effect.tryPromise({
     try: async () => {

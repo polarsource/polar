@@ -23,6 +23,8 @@ from polar.logging import configure
 from polar.postgres import create_async_engine
 from polar.void.event.service import event as event_service
 from polar.void.event.workflows import EventDispatchWorkflow
+from polar.void.meter.activities import MeterActivities
+from polar.void.meter.workflows import MeterCycleWorkflow
 from polar.void.reducer.activities import ReducerActivities
 from polar.void.reducer.workflows import (
     DerivedDispatchWorkflow,
@@ -59,9 +61,10 @@ class EventActivities:
 
 
 async def ensure_schedules(client: Client) -> None:
-    for name, run in (
-        ("events", EventDispatchWorkflow.run),
-        ("reducers", DerivedDispatchWorkflow.run),
+    for name, run, interval in (
+        ("events", EventDispatchWorkflow.run, timedelta(seconds=1)),
+        ("reducers", DerivedDispatchWorkflow.run, timedelta(seconds=1)),
+        ("meter-cycles", MeterCycleWorkflow.run, timedelta(minutes=5)),
     ):
         schedule_id = f"{TASK_QUEUE}-dispatch-{name}"
         try:
@@ -71,9 +74,7 @@ async def ensure_schedules(client: Client) -> None:
                     action=ScheduleActionStartWorkflow(
                         run, id=schedule_id, task_queue=TASK_QUEUE
                     ),
-                    spec=ScheduleSpec(
-                        intervals=[ScheduleIntervalSpec(every=timedelta(seconds=1))]
-                    ),
+                    spec=ScheduleSpec(intervals=[ScheduleIntervalSpec(every=interval)]),
                 ),
             )
         except ScheduleAlreadyRunningError:
@@ -85,6 +86,7 @@ def create_worker(
 ) -> Worker:
     reducers = ReducerActivities(sessionmaker, tinybird, client)
     events = EventActivities(sessionmaker, tinybird, client)
+    meters = MeterActivities(sessionmaker, tinybird)
     return Worker(
         client,
         task_queue=TASK_QUEUE,
@@ -98,12 +100,14 @@ def create_worker(
             DerivedReducerWorkflow,
             DerivedDispatchWorkflow,
             EventDispatchWorkflow,
+            MeterCycleWorkflow,
         ],
         activities=[
             reducers.list_reducers,
             reducers.recompute_bucket,
             reducers.dispatch_derived,
             events.dispatch_events,
+            meters.cycle_meters,
         ],
         max_concurrent_activities=settings.DATABASE_POOL_SIZE,
     )

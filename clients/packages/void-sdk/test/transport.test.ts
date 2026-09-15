@@ -33,7 +33,7 @@ it('every generated request stays under the Void namespace', () => {
   assert.ok(paths.every(([, path]) => path?.startsWith('/v1/void/')))
 })
 
-it('pending operations send Polar credentials only to Void routes and preserve SDK errors', async () => {
+it('resource operations send Polar credentials only to Void routes and preserve SDK errors', async () => {
   const requests: Request[] = []
   const client = createVoid(config, {
     apiUrl: 'http://polar/',

@@ -278,7 +278,7 @@ class TestDeploy:
             )
         assert await counts(session, organization) == [0] * 6
 
-    async def test_preview_fails_before_locking_or_writing(
+    async def test_preview_plans_without_writing(
         self, session: AsyncSession, organization: Organization, mocker: MockerFixture
     ) -> None:
         lock = mocker.patch(
@@ -292,10 +292,9 @@ class TestDeploy:
                 "preview": {"start": "2026-01-01", "end": "2026-02-01"},
             }
         )
-        with pytest.raises(PolarError) as error:
-            await deploy_service.deploy(session, organization.id, config)
-        assert error.value.status_code == 501
-        lock.assert_not_awaited()
+        plan = await deploy_service.deploy(session, organization.id, config)
+        assert not plan.applied
+        lock.assert_awaited_once()
         assert await counts(session, organization) == [0] * 6
 
     async def test_derived_order_and_event_backfill(

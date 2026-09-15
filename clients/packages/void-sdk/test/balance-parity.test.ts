@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
-import type { MeterEvent, State } from '../src/api/generated'
+import type { MeterEvent, LedgerState } from '../src/api/generated'
 import { emptyState, fold } from '../src/storage/balance'
 
 const cases: {
@@ -9,7 +9,7 @@ const cases: {
   credits: [string, number][]
   usage: [string, number][]
   until: string
-  expected: State
+  expected: LedgerState
 }[] = JSON.parse(
   readFileSync(
     new URL('./fixtures/meter_reconciliation.json', import.meta.url),

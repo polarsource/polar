@@ -73,6 +73,8 @@ const serve = (initial: number) => {
     if (path === '/reducers')
       return json([
         {
+          map: null,
+
           id: 'r-spent',
           slug: 'credits',
           created_at: 'a',
@@ -100,6 +102,10 @@ const serve = (initial: number) => {
     if (path === '/meters/m-pool/check') {
       const allowed = remaining >= Number(searchParams.get('size'))
       return json({
+        entitlements: [],
+        period_start: null,
+        period_end: null,
+
         allowed,
         reason: allowed ? 'ok' : 'exhausted',
         remaining,
@@ -110,6 +116,14 @@ const serve = (initial: number) => {
     }
     if (path === '/meters/m-pool/balance')
       return json({
+        credits: 0,
+        usage: 0,
+        limited_by: null,
+        limit: null,
+        reason: 'ok',
+        period_start: null,
+        period_end: null,
+
         meter_id: 'm-pool',
         external_identity_id: 'c1',
         at: null,

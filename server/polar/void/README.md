@@ -6,8 +6,8 @@ Void is being moved from `polarsource/void` at
 
 ## Current stage
 
-Stages 1–6 provide the SDK/CLI, gated Polar organization-token login, isolated
-persistence, identity trees, bindings to Polar customers, event processing, and configuration deployment.
+Stages 1–7 provide the SDK/CLI, gated Polar organization-token login, isolated
+persistence, identity trees, bindings to Polar customers, event processing, configuration deployment, and the complete backend runtime.
 Live routes are:
 
 | Method | Path | Behavior |
@@ -30,17 +30,27 @@ Live routes are:
 | GET | `/v1/void/products/{id}` | Read a product generation |
 | POST | `/v1/void/deploys` | Plan or apply a complete compiled configuration |
 | GET | `/v1/void/deploys/latest` | Read the latest deployment for a selected variant |
+| GET | `/v1/void/identities/{external_id}/snapshot` | Identity, customer, balances, and inherited entitlements |
+| GET, PUT | `/v1/void/identities/{external_id}/entitlements` | Read access or replace an assignment |
+| GET | `/v1/void/customers/{external_id}/state` | Customer reconciliation snapshot and processing receipts |
+| GET | `/v1/void/meters/{id}/balance`, `/check` | Fold credits and recurring usage, then check limits |
+| GET, POST | `/v1/void/subscriptions` | Read subscriptions or subscribe a root to a product generation |
+| GET | `/v1/void/subscriptions/{id}`, `/{id}/cycles` | Read a subscription and its closed periods |
+| POST | `/v1/void/subscriptions/{id}/cancel`, `/{id}/revoke` | End access at a boundary or immediately |
+| POST | `/v1/void/subscriptions/rebuild` | Rebuild projections from durable lifecycle events |
+| GET | `/v1/void/metrics/compare` | Compare variants against the same historical customer cohort |
 
-Snapshots, subscription lifecycle, balances, entitlement assignment, and metric
-comparisons remain pending. The SDK compatibility contract retains those operations.
+All 40 migrated operations are included in the private OpenAPI export.
 
 ## Configuration deployment
 
 `POST /deploys` reconciles reducers, meters, entitlements, and products together.
 Both planning and applying require `void:write`. `dry_run: true` validates and
 returns the plan without writing definitions, deployment records, settings, or
-backfill jobs. Historical price previews return 501 before any writes; they need
-the lifecycle and balance services planned for step 7.
+backfill jobs. Historical price previews require `dry_run`, customer-read scope,
+and Tinybird access. They reuse the meter fold over processed usage, preserving
+credits and rollover. Unsupported histories and currency or reducer changes are
+reported explicitly.
 
 Applying uses one transaction and the organization lock shared by definition
 writes and default-variant selection. The lock allows the event worker's
@@ -87,7 +97,7 @@ pnpm --filter @void/sdk void deploy --config /absolute/path/to/void.ts
 ```
 
 Plain `plan` checks configuration only. `--preview` or explicit `--from` / `--to`
-dates request historical prices and currently return the unsupported response.
+dates request historical price comparisons against the selected default variant.
 A complete example used by the CLI tests lives in
 `clients/packages/void-sdk/test/fixtures/deployment.ts`.
 
@@ -197,6 +207,30 @@ option to grant those customer permissions explicitly:
 uv run python -m scripts.generate_void_token <organization-uuid-or-slug> --customers
 ```
 
+## Lifecycle and reconciliation
+
+Subscription writes hold the organization lock and commit their projection and
+canonical lifecycle events together. Rebuild reads system lifecycle events from
+PostgreSQL, including events not yet delivered to Tinybird. Direct user
+`subscription.*` meter events remain supported; they do not create product
+subscription projections. Entitlement assignments use a managed last-value reducer
+and become effective after processing. Parent assignments constrain children.
+
+Customer state and identity snapshots open a fresh `REPEATABLE READ` transaction
+on the primary database. They never use the read replica. Snapshots retain
+per-event processing receipts and the requested replay window so SDK local events
+can reconcile with server totals. Snapshot, state, and comparison responses that
+include customer details require customer-read permission in addition to Void read.
+
+The dedicated worker registers a namespaced meter-cycle schedule every five
+minutes. Each organization settles in its own transaction. Settlement waits while
+accepted events remain undelivered, then reads authoritative Tinybird usage so a
+lagging PostgreSQL reducer cannot freeze a stale charge. Cycle IDs are deterministic
+and retries keep the first accepted event. Source behavior for already settled
+periods is retained; this migration does not add retroactive adjustments or a
+native Polar billing writer. The source active-subscription schedule also excludes
+ended subscriptions; their historical cycles remain available through cycle reads.
+
 ## Persistence
 
 Migration `3d19da536d94`, following `38a9961f9d09`, adds twelve tables:
@@ -225,7 +259,7 @@ precision. Relationships require explicit eager loading through `lazy="raise"`.
 Product meter and entitlement UUID arrays are validated against active resources
 in the same organization. ORM relationship reads also enforce organization scope.
 Subscription rows remain Void lifecycle projections, separate from Polar's
-payment-backed subscriptions; their lifecycle services arrive in the next stage.
+payment-backed subscriptions. No native purchase or Stripe lifecycle adapter is installed.
 
 ## Deployment and validation
 
@@ -256,6 +290,15 @@ re-upgrade preserved identical snapshots of existing Polar schema and sample
 account, organization, and customer records. `alembic check` reported no drift.
 Tests cover database constraints, typed JSON, decimal precision, shared SDK balance
 and mapping fixtures, and configuration-hash parity with the source repository.
+
+Step 7 was also exercised through a running Polar API, the actual SDK/CLI, and
+isolated PostgreSQL, Tinybird, and Temporal services. The scenario created a root,
+child, and customer binding, subscribed to a deployed product, enforced a child
+usage cap, and reconciled offline usage after its server receipt without double
+counting. A closed period produced 200 overage units and a $49.40 cycle total;
+a historical preview at the proposed rate produced $0.80 for the same 200 units.
+The normal Polar API client regenerated without changes, and Alembic found no
+schema drift.
 
 Disable runtime access with `POLAR_VOID_ENABLED=false`. A schema downgrade drops
 the Void tables and their data; it is not the runtime disable mechanism.

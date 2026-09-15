@@ -75,6 +75,8 @@ type Fixture = Mutable<Omit<Wire.CustomerState, 'meters'>> & {
 }
 function snapshot(): Fixture {
   return {
+    next_change_at: null,
+
     organization_id: 'org',
     at,
     since: '1970-01-01T00:00:00.000Z',
@@ -85,7 +87,13 @@ function snapshot(): Fixture {
       name: 'A',
       created_at: at,
     },
-    identities: [{ external_id: 'root', parent_external_id: null }],
+    identities: [
+      {
+        entitlements: { features: null, meters: null },
+        external_id: 'root',
+        parent_external_id: null,
+      },
+    ],
     reducers: compile(config).reducers.map((r) => ({
       ...r,
       filter: r.filter ?? null,
@@ -113,9 +121,34 @@ function snapshot(): Fixture {
         },
         holders: [
           {
+            credit_base: null,
+            usage_base: null,
+            entitlement: null,
+            entitlement_usage_base: 0,
+
             external_identity_id: 'root',
-            balance: { credits: 100, usage: 20, remaining: 80, overage: 0 },
-            base: { at: '1970-01-01T00:00:00.000Z', remaining: 0, overage: 0 },
+            balance: {
+              at: null,
+              subscription: null,
+              boundary: null,
+              boundaries: [],
+              cycles: {},
+              credits: 100,
+              usage: 20,
+              remaining: 80,
+              overage: 0,
+            },
+            base: {
+              subscription: null,
+              boundary: null,
+              boundaries: [],
+              cycles: {},
+              credits: 0,
+              usage: 0,
+              at: '1970-01-01T00:00:00.000Z',
+              remaining: 0,
+              overage: 0,
+            },
             is_holder: true,
             events: [],
           },
@@ -223,13 +256,46 @@ it('balance reports own credits and subtree usage with the remaining the chain a
   const s = snapshot()
   s.identities = [
     ...s.identities,
-    { external_id: 'child', parent_external_id: 'root' },
-    { external_id: 'grandchild', parent_external_id: 'child' },
+    {
+      entitlements: { features: null, meters: null },
+      external_id: 'child',
+      parent_external_id: 'root',
+    },
+    {
+      entitlements: { features: null, meters: null },
+      external_id: 'grandchild',
+      parent_external_id: 'child',
+    },
   ]
   s.meters[0].holders.push({
+    credit_base: null,
+    usage_base: null,
+    entitlement: null,
+    entitlement_usage_base: 0,
+
     external_identity_id: 'child',
-    balance: { credits: 200, usage: 0, remaining: 200, overage: 0 },
-    base: { at: '1970-01-01T00:00:00.000Z', remaining: 0, overage: 0 },
+    balance: {
+      at: null,
+      subscription: null,
+      boundary: null,
+      boundaries: [],
+      cycles: {},
+      credits: 200,
+      usage: 0,
+      remaining: 200,
+      overage: 0,
+    },
+    base: {
+      subscription: null,
+      boundary: null,
+      boundaries: [],
+      cycles: {},
+      credits: 0,
+      usage: 0,
+      at: '1970-01-01T00:00:00.000Z',
+      remaining: 0,
+      overage: 0,
+    },
     is_holder: true,
     events: [],
   })
@@ -268,6 +334,12 @@ it('balance returns zero without a holder and still reports own usage', () => {
   const s = snapshot()
   s.buckets = []
   s.meters[0].holders[0].balance = {
+    at: null,
+    subscription: null,
+    boundary: null,
+    boundaries: [],
+    cycles: {},
+
     credits: 0,
     usage: 0,
     remaining: 0,
@@ -326,6 +398,8 @@ it.each([null, 'c'.repeat(64)])(
             })
           if (url.pathname === '/v1/void/identities/root')
             return Response.json({
+              entitlements: { features: null, meters: null },
+
               id: 'root',
               external_id: 'root',
               parent_external_id: null,
@@ -348,6 +422,11 @@ it.each([null, 'c'.repeat(64)])(
           if (url.pathname === '/v1/void/meters/meter/balance')
             return Response.json({
               ...scopedSnapshot().meters[0].holders[0].balance,
+              limited_by: null,
+              limit: null,
+              reason: 'ok',
+              period_start: null,
+              period_end: null,
               meter_id: 'meter',
               external_identity_id: 'root',
             })
@@ -467,15 +546,48 @@ it('checks every holder and counts sibling usage against shared ancestor credits
   const s = snapshot()
   s.identities = [
     ...s.identities,
-    { external_id: 'child', parent_external_id: 'root' },
-    { external_id: 'sibling', parent_external_id: 'root' },
+    {
+      entitlements: { features: null, meters: null },
+      external_id: 'child',
+      parent_external_id: 'root',
+    },
+    {
+      entitlements: { features: null, meters: null },
+      external_id: 'sibling',
+      parent_external_id: 'root',
+    },
   ]
   s.meters[0].holders = [
     ...s.meters[0].holders,
     {
+      credit_base: null,
+      usage_base: null,
+      entitlement: null,
+      entitlement_usage_base: 0,
+
       external_identity_id: 'child',
-      balance: { remaining: 50, overage: 0 },
-      base: { at: '1970-01-01T00:00:00.000Z', remaining: 0, overage: 0 },
+      balance: {
+        at: null,
+        subscription: null,
+        boundary: null,
+        boundaries: [],
+        cycles: {},
+        credits: 0,
+        usage: 0,
+        remaining: 50,
+        overage: 0,
+      },
+      base: {
+        subscription: null,
+        boundary: null,
+        boundaries: [],
+        cycles: {},
+        credits: 0,
+        usage: 0,
+        at: '1970-01-01T00:00:00.000Z',
+        remaining: 0,
+        overage: 0,
+      },
       is_holder: true,
       events: [],
     },
@@ -580,6 +692,8 @@ it('the public check reads SQLite, applies the estimate and never calls the remo
           })
         if (path === '/v1/void/identities/root')
           return Response.json({
+            entitlements: { features: null, meters: null },
+
             id: 'root',
             external_id: 'root',
             parent_external_id: null,
@@ -672,6 +786,8 @@ it.each(['check', 'balance'] as const)(
               })
             if (url.pathname === '/v1/void/identities/root')
               return Response.json({
+                entitlements: { features: null, meters: null },
+
                 id: 'root',
                 external_id: 'root',
                 parent_external_id: null,
@@ -788,6 +904,12 @@ it('reports only unprocessed local events and separates remote availability from
     bucket('spent', 70, ['processed', 'pending']),
   ]
   s.meters[0].holders[0].balance = {
+    at: null,
+    subscription: null,
+    boundary: null,
+    boundaries: [],
+    cycles: {},
+
     credits: 100,
     usage: 70,
     remaining: 30,
@@ -837,11 +959,18 @@ it('reconciles mapped pending usage and rejects a different deployed map', () =>
 function cappedSnapshot(cap = 40) {
   const s = snapshot()
   s.identities = [
-    { external_id: 'root', parent_external_id: null },
+    {
+      entitlements: { features: null, meters: null },
+      external_id: 'root',
+      parent_external_id: null,
+    },
     {
       external_id: 'child',
       parent_external_id: 'root',
-      entitlements: { meters: [{ meter: 'credits', cap }] },
+      entitlements: {
+        features: null,
+        meters: [{ meter: 'credits', cap }],
+      },
     },
   ]
   s.meters[0]!.holders[0]!.events = [
@@ -849,13 +978,43 @@ function cappedSnapshot(cap = 40) {
       id: 'subscription',
       name: 'subscription.created',
       at: '2026-09-01T00:00:00.000Z',
-      data: { meter_interval: 'month', included: 1000, rollover_cap: 0 },
+      data: {
+        meter_interval_count: 1,
+        limit: 'hard',
+        ended: false,
+        meter_interval: 'month',
+        included: 1000,
+        rollover_cap: 0,
+      },
     },
   ]
   s.meters[0]!.holders.push({
+    credit_base: null,
+    usage_base: null,
+
     external_identity_id: 'child',
-    balance: { usage: 35, remaining: 0, overage: 35 },
-    base: { remaining: 0, overage: 0 },
+    balance: {
+      at: null,
+      subscription: null,
+      boundary: null,
+      boundaries: [],
+      cycles: {},
+      credits: 0,
+      usage: 35,
+      remaining: 0,
+      overage: 35,
+    },
+    base: {
+      at: null,
+      subscription: null,
+      boundary: null,
+      boundaries: [],
+      cycles: {},
+      credits: 0,
+      usage: 0,
+      remaining: 0,
+      overage: 0,
+    },
     is_holder: false,
     events: [],
     entitlement: {
@@ -925,7 +1084,11 @@ it('counts sibling usage against the ancestor entitlement but not the child cap'
   const s = cappedSnapshot(100)
   s.identities = [
     ...s.identities,
-    { external_id: 'sibling', parent_external_id: 'root' },
+    {
+      entitlements: { features: null, meters: null },
+      external_id: 'sibling',
+      parent_external_id: 'root',
+    },
   ]
   s.meters[0]!.holders[0]!.entitlement = {
     external_identity_id: 'root',
@@ -1006,7 +1169,13 @@ it('denies narrowed meter access before allowing a child to use root credits', (
   const s = cappedSnapshot()
   s.identities = s.identities.map((node) =>
     node.external_id === 'root'
-      ? { ...node, entitlements: { meters: [] } }
+      ? {
+          ...node,
+          entitlements: {
+            features: null,
+            meters: [],
+          },
+        }
       : node,
   )
   const result = decide(
@@ -1051,7 +1220,14 @@ it.each(['09', '10'])(
         id: 'subscription',
         name: 'subscription.created',
         at: '2026-09-07T12:02:09.857Z',
-        data: { meter_interval: 'month', included: 1000, rollover_cap: 0 },
+        data: {
+          meter_interval_count: 1,
+          limit: 'hard',
+          ended: false,
+          meter_interval: 'month',
+          included: 1000,
+          rollover_cap: 0,
+        },
       },
     ]
     s.buckets = s.buckets.map((b) => ({ ...b, bucket_start: tail }))

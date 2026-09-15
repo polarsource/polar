@@ -131,6 +131,8 @@ const serve = (remaining: Record<string, number>) => {
     if (path === '/reducers')
       return json(
         ir.reducers.map((r) => ({
+          map: null,
+
           id: `r-${r.slug}`,
           slug: r.slug,
           created_at: 'a',
@@ -162,6 +164,10 @@ const serve = (remaining: Record<string, number>) => {
       const left = remaining[slug] ?? 0
       const allowed = left >= Number(searchParams.get('size'))
       return json({
+        entitlements: [],
+        period_start: null,
+        period_end: null,
+
         allowed,
         reason: allowed ? 'ok' : 'exhausted',
         remaining: left,
@@ -825,6 +831,8 @@ it('capture: false leaves only the wrapped model recording', async () => {
     if (path === '/reducers')
       return json(
         quietIr.reducers.map((r) => ({
+          map: null,
+
           id: `r-${r.slug}`,
           slug: r.slug,
           created_at: 'a',
@@ -904,6 +912,8 @@ const serveFor = (
     if (path === '/reducers')
       return json(
         own.reducers.map((r) => ({
+          map: null,
+
           id: `r-${r.slug}`,
           slug: r.slug,
           created_at: 'a',
@@ -938,6 +948,10 @@ const serveFor = (
       const left = remaining[slug] ?? 0
       const allowed = left >= size
       return json({
+        entitlements: [],
+        period_start: null,
+        period_end: null,
+
         allowed,
         reason: allowed ? 'ok' : 'exhausted',
         remaining: left,

@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import {
   Api,
   type Customer,
-  type EntitlementAssignment,
+  type EntitlementAssignmentRead,
   type IdentityDetail,
 } from '../api/index'
 import type { RunEffect } from '../api/layers'
@@ -120,7 +120,7 @@ export function makeScopes<M extends SchemaModule>(
 
   const toWire = (
     entitlements: IdentityEntitlements,
-  ): EntitlementAssignment => ({
+  ): EntitlementAssignmentRead => ({
     features: entitlements.features?.map((feature) => feature.key) ?? null,
     meters:
       entitlements.meters?.map(({ meter, cap }) => ({
@@ -132,7 +132,7 @@ export function makeScopes<M extends SchemaModule>(
   /** Replace the identity's terms. */
   const assign = Effect.fn('Scope.assign')(function* (
     id: string,
-    terms: EntitlementAssignment,
+    terms: EntitlementAssignmentRead,
     external = randomUUID(),
   ) {
     const api = yield* Api

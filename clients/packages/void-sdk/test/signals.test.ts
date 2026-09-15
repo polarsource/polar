@@ -42,6 +42,8 @@ function fixture(): Wire.CustomerState {
     Math.floor(Date.now() / 300000) * 300000,
   ).toISOString()
   return {
+    next_change_at: null,
+
     organization_id: 'org',
     at,
     since: '1970-01-01T00:00:00.000Z',
@@ -53,8 +55,16 @@ function fixture(): Wire.CustomerState {
       created_at: at,
     },
     identities: [
-      { external_id: 'root', parent_external_id: null },
-      { external_id: 'child', parent_external_id: 'root' },
+      {
+        entitlements: { features: null, meters: null },
+        external_id: 'root',
+        parent_external_id: null,
+      },
+      {
+        entitlements: { features: null, meters: null },
+        external_id: 'child',
+        parent_external_id: 'root',
+      },
     ],
     reducers: compile(defineConfig({ schema })).reducers.map((r) => ({
       ...r,
@@ -66,6 +76,9 @@ function fixture(): Wire.CustomerState {
     })),
     meters: [
       {
+        usage_last_processed_event: null,
+        credit_last_processed_event: null,
+
         meter: {
           variant_id: null,
           branch_id: null,
@@ -81,9 +94,34 @@ function fixture(): Wire.CustomerState {
         },
         holders: [
           {
+            credit_base: null,
+            usage_base: null,
+            entitlement: null,
+            entitlement_usage_base: 0,
+
             external_identity_id: 'root',
-            balance: { credits: 120, usage: 0, remaining: 120, overage: 0 },
-            base: { at: '1970-01-01T00:00:00.000Z', remaining: 0, overage: 0 },
+            balance: {
+              at: null,
+              subscription: null,
+              boundary: null,
+              boundaries: [],
+              cycles: {},
+              credits: 120,
+              usage: 0,
+              remaining: 120,
+              overage: 0,
+            },
+            base: {
+              subscription: null,
+              boundary: null,
+              boundaries: [],
+              cycles: {},
+              credits: 0,
+              usage: 0,
+              at: '1970-01-01T00:00:00.000Z',
+              remaining: 0,
+              overage: 0,
+            },
             is_holder: true,
             events: [],
           },
@@ -137,6 +175,8 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
         })
       if (path === '/v1/void/identities/root')
         return Response.json({
+          entitlements: { features: null, meters: null },
+
           id: 'identity',
           external_id: 'root',
           parent_external_id: null,
@@ -473,7 +513,10 @@ it('keeps hysteresis through unknown and resolves unlimited balances', async () 
       {
         external_id: 'root',
         parent_external_id: null,
-        entitlements: { meters: [] },
+        entitlements: {
+          features: null,
+          meters: [],
+        },
       },
     ],
   }
@@ -499,6 +542,11 @@ it('keeps hysteresis through unknown and resolves unlimited balances', async () 
             base: {
               ...holder.base,
               subscription: {
+                meter_interval_count: 1,
+                rollover_cap: null,
+                included: 0,
+                ended: false,
+
                 id: 'sub',
                 at: valid.at,
                 anchor: valid.at,
@@ -629,7 +677,10 @@ it('wakes at a billing boundary without a usage event or refresh', async () => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-12T23:59:59Z'))
   const server = setup()
-  const base: Wire.State = {
+  const base: Wire.LedgerState = {
+    boundaries: [],
+    cycles: {},
+
     at: '2026-09-12T00:00:00Z',
     boundary: '2026-09-12T00:00:00Z',
     credits: 200,
@@ -637,6 +688,9 @@ it('wakes at a billing boundary without a usage event or refresh', async () => {
     remaining: 80,
     overage: 0,
     subscription: {
+      meter_interval_count: 1,
+      ended: false,
+
       id: 'sub',
       at: '2026-09-12T00:00:00Z',
       anchor: '2026-09-12T00:00:00Z',
@@ -655,6 +709,11 @@ it('wakes at a billing boundary without a usage event or refresh', async () => {
         ...server.snapshot.meters[0]!,
         holders: [
           {
+            credit_base: null,
+            usage_base: null,
+            entitlement: null,
+            entitlement_usage_base: 0,
+
             external_identity_id: 'root',
             base,
             balance: base,

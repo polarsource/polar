@@ -6,25 +6,16 @@ This private package contains the SDK and CLI imported from
 [`polarsource/void` at `495330f3`](https://github.com/polarsource/void/tree/495330f3f00e157f6cd034562cfecfb55075d517/packages/sdk).
 It keeps the `@void/sdk` imports and the `void` command.
 
-Polar now serves CLI login, identities, customer bindings, event ingestion,
-reducers, metrics, and configuration deployment under `/v1/void`. The SDK sends a Polar organization access
-token and `Polar-Version: 2026-04` with every request. Set `apiUrl` to the server origin,
-without `/v1/void`.
+Polar serves the backend runtime under `/v1/void`, including subscriptions,
+entitlement assignments, balances, identity snapshots, customer reconciliation,
+and historical price comparisons. The SDK sends a Polar organization access token,
+`Polar-Version: 2026-04`, and `x-void-config` with requests. Set `apiUrl` to the server
+origin, without `/v1/void`.
 
-The implemented operations are `organizations:current`, `identities:list`,
-`identities:ensure`, `identities:get`, `customers:list`, `customers:create`,
-`customers:get`, `events:list`, `events:ingest`, `reducers:list`,
-`reducers:create`, `reducers:get`, `reducers:records`, `metrics:get`,
-`deploys:create`, `deploys:latest`, `meters:list`, `meters:create`, `meters:get`,
-`products:list`, `products:create`, `products:get`, `entitlements:list`,
-`entitlements:create`, `entitlements:get`, and `organizations:updateCurrent`. This enables
-`root()`, `ensure()`, `spawn()` without entitlements, identity navigation,
-`actor.customer()`, scalar reducer usage and totals, and first/last record reads.
-
-The remaining SDK operations are preserved for later migration stages.
-Snapshots, customer state, identity entitlement grants, meter queries,
-and metric comparisons still return 404. Historical price previews return 501. The examples below describe the full
-imported SDK.
+The checked-in contract contains all 40 migrated operations. Organization access
+comes from the Polar token; the old Void organization creation and listing APIs
+are not exposed. Void subscriptions remain separate from Polar's payment-backed
+subscriptions.
 
 Event ingestion returns `202` after durable acceptance. The dedicated Void worker
 delivers events and recomputes reducers, so event listings and metrics update
@@ -116,15 +107,14 @@ pnpm --filter @void/sdk generate
 ```
 
 `generate` uses the checked-in `openapi.json` and requires no running server or
-Python environment. This is a migration compatibility contract that retains the
-imported SDK API. Each operation has `x-void-migration-status` set to `implemented`
-or `pending`; twenty-six operations are implemented.
+Python environment. Refresh it from Polar's private API export:
 
-Export the live backend contract from `server/` with
-`uv run python -m scripts.generate_void_openapi 2026-04`. Use it to verify migrated
-operations. Do not replace the SDK contract with this partial export: doing so
-would remove pending operations still referenced by the imported runtime. Update
-migrated operations in the compatibility contract and regenerate together.
+```sh
+# From server/
+uv run python -m scripts.generate_void_openapi 2026-04 > /tmp/void-openapi.json
+# From clients/
+pnpm --filter @void/sdk generate /tmp/void-openapi.json
+```
 
 The default test suite runs without services. PostgreSQL and Redis integration
 tests skip unless their test connection variables are set. The shared backend
@@ -217,17 +207,21 @@ Polar product or subscription configuration.
 
 ### Historical price previews
 
-Historical comparisons depend on subscription lifecycle migration and are not yet
-available in Polar. Planning defaults to configuration changes only. Explicit
-preview requests return 501, and the CLI reports the error without retrying or
-removing the preview request.
+Planning defaults to configuration changes only. Add `--preview` or a date
+window to compare processed usage at the proposed meter prices. Preview reads
+require customer-read permission and configured Tinybird access. They write no
+billing or deployment records. Currency or reducer changes and unsupported
+subscription histories are reported explicitly rather than priced as zero.
 
 ```sh
-void plan                                     # Configuration changes only
-void plan --no-preview                        # Explicit configuration-only plan
-void plan --preview                           # Historical preview; currently 501
-void plan --from 2026-08-01 --to 2026-09-01     # Explicit window; currently 501
+void plan
+void plan --preview
+void plan --from 2026-08-01 --to 2026-09-01
 ```
+
+Customer state and identity snapshots use a fresh transaction on Polar's primary
+database at repeatable-read isolation. The SDK uses processing receipts to merge
+locally buffered events with server balances without counting usage twice.
 
 ## Runtime usage
 
@@ -570,7 +564,7 @@ The builder example has been migrated from `customer().track()` to identity scop
 
 The first argument to `meter('tokens', ...)` is its stable slug. Deployment and SDK resolution match this slug across generations, independently of the display name. Compiled meter entries now use `slug` instead of `name`; run `void deploy` against the updated server. Existing meters whose name and slug match retain their identity.
 
-Run `pnpm --filter @void/sdk generate` from Polar's `clients/` directory to regenerate the schemas, HTTP client, and grouped Promise API in `src/api/generated.ts` from the checked-in migration compatibility contract, `openapi.json`. Resource groups and methods come from its `resource:action` operation IDs; input types come directly from the generated HTTP client. No endpoint registry is maintained in the SDK.
+Run `pnpm --filter @void/sdk generate` from Polar's `clients/` directory to regenerate the schemas, HTTP client, and grouped Promise API in `src/api/generated.ts` from the checked-in private API contract, `openapi.json`. Resource groups and methods come from its `resource:action` operation IDs; input types come directly from the generated HTTP client. No endpoint registry is maintained in the SDK.
 
 ## Runtime architecture
 

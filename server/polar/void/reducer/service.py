@@ -59,6 +59,35 @@ class ReducerNotDict(PolarError):
         super().__init__("Reducer must be dict", 400)
 
 
+async def query_buckets(
+    tinybird: TinybirdApi, reducer: Reducer, start: datetime, end: datetime
+) -> Sequence[dict[str, Any]]:
+    assert reducer.filter is not None
+    groups = to_dnf(reducer.filter)
+    if any(not group for group in groups):
+        groups = []
+    clauses = [
+        (index, clause) for index, group in enumerate(groups) for clause in group
+    ]
+    result = await asyncio.to_thread(
+        tinybird.query,
+        "void_reducer_buckets",
+        {
+            "organization_id": str(reducer.organization_id),
+            "start": start.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S"),
+            "end": end.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S"),
+            "func": reducer.aggregation.func,
+            "event_map": json.dumps(compile_map(reducer.map)),
+            "aggregation_property": getattr(reducer.aggregation, "property", "_"),
+            "clause_group": json.dumps([index for index, _ in clauses]),
+            "clause_property": json.dumps([c.property for _, c in clauses]),
+            "clause_operator": json.dumps([c.operator for _, c in clauses]),
+            "clause_value": json.dumps([_clause_value(c.value) for _, c in clauses]),
+        },
+    )
+    return result["data"]
+
+
 class ReducerService:
     async def list(
         self, session: AsyncReadSession, organization_id: uuid.UUID
@@ -248,30 +277,7 @@ class ReducerService:
         repository = ReducerRepository.from_session(session)
         await repository.lock_definitions(reducer.organization_id, shared=True)
         await repository.lock_bucket(reducer.id, start)
-        groups = to_dnf(reducer.filter)
-        if any(not group for group in groups):
-            groups = []
-        clauses = [
-            (index, clause) for index, group in enumerate(groups) for clause in group
-        ]
-        result = await asyncio.to_thread(
-            tinybird.query,
-            "void_reducer_buckets",
-            {
-                "organization_id": str(reducer.organization_id),
-                "start": start.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S"),
-                "end": end.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S"),
-                "func": reducer.aggregation.func,
-                "event_map": json.dumps(compile_map(reducer.map)),
-                "aggregation_property": getattr(reducer.aggregation, "property", "_"),
-                "clause_group": json.dumps([index for index, _ in clauses]),
-                "clause_property": json.dumps([c.property for _, c in clauses]),
-                "clause_operator": json.dumps([c.operator for _, c in clauses]),
-                "clause_value": json.dumps(
-                    [_clause_value(c.value) for _, c in clauses]
-                ),
-            },
-        )
+        result = await query_buckets(tinybird, reducer, start, end)
         rows = [
             {
                 "reducer_id": reducer.id,
@@ -287,7 +293,7 @@ class ReducerService:
                     row["last_processed_event"]
                 ),
             }
-            for row in result["data"]
+            for row in result
         ]
         await self.write_buckets(session, rows)
         current = bucket_start(start)

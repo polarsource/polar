@@ -31,7 +31,7 @@ from polar.void.reducer.filter import (
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 
-from .exceptions import DeploymentConflict, InvalidDeployment, PreviewUnavailable
+from .exceptions import DeploymentConflict, InvalidDeployment
 from .repository import DeployRepository
 from .schemas import (
     Action,
@@ -127,8 +127,6 @@ class DeployService:
         created again and the server bumps its generation. Nothing is ever
         deleted; what the config no longer names is reported as an orphan.
         """
-        if create_schema.preview is not None:
-            raise PreviewUnavailable()
         await organization_service.lock(session, organization_id)
         async with session.begin_nested():
             return await self._reconcile(session, organization_id, create_schema)

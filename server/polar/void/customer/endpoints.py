@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 
 from fastapi import Depends
+from pydantic import AwareDatetime
 
 from polar.exceptions import ResourceNotFound
 from polar.openapi import APITag
@@ -12,10 +13,14 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.void.auth import VoidCustomerRead, VoidCustomerWrite
+from polar.void.organization.service import selected_variant
+from polar.void.postgres import get_snapshot_session
+from polar.void.tinybird import TinybirdClient
 
-from .schemas import Customer, CustomerCreate
+from .schemas import Customer, CustomerCreate, CustomerState
 from .service import CustomerBindingConflict
 from .service import customer as customer_service
+from .state import customer_state
 
 router = APIRouter(
     prefix="/customers", tags=["customers", APITag.private], include_in_schema=False
@@ -60,3 +65,27 @@ async def get_customer(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Customer:
     return await customer_service.get(session, auth_subject, external_id)
+
+
+@router.get(
+    "/{external_id}/state",
+    response_model=CustomerState,
+    operation_id="customers:state",
+    responses={404: {"model": ResourceNotFound.schema()}},
+)
+async def state(
+    external_id: str,
+    auth_subject: VoidCustomerRead,
+    tinybird: TinybirdClient,
+    since: AwareDatetime | None = None,
+    variant_id: str | None = None,
+    session: AsyncSession = Depends(get_snapshot_session),
+) -> CustomerState:
+    return await customer_state(
+        session,
+        tinybird,
+        auth_subject,
+        external_id,
+        since,
+        await selected_variant(session, auth_subject.subject.id, variant_id),
+    )

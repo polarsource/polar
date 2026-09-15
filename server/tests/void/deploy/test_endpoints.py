@@ -1,9 +1,13 @@
+from unittest.mock import Mock
+
 import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.void.deploy import endpoints
+from polar.void.tinybird import TinybirdApi
 from tests.fixtures.database import SaveFixture
 from tests.void.deploy.test_service import CONFIG, counts
 from tests.void.test_endpoints import TOKEN, create_token
@@ -65,11 +69,37 @@ class TestDeployEndpoints:
             await void_client.get(f"{PATH}/latest", headers=HEADERS)
         ).status_code == 404
 
-    async def test_preview_returns_501_and_leaves_database_empty(
+    async def test_preview_plans_and_leaves_database_empty(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        monkeypatch: pytest.MonkeyPatch,
+        organization: Organization,
+    ) -> None:
+        await create_token(
+            save_fixture, organization, scopes={Scope.void_write, Scope.customers_read}
+        )
+        monkeypatch.setattr(
+            endpoints, "get_client", lambda: iter([Mock(spec=TinybirdApi)])
+        )
+        response = await void_client.post(
+            PATH,
+            headers=HEADERS,
+            json={
+                **CONFIG,
+                "dry_run": True,
+                "preview": {"start": "2026-01-01", "end": "2026-02-01"},
+            },
+        )
+        assert response.status_code == 201
+        assert not response.json()["applied"]
+        assert await counts(session, organization) == [0] * 6
+
+    async def test_preview_requires_customer_read_scope(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await create_token(save_fixture, organization, scopes={Scope.void_write})
@@ -82,5 +112,4 @@ class TestDeployEndpoints:
                 "preview": {"start": "2026-01-01", "end": "2026-02-01"},
             },
         )
-        assert response.status_code == 501
-        assert await counts(session, organization) == [0] * 6
+        assert response.status_code == 403

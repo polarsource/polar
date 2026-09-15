@@ -1,12 +1,12 @@
 /** Mirrors server/void/meter/balance.py; timestamps are milliseconds internally. */
-import type { MeterEvent, MeterCycle, Subscription } from '../api/generated'
+import type { MeterEvent, MeterCycle, SubscriptionRead } from '../api/generated'
 
 export type Limit = 'hard' | 'soft' | 'unlimited'
 interface Sub {
   id: string
   at: number
   anchor: number
-  interval: Subscription['meter_interval']
+  interval: SubscriptionRead['meter_interval']
   count: number
   cap: number | null
   /** Credits granted at the start of every period. */
@@ -32,7 +32,7 @@ export const emptyState = (): FoldState => ({
 })
 const iso = (at: number) => new Date(at).toISOString()
 const remaining = (s: FoldState) => Math.max(s.credits - s.usage, 0)
-const deltas: Partial<Record<Subscription['meter_interval'], number>> = {
+const deltas: Partial<Record<SubscriptionRead['meter_interval'], number>> = {
   hour: 3600000,
   day: 86400000,
   week: 604800000,
@@ -232,7 +232,9 @@ export function fold(
 }
 
 /** Resume from a compact remote state, without loading completed cycles. */
-export function resume(state: import('../api/generated').State): FoldState {
+export function resume(
+  state: import('../api/generated').LedgerState,
+): FoldState {
   const sub = state.subscription
   return {
     subscription: sub

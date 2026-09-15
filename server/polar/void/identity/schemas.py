@@ -4,6 +4,8 @@ from typing import Any
 from pydantic import AliasChoices, Field
 
 from polar.kit.schemas import IDSchema, Schema
+from polar.void.customer.schemas import Customer
+from polar.void.meter.schemas import Balance
 
 
 class IdentityCreate(Schema):
@@ -29,3 +31,16 @@ class Identity(IDSchema):
 class IdentityDetail(Identity):
     chain: list[str] = Field(description="External IDs from this identity to its root.")
     children: list[Identity]
+
+
+class IdentitySnapshot(Schema):
+    at: datetime
+    identity: Identity
+    root: Identity
+    customer: Customer | None
+    meters: dict[str, Balance] = Field(
+        description="Current mainline meter balances, keyed by meter slug."
+    )
+    entitlements: list[str] = Field(
+        description="Entitlement slugs held through this identity's chain."
+    )

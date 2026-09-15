@@ -19,6 +19,7 @@ from .organization.service import organization as organization_service
 from .product.endpoints import router as product_router
 from .reducer.endpoints import router as reducer_router
 from .schemas import VoidOrganization
+from .subscription.endpoints import router as subscription_router
 
 router = APIRouter(
     prefix="/void",
@@ -65,3 +66,5 @@ router.include_router(deploy_router)
 router.include_router(entitlement_router)
 router.include_router(meter_router)
 router.include_router(product_router)
+
+router.include_router(subscription_router)

@@ -113,6 +113,10 @@ const serve = () => {
     created_at: 't',
   })
   const balance = {
+    reason: 'ok',
+    period_start: null,
+    period_end: null,
+
     meter_id: 'm-tokens',
     external_identity_id: 'member_1',
     at: null,
@@ -168,6 +172,11 @@ const serve = () => {
       return json(
         searchParams.get('external_identity_id') === 'nobody'
           ? {
+              entitlements: [],
+              overage: 0,
+              period_start: null,
+              period_end: null,
+
               allowed: false,
               reason: 'no_holder',
               remaining: 0,
@@ -175,6 +184,8 @@ const serve = () => {
               external_identity_id: null,
             }
           : {
+              entitlements: [],
+
               allowed: Number(searchParams.get('size')) <= 100,
               reason:
                 Number(searchParams.get('size')) <= 100 ? 'ok' : 'exhausted',
@@ -241,6 +252,8 @@ const serve = () => {
       const ancestry = chain(id)
       const root = present(ancestry.at(-1), 'root identity')
       return json({
+        entitlements: [],
+
         at: '2026-09-07T08:00:00Z',
         identity: identity(id),
         root: identity(root),

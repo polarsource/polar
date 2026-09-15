@@ -1,10 +1,10 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, select
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidEntitlement
+from polar.models import VoidEntitlement, VoidEvent, VoidReducer
 
 
 class EntitlementRepository(RepositoryBase[VoidEntitlement]):
@@ -37,3 +37,22 @@ class EntitlementRepository(RepositoryBase[VoidEntitlement]):
         if not include_deleted:
             statement = statement.where(VoidEntitlement.deleted_at.is_(None))
         return await self.get_one_or_none(statement)
+
+    async def assignment_reducer(self, organization_id: UUID) -> VoidReducer | None:
+        return await self.session.scalar(
+            select(VoidReducer).where(
+                VoidReducer.organization_id == organization_id,
+                VoidReducer.slug == "void-identity-entitlements",
+                VoidReducer.deleted_at.is_(None),
+            )
+        )
+
+    async def assignment_event(
+        self, organization_id: UUID, external_id: str
+    ) -> VoidEvent | None:
+        return await self.session.scalar(
+            select(VoidEvent).where(
+                VoidEvent.organization_id == organization_id,
+                VoidEvent.external_id == external_id,
+            )
+        )

@@ -3,12 +3,19 @@ from typing import Literal
 from uuid import UUID
 
 from polar.exceptions import PolarError, ResourceNotFound
-from polar.models import VoidEntitlement
+from polar.kit.utils import utc_now
+from polar.models import VoidEntitlement, VoidEvent, VoidMeter
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.void.event.schemas import EventCreate, EventSource
+from polar.void.event.service import event as event_service
+from polar.void.identity.service import identity as identity_service
+from polar.void.meter.repository import MeterRepository
 from polar.void.organization.service import organization as organization_service
+from polar.void.reducer.schemas import ReducerCreate
+from polar.void.reducer.service import reducer as reducer_service
 
 from .repository import EntitlementRepository
-from .schemas import EntitlementCreate
+from .schemas import EntitlementAssignment, EntitlementCreate, EntitlementUpdate
 
 
 class EntitlementSlugTaken(PolarError):
@@ -29,7 +36,136 @@ def classify(
     return "update"
 
 
+class EntitlementAssignmentInvalid(PolarError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 400)
+
+
+class EntitlementAssignmentConflict(PolarError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 409)
+
+
+def persisted_assignment(
+    event: VoidEvent, external_identity_id: str
+) -> EntitlementAssignment:
+    if (
+        event.payload["name"] != "identity.entitlements.updated"
+        or event.payload["external_identity_id"] != external_identity_id
+        or event.payload["source"] != "system"
+    ):
+        raise EntitlementAssignmentConflict(
+            "This event id belongs to another operation"
+        )
+    return EntitlementAssignment.model_validate_json(event.payload["metadata"])
+
+
 class EntitlementService:
+    async def assignments(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+    ) -> dict[str, EntitlementAssignment]:
+        """The ordinary last-record projection, rebuilt by the reducer worker."""
+        reducer = await EntitlementRepository.from_session(session).assignment_reducer(
+            organization_id
+        )
+        if reducer is None:
+            return {}
+        return {
+            record.external_identity_id: EntitlementAssignment.model_validate(
+                record.data
+            )
+            for record in await reducer_service.records(
+                session, organization_id, reducer.id
+            )
+            if record.external_identity_id is not None
+        }
+
+    async def assign(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        external_identity_id: str,
+        update: EntitlementUpdate,
+    ) -> EntitlementAssignment:
+        await organization_service.lock(session, organization_id)
+        repository = EntitlementRepository.from_session(session)
+        existing_event = await repository.assignment_event(
+            organization_id, update.external_id
+        )
+        if existing_event is not None:
+            return persisted_assignment(existing_event, external_identity_id)
+        await identity_service.get(session, organization_id, external_identity_id)
+        assignment = EntitlementAssignment.model_validate(
+            update.model_dump(exclude={"external_id"})
+        )
+        known_features = {e.slug for e in await self.list(session, organization_id)}
+        if any(slug not in known_features for slug in assignment.features or []):
+            raise EntitlementAssignmentInvalid("Unknown feature entitlement")
+        known_meters: dict[str, VoidMeter] = {}
+        for meter in await MeterRepository.from_session(session).list(organization_id):
+            if meter.branch_id is None and (
+                meter.slug not in known_meters
+                or meter.generation_id > known_meters[meter.slug].generation_id
+            ):
+                known_meters[meter.slug] = meter
+        for entry in assignment.meters or []:
+            if entry.meter not in known_meters:
+                raise EntitlementAssignmentInvalid(f"Unknown meter {entry.meter!r}")
+            if entry.cap is not None:
+                reducer = await reducer_service.get(
+                    session, organization_id, known_meters[entry.meter].usage_reducer_id
+                )
+                if reducer.aggregation.func not in ("sum", "count"):
+                    raise EntitlementAssignmentInvalid(
+                        "Usage caps require a sum or count meter"
+                    )
+        existing = await repository.assignment_reducer(organization_id)
+        definition = ReducerCreate.model_validate(
+            {
+                "slug": "void-identity-entitlements",
+                "filter": {
+                    "conjunction": "and",
+                    "clauses": [
+                        {
+                            "property": "name",
+                            "operator": "eq",
+                            "value": "identity.entitlements.updated",
+                        }
+                    ],
+                },
+                "aggregation": {"func": "last"},
+            }
+        )
+        if existing is None:
+            await reducer_service.create(session, organization_id, definition)
+        elif ReducerCreate.model_validate(existing, from_attributes=True) != definition:
+            raise EntitlementAssignmentInvalid(
+                "The identity entitlement reducer definition differs"
+            )
+        saved, _ = await event_service.ingest(
+            session,
+            organization_id,
+            [
+                EventCreate(
+                    external_id=update.external_id,
+                    external_identity_id=external_identity_id,
+                    name="identity.entitlements.updated",
+                    timestamp=utc_now(),
+                    metadata=assignment.model_dump(mode="json"),
+                )
+            ],
+            EventSource.system,
+        )
+        if saved == 0:
+            existing_event = await repository.assignment_event(
+                organization_id, update.external_id
+            )
+            assert existing_event is not None
+            return persisted_assignment(existing_event, external_identity_id)
+        return assignment
+
     async def list(
         self, session: AsyncReadSession, organization_id: UUID
     ) -> Sequence[VoidEntitlement]:

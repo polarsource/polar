@@ -1,5 +1,6 @@
 import calendar
 import math
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Any, Literal
 
@@ -191,9 +192,9 @@ def _change(state: State, event: MeterEvent) -> None:
 
 def fold(
     state: State,
-    events: list[MeterEvent],
-    credits: list[tuple[datetime, float]],
-    usage: list[tuple[datetime, float]],
+    events: Sequence[MeterEvent],
+    credits: Sequence[tuple[datetime, float]],
+    usage: Sequence[tuple[datetime, float]],
     until: datetime,
 ) -> State:
     state = state.model_copy(deep=True)

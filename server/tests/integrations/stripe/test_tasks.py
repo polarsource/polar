@@ -119,7 +119,7 @@ class TestAccountRiskSignal:
                 source=OrganizationRiskSignal.Source.STRIPE,
                 type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
                 risk_level="unknown",
-                payload={"account_evaluation": "acctevl_789"},
+                account_evaluation_id="acctevl_789",
             )
         )
 

@@ -2009,7 +2009,7 @@ class TestHandleAccountRiskSignal:
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
             risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
-            payload={"account_evaluation": evaluation_id},
+            account_evaluation_id=evaluation_id,
         )
         await save_fixture(signal)
         return signal
@@ -2187,7 +2187,7 @@ class TestHandleAccountRiskSignal:
         ).get_by_account_evaluation("acctevl_456")
         assert pending is not None
         assert pending.id == signals[0].id
-        assert pending.payload.get("account_evaluation") == "acctevl_456"
+        assert pending.account_evaluation_id == "acctevl_456"
 
         await session.refresh(organization_second)
         assert organization_second.status == OrganizationStatus.ACTIVE

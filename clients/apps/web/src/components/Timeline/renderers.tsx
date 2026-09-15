@@ -72,6 +72,10 @@ const timelineRenderers: TimelineRendererMap = {
         metadata.recurring_interval_count,
       ),
   },
+  'subscription.migrated': {
+    importance: 'high',
+    summary: ({ metadata }) => `${metadata.platform} · ${metadata.source_id}`,
+  },
   'subscription.cycled': {
     importance: 'medium',
     summary: ({ metadata }) =>

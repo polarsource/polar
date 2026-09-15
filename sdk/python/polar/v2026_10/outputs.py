@@ -6759,6 +6759,18 @@ class LicenseKeyCustomer:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class LicenseKeyMember:
+    id: str
+    """The ID of the object."""
+
+    email: str
+    """The email address of the seat member."""
+
+    external_id: str | None
+    """The external ID of the seat member, if set."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyRead:
     id: str
     """The ID of the object."""
@@ -6774,6 +6786,12 @@ class LicenseKeyRead:
     customer_id: str
 
     customer: LicenseKeyCustomer
+
+    member_id: str | None = None
+    """The ID of the seat member holding this key, if any."""
+
+    member: LicenseKeyMember | None = None
+    """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
     """The benefit ID."""
@@ -6813,6 +6831,12 @@ class LicenseKeyWithActivations:
     customer_id: str
 
     customer: LicenseKeyCustomer
+
+    member_id: str | None = None
+    """The ID of the seat member holding this key, if any."""
+
+    member: LicenseKeyMember | None = None
+    """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
     """The benefit ID."""
@@ -10797,6 +10821,12 @@ class ValidatedLicenseKey:
     customer_id: str
 
     customer: LicenseKeyCustomer
+
+    member_id: str | None = None
+    """The ID of the seat member holding this key, if any."""
+
+    member: LicenseKeyMember | None = None
+    """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
     """The benefit ID."""

@@ -15039,6 +15039,24 @@ export interface LicenseKeyDeactivate {
 }
 
 /**
+ * LicenseKeyMember
+ */
+export interface LicenseKeyMember {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The email address of the seat member.
+   */
+  email: string;
+  /**
+   * The external ID of the seat member, if set.
+   */
+  external_id: string | null;
+}
+
+/**
  * LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -15066,6 +15084,14 @@ export interface LicenseKeyRead {
    * customer
    */
   customer: LicenseKeyCustomer;
+  /**
+   * The ID of the seat member holding this key, if any.
+   */
+  member_id?: string | null;
+  /**
+   * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
+   */
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -15206,6 +15232,14 @@ export interface LicenseKeyWithActivations {
    * customer
    */
   customer: LicenseKeyCustomer;
+  /**
+   * The ID of the seat member holding this key, if any.
+   */
+  member_id?: string | null;
+  /**
+   * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
+   */
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -23592,6 +23626,14 @@ export interface ValidatedLicenseKey {
    * customer
    */
   customer: LicenseKeyCustomer;
+  /**
+   * The ID of the seat member holding this key, if any.
+   */
+  member_id?: string | null;
+  /**
+   * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
+   */
+  member?: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */

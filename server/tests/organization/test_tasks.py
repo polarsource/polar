@@ -18,6 +18,7 @@ from polar.organization.tasks import (
     organization_under_review,
     sync_payout_account_website,
 )
+from polar.organization_review.repository import OrganizationRiskSignalRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout_account
 
@@ -217,6 +218,7 @@ class TestEvaluateWebsiteRisk:
     async def test_triggers_evaluation_for_org_with_website(
         self,
         mocker: MockerFixture,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -227,12 +229,18 @@ class TestEvaluateWebsiteRisk:
         await save_fixture(organization)
         evaluate_mock = mocker.patch(
             "polar.organization.service.stripe_service.create_website_risk_evaluation",
-            new=AsyncMock(return_value={}),
+            new=AsyncMock(return_value={"id": "acctevl_123"}),
         )
 
         await evaluate_website_risk(organization.id)
 
         evaluate_mock.assert_awaited_once_with("https://example.com")
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_123")
+        assert pending is not None
+        assert pending.organization_id == organization.id
+        assert pending.payload["account_evaluation"] == "acctevl_123"
 
     async def test_noop_without_website(
         self,

@@ -1972,6 +1972,7 @@ class TestHandleAccountRiskSignal:
         level: StripeAccountRiskLevel,
         *,
         website_url: str | None = None,
+        evaluation_id: str | None = None,
         type: OrganizationRiskSignal.Type = (
             OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
         ),
@@ -1982,6 +1983,7 @@ class TestHandleAccountRiskSignal:
             risk_level=level,
             account_id=account_id,
             website_url=website_url,
+            evaluation_id=evaluation_id,
             description=description,
             payload={"account": account_id} if account_id else {},
         )
@@ -1991,6 +1993,22 @@ class TestHandleAccountRiskSignal:
     ) -> list[OrganizationRiskSignal]:
         repository = OrganizationRiskSignalRepository.from_session(session)
         return await repository.list_by_organization(organization.id)
+
+    async def _pending_website_eval(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        evaluation_id: str,
+    ) -> OrganizationRiskSignal:
+        signal = OrganizationRiskSignal(
+            organization=organization,
+            source=OrganizationRiskSignal.Source.STRIPE,
+            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+            risk_level=StripeAccountRiskLevel.UNKNOWN.value,
+            payload={"account_evaluation": evaluation_id},
+        )
+        await save_fixture(signal)
+        return signal
 
     async def test_actionable_website_on_active_org(
         self,
@@ -2128,7 +2146,44 @@ class TestHandleAccountRiskSignal:
         assert organization.status == OrganizationStatus.ACTIVE
         assert await self._signals(session, organization) == []
 
-    async def test_actionable_website_matches_org_by_url(
+    async def test_actionable_website_matches_org_by_evaluation_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        await self._pending_website_eval(save_fixture, organization, "acctevl_456")
+        organization_second.website = "https://example.com"
+        await save_fixture(organization_second)
+        await self._pending_website_eval(
+            save_fixture, organization_second, "acctevl_other"
+        )
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session,
+            self._signal(
+                None,
+                StripeAccountRiskLevel.HIGHEST,
+                website_url="https://example.com",
+                evaluation_id="acctevl_456",
+            ),
+        )
+
+        assert organization.status == OrganizationStatus.REVIEW
+        signals = await self._signals(session, organization)
+        assert len(signals) == 1
+        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+
+        await session.refresh(organization_second)
+        assert organization_second.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization_second) == []
+
+    async def test_website_url_does_not_match_org(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2148,10 +2203,59 @@ class TestHandleAccountRiskSignal:
             ),
         )
 
-        assert organization.status == OrganizationStatus.REVIEW
-        signals = await self._signals(session, organization)
-        assert len(signals) == 1
-        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization) == []
+
+    async def test_unknown_evaluation_id_does_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        await self._pending_website_eval(save_fixture, organization, "acctevl_ours")
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session,
+            self._signal(
+                None,
+                StripeAccountRiskLevel.HIGHEST,
+                website_url="https://example.com",
+                evaluation_id="acctevl_unknown",
+            ),
+        )
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization) == []
+
+    async def test_non_actionable_evaluation_drops_pending(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._pending_website_eval(save_fixture, organization, "acctevl_456")
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session,
+            self._signal(
+                None,
+                StripeAccountRiskLevel.LOW,
+                evaluation_id="acctevl_456",
+            ),
+        )
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization) == []
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_456")
+        assert pending is None
 
 
 class TestGetPaymentStatus:

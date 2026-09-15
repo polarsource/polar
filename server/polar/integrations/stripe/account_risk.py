@@ -51,6 +51,7 @@ class AccountRiskSignal:
     risk_level: StripeAccountRiskLevel
     account_id: str | None = None
     website_url: str | None = None
+    evaluation_id: str | None = None
     description: str | None = None
     payload: dict[str, Any] = field(default_factory=dict)
 
@@ -157,13 +158,14 @@ def parse_account_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None
 
     account_id = _account_id(payload)
     website_url = _website_url(payload)
+    evaluation_id = _optional_str(payload.get("account_evaluation"))
     inner = _nested(payload, signal_type.value)
     if signal_type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT:
         if not account_id:
             return None
         description = _merchant_description(inner)
     else:
-        if not account_id and not website_url:
+        if not account_id and not website_url and not evaluation_id:
             return None
         details = inner.get("details")
         description = str(details) if details is not None else None
@@ -173,6 +175,7 @@ def parse_account_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None
         risk_level=_coerce_risk_level(inner.get("risk_level")),
         account_id=account_id,
         website_url=website_url,
+        evaluation_id=evaluation_id,
         description=description,
         payload=dict(payload),
     )

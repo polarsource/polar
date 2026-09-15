@@ -190,6 +190,25 @@ class Settings(BaseSettings):
     DATABASE_CONNECT_TIMEOUT_SECONDS: float = 10.0
     DATABASE_STREAM_YIELD_PER: int = 100
 
+    # Payout query diagnostics (opt-in, best-effort). When a payout row-lock or
+    # UPDATE query stalls, sample Postgres wait/blocking state through a SEPARATE
+    # short-lived connection so the stall is self-diagnosing in Logfire.
+    # Lightweight spans (row counts, durations, backend PID) are always emitted;
+    # only this live sampling is gated. The sampling role must be able to read
+    # other backends' details in pg_stat_activity: it connects with the same DB
+    # role as the payout (so it sees its own role's sessions), otherwise grant
+    # pg_monitor / pg_read_all_stats.
+    PAYOUT_QUERY_DIAGNOSTICS_ENABLED: bool = False
+    # Only sample once a query has been running for at least this long, so fast
+    # queries never trigger a sampling connection.
+    PAYOUT_QUERY_DIAGNOSTICS_DELAY_SECONDS: float = 5.0
+    # Bounds on the sampling connection itself, kept small so diagnostics can
+    # never exhaust the pool or hang: a dedicated NullPool engine is used.
+    PAYOUT_QUERY_DIAGNOSTICS_CONNECT_TIMEOUT_SECONDS: float = 5.0
+    PAYOUT_QUERY_DIAGNOSTICS_STATEMENT_TIMEOUT_SECONDS: float = 5.0
+    # Cap the number of blocking backends whose (allowlisted) metadata is read.
+    PAYOUT_QUERY_DIAGNOSTICS_MAX_BLOCKERS: int = 5
+
     POSTGRES_READ_USER: str | None = None
     POSTGRES_READ_PWD: str | None = None
     POSTGRES_READ_HOST: str | None = None

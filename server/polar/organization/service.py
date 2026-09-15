@@ -32,7 +32,7 @@ from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.stripe.account_risk import (
     ACTIONABLE_RISK_LEVELS,
     AccountRiskSignal,
-    StripeAccountRiskLevel,
+    UnknownAccountRiskEvaluation,
 )
 from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -282,12 +282,6 @@ class OrganizationDeletionCheckResult(BaseModel):
 
 
 class OrganizationError(PolarError): ...
-
-
-class UnknownAccountRiskEvaluation(OrganizationError):
-    def __init__(self, evaluation_id: str) -> None:
-        self.evaluation_id = evaluation_id
-        super().__init__(f"No pending website evaluation for {evaluation_id}.")
 
 
 class ActivationGate(StrEnum):
@@ -1935,7 +1929,7 @@ class OrganizationService:
             organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=StripeAccountRiskLevel.UNKNOWN.value,
+            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
             payload={"account_evaluation": evaluation_id},
         )
 
@@ -1962,14 +1956,28 @@ class OrganizationService:
             return
 
         repository = OrganizationRepository.from_session(session)
-        organizations: Sequence[Organization] = []
         if pending is not None:
             organization = await repository.get_by_id(
                 pending.organization_id, include_blocked=True
             )
-            if organization is not None:
-                organizations = [organization]
-        elif signal.account_id:
+            if organization is None:
+                return
+            await risk_signal_repository.update(
+                pending,
+                update_dict={
+                    "risk_level": signal.risk_level,
+                    "description": signal.description,
+                    "payload": signal.payload,
+                },
+            )
+            if organization.status == OrganizationStatus.ACTIVE:
+                await self.set_organization_under_review(
+                    session, organization, enqueue_review=False
+                )
+            return
+
+        organizations: Sequence[Organization] = []
+        if signal.account_id:
             payout_account_repository = PayoutAccountRepository.from_session(session)
             payout_account = await payout_account_repository.get_by_stripe_id(
                 signal.account_id
@@ -1978,29 +1986,8 @@ class OrganizationService:
                 organizations = await repository.get_all_by_payout_account(
                     payout_account.id
                 )
-        if not organizations:
-            log.warning(
-                "Risk signal for unknown organization",
-                stripe_account_id=signal.account_id,
-                website_url=signal.website_url,
-                evaluation_id=signal.evaluation_id,
-                signal_type=signal.type,
-            )
-            if signal.evaluation_id is not None and pending is None:
-                raise UnknownAccountRiskEvaluation(signal.evaluation_id)
-            return
-
-        for organization in organizations:
-            if pending is not None and pending.organization_id == organization.id:
-                await risk_signal_repository.update(
-                    pending,
-                    update_dict={
-                        "risk_level": signal.risk_level,
-                        "description": signal.description,
-                        "payload": signal.payload,
-                    },
-                )
-            else:
+        if organizations:
+            for organization in organizations:
                 await risk_signal_service.record(
                     session,
                     organization,
@@ -2010,10 +1997,21 @@ class OrganizationService:
                     description=signal.description,
                     payload=signal.payload,
                 )
-            if organization.status == OrganizationStatus.ACTIVE:
-                await self.set_organization_under_review(
-                    session, organization, enqueue_review=False
-                )
+                if organization.status == OrganizationStatus.ACTIVE:
+                    await self.set_organization_under_review(
+                        session, organization, enqueue_review=False
+                    )
+            return
+
+        log.warning(
+            "Risk signal for unknown organization",
+            stripe_account_id=signal.account_id,
+            website_url=signal.website_url,
+            evaluation_id=signal.evaluation_id,
+            signal_type=signal.type,
+        )
+        if signal.evaluation_id is not None:
+            raise UnknownAccountRiskEvaluation(signal.evaluation_id)
 
     async def set_organization_offboarding(
         self,

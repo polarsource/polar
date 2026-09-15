@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.integrations.stripe.account_risk import UnknownAccountRiskEvaluation
 from polar.integrations.stripe.tasks import (
     account_risk_signal,
     payment_intent_succeeded,
@@ -24,7 +25,6 @@ from polar.models import (
 )
 from polar.models.organization import OrganizationStatus
 from polar.organization.repository import OrganizationRepository
-from polar.organization.service import UnknownAccountRiskEvaluation
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository

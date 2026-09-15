@@ -390,8 +390,8 @@ resource "aws_s3_bucket_object_lock_configuration" "production_backups" {
 
   rule {
     default_retention {
-      mode = "GOVERNANCE"
-      days = 14
+      mode = "COMPLIANCE"
+      days = 30
     }
   }
 }
@@ -414,11 +414,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_backups" {
   bucket = aws_s3_bucket_versioning.production_backups.id
 
   rule {
-    id     = "14-days-expiration-rule"
+    id     = "30-days-expiration-rule"
     status = "Enabled"
     filter {}
     expiration {
-      days = 14
+      days = 30
     }
     noncurrent_version_expiration {
       noncurrent_days = 1

@@ -491,12 +491,7 @@ class OrganizationRepository(
         return await self.get_all(statement)
 
     async def get_all_by_website(self, website: str) -> Sequence[Organization]:
-        normalized = website.strip().rstrip("/").lower()
-        if not normalized:
-            return []
-        statement = self.get_base_statement().where(
-            func.lower(func.rtrim(Organization.website, "/")) == normalized
-        )
+        statement = self.get_base_statement().where(Organization.website == website)
         return await self.get_all(statement)
 
     async def get_all_by_owner_user(self, user_id: UUID) -> Sequence[Organization]:

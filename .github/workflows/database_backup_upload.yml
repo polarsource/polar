@@ -55,7 +55,7 @@ jobs:
           if [ "$BACKUP_COUNT" -gt 0 ]; then
             echo "Uploading $BACKUP_COUNT backup file(s) to S3..."
 
-            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/$(date +%Y%m%d)/" --no-progress; then
+            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/$(date +%Y%m%d)/" --checksum-algorithm SHA256 --no-progress; then
               echo "Error: Failed to upload backups to S3" >&2
               exit 1
             fi

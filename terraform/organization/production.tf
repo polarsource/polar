@@ -324,8 +324,6 @@ resource "aws_iam_policy" "production_polar_sh_backups" {
         Sid    = "VisualEditor0"
         Effect = "Allow"
         Action = [
-          "s3:DeleteObject",
-          "s3:DeleteObjectVersion",
           "s3:GetObject",
           "s3:GetObjectAttributes",
           "s3:GetObjectVersion",
@@ -375,6 +373,29 @@ resource "aws_s3_bucket" "production_backups" {
   bucket = "polar-sh-backups"
 }
 
+resource "aws_s3_bucket_versioning" "production_backups" {
+  provider = aws.us_east_2
+
+  bucket = aws_s3_bucket.production_backups.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "production_backups" {
+  provider = aws.us_east_2
+
+  bucket = aws_s3_bucket_versioning.production_backups.id
+
+  rule {
+    default_retention {
+      mode = "GOVERNANCE"
+      days = 14
+    }
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "production_backups" {
   provider = aws.us_east_2
 
@@ -390,7 +411,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "production_backup
 resource "aws_s3_bucket_lifecycle_configuration" "production_backups" {
   provider = aws.us_east_2
 
-  bucket = aws_s3_bucket.production_backups.id
+  bucket = aws_s3_bucket_versioning.production_backups.id
 
   rule {
     id     = "14-days-expiration-rule"
@@ -398,6 +419,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_backups" {
     filter {}
     expiration {
       days = 14
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
     }
   }
 }
@@ -714,5 +738,15 @@ import {
 
 import {
   to = aws_s3_bucket_lifecycle_configuration.production_backups
+  id = "polar-sh-backups"
+}
+
+import {
+  to = aws_s3_bucket_server_side_encryption_configuration.production_backups
+  id = "polar-sh-backups"
+}
+
+import {
+  to = aws_s3_bucket_versioning.production_backups
   id = "polar-sh-backups"
 }

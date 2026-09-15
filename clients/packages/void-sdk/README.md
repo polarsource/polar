@@ -6,19 +6,27 @@ This private package contains the SDK and CLI imported from
 [`polarsource/void` at `495330f3`](https://github.com/polarsource/void/tree/495330f3f00e157f6cd034562cfecfb55075d517/packages/sdk).
 It keeps the `@void/sdk` imports and the `void` command.
 
-Polar now serves CLI login, identity creation and navigation, and customer
-bindings under `/v1/void`. The SDK sends a Polar organization access token and
-`Polar-Version: 2026-04` with every request. Set `apiUrl` to the server origin,
+Polar now serves CLI login, identities, customer bindings, event ingestion,
+reducers, and metrics under `/v1/void`. The SDK sends a Polar organization access
+token and `Polar-Version: 2026-04` with every request. Set `apiUrl` to the server origin,
 without `/v1/void`.
 
 The implemented operations are `organizations:current`, `identities:list`,
-`identities:ensure`, `identities:get`, `customers:list`, `customers:create`, and
-`customers:get`. This enables `root()`, `ensure()`, `spawn()` without entitlements,
-identity navigation, and `actor.customer()`.
+`identities:ensure`, `identities:get`, `customers:list`, `customers:create`,
+`customers:get`, `events:list`, `events:ingest`, `reducers:list`,
+`reducers:create`, `reducers:get`, `reducers:records`, and `metrics:get`. This enables
+`root()`, `ensure()`, `spawn()` without entitlements, identity navigation,
+`actor.customer()`, scalar reducer usage and totals, and first/last record reads.
 
 The remaining SDK operations are preserved for later migration stages.
-`plan`, `deploy`, ingestion, snapshots, customer state, entitlements, and meter or
-reducer queries still return 404. The examples below describe the full imported SDK.
+`plan`, `deploy`, snapshots, customer state, entitlements, meter queries,
+and metric comparisons still return 404. The examples below describe the full
+imported SDK.
+
+Event ingestion returns `202` after durable acceptance. The dedicated Void worker
+delivers events and recomputes reducers, so event listings and metrics update
+asynchronously. Run the worker and its Temporal/Tinybird services as described in
+[`server/polar/void/README.md`](../../../server/polar/void/README.md).
 
 ### Try login locally
 
@@ -107,7 +115,7 @@ pnpm --filter @void/sdk generate
 `generate` uses the checked-in `openapi.json` and requires no running server or
 Python environment. This is a migration compatibility contract that retains the
 imported SDK API. Each operation has `x-void-migration-status` set to `implemented`
-or `pending`; seven operations are implemented.
+or `pending`; fourteen operations are implemented.
 
 Export the live backend contract from `server/` with
 `uv run python -m scripts.generate_void_openapi 2026-04`. Use it to verify migrated

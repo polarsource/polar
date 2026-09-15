@@ -58,6 +58,8 @@ function fixture(): Wire.CustomerState {
     ],
     reducers: compile(defineConfig({ schema })).reducers.map((r) => ({
       ...r,
+      filter: r.filter ?? null,
+      map: r.map ?? null,
       id: r.slug,
       created_at: at,
       type: 'scalar',

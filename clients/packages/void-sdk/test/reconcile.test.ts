@@ -88,6 +88,8 @@ function snapshot(): Fixture {
     identities: [{ external_id: 'root', parent_external_id: null }],
     reducers: compile(config).reducers.map((r) => ({
       ...r,
+      filter: r.filter ?? null,
+      map: r.map ?? null,
       id: r.slug,
       created_at: at,
       type: 'scalar' as const,

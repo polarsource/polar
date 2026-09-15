@@ -1,0 +1,146 @@
+NODE buckets
+SQL >
+    %
+    WITH
+                                {{String(func, required=True)}} AS f,
+                                JSONExtract(
+                                    {{String(clause_group, required=True)}}, 'Array(UInt32)'
+                                ) AS g,
+                                JSONExtract(
+                                    {{String(clause_property, required=True)}},
+                                    'Array(String)'
+                                ) AS p,
+                                JSONExtract(
+                                    {{String(clause_operator, required=True)}},
+                                    'Array(String)'
+                                ) AS o,
+                                JSONExtract(
+                                    {{String(clause_value, required=True)}}, 'Array(String)'
+                                ) AS v,
+                                {{String(aggregation_property, required=True)}} AS ap,
+                                -- Projection fields: (key, literal JSON, postfix program).
+                                -- Programs contain (opcode, operand) pairs; no dynamic SQL.
+                                {{String(event_map, 'null')}} AS map_json,
+                                JSONExtract(map_json, concat(
+                                    'Array(Tuple(String, String, ',
+                                    'Array(Tuple(String, String))))'
+                                )) AS projection,
+                                arrayMap(field -> arrayElement(arrayFold(
+                                    (stack, instruction) -> arrayMap(
+                                        n -> if(isFinite(n), n, NULL),
+                                        multiIf(
+                                            instruction.1 = 'ref',
+                                            arrayPushBack(stack, toFloat64OrNull(
+                                                JSONExtractRaw(metadata, instruction.2)
+                                            )),
+                                            instruction.1 = 'number',
+                                            arrayPushBack(stack,
+                                                toFloat64OrNull(instruction.2)),
+                                            instruction.1 = 'neg',
+                                            arrayPushBack(arrayPopBack(stack), -stack[-1]),
+                                            instruction.1 = 'pos', stack,
+                                            arrayPushBack(arrayPopBack(arrayPopBack(stack)),
+                                                multiIf(
+                                                    instruction.1 = '+',
+                                                    stack[-2] + stack[-1],
+                                                    instruction.1 = '-',
+                                                    stack[-2] - stack[-1],
+                                                    instruction.1 = '*',
+                                                    stack[-2] * stack[-1],
+                                                    stack[-2] / nullIf(stack[-1], 0)
+                                                ))
+                                        )
+                                    ), field.3, CAST([], 'Array(Nullable(Float64))')
+                                ), -1), projection) AS mapped_numbers,
+                                if(map_json = 'null', metadata,
+                                    concat('{', arrayStringConcat(arrayMap(
+                                        (field, number) -> concat(
+                                            toJSONString(field.1), ':', multiIf(
+                                                length(field.3) = 0, field.2,
+                                                length(field.3) = 1
+                                                    AND field.3[1].1 = 'ref',
+                                                if(empty(JSONExtractRaw(
+                                                    metadata, field.3[1].2)),
+                                                    'null', JSONExtractRaw(
+                                                        metadata, field.3[1].2)),
+                                                ifNull(toJSONString(number), 'null')
+                                            )
+                                        ), projection, mapped_numbers
+                                    ), ','), '}')
+                                ) AS mapped_metadata,
+                                toFloat64OrNull(JSONExtractRaw(mapped_metadata, ap)) AS x,
+                                arrayMap(
+                                    k -> multiIf(
+                                        k = 'name', name,
+                                        k = 'source', source,
+                                        k = 'external_identity_id',
+                                        ifNull(external_identity_id, ''),
+                                        k = 'external_root_id',
+                                        ifNull(void_events.external_root_id, ''),
+                                        JSONType(metadata, k) = 'String',
+                                        JSONExtractString(metadata, k),
+                                        JSONExtractRaw(metadata, k)
+                                    ),
+                                    p
+                                ) AS actual,
+                                arrayMap(a -> toFloat64OrNull(a), actual) AS actual_num,
+                                arrayMap(val -> toFloat64OrNull(val), v) AS v_num,
+                                arrayMap(
+                                    (a, an, op, val, vn) -> ifNull(multiIf(
+                                        op = 'eq', a = val,
+                                        op = 'ne', a != val,
+                                        op = 'gt', an > vn,
+                                        op = 'gte', an >= vn,
+                                        op = 'lt', an < vn,
+                                        op = 'lte', an <= vn,
+                                        op = 'like', positionCaseInsensitive(a, val) > 0,
+                                        positionCaseInsensitive(a, val) = 0
+                                    ), 0),
+                                    actual, actual_num, o, v, v_num
+                                ) AS matched
+                            SELECT
+                                toStartOfFiveMinutes(timestamp) AS bucket_start,
+                                external_identity_id,
+                                any(external_root_id) AS external_root_id,
+                                toJSONString(tuple(
+                                    argMax(external_id,
+                                        (ingested_at, timestamp, external_id)),
+                                    argMax(timestamp,
+                                        (ingested_at, timestamp, external_id)),
+                                    max(ingested_at),
+                                    arraySort(groupUniqArray(external_id))
+                                )) AS last_processed_event,
+                                ifNull(multiIf(
+                                    f = 'count', toFloat64(count()),
+                                    f = 'sum', sum(x),
+                                    f = 'max', max(x),
+                                    f = 'min', min(x),
+                                    NULL
+                                ), 0) AS value,
+                                multiIf(
+                                    f = 'first',
+                                    argMin(mapped_metadata, (timestamp, ingested_at)),
+                                    f = 'last',
+                                    argMax(mapped_metadata, (timestamp, ingested_at)),
+                                    ''
+                                ) AS data
+                            FROM void_events FINAL
+                            WHERE organization_id = toUUIDOrZero(
+                                {{String(organization_id, required=True)}}
+                            )
+                            AND timestamp >= {{DateTime(start, required=True)}}
+                            AND timestamp < {{DateTime(end, required=True)}}
+                            AND (f IN ('count', 'first', 'last') OR x IS NOT NULL)
+                            AND (
+                                length(g) = 0
+                                OR arrayExists(
+                                    gi -> arrayAll(
+                                        i -> matched[i],
+                                        arrayFilter(i -> g[i] = gi, arrayEnumerate(g))
+                                    ),
+                                    arrayDistinct(g)
+                                )
+                            )
+                            GROUP BY bucket_start, external_identity_id
+
+TYPE endpoint

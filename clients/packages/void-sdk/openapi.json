@@ -860,12 +860,16 @@
     },
     "/v1/void/events": {
       "get": {
-        "tags": ["events"],
-        "summary": "List",
+        "tags": ["void", "private", "events"],
+        "summary": "List Events",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "events:list",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -930,10 +934,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Only this tree, by its root's key",
+              "description": "Only this tree's root",
               "title": "External Root Id"
             },
-            "description": "Only this tree, by its root's key"
+            "description": "Only this tree's root"
           }
         ],
         "responses": {
@@ -958,15 +962,19 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "events",
+        "x-speakeasy-name-override": "list_events",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["events"],
+        "tags": ["void", "private", "events"],
         "summary": "Ingest",
+        "description": "**Scopes**: `void:write`",
         "operationId": "events:ingest",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
         "requestBody": {
@@ -978,6 +986,7 @@
                 "items": {
                   "$ref": "#/components/schemas/EventCreate"
                 },
+                "maxItems": 1000,
                 "title": "Events"
               }
             }
@@ -994,6 +1003,26 @@
               }
             }
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidAttribution"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservedEventName"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1005,13 +1034,17 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "events",
+        "x-speakeasy-name-override": "ingest",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/reducers": {
       "get": {
-        "tags": ["reducers"],
-        "summary": "List",
+        "tags": ["void", "private", "reducers"],
+        "summary": "List Reducers",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "reducers:list",
         "responses": {
           "200": {
@@ -1031,14 +1064,21 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "reducers",
+        "x-speakeasy-name-override": "list_reducers",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["reducers"],
-        "summary": "Create",
+        "tags": ["void", "private", "reducers"],
+        "summary": "Create Reducer",
+        "description": "**Scopes**: `void:write`",
         "operationId": "reducers:create",
         "requestBody": {
           "content": {
@@ -1061,6 +1101,26 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidReducer"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlugTaken"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1074,20 +1134,27 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "reducers",
+        "x-speakeasy-name-override": "create_reducer",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/reducers/{id}": {
       "get": {
-        "tags": ["reducers"],
-        "summary": "Get",
+        "tags": ["void", "private", "reducers"],
+        "summary": "Get Reducer",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "reducers:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -1113,6 +1180,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1124,17 +1201,24 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "reducers",
+        "x-speakeasy-name-override": "get_reducer",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/reducers/{id}/records": {
       "get": {
-        "tags": ["reducers"],
+        "tags": ["void", "private", "reducers"],
         "summary": "Records",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "reducers:records",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -1180,6 +1264,26 @@
               }
             }
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReducerNotDict"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1191,7 +1295,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "reducers",
+        "x-speakeasy-name-override": "records",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/meters": {
@@ -1533,12 +1640,16 @@
     },
     "/v1/void/metrics": {
       "get": {
-        "tags": ["metrics"],
-        "summary": "Get",
+        "tags": ["void", "private", "metrics"],
+        "summary": "Get Metrics",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "metrics:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -1638,6 +1749,36 @@
               }
             }
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReducerNotScalar"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityHierarchyConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1649,7 +1790,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "get_metrics",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/entitlements": {
@@ -3525,7 +3669,8 @@
           "timestamp": {
             "type": "string",
             "format": "date-time",
-            "title": "Timestamp"
+            "title": "Timestamp",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           },
           "name": {
             "type": "string",
@@ -3559,7 +3704,7 @@
               }
             ],
             "title": "External Root Id",
-            "description": "The root of the actor's tree, stamped at ingest: the billable identity a customer owns. Never sent by the merchant."
+            "description": "The actor's root, stamped when the event was accepted."
           },
           "metadata": {
             "additionalProperties": true,
@@ -3584,34 +3729,41 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
             "title": "Name"
           },
           "external_id": {
             "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
             "title": "External Id"
           },
           "external_identity_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
               },
               {
                 "type": "null"
               }
             ],
             "title": "External Identity Id",
-            "description": "Who performed the action: a billing identity that already exists. Usage rolls up from it through its parents to the root of its tree."
+            "description": "An existing identity that performed the action. Usage rolls up to its root."
           },
           "timestamp": {
             "type": "string",
             "format": "date-time",
-            "title": "Timestamp"
+            "title": "Timestamp",
+            "description": "Event time with timezone, from 1970-01-01 inclusive to 2106-01-01 exclusive.",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           },
           "metadata": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Metadata",
-            "default": {}
+            "title": "Metadata"
           }
         },
         "type": "object",
@@ -3720,8 +3872,8 @@
               },
               {
                 "type": "integer",
-                "maximum": 2147483647,
-                "minimum": -2147483648
+                "maximum": 2147483647.0,
+                "minimum": -2147483648.0
               },
               {
                 "type": "boolean"
@@ -5275,10 +5427,19 @@
       },
       "Reducer": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
+          },
           "slug": {
             "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-z0-9][a-z0-9_-]*$",
             "title": "Slug"
           },
           "filter": {
@@ -5334,16 +5495,6 @@
             ],
             "title": "Map"
           },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
           "type": {
             "type": "string",
             "enum": ["scalar", "dict"],
@@ -5352,7 +5503,15 @@
           }
         },
         "type": "object",
-        "required": ["slug", "aggregation", "id", "created_at", "type"],
+        "required": [
+          "id",
+          "created_at",
+          "slug",
+          "filter",
+          "aggregation",
+          "map",
+          "type"
+        ],
         "title": "Reducer"
       },
       "ReducerCreate": {
@@ -5437,7 +5596,8 @@
           "timestamp": {
             "type": "string",
             "format": "date-time",
-            "title": "Timestamp"
+            "title": "Timestamp",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           },
           "data": {
             "additionalProperties": true,
@@ -5954,6 +6114,138 @@
         "type": "object",
         "required": ["error", "detail"],
         "title": "ResourceNotFound"
+      },
+      "InvalidAttribution": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "InvalidAttribution",
+            "title": "Error",
+            "examples": ["InvalidAttribution"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "InvalidAttribution"
+      },
+      "InvalidReducer": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "InvalidReducer",
+            "title": "Error",
+            "examples": ["InvalidReducer"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "InvalidReducer"
+      },
+      "ReducerNotDict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ReducerNotDict",
+            "title": "Error",
+            "examples": ["ReducerNotDict"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "ReducerNotDict"
+      },
+      "ReducerNotScalar": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ReducerNotScalar",
+            "title": "Error",
+            "examples": ["ReducerNotScalar"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "ReducerNotScalar"
+      },
+      "ReservedEventName": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ReservedEventName",
+            "title": "Error",
+            "examples": ["ReservedEventName"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "ReservedEventName"
+      },
+      "SlugTaken": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "SlugTaken",
+            "title": "Error",
+            "examples": ["SlugTaken"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "SlugTaken"
+      },
+      "VoidOrganization": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The organization name."
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "The organization slug."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The organization creation timestamp.",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
+          }
+        },
+        "type": "object",
+        "required": ["id", "name", "slug", "created_at"],
+        "title": "VoidOrganization"
       }
     },
     "securitySchemes": {

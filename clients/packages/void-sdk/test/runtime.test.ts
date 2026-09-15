@@ -90,6 +90,7 @@ const serve = () => {
     type: 'scalar',
     filter: { conjunction: 'and', clauses: [] },
     aggregation: { func: 'count' },
+    map: null,
   })
   const meter = (id: string, usage_reducer_id: string, created_at: string) => ({
     id,

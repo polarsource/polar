@@ -20,6 +20,11 @@ class TestGetVoidOpenAPI:
             "/v1/void/identities/{external_id}",
             "/v1/void/customers",
             "/v1/void/customers/{external_id}",
+            "/v1/void/events",
+            "/v1/void/reducers",
+            "/v1/void/reducers/{id}",
+            "/v1/void/reducers/{id}/records",
+            "/v1/void/metrics",
         }
         operation = schema["paths"]["/v1/void/organizations/current"]["get"]
         assert operation["operationId"] == "organizations:current"

@@ -7,7 +7,10 @@ from polar.routing import APIRouter
 
 from .auth import VoidRead, require_void_enabled
 from .customer.endpoints import router as customer_router
+from .event.endpoints import router as event_router
 from .identity.endpoints import router as identity_router
+from .metric.endpoints import router as metric_router
+from .reducer.endpoints import router as reducer_router
 from .schemas import VoidOrganization
 
 router = APIRouter(
@@ -30,3 +33,7 @@ async def current(auth_subject: VoidRead) -> Organization:
 
 router.include_router(identity_router)
 router.include_router(customer_router)
+
+router.include_router(event_router)
+router.include_router(reducer_router)
+router.include_router(metric_router)

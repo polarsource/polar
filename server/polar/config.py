@@ -67,6 +67,15 @@ class Settings(BaseSettings):
 
     VOID_ENABLED: bool = False
     VOID_ORGANIZATION_IDS: set[UUID] = set()
+    VOID_TEMPORAL_ADDRESS: str = "localhost:7333"
+    VOID_TEMPORAL_NAMESPACE: str = "default"
+    VOID_TEMPORAL_TASK_QUEUE: str = "polar-void"
+    VOID_TEMPORAL_API_KEY: str | None = None
+    VOID_TEMPORAL_TLS: bool = False
+    VOID_TINYBIRD_API_URL: str = "http://localhost:7281"
+    VOID_TINYBIRD_API_TOKEN: str | None = None
+    VOID_TINYBIRD_WORKSPACE: str | None = None
+    VOID_REDUCER_PROCESSING_DELAY_SECONDS: float = 0
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20

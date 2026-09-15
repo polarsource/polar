@@ -12,6 +12,7 @@ const reducer: Reducer = {
   type: 'scalar',
   filter: { conjunction: 'and', clauses: [] },
   aggregation: { func: 'count' },
+  map: null,
 }
 const meter: Meter = {
   id: 'm1',

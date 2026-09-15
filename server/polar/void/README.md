@@ -6,8 +6,9 @@ Void is being moved from `polarsource/void` at
 
 ## Current stage
 
-Stages 1–4 provide the SDK/CLI, gated Polar organization-token login, isolated
-persistence, identity trees, and bindings to Polar customers. Live routes are:
+Stages 1–5 provide the SDK/CLI, gated Polar organization-token login, isolated
+persistence, identity trees, bindings to Polar customers, and event processing.
+Live routes are:
 
 | Method | Path | Behavior |
 | --- | --- | --- |
@@ -16,9 +17,84 @@ persistence, identity trees, and bindings to Polar customers. Live routes are:
 | GET | `/v1/void/identities/{external_id}` | Read the identity, ancestor chain, and children |
 | GET, POST | `/v1/void/customers` | List bound customers or attach a customer to a root |
 | GET | `/v1/void/customers/{external_id}` | Read a customer through its root identity key |
+| GET, POST | `/v1/void/events` | List delivered events or durably accept a batch |
+| GET, POST | `/v1/void/reducers` | List or create reducers, including historical backfill |
+| GET | `/v1/void/reducers/{id}` | Read a reducer definition |
+| GET | `/v1/void/reducers/{id}/records` | Read first/last dictionary records by actor |
+| GET | `/v1/void/metrics` | Read scalar and derived totals or time series |
 
-Event processing, configuration deployment, snapshots, and subscription lifecycle
-operations remain pending.
+Configuration deployment, snapshots, subscription lifecycle, and metric comparisons
+remain pending. The SDK compatibility contract retains those pending operations.
+
+## Event processing and recovery
+
+`POST /events` accepts up to 1,000 events and returns 202 after PostgreSQL commits
+canonical event payloads. `saved` means durably accepted. Tinybird listings and
+reducer results become visible asynchronously through the dedicated Void worker.
+Event timestamps require a timezone and must fall in 1970–2105, matching the
+processing pipes' date range. Actor identities must already exist in the
+organization. The server stamps the actor's root when accepting the event.
+
+The `void_events` table reserves each organization's external event IDs. The first
+payload wins, including within a batch and across concurrent requests. Retries do
+not change attribution, timestamps, or metadata. Rows remain after delivery to
+preserve idempotency and support reducer backfills. Retention is not implemented;
+do not prune these records without a replacement for those guarantees.
+
+The worker locks pending rows, sends them to Tinybird with synchronous ingestion,
+then signals bucket processing. It marks delivery complete only after notification
+succeeds. A crash at either boundary leaves the row pending for automatic retry;
+the caller does not need to submit the event again. Tinybird uses
+`ReplacingMergeTree` with immutable event IDs, and every read uses `FINAL` so
+replayed delivery never inflates aggregates while background merges are pending.
+
+Reducer creation queues historical five-minute buckets transactionally. Reducer
+writes keep event processing receipts and queue dependent reducers in the same
+transaction. Activities serialize writes to a bucket, retry outages, and preserve
+signals during debounce. Derived reducers merge their input states before
+computing totals, so ratios aggregate correctly across actors and periods.
+
+Void keeps its Temporal worker separate from Polar's Dramatiq worker. Workflow IDs,
+schedules, and the default task queue use the `polar-void` prefix. API startup does
+not connect to Temporal or build Tinybird resources. Workers process only enabled,
+allowlisted organizations. Removing an organization pauses queued computation;
+retryable activities retain it until access is restored. Stop the worker when
+turning off Void entirely.
+
+## Run the event pipeline locally
+
+From `server/`, alongside the normal Polar database and API infrastructure:
+
+```sh
+docker compose -f docker-compose.void.yml up -d
+export POLAR_VOID_ENABLED=true
+export POLAR_VOID_ORGANIZATION_IDS='["<organization-uuid>"]'
+uv run alembic upgrade head
+uv run task void_tb_deploy --local
+export POLAR_VOID_TINYBIRD_API_TOKEN="$(curl -fsS http://localhost:7281/tokens | jq -r .admin_token)"
+uv run task void_worker
+```
+
+Start `uv run task api` in another terminal with the same Void environment values.
+The dedicated development services use Tinybird port 7281 and Temporal port 7333,
+with Temporal's UI on 8333. They have a separate Compose project and volumes.
+For custom ports also set `POLAR_VOID_TINYBIRD_API_URL` and
+`POLAR_VOID_TEMPORAL_ADDRESS` on the API and worker.
+
+For hosted environments, provision a **dedicated Tinybird workspace**, set
+`POLAR_VOID_TINYBIRD_API_URL`, `POLAR_VOID_TINYBIRD_API_TOKEN`, and
+`POLAR_VOID_TINYBIRD_WORKSPACE`, then run `uv run task void_tb_deploy` with the
+Tinybird CLI installed. The command verifies the workspace and runs build,
+deployment check, and deployment. Resources live in `server/void-tinybird` and all
+names start with `void_`. Keep this project separate from Polar billing's Tinybird
+project; deploying a partial project can remove unrelated resources.
+
+Temporal uses `POLAR_VOID_TEMPORAL_ADDRESS`, `POLAR_VOID_TEMPORAL_NAMESPACE`, and
+`POLAR_VOID_TEMPORAL_TASK_QUEUE`. Hosted Temporal also supports
+`POLAR_VOID_TEMPORAL_TLS` and `POLAR_VOID_TEMPORAL_API_KEY`. Start one or more
+`uv run task void_worker` processes with the same settings. Schedules are created
+idempotently when the worker starts. This stage does not run subscription or meter
+cycle workflows.
 
 ## Identity and customer rules
 
@@ -64,6 +140,9 @@ Migration `3d19da536d94`, following `38a9961f9d09`, adds twelve tables:
 | `void_reducer_dependencies`, `void_reducer_jobs` | Derived reducer inputs and transactional outbox |
 | `void_meters`, `void_deployments` | Versioned meters and configuration deployment records |
 | `void_entitlements`, `void_products`, `void_subscriptions` | Entitlements, immutable product generations, and subscription projections |
+
+Migration `b2c26017068c`, following `3d19da536d94`, adds `void_events` for canonical
+event payloads and durable delivery. It changes no existing Polar tables.
 
 Every table has a Polar `organization_id`. Composite foreign keys between Void
 records reject cross-organization references. Existing Polar tables are unchanged.

@@ -94,6 +94,8 @@ it('compiles the projection and original filter for named and inline reducers', 
 
 it('filters source metadata and contributes the mapped numeric result', () => {
   const reducer: Reducer = {
+    filter: null,
+    map: null,
     ...compile(defineConfig({ schema: { usage, total } })).reducers[0]!,
     id: 'r1',
     created_at: '2026-09-08T00:00:00Z',
@@ -161,6 +163,8 @@ it.each(doubleThenSumExamples)(
     const doubled = map(source, { amount: '$asdf * 2' })
     const total = sum('doubled-total', doubled, 'amount')
     const reducer: Reducer = {
+      filter: null,
+      map: null,
       ...compile(defineConfig({ schema: { reading, total } })).reducers[0]!,
       id: 'double',
       created_at: '2026-09-08T00:00:00Z',

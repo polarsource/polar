@@ -80,6 +80,7 @@ it('preserves nulls in typed derived queries and forwards the month and grouping
               inputs: { opened: 'opened', sold: 'sold' },
             },
             filter: null,
+            map: null,
           },
         ])
       if (url.pathname.endsWith('/metrics'))

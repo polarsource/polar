@@ -1,0 +1,30 @@
+NODE latest
+SQL >
+    %
+    SELECT
+                                id,
+                                timestamp,
+                                name,
+                                source,
+                                external_id,
+                                external_identity_id,
+                                external_root_id,
+                                metadata,
+                                count() OVER () AS total_count
+                            FROM void_events FINAL
+                            WHERE organization_id = toUUIDOrZero(
+                                {{String(organization_id, required=True)}}
+                            )
+                            {% if defined(external_identity_id) %}
+                            AND external_identity_id = {{String(external_identity_id)}}
+                            {% end %}
+                            {% if defined(external_root_id) %}
+                            AND external_root_id = {{String(external_root_id)}}
+                            {% end %}
+                            {% if defined(name) %}
+                            AND name = {{String(name)}}
+                            {% end %}
+                            ORDER BY ingested_at DESC, timestamp DESC, id
+                            LIMIT {{Int32(limit, required=True)}}
+
+TYPE endpoint

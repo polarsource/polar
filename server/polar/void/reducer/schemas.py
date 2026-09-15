@@ -1,6 +1,12 @@
-from pydantic import BaseModel, Field, model_validator
+from datetime import datetime
+from typing import Any
+from uuid import UUID
 
-from .aggregation import Aggregation
+from pydantic import BaseModel, Field, computed_field, model_validator
+
+from polar.kit.schemas import Schema
+
+from .aggregation import Aggregation, ReducerType
 from .filter import Filter
 from .map import EventMap
 
@@ -19,3 +25,23 @@ class ReducerCreate(BaseModel):
         elif self.filter is None:
             raise ValueError("Event reducers require a filter")
         return self
+
+
+class Reducer(Schema):
+    id: UUID
+    created_at: datetime
+    slug: str
+    filter: Filter | None
+    aggregation: Aggregation
+    map: EventMap | None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def type(self) -> ReducerType:
+        return self.aggregation.type
+
+
+class ReducerRecord(Schema):
+    external_identity_id: str | None
+    timestamp: datetime
+    data: dict[str, Any]

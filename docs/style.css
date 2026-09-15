@@ -344,6 +344,10 @@
   padding-right: 0;
 }
 
+.migration-flow__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .migration-flow__table code {
   padding: 0;
   color: #18181b;

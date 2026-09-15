@@ -113,8 +113,9 @@ variable "aws_s3_secrets" {
 
 variable "aws_kms_config" {
   type = object({
-    key_id   = string
-    role_arn = string
+    key_id      = string
+    jwks_key_id = string
+    role_arn    = string
   })
 }
 

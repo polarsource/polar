@@ -166,8 +166,9 @@ variable "environment_groups" {
       POLAR_S3_FILES_DOWNLOAD_SECRET         = string
     })
     secrets_kms = object({
-      POLAR_AWS_KMS_KEY_ID = string
-      AWS_ROLE_ARN         = string
+      POLAR_AWS_KMS_KEY_ID      = string
+      POLAR_AWS_JWKS_KMS_KEY_ID = string
+      AWS_ROLE_ARN              = string
     })
     worker_sqs = object({
       POLAR_WORKER_SQS_ENABLED               = string

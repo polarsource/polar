@@ -135,8 +135,9 @@ module "backend_environment" {
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets
   aws_kms_config = {
-    key_id   = one(module.secrets_kms[*].key_arn)
-    role_arn = one(module.secrets_kms[*].role_arn)
+    key_id      = one(module.secrets_kms[*].key_arn)
+    jwks_key_id = one(module.jwks_signing_key[*].key_arn)
+    role_arn    = one(module.secrets_kms[*].role_arn)
   }
   worker_sqs_config = {
     enabled      = "true"

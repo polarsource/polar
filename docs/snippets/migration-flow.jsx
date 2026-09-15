@@ -103,9 +103,8 @@ export const MigrationFlow = () => {
       polarNote: 'Activating',
       packets: [
         { path: 'sibling', label: 'Subscription moves' },
-        { path: 'right-up', label: 'subscription.migrated', soon: true },
+        { path: 'right-up', label: 'subscription.migrated' },
       ],
-      footnote: true,
       rows: [
         {
           id: 'sub_4821',
@@ -271,37 +270,42 @@ export const MigrationFlow = () => {
         </div>
 
         <div className="migration-flow__branch">
-          <svg viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M100 0 V16 H26 V48" />
-            <path d="M100 0 V16 H174 V48" />
-          </svg>
-          {packetFor('left-up') ? (
-            <span
-              key={`${phase.key}-left`}
-              className="migration-flow__packet migration-flow__packet--left migration-flow__packet--up"
-            >
-              {packetFor('left-up').label}
-            </span>
-          ) : null}
-          {packetFor('right-down') ? (
-            <span
-              key={`${phase.key}-right-down`}
-              className="migration-flow__packet migration-flow__packet--right migration-flow__packet--down"
-            >
-              {packetFor('right-down').label}
-            </span>
-          ) : null}
-          {packetFor('right-up') ? (
-            <span
-              key={`${phase.key}-right-up`}
-              className="migration-flow__packet migration-flow__packet--right migration-flow__packet--up"
-            >
-              {packetFor('right-up').label}
-              {packetFor('right-up').soon ? (
-                <span className="migration-flow__packet-soon">soon</span>
-              ) : null}
-            </span>
-          ) : null}
+          <div className="migration-flow__branch-col">
+            <span className="migration-flow__elbow migration-flow__elbow--left" aria-hidden="true" />
+            {packetFor('left-up') ? (
+              <span
+                key={`${phase.key}-left-up`}
+                className="migration-flow__packet migration-flow__packet--on-left migration-flow__packet--up"
+              >
+                {packetFor('left-up').label}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="migration-flow__branch-col">
+            <span className="migration-flow__stub" aria-hidden="true" />
+            <span className="migration-flow__crossbar" aria-hidden="true" />
+          </div>
+
+          <div className="migration-flow__branch-col">
+            <span className="migration-flow__elbow migration-flow__elbow--right" aria-hidden="true" />
+            {packetFor('right-down') ? (
+              <span
+                key={`${phase.key}-right-down`}
+                className="migration-flow__packet migration-flow__packet--on-right migration-flow__packet--down"
+              >
+                {packetFor('right-down').label}
+              </span>
+            ) : null}
+            {packetFor('right-up') ? (
+              <span
+                key={`${phase.key}-right-up`}
+                className="migration-flow__packet migration-flow__packet--on-right migration-flow__packet--up"
+              >
+                {packetFor('right-up').label}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="migration-flow__children">
@@ -334,6 +338,12 @@ export const MigrationFlow = () => {
 
       <div className="migration-flow__table-scroll">
         <table className="migration-flow__table">
+          <colgroup>
+            <col className="migration-flow__col-id" />
+            <col className="migration-flow__col-name" />
+            <col className="migration-flow__col-renews" />
+            <col className="migration-flow__col-comment" />
+          </colgroup>
           <thead>
             <tr>
               <th>Subscription</th>
@@ -368,13 +378,6 @@ export const MigrationFlow = () => {
           </tbody>
         </table>
       </div>
-
-      {phase.footnote ? (
-        <p className="migration-flow__footnote">
-          <code>subscription.migrated</code> is coming. Until it ships, the switch
-          emits <code>subscription.updated</code>.
-        </p>
-      ) : null}
 
       <div className="migration-flow__controls">
         <button type="button" onClick={() => goTo(activeIndex - 1)}>

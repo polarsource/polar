@@ -131,9 +131,30 @@ it('plugin origins cover the meter, its reducer and the server-made credit reduc
 it('plan output attributes plugin entries to their plugin', () => {
   const text = describePlan(
     [
-      { kind: 'meter', key: 'pool', action: 'create' },
-      { kind: 'reducer', key: 'pool', action: 'create', reason: 'new' },
-      { kind: 'product', key: 'pro', action: 'create' },
+      {
+        reason: null,
+        id: null,
+        price_preview: null,
+        kind: 'meter',
+        key: 'pool',
+        action: 'create',
+      },
+      {
+        id: null,
+        price_preview: null,
+        kind: 'reducer',
+        key: 'pool',
+        action: 'create',
+        reason: 'new',
+      },
+      {
+        reason: null,
+        id: null,
+        price_preview: null,
+        kind: 'product',
+        key: 'pro',
+        action: 'create',
+      },
     ],
     false,
     new Map([['pool', 'pool']]),

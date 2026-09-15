@@ -142,6 +142,7 @@ const serve = (remaining: Record<string, number>) => {
     if (path === '/meters')
       return json(
         ir.meters.map((m) => ({
+          variant_id: null,
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
@@ -835,6 +836,7 @@ it('capture: false leaves only the wrapped model recording', async () => {
     if (path === '/meters')
       return json(
         quietIr.meters.map((m) => ({
+          variant_id: null,
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
@@ -848,7 +850,13 @@ it('capture: false leaves only the wrapped model recording', async () => {
         })),
       )
     if (path === '/organizations/current')
-      return json({ id: 'org', name: 'Org', slug: 'org', created_at: 'a' })
+      return json({
+        default_variant_id: null,
+        id: 'org',
+        name: 'Org',
+        slug: 'org',
+        created_at: 'a',
+      })
     if (path === '/events' && init?.method === 'POST') {
       const raw = init.body
       const rows = JSON.parse(
@@ -907,6 +915,7 @@ const serveFor = (
     if (path === '/meters')
       return json(
         own.meters.map((m) => ({
+          variant_id: null,
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
@@ -946,7 +955,13 @@ const serveFor = (
       return json({ saved: rows.length, ignored: 0 }, 202)
     }
     if (path === '/organizations/current')
-      return json({ id: 'org', name: 'Org', slug: 'org', created_at: 'a' })
+      return json({
+        default_variant_id: null,
+        id: 'org',
+        name: 'Org',
+        slug: 'org',
+        created_at: 'a',
+      })
     return json({ error: 'ResourceNotFound', detail: path }, 404)
   }
   return { fetch, posts, checks }

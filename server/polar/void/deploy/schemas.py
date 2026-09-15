@@ -1,6 +1,7 @@
-from datetime import date
+import uuid
+from datetime import date, datetime
 from decimal import Decimal
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -25,7 +26,7 @@ class DeployMeter(BaseModel):
         description="Slug of a sum reducer in this deploy supplying credits. "
         "When omitted, a credit.granted reducer is created automatically.",
     )
-    unit_amount: Decimal = Field(ge=0)
+    unit_amount: Decimal = Field(ge=0, max_digits=17, decimal_places=12)
     currency: str = Field("usd", min_length=3, max_length=3)
 
 
@@ -93,3 +94,49 @@ class DeployCreate(BaseModel):
         if self.preview is not None and not self.dry_run:
             raise ValueError("price preview requires dry_run")
         return self
+
+
+Action = Literal["create", "replace", "update", "unchanged", "orphan"]
+
+
+class PricePreviewCustomer(BaseModel):
+    external_id: str
+    name: str | None
+    billable_units: Decimal
+    current_amount: Decimal
+    proposed_amount: Decimal
+    difference: Decimal
+
+
+class MeterPricePreview(BaseModel):
+    window: PricePreviewWindow
+    currency: str
+    current_unit_amount: Decimal
+    proposed_unit_amount: Decimal
+    customers: list[PricePreviewCustomer]
+    billable_units: Decimal
+    current_amount: Decimal
+    proposed_amount: Decimal
+    difference: Decimal
+    unavailable: str | None
+    excluded_customers: list[str]
+
+
+class DeployEntry(BaseModel):
+    kind: Literal["reducer", "meter", "entitlement", "product"]
+    key: str
+    action: Action
+    reason: str | None
+    id: uuid.UUID | None = Field(
+        description="The server id after apply. Unset on a dry run create."
+    )
+    price_preview: MeterPricePreview | None
+
+
+class Deploy(BaseModel):
+    variant_id: str | None
+    id: uuid.UUID | None = Field(description="Unset on a dry run.")
+    checksum: str
+    applied: bool
+    entries: list[DeployEntry]
+    created_at: datetime

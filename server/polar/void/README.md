@@ -6,13 +6,13 @@ Void is being moved from `polarsource/void` at
 
 ## Current stage
 
-Stages 1–5 provide the SDK/CLI, gated Polar organization-token login, isolated
-persistence, identity trees, bindings to Polar customers, and event processing.
+Stages 1–6 provide the SDK/CLI, gated Polar organization-token login, isolated
+persistence, identity trees, bindings to Polar customers, event processing, and configuration deployment.
 Live routes are:
 
 | Method | Path | Behavior |
 | --- | --- | --- |
-| GET | `/v1/void/organizations/current` | Identify the token's Polar organization |
+| GET, PATCH | `/v1/void/organizations/current` | Read the organization or select its default Void variant |
 | GET, POST | `/v1/void/identities` | List identities or create one on first touch |
 | GET | `/v1/void/identities/{external_id}` | Read the identity, ancestor chain, and children |
 | GET, POST | `/v1/void/customers` | List bound customers or attach a customer to a root |
@@ -22,9 +22,78 @@ Live routes are:
 | GET | `/v1/void/reducers/{id}` | Read a reducer definition |
 | GET | `/v1/void/reducers/{id}/records` | Read first/last dictionary records by actor |
 | GET | `/v1/void/metrics` | Read scalar and derived totals or time series |
+| GET, POST | `/v1/void/meters` | Read or create versioned meter definitions |
+| GET | `/v1/void/meters/{id}` | Read a meter generation |
+| GET, POST | `/v1/void/entitlements` | Read or upsert entitlement definitions |
+| GET | `/v1/void/entitlements/{id}` | Read an entitlement definition |
+| GET, POST | `/v1/void/products` | Read or create immutable product generations |
+| GET | `/v1/void/products/{id}` | Read a product generation |
+| POST | `/v1/void/deploys` | Plan or apply a complete compiled configuration |
+| GET | `/v1/void/deploys/latest` | Read the latest deployment for a selected variant |
 
-Configuration deployment, snapshots, subscription lifecycle, and metric comparisons
-remain pending. The SDK compatibility contract retains those pending operations.
+Snapshots, subscription lifecycle, balances, entitlement assignment, and metric
+comparisons remain pending. The SDK compatibility contract retains those operations.
+
+## Configuration deployment
+
+`POST /deploys` reconciles reducers, meters, entitlements, and products together.
+Both planning and applying require `void:write`. `dry_run: true` validates and
+returns the plan without writing definitions, deployment records, settings, or
+backfill jobs. Historical price previews return 501 before any writes; they need
+the lifecycle and balance services planned for step 7.
+
+Applying uses one transaction and the organization lock shared by definition
+writes and default-variant selection. The lock allows the event worker's
+foreign-key checks to proceed. A failed apply rolls back every definition and
+queued backfill. Repeated applies report unchanged resources and append a
+deployment record without creating new definition generations.
+
+The SDK's compiled configuration checksum is stored unchanged and returned with
+the deployment. A separate server hash identifies the normalized configuration
+variant. It excludes the checksum, dry-run flag, and preview window. Definition
+order and equivalent decimal spellings do not change that variant. A changed
+configuration creates another variant; it does not reprice the previous variant.
+
+Meter and product generations are allocated within their slug and variant, with
+meter branches counted separately. Products reference the exact meter and
+entitlement records validated in the same organization. Old product generations
+are archived when replaced within a variant. Orphan definitions are reported;
+orphan products in the deployed variant are archived. Other variants remain
+available. Deleted reducer and entitlement slugs stay reserved during both
+planning and applying.
+
+Deploying does not select the new variant automatically. Use the `variant` printed
+by the CLI or `variant_id` from the deployment response:
+
+```http
+PATCH /v1/void/organizations/current
+Authorization: Bearer <Void organization token>
+Content-Type: application/json
+
+{"default_variant_id": "<variant hash>"}
+```
+
+The selected variant must contain an active product or a non-branch meter in this
+organization. Send `null` to select the unnamed variant. Omitting `variant_id` on
+`GET /deploys/latest` follows that default; passing an empty value selects the
+unnamed variant explicitly. Settings live in `void_organization_settings`, without
+adding fields to Polar's native organization table.
+
+After logging in, run these commands from `clients/`:
+
+```sh
+pnpm --filter @void/sdk void plan --config /absolute/path/to/void.ts
+pnpm --filter @void/sdk void deploy --config /absolute/path/to/void.ts
+```
+
+Plain `plan` checks configuration only. `--preview` or explicit `--from` / `--to`
+dates request historical prices and currently return the unsupported response.
+A complete example used by the CLI tests lives in
+`clients/packages/void-sdk/test/fixtures/deployment.ts`.
+
+Definition deployment needs only Polar's API and PostgreSQL. Applying a new
+reducer queues backfill work for the Void worker; starting Temporal or Tinybird is
+not required to plan or apply definitions.
 
 ## Event processing and recovery
 
@@ -153,12 +222,10 @@ nullable variants and branches. Reducer buckets preserve nullable identity keys
 and the processing-receipt index. Monetary columns retain their original decimal
 precision. Relationships require explicit eager loading through `lazy="raise"`.
 
-The next stages must enforce these remaining service-level rules:
-
-- Product meter and entitlement UUID arrays must refer to resources in the same
-  organization. ORM relationship reads already filter by organization.
-- Subscription rows remain Void lifecycle projections, separate from Polar's
-  payment-backed subscriptions.
+Product meter and entitlement UUID arrays are validated against active resources
+in the same organization. ORM relationship reads also enforce organization scope.
+Subscription rows remain Void lifecycle projections, separate from Polar's
+payment-backed subscriptions; their lifecycle services arrive in the next stage.
 
 ## Deployment and validation
 

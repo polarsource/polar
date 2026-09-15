@@ -136,6 +136,7 @@ describe.skipIf(!pool)('postgres', () => {
           const path = new URL(request.url).pathname
           if (path === '/v1/void/organizations/current')
             return Response.json({
+              default_variant_id: null,
               id: 'org_pg',
               name: 'Demo',
               slug: 'demo',

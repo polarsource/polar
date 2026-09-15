@@ -9,7 +9,6 @@ from sqlalchemy.dialects.postgresql import insert
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.models import (
-    Organization,
     VoidEvent,
     VoidReducer,
     VoidReducerBucket,
@@ -49,9 +48,6 @@ class ReducerRepository(RepositoryBase[VoidReducer]):
                 VoidReducer.id == reducer_id, VoidReducer.deleted_at.is_(None)
             )
         )
-
-    async def organization(self, organization_id: UUID) -> Organization | None:
-        return await self.session.get(Organization, organization_id)
 
     async def lock_definitions(
         self, organization_id: UUID, *, shared: bool = False

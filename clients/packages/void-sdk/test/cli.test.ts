@@ -21,6 +21,7 @@ import {
   signal,
 } from '../src/config/index'
 import { loadConfig, reconcile, run } from '../src/cli/index'
+import { config as deploymentConfig } from './fixtures/deployment'
 
 const aiCall = event<{ tokens: number; status: string }>('ai_call')
 const config = defineConfig({
@@ -81,12 +82,28 @@ const posted: Array<[string, string, unknown]> = []
 const plan = apiWith((method, path, body) => {
   posted.push([method, path, body])
   return {
+    variant_id: null,
+    id: null,
     checksum: 'c',
     applied: false,
     created_at: 't',
     entries: [
-      { kind: 'reducer', key: 'calls', action: 'create' },
-      { kind: 'reducer', key: 'tokens', action: 'unchanged', id: 'r1' },
+      {
+        reason: null,
+        id: null,
+        price_preview: null,
+        kind: 'reducer',
+        key: 'calls',
+        action: 'create',
+      },
+      {
+        reason: null,
+        price_preview: null,
+        kind: 'reducer',
+        key: 'tokens',
+        action: 'unchanged',
+        id: 'r1',
+      },
       {
         kind: 'meter',
         key: 'tokens',
@@ -94,6 +111,8 @@ const plan = apiWith((method, path, body) => {
         reason: 'price changed',
         id: 'm1',
         price_preview: {
+          unavailable: null,
+          excluded_customers: [],
           window: { start: '2026-01-01', end: '2026-02-01' },
           currency: 'usd',
           current_unit_amount: '0.002',
@@ -114,7 +133,14 @@ const plan = apiWith((method, path, body) => {
           ],
         },
       },
-      { kind: 'meter', key: 'legacy', action: 'orphan', id: 'm9' },
+      {
+        reason: null,
+        price_preview: null,
+        kind: 'meter',
+        key: 'legacy',
+        action: 'orphan',
+        id: 'm9',
+      },
     ],
   }
 })
@@ -136,11 +162,21 @@ layer(
     assert.equal(body.dry_run, false)
     assert.equal(body.checksum, checksum(ir))
     return {
+      variant_id: null,
       id: 'deployment-1',
       checksum: body.checksum,
       applied: true,
       created_at: 't',
-      entries: [{ kind: 'meter', key: 'tokens', action: 'create', id: 'm1' }],
+      entries: [
+        {
+          reason: null,
+          price_preview: null,
+          kind: 'meter',
+          key: 'tokens',
+          action: 'create',
+          id: 'm1',
+        },
+      ],
     }
   }),
 )((it) => {
@@ -213,6 +249,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
       const request = new Request(input, init)
       if (new URL(request.url).pathname === '/v1/void/organizations/current') {
         return Response.json({
+          default_variant_id: null,
           id: 'org1',
           name: 'Test',
           slug: 'test',
@@ -222,6 +259,8 @@ it('plan and deploy use supplied credentials with the same organization-free con
       requests.push(request)
       return Response.json(
         {
+          variant_id: null,
+          id: null,
           checksum: checksum(ir),
           applied: false,
           created_at: '2026-09-06T00:00:00Z',
@@ -273,64 +312,73 @@ it('plan and deploy use supplied credentials with the same organization-free con
   }
 })
 
-it('plan --no-preview sends the existing dry-run payload', async () => {
-  const bodies: unknown[] = []
-  const fetch = vi
-    .spyOn(globalThis, 'fetch')
-    .mockImplementation(async (input, init) => {
-      const request = new Request(input, init)
-      if (new URL(request.url).pathname === '/v1/void/organizations/current')
+it.each([{ flags: [] }, { flags: ['--no-preview'] }])(
+  'plan $flags sends configuration changes without a preview',
+  async ({ flags: previewFlags }) => {
+    const bodies: unknown[] = []
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const request = new Request(input, init)
+        if (new URL(request.url).pathname === '/v1/void/organizations/current')
+          return Response.json({
+            default_variant_id: null,
+            id: 'org1',
+            name: 'Test',
+            slug: 'test',
+            created_at: '2026-01-01T00:00:00Z',
+          })
+        bodies.push(await request.json())
         return Response.json({
-          id: 'org1',
-          name: 'Test',
-          slug: 'test',
-          created_at: '2026-01-01T00:00:00Z',
+          variant_id: null,
+          id: null,
+          checksum: 'c',
+          applied: false,
+          created_at: 't',
+          entries: [],
         })
-      bodies.push(await request.json())
-      return Response.json({
-        checksum: 'c',
-        applied: false,
-        created_at: 't',
-        entries: [],
       })
-    })
-  try {
-    await run(
-      [
-        'plan',
-        '--no-preview',
-        '--config',
-        'void.ts',
-        '--api-url',
-        'http://void',
-        '--token',
-        'test',
-      ],
-      async () => ({ config }),
-    )
-    assert.equal(bodies.length, 1)
-    assert.notProperty(bodies[0], 'preview')
-  } finally {
-    fetch.mockRestore()
-  }
-})
+    try {
+      await run(
+        [
+          'plan',
+          ...previewFlags,
+          '--config',
+          'void.ts',
+          '--api-url',
+          'http://void',
+          '--token',
+          'test',
+        ],
+        async () => ({ config }),
+      )
+      assert.equal(bodies.length, 1)
+      assert.notProperty(bodies[0], 'preview')
+    } finally {
+      fetch.mockRestore()
+    }
+  },
+)
 
-it('rejects conflicting preview flags before loading config or making requests', async () => {
-  const fetch = vi.spyOn(globalThis, 'fetch')
-  const load = vi.fn(async () => ({ config }))
-  try {
-    await expect(
-      run(
-        ['plan', '--no-preview', '--from', '2026-01-01', '--to', '2026-02-01'],
-        load,
-      ),
-    ).rejects.toThrow('--no-preview cannot be combined')
-    assert.equal(load.mock.calls.length, 0)
-    assert.equal(fetch.mock.calls.length, 0)
-  } finally {
-    fetch.mockRestore()
-  }
-})
+it.each([
+  { flags: ['--preview'] },
+  { flags: ['--from', '2026-01-01', '--to', '2026-02-01'] },
+])(
+  'rejects --no-preview with $flags before loading config or making requests',
+  async ({ flags: previewFlags }) => {
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    const load = vi.fn(async () => ({ config }))
+    try {
+      await expect(
+        run(['plan', '--no-preview', ...previewFlags], load),
+      ).rejects.toThrow('--no-preview cannot be combined')
+      assert.equal(load.mock.calls.length, 0)
+      assert.equal(fetch.mock.calls.length, 0)
+    } finally {
+      fetch.mockRestore()
+    }
+  },
+)
 
 layer(
   apiWith((method, path, body) => {
@@ -347,6 +395,7 @@ layer(
       ],
     })
     return {
+      id: null,
       checksum: 'c',
       variant_id: 'f'.repeat(64),
       applied: true,
@@ -394,6 +443,7 @@ layer(
       ],
     })
     return {
+      id: null,
       checksum: 'c',
       variant_id: 'f'.repeat(64),
       applied: true,
@@ -420,3 +470,126 @@ layer(
     }),
   )
 })
+
+it('deploy sends complete product, entitlement and meter terms', async () => {
+  const compiled = compile(deploymentConfig)
+  const bodies: unknown[] = []
+  const fetch = vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(async (input, init) => {
+      const request = new Request(input, init)
+      if (new URL(request.url).pathname === '/v1/void/organizations/current')
+        return Response.json({
+          id: 'org1',
+          name: 'Test',
+          slug: 'test',
+          created_at: '2026-09-06T00:00:00Z',
+          default_variant_id: null,
+        })
+      bodies.push(await request.json())
+      return Response.json(
+        {
+          id: 'deployment-1',
+          checksum: checksum(compiled),
+          variant_id: 'f'.repeat(64),
+          applied: true,
+          created_at: '2026-09-06T00:00:00Z',
+          entries: [],
+        },
+        { status: 201 },
+      )
+    })
+  try {
+    await run(
+      [
+        'deploy',
+        '--config',
+        'void.ts',
+        '--api-url',
+        'http://void',
+        '--token',
+        'test',
+      ],
+      async () => ({ config: deploymentConfig }),
+    )
+    assert.deepEqual(bodies, [
+      {
+        checksum: checksum(compiled),
+        dry_run: false,
+        reducers: compiled.reducers,
+        meters: compiled.meters,
+        entitlements: compiled.entitlements,
+        products: compiled.products,
+      },
+    ])
+    assert.deepEqual(compiled.products[0]?.meters, [
+      {
+        slug: 'deployment-tokens',
+        included: 1000,
+        limit: 'hard',
+        rollover_cap: 500,
+      },
+    ])
+    assert.deepEqual(compiled.products[0]?.entitlements, ['deployment-support'])
+  } finally {
+    fetch.mockRestore()
+  }
+})
+
+it.each([
+  { flags: ['--preview'] },
+  { flags: ['--from', '2026-01-01', '--to', '2026-02-01'] },
+])(
+  'plan $flags propagates unavailable previews without retrying or dropping them',
+  async ({ flags: previewFlags }) => {
+    const bodies: unknown[] = []
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const request = new Request(input, init)
+        if (new URL(request.url).pathname === '/v1/void/organizations/current')
+          return Response.json({
+            id: 'org1',
+            name: 'Test',
+            slug: 'test',
+            created_at: '2026-09-06T00:00:00Z',
+            default_variant_id: null,
+          })
+        bodies.push(await request.json())
+        return Response.json(
+          {
+            error: 'PricePreviewUnavailable',
+            detail: 'Price previews are not available yet; use --no-preview.',
+          },
+          { status: 501 },
+        )
+      })
+    try {
+      await expect(
+        run(
+          [
+            'plan',
+            '--config',
+            'void.ts',
+            '--api-url',
+            'http://void',
+            '--token',
+            'test',
+            ...previewFlags,
+          ],
+          async () => ({ config: deploymentConfig }),
+        ),
+      ).rejects.toThrow('use --no-preview')
+      assert.equal(bodies.length, 1)
+      expect(bodies[0]).toMatchObject({
+        dry_run: true,
+        preview: {
+          start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          end: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        },
+      })
+    } finally {
+      fetch.mockRestore()
+    }
+  },
+)

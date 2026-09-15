@@ -4,6 +4,8 @@ import { describePricePreview, previewWindow } from '../src/cli/preview'
 import type { MeterPricePreview } from '../src/api/generated'
 
 const preview: MeterPricePreview = {
+  unavailable: null,
+  excluded_customers: [],
   window: { start: '2026-01-01', end: '2026-02-01' },
   currency: 'usd',
   current_unit_amount: '0.002',

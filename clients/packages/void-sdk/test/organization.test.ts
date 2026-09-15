@@ -28,6 +28,7 @@ it('organization operations use the configured client without resolver requests'
         })
       }
       return Response.json({
+        variant_id: null,
         id: 'deployment_1',
         checksum: 'compiled-checksum',
         applied: true,
@@ -149,5 +150,52 @@ it('the same config can be used by clients with independent organization credent
     assert.equal(requests.length, 2)
   } finally {
     await Promise.all([first.dispose(), second.dispose()])
+  }
+})
+
+it('selects a deployed default variant through the organization settings route', async () => {
+  const variant = 'f'.repeat(64)
+  const requests: Request[] = []
+  const client = createVoid(config, {
+    apiUrl: 'http://void',
+    token: 'organization-token',
+    fetch: async (input, init) => {
+      const request = new Request(input, init)
+      requests.push(request)
+      return Response.json({
+        id: 'org1',
+        name: 'Test',
+        slug: 'test',
+        created_at: '2026-09-06T00:00:00Z',
+        default_variant_id: request.method === 'PATCH' ? variant : null,
+      })
+    },
+  })
+  try {
+    assert.equal(
+      (await client.api.organizations.current()).default_variant_id,
+      null,
+    )
+    assert.equal(
+      (
+        await client.api.organizations.updateCurrent({
+          default_variant_id: variant,
+        })
+      ).default_variant_id,
+      variant,
+    )
+    assert.deepEqual(
+      requests.map((request) => [
+        request.method,
+        new URL(request.url).pathname,
+      ]),
+      [
+        ['GET', '/v1/void/organizations/current'],
+        ['PATCH', '/v1/void/organizations/current'],
+      ],
+    )
+    assert.deepEqual(await requests[1]!.json(), { default_variant_id: variant })
+  } finally {
+    await client.dispose()
   }
 })

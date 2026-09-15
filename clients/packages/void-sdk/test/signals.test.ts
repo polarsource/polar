@@ -67,6 +67,9 @@ function fixture(): Wire.CustomerState {
     meters: [
       {
         meter: {
+          variant_id: null,
+          branch_id: null,
+          currency: 'usd',
           id: 'meter',
           slug: 'credits',
           name: 'Credits',
@@ -126,6 +129,7 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
       const path = new URL(request.url).pathname
       if (path === '/v1/void/organizations/current')
         return Response.json({
+          default_variant_id: null,
           id: 'org',
           name: 'Org',
           slug: 'org',

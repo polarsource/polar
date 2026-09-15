@@ -99,6 +99,9 @@ function snapshot(): Fixture {
         usage_last_processed_event: receipt(['processed']),
         credit_last_processed_event: receipt(['purchase']),
         meter: {
+          variant_id: null,
+          branch_id: null,
+          currency: 'usd',
           id: 'meter',
           slug: 'credits',
           name: 'Credits',
@@ -135,7 +138,7 @@ it.each([undefined, 'candidate'])(
   (variantId) => {
     const s = snapshot()
     const selected = s.meters[0]!
-    selected.meter = { ...selected.meter, variant_id: variantId }
+    selected.meter = { ...selected.meter, variant_id: variantId ?? null }
     s.meters.unshift({
       ...selected,
       meter: {

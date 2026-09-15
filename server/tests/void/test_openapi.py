@@ -25,6 +25,14 @@ class TestGetVoidOpenAPI:
             "/v1/void/reducers/{id}",
             "/v1/void/reducers/{id}/records",
             "/v1/void/metrics",
+            "/v1/void/deploys",
+            "/v1/void/deploys/latest",
+            "/v1/void/meters",
+            "/v1/void/meters/{id}",
+            "/v1/void/products",
+            "/v1/void/products/{id}",
+            "/v1/void/entitlements",
+            "/v1/void/entitlements/{id}",
         }
         operation = schema["paths"]["/v1/void/organizations/current"]["get"]
         assert operation["operationId"] == "organizations:current"
@@ -32,7 +40,13 @@ class TestGetVoidOpenAPI:
             "schema"
         ] == {"$ref": "#/components/schemas/VoidOrganization"}
         organization = schema["components"]["schemas"]["VoidOrganization"]
-        assert set(organization["required"]) == {"id", "name", "slug", "created_at"}
+        assert set(organization["required"]) == {
+            "id",
+            "name",
+            "slug",
+            "created_at",
+            "default_variant_id",
+        }
         assert "webhooks" not in schema
         assert set(schema["components"]["securitySchemes"]) == {"oat"}
         assert operation["security"] == [

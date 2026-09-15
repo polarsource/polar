@@ -16,6 +16,7 @@ from polar.models import VoidReducer as Reducer
 from polar.models import VoidReducerBucket
 from polar.models import VoidReducerDependency as ReducerDependency
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.void.organization.service import organization as organization_service
 from polar.void.temporal import TASK_QUEUE
 from polar.void.tinybird import TinybirdApi
 
@@ -81,10 +82,8 @@ class ReducerService:
         create_schema: ReducerCreate,
     ) -> Reducer:
         repository = ReducerRepository.from_session(session)
+        organization = await organization_service.lock(session, organization_id)
         await repository.lock_definitions(organization_id)
-        organization = await repository.organization(organization_id)
-        if organization is None:
-            raise ResourceNotFound()
         sources = {}
         if create_schema.aggregation.func == "derive":
             sources = {r.slug: r for r in await self.list(session, organization_id)}

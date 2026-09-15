@@ -93,6 +93,7 @@ const serve = () => {
     map: null,
   })
   const meter = (id: string, usage_reducer_id: string, created_at: string) => ({
+    variant_id: null,
     id,
     name: 'tokens',
     slug: 'tokens',
@@ -386,6 +387,7 @@ it('deployment forwards the configured credit reducer to the server', async () =
     fetch: async (_, init) => {
       body = await new Response(init?.body).json()
       return Response.json({
+        variant_id: null,
         id: null,
         checksum: 'test',
         applied: false,

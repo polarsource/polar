@@ -84,6 +84,7 @@ const serve = (initial: number) => {
     if (path === '/meters')
       return json([
         {
+          variant_id: null,
           id: 'm-pool',
           name: 'credits',
           slug: 'credits',

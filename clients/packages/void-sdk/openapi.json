@@ -77,9 +77,9 @@
     },
     "/v1/void/organizations/current": {
       "get": {
-        "tags": ["organizations"],
+        "tags": ["void", "private"],
         "summary": "Current",
-        "description": "Return the organization authenticated by the supplied access token.",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "organizations:current",
         "responses": {
           "200": {
@@ -87,7 +87,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Organization"
+                  "$ref": "#/components/schemas/VoidOrganization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
                 }
               }
             }
@@ -101,12 +111,15 @@
             "oat": ["void:write"]
           }
         ],
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "void",
+        "x-speakeasy-name-override": "current",
         "x-void-migration-status": "implemented"
       },
       "patch": {
-        "tags": ["organizations"],
-        "summary": "Updatecurrent",
-        "description": "Update settings for the authenticated organization.",
+        "tags": ["void", "private"],
+        "summary": "Update Current",
+        "description": "**Scopes**: `void:write`",
         "operationId": "organizations:updateCurrent",
         "requestBody": {
           "content": {
@@ -124,7 +137,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Organization"
+                  "$ref": "#/components/schemas/VoidOrganization"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidDefaultVariant"
                 }
               }
             }
@@ -142,10 +165,13 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "void",
+        "x-speakeasy-name-override": "update_current",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/organizations/{id}": {
@@ -1303,8 +1329,9 @@
     },
     "/v1/void/meters": {
       "get": {
-        "tags": ["meters"],
-        "summary": "List",
+        "tags": ["void", "private", "meters"],
+        "summary": "List Meters",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "meters:list",
         "responses": {
           "200": {
@@ -1324,14 +1351,21 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "meters",
+        "x-speakeasy-name-override": "list_meters",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["meters"],
-        "summary": "Create",
+        "tags": ["void", "private", "meters"],
+        "summary": "Create Meter",
+        "description": "**Scopes**: `void:write`",
         "operationId": "meters:create",
         "requestBody": {
           "content": {
@@ -1354,6 +1388,26 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidReducer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1367,20 +1421,27 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "meters",
+        "x-speakeasy-name-override": "create_meter",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/meters/{id}": {
       "get": {
-        "tags": ["meters"],
-        "summary": "Get",
+        "tags": ["void", "private", "meters"],
+        "summary": "Get Meter",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "meters:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -1406,6 +1467,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1417,7 +1488,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "meters",
+        "x-speakeasy-name-override": "get_meter",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/meters/{id}/balance": {
@@ -1798,8 +1872,9 @@
     },
     "/v1/void/entitlements": {
       "get": {
-        "tags": ["entitlements"],
-        "summary": "List",
+        "tags": ["void", "private", "entitlements"],
+        "summary": "List Entitlements",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "entitlements:list",
         "responses": {
           "200": {
@@ -1819,15 +1894,21 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "entitlements",
+        "x-speakeasy-name-override": "list_entitlements",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["entitlements"],
-        "summary": "Create",
-        "description": "Create by slug, or update the display fields of an existing one.",
+        "tags": ["void", "private", "entitlements"],
+        "summary": "Create Entitlement",
+        "description": "**Scopes**: `void:write`",
         "operationId": "entitlements:create",
         "requestBody": {
           "content": {
@@ -1850,6 +1931,26 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitlementSlugTaken"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1863,20 +1964,27 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "entitlements",
+        "x-speakeasy-name-override": "create_entitlement",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/entitlements/{id}": {
       "get": {
-        "tags": ["entitlements"],
-        "summary": "Get",
+        "tags": ["void", "private", "entitlements"],
+        "summary": "Get Entitlement",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "entitlements:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -1902,6 +2010,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1913,18 +2031,24 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "entitlements",
+        "x-speakeasy-name-override": "get_entitlement",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/products": {
       "get": {
-        "tags": ["products"],
-        "summary": "List",
-        "description": "Every product generation; by default only the ones still sold.",
+        "tags": ["void", "private", "products"],
+        "summary": "List Products",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "products:list",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -1965,16 +2089,19 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "products",
+        "x-speakeasy-name-override": "list_products",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["products"],
-        "summary": "Create",
-        "description": "Insert the next generation of the slug and archive the previous one.",
+        "tags": ["void", "private", "products"],
+        "summary": "Create Product",
+        "description": "**Scopes**: `void:write`",
         "operationId": "products:create",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
         "requestBody": {
@@ -1998,6 +2125,26 @@
               }
             }
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductInvalid"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2009,17 +2156,24 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "products",
+        "x-speakeasy-name-override": "create_product",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/products/{id}": {
       "get": {
-        "tags": ["products"],
-        "summary": "Get",
+        "tags": ["void", "private", "products"],
+        "summary": "Get Product",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "products:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -2045,6 +2199,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2056,7 +2220,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "products",
+        "x-speakeasy-name-override": "get_product",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/subscriptions": {
@@ -2425,9 +2592,9 @@
     },
     "/v1/void/deploys": {
       "post": {
-        "tags": ["deploys"],
+        "tags": ["void", "private", "deploys"],
         "summary": "Create",
-        "description": "Reconcile a compiled config: create or version reducers, upsert meters\nby slug, report orphans. `dry_run` returns the plan without writing.",
+        "description": "**Scopes**: `void:write`",
         "operationId": "deploys:create",
         "requestBody": {
           "content": {
@@ -2450,6 +2617,26 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidDeployment"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentConflict"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2459,24 +2646,41 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewUnavailable"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "deploys",
+        "x-speakeasy-name-override": "create",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/deploys/latest": {
       "get": {
-        "tags": ["deploys"],
+        "tags": ["void", "private", "deploys"],
         "summary": "Latest",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "deploys:latest",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -2508,6 +2712,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2519,7 +2733,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "deploys",
+        "x-speakeasy-name-override": "latest",
+        "x-void-migration-status": "implemented"
       }
     }
   },
@@ -3056,7 +3273,14 @@
           }
         },
         "type": "object",
-        "required": ["checksum", "applied", "entries", "created_at"],
+        "required": [
+          "variant_id",
+          "id",
+          "checksum",
+          "applied",
+          "entries",
+          "created_at"
+        ],
         "title": "Deploy"
       },
       "DeployCreate": {
@@ -3209,7 +3433,7 @@
           }
         },
         "type": "object",
-        "required": ["kind", "key", "action"],
+        "required": ["kind", "key", "action", "reason", "id", "price_preview"],
         "title": "DeployEntry"
       },
       "DeployMeter": {
@@ -3246,7 +3470,8 @@
                 "minimum": 0
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
               }
             ],
             "title": "Unit Amount"
@@ -3290,18 +3515,18 @@
           "price": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/RecurringPrice-Input"
+                "$ref": "#/components/schemas/RecurringPrice"
               },
               {
-                "$ref": "#/components/schemas/OneTimePrice-Input"
+                "$ref": "#/components/schemas/OneTimePrice"
               }
             ],
             "title": "Price",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "one_time": "#/components/schemas/OneTimePrice-Input",
-                "recurring": "#/components/schemas/RecurringPrice-Input"
+                "one_time": "#/components/schemas/OneTimePrice",
+                "recurring": "#/components/schemas/RecurringPrice"
               }
             }
           },
@@ -3495,7 +3720,8 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           }
         },
         "type": "object",
@@ -3872,8 +4098,8 @@
               },
               {
                 "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": -2147483648.0
+                "maximum": 2147483647,
+                "minimum": -2147483648
               },
               {
                 "type": "boolean"
@@ -4159,11 +4385,15 @@
       },
       "Meter": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
           "variant_id": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -4173,13 +4403,10 @@
           },
           "name": {
             "type": "string",
-            "minLength": 3,
             "title": "Name"
           },
           "slug": {
             "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-z0-9][a-z0-9_-]*$",
             "title": "Slug"
           },
           "branch_id": {
@@ -4206,19 +4433,12 @@
           },
           "unit_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount"
           },
           "currency": {
             "type": "string",
-            "maxLength": 3,
-            "minLength": 3,
-            "title": "Currency",
-            "default": "usd"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
+            "title": "Currency"
           },
           "generation_id": {
             "type": "integer",
@@ -4227,17 +4447,21 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           }
         },
         "type": "object",
         "required": [
+          "id",
+          "variant_id",
           "name",
           "slug",
+          "branch_id",
           "usage_reducer_id",
           "credit_reducer_id",
           "unit_amount",
-          "id",
+          "currency",
           "generation_id",
           "created_at"
         ],
@@ -4297,7 +4521,8 @@
                 "minimum": 0
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
               }
             ],
             "title": "Unit Amount"
@@ -4559,10 +4784,12 @@
           },
           "current_unit_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Current Unit Amount"
           },
           "proposed_unit_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Proposed Unit Amount"
           },
           "customers": {
@@ -4574,23 +4801,23 @@
           },
           "billable_units": {
             "type": "string",
-            "title": "Billable Units",
-            "default": "0"
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Billable Units"
           },
           "current_amount": {
             "type": "string",
-            "title": "Current Amount",
-            "default": "0"
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Current Amount"
           },
           "proposed_amount": {
             "type": "string",
-            "title": "Proposed Amount",
-            "default": "0"
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Proposed Amount"
           },
           "difference": {
             "type": "string",
-            "title": "Difference",
-            "default": "0"
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Difference"
           },
           "unavailable": {
             "anyOf": [
@@ -4616,7 +4843,14 @@
           "window",
           "currency",
           "current_unit_amount",
-          "proposed_unit_amount"
+          "proposed_unit_amount",
+          "customers",
+          "billable_units",
+          "current_amount",
+          "proposed_amount",
+          "difference",
+          "unavailable",
+          "excluded_customers"
         ],
         "title": "MeterPricePreview"
       },
@@ -4958,18 +5192,22 @@
           },
           "billable_units": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Billable Units"
           },
           "current_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Current Amount"
           },
           "proposed_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Proposed Amount"
           },
           "difference": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Difference"
           }
         },
@@ -5076,18 +5314,18 @@
           "price": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/RecurringPrice-Output"
+                "$ref": "#/components/schemas/RecurringPriceRead"
               },
               {
-                "$ref": "#/components/schemas/OneTimePrice-Output"
+                "$ref": "#/components/schemas/OneTimePriceRead"
               }
             ],
             "title": "Price",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "one_time": "#/components/schemas/OneTimePrice-Output",
-                "recurring": "#/components/schemas/RecurringPrice-Output"
+                "one_time": "#/components/schemas/OneTimePriceRead",
+                "recurring": "#/components/schemas/RecurringPriceRead"
               }
             }
           },
@@ -5100,7 +5338,7 @@
           },
           "meter_terms": {
             "additionalProperties": {
-              "$ref": "#/components/schemas/MeterTerms"
+              "$ref": "#/components/schemas/MeterTermsRead"
             },
             "type": "object",
             "title": "Meter Terms"
@@ -5116,7 +5354,8 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": ["2026-01-01T00:00:00.000000Z"]
               },
               {
                 "type": "null"
@@ -5127,11 +5366,13 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           }
         },
         "type": "object",
         "required": [
+          "variant_id",
           "id",
           "slug",
           "generation_id",
@@ -5139,6 +5380,7 @@
           "description",
           "price",
           "meters",
+          "meter_terms",
           "entitlements",
           "archived_at",
           "created_at"
@@ -5184,18 +5426,18 @@
           "price": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/RecurringPrice-Input"
+                "$ref": "#/components/schemas/RecurringPrice"
               },
               {
-                "$ref": "#/components/schemas/OneTimePrice-Input"
+                "$ref": "#/components/schemas/OneTimePrice"
               }
             ],
             "title": "Price",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "one_time": "#/components/schemas/OneTimePrice-Input",
-                "recurring": "#/components/schemas/RecurringPrice-Input"
+                "one_time": "#/components/schemas/OneTimePrice",
+                "recurring": "#/components/schemas/RecurringPrice"
               }
             }
           },
@@ -6241,11 +6483,283 @@
             "title": "Created At",
             "description": "The organization creation timestamp.",
             "examples": ["2026-01-01T00:00:00.000000Z"]
+          },
+          "default_variant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Variant Id",
+            "description": "The default Void configuration variant."
           }
         },
         "type": "object",
-        "required": ["id", "name", "slug", "created_at"],
+        "required": ["id", "name", "slug", "created_at", "default_variant_id"],
         "title": "VoidOrganization"
+      },
+      "InvalidDefaultVariant": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "InvalidDefaultVariant",
+            "title": "Error",
+            "examples": ["InvalidDefaultVariant"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "InvalidDefaultVariant"
+      },
+      "InvalidDeployment": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "InvalidDeployment",
+            "title": "Error",
+            "examples": ["InvalidDeployment"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "InvalidDeployment"
+      },
+      "DeploymentConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "DeploymentConflict",
+            "title": "Error",
+            "examples": ["DeploymentConflict"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "DeploymentConflict"
+      },
+      "PreviewUnavailable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PreviewUnavailable",
+            "title": "Error",
+            "examples": ["PreviewUnavailable"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "PreviewUnavailable"
+      },
+      "EntitlementSlugTaken": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "EntitlementSlugTaken",
+            "title": "Error",
+            "examples": ["EntitlementSlugTaken"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "EntitlementSlugTaken"
+      },
+      "ProductInvalid": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ProductInvalid",
+            "title": "Error",
+            "examples": ["ProductInvalid"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "ProductInvalid"
+      },
+      "RecurringPriceRead": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "recurring",
+            "title": "Type"
+          },
+          "interval": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"],
+            "title": "Interval"
+          },
+          "interval_count": {
+            "type": "integer",
+            "title": "Interval Count"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "interval",
+          "interval_count",
+          "amount",
+          "currency"
+        ],
+        "title": "RecurringPriceRead"
+      },
+      "OneTimePriceRead": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "one_time",
+            "title": "Type"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "amount", "currency"],
+        "title": "OneTimePriceRead"
+      },
+      "MeterTermsRead": {
+        "properties": {
+          "included": {
+            "type": "number",
+            "title": "Included"
+          },
+          "limit": {
+            "type": "string",
+            "enum": ["hard", "soft", "unlimited"],
+            "title": "Limit"
+          },
+          "rollover_cap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollover Cap"
+          }
+        },
+        "type": "object",
+        "required": ["included", "limit", "rollover_cap"],
+        "title": "MeterTermsRead"
+      },
+      "RecurringPrice": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "recurring",
+            "title": "Type"
+          },
+          "interval": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"],
+            "title": "Interval"
+          },
+          "interval_count": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Interval Count",
+            "default": 1
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)"
+              }
+            ],
+            "title": "Amount",
+            "description": "Fixed amount per interval."
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "interval", "amount", "currency"],
+        "title": "RecurringPrice"
+      },
+      "OneTimePrice": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "one_time",
+            "title": "Type"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "amount", "currency"],
+        "title": "OneTimePrice"
       }
     },
     "securitySchemes": {

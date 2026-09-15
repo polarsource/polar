@@ -7,20 +7,23 @@ This private package contains the SDK and CLI imported from
 It keeps the `@void/sdk` imports and the `void` command.
 
 Polar now serves CLI login, identities, customer bindings, event ingestion,
-reducers, and metrics under `/v1/void`. The SDK sends a Polar organization access
+reducers, metrics, and configuration deployment under `/v1/void`. The SDK sends a Polar organization access
 token and `Polar-Version: 2026-04` with every request. Set `apiUrl` to the server origin,
 without `/v1/void`.
 
 The implemented operations are `organizations:current`, `identities:list`,
 `identities:ensure`, `identities:get`, `customers:list`, `customers:create`,
 `customers:get`, `events:list`, `events:ingest`, `reducers:list`,
-`reducers:create`, `reducers:get`, `reducers:records`, and `metrics:get`. This enables
+`reducers:create`, `reducers:get`, `reducers:records`, `metrics:get`,
+`deploys:create`, `deploys:latest`, `meters:list`, `meters:create`, `meters:get`,
+`products:list`, `products:create`, `products:get`, `entitlements:list`,
+`entitlements:create`, `entitlements:get`, and `organizations:updateCurrent`. This enables
 `root()`, `ensure()`, `spawn()` without entitlements, identity navigation,
 `actor.customer()`, scalar reducer usage and totals, and first/last record reads.
 
 The remaining SDK operations are preserved for later migration stages.
-`plan`, `deploy`, snapshots, customer state, entitlements, meter queries,
-and metric comparisons still return 404. The examples below describe the full
+Snapshots, customer state, identity entitlement grants, meter queries,
+and metric comparisons still return 404. Historical price previews return 501. The examples below describe the full
 imported SDK.
 
 Event ingestion returns `202` after durable acceptance. The dedicated Void worker
@@ -115,7 +118,7 @@ pnpm --filter @void/sdk generate
 `generate` uses the checked-in `openapi.json` and requires no running server or
 Python environment. This is a migration compatibility contract that retains the
 imported SDK API. Each operation has `x-void-migration-status` set to `implemented`
-or `pending`; fourteen operations are implemented.
+or `pending`; twenty-six operations are implemented.
 
 Export the live backend contract from `server/` with
 `uv run python -m scripts.generate_void_openapi 2026-04`. Use it to verify migrated
@@ -191,41 +194,40 @@ Organization operations under `client.api` and identity operations under `client
 
 Applications supply their own runtime token. The SDK does not read a developer's saved CLI login.
 
-## Usage price previews
+## Configuration deployment
 
-After changing a meter's `price.amount`, `void plan` shows current and proposed
-usage charges per customer, plus totals. Both prices use the same existing reducer
-buckets. The preview never ingests events, runs reducers, creates meter generations,
-or modifies subscriptions.
+`void plan` compares reducers, meters, entitlements and products without writing.
+`void deploy` applies the complete configuration atomically and reports its content
+hash as `variant`. Repeating the same deployment reuses existing definitions.
+Orphaned definitions are reported and retained.
 
-```sh
-void plan                                      # Last 30 completed UTC days
-void plan --from 2026-08-01 --to 2026-09-01      # End date is exclusive
-void plan --no-preview                          # Configuration changes only
+Deploying a variant does not select it as the organization's default. Select a
+deployed variant explicitly through the SDK:
+
+```ts
+// Use the variant hash printed by `void deploy`.
+await client.api.organizations.updateCurrent({
+  default_variant_id: deployedVariant,
+})
+const deployment = await client.api.deploys.latest()
 ```
 
-The comparison uses the latest deployed meter rate and the candidate rate, with
-existing allowances, credit adjustments, rollover and subscription intervals held
-fixed. Customer usage includes the customer's identity subtree. Customers pinned
-to an older generation of the same meter are included when its reducers match.
-Proposed product terms and customer migrations are not simulated.
+The default is stored in Void organization settings. It does not alter native
+Polar product or subscription configuration.
 
-Amounts are usage-charge estimates, including the open billing period, rather than
-invoice totals. Flat subscription charges, taxes, discounts and prepaid pack sales
-are outside the comparison. Billable units are the change in accumulated overage
-over the selected window; a credit adjustment can produce a negative amount.
-Prices and amounts are calculated with decimal arithmetic on the server.
+### Historical price previews
 
-This demo supports price-only changes on sum/count usage reducers with unchanged,
-separate usage and credit reducers and the same currency. It reads subscription
-lifecycle metadata to apply existing terms, but never replays raw usage events.
-Unattributed usage and roots without customers are outside the customer table.
-Overlapping subscriptions and subscription changes outside five-minute bucket
-boundaries are explicitly excluded. Totals are labeled when customers are excluded.
+Historical comparisons depend on subscription lifecycle migration and are not yet
+available in Polar. Planning defaults to configuration changes only. Explicit
+preview requests return 501, and the CLI reports the error without retrying or
+removing the preview request.
 
-Run the server and SDK from the same revision to use the preview. No new database
-migration or Tinybird resource is needed for this feature. Historical usage must
-already have been processed into buckets.
+```sh
+void plan                                     # Configuration changes only
+void plan --no-preview                        # Explicit configuration-only plan
+void plan --preview                           # Historical preview; currently 501
+void plan --from 2026-08-01 --to 2026-09-01     # Explicit window; currently 501
+```
 
 ## Runtime usage
 

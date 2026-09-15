@@ -15,6 +15,8 @@ const reducer: Reducer = {
   map: null,
 }
 const meter: Meter = {
+  variant_id: null,
+  branch_id: null,
   id: 'm1',
   name: 'Token usage',
   slug: 'tokens',
@@ -29,6 +31,8 @@ let reducerCalls = 0
 let meterCalls = 0
 let meters: ReadonlyArray<Meter> = [meter]
 const product: Product = {
+  variant_id: null,
+  meter_terms: {},
   id: 'p1',
   slug: 'pro',
   generation_id: 2,

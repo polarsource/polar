@@ -177,23 +177,39 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
               Flag.withDescription('Exclusive UTC date, YYYY-MM-DD'),
               Flag.optional,
             ),
+            preview: Flag.boolean('preview').pipe(
+              Flag.withDescription(
+                'Compare usage prices over a historical window',
+              ),
+            ),
             noPreview: Flag.boolean('no-preview').pipe(
               Flag.withDescription('Skip the usage price comparison'),
             ),
           }
         : {}),
     },
-    ({ config: file, apiUrl, token, from, to, noPreview }) =>
+    ({
+      config: file,
+      apiUrl,
+      token,
+      from,
+      to,
+      preview: requestedPreview,
+      noPreview,
+    }) =>
       Effect.gen(function* () {
         const start =
           from === undefined ? undefined : Option.getOrUndefined(from)
         const end = to === undefined ? undefined : Option.getOrUndefined(to)
-        if (noPreview && (start !== undefined || end !== undefined))
+        const wantsPreview =
+          requestedPreview || start !== undefined || end !== undefined
+        if (noPreview && wantsPreview)
           return yield* new PreviewError({
-            message: '--no-preview cannot be combined with --from or --to.',
+            message:
+              '--no-preview cannot be combined with --preview, --from or --to.',
           })
         const preview =
-          name === 'plan' && !noPreview
+          name === 'plan' && wantsPreview
             ? yield* previewWindow(start, end)
             : undefined
         const config = yield* loadConfig(file, load)
@@ -286,11 +302,7 @@ const cli = (load: Loader) =>
     Command.withSubcommands([
       login,
       logout,
-      command(
-        'plan',
-        'Show config changes and compare usage prices; writes nothing',
-        load,
-      ),
+      command('plan', 'Show config changes; writes nothing', load),
       command(
         'deploy',
         'Apply the config to reducers, meters, entitlements and products',

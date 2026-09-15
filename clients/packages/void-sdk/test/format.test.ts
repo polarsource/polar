@@ -7,16 +7,38 @@ import {
 import type { DeployEntry } from '../src/api/generated'
 
 const entries: DeployEntry[] = [
-  { kind: 'reducer', key: 'calls', action: 'create' },
-  { kind: 'reducer', key: 'tokens', action: 'unchanged', id: 'r1' },
   {
+    reason: null,
+    id: null,
+    price_preview: null,
+    kind: 'reducer',
+    key: 'calls',
+    action: 'create',
+  },
+  {
+    reason: null,
+    price_preview: null,
+    kind: 'reducer',
+    key: 'tokens',
+    action: 'unchanged',
+    id: 'r1',
+  },
+  {
+    price_preview: null,
     kind: 'meter',
     key: 'tokens',
     action: 'update',
     reason: 'price changed',
     id: 'm1',
   },
-  { kind: 'meter', key: 'legacy', action: 'orphan', id: 'm9' },
+  {
+    reason: null,
+    price_preview: null,
+    kind: 'meter',
+    key: 'legacy',
+    action: 'orphan',
+    id: 'm9',
+  },
 ]
 
 it('aligns visible entries and drops ids and unchanged rows', () => {

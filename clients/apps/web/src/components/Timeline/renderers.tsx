@@ -73,7 +73,7 @@ const timelineRenderers: TimelineRendererMap = {
       ),
   },
   'subscription.migrated': {
-    importance: 'high',
+    importance: 'medium',
     summary: ({ metadata }) => `${metadata.platform} · ${metadata.source_id}`,
   },
   'subscription.cycled': {

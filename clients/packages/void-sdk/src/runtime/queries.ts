@@ -252,7 +252,7 @@ export function makeQueries<M extends SchemaModule>(
 ): (id: string) => Queries<M> {
   const meterId = Effect.fn(function* (def: MeterDef) {
     const resolver = yield* Resolver
-    return (yield* resolver.meterBySlug(def.key, config.variantId)).id
+    return (yield* resolver.meterBySlug(def.key, config.versionId)).id
   })
   const reducerId = Effect.fn(function* (def: AnyReducer) {
     const resolver = yield* Resolver
@@ -260,7 +260,7 @@ export function makeQueries<M extends SchemaModule>(
   })
   const productOf = Effect.fn(function* (def: ProductDef) {
     const resolver = yield* Resolver
-    return yield* resolver.productBySlug(def.key, config.variantId)
+    return yield* resolver.productBySlug(def.key, config.versionId)
   })
 
   const ingest = Effect.fn('Scope.ingest')(function* (

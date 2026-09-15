@@ -107,7 +107,7 @@ function snapshot(): Fixture {
         usage_last_processed_event: receipt(['processed']),
         credit_last_processed_event: receipt(['purchase']),
         meter: {
-          variant_id: null,
+          version_id: null,
           branch_id: null,
           currency: 'usd',
           id: 'meter',
@@ -167,22 +167,22 @@ const balance = (s = snapshot(), events: StoredEvent[] = [], id = 'root') =>
   reconcile(config, credits, s, id, events, new Date(at), 'balance')
 
 it.each([undefined, 'candidate'])(
-  'reconciles only the configured variant: %s',
-  (variantId) => {
+  'reconciles only the configured version: %s',
+  (versionId) => {
     const s = snapshot()
     const selected = s.meters[0]!
-    selected.meter = { ...selected.meter, variant_id: variantId ?? null }
+    selected.meter = { ...selected.meter, version_id: versionId ?? null }
     s.meters.unshift({
       ...selected,
       meter: {
         ...selected.meter,
-        id: 'other-variant',
-        variant_id: variantId === undefined ? 'candidate' : null,
+        id: 'other-version',
+        version_id: versionId === undefined ? 'candidate' : null,
         generation_id: 99,
         usage_reducer_id: 'other-usage',
       },
     })
-    const scoped = defineConfig({ schema: config.schema, variantId })
+    const scoped = defineConfig({ schema: config.schema, versionId })
     expect(
       reconcile(scoped, credits, s, 'root', [], new Date(at), 'balance'),
     ).toMatchObject({ remaining: 80, overage: 0 })
@@ -356,13 +356,13 @@ it('balance returns zero without a holder and still reports own usage', () => {
 })
 
 it.each([null, 'c'.repeat(64)])(
-  'balance follows default variant %s for SQLite, remote, and historical reads',
-  async (variantId) => {
+  'balance follows default version %s for SQLite, remote, and historical reads',
+  async (versionId) => {
     const scopedSnapshot = () => {
       const state = snapshot()
       state.meters[0].meter = {
         ...state.meters[0].meter,
-        variant_id: variantId,
+        version_id: versionId,
       }
       return state
     }
@@ -394,7 +394,7 @@ it.each([null, 'c'.repeat(64)])(
               name: 'Org',
               slug: 'org',
               created_at: at,
-              default_variant_id: variantId,
+              default_version_id: versionId,
             })
           if (url.pathname === '/v1/void/identities/root')
             return Response.json({
@@ -409,7 +409,7 @@ it.each([null, 'c'.repeat(64)])(
               children: [],
             })
           if (url.pathname === '/v1/void/customers/root/state') {
-            expect(url.searchParams.get('variant_id')).toBe(variantId ?? '')
+            expect(url.searchParams.get('version_id')).toBe(versionId ?? '')
             if (unavailable)
               return Response.json(
                 { error: 'Unavailable', detail: 'down' },
@@ -688,7 +688,7 @@ it('the public check reads SQLite, applies the estimate and never calls the remo
             name: 'Org',
             slug: 'org',
             created_at: at,
-            default_variant_id: null,
+            default_version_id: null,
           })
         if (path === '/v1/void/identities/root')
           return Response.json({
@@ -782,7 +782,7 @@ it.each(['check', 'balance'] as const)(
                 name: 'Org',
                 slug: 'org',
                 created_at: at,
-                default_variant_id: null,
+                default_version_id: null,
               })
             if (url.pathname === '/v1/void/identities/root')
               return Response.json({

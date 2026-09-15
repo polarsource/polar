@@ -11,7 +11,7 @@ import { VoidError } from '../errors'
 /**
  * Maps config keys to server IDs and caches successful listings for one minute.
  * Failed listings are retried on the next lookup. Reducers use their slug;
- * products and meters select the newest generation within the requested variant.
+ * products and meters select the newest generation within the requested version.
  */
 export class Resolver extends Context.Service<
   Resolver,
@@ -19,11 +19,11 @@ export class Resolver extends Context.Service<
     readonly reducerBySlug: (slug: string) => Effect.Effect<Reducer, ApiError>
     readonly meterBySlug: (
       slug: string,
-      variantId?: string | null,
+      versionId?: string | null,
     ) => Effect.Effect<Meter, ApiError>
     readonly productBySlug: (
       slug: string,
-      variantId?: string | null,
+      versionId?: string | null,
     ) => Effect.Effect<Product, ApiError>
     /** Forget cached listings, for example after a deploy. */
     readonly reset: Effect.Effect<void>
@@ -33,14 +33,14 @@ export class Resolver extends Context.Service<
 const latestMeter = (
   meters: ReadonlyArray<Meter>,
   slug: string,
-  variantId?: string | null,
+  versionId?: string | null,
 ) =>
   meters
     .filter(
       (meter) =>
         meter.slug === slug &&
         meter.branch_id == null &&
-        (meter.variant_id ?? null) === variantId,
+        (meter.version_id ?? null) === versionId,
     )
     .reduce<Meter | undefined>(
       (best, meter) =>
@@ -53,14 +53,14 @@ const latestMeter = (
 const latestProduct = (
   products: ReadonlyArray<Product>,
   slug: string,
-  variantId?: string | null,
+  versionId?: string | null,
 ) =>
   products
     .filter(
       (product) =>
         product.slug === slug &&
         product.archived_at == null &&
-        (product.variant_id ?? null) === variantId,
+        (product.version_id ?? null) === versionId,
     )
     .reduce<Product | undefined>(
       (best, product) =>
@@ -102,24 +102,24 @@ export const ResolverLive = Layer.effect(Resolver)(
             ? Effect.succeed(found)
             : Effect.fail(notDeployed('reducer', slug))
         }),
-      meterBySlug: (slug, variantId) =>
+      meterBySlug: (slug, versionId) =>
         Effect.gen(function* () {
           const selected =
-            variantId === undefined
+            versionId === undefined
               ? ((yield* api.organizationsCurrent(undefined))
-                  .default_variant_id ?? null)
-              : variantId
+                  .default_version_id ?? null)
+              : versionId
           const all = yield* Cache.get(meters, undefined)
           const found = latestMeter(all, slug, selected)
           return found ? found : yield* Effect.fail(notDeployed('meter', slug))
         }),
-      productBySlug: (slug, variantId) =>
+      productBySlug: (slug, versionId) =>
         Effect.gen(function* () {
           const selected =
-            variantId === undefined
+            versionId === undefined
               ? ((yield* api.organizationsCurrent(undefined))
-                  .default_variant_id ?? null)
-              : variantId
+                  .default_version_id ?? null)
+              : versionId
           const all = yield* Cache.get(products, undefined)
           const found = latestProduct(all, slug, selected)
           return found

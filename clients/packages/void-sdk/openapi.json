@@ -77,7 +77,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvalidDefaultVariant"
+                  "$ref": "#/components/schemas/InvalidDefaultVersion"
                 }
               }
             }
@@ -377,7 +377,7 @@
             }
           },
           {
-            "name": "variant_id",
+            "name": "version_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -389,7 +389,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Variant Id"
+              "title": "Version Id"
             }
           }
         ],
@@ -830,7 +830,7 @@
             }
           },
           {
-            "name": "variant_id",
+            "name": "version_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -842,7 +842,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Variant Id"
+              "title": "Version Id"
             }
           }
         ],
@@ -1480,7 +1480,7 @@
     "/v1/void/metrics/compare": {
       "get": {
         "tags": ["void", "private", "metrics"],
-        "summary": "Compare Variants",
+        "summary": "Compare Versions",
         "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "metrics:compare",
         "security": [
@@ -1504,10 +1504,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Subscription history variant; empty means unversioned.",
+              "description": "Subscription history version; empty means unversioned.",
               "title": "Baseline"
             },
-            "description": "Subscription history variant; empty means unversioned."
+            "description": "Subscription history version; empty means unversioned."
           },
           {
             "name": "candidate",
@@ -1515,10 +1515,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Pricing variant; empty means unversioned.",
+              "description": "Pricing version; empty means unversioned.",
               "title": "Candidate"
             },
-            "description": "Pricing variant; empty means unversioned."
+            "description": "Pricing version; empty means unversioned."
           },
           {
             "name": "start",
@@ -1575,7 +1575,7 @@
         },
         "x-polar-allowed-subjects": ["Organization", "User"],
         "x-speakeasy-group": "metrics",
-        "x-speakeasy-name-override": "compare_variants"
+        "x-speakeasy-name-override": "compare_versions"
       }
     },
     "/v1/void/deploys": {
@@ -1662,7 +1662,7 @@
         ],
         "parameters": [
           {
-            "name": "variant_id",
+            "name": "version_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -1674,7 +1674,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Variant Id"
+              "title": "Version Id"
             }
           }
         ],
@@ -3573,7 +3573,7 @@
       },
       "Deploy": {
         "properties": {
-          "variant_id": {
+          "version_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -3582,7 +3582,7 @@
                 "type": "null"
               }
             ],
-            "title": "Variant Id"
+            "title": "Version Id"
           },
           "id": {
             "anyOf": [
@@ -3620,7 +3620,7 @@
         },
         "type": "object",
         "required": [
-          "variant_id",
+          "version_id",
           "id",
           "checksum",
           "applied",
@@ -4823,13 +4823,13 @@
         "required": ["error", "detail"],
         "title": "InvalidAttribution"
       },
-      "InvalidDefaultVariant": {
+      "InvalidDefaultVersion": {
         "properties": {
           "error": {
             "type": "string",
-            "const": "InvalidDefaultVariant",
+            "const": "InvalidDefaultVersion",
             "title": "Error",
-            "examples": ["InvalidDefaultVariant"]
+            "examples": ["InvalidDefaultVersion"]
           },
           "detail": {
             "type": "string",
@@ -4838,7 +4838,7 @@
         },
         "type": "object",
         "required": ["error", "detail"],
-        "title": "InvalidDefaultVariant"
+        "title": "InvalidDefaultVersion"
       },
       "InvalidDeployment": {
         "properties": {
@@ -4994,7 +4994,7 @@
             "format": "uuid",
             "title": "Id"
           },
-          "variant_id": {
+          "version_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -5003,7 +5003,7 @@
                 "type": "null"
               }
             ],
-            "title": "Variant Id"
+            "title": "Version Id"
           },
           "name": {
             "type": "string",
@@ -5058,7 +5058,7 @@
         "type": "object",
         "required": [
           "id",
-          "variant_id",
+          "version_id",
           "name",
           "slug",
           "branch_id",
@@ -5073,7 +5073,7 @@
       },
       "MeterCreate": {
         "properties": {
-          "variant_id": {
+          "version_id": {
             "anyOf": [
               {
                 "type": "string",
@@ -5083,7 +5083,7 @@
                 "type": "null"
               }
             ],
-            "title": "Variant Id"
+            "title": "Version Id"
           },
           "name": {
             "type": "string",
@@ -5755,7 +5755,7 @@
       },
       "OrganizationUpdate": {
         "properties": {
-          "default_variant_id": {
+          "default_version_id": {
             "anyOf": [
               {
                 "type": "string",
@@ -5765,12 +5765,12 @@
                 "type": "null"
               }
             ],
-            "title": "Default Variant Id",
-            "description": "Default configuration variant. Null selects the unnamed variant."
+            "title": "Default Version Id",
+            "description": "Default configuration version. Null selects the unnamed version."
           }
         },
         "type": "object",
-        "required": ["default_variant_id"],
+        "required": ["default_version_id"],
         "title": "OrganizationUpdate"
       },
       "Pagination": {
@@ -5885,7 +5885,7 @@
       },
       "Product": {
         "properties": {
-          "variant_id": {
+          "version_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -5894,7 +5894,7 @@
                 "type": "null"
               }
             ],
-            "title": "Variant Id"
+            "title": "Version Id"
           },
           "id": {
             "type": "string",
@@ -5985,7 +5985,7 @@
         },
         "type": "object",
         "required": [
-          "variant_id",
+          "version_id",
           "id",
           "slug",
           "generation_id",
@@ -6002,7 +6002,7 @@
       },
       "ProductCreate": {
         "properties": {
-          "variant_id": {
+          "version_id": {
             "anyOf": [
               {
                 "type": "string",
@@ -6012,7 +6012,7 @@
                 "type": "null"
               }
             ],
-            "title": "Variant Id"
+            "title": "Version Id"
           },
           "slug": {
             "type": "string",
@@ -7002,7 +7002,7 @@
             "description": "The organization creation timestamp.",
             "examples": ["2026-01-01T00:00:00.000000Z"]
           },
-          "default_variant_id": {
+          "default_version_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -7011,12 +7011,12 @@
                 "type": "null"
               }
             ],
-            "title": "Default Variant Id",
-            "description": "The default Void configuration variant."
+            "title": "Default Version Id",
+            "description": "The default Void configuration version."
           }
         },
         "type": "object",
-        "required": ["id", "name", "slug", "created_at", "default_variant_id"],
+        "required": ["id", "name", "slug", "created_at", "default_version_id"],
         "title": "VoidOrganization"
       },
       "VoidSubscriptionStatus": {

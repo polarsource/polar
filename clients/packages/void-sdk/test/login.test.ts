@@ -12,7 +12,7 @@ const requests: Request[] = []
 const config = defineConfig({ schema: {} })
 const load = async () => ({ config })
 const first = {
-  default_variant_id: null,
+  default_version_id: null,
   id: 'org-1',
   name: 'First',
   slug: 'first',
@@ -44,7 +44,7 @@ beforeEach(async () => {
     }
     return Response.json(
       {
-        variant_id: null,
+        version_id: null,
         checksum: 'test',
         applied: true,
         id: 'd1',

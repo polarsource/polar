@@ -209,16 +209,16 @@ Applications supply their own runtime token. The SDK does not read a developer's
 
 `void plan` compares reducers, meters, entitlements and products without writing.
 `void deploy` applies the complete configuration atomically and reports its content
-hash as `variant`. Repeating the same deployment reuses existing definitions.
+hash as `version`. Repeating the same deployment reuses existing definitions.
 Orphaned definitions are reported and retained.
 
-Deploying a variant does not select it as the organization's default. Select a
-deployed variant explicitly through the SDK:
+Deploying a version does not select it as the organization's default. Select a
+deployed version explicitly through the SDK:
 
 ```ts
-// Use the variant hash printed by `void deploy`.
+// Use the version hash printed by `void deploy`.
 await client.api.organizations.updateCurrent({
-  default_variant_id: deployedVariant,
+  default_version_id: deployedVersion,
 })
 const deployment = await client.api.deploys.latest()
 ```

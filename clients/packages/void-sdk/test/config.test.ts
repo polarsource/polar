@@ -44,14 +44,14 @@ const schema = {
   helper: () => 1,
 }
 
-it('lookup variants do not change the published config checksum', () => {
+it('lookup versions do not change the published config checksum', () => {
   const baseline = compile(defineConfig({ schema }))
-  const candidate = compile(defineConfig({ schema, variantId: 'candidate' }))
+  const candidate = compile(defineConfig({ schema, versionId: 'candidate' }))
   assert.deepEqual(candidate, baseline)
   assert.equal(checksum(baseline), checksum(candidate))
   assert.deepEqual(candidate.meters, baseline.meters)
   assert.deepEqual(candidate.reducers, baseline.reducers)
-  assert.throws(() => defineConfig({ schema, variantId: '' }))
+  assert.throws(() => defineConfig({ schema, versionId: '' }))
 })
 
 // oxlint-disable-next-line no-constant-condition -- Compile-time assertions must not execute.

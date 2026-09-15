@@ -129,21 +129,21 @@ try {
   const meter = deployed.meters.find(
     (item) => item.slug === config.schema.units.key,
   )
-  assert(meter?.variant_id, 'Deployment must produce a meter variant')
+  assert(meter?.version_id, 'Deployment must produce a meter version')
   await client.api.organizations.updateCurrent({
-    default_variant_id: meter.variant_id,
+    default_version_id: meter.version_id,
   })
   await client.refresh()
   const firstDeploy = await client.api.deploys.latest()
   await cli('deploy')
   const secondDeploy = await client.api.deploys.latest()
   assert.notEqual(firstDeploy.id, secondDeploy.id)
-  assert.equal(firstDeploy.variant_id, secondDeploy.variant_id)
+  assert.equal(firstDeploy.version_id, secondDeploy.version_id)
   assert.equal(secondDeploy.checksum, sum)
   assert.deepEqual(await definitions(), deployed)
   progress('deployment_verified', {
     organization_id: organization.id,
-    variant_id: meter.variant_id,
+    version_id: meter.version_id,
   })
 
   const root = await client.root(rootId)

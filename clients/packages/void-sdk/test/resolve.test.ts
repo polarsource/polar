@@ -15,7 +15,7 @@ const reducer: Reducer = {
   map: null,
 }
 const meter: Meter = {
-  variant_id: null,
+  version_id: null,
   branch_id: null,
   id: 'm1',
   name: 'Token usage',
@@ -31,7 +31,7 @@ let reducerCalls = 0
 let meterCalls = 0
 let meters: ReadonlyArray<Meter> = [meter]
 const product: Product = {
-  variant_id: null,
+  version_id: null,
   meter_terms: {},
   id: 'p1',
   slug: 'pro',
@@ -44,7 +44,7 @@ const product: Product = {
   archived_at: null,
   created_at: 't',
 }
-let defaultVariantId: string | null = null
+let defaultVersionId: string | null = null
 const api = Layer.mock(Api, {
   organizationsCurrent: () =>
     Effect.sync(() => ({
@@ -52,7 +52,7 @@ const api = Layer.mock(Api, {
       name: 'Org',
       slug: 'org',
       created_at: 't',
-      default_variant_id: defaultVariantId,
+      default_version_id: defaultVersionId,
     })),
   productsList: () =>
     Effect.succeed([
@@ -60,13 +60,13 @@ const api = Layer.mock(Api, {
       {
         ...product,
         id: 'candidate',
-        variant_id: 'candidate',
+        version_id: 'candidate',
         generation_id: 99,
       },
       {
         ...product,
         id: 'archived',
-        variant_id: 'candidate',
+        version_id: 'candidate',
         generation_id: 100,
         archived_at: 't',
       },
@@ -141,9 +141,9 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
           { ...meter, id: 'branch', generation_id: 3, branch_id: 'preview' },
           {
             ...meter,
-            id: 'variant',
+            id: 'version',
             generation_id: 99,
-            variant_id: 'candidate',
+            version_id: 'candidate',
           },
         ]
         assert.equal((yield* resolver.meterBySlug('tokens')).id, 'm1')
@@ -151,7 +151,7 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
         assert.equal((yield* resolver.meterBySlug('tokens')).id, 'm2')
         assert.equal(
           (yield* resolver.meterBySlug('tokens', 'candidate')).id,
-          'variant',
+          'version',
         )
         yield* resolver.reducerBySlug('tokens')
         assert.equal(reducerCalls, 3)
@@ -162,12 +162,12 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
         yield* resolver.meterBySlug('tokens')
         assert.equal(reducerCalls, 4)
         assert.equal(meterCalls, 4)
-        defaultVariantId = 'candidate'
+        defaultVersionId = 'candidate'
         assert.equal((yield* resolver.productBySlug('pro')).id, 'candidate')
-        assert.equal((yield* resolver.meterBySlug('tokens')).id, 'variant')
+        assert.equal((yield* resolver.meterBySlug('tokens')).id, 'version')
         assert.equal((yield* resolver.productBySlug('pro', null)).id, 'p1')
         assert.equal((yield* resolver.meterBySlug('tokens', null)).id, 'm2')
-        defaultVariantId = 'missing'
+        defaultVersionId = 'missing'
         assert.equal(
           (yield* Effect.flip(resolver.productBySlug('pro')))._tag,
           'VoidError',
@@ -176,7 +176,7 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
           (yield* resolver.productBySlug('pro', 'candidate')).id,
           'candidate',
         )
-        defaultVariantId = null
+        defaultVersionId = null
         assert.equal((yield* resolver.productBySlug('pro')).id, 'p1')
       }),
   )

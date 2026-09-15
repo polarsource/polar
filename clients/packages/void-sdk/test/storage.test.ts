@@ -60,7 +60,7 @@ const setup = (
         requests.push(path)
         if (path === '/v1/void/organizations/current')
           return Response.json({
-            default_variant_id: null,
+            default_version_id: null,
             id: options.organizationId ?? 'org_1',
             name: 'Demo',
             slug: 'demo',

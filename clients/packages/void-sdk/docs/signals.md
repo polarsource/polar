@@ -54,12 +54,12 @@ await client.dispose()
 
 The source meter and its reducers are collected automatically and must be deployed
 as usual. Signal definitions stay in the SDK. Threshold changes do not affect the
-deployment checksum, create a billing variant, or require `void deploy`.
+deployment checksum, create a billing version, or require `void deploy`.
 `signal(slug)` without a definition is no longer supported.
 
 Signals currently require a root customer. Child usage contributes to the root's
 balance through the existing reconciliation rules. Meter selection follows the
-client's configured variant, or the organization's default when omitted.
+client's configured version, or the organization's default when omitted.
 
 ## Evaluation
 

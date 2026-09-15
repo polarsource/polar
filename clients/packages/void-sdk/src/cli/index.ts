@@ -132,7 +132,7 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
   })
   const styled = styleEnabled()
   yield* Console.log(
-    `${soft('variant', styled)} ${deploy.variant_id ?? 'unavailable'}`,
+    `${soft('version', styled)} ${deploy.version_id ?? 'unavailable'}`,
   )
   const plan = describePlan(deploy.entries, styled, pluginOrigins(config))
   if (plan) yield* Console.log(`\n${plan}`)

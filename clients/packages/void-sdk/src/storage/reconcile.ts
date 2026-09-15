@@ -72,7 +72,7 @@ export function reconcile(
       (m) =>
         m.meter.slug === ref.key &&
         m.meter.branch_id == null &&
-        (m.meter.variant_id ?? null) === (config.variantId ?? null),
+        (m.meter.version_id ?? null) === (config.versionId ?? null),
     )
     .sort((a, b) => b.meter.generation_id - a.meter.generation_id)[0]
   if (!deployed)
@@ -631,17 +631,17 @@ export const reconciliationEvents = Effect.fn('Scope.reconciliationEvents')(
 export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
   function* (config: Config, ref: MeterDef, id: string, keepTail = false) {
     const api = yield* Api
-    const variantId =
-      config.variantId === undefined
-        ? ((yield* api.organizationsCurrent(undefined)).default_variant_id ??
+    const versionId =
+      config.versionId === undefined
+        ? ((yield* api.organizationsCurrent(undefined)).default_version_id ??
           null)
-        : config.variantId
-    const effectiveConfig = { ...config, variantId }
+        : config.versionId
+    const effectiveConfig = { ...config, versionId }
     const identity = yield* api.identitiesGet(id, undefined)
     const root = identity.chain.at(-1) ?? id
     let snapshot = yield* api.customersState(root, {
       params: {
-        variant_id: variantId ?? '',
+        version_id: versionId ?? '',
         ...(keepTail && {
           since: new Date(
             Math.floor(Date.now() / 300000) * 300000 - 300000,
@@ -653,7 +653,7 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
       (m) =>
         m.meter.slug === ref.key &&
         m.meter.branch_id == null &&
-        (m.meter.variant_id ?? null) === variantId,
+        (m.meter.version_id ?? null) === versionId,
     )
     if (!deployed)
       return fail(`meter ${ref.key} is missing from customer state`)
@@ -671,7 +671,7 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
       )
       snapshot = yield* api.customersState(root, {
         params: {
-          variant_id: variantId ?? '',
+          version_id: versionId ?? '',
           since: new Date(Math.max(0, earliest - 300000)).toISOString(),
         },
       })

@@ -22,7 +22,7 @@ export type MetersOf<M extends SchemaModule> = Extract<M[keyof M], MeterDef>
 /** Deployable definitions; credentials select the organization outside config. */
 export interface ConfigInput<M extends SchemaModule> {
   /** Lookup override using a published config hash. Omitted follows the organization default; null selects unversioned records. Does not affect publishing. */
-  readonly variantId?: string | null
+  readonly versionId?: string | null
   readonly schema: M
   /**
    * Local ledgers that must persist every event before API ingestion, so this
@@ -41,7 +41,7 @@ export interface ConfigInput<M extends SchemaModule> {
 }
 
 export interface Config<M extends SchemaModule = SchemaModule> {
-  readonly variantId?: string | null
+  readonly versionId?: string | null
   readonly kind: 'config'
   readonly schema: M
   readonly events: readonly EventDef[]
@@ -108,15 +108,15 @@ const unique = <T extends { key: string } | { name: string }>(
  */
 export const defineConfig = <M extends SchemaModule>({
   schema,
-  variantId,
+  versionId,
   eventStorage = [],
   signalRefreshInterval,
   eventRetention = DEFAULT_EVENT_RETENTION,
 }: ConfigInput<M>): Config<M> => {
   if (!(Number.isFinite(eventRetention) && eventRetention > 0))
     throw new Error('eventRetention must be a positive number of milliseconds')
-  if (variantId != null && variantId.length === 0)
-    throw new Error('variantId must not be empty')
+  if (versionId != null && versionId.length === 0)
+    throw new Error('versionId must not be empty')
   if (
     signalRefreshInterval !== undefined &&
     !(Number.isFinite(signalRefreshInterval) && signalRefreshInterval > 0)
@@ -213,7 +213,7 @@ export const defineConfig = <M extends SchemaModule>({
   )
   return {
     kind: 'config',
-    ...(variantId !== undefined && { variantId }),
+    ...(versionId !== undefined && { versionId }),
     schema,
     events,
     reducers,

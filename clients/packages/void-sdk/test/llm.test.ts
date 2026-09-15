@@ -144,7 +144,7 @@ const serve = (remaining: Record<string, number>) => {
     if (path === '/meters')
       return json(
         ir.meters.map((m) => ({
-          variant_id: null,
+          version_id: null,
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
@@ -189,7 +189,7 @@ const serve = (remaining: Record<string, number>) => {
         name: 'Org',
         slug: 'org',
         created_at: 'a',
-        default_variant_id: null,
+        default_version_id: null,
       })
     return json({ error: 'ResourceNotFound', detail: path }, 404)
   }
@@ -844,7 +844,7 @@ it('capture: false leaves only the wrapped model recording', async () => {
     if (path === '/meters')
       return json(
         quietIr.meters.map((m) => ({
-          variant_id: null,
+          version_id: null,
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
@@ -859,7 +859,7 @@ it('capture: false leaves only the wrapped model recording', async () => {
       )
     if (path === '/organizations/current')
       return json({
-        default_variant_id: null,
+        default_version_id: null,
         id: 'org',
         name: 'Org',
         slug: 'org',
@@ -925,7 +925,7 @@ const serveFor = (
     if (path === '/meters')
       return json(
         own.meters.map((m) => ({
-          variant_id: null,
+          version_id: null,
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
@@ -970,7 +970,7 @@ const serveFor = (
     }
     if (path === '/organizations/current')
       return json({
-        default_variant_id: null,
+        default_version_id: null,
         id: 'org',
         name: 'Org',
         slug: 'org',
@@ -1463,7 +1463,7 @@ it('canonicalModel names what a provider reported as the merchant does', () => {
   )
   // Azure deployments named after the model match on the whole tail.
   assert.equal(name('azure.responses', 'gpt-5'), 'openai/gpt-5')
-  // Bedrock and dated variants extend a listed tail past a separator.
+  // Bedrock and dated versions extend a listed tail past a separator.
   assert.equal(
     name('amazon-bedrock', 'anthropic.claude-sonnet-5-v1:0'),
     'anthropic/claude-sonnet-5',

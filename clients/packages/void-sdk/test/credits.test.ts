@@ -86,7 +86,7 @@ const serve = (initial: number) => {
     if (path === '/meters')
       return json([
         {
-          variant_id: null,
+          version_id: null,
           id: 'm-pool',
           name: 'credits',
           slug: 'credits',
@@ -160,7 +160,7 @@ const serve = (initial: number) => {
         name: 'Org',
         slug: 'org',
         created_at: 'a',
-        default_variant_id: null,
+        default_version_id: null,
       })
     return json({ error: 'ResourceNotFound', detail: path }, 404)
   }

@@ -80,7 +80,7 @@ function fixture(): Wire.CustomerState {
         credit_last_processed_event: null,
 
         meter: {
-          variant_id: null,
+          version_id: null,
           branch_id: null,
           currency: 'usd',
           id: 'meter',
@@ -155,7 +155,7 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
   let reads = 0
   const config = defineConfig({
     schema,
-    variantId: null,
+    versionId: null,
     eventStorage: db ? [{ type: 'sqlite', connection: db }] : [],
     ...(signalRefreshInterval !== undefined && { signalRefreshInterval }),
   })
@@ -167,7 +167,7 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
       const path = new URL(request.url).pathname
       if (path === '/v1/void/organizations/current')
         return Response.json({
-          default_variant_id: null,
+          default_version_id: null,
           id: 'org',
           name: 'Org',
           slug: 'org',

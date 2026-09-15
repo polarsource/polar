@@ -82,7 +82,7 @@ const posted: Array<[string, string, unknown]> = []
 const plan = apiWith((method, path, body) => {
   posted.push([method, path, body])
   return {
-    variant_id: null,
+    version_id: null,
     id: null,
     checksum: 'c',
     applied: false,
@@ -162,7 +162,7 @@ layer(
     assert.equal(body.dry_run, false)
     assert.equal(body.checksum, checksum(ir))
     return {
-      variant_id: null,
+      version_id: null,
       id: 'deployment-1',
       checksum: body.checksum,
       applied: true,
@@ -249,7 +249,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
       const request = new Request(input, init)
       if (new URL(request.url).pathname === '/v1/void/organizations/current') {
         return Response.json({
-          default_variant_id: null,
+          default_version_id: null,
           id: 'org1',
           name: 'Test',
           slug: 'test',
@@ -259,7 +259,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
       requests.push(request)
       return Response.json(
         {
-          variant_id: null,
+          version_id: null,
           id: null,
           checksum: checksum(ir),
           applied: false,
@@ -322,7 +322,7 @@ it.each([{ flags: [] }, { flags: ['--no-preview'] }])(
         const request = new Request(input, init)
         if (new URL(request.url).pathname === '/v1/void/organizations/current')
           return Response.json({
-            default_variant_id: null,
+            default_version_id: null,
             id: 'org1',
             name: 'Test',
             slug: 'test',
@@ -330,7 +330,7 @@ it.each([{ flags: [] }, { flags: ['--no-preview'] }])(
           })
         bodies.push(await request.json())
         return Response.json({
-          variant_id: null,
+          version_id: null,
           id: null,
           checksum: 'c',
           applied: false,
@@ -384,7 +384,7 @@ layer(
   apiWith((method, path, body) => {
     assert.equal(method, 'POST')
     assert.equal(path, '/v1/void/deploys')
-    assert.notProperty(body, 'variant_id')
+    assert.notProperty(body, 'version_id')
     assert.notProperty(body, 'signals')
     expect(body).toMatchObject({
       products: [
@@ -397,7 +397,7 @@ layer(
     return {
       id: null,
       checksum: 'c',
-      variant_id: 'f'.repeat(64),
+      version_id: 'f'.repeat(64),
       applied: true,
       created_at: 't',
       entries: [],
@@ -405,13 +405,13 @@ layer(
   }),
 )((it) => {
   it.effect(
-    'publishes definitions without a variant name and reports the returned config hash',
+    'publishes definitions without a version name and reports the returned config hash',
     () =>
       Effect.gen(function* () {
         yield* reconcile(
           'deploy',
           defineConfig({
-            variantId: 'lookup-only',
+            versionId: 'lookup-only',
             schema: {
               budgetLow: signal('budget-low', {
                 meter: config.meters[0]!,
@@ -427,7 +427,7 @@ layer(
             },
           }),
         )
-        assert.match((yield* TestConsole.logLines).join('\n'), /variant f{64}/)
+        assert.match((yield* TestConsole.logLines).join('\n'), /version f{64}/)
       }),
   )
 })
@@ -445,7 +445,7 @@ layer(
     return {
       id: null,
       checksum: 'c',
-      variant_id: 'f'.repeat(64),
+      version_id: 'f'.repeat(64),
       applied: true,
       created_at: 't',
       entries: [],
@@ -466,7 +466,7 @@ layer(
           },
         }),
       )
-      assert.match((yield* TestConsole.logLines).join('\n'), /variant f{64}/)
+      assert.match((yield* TestConsole.logLines).join('\n'), /version f{64}/)
     }),
   )
 })
@@ -484,14 +484,14 @@ it('deploy sends complete product, entitlement and meter terms', async () => {
           name: 'Test',
           slug: 'test',
           created_at: '2026-09-06T00:00:00Z',
-          default_variant_id: null,
+          default_version_id: null,
         })
       bodies.push(await request.json())
       return Response.json(
         {
           id: 'deployment-1',
           checksum: checksum(compiled),
-          variant_id: 'f'.repeat(64),
+          version_id: 'f'.repeat(64),
           applied: true,
           created_at: '2026-09-06T00:00:00Z',
           entries: [],
@@ -553,7 +553,7 @@ it.each([
             name: 'Test',
             slug: 'test',
             created_at: '2026-09-06T00:00:00Z',
-            default_variant_id: null,
+            default_version_id: null,
           })
         bodies.push(await request.json())
         return Response.json(

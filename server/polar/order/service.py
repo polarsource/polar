@@ -1317,6 +1317,9 @@ class OrderService:
             )
             order = await self.handle_payment(session, order, payment)
 
+        if order.paid:
+            enqueue_job("order.admin_notification", order.id)
+
         return order
 
     def _get_intent_charge(

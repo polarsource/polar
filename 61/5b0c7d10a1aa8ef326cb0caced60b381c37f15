@@ -1,0 +1,36 @@
+handbook/engineering/oncall/vendor-advisories.mdx
+  s_8fbbc85dcefa7d::t_9629c4042591ca 1,4-5,7,11
+  s_8fbbc85dcefa7d::t_46193b726f6bc7 2,6,8
+  s_8fbbc85dcefa7d::t_5c6a22aab6a24c 10
+  s_8fbbc85dcefa7d::t_56c3a35978e774 13
+  s_8fbbc85dcefa7d::t_f9b400db5f2905 18-26,37
+  s_8fbbc85dcefa7d::t_ce3ae182cae637 33,39-40
+  s_8fbbc85dcefa7d::t_ea78051860a165 3
+  s_8fbbc85dcefa7d::t_4cd5c10905d16c 9
+  s_8fbbc85dcefa7d::t_84608e95b3b6a5 12
+  s_8fbbc85dcefa7d::t_11dd623e3e322a 14-17
+  s_8fbbc85dcefa7d::t_0afca05b619222 27-32
+  s_8fbbc85dcefa7d::t_b1f326037f52d2 34-36
+  s_8fbbc85dcefa7d::t_40c8ee2d7e1643 38
+handbook/docs.json
+  s_8fbbc85dcefa7d::t_d3ec4e32be7b53 123-124
+handbook/engineering/oncall/introduction.mdx
+  s_8fbbc85dcefa7d::t_d939a5a3589b7b 34,37
+  s_8fbbc85dcefa7d::t_c83cd15233b0a9 35-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "615b0c7d10a1aa8ef326cb0caced60b381c37f15",
+  "prompts": {},
+  "sessions": {
+    "s_8fbbc85dcefa7d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "140b60b9-6b5d-4853-a0a8-226c8a1a289c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

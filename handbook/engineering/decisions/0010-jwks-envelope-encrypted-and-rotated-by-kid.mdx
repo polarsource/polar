@@ -1,0 +1,64 @@
+---
+title: "ADR-0010: JWKS is envelope-encrypted and rotated by kid"
+description: "Where the signing key set lives, and how a key is replaced without breaking the parties that verify our tokens."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-09-15
+</Info>
+
+## Context
+
+The key set that signs OAuth2 id_tokens and SSO `private_key_jwt` assertions travels as
+plaintext: a Terraform Cloud variable, mounted as a Render secret file and bundled into the
+Lambda worker's Secrets Manager blob. It has never been rotated, and nothing says how to.
+KMS cannot rotate it — automatic rotation covers only symmetric encryption keys whose
+material AWS generates, and asymmetric keys are explicitly excluded — so both the storage
+and the lifecycle need deciding rather than delegating.
+
+## Decision
+
+Hold the JWKS as envelope ciphertext, decrypted once at process start through
+`polar/kit/encryption.py`. Rotate it by publishing a second key and moving
+`CURRENT_JWK_KID`, never by asking KMS to rotate a key.
+
+## Consequences
+
+- A leaked configuration value, environment dump or Secrets Manager read no longer yields
+  the signing key. The KMS key is what protects it, and every unwrap is logged in CloudTrail
+  with its encryption context.
+- New rule: code that signs with the set resolves it per use through `settings.JWKS` and
+  names the key in the `kid` header. Freezing a key into a module-level constant breaks
+  rotation, silently.
+- A retired public key stays in `/.well-known/jwks.json` for 7 days before removal. Shorter
+  risks the third-party identity providers that cache our public set for SSO.
+- Local development and CI keep the plaintext file form and make no KMS call, so the test
+  suite needs no cloud access.
+- Accepted trade-off: one blocking KMS `Decrypt` per process start, and the private key still
+  exists in process memory once loaded.
+
+## Alternatives considered
+
+- **Asymmetric KMS key with `kms:Sign`**: the private key would never leave KMS, but the SSO
+  `private_key_jwt` path extracts the key material to sign locally, so a non-exportable key
+  cannot serve it at all.
+- **A table of keys, one row per key**: a better audit trail, and the natural home for
+  scheduled rotation since the retirement window becomes data rather than a runbook step. It
+  puts the database on the signing path and needs a migration; deferred until rotation is
+  automated rather than triggered by hand.
+- **Leave it in plaintext and rotate by hand**: what we do today. Rotation means editing a
+  Terraform Cloud variable and redeploying every consumer, with no procedure written down.
+
+## References
+
+- [Secrets encryption design](/engineering/design-documents/secrets-encryption) — the
+  "Signing keys are a different category" section.
+- [ADR-0008: Encrypt secrets at rest](/engineering/decisions/0008-encrypt-secrets-at-rest) —
+  the envelope pattern this reuses.
+- [Rotating KMS keys](https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html)
+  — the key types automatic rotation excludes.
+- `polar/kit/jwk.py`, `polar/oauth2/grants/authorization_code.py` (`IDTokenSigning`).

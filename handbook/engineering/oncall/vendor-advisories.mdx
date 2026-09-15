@@ -1,0 +1,40 @@
+---
+title: "Vendor Security Monitoring"
+description: "How we monitor subservice organizations for security breaches"
+---
+
+# Vendor Security Monitoring
+
+Stripe, AWS, Render, Vercel, GitHub and Tailscale handle payment, hosting and code data on our
+behalf. A breach at any of them could expose Polar data through a channel we don't control and
+start our DPA notification obligations.
+
+Their security advisory and/or status feeds land in our Slack channel [#vendor-incidents](https://polar-sh.slack.com/archives/C0C2QQ2PUGY).
+
+For an up to date list, run `/feed list` in the slack channel to see all subscribed feeds.
+
+Currently, that includes the following:
+
+| Vendor | Security advisories | Status incidents |
+| --- | --- | --- |
+| Stripe | None published | `https://www.stripestatus.com/history.rss` |
+| Amazon Web Services | `https://aws.amazon.com/security/security-bulletins/feed/` | — |
+| Render | None published | `https://status.render.com/history.rss` |
+| Vercel | None published | `https://www.vercel-status.com/history.rss` |
+| GitHub | `https://github.blog/category/security/feed/` | `https://www.githubstatus.com/history.rss` |
+| Tailscale | `https://tailscale.com/security-bulletins/index.xml` | `https://status.tailscale.com/history.rss` |
+
+## Notes on noise 
+
+- GitHub's security advisory feed is actually their blog's security *category*, so expect some non-advisory posts.
+- Stripe, Render and Vercel don't offer any security advisory feed to subscribe to so we have to fallback to their status feeds instead. Expect noise.
+
+## Triage
+
+Triage every post in #vendor-incidents within 24 hours:
+- **Not relevant**: If the post is not relevant to us add a 👎 reaction (`+:-1:`) to the post so it's clear that it's been reviewed.
+- **Relevant?** Reply in the thread with the impact and what we're doing, and open an issue
+   for the fix.
+- **If Polar data may be exposed**, escalate immediately in [#vendor-incidents](https://polar-sh.slack.com/archives/C0C2QQ2PUGY): `@incident start possible data breach` or similar.
+
+The reactions and threads are the triage log, and that log is the evidence we hand to auditors.

@@ -490,10 +490,6 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
-    async def get_all_by_website(self, website: str) -> Sequence[Organization]:
-        statement = self.get_base_statement().where(Organization.website == website)
-        return await self.get_all(statement)
-
     async def get_all_by_owner_user(self, user_id: UUID) -> Sequence[Organization]:
         statement = (
             self.get_base_statement()

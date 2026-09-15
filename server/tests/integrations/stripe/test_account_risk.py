@@ -76,6 +76,7 @@ WEBSITE_SIGNAL = {
     "id": "acctsig_456",
     "object": "v2.signals.account_signal",
     "type": "fraudulent_website",
+    "account_evaluation": "acctevl_456",
     "account_details": {
         "data": {"defaults": {"profile": {"business_url": "https://example.com"}}},
     },
@@ -117,9 +118,27 @@ class TestParseAccountSignal:
         assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
         assert result.account_id is None
         assert result.website_url == "https://example.com"
+        assert result.evaluation_id == "acctevl_456"
         assert result.risk_level == StripeAccountRiskLevel.ELEVATED
         assert result.description is not None
         assert "no verifiable identity" in result.description
+
+    def test_website_uses_evaluation_id_without_url(self) -> None:
+        result = parse_account_signal(
+            {
+                "type": "fraudulent_website",
+                "account_evaluation": "acctevl_solo",
+                "fraudulent_website": {
+                    "risk_level": "highest",
+                    "details": "Deceptive website",
+                },
+            }
+        )
+
+        assert result is not None
+        assert result.evaluation_id == "acctevl_solo"
+        assert result.website_url is None
+        assert result.account_id is None
 
     def test_unknown_type_returns_none(self) -> None:
         assert parse_account_signal({"type": "merchant_delinquency"}) is None

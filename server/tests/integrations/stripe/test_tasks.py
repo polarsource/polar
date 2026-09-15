@@ -17,6 +17,7 @@ from polar.integrations.stripe.tasks import (
 from polar.models import (
     Customer,
     Organization,
+    OrganizationRiskSignal,
     PaymentMethod,
     User,
 )
@@ -77,7 +78,7 @@ class TestAccountRiskSignal:
         context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
         context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
 
-    async def test_website_signal_matches_org_by_url(
+    async def test_website_signal_matches_org_by_evaluation_id(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -86,6 +87,15 @@ class TestAccountRiskSignal:
     ) -> None:
         organization.website = "https://example.com"
         await save_fixture(organization)
+        await save_fixture(
+            OrganizationRiskSignal(
+                organization=organization,
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                risk_level="unknown",
+                payload={"account_evaluation": "acctevl_789"},
+            )
+        )
 
         self._mock_event(
             mocker,
@@ -101,6 +111,7 @@ class TestAccountRiskSignal:
                 return_value={
                     "id": "acctsig_789",
                     "type": "fraudulent_website",
+                    "account_evaluation": "acctevl_789",
                     "account_details": {
                         "data": {
                             "defaults": {

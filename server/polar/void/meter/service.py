@@ -55,7 +55,7 @@ def build_meter_cycle_event(
         metadata={
             "meter_id": str(meter.id),
             "meter_generation_id": meter.generation_id,
-            "meter_variant_id": meter.variant_id,
+            "meter_version_id": meter.version_id,
             "meter_branch_id": (
                 str(meter.branch_id) if meter.branch_id is not None else None
             ),
@@ -105,7 +105,7 @@ class MeterService:
         generation = await repository.next_generation(
             organization_id,
             create_schema.slug,
-            create_schema.variant_id,
+            create_schema.version_id,
             create_schema.branch_id,
         )
         meter = VoidMeter(

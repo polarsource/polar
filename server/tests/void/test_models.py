@@ -69,14 +69,14 @@ def create_meter(
     reducer: VoidReducer,
     *,
     generation: int = 1,
-    variant: str | None = None,
+    version: str | None = None,
     branch: UUID | None = None,
 ) -> VoidMeter:
     return VoidMeter(
         organization=organization,
         name="Requests",
         slug="requests",
-        variant_id=variant,
+        version_id=version,
         generation_id=generation,
         branch_id=branch,
         usage_reducer=reducer,
@@ -90,13 +90,13 @@ def create_product(
     organization: Organization,
     *,
     generation: int = 1,
-    variant: str | None = None,
+    version: str | None = None,
 ) -> VoidProduct:
     return VoidProduct(
         organization=organization,
         name="Pro",
         slug="pro",
-        variant_id=variant,
+        version_id=version,
         generation_id=generation,
         price_type="recurring",
         interval="month",
@@ -153,11 +153,11 @@ class TestOrganizationKeys:
         organization: Organization,
     ) -> None:
         settings = VoidOrganizationSettings(
-            organization=organization, default_variant_id="preview"
+            organization=organization, default_version_id="preview"
         )
         await save_fixture(settings)
         await session.refresh(settings)
-        assert settings.default_variant_id == "preview"
+        assert settings.default_version_id == "preview"
         with pytest.raises(IntegrityError):
             async with session.begin_nested():
                 await save_fixture(VoidOrganizationSettings(organization=organization))
@@ -165,7 +165,7 @@ class TestOrganizationKeys:
 
 @pytest.mark.asyncio
 class TestGenerationKeys:
-    async def test_meter_default_variant_and_branch_are_unique(
+    async def test_meter_default_version_and_branch_are_unique(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -175,7 +175,7 @@ class TestGenerationKeys:
         for meter in [
             create_meter(organization, void_reducer),
             create_meter(organization, void_reducer, generation=2),
-            create_meter(organization, void_reducer, variant="preview"),
+            create_meter(organization, void_reducer, version="preview"),
             create_meter(organization, void_reducer, branch=uuid4()),
         ]:
             await save_fixture(meter)
@@ -183,7 +183,7 @@ class TestGenerationKeys:
             async with session.begin_nested():
                 await save_fixture(create_meter(organization, void_reducer))
 
-    async def test_product_default_variant_is_unique(
+    async def test_product_default_version_is_unique(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -192,7 +192,7 @@ class TestGenerationKeys:
         for product in [
             create_product(organization),
             create_product(organization, generation=2),
-            create_product(organization, variant="preview"),
+            create_product(organization, version="preview"),
         ]:
             await save_fixture(product)
         with pytest.raises(IntegrityError):

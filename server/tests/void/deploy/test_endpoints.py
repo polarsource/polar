@@ -35,7 +35,7 @@ class TestDeployEndpoints:
             await void_client.get(
                 f"{PATH}/latest",
                 headers=HEADERS,
-                params={"variant_id": plan["variant_id"]},
+                params={"version_id": plan["version_id"]},
             )
         ).status_code == 404
         response = await void_client.post(PATH, headers=HEADERS, json=CONFIG)
@@ -44,7 +44,7 @@ class TestDeployEndpoints:
         latest = await void_client.get(
             f"{PATH}/latest",
             headers=HEADERS,
-            params={"variant_id": deployed["variant_id"]},
+            params={"version_id": deployed["version_id"]},
         )
         assert latest.status_code == 200
         assert latest.json() == deployed

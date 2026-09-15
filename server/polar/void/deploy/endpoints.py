@@ -13,7 +13,7 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.void.auth import VoidRead, VoidWrite
-from polar.void.organization.service import selected_variant
+from polar.void.organization.service import selected_version
 from polar.void.tinybird import TinybirdApi, get_client
 
 from .exceptions import DeploymentConflict, InvalidDeployment
@@ -62,7 +62,7 @@ async def create(
             auth_subject,
             body,
             plan,
-            await selected_variant(session, auth_subject.subject.id, None),
+            await selected_version(session, auth_subject.subject.id, None),
         )
     return plan
 
@@ -75,18 +75,18 @@ async def create(
 )
 async def latest(
     auth_subject: VoidRead,
-    variant_id: str | None = None,
+    version_id: str | None = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Deploy:
     deployment = await deploy_service.latest(
         session,
         auth_subject.subject.id,
-        await selected_variant(session, auth_subject.subject.id, variant_id),
+        await selected_version(session, auth_subject.subject.id, version_id),
     )
     if deployment is None:
         raise ResourceNotFound("No deployment yet")
     return Deploy(
-        variant_id=deployment.variant_id,
+        version_id=deployment.version_id,
         id=deployment.id,
         checksum=deployment.checksum,
         applied=True,

@@ -34,14 +34,14 @@ class MeterRepository(RepositoryBase[VoidMeter]):
         self,
         organization_id: UUID,
         slug: str,
-        variant_id: str | None,
+        version_id: str | None,
         branch_id: UUID | None,
     ) -> int:
         value = await self.session.scalar(
             select(func.coalesce(func.max(VoidMeter.generation_id), 0) + 1).where(
                 VoidMeter.organization_id == organization_id,
                 VoidMeter.slug == slug,
-                VoidMeter.variant_id.is_not_distinct_from(variant_id),
+                VoidMeter.version_id.is_not_distinct_from(version_id),
                 VoidMeter.branch_id.is_not_distinct_from(branch_id),
             )
         )

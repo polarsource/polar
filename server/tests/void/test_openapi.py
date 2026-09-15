@@ -57,7 +57,7 @@ class TestGetVoidOpenAPI:
             "name",
             "slug",
             "created_at",
-            "default_variant_id",
+            "default_version_id",
         }
         assert "webhooks" not in schema
         assert set(schema["components"]["securitySchemes"]) == {"oat"}

@@ -52,7 +52,7 @@ class TestDefinitionRoutes:
         assert meter_response.status_code == 201, meter_response.text
         meter = meter_response.json()
         assert meter["unit_amount"] == "0.012345678912"
-        assert meter["variant_id"] is meter["branch_id"] is None
+        assert meter["version_id"] is meter["branch_id"] is None
         entitlement_response = await void_client.post(
             f"{PREFIX}/entitlements", headers=headers, json={"slug": "export"}
         )

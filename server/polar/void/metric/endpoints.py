@@ -42,7 +42,7 @@ async def get_metrics(
     operation_id="metrics:compare",
     responses={404: {"model": ResourceNotFound.schema()}},
 )
-async def compare_variants(
+async def compare_versions(
     query: Annotated[CompareQuery, Query()],
     auth_subject: VoidCustomerRead,
     tinybird: TinybirdClient,

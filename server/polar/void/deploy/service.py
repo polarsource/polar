@@ -50,11 +50,11 @@ def _by_slug(reducers: Sequence[Reducer]) -> dict[str, Reducer]:
 
 
 def _latest_meters(
-    meters: Sequence[Meter], variant_id: str | None = None
+    meters: Sequence[Meter], version_id: str | None = None
 ) -> dict[str, Meter]:
     latest: dict[str, Meter] = {}
     for meter in meters:
-        if meter.branch_id is not None or meter.variant_id != variant_id:
+        if meter.branch_id is not None or meter.version_id != version_id:
             continue
         current = latest.get(meter.slug)
         if current is None or meter.generation_id > current.generation_id:
@@ -229,7 +229,7 @@ class DeployService:
             await reducer_service.list(session, organization_id)
         )
         current_meters = _latest_meters(
-            await meter_service.list(session, organization_id), create_schema.variant_id
+            await meter_service.list(session, organization_id), create_schema.version_id
         )
         self._validate(create_schema, current_reducers)
         reserved = await DeployRepository.from_session(session).reserved_slugs(
@@ -380,7 +380,7 @@ class DeployService:
             next_generation = await MeterRepository.from_session(
                 session
             ).next_generation(
-                organization_id, wanted_meter.slug, create_schema.variant_id, None
+                organization_id, wanted_meter.slug, create_schema.version_id, None
             )
             meter_id: uuid.UUID | None = None
             if apply:
@@ -394,7 +394,7 @@ class DeployService:
                         if current_meter is not None
                         else wanted_meter.slug,
                         slug=wanted_meter.slug,
-                        variant_id=create_schema.variant_id,
+                        version_id=create_schema.version_id,
                         usage_reducer_id=usage_reducer_id,
                         credit_reducer_id=credit_reducer_id,
                         unit_amount=wanted_meter.unit_amount,
@@ -439,7 +439,7 @@ class DeployService:
 
         if not apply:
             return Deploy(
-                variant_id=create_schema.variant_id,
+                version_id=create_schema.version_id,
                 checksum=create_schema.checksum,
                 id=None,
                 applied=False,
@@ -447,7 +447,7 @@ class DeployService:
                 created_at=utc_now(),
             )
         deployment = Deployment(
-            variant_id=create_schema.variant_id,
+            version_id=create_schema.version_id,
             checksum=create_schema.checksum,
             entries=[entry.model_dump(mode="json") for entry in entries],
             organization=await organization_service.lock(session, organization_id),
@@ -455,7 +455,7 @@ class DeployService:
         session.add(deployment)
         await session.flush()
         return Deploy(
-            variant_id=deployment.variant_id,
+            version_id=deployment.version_id,
             id=deployment.id,
             checksum=deployment.checksum,
             applied=True,
@@ -523,12 +523,12 @@ class DeployService:
 
         current_products = latest_products(
             await product_service.list(session, organization_id),
-            create_schema.variant_id,
+            create_schema.version_id,
         )
         for wanted_product in create_schema.products:
             create = self._product_create(wanted_product, meter_ids, entitlement_ids)
             if create is not None:
-                create.variant_id = create_schema.variant_id
+                create.version_id = create_schema.version_id
             current_product = current_products.get(wanted_product.slug)
             if (
                 current_product is not None
@@ -550,7 +550,7 @@ class DeployService:
             next_generation = await ProductRepository.from_session(
                 session
             ).next_generation(
-                organization_id, wanted_product.slug, create_schema.variant_id
+                organization_id, wanted_product.slug, create_schema.version_id
             )
             product_id: uuid.UUID | None = None
             if apply:
@@ -641,10 +641,10 @@ class DeployService:
         self,
         session: AsyncReadSession,
         organization_id: uuid.UUID,
-        variant_id: str | None = None,
+        version_id: str | None = None,
     ) -> Deployment | None:
         return await DeployRepository.from_session(session).latest(
-            organization_id, variant_id
+            organization_id, version_id
         )
 
 

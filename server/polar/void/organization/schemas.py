@@ -4,7 +4,7 @@ from polar.kit.schemas import Schema
 
 
 class OrganizationUpdate(Schema):
-    default_variant_id: str | None = Field(
+    default_version_id: str | None = Field(
         min_length=1,
-        description="Default configuration variant. Null selects the unnamed variant.",
+        description="Default configuration version. Null selects the unnamed version.",
     )

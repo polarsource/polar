@@ -51,7 +51,7 @@ async def customer_state(
     auth_subject: AuthSubject[Organization],
     external_id: str,
     since: datetime | None = None,
-    variant_id: str | None = None,
+    version_id: str | None = None,
 ) -> CustomerState:
     organization_id = auth_subject.subject.id
     customer = await customer_service.get(session, auth_subject, external_id)
@@ -76,7 +76,7 @@ async def customer_state(
     # Retired generations have no place in the current customer state.
     latest: dict[str, VoidMeter] = {}
     for meter in await meter_service.list(session, organization_id):
-        if meter.branch_id is not None or meter.variant_id != variant_id:
+        if meter.branch_id is not None or meter.version_id != version_id:
             continue
         previous = latest.get(meter.slug)
         if previous is None or meter.generation_id > previous.generation_id:

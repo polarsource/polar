@@ -42,13 +42,13 @@ class ProductRepository(RepositoryBase[VoidProduct]):
         )
 
     async def next_generation(
-        self, organization_id: UUID, slug: str, variant_id: str | None
+        self, organization_id: UUID, slug: str, version_id: str | None
     ) -> int:
         value = await self.session.scalar(
             select(func.coalesce(func.max(VoidProduct.generation_id), 0) + 1).where(
                 VoidProduct.organization_id == organization_id,
                 VoidProduct.slug == slug,
-                VoidProduct.variant_id.is_not_distinct_from(variant_id),
+                VoidProduct.version_id.is_not_distinct_from(version_id),
             )
         )
         assert value is not None
@@ -58,7 +58,7 @@ class ProductRepository(RepositoryBase[VoidProduct]):
         previous = await self.get_all(
             self.scoped_statement(product.organization_id).where(
                 VoidProduct.slug == product.slug,
-                VoidProduct.variant_id.is_not_distinct_from(product.variant_id),
+                VoidProduct.version_id.is_not_distinct_from(product.version_id),
                 VoidProduct.generation_id < product.generation_id,
                 VoidProduct.archived_at.is_(None),
             )

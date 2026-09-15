@@ -43,7 +43,7 @@ class MeterTerms(BaseModel):
 
 
 class ProductCreate(BaseModel):
-    variant_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$")
+    version_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$")
     slug: str = Field(min_length=1, pattern=SLUG_PATTERN)
     name: str = Field(min_length=1)
     description: str | None = None
@@ -82,7 +82,7 @@ class MeterTermsRead(Schema):
 
 
 class Product(Schema):
-    variant_id: str | None
+    version_id: str | None
     id: uuid.UUID
     slug: str
     generation_id: int
@@ -116,7 +116,7 @@ def to_schema(product: ProductModel) -> Product:
     return Product(
         id=product.id,
         slug=product.slug,
-        variant_id=product.variant_id,
+        version_id=product.version_id,
         generation_id=product.generation_id,
         name=product.name,
         description=product.description,

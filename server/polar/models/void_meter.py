@@ -34,7 +34,7 @@ class VoidMeter(RecordModel):
         UniqueConstraint(
             "organization_id",
             "slug",
-            "variant_id",
+            "version_id",
             "generation_id",
             "branch_id",
             postgresql_nulls_not_distinct=True,
@@ -43,7 +43,7 @@ class VoidMeter(RecordModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, nullable=False)
-    variant_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    version_id: Mapped[str | None] = mapped_column(String, nullable=True)
     generation_id: Mapped[int] = mapped_column(Integer, nullable=False)
     branch_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     usage_reducer_id: Mapped[uuid.UUID] = mapped_column(

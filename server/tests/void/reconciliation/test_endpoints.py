@@ -77,7 +77,7 @@ class TestCustomerState:
             for holder in compact["meters"][0]["holders"]
         )
 
-    async def test_uses_selected_variant_and_latest_mainline_generation(
+    async def test_uses_selected_version_and_latest_mainline_generation(
         self,
         state_client: AsyncClient,
         graph: Graph,
@@ -90,28 +90,28 @@ class TestCustomerState:
         chosen = await meter_service.create(
             session,
             organization.id,
-            definition.model_copy(update={"variant_id": "a" * 64}),
+            definition.model_copy(update={"version_id": "a" * 64}),
         )
         await meter_service.create(
             session,
             organization.id,
             definition.model_copy(
-                update={"variant_id": "a" * 64, "branch_id": uuid4()}
+                update={"version_id": "a" * 64, "branch_id": uuid4()}
             ),
         )
         await meter_service.create(
             session,
             organization.id,
-            definition.model_copy(update={"variant_id": "b" * 64}),
+            definition.model_copy(update={"version_id": "b" * 64}),
         )
-        await organization_service.set_default_variant(
+        await organization_service.set_default_version(
             session, organization.id, "a" * 64
         )
         response = await state_client.get("/v1/void/customers/root/state")
         assert response.status_code == 200, response.text
         assert [m["meter"]["id"] for m in response.json()["meters"]] == [str(chosen.id)]
         response = await state_client.get(
-            "/v1/void/customers/root/state", params={"variant_id": ""}
+            "/v1/void/customers/root/state", params={"version_id": ""}
         )
         assert response.status_code == 200, response.text
         assert [m["meter"]["id"] for m in response.json()["meters"]] == [

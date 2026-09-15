@@ -121,7 +121,7 @@ def _product_metadata(subscription: Subscription) -> dict[str, object]:
         "product_id": str(product.id),
         "product_slug": product.slug,
         "product_generation_id": product.generation_id,
-        "product_variant_id": product.variant_id,
+        "product_version_id": product.version_id,
     }
 
 
@@ -181,7 +181,7 @@ def _meter_metadata(subscription: Subscription, meter: Meter) -> dict[str, objec
         **_product_metadata(subscription),
         "id": str(subscription.id),
         "meter_id": str(meter.id),
-        "meter_variant_id": meter.variant_id,
+        "meter_version_id": meter.version_id,
         "meter_interval": product.interval,
         "meter_interval_count": product.interval_count,
         **(product.meter_terms or {}).get(meter.slug, {}),

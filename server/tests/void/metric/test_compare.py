@@ -38,20 +38,20 @@ def query(**overrides: Any) -> CompareQuery:
 def test_compare_uses_baseline_subscriptions_and_candidate_prices(
     scenario: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    scenario.current.variant_id = "a" * 64
+    scenario.current.version_id = "a" * 64
     candidate = Meter(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="tokens",
         generation_id=1,
-        variant_id="b" * 64,
+        version_id="b" * 64,
         usage_reducer_id=scenario.usage_id,
         credit_reducer_id=scenario.credit_id,
         unit_amount=Decimal("0.003"),
         currency="usd",
     )
     scenario.meters.append(candidate)
-    # Credits alone in another variant must not add Orbit to this comparison.
+    # Credits alone in another version must not add Orbit to this comparison.
     del scenario.events[scenario.current.id, "orbit"]
     for reducer in scenario.reducers:
         reducer.aggregation.type = "scalar"
@@ -104,7 +104,7 @@ def test_compare_uses_baseline_subscriptions_and_candidate_prices(
     assert scenario.current.unit_amount == Decimal("0.002")
 
 
-def test_same_variant_compares_unchanged_meter_and_exposes_missing_matches(
+def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
     scenario: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     for reducer in scenario.reducers:
@@ -125,7 +125,7 @@ def test_same_variant_compares_unchanged_meter_and_exposes_missing_matches(
         organization_id=scenario.current.organization_id,
         slug="other",
         generation_id=1,
-        variant_id="b" * 64,
+        version_id="b" * 64,
         usage_reducer_id=scenario.usage_id,
         credit_reducer_id=scenario.credit_id,
         unit_amount=Decimal("0.003"),
@@ -143,7 +143,7 @@ def test_same_variant_compares_unchanged_meter_and_exposes_missing_matches(
     assert all(entry.price_preview is None and entry.reason for entry in result.meters)
 
 
-def test_unknown_or_other_organization_variant_is_rejected_before_history(
+def test_unknown_or_other_organization_version_is_rejected_before_history(
     scenario: SimpleNamespace,
 ) -> None:
     with pytest.raises(ResourceNotFound):

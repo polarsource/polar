@@ -51,7 +51,7 @@ async def preview_prices(
     auth_subject: AuthSubject[Organization],
     request: DeployCreate,
     plan: Deploy,
-    baseline_variant_id: str | None = None,
+    baseline_version_id: str | None = None,
     *,
     history: dict[tuple[uuid.UUID, str], list[MeterEvent]] | None = None,
 ) -> None:
@@ -62,7 +62,7 @@ async def preview_prices(
     start = datetime.combine(window.start, time(), UTC)
     end = datetime.combine(window.end, time(), UTC)
     meters = await meter_service.list(session, organization_id)
-    latest = _latest_meters(meters, baseline_variant_id)
+    latest = _latest_meters(meters, baseline_version_id)
     reducers = {r.slug: r for r in await reducer_service.list(session, organization_id)}
     wanted = {m.slug: m for m in request.meters}
     customers = None
@@ -124,7 +124,7 @@ async def preview_prices(
             for m in meters
             if m.slug == current.slug
             and m.branch_id is None
-            and m.variant_id == baseline_variant_id
+            and m.version_id == baseline_version_id
         ]
         if any(
             m.usage_reducer_id != usage.id or m.credit_reducer_id != credits.id
@@ -156,7 +156,7 @@ async def preview_prices(
                         "subscription.revoked",
                     )
                 )
-            # A comparison uses the source variant's subscription holders;
+            # A comparison uses the source version's subscription holders;
             # credits elsewhere in the organization must not add customers.
             if history is not None and not events:
                 continue

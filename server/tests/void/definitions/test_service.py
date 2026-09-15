@@ -79,7 +79,7 @@ def product_definition(meter: VoidMeter, **changes: object) -> ProductCreate:
 
 @pytest.mark.asyncio
 class TestMeterDefinitions:
-    async def test_generations_are_scoped_by_variant_and_branch(
+    async def test_generations_are_scoped_by_version_and_branch(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -91,10 +91,10 @@ class TestMeterDefinitions:
             organization.id,
             original.model_copy(update={"unit_amount": Decimal("0.02")}),
         )
-        variant = await meter_service.create(
+        version = await meter_service.create(
             session,
             organization.id,
-            original.model_copy(update={"variant_id": "a" * 64}),
+            original.model_copy(update={"version_id": "a" * 64}),
         )
         branch = await meter_service.create(
             session, organization.id, original.model_copy(update={"branch_id": uuid4()})
@@ -102,7 +102,7 @@ class TestMeterDefinitions:
         assert [
             meter.generation_id,
             second.generation_id,
-            variant.generation_id,
+            version.generation_id,
             branch.generation_id,
         ] == [1, 2, 1, 1]
         assert meter.unit_amount == Decimal("0.01")
@@ -233,7 +233,7 @@ class TestEntitlementDefinitions:
 
 @pytest.mark.asyncio
 class TestProductDefinitions:
-    async def test_new_generation_keeps_previous_terms_and_only_archives_its_variant(
+    async def test_new_generation_keeps_previous_terms_and_only_archives_its_version(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -245,10 +245,10 @@ class TestProductDefinitions:
         definition = product_definition(meter, entitlement_ids=[entitlement.id])
         first = await product_service.create(session, organization.id, definition)
         assert same_definition(definition, first)
-        variant = await product_service.create(
+        version = await product_service.create(
             session,
             organization.id,
-            definition.model_copy(update={"variant_id": "b" * 64}),
+            definition.model_copy(update={"version_id": "b" * 64}),
         )
         second_definition = product_definition(
             meter,
@@ -259,18 +259,18 @@ class TestProductDefinitions:
         second = await product_service.create(
             session, organization.id, second_definition
         )
-        assert (first.generation_id, variant.generation_id, second.generation_id) == (
+        assert (first.generation_id, version.generation_id, second.generation_id) == (
             1,
             1,
             2,
         )
         assert first.archived_at is not None
-        assert variant.archived_at is second.archived_at is None
+        assert version.archived_at is second.archived_at is None
         assert first.meter_terms["requests"]["included"] == 100
         assert second.meter_terms["requests"]["included"] == 200
         rows = await product_service.list(session, organization.id)
         assert latest_products(rows)["pro"].id == second.id
-        assert latest_products(rows, "b" * 64)["pro"].id == variant.id
+        assert latest_products(rows, "b" * 64)["pro"].id == version.id
         session.expunge_all()
         loaded = await product_service.get(session, organization.id, first.id)
         payload = to_schema(loaded)
@@ -280,7 +280,7 @@ class TestProductDefinitions:
         active = await product_service.list(
             session, organization.id, include_archived=False
         )
-        assert {p.id for p in active} == {variant.id, second.id}
+        assert {p.id for p in active} == {version.id, second.id}
 
     @pytest.mark.parametrize("resource", ["meter", "entitlement"])
     async def test_rejects_foreign_and_deleted_array_references(

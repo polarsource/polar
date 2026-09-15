@@ -35,14 +35,14 @@ class VoidProduct(RecordModel):
         UniqueConstraint(
             "organization_id",
             "slug",
-            "variant_id",
+            "version_id",
             "generation_id",
             postgresql_nulls_not_distinct=True,
         ),
     )
 
     slug: Mapped[str] = mapped_column(String, nullable=False)
-    variant_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    version_id: Mapped[str | None] = mapped_column(String, nullable=True)
     generation_id: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)

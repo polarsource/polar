@@ -10,13 +10,13 @@ class DeployRepository(RepositoryBase[VoidDeployment]):
     model = VoidDeployment
 
     async def latest(
-        self, organization_id: UUID, variant_id: str | None
+        self, organization_id: UUID, version_id: str | None
     ) -> VoidDeployment | None:
         return await self.get_one_or_none(
             select(VoidDeployment)
             .where(
                 VoidDeployment.organization_id == organization_id,
-                VoidDeployment.variant_id.is_not_distinct_from(variant_id),
+                VoidDeployment.version_id.is_not_distinct_from(version_id),
                 VoidDeployment.deleted_at.is_(None),
             )
             .order_by(VoidDeployment.created_at.desc(), VoidDeployment.id.desc())

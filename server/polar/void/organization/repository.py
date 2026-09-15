@@ -54,20 +54,20 @@ class OrganizationRepository(RepositoryBase[VoidOrganizationSettings]):
             )
         )
 
-    async def has_variant(self, organization_id: UUID, variant_id: str) -> bool:
+    async def has_version(self, organization_id: UUID, version_id: str) -> bool:
         return bool(
             await self.session.scalar(
                 select(
                     or_(
                         exists().where(
                             VoidProduct.organization_id == organization_id,
-                            VoidProduct.variant_id == variant_id,
+                            VoidProduct.version_id == version_id,
                             VoidProduct.deleted_at.is_(None),
                             VoidProduct.archived_at.is_(None),
                         ),
                         exists().where(
                             VoidMeter.organization_id == organization_id,
-                            VoidMeter.variant_id == variant_id,
+                            VoidMeter.version_id == version_id,
                             VoidMeter.deleted_at.is_(None),
                             VoidMeter.branch_id.is_(None),
                         ),

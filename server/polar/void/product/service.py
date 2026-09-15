@@ -20,12 +20,12 @@ class ProductInvalid(PolarError):
 
 
 def latest_products(
-    products: Sequence[VoidProduct], variant_id: str | None = None
+    products: Sequence[VoidProduct], version_id: str | None = None
 ) -> dict[str, VoidProduct]:
-    """The newest generation per slug within one configuration variant."""
+    """The newest generation per slug within one configuration version."""
     latest: dict[str, VoidProduct] = {}
     for product in products:
-        if product.variant_id != variant_id:
+        if product.version_id != version_id:
             continue
         current = latest.get(product.slug)
         if current is None or product.generation_id > current.generation_id:
@@ -37,7 +37,7 @@ def same_definition(wanted: ProductCreate, current: VoidProduct) -> bool:
     price = wanted.price
     return (
         current.name == wanted.name
-        and current.variant_id == wanted.variant_id
+        and current.version_id == wanted.version_id
         and current.description == wanted.description
         and current.price_type == price.type
         and current.interval == (price.interval if price.type == "recurring" else None)
@@ -105,11 +105,11 @@ class ProductService:
         ]
         repository = ProductRepository.from_session(session)
         generation = await repository.next_generation(
-            organization_id, create_schema.slug, create_schema.variant_id
+            organization_id, create_schema.slug, create_schema.version_id
         )
         product = VoidProduct(
             slug=create_schema.slug,
-            variant_id=create_schema.variant_id,
+            version_id=create_schema.version_id,
             generation_id=generation,
             name=create_schema.name,
             description=create_schema.description,

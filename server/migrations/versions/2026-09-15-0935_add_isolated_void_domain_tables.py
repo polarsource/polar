@@ -83,7 +83,7 @@ def upgrade() -> None:
     op.create_table(
         "void_deployments",
         sa.Column("checksum", sa.String(), nullable=False),
-        sa.Column("variant_id", sa.String(), nullable=True),
+        sa.Column("version_id", sa.String(), nullable=True),
         sa.Column("entries", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -122,9 +122,9 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_index(
-        op.f("ix_void_deployments_variant_id"),
+        op.f("ix_void_deployments_version_id"),
         "void_deployments",
-        ["variant_id"],
+        ["version_id"],
         unique=False,
     )
     op.create_table(
@@ -170,7 +170,7 @@ def upgrade() -> None:
     op.create_table(
         "void_organization_settings",
         sa.Column("organization_id", sa.Uuid(), nullable=False),
-        sa.Column("default_variant_id", sa.String(), nullable=True),
+        sa.Column("default_version_id", sa.String(), nullable=True),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
@@ -201,7 +201,7 @@ def upgrade() -> None:
     op.create_table(
         "void_products",
         sa.Column("slug", sa.String(), nullable=False),
-        sa.Column("variant_id", sa.String(), nullable=True),
+        sa.Column("version_id", sa.String(), nullable=True),
         sa.Column("generation_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
@@ -233,10 +233,10 @@ def upgrade() -> None:
         sa.UniqueConstraint(
             "organization_id",
             "slug",
-            "variant_id",
+            "version_id",
             "generation_id",
             name=op.f(
-                "void_products_organization_id_slug_variant_id_generation_id_key"
+                "void_products_organization_id_slug_version_id_generation_id_key"
             ),
             postgresql_nulls_not_distinct=True,
         ),
@@ -326,7 +326,7 @@ def upgrade() -> None:
         "void_meters",
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("slug", sa.String(), nullable=False),
-        sa.Column("variant_id", sa.String(), nullable=True),
+        sa.Column("version_id", sa.String(), nullable=True),
         sa.Column("generation_id", sa.Integer(), nullable=False),
         sa.Column("branch_id", sa.Uuid(), nullable=True),
         sa.Column("usage_reducer_id", sa.Uuid(), nullable=False),
@@ -357,11 +357,11 @@ def upgrade() -> None:
         sa.UniqueConstraint(
             "organization_id",
             "slug",
-            "variant_id",
+            "version_id",
             "generation_id",
             "branch_id",
             name=op.f(
-                "void_meters_organization_id_slug_variant_id_generation_id_branch_id_key"
+                "void_meters_organization_id_slug_version_id_generation_id_branch_id_key"
             ),
             postgresql_nulls_not_distinct=True,
         ),
@@ -696,7 +696,7 @@ def downgrade() -> None:
         op.f("ix_void_entitlements_created_at"), table_name="void_entitlements"
     )
     op.drop_table("void_entitlements")
-    op.drop_index(op.f("ix_void_deployments_variant_id"), table_name="void_deployments")
+    op.drop_index(op.f("ix_void_deployments_version_id"), table_name="void_deployments")
     op.drop_index(
         op.f("ix_void_deployments_organization_id"), table_name="void_deployments"
     )

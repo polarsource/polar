@@ -17,25 +17,25 @@ def config(**overrides: Any) -> DeployCreate:
     )
 
 
-def test_variant_is_a_hash_of_config_not_a_user_supplied_name() -> None:
-    variant = config().variant_id
-    assert variant == "278fca1ee35c8e8e46c470ab969ee8c5820520a95c5eaa6a7497609a8127f848"
+def test_version_is_a_hash_of_config_not_a_user_supplied_name() -> None:
+    version = config().version_id
+    assert version == "278fca1ee35c8e8e46c470ab969ee8c5820520a95c5eaa6a7497609a8127f848"
     with pytest.raises(ValidationError):
-        config(variant_id="candidate")
-    assert config(checksum="different-request").variant_id == variant
+        config(version_id="candidate")
+    assert config(checksum="different-request").version_id == version
     assert (
         config(
             dry_run=True, preview={"start": "2026-01-01", "end": "2026-02-01"}
-        ).variant_id
-        == variant
+        ).version_id
+        == version
     )
 
 
-def test_prices_and_reducer_definitions_change_the_variant() -> None:
+def test_prices_and_reducer_definitions_change_the_version() -> None:
     baseline = config()
     changed = baseline.model_copy(deep=True)
     changed.meters[0].unit_amount = Decimal(2)
-    assert changed.variant_id != baseline.variant_id
+    assert changed.version_id != baseline.version_id
     assert (
         config(
             reducers=[
@@ -45,8 +45,8 @@ def test_prices_and_reducer_definitions_change_the_variant() -> None:
                     "aggregation": {"func": "count"},
                 }
             ]
-        ).variant_id
-        != baseline.variant_id
+        ).version_id
+        != baseline.version_id
     )
 
 
@@ -64,7 +64,7 @@ def test_definition_order_defaults_and_decimal_spelling_do_not_change_the_hash()
             {**meters[0], "unit_amount": 1, "credit_reducer": None},
         ]
     )
-    assert first.variant_id == second.variant_id
+    assert first.version_id == second.version_id
 
 
 def test_product_meter_terms_hash_by_slug_regardless_of_order() -> None:
@@ -79,10 +79,10 @@ def test_product_meter_terms_hash_by_slug_regardless_of_order() -> None:
         },
     }
     terms = {"slug": "tokens", "included": 1000, "limit": "hard", "rollover_cap": 0}
-    forward = config(products=[{**product, "meters": ["calls", terms]}]).variant_id
-    backward = config(products=[{**product, "meters": [terms, "calls"]}]).variant_id
+    forward = config(products=[{**product, "meters": ["calls", terms]}]).version_id
+    backward = config(products=[{**product, "meters": [terms, "calls"]}]).version_id
     assert forward == backward
     assert (
         forward
-        != config(products=[{**product, "meters": ["calls", "tokens"]}]).variant_id
+        != config(products=[{**product, "meters": ["calls", "tokens"]}]).version_id
     )

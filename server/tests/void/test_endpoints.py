@@ -67,7 +67,7 @@ class TestCurrentOrganization:
 
         assert response.status_code == 200
         data = response.json()
-        assert set(data) == {"id", "name", "slug", "created_at", "default_variant_id"}
+        assert set(data) == {"id", "name", "slug", "created_at", "default_version_id"}
         assert data["id"] == str(organization.id)
         assert data["name"] == organization.name
         assert data["slug"] == organization.slug

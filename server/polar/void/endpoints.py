@@ -14,7 +14,7 @@ from .identity.endpoints import router as identity_router
 from .meter.endpoints import router as meter_router
 from .metric.endpoints import router as metric_router
 from .organization.schemas import OrganizationUpdate
-from .organization.service import InvalidDefaultVariant
+from .organization.service import InvalidDefaultVersion
 from .organization.service import organization as organization_service
 from .product.endpoints import router as product_router
 from .reducer.endpoints import router as reducer_router
@@ -45,7 +45,7 @@ async def current(
     "/organizations/current",
     response_model=VoidOrganization,
     operation_id="organizations:updateCurrent",
-    responses={400: {"model": InvalidDefaultVariant.schema()}},
+    responses={400: {"model": InvalidDefaultVersion.schema()}},
 )
 async def update_current(
     body: OrganizationUpdate,

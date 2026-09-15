@@ -152,7 +152,7 @@ def scenario(
     async def run() -> Any:
         plan = Deploy(
             id=None,
-            variant_id=None,
+            version_id=None,
             checksum="candidate",
             applied=False,
             created_at=at(3),
@@ -270,7 +270,7 @@ def test_pinned_old_generation_is_counted_once(scenario: SimpleNamespace) -> Non
         Meter(slug="tokens", generation_id=99, branch_id=uuid.uuid4())
     )
     scenario.meters.append(
-        Meter(slug="tokens", generation_id=100, variant_id="candidate")
+        Meter(slug="tokens", generation_id=100, version_id="candidate")
     )
     preview = asyncio.run(scenario.run())
     assert preview.current_unit_amount == Decimal("0.0025")

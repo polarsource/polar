@@ -68,7 +68,7 @@ class DeployCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     @property
-    def variant_id(self) -> str:
+    def version_id(self) -> str:
         return configuration_hash(self)
 
     checksum: str = Field(
@@ -134,7 +134,7 @@ class DeployEntry(BaseModel):
 
 
 class Deploy(BaseModel):
-    variant_id: str | None
+    version_id: str | None
     id: uuid.UUID | None = Field(description="Unset on a dry run.")
     checksum: str
     applied: bool

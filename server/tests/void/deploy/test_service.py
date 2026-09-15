@@ -86,7 +86,7 @@ async def counts(session: AsyncSession, organization: Organization) -> list[int]
 
 @pytest.mark.asyncio
 class TestDeploy:
-    async def test_plan_apply_repeat_and_changed_variant(
+    async def test_plan_apply_repeat_and_changed_version(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         config = DeployCreate.model_validate(CONFIG)
@@ -102,7 +102,7 @@ class TestDeploy:
         first = await deploy_service.deploy(session, organization.id, config)
         assert first.applied
         assert first.id is not None
-        assert first.variant_id == config.variant_id
+        assert first.version_id == config.version_id
         assert {entry.kind for entry in first.entries} == {
             "reducer",
             "meter",
@@ -116,7 +116,7 @@ class TestDeploy:
             config.model_copy(update={"checksum": "another-source-checksum"}),
         )
         assert all(entry.action == "unchanged" for entry in repeated.entries)
-        assert repeated.variant_id == first.variant_id
+        assert repeated.version_id == first.version_id
         assert repeated.checksum == "another-source-checksum"
         assert await counts(session, organization) == [2, 1, 1, 1, 2, 0]
         changed = deepcopy(CONFIG)
@@ -125,7 +125,7 @@ class TestDeploy:
         second = await deploy_service.deploy(
             session, organization.id, DeployCreate.model_validate(changed)
         )
-        assert second.variant_id != first.variant_id
+        assert second.version_id != first.version_id
         assert (
             next(
                 entry for entry in second.entries if entry.kind == "entitlement"
@@ -136,7 +136,7 @@ class TestDeploy:
         assert len(meters) == 2
         assert {meter.generation_id for meter in meters} == {1}
         assert (
-            await deploy_service.latest(session, organization.id, first.variant_id)
+            await deploy_service.latest(session, organization.id, first.version_id)
             is not None
         )
         assert await deploy_service.latest(session, organization.id, "0" * 64) is None
@@ -156,7 +156,7 @@ class TestDeploy:
         create.assert_awaited_once()
         assert await counts(session, organization) == [0] * 6
 
-    async def test_same_variant_replaces_drift_and_reports_orphans(
+    async def test_same_version_replaces_drift_and_reports_orphans(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         config = DeployCreate.model_validate(CONFIG)
@@ -166,7 +166,7 @@ class TestDeploy:
             session,
             organization.id,
             MeterCreate(
-                variant_id=config.variant_id,
+                version_id=config.version_id,
                 name="Changed price",
                 slug="tokens",
                 usage_reducer_id=current.usage_reducer_id,
@@ -179,7 +179,7 @@ class TestDeploy:
             session,
             organization.id,
             ProductCreate(
-                variant_id=config.variant_id,
+                version_id=config.version_id,
                 slug="old-product",
                 name="Old",
                 price=OneTimePrice(type="one_time", amount=Decimal(1), currency="usd"),
@@ -406,7 +406,7 @@ class TestDeploy:
                 session,
                 organization.id,
                 MeterCreate(
-                    variant_id=config.variant_id,
+                    version_id=config.version_id,
                     name="Price drift",
                     slug="tokens",
                     usage_reducer_id=current.usage_reducer_id,
@@ -419,7 +419,7 @@ class TestDeploy:
                 session,
                 organization.id,
                 ProductCreate(
-                    variant_id=config.variant_id,
+                    version_id=config.version_id,
                     slug="pro",
                     name="Name drift",
                     price=OneTimePrice(

@@ -28,7 +28,7 @@ def test_build_meter_cycle_event_contains_complete_settlement() -> None:
         name="Tokens",
         slug="tokens",
         generation_id=4,
-        variant_id="higher-price",
+        version_id="higher-price",
         branch_id=branch_id,
         usage_reducer_id=uuid.uuid4(),
         credit_reducer_id=uuid.uuid4(),
@@ -58,7 +58,7 @@ def test_build_meter_cycle_event_contains_complete_settlement() -> None:
     assert event.metadata == {
         "meter_id": str(meter_id),
         "meter_generation_id": 4,
-        "meter_variant_id": "higher-price",
+        "meter_version_id": "higher-price",
         "meter_branch_id": str(branch_id),
         "unit_amount": "0.01",
         "currency": "usd",

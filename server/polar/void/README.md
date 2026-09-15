@@ -108,7 +108,7 @@ Live routes are:
 
 | Method | Path | Behavior |
 | --- | --- | --- |
-| GET, PATCH | `/v1/void/organizations/current` | Read the organization or select its default Void variant |
+| GET, PATCH | `/v1/void/organizations/current` | Read the organization or select its default Void version |
 | GET, POST | `/v1/void/identities` | List identities or create one on first touch |
 | GET | `/v1/void/identities/{external_id}` | Read the identity, ancestor chain, and children |
 | GET, POST | `/v1/void/customers` | List bound customers or attach a customer to a root |
@@ -125,7 +125,7 @@ Live routes are:
 | GET, POST | `/v1/void/products` | Read or create immutable product generations |
 | GET | `/v1/void/products/{id}` | Read a product generation |
 | POST | `/v1/void/deploys` | Plan or apply a complete compiled configuration |
-| GET | `/v1/void/deploys/latest` | Read the latest deployment for a selected variant |
+| GET | `/v1/void/deploys/latest` | Read the latest deployment for a selected version |
 | GET | `/v1/void/identities/{external_id}/snapshot` | Identity, customer, balances, and inherited entitlements |
 | GET, PUT | `/v1/void/identities/{external_id}/entitlements` | Read access or replace an assignment |
 | GET | `/v1/void/customers/{external_id}/state` | Customer reconciliation snapshot and processing receipts |
@@ -134,7 +134,7 @@ Live routes are:
 | GET | `/v1/void/subscriptions/{id}`, `/{id}/cycles` | Read a subscription and its closed periods |
 | POST | `/v1/void/subscriptions/{id}/cancel`, `/{id}/revoke` | End access at a boundary or immediately |
 | POST | `/v1/void/subscriptions/rebuild` | Rebuild projections from durable lifecycle events |
-| GET | `/v1/void/metrics/compare` | Compare variants against the same historical customer cohort |
+| GET | `/v1/void/metrics/compare` | Compare versions against the same historical customer cohort |
 
 All 40 migrated operations are included in the private OpenAPI export.
 
@@ -149,40 +149,40 @@ credits and rollover. Unsupported histories and currency or reducer changes are
 reported explicitly.
 
 Applying uses one transaction and the organization lock shared by definition
-writes and default-variant selection. The lock allows the event worker's
+writes and default-version selection. The lock allows the event worker's
 foreign-key checks to proceed. A failed apply rolls back every definition and
 queued backfill. Repeated applies report unchanged resources and append a
 deployment record without creating new definition generations.
 
 The SDK's compiled configuration checksum is stored unchanged and returned with
 the deployment. A separate server hash identifies the normalized configuration
-variant. It excludes the checksum, dry-run flag, and preview window. Definition
-order and equivalent decimal spellings do not change that variant. A changed
-configuration creates another variant; it does not reprice the previous variant.
+version. It excludes the checksum, dry-run flag, and preview window. Definition
+order and equivalent decimal spellings do not change that version. A changed
+configuration creates another version; it does not reprice the previous version.
 
-Meter and product generations are allocated within their slug and variant, with
+Meter and product generations are allocated within their slug and version, with
 meter branches counted separately. Products reference the exact meter and
 entitlement records validated in the same organization. Old product generations
-are archived when replaced within a variant. Orphan definitions are reported;
-orphan products in the deployed variant are archived. Other variants remain
+are archived when replaced within a version. Orphan definitions are reported;
+orphan products in the deployed version are archived. Other versions remain
 available. Deleted reducer and entitlement slugs stay reserved during both
 planning and applying.
 
-Deploying does not select the new variant automatically. Use the `variant` printed
-by the CLI or `variant_id` from the deployment response:
+Deploying does not select the new version automatically. Use the `version` printed
+by the CLI or `version_id` from the deployment response:
 
 ```http
 PATCH /v1/void/organizations/current
 Authorization: Bearer <Void organization token>
 Content-Type: application/json
 
-{"default_variant_id": "<variant hash>"}
+{"default_version_id": "<version hash>"}
 ```
 
-The selected variant must contain an active product or a non-branch meter in this
-organization. Send `null` to select the unnamed variant. Omitting `variant_id` on
+The selected version must contain an active product or a non-branch meter in this
+organization. Send `null` to select the unnamed version. Omitting `version_id` on
 `GET /deploys/latest` follows that default; passing an empty value selects the
-unnamed variant explicitly. Settings live in `void_organization_settings`, without
+unnamed version explicitly. Settings live in `void_organization_settings`, without
 adding fields to Polar's native organization table.
 
 After logging in, run these commands from `clients/`:
@@ -193,7 +193,7 @@ pnpm --filter @void/sdk void deploy --config /absolute/path/to/void.ts
 ```
 
 Plain `plan` checks configuration only. `--preview` or explicit `--from` / `--to`
-dates request historical price comparisons against the selected default variant.
+dates request historical price comparisons against the selected default version.
 A complete example used by the CLI tests lives in
 `clients/packages/void-sdk/test/fixtures/deployment.ts`.
 
@@ -338,7 +338,7 @@ Migration `3d19da536d94`, following `38a9961f9d09`, adds eleven tables and the n
 
 | Tables | Purpose |
 | --- | --- |
-| `void_organization_settings` | Organization extension for `default_variant_id` |
+| `void_organization_settings` | Organization extension for `default_version_id` |
 | `void_identities` | Identity trees owned through `customers.root_identity_id` |
 | `void_reducers`, `void_reducer_buckets` | Reducer definitions, results, and processing receipts |
 | `void_reducer_dependencies`, `void_reducer_jobs` | Derived reducer inputs and transactional outbox |
@@ -354,7 +354,7 @@ only change to an existing Polar table.
 Customer contact details and access tokens remain in Polar's existing tables.
 
 Source generation uniqueness retains PostgreSQL `NULLS NOT DISTINCT`, including
-nullable variants and branches. Reducer buckets preserve nullable identity keys
+nullable versions and branches. Reducer buckets preserve nullable identity keys
 and the processing-receipt index. Monetary columns retain their original decimal
 precision. Relationships require explicit eager loading through `lazy="raise"`.
 

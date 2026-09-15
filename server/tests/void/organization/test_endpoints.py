@@ -20,11 +20,11 @@ from tests.void.test_models import create_meter, create_product
 
 PATH = "/v1/void/organizations/current"
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}
-VARIANT = "a" * 64
+VERSION = "a" * 64
 
 
 @pytest.mark.asyncio
-class TestDefaultVariant:
+class TestDefaultVersion:
     async def test_current_and_clearing_empty_default_do_not_create_settings(
         self,
         void_client: AsyncClient,
@@ -36,12 +36,12 @@ class TestDefaultVariant:
         responses = [
             await void_client.get(PATH, headers=HEADERS),
             await void_client.patch(
-                PATH, headers=HEADERS, json={"default_variant_id": None}
+                PATH, headers=HEADERS, json={"default_version_id": None}
             ),
         ]
         for response in responses:
             assert response.status_code == 200
-            assert response.json()["default_variant_id"] is None
+            assert response.json()["default_version_id"] is None
         assert (
             await session.scalar(
                 select(func.count()).select_from(VoidOrganizationSettings)
@@ -49,46 +49,46 @@ class TestDefaultVariant:
             == 0
         )
 
-    async def test_select_and_clear_variant_changes_latest_resolution(
+    async def test_select_and_clear_version_changes_latest_resolution(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await create_token(save_fixture, organization, scopes={Scope.void_write})
-        await save_fixture(create_product(organization, variant=VARIANT))
-        for variant, checksum in ((VARIANT, "named"), (None, "unnamed")):
+        await save_fixture(create_product(organization, version=VERSION))
+        for version, checksum in ((VERSION, "named"), (None, "unnamed")):
             await save_fixture(
                 VoidDeployment(
                     organization=organization,
-                    variant_id=variant,
+                    version_id=version,
                     checksum=checksum,
                     entries=[],
                 )
             )
         response = await void_client.patch(
-            PATH, headers=HEADERS, json={"default_variant_id": VARIANT}
+            PATH, headers=HEADERS, json={"default_version_id": VERSION}
         )
         assert response.status_code == 200
-        assert response.json()["default_variant_id"] == VARIANT
+        assert response.json()["default_version_id"] == VERSION
         selected = await void_client.get("/v1/void/deploys/latest", headers=HEADERS)
         assert selected.json()["checksum"] == "named"
         unnamed = await void_client.get(
-            "/v1/void/deploys/latest", headers=HEADERS, params={"variant_id": ""}
+            "/v1/void/deploys/latest", headers=HEADERS, params={"version_id": ""}
         )
         assert unnamed.json()["checksum"] == "unnamed"
         response = await void_client.patch(
-            PATH, headers=HEADERS, json={"default_variant_id": None}
+            PATH, headers=HEADERS, json={"default_version_id": None}
         )
         assert response.status_code == 200
-        assert response.json()["default_variant_id"] is None
+        assert response.json()["default_version_id"] is None
         selected = await void_client.get("/v1/void/deploys/latest", headers=HEADERS)
         assert selected.json()["checksum"] == "unnamed"
 
     @pytest.mark.parametrize(
         "reason", ["foreign", "archived", "deleted", "missing", "branch"]
     )
-    async def test_rejects_unavailable_variant(
+    async def test_rejects_unavailable_version(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
@@ -104,12 +104,12 @@ class TestDefaultVariant:
             )
             await save_fixture(reducer)
             await save_fixture(
-                create_meter(organization, reducer, variant=VARIANT, branch=uuid4())
+                create_meter(organization, reducer, version=VERSION, branch=uuid4())
             )
         elif reason != "missing":
             product = create_product(
                 organization_second if reason == "foreign" else organization,
-                variant=VARIANT,
+                version=VERSION,
             )
             if reason == "archived":
                 product.archived_at = utc_now()
@@ -117,7 +117,7 @@ class TestDefaultVariant:
                 product.deleted_at = utc_now()
             await save_fixture(product)
         response = await void_client.patch(
-            PATH, headers=HEADERS, json={"default_variant_id": VARIANT}
+            PATH, headers=HEADERS, json={"default_version_id": VERSION}
         )
         assert response.status_code == 400
         assert (
@@ -127,7 +127,7 @@ class TestDefaultVariant:
             == 0
         )
 
-    async def test_meter_only_variant_can_be_selected(
+    async def test_meter_only_version_can_be_selected(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
@@ -138,14 +138,14 @@ class TestDefaultVariant:
             organization=organization, slug="usage", aggregation=CountAggregation()
         )
         await save_fixture(reducer)
-        await save_fixture(create_meter(organization, reducer, variant=VARIANT))
+        await save_fixture(create_meter(organization, reducer, version=VERSION))
         response = await void_client.patch(
-            PATH, headers=HEADERS, json={"default_variant_id": VARIANT}
+            PATH, headers=HEADERS, json={"default_version_id": VERSION}
         )
         assert response.status_code == 200
-        assert response.json()["default_variant_id"] == VARIANT
+        assert response.json()["default_version_id"] == VERSION
 
-    async def test_read_token_cannot_select_variant(
+    async def test_read_token_cannot_select_version(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
@@ -153,6 +153,6 @@ class TestDefaultVariant:
     ) -> None:
         await create_token(save_fixture, organization, scopes={Scope.void_read})
         response = await void_client.patch(
-            PATH, headers=HEADERS, json={"default_variant_id": None}
+            PATH, headers=HEADERS, json={"default_version_id": None}
         )
         assert response.status_code == 403

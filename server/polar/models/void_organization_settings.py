@@ -16,6 +16,6 @@ class VoidOrganizationSettings(RecordModel):
     organization_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id"), nullable=False, unique=True
     )
-    default_variant_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    default_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     organization: Mapped["Organization"] = relationship(lazy="raise")

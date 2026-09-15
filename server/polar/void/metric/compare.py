@@ -1,4 +1,4 @@
-"""Read-only POC: one variant's subscription history, another's meter prices."""
+"""Read-only POC: one version's subscription history, another's meter prices."""
 
 import uuid
 from datetime import UTC, date, datetime, time
@@ -33,9 +33,9 @@ from .service import metric as metric_service
 
 class CompareQuery(BaseModel):
     baseline: str = Field(
-        description="Subscription history variant; empty means unversioned."
+        description="Subscription history version; empty means unversioned."
     )
-    candidate: str = Field(description="Pricing variant; empty means unversioned.")
+    candidate: str = Field(description="Pricing version; empty means unversioned.")
     start: date
     end: date
 
@@ -75,7 +75,7 @@ async def compare(
     baseline = _latest_meters(meters, baseline_id)
     candidate = _latest_meters(meters, candidate_id)
     if not baseline or not candidate:
-        raise ResourceNotFound("Both variants must have meters in this organization")
+        raise ResourceNotFound("Both versions must have meters in this organization")
     reducers = await reducer_service.list(session, organization_id)
     by_id = {r.id: r for r in reducers}
     if any(
@@ -88,7 +88,7 @@ async def compare(
     history: dict[tuple[uuid.UUID, str], list[MeterEvent]] = {}
     roots: set[str] = set()
     for meter in meters:
-        if meter.variant_id != baseline_id or meter.branch_id is not None:
+        if meter.version_id != baseline_id or meter.branch_id is not None:
             continue
         for customer in customers:
             events = [
@@ -151,7 +151,7 @@ async def compare(
         ],
     )
     plan = Deploy(
-        variant_id=candidate_id,
+        version_id=candidate_id,
         id=None,
         checksum="comparison",
         applied=False,

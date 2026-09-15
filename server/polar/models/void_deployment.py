@@ -17,7 +17,7 @@ class VoidDeployment(RecordModel):
     __tablename__ = "void_deployments"
 
     checksum: Mapped[str] = mapped_column(String, nullable=False, index=True)
-    variant_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    version_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     entries: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
     organization_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id"), nullable=False, index=True

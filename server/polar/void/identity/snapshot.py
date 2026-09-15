@@ -15,11 +15,11 @@ from .service import identity as identity_service
 
 
 def _latest_meters(
-    meters: Sequence[VoidMeter], variant_id: str | None = None
+    meters: Sequence[VoidMeter], version_id: str | None = None
 ) -> dict[str, VoidMeter]:
     latest: dict[str, VoidMeter] = {}
     for meter in meters:
-        if meter.branch_id is not None or meter.variant_id != variant_id:
+        if meter.branch_id is not None or meter.version_id != version_id:
             continue
         current = latest.get(meter.slug)
         if current is None or meter.generation_id > current.generation_id:
@@ -34,7 +34,7 @@ class IdentitySnapshotService:
         tinybird: TinybirdApi,
         auth_subject: AuthSubject[Organization],
         external_id: str,
-        variant_id: str | None = None,
+        version_id: str | None = None,
     ) -> IdentitySnapshot:
         organization_id = auth_subject.subject.id
         at = utc_now()
@@ -49,7 +49,7 @@ class IdentitySnapshotService:
                 session, auth_subject, root.external_id
             )
         meters = _latest_meters(
-            await meter_service.list(session, organization_id), variant_id
+            await meter_service.list(session, organization_id), version_id
         )
         balances = {
             slug: await meter_service.balance(

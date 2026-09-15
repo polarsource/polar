@@ -121,8 +121,8 @@ def test_lifecycle_events_fan_out_one_meter_event_per_pinned_meter() -> None:
     subscription = _subscription(
         _product(meters=[tokens, calls], entitlements=[sso]), _identity("acme")
     )
-    subscription.product.variant_id = "candidate"
-    tokens.variant_id = "candidate"
+    subscription.product.version_id = "candidate"
+    tokens.version_id = "candidate"
 
     events = lifecycle_events(subscription, "created", NOW)
 
@@ -135,9 +135,9 @@ def test_lifecycle_events_fan_out_one_meter_event_per_pinned_meter() -> None:
         "subscription.created",
     }
     assert len(by_name["subscription.created"]) == 2
-    assert all(e.metadata["product_variant_id"] == "candidate" for e in events)
+    assert all(e.metadata["product_version_id"] == "candidate" for e in events)
     assert {
-        e.metadata["meter_id"]: e.metadata["meter_variant_id"]
+        e.metadata["meter_id"]: e.metadata["meter_version_id"]
         for e in by_name["subscription.created"]
     } == {str(tokens.id): "candidate", str(calls.id): None}
     assert {e.metadata["meter_id"] for e in by_name["subscription.created"]} == {

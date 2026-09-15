@@ -22,7 +22,7 @@ from polar.void.entitlement.service import (
     EntitlementAssignmentInvalid,
 )
 from polar.void.entitlement.service import entitlement as entitlement_service
-from polar.void.organization.service import selected_variant
+from polar.void.organization.service import selected_version
 from polar.void.postgres import get_snapshot_session
 from polar.void.subscription.service import subscription as subscription_service
 from polar.void.tinybird import TinybirdClient
@@ -113,7 +113,7 @@ async def snapshot(
     external_id: str,
     auth_subject: VoidCustomerRead,
     tinybird: TinybirdClient,
-    variant_id: str | None = None,
+    version_id: str | None = None,
     session: AsyncSession = Depends(get_snapshot_session),
 ) -> IdentitySnapshot:
     return await snapshot_service.get(
@@ -121,7 +121,7 @@ async def snapshot(
         tinybird,
         auth_subject,
         external_id,
-        await selected_variant(session, auth_subject.subject.id, variant_id),
+        await selected_version(session, auth_subject.subject.id, version_id),
     )
 
 

@@ -15,7 +15,6 @@ import {
 } from '@/test-utils/checkout'
 import { stubLocationReload } from '@/test-utils/location'
 import { apiError } from '@/test-utils/server'
-import { setViewport } from '@/test-utils/viewport'
 
 describe('Checkout page', () => {
   it('renders the product and reports the checkout as opened', async () => {
@@ -55,73 +54,29 @@ describe('Checkout page', () => {
     ).toBeGreaterThan(0)
   })
 
-  describe('collapsed order summary experiment', () => {
-    const mobile = { width: 375, coarsePointer: true }
-    const exposures = (
-      events: { event: string; properties?: Record<string, unknown> }[],
-    ) =>
-      events.filter(
-        (e) =>
-          e.event === '$feature_flag_called' &&
-          e.properties?.$feature_flag === 'checkout_collapsed_order_summary',
-      )
+  describe('collapsed order summary', () => {
+    const orderSummaryToggle = () =>
+      screen.queryByRole('button', { name: /order summary/i })
 
-    it('collapses the summary on mobile for the treatment and records exposure', async () => {
-      setViewport(mobile)
-      const { posthog } = renderCheckout({
-        experiments: { checkout_collapsed_order_summary: 'treatment' },
-      })
+    it('collapses the summary on hosted single-price checkouts', () => {
+      renderCheckout()
 
-      expect(
-        screen.getByRole('button', { name: /order summary/i }),
-      ).toHaveAttribute('aria-expanded', 'false')
-      await waitFor(() => expect(exposures(posthog.events)).toHaveLength(1))
-      expect(exposures(posthog.events)[0].properties).toMatchObject({
-        $feature_flag_response: 'treatment',
-      })
+      expect(orderSummaryToggle()).toHaveAttribute('aria-expanded', 'false')
     })
 
-    it('records exposure for control without collapsing', async () => {
-      setViewport(mobile)
-      const { posthog } = renderCheckout({
-        experiments: { checkout_collapsed_order_summary: 'control' },
-      })
+    it('keeps the full summary for pay-what-you-want checkouts', () => {
+      renderCheckout({ checkout: { product_price: createCustomPrice() } })
 
-      expect(
-        screen.queryByRole('button', { name: /order summary/i }),
-      ).not.toBeInTheDocument()
-      await waitFor(() => expect(exposures(posthog.events)).toHaveLength(1))
+      expect(orderSummaryToggle()).not.toBeInTheDocument()
     })
 
-    it('does not expose desktop visitors', async () => {
-      const { posthog } = renderCheckout({
-        experiments: { checkout_collapsed_order_summary: 'treatment' },
+    it('never collapses the embedded checkout', () => {
+      renderCheckout({
+        embed: true,
+        checkout: { embed_origin: window.location.origin },
       })
 
-      await waitFor(() =>
-        expect(posthog.events.map((e) => e.event)).toContain(
-          'storefront:checkout:page:view',
-        ),
-      )
-      expect(exposures(posthog.events)).toHaveLength(0)
-    })
-
-    it('does not expose or collapse pay-what-you-want checkouts', async () => {
-      setViewport(mobile)
-      const { posthog } = renderCheckout({
-        checkout: { product_price: createCustomPrice() },
-        experiments: { checkout_collapsed_order_summary: 'treatment' },
-      })
-
-      expect(
-        screen.queryByRole('button', { name: /order summary/i }),
-      ).not.toBeInTheDocument()
-      await waitFor(() =>
-        expect(posthog.events.map((e) => e.event)).toContain(
-          'storefront:checkout:page:view',
-        ),
-      )
-      expect(exposures(posthog.events)).toHaveLength(0)
+      expect(orderSummaryToggle()).not.toBeInTheDocument()
     })
   })
 

@@ -1,130 +1,81 @@
 export const MigrationFlow = () => {
   // Mintlify inlines only this export into the MDX module, so stage data
   // must live inside the component — a file-level const is dropped.
-  const MIGRATION_STAGES = [
+  const PHASES = [
     {
       key: 'new-sales',
       short: 'New sales',
-      eyebrow: 'Start safely',
-      title: 'Polar handles every new checkout',
-      description:
-        'New customers enter through Polar while existing subscriptions keep renewing in Stripe.',
-      appTitle: 'Checkout + access',
-      appStatus: 'Dual-source ready',
-      stripeTitle: 'Existing subscriptions',
-      stripeStatus: 'Renewing',
-      polarTitle: 'New sales',
-      polarStatus: 'Live',
-      owner: 'Existing → Stripe · New → Polar',
-      flows: [
-        { from: 'Merchant app', to: 'Polar', label: 'New checkout' },
-        { from: 'Stripe', to: 'Merchant app', label: 'Legacy webhooks' },
-        { from: 'Polar', to: 'Merchant app', label: 'Order + customer state' },
-      ],
-      records: [
-        { name: 'New checkout', owner: 'Polar', state: 'Live' },
-        { name: 'Existing subscription', owner: 'Stripe', state: 'Renewing' },
-        { name: 'Product access', owner: 'Merchant app', state: 'Both sources' },
+      caption: 'New checkouts go to Polar. Stripe keeps renewing what it already owns.',
+      appNote: 'Routes new checkout',
+      stripeNote: 'Renewing',
+      polarNote: 'Selling',
+      packets: [{ path: 'right-down', label: 'New checkout' }],
+      rows: [
+        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Stripe' },
+        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
+        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
       ],
     },
     {
       key: 'prepare',
       short: 'Prepare',
-      eyebrow: 'Build the bridge',
-      title: 'Prepare the catalog and customer map',
-      description:
-        'Polar imports the products and customers needed by the subscriptions you select. Billing does not move yet.',
-      appTitle: 'Identity map',
-      appStatus: 'Matching IDs',
-      stripeTitle: 'Subscriptions',
-      stripeStatus: 'Unchanged',
-      polarTitle: 'Catalog + customers',
-      polarStatus: 'Prepared',
-      owner: 'Existing renewals → Stripe',
-      flows: [
-        { from: 'Stripe', to: 'Polar', label: 'Products + customers' },
-        { from: 'Merchant app', to: 'Polar', label: 'External customer ID' },
-        { from: 'Stripe', to: 'Merchant app', label: 'Renewal events' },
-      ],
-      records: [
-        { name: 'Products + prices', owner: 'Polar', state: 'Prepared' },
-        { name: 'Customer mapping', owner: 'Merchant app', state: 'Reviewing' },
-        { name: 'Existing subscription', owner: 'Stripe', state: 'Unchanged' },
+      caption: 'Polar builds the catalog and customers. No billing moves yet.',
+      appNote: 'Maps customer IDs',
+      stripeNote: 'Unchanged',
+      polarNote: 'Preparing',
+      packets: [{ path: 'sibling', label: 'Products + customers' }],
+      rows: [
+        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Stripe' },
+        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
+        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
       ],
     },
     {
       key: 'cards',
       short: 'Move cards',
-      eyebrow: 'Secure transfer',
-      title: 'Stripe copies saved cards account to account',
-      description:
-        'Card details move directly between Stripe accounts. Polar verifies which subscriptions have a usable card.',
-      appTitle: 'Customer access',
-      appStatus: 'Unchanged',
-      stripeTitle: 'Card vault',
-      stripeStatus: 'Copying',
-      polarTitle: 'Payment methods',
-      polarStatus: 'Verifying',
-      owner: 'Existing renewals → Stripe',
-      flows: [
-        { from: 'Stripe', to: 'Polar', label: 'Encrypted card copy' },
-        { from: 'Polar', to: 'Merchant app', label: 'Coverage status' },
-        { from: 'Merchant app', to: 'Customer', label: 'Card update if needed' },
-      ],
-      records: [
-        { name: 'Copied cards', owner: 'Polar', state: 'Verifying' },
-        { name: 'Missing cards', owner: 'Merchant app', state: 'Action needed' },
-        { name: 'Existing subscription', owner: 'Stripe', state: 'Renewing' },
+      caption: 'Stripe copies saved cards to Polar. No card data touches your app.',
+      appNote: 'Unchanged',
+      stripeNote: 'Copying',
+      polarNote: 'Verifying',
+      packets: [{ path: 'sibling', label: 'Saved cards' }],
+      rows: [
+        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Stripe' },
+        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
+        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
       ],
     },
     {
       key: 'cutover',
       short: 'Cutover',
-      eyebrow: 'Change ownership',
-      title: 'Selected subscriptions switch to Polar',
-      description:
-        'Polar preserves the paid period, stops the Stripe subscription, and activates the matching Polar subscription.',
-      appTitle: 'Access state',
-      appStatus: 'Synchronizing',
-      stripeTitle: 'Selected subscriptions',
-      stripeStatus: 'Stopping',
-      polarTitle: 'Same paid periods',
-      polarStatus: 'Activating',
-      owner: 'Switched renewals → Polar',
-      flows: [
-        { from: 'Stripe', to: 'Polar', label: 'Billing ownership' },
-        { from: 'Polar', to: 'Merchant app', label: 'subscription.updated' },
-        { from: 'Polar', to: 'Merchant app', label: 'customer.state_changed' },
+      caption: 'Polar keeps the paid period and Stripe stops that subscription.',
+      appNote: 'Updates access',
+      stripeNote: 'Stopping',
+      polarNote: 'Activating',
+      packets: [
+        { path: 'sibling', label: 'Billing owner' },
+        { path: 'right-up', label: 'subscription.updated' },
       ],
-      records: [
-        { name: 'Selected subscription', owner: 'Polar', state: 'Switching' },
-        { name: 'Current paid period', owner: 'Polar', state: 'Preserved' },
-        { name: 'Product access', owner: 'Merchant app', state: 'Synchronizing' },
+      rows: [
+        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Polar', moved: true },
+        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
+        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
       ],
     },
     {
       key: 'reconcile',
       short: 'Reconcile',
-      eyebrow: 'Verify and clean up',
-      title: 'Every subscription finishes with one owner',
-      description:
-        'Moved subscriptions renew in Polar. Historical payments and intentional exceptions remain in Stripe.',
-      appTitle: 'Unified access',
-      appStatus: 'Reconciled',
-      stripeTitle: 'History + exceptions',
-      stripeStatus: 'Retained',
-      polarTitle: 'Moved subscriptions',
-      polarStatus: 'Renewing',
-      owner: 'Exactly one owner per subscription',
-      flows: [
-        { from: 'Stripe', to: 'Merchant app', label: 'History + exceptions' },
-        { from: 'Polar', to: 'Merchant app', label: 'Renewals + webhooks' },
-        { from: 'Merchant app', to: 'Support', label: 'Unified lookup' },
+      caption: 'Every subscription has one owner. Your app reads both systems.',
+      appNote: 'One lookup',
+      stripeNote: 'History only',
+      polarNote: 'Renewing',
+      packets: [
+        { path: 'left-up', label: 'Past payments' },
+        { path: 'right-up', label: 'Renewals' },
       ],
-      records: [
-        { name: 'Moved subscriptions', owner: 'Polar', state: 'Verified' },
-        { name: 'Exceptions + history', owner: 'Stripe', state: 'Retained' },
-        { name: 'Product access', owner: 'Merchant app', state: 'Reconciled' },
+      rows: [
+        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Polar' },
+        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe', kept: true },
+        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
       ],
     },
   ]
@@ -135,20 +86,22 @@ export const MigrationFlow = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const containerRef = useRef(null)
 
-  const stage = MIGRATION_STAGES[activeIndex]
+  const phase = PHASES[activeIndex]
+  const stripeCount = phase.rows.filter((row) => row.owner === 'Stripe').length
+  const polarCount = phase.rows.filter((row) => row.owner === 'Polar').length
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const updateMotionPreference = () => {
+    const syncPreference = () => {
       setPrefersReducedMotion(mediaQuery.matches)
       if (mediaQuery.matches) {
         setIsPlaying(false)
       }
     }
 
-    updateMotionPreference()
-    mediaQuery.addEventListener('change', updateMotionPreference)
-    return () => mediaQuery.removeEventListener('change', updateMotionPreference)
+    syncPreference()
+    mediaQuery.addEventListener('change', syncPreference)
+    return () => mediaQuery.removeEventListener('change', syncPreference)
   }, [])
 
   useEffect(() => {
@@ -171,49 +124,37 @@ export const MigrationFlow = () => {
     }
 
     const timeout = window.setTimeout(() => {
-      setActiveIndex((current) => (current + 1) % MIGRATION_STAGES.length)
-    }, 3600)
+      setActiveIndex((current) => (current + 1) % PHASES.length)
+    }, 3800)
 
     return () => window.clearTimeout(timeout)
   }, [activeIndex, isPlaying, isVisible, prefersReducedMotion])
 
-  const selectStage = (index) => {
-    setActiveIndex(index)
+  const goTo = (index) => {
+    setActiveIndex((index + PHASES.length) % PHASES.length)
     setIsPlaying(false)
   }
 
-  const showPrevious = () => {
-    setActiveIndex(
-      (current) =>
-        (current - 1 + MIGRATION_STAGES.length) % MIGRATION_STAGES.length,
-    )
-    setIsPlaying(false)
-  }
+  const packetFor = (path) =>
+    phase.packets.find((packet) => packet.path === path)
 
-  const showNext = () => {
-    setActiveIndex((current) => (current + 1) % MIGRATION_STAGES.length)
-    setIsPlaying(false)
-  }
+  const siblingPacket = packetFor('sibling')
 
   return (
     <section
       ref={containerRef}
-      className={`migration-flow migration-flow--${stage.key}`}
-      aria-label="How a Stripe migration progresses"
+      className={`migration-flow migration-flow--${phase.key}`}
+      aria-label="How billing ownership moves during a Stripe migration"
     >
       <div className="migration-flow__topbar">
-        <div>
-          <p className="migration-flow__overline">Migration walkthrough</p>
-          <p className="migration-flow__counter">
-            Phase {activeIndex + 1} of {MIGRATION_STAGES.length}
-          </p>
-        </div>
+        <p className="migration-flow__counter">
+          Phase {activeIndex + 1} of {PHASES.length}
+        </p>
         <button
           type="button"
           className="migration-flow__play"
           onClick={() => setIsPlaying((playing) => !playing)}
           disabled={prefersReducedMotion}
-          aria-label={isPlaying ? 'Pause animation' : 'Play animation'}
         >
           <span aria-hidden="true">{isPlaying ? 'Ⅱ' : '▶'}</span>
           {prefersReducedMotion ? 'Reduced motion' : isPlaying ? 'Pause' : 'Play'}
@@ -221,115 +162,127 @@ export const MigrationFlow = () => {
       </div>
 
       <div className="migration-flow__tabs" role="tablist" aria-label="Migration phases">
-        {MIGRATION_STAGES.map((item, index) => (
+        {PHASES.map((item, index) => (
           <button
             key={item.key}
             type="button"
             role="tab"
             aria-selected={index === activeIndex}
             className="migration-flow__tab"
-            onClick={() => selectStage(index)}
+            onClick={() => goTo(index)}
           >
-            <span className="migration-flow__tab-number">{index + 1}</span>
-            <span>{item.short}</span>
+            {item.short}
           </button>
         ))}
       </div>
 
-      <div className="migration-flow__progress" aria-hidden="true">
-        <span
-          className={`migration-flow__progress-fill migration-flow__progress-fill--${activeIndex + 1}`}
-        />
-      </div>
+      <p className="migration-flow__caption" aria-live="polite">
+        {phase.caption}
+      </p>
 
-      <div className="migration-flow__copy" aria-live="polite">
-        <p className="migration-flow__eyebrow">{stage.eyebrow}</p>
-        <h3>{stage.title}</h3>
-        <p>{stage.description}</p>
-      </div>
-
-      <div className="migration-flow__systems">
-        <div className="migration-flow__system migration-flow__system--app">
-          <div className="migration-flow__system-heading">
-            <span className="migration-flow__brand-mark migration-flow__brand-mark--app">
-              M
-            </span>
-            <span>Merchant app</span>
-          </div>
-          <p>{stage.appTitle}</p>
-          <span className="migration-flow__status">{stage.appStatus}</span>
+      <div className="migration-flow__tree">
+        <div className="migration-flow__node migration-flow__node--app">
+          <span className="migration-flow__node-name">Merchant app</span>
+          <span className="migration-flow__node-note">{phase.appNote}</span>
         </div>
 
-        <div className="migration-flow__system migration-flow__system--stripe">
-          <div className="migration-flow__system-heading">
-            <span className="migration-flow__brand-mark migration-flow__brand-mark--stripe">
-              S
+        <div className="migration-flow__branch">
+          <svg viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M100 0 V16 H26 V48" />
+            <path d="M100 0 V16 H174 V48" />
+          </svg>
+          {packetFor('left-up') ? (
+            <span
+              key={`${phase.key}-left`}
+              className="migration-flow__packet migration-flow__packet--left migration-flow__packet--up"
+            >
+              {packetFor('left-up').label}
             </span>
-            <span>Stripe</span>
-          </div>
-          <p>{stage.stripeTitle}</p>
-          <span className="migration-flow__status">{stage.stripeStatus}</span>
+          ) : null}
+          {packetFor('right-down') ? (
+            <span
+              key={`${phase.key}-right-down`}
+              className="migration-flow__packet migration-flow__packet--right migration-flow__packet--down"
+            >
+              {packetFor('right-down').label}
+            </span>
+          ) : null}
+          {packetFor('right-up') ? (
+            <span
+              key={`${phase.key}-right-up`}
+              className="migration-flow__packet migration-flow__packet--right migration-flow__packet--up"
+            >
+              {packetFor('right-up').label}
+            </span>
+          ) : null}
         </div>
 
-        <div className="migration-flow__system migration-flow__system--polar">
-          <div className="migration-flow__system-heading">
-            <span className="migration-flow__brand-mark migration-flow__brand-mark--polar">
-              P
+        <div className="migration-flow__children">
+          <div className="migration-flow__node migration-flow__node--stripe">
+            <span className="migration-flow__node-name">Stripe</span>
+            <span className="migration-flow__node-note">{phase.stripeNote}</span>
+            <span className="migration-flow__node-count">
+              {stripeCount} subscription{stripeCount === 1 ? '' : 's'}
             </span>
-            <span>Polar</span>
           </div>
-          <p>{stage.polarTitle}</p>
-          <span className="migration-flow__status">{stage.polarStatus}</span>
-        </div>
-      </div>
 
-      <div
-        key={`${stage.key}-flows`}
-        className="migration-flow__flows"
-        aria-label={`Data flowing during ${stage.short}`}
-      >
-        {stage.flows.map((flow) => (
-          <div key={`${flow.from}-${flow.to}-${flow.label}`} className="migration-flow__flow">
-            <span>{flow.from}</span>
-            <span className="migration-flow__flow-track">
-              <span className="migration-flow__flow-packet">{flow.label}</span>
-              <span className="migration-flow__flow-arrow" aria-hidden="true">
-                →
+          <div className="migration-flow__link">
+            <span className="migration-flow__link-line" aria-hidden="true" />
+            {siblingPacket ? (
+              <span key={`${phase.key}-sibling`} className="migration-flow__packet">
+                {siblingPacket.label}
               </span>
+            ) : null}
+          </div>
+
+          <div className="migration-flow__node migration-flow__node--polar">
+            <span className="migration-flow__node-name">Polar</span>
+            <span className="migration-flow__node-note">{phase.polarNote}</span>
+            <span className="migration-flow__node-count">
+              {polarCount} subscription{polarCount === 1 ? '' : 's'}
             </span>
-            <span>{flow.to}</span>
           </div>
-        ))}
-      </div>
-
-      <div className="migration-flow__owner">
-        <span>Next renewal owner</span>
-        <strong>{stage.owner}</strong>
-      </div>
-
-      <div className="migration-flow__records">
-        <div className="migration-flow__record migration-flow__record--header">
-          <span>Data</span>
-          <span>Owner</span>
-          <span>State</span>
         </div>
-        {stage.records.map((record) => (
-          <div key={record.name} className="migration-flow__record">
-            <strong>{record.name}</strong>
-            <span>{record.owner}</span>
-            <span className="migration-flow__record-state">{record.state}</span>
-          </div>
-        ))}
       </div>
+
+      <table className="migration-flow__table">
+        <thead>
+          <tr>
+            <th>Subscription</th>
+            <th>Renews in</th>
+          </tr>
+        </thead>
+        <tbody>
+          {phase.rows.map((row) => (
+            <tr key={row.id}>
+              <td>
+                <code>{row.id}</code>
+                <span>{row.plan}</span>
+              </td>
+              <td>
+                <span
+                  className={`migration-flow__owner migration-flow__owner--${row.owner.toLowerCase()}`}
+                >
+                  {row.owner}
+                </span>
+                {row.moved ? (
+                  <span className="migration-flow__flag">just moved</span>
+                ) : null}
+                {row.kept ? (
+                  <span className="migration-flow__flag">left on purpose</span>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <div className="migration-flow__controls">
-        <button type="button" onClick={showPrevious} aria-label="Previous phase">
-          <span aria-hidden="true">←</span>
-          Previous
+        <button type="button" onClick={() => goTo(activeIndex - 1)}>
+          <span aria-hidden="true">←</span> Previous
         </button>
-        <button type="button" onClick={showNext} aria-label="Next phase">
-          Next
-          <span aria-hidden="true">→</span>
+        <button type="button" onClick={() => goTo(activeIndex + 1)}>
+          Next <span aria-hidden="true">→</span>
         </button>
       </div>
     </section>

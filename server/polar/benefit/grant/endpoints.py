@@ -23,6 +23,15 @@ router = APIRouter(
     "/",
     response_model=ListResource[BenefitGrant],
     summary="List Benefit Grants",
+    openapi_extra={
+        "x-tool-name": "benefit_grants_list",
+        "x-tool-title": "List benefit grants",
+        "x-tool-description": (
+            "List benefit grants across all benefits accessible to the authenticated "
+            "subject."
+        ),
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: BenefitsRead,

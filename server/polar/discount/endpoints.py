@@ -33,7 +33,17 @@ DiscountNotFound = {
 }
 
 
-@router.get("/", summary="List Discounts", response_model=ListResource[DiscountSchema])
+@router.get(
+    "/",
+    summary="List Discounts",
+    response_model=ListResource[DiscountSchema],
+    openapi_extra={
+        "x-tool-name": "discounts_list",
+        "x-tool-title": "List discount codes",
+        "x-tool-description": "List all discount codes and coupons.",
+        "x-tool-annotations": ["read_only"],
+    },
+)
 async def list(
     auth_subject: auth.DiscountRead,
     pagination: PaginationParamsQuery,
@@ -66,6 +76,12 @@ async def list(
     summary="Get Discount",
     response_model=DiscountSchema,
     responses={404: DiscountNotFound},
+    openapi_extra={
+        "x-tool-name": "discounts_get",
+        "x-tool-title": "Get discount",
+        "x-tool-description": "Retrieve a specific discount by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     id: DiscountID,
@@ -87,6 +103,11 @@ async def get(
     status_code=201,
     summary="Create Discount",
     responses={201: {"description": "Discount created."}},
+    openapi_extra={
+        "x-tool-name": "discounts_create",
+        "x-tool-title": "Create discount code",
+        "x-tool-description": "Create a new discount code for products or subscriptions.",
+    },
 )
 async def create(
     auth_subject: auth.DiscountWrite,
@@ -109,6 +130,11 @@ async def create(
     responses={
         200: {"description": "Discount updated."},
         404: DiscountNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "discounts_update",
+        "x-tool-title": "Update discount",
+        "x-tool-description": "Update an existing discount's settings or validity.",
     },
 )
 async def update(
@@ -135,6 +161,12 @@ async def update(
     responses={
         204: {"description": "Discount deleted."},
         404: DiscountNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "discounts_delete",
+        "x-tool-title": "Delete discount",
+        "x-tool-description": "Delete a discount.",
+        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete(

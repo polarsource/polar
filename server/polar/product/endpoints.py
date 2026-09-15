@@ -48,7 +48,13 @@ ListSorting = Annotated[
     "/",
     summary="List Products",
     response_model=ListResource[ProductSchema],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    openapi_extra={
+        "x-tool-name": "products_list",
+        "x-tool-title": "List products",
+        "x-tool-description": "List all products in your organization.",
+        "x-tool-annotations": ["read_only"],
+        "parameters": [get_metadata_query_openapi_schema()],
+    },
 )
 async def list(
     pagination: PaginationParamsQuery,
@@ -110,6 +116,12 @@ async def list(
     summary="Get Product",
     response_model=ProductSchema,
     responses={404: ProductNotFound},
+    openapi_extra={
+        "x-tool-name": "products_get",
+        "x-tool-title": "Get product",
+        "x-tool-description": "Retrieve a specific product by ID.",
+        "x-tool-annotations": ["read_only"],
+    },
 )
 async def get(
     id: ProductID,
@@ -131,6 +143,11 @@ async def get(
     status_code=201,
     summary="Create Product",
     responses={201: {"description": "Product created."}},
+    openapi_extra={
+        "x-tool-name": "products_create",
+        "x-tool-title": "Create product",
+        "x-tool-description": "Create a new product with pricing and benefits (entitlements).",
+    },
 )
 async def create(
     product_create: ProductCreate,
@@ -152,6 +169,11 @@ async def create(
             "model": NotPermitted.schema(),
         },
         404: ProductNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "products_update",
+        "x-tool-title": "Update product",
+        "x-tool-description": "Update an existing product's details, pricing, or settings.",
     },
 )
 async def update(
@@ -180,6 +202,11 @@ async def update(
             "model": NotPermitted.schema(),
         },
         404: ProductNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "products_update_benefits",
+        "x-tool-title": "Update product benefits",
+        "x-tool-description": "Update which benefits are granted when a product is purchased.",
     },
 )
 async def update_benefits(

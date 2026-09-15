@@ -57,6 +57,12 @@ def _assert_mutable(file: File) -> None:
     summary="List Files",
     response_model=ListResource[FileRead],
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "files_list",
+        "x-tool-title": "List files",
+        "x-tool-description": "List files.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.FileRead,
@@ -225,6 +231,12 @@ async def update(
             "model": NotPermitted.schema(),
         },
         404: FileNotFound,
+    },
+    openapi_extra={
+        "x-tool-name": "files_delete",
+        "x-tool-title": "Delete file",
+        "x-tool-description": "Delete a file.",
+        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete(

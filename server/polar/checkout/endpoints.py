@@ -98,6 +98,12 @@ CheckoutForbiddenError = {
     summary="List Checkout Sessions",
     response_model=ListResource[CheckoutSchema],
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "checkouts_list",
+        "x-tool-title": "List checkout sessions",
+        "x-tool-description": "List checkout sessions.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def list(
     auth_subject: auth.CheckoutRead,
@@ -152,6 +158,12 @@ async def list(
     tags=[APITag.mcp, APITag.cli],
     response_model=CheckoutSchema,
     responses={404: CheckoutNotFound},
+    openapi_extra={
+        "x-tool-name": "checkouts_get",
+        "x-tool-title": "Get checkout session",
+        "x-tool-description": "Get a checkout session by ID.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     id: CheckoutID,

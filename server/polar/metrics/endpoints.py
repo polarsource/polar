@@ -55,6 +55,16 @@ MetricDashboardID = Annotated[UUID4, Path(description="The metric dashboard ID."
     response_model=MetricsResponse,
     tags=[APITag.mcp, APITag.cli],
     response_model_exclude_none=True,
+    openapi_extra={
+        "x-tool-name": "metrics_get",
+        "x-tool-title": "Get metrics",
+        "x-tool-description": (
+            "Get metrics about your orders and subscriptions.\n"
+            "\n"
+            "Currency values are output in cents."
+        ),
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def get(
     auth_subject: auth.MetricsRead,
@@ -262,6 +272,12 @@ async def export(
     summary="Get Metrics Limits",
     response_model=MetricsLimits,
     tags=[APITag.mcp, APITag.cli],
+    openapi_extra={
+        "x-tool-name": "metrics_limits",
+        "x-tool-title": "Get metrics limits",
+        "x-tool-description": "Get the interval limits for the metrics endpoint.",
+        "x-tool-annotations": ["read_only", "idempotent"],
+    },
 )
 async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     """Get the interval limits for the metrics endpoint."""

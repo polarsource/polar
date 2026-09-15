@@ -11,7 +11,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Product
 from polar.models.product import ProductVisibility
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -108,6 +108,9 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Product",
+    openapi_extra=cli_preview(
+        ("id", "ID"), ("name", "Name"), ("is_archived", "Archived")
+    ),
     response_model=ProductSchema,
     responses={404: ProductNotFound},
 )

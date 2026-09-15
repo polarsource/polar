@@ -22,7 +22,10 @@ const polarWith = (resolve: Resolve) =>
     ),
   )
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 test('retries a rejected saved token with refreshed credentials in the same environment', async () => {
   const saved = keyringCredential('saved-token')
@@ -75,6 +78,12 @@ test.each([
   },
   {
     credential: keyringCredential(),
+    status: 404,
+    attempts: 1,
+    message: 'Organization is missing or inaccessible',
+  },
+  {
+    credential: keyringCredential(),
     status: 401,
     attempts: 2,
     message: 'Authentication rejected',
@@ -88,11 +97,29 @@ test.each([
       .fn<(client: PolarSDK) => Promise<string>>()
       .mockRejectedValue({ statusCode: status })
 
-    await expect(Effect.runPromise(polar.use(request))).rejects.toThrow(message)
+    await expect(Effect.runPromise(polar.use(request))).rejects.toMatchObject({
+      message: expect.stringContaining(message),
+      statusCode: status,
+    })
     expect(request).toHaveBeenCalledTimes(attempts)
     expect(resolve).toHaveBeenCalledTimes(attempts)
   },
 )
+
+test('passes the one-second request timeout to the SDK', async () => {
+  const timeout = vi.spyOn(AbortSignal, 'timeout')
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(Response.json({ id: 'customer-1' })),
+  )
+  const polar = await polarWith(() => Effect.succeed(overrideCredential()))
+  await Effect.runPromise(
+    polar.use((client) => client.customers.get('customer-1'), 'sandbox', {
+      timeout: 1,
+    }),
+  )
+  expect(timeout).toHaveBeenCalledWith(1000)
+})
 
 test('preserves refresh failures without retrying the API request', async () => {
   const error = new AuthError({ message: 'Unable to refresh saved session.' })

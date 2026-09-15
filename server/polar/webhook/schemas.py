@@ -196,7 +196,9 @@ class WebhookEndpointUpdate(Schema):
     format: EndpointFormat | None = None
     events: EndpointEvents | None = None
     enabled: bool | None = Field(
-        default=None, description="Whether the webhook endpoint is enabled."
+        default=None,
+        description="Whether the webhook endpoint is enabled.",
+        json_schema_extra={"x-polar-cli-confirm": {"equals": False}},
     )
 
 

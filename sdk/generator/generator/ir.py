@@ -4,7 +4,13 @@ import re
 import typing
 
 import openapi_pydantic as op
-from pydantic import BaseModel, Discriminator
+from pydantic import (
+    BaseModel,
+    Discriminator,
+    StringConstraints,
+    model_serializer,
+    model_validator,
+)
 
 from generator.casing import to_pascal_case
 
@@ -132,6 +138,36 @@ type TypeRef = typing.Annotated[
 ]
 
 
+type CLIConfirmationValue = str | bool | int | float | None
+
+
+class CLIConfirmation(BaseModel):
+    model_config = {"strict": True, "allow_inf_nan": False, "extra": "forbid"}
+
+    equals: CLIConfirmationValue = None
+    one_of: list[CLIConfirmationValue] | None = None
+
+    @model_validator(mode="after")
+    def validate_condition(self) -> typing.Self:
+        if self.model_fields_set == {"equals"}:
+            return self
+        if self.model_fields_set == {"one_of"} and self.one_of:
+            return self
+        raise ValueError("Specify either 'equals' or a non-empty 'one_of' list")
+
+    @model_serializer
+    def serialize_condition(
+        self,
+    ) -> dict[str, CLIConfirmationValue | list[CLIConfirmationValue]]:
+        if self.one_of is not None:
+            return {"one_of": self.one_of}
+        return {"equals": self.equals}
+
+    @property
+    def values(self) -> list[CLIConfirmationValue]:
+        return self.one_of if self.one_of is not None else [self.equals]
+
+
 class Field(BaseModel):
     """A single property of a Model, with optional read/write and deprecation metadata."""
 
@@ -141,6 +177,7 @@ class Field(BaseModel):
     description: str | None = None
     read_only: bool | None = None
     write_only: bool | None = None
+    cli_confirm: CLIConfirmation | None = None
     deprecated: bool | None = None
     default: typing.Any | None = None
     has_default: bool = False
@@ -212,6 +249,7 @@ class Parameter(BaseModel):
 
     name: str
     parameter_name: str
+    cli_confirm: CLIConfirmation | None = None
     type: TypeRef
     required: bool
     description: str | None = None
@@ -249,6 +287,18 @@ class Pagination(BaseModel):
     item_schema: TypeRef
 
 
+CLI_PREVIEW = "x-polar-cli-preview"
+
+
+class CLIPreviewField(BaseModel):
+    key: typing.Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    label: typing.Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class CLIPreview(BaseModel):
+    fields: list[CLIPreviewField]
+
+
 class Method(BaseModel):
     """A single API endpoint grouped under a Service."""
 
@@ -265,6 +315,7 @@ class Method(BaseModel):
     errors: list[ErrorResponse] = []
     deprecated: bool | None = None
     pagination: Pagination | None = None
+    cli_preview: CLIPreview | None = None
 
 
 class Service(BaseModel):
@@ -649,6 +700,19 @@ def _schema_to_enum(name: str, schema: op.Schema) -> Enum:
     )
 
 
+def _cli_confirmation(
+    schema: op.Schema | op.Reference | None,
+) -> CLIConfirmation | None:
+    if schema is None:
+        return None
+
+    extras = schema.__pydantic_extra__ or {}
+    if "x-polar-cli-confirm" not in extras:
+        return None
+
+    return CLIConfirmation.model_validate(extras["x-polar-cli-confirm"])
+
+
 def _schema_to_model(
     name: str,
     schema: op.Schema,
@@ -673,6 +737,7 @@ def _schema_to_model(
         read_only = None
         write_only = None
         deprecated = None
+        cli_confirm = _cli_confirmation(prop)
         default = None
         has_default = False
         has_example, example = _extract_example(prop)
@@ -692,6 +757,7 @@ def _schema_to_model(
                 description=description,
                 read_only=read_only,
                 write_only=write_only,
+                cli_confirm=cli_confirm,
                 deprecated=deprecated,
                 default=default,
                 has_default=has_default,
@@ -950,6 +1016,7 @@ def _convert_parameter_ir(
         type=type_,
         required=parameter.required or False,
         description=parameter.description or None,
+        cli_confirm=_cli_confirmation(parameter.param_schema),
         deprecated=True if parameter.deprecated else None,
         default=default,
         has_default=has_default,
@@ -1227,6 +1294,14 @@ def _generate_ir_version(
                         item_schema=item_schema,
                     )
 
+                preview_extension = (operation.__pydantic_extra__ or {}).get(
+                    CLI_PREVIEW
+                )
+                cli_preview = (
+                    CLIPreview.model_validate(preview_extension)
+                    if preview_extension is not None
+                    else None
+                )
                 method = Method(
                     name=method_name,
                     operation_id=typing.cast(str, operation.operationId),
@@ -1241,6 +1316,7 @@ def _generate_ir_version(
                     errors=errors,
                     deprecated=True if operation.deprecated else None,
                     pagination=pagination,
+                    cli_preview=cli_preview,
                 )
                 current_service.methods.append(method)
 

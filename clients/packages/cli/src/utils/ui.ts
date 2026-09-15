@@ -28,15 +28,19 @@ export const warning = (message: string) =>
 export const step = (message: string) => `${INDENT}${pc.dim(message)}`
 
 export const keyValue = (rows: ReadonlyArray<readonly [string, string]>) => {
-  const width = Math.max(...rows.map(([label]) => label.length))
+  const width = Math.max(...rows.map(([label]) => Bun.stringWidth(label)))
   return rows
     .map(
-      ([label, value]) => `${INDENT}${pc.dim(label.padEnd(width))}  ${value}`,
+      ([label, value]) =>
+        `${INDENT}${pc.dim(label + ' '.repeat(width - Bun.stringWidth(label)))}  ${value}`,
     )
     .join('\n')
 }
 
 export const blank = ''
+export const clearLine = '\r\x1b[2K'
+export const clearLines = (rows: number) =>
+  rows > 0 ? clearLine + `\x1b[1A${clearLine}`.repeat(rows - 1) : ''
 
 export const statusCode = (status: number, statusText: string) => {
   const text = `${status} ${statusText}`.trim()

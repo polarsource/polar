@@ -31,6 +31,7 @@ export type Session = typeof Session.Type
 
 export class AuthError extends Data.TaggedError('AuthError')<{
   message: string
+  statusCode?: number | undefined
 }> {}
 
 export const loginCommand = (environment: PolarEnvironment) =>

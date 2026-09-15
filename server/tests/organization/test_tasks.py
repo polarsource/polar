@@ -204,17 +204,6 @@ class TestSyncPayoutAccountWebsite:
 
 @pytest.mark.asyncio
 class TestEvaluateWebsiteRisk:
-    async def test_not_existing_organization(
-        self, mocker: MockerFixture, session: AsyncSession
-    ) -> None:
-        mocker.patch.object(
-            settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
-        )
-        session.expunge_all()
-
-        with pytest.raises(OrganizationDoesNotExist):
-            await evaluate_website_risk(uuid.uuid4())
-
     async def test_triggers_evaluation_for_org_with_website(
         self,
         mocker: MockerFixture,

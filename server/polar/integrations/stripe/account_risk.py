@@ -8,7 +8,7 @@ backoffice.
 
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
@@ -53,14 +53,22 @@ ACCOUNT_RISK_EVENT_TYPES: dict[str, OrganizationRiskSignal.Type] = {
 
 
 @dataclass(frozen=True)
-class AccountRiskSignal:
-    type: OrganizationRiskSignal.Type
+class MerchantRiskSignal:
     risk_level: StripeAccountRiskLevel
-    account_id: str | None = None
-    website_url: str | None = None
-    evaluation_id: str | None = None
-    description: str | None = None
-    payload: dict[str, Any] = field(default_factory=dict)
+    account_id: str
+    description: str | None
+    payload: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class WebsiteRiskSignal:
+    risk_level: StripeAccountRiskLevel
+    evaluation_id: str
+    description: str | None
+    payload: dict[str, Any]
+
+
+type AccountRiskSignal = MerchantRiskSignal | WebsiteRiskSignal
 
 
 @dataclass(frozen=True)
@@ -169,13 +177,12 @@ def _merchant_description(inner: Mapping[str, Any]) -> str | None:
     return ". ".join(parts) or None
 
 
-def _parse_merchant_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None:
+def _parse_merchant_signal(payload: Mapping[str, Any]) -> MerchantRiskSignal | None:
     account_id = _account_id(payload)
     if not account_id:
         return None
     inner = _nested(payload, OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT)
-    return AccountRiskSignal(
-        type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+    return MerchantRiskSignal(
         risk_level=_coerce_risk_level(inner.get("risk_level")),
         account_id=account_id,
         description=_merchant_description(inner),
@@ -202,23 +209,14 @@ def parse_merchant_payload(payload: Mapping[str, Any]) -> MerchantSignalPayload 
     )
 
 
-def _parse_website_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None:
-    account_id = _account_id(payload)
-    try:
-        url = payload["account_details"]["data"]["defaults"]["profile"]["business_url"]
-    except KeyError, TypeError:
-        url = None
-    website_url = str(url) if url else None
+def _parse_website_signal(payload: Mapping[str, Any]) -> WebsiteRiskSignal | None:
     evaluation_id = _optional_str(payload.get("account_evaluation"))
-    if not (account_id or website_url or evaluation_id):
+    if evaluation_id is None:
         return None
     inner = _nested(payload, OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE)
     details = inner.get("details")
-    return AccountRiskSignal(
-        type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+    return WebsiteRiskSignal(
         risk_level=_coerce_risk_level(inner.get("risk_level")),
-        account_id=account_id,
-        website_url=website_url,
         evaluation_id=evaluation_id,
         description=str(details) if details is not None else None,
         payload=dict(payload),

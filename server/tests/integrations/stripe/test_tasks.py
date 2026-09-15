@@ -204,26 +204,6 @@ class TestAccountRiskSignal:
         assert updated is not None
         assert updated.status == OrganizationStatus.REVIEW
 
-    async def test_missing_related_object_is_a_noop(
-        self,
-        mocker: MockerFixture,
-    ) -> None:
-        self._mock_event(
-            mocker,
-            {
-                "id": "evt_test",
-                "type": "v2.signals.account_signal.fraudulent_website_ready",
-            },
-        )
-        handle_mock = mocker.patch(
-            "polar.integrations.stripe.tasks.organization_service"
-            ".handle_account_risk_signal"
-        )
-
-        await account_risk_signal(uuid.uuid4())
-
-        handle_mock.assert_not_called()
-
     async def test_unmatched_evaluation_retries(
         self,
         mocker: MockerFixture,

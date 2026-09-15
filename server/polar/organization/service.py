@@ -32,7 +32,9 @@ from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.stripe.account_risk import (
     ACTIONABLE_RISK_LEVELS,
     AccountRiskSignal,
+    MerchantRiskSignal,
     UnknownAccountRiskEvaluation,
+    WebsiteRiskSignal,
 )
 from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -1944,74 +1946,86 @@ class OrganizationService:
         we also pull a live org into review, so a high-risk signal isn't sitting
         in a table nobody reads yet. We never auto-block.
         """
+        if isinstance(signal, WebsiteRiskSignal):
+            await self._handle_website_risk_signal(session, signal)
+            return
+
+        await self._handle_merchant_risk_signal(session, signal)
+
+    async def _handle_website_risk_signal(
+        self,
+        session: AsyncSession,
+        signal: WebsiteRiskSignal,
+    ) -> None:
         risk_signal_repository = OrganizationRiskSignalRepository.from_session(session)
-        pending = (
-            await risk_signal_repository.get_by_account_evaluation(signal.evaluation_id)
-            if signal.evaluation_id
-            else None
+        pending = await risk_signal_repository.get_by_account_evaluation(
+            signal.evaluation_id
         )
+        if pending is None:
+            log.warning(
+                "Risk signal for unknown website evaluation",
+                evaluation_id=signal.evaluation_id,
+            )
+            raise UnknownAccountRiskEvaluation(signal.evaluation_id)
+
         if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
-            if pending is not None:
-                await risk_signal_repository.soft_delete(pending)
+            await risk_signal_repository.soft_delete(pending)
             return
 
         repository = OrganizationRepository.from_session(session)
-        if pending is not None:
-            organization = await repository.get_by_id(
-                pending.organization_id, include_blocked=True
+        organization = await repository.get_by_id(
+            pending.organization_id, include_blocked=True
+        )
+        if organization is None:
+            return
+        await risk_signal_repository.update(
+            pending,
+            update_dict={
+                "risk_level": signal.risk_level,
+                "description": signal.description,
+                "payload": signal.payload,
+            },
+        )
+        if organization.status == OrganizationStatus.ACTIVE:
+            await self.set_organization_under_review(
+                session, organization, enqueue_review=False
             )
-            if organization is None:
-                return
-            await risk_signal_repository.update(
-                pending,
-                update_dict={
-                    "risk_level": signal.risk_level,
-                    "description": signal.description,
-                    "payload": signal.payload,
-                },
+
+    async def _handle_merchant_risk_signal(
+        self,
+        session: AsyncSession,
+        signal: MerchantRiskSignal,
+    ) -> None:
+        if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
+            return
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_stripe_id(
+            signal.account_id
+        )
+        if payout_account is None:
+            log.warning(
+                "Risk signal for unknown organization",
+                stripe_account_id=signal.account_id,
+            )
+            return
+
+        repository = OrganizationRepository.from_session(session)
+        organizations = await repository.get_all_by_payout_account(payout_account.id)
+        for organization in organizations:
+            await risk_signal_service.record(
+                session,
+                organization,
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                risk_level=signal.risk_level,
+                description=signal.description,
+                payload=signal.payload,
             )
             if organization.status == OrganizationStatus.ACTIVE:
                 await self.set_organization_under_review(
                     session, organization, enqueue_review=False
                 )
-            return
-
-        organizations: Sequence[Organization] = []
-        if signal.account_id:
-            payout_account_repository = PayoutAccountRepository.from_session(session)
-            payout_account = await payout_account_repository.get_by_stripe_id(
-                signal.account_id
-            )
-            if payout_account is not None:
-                organizations = await repository.get_all_by_payout_account(
-                    payout_account.id
-                )
-        if organizations:
-            for organization in organizations:
-                await risk_signal_service.record(
-                    session,
-                    organization,
-                    source=OrganizationRiskSignal.Source.STRIPE,
-                    type=signal.type,
-                    risk_level=signal.risk_level,
-                    description=signal.description,
-                    payload=signal.payload,
-                )
-                if organization.status == OrganizationStatus.ACTIVE:
-                    await self.set_organization_under_review(
-                        session, organization, enqueue_review=False
-                    )
-            return
-
-        log.warning(
-            "Risk signal for unknown organization",
-            stripe_account_id=signal.account_id,
-            website_url=signal.website_url,
-            evaluation_id=signal.evaluation_id,
-            signal_type=signal.type,
-        )
-        if signal.evaluation_id is not None:
-            raise UnknownAccountRiskEvaluation(signal.evaluation_id)
 
     async def set_organization_offboarding(
         self,

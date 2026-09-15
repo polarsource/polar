@@ -126,7 +126,8 @@ from tests.fixtures.random_objects import (
 )
 
 Hooks = namedtuple(
-    "Hooks", "updated activated canceled uncanceled revoked paused resumed"
+    "Hooks",
+    "updated activated canceled uncanceled revoked paused resumed migrated",
 )
 HookNames = frozenset(Hooks._fields)
 
@@ -208,6 +209,7 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
     revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
     paused = mocker.patch.object(subscription_service, "_on_subscription_paused")
     resumed = mocker.patch.object(subscription_service, "_on_subscription_resumed")
+    migrated = mocker.patch.object(subscription_service, "_on_subscription_migrated")
     return Hooks(
         updated=updated,
         activated=activated,
@@ -216,6 +218,7 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
         revoked=revoked,
         paused=paused,
         resumed=resumed,
+        migrated=migrated,
     )
 
 
@@ -4102,7 +4105,7 @@ class TestActivateImported:
             source_id="sub_1",
         )
 
-        assert_hooks_called_once(subscription_hooks, {"updated"})
+        assert_hooks_called_once(subscription_hooks, {"migrated"})
 
     async def test_keeps_the_billing_anchor_the_import_captured(
         self,

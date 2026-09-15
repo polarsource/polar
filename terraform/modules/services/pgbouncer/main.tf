@@ -115,6 +115,7 @@ module "service" {
     DB_PORT            = var.database.port
     DB_USER            = var.database.user
     SERVER_TLS_SSLMODE = "verify-full"
+    CONNECT_QUERY      = "SET statement_timeout=30000"
   }
 
   secrets = {

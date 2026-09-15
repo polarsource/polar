@@ -378,6 +378,10 @@ class Settings(BaseSettings):
     AWS_KMS_KEY_ID: str | None = None
     ENCRYPTION_LOCAL_KEY: str = "super secret encryption key"
 
+    # JWKS signing. Production and sandbox sign through a KMS asymmetric key
+    # (AWS_JWKS_KMS_KEY_ID); elsewhere the key set in JWKS signs in process.
+    AWS_JWKS_KMS_KEY_ID: str | None = None
+
     # Worker SQS/Lambda execution engine (POC)
     # When enabled, jobs enqueued for an allowlisted actor are routed to an
     # SQS queue consumed by the Lambda worker instead of Redis.

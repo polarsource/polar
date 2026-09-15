@@ -1,0 +1,52 @@
+{
+  "name": "@void/sdk",
+  "description": "Void SDK: a config of events, reducers and meters, an identity-scoped client, and a CLI to deploy the config",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config/index.ts",
+    "./plugins": "./src/plugins/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generate": "node --import tsx scripts/generate.mjs",
+    "lint": "oxlint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "void": "node ./bin/void.mjs"
+  },
+  "devDependencies": {
+    "@effect/openapi-generator": "4.0.0-beta.107",
+    "@effect/vitest": "4.0.0-beta.107",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
+    "@upstash/redis": "^1.38.4",
+    "ai": "7.0.94",
+    "ioredis": "5.11.1",
+    "pg": "8.23.0",
+    "typescript": "^5.9.3",
+    "vitest": "4.1.11",
+    "@polar-sh/typescript-config": "workspace:*"
+  },
+  "bin": {
+    "void": "./bin/void.mjs"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-beta.107",
+    "effect": "4.0.0-beta.107",
+    "tsx": "^4.23.13"
+  },
+  "peerDependencies": {
+    "ai": ">=7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    }
+  }
+}

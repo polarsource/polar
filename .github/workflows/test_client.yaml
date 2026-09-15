@@ -92,6 +92,11 @@ jobs:
       - name: "🧪 Test: @polar-sh/orbit"
         run: pnpm --filter @polar-sh/orbit test
 
+      - name: "🧪 Test: @void/sdk and CLI"
+        run: |
+          pnpm --filter @void/sdk test
+          node packages/void-sdk/bin/void.mjs --help
+
       - name: "🧪 Test: Adapters"
         run: pnpm turbo run test --filter='./adapters/*'
 

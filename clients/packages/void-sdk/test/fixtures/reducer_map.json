@@ -1,0 +1,195 @@
+{
+  "cases": [
+    {
+      "name": "identity",
+      "map": null,
+      "metadata": {
+        "asdf": 10,
+        "secret": "keep"
+      },
+      "expected": {
+        "asdf": 10,
+        "secret": "keep"
+      }
+    },
+    {
+      "name": "empty",
+      "map": {},
+      "metadata": {
+        "asdf": 10
+      },
+      "expected": {}
+    },
+    {
+      "name": "projection",
+      "map": {
+        "renamed": "$asdf",
+        "missing": "$missing",
+        "text": "$text",
+        "boolean": "$boolean",
+        "object": "$object",
+        "array": "$array",
+        "nil": "$nil"
+      },
+      "metadata": {
+        "asdf": 10,
+        "text": "hello",
+        "boolean": false,
+        "object": {
+          "x": 1
+        },
+        "array": [1, "a"],
+        "nil": null,
+        "secret": "drop"
+      },
+      "expected": {
+        "renamed": 10,
+        "missing": null,
+        "text": "hello",
+        "boolean": false,
+        "object": {
+          "x": 1
+        },
+        "array": [1, "a"],
+        "nil": null
+      }
+    },
+    {
+      "name": "arithmetic",
+      "map": {
+        "add": "$asdf + 20",
+        "subtract": "20 - $asdf",
+        "multiply": "$asdf * 3",
+        "divide": "$asdf / 4",
+        "precedence": "$asdf + 20 * 2",
+        "parentheses": "($asdf + 20) * 2 / 4",
+        "negative": "-$asdf + +2",
+        "scientific": ".5 + $asdf * 1e-2",
+        "associativity": "$asdf / 2 / 5",
+        "two": "$asdf + $other"
+      },
+      "metadata": {
+        "asdf": 10,
+        "other": 3
+      },
+      "expected": {
+        "add": 30,
+        "subtract": 10,
+        "multiply": 30,
+        "divide": 2.5,
+        "precedence": 50,
+        "parentheses": 15,
+        "negative": -8,
+        "scientific": 0.6,
+        "associativity": 1,
+        "two": 13
+      }
+    },
+    {
+      "name": "invalid-operands",
+      "map": {
+        "missing": "$missing + 1",
+        "string": "$string + 1",
+        "boolean": "$boolean * 2",
+        "object": "$object / 2",
+        "null": "$nil - 1",
+        "zero": "$number / 0",
+        "overflow": "$number * 1e308",
+        "intermediate": "$number / ($number * 1e308)"
+      },
+      "metadata": {
+        "number": 10,
+        "string": "10",
+        "boolean": true,
+        "object": {},
+        "nil": null
+      },
+      "expected": {
+        "missing": null,
+        "string": null,
+        "boolean": null,
+        "object": null,
+        "null": null,
+        "zero": null,
+        "overflow": null,
+        "intermediate": null
+      }
+    },
+    {
+      "name": "literals-and-original-input",
+      "map": {
+        "asdf": 20,
+        "original": "$asdf",
+        "string": "plain text",
+        "array": ["$asdf"],
+        "object": {
+          "nested": "$asdf"
+        },
+        "boolean": false,
+        "nil": null,
+        "quote\"key": "$asdf"
+      },
+      "metadata": {
+        "asdf": 10
+      },
+      "expected": {
+        "asdf": 20,
+        "original": 10,
+        "string": "plain text",
+        "array": ["$asdf"],
+        "object": {
+          "nested": "$asdf"
+        },
+        "boolean": false,
+        "nil": null,
+        "quote\"key": 10
+      }
+    },
+    {
+      "name": "metadata-only",
+      "map": {
+        "name": "$name",
+        "identity": "$external_identity_id",
+        "prototype": "$toString"
+      },
+      "metadata": {},
+      "expected": {
+        "name": null,
+        "identity": null,
+        "prototype": null
+      }
+    },
+    {
+      "name": "numeric-parentheses",
+      "map": {
+        "number": "($number)",
+        "text": "($text)"
+      },
+      "metadata": {
+        "number": 10,
+        "text": "hello"
+      },
+      "expected": {
+        "number": 10,
+        "text": null
+      }
+    }
+  ],
+  "invalid": [
+    "$",
+    "$asdf +",
+    "$asdf ** 2",
+    "$asdf // 2",
+    "$asdf % 2",
+    "Math.abs($asdf)",
+    "$asdf[0]",
+    "$asdf.foo",
+    "$asdf + Infinity",
+    "$asdf + 1e999",
+    "$asdf; DROP TABLE events",
+    "($asdf + 1",
+    "$asdf + 0x10",
+    "$asdf + 1_000",
+    "$asdf # comment"
+  ]
+}

@@ -1,0 +1,1273 @@
+[
+  {
+    "name": "hour rollover None",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "hour",
+          "rollover_cap": null
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-01-31T15:00:00Z",
+    "expected": {
+      "at": "2024-01-31T15:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "hour",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-01-31T15:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-01-31T13:00:00Z",
+        "2024-01-31T14:00:00Z",
+        "2024-01-31T15:00:00Z"
+      ],
+      "cycles": {
+        "2024-01-31T13:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-01-31T13:00:00Z",
+          "credits": 100.0,
+          "usage": 30.0,
+          "expired": 0.0,
+          "rollover": 70.0,
+          "overage": 0.0
+        },
+        "2024-01-31T14:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T13:00:00Z",
+          "period_end": "2024-01-31T14:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2024-01-31T15:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T14:00:00Z",
+          "period_end": "2024-01-31T15:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 90.0,
+      "usage": 0.0,
+      "remaining": 90.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "hour rollover 0",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "hour",
+          "rollover_cap": 0
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-01-31T15:00:00Z",
+    "expected": {
+      "at": "2024-01-31T15:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "hour",
+        "meter_interval_count": 1,
+        "rollover_cap": 0.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-01-31T15:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-01-31T13:00:00Z",
+        "2024-01-31T14:00:00Z",
+        "2024-01-31T15:00:00Z"
+      ],
+      "cycles": {
+        "2024-01-31T13:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-01-31T13:00:00Z",
+          "credits": 100.0,
+          "usage": 30.0,
+          "expired": 70.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-01-31T14:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T13:00:00Z",
+          "period_end": "2024-01-31T14:00:00Z",
+          "credits": 20.0,
+          "usage": 0.0,
+          "expired": 20.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-01-31T15:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T14:00:00Z",
+          "period_end": "2024-01-31T15:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 0.0,
+      "usage": 0.0,
+      "remaining": 0.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "hour rollover 15",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "hour",
+          "rollover_cap": 15
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-01-31T15:00:00Z",
+    "expected": {
+      "at": "2024-01-31T15:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "hour",
+        "meter_interval_count": 1,
+        "rollover_cap": 15.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-01-31T15:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-01-31T13:00:00Z",
+        "2024-01-31T14:00:00Z",
+        "2024-01-31T15:00:00Z"
+      ],
+      "cycles": {
+        "2024-01-31T13:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-01-31T13:00:00Z",
+          "credits": 100.0,
+          "usage": 30.0,
+          "expired": 55.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-01-31T14:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T13:00:00Z",
+          "period_end": "2024-01-31T14:00:00Z",
+          "credits": 35.0,
+          "usage": 0.0,
+          "expired": 20.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-01-31T15:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T14:00:00Z",
+          "period_end": "2024-01-31T15:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 15.0,
+      "usage": 0.0,
+      "remaining": 15.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "day rollover None",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "day",
+          "rollover_cap": null
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-02-03T12:00:00Z",
+    "expected": {
+      "at": "2024-02-03T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "day",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-02-03T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-01T12:00:00Z",
+        "2024-02-02T12:00:00Z",
+        "2024-02-03T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-01T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-01T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2024-02-02T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-01T12:00:00Z",
+          "period_end": "2024-02-02T12:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2024-02-03T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-02T12:00:00Z",
+          "period_end": "2024-02-03T12:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 90.0,
+      "usage": 0.0,
+      "remaining": 90.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "day rollover 0",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "day",
+          "rollover_cap": 0
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-02-03T12:00:00Z",
+    "expected": {
+      "at": "2024-02-03T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "day",
+        "meter_interval_count": 1,
+        "rollover_cap": 0.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-02-03T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-01T12:00:00Z",
+        "2024-02-02T12:00:00Z",
+        "2024-02-03T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-01T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-01T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 90.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-02-02T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-01T12:00:00Z",
+          "period_end": "2024-02-02T12:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-02-03T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-02T12:00:00Z",
+          "period_end": "2024-02-03T12:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 0.0,
+      "usage": 0.0,
+      "remaining": 0.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "day rollover 15",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "day",
+          "rollover_cap": 15
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-02-03T12:00:00Z",
+    "expected": {
+      "at": "2024-02-03T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "day",
+        "meter_interval_count": 1,
+        "rollover_cap": 15.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-02-03T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-01T12:00:00Z",
+        "2024-02-02T12:00:00Z",
+        "2024-02-03T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-01T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-01T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 75.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-02-02T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-01T12:00:00Z",
+          "period_end": "2024-02-02T12:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-02-03T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-02T12:00:00Z",
+          "period_end": "2024-02-03T12:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 15.0,
+      "usage": 0.0,
+      "remaining": 15.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "week rollover None",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "week",
+          "rollover_cap": null
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-02-21T12:00:00Z",
+    "expected": {
+      "at": "2024-02-21T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "week",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-02-21T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-07T12:00:00Z",
+        "2024-02-14T12:00:00Z",
+        "2024-02-21T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-07T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-07T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2024-02-14T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-07T12:00:00Z",
+          "period_end": "2024-02-14T12:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2024-02-21T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-14T12:00:00Z",
+          "period_end": "2024-02-21T12:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 90.0,
+      "usage": 0.0,
+      "remaining": 90.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "week rollover 0",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "week",
+          "rollover_cap": 0
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-02-21T12:00:00Z",
+    "expected": {
+      "at": "2024-02-21T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "week",
+        "meter_interval_count": 1,
+        "rollover_cap": 0.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-02-21T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-07T12:00:00Z",
+        "2024-02-14T12:00:00Z",
+        "2024-02-21T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-07T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-07T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 90.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-02-14T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-07T12:00:00Z",
+          "period_end": "2024-02-14T12:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-02-21T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-14T12:00:00Z",
+          "period_end": "2024-02-21T12:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 0.0,
+      "usage": 0.0,
+      "remaining": 0.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "week rollover 15",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "week",
+          "rollover_cap": 15
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-02-21T12:00:00Z",
+    "expected": {
+      "at": "2024-02-21T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "week",
+        "meter_interval_count": 1,
+        "rollover_cap": 15.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-02-21T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-07T12:00:00Z",
+        "2024-02-14T12:00:00Z",
+        "2024-02-21T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-07T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-07T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 75.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-02-14T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-07T12:00:00Z",
+          "period_end": "2024-02-14T12:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-02-21T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-14T12:00:00Z",
+          "period_end": "2024-02-21T12:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 15.0,
+      "usage": 0.0,
+      "remaining": 15.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "month rollover None",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "month",
+          "rollover_cap": null
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-04-01T12:00:00Z",
+    "expected": {
+      "at": "2024-04-01T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "month",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-03-31T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-29T12:00:00Z",
+        "2024-03-31T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-29T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-29T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2024-03-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-29T12:00:00Z",
+          "period_end": "2024-03-31T12:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 90.0,
+      "usage": 0.0,
+      "remaining": 90.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "month rollover 0",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "month",
+          "rollover_cap": 0
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-04-01T12:00:00Z",
+    "expected": {
+      "at": "2024-04-01T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "month",
+        "meter_interval_count": 1,
+        "rollover_cap": 0.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-03-31T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-29T12:00:00Z",
+        "2024-03-31T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-29T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-29T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 90.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2024-03-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-29T12:00:00Z",
+          "period_end": "2024-03-31T12:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 0.0,
+      "usage": 0.0,
+      "remaining": 0.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "month rollover 15",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "month",
+          "rollover_cap": 15
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2024-04-01T12:00:00Z",
+    "expected": {
+      "at": "2024-04-01T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "month",
+        "meter_interval_count": 1,
+        "rollover_cap": 15.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2024-03-31T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2024-02-29T12:00:00Z",
+        "2024-03-31T12:00:00Z"
+      ],
+      "cycles": {
+        "2024-02-29T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2024-02-29T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 75.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2024-03-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-02-29T12:00:00Z",
+          "period_end": "2024-03-31T12:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 15.0,
+      "usage": 0.0,
+      "remaining": 15.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "year rollover None",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "year",
+          "rollover_cap": null
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2026-03-01T12:00:00Z",
+    "expected": {
+      "at": "2026-03-01T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "year",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2026-01-31T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2025-01-31T12:00:00Z",
+        "2026-01-31T12:00:00Z"
+      ],
+      "cycles": {
+        "2025-01-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2025-01-31T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        },
+        "2026-01-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2025-01-31T12:00:00Z",
+          "period_end": "2026-01-31T12:00:00Z",
+          "credits": 90.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 90.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 90.0,
+      "usage": 0.0,
+      "remaining": 90.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "year rollover 0",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "year",
+          "rollover_cap": 0
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2026-03-01T12:00:00Z",
+    "expected": {
+      "at": "2026-03-01T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "year",
+        "meter_interval_count": 1,
+        "rollover_cap": 0.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2026-01-31T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2025-01-31T12:00:00Z",
+        "2026-01-31T12:00:00Z"
+      ],
+      "cycles": {
+        "2025-01-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2025-01-31T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 90.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        },
+        "2026-01-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2025-01-31T12:00:00Z",
+          "period_end": "2026-01-31T12:00:00Z",
+          "credits": 0.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 0.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 0.0,
+      "usage": 0.0,
+      "remaining": 0.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "year rollover 15",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "year",
+          "rollover_cap": 15
+        }
+      }
+    ],
+    "credits": [
+      ["2024-01-31T12:00:00Z", 100],
+      ["2024-01-31T13:00:00Z", 20]
+    ],
+    "usage": [["2024-01-31T12:00:00Z", 30]],
+    "until": "2026-03-01T12:00:00Z",
+    "expected": {
+      "at": "2026-03-01T12:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2024-01-31T12:00:00Z",
+        "anchor": "2024-01-31T12:00:00Z",
+        "meter_interval": "year",
+        "meter_interval_count": 1,
+        "rollover_cap": 15.0,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2026-01-31T12:00:00Z",
+      "boundaries": [
+        "2024-01-31T12:00:00Z",
+        "2025-01-31T12:00:00Z",
+        "2026-01-31T12:00:00Z"
+      ],
+      "cycles": {
+        "2025-01-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2024-01-31T12:00:00Z",
+          "period_end": "2025-01-31T12:00:00Z",
+          "credits": 120.0,
+          "usage": 30.0,
+          "expired": 75.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        },
+        "2026-01-31T12:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2025-01-31T12:00:00Z",
+          "period_end": "2026-01-31T12:00:00Z",
+          "credits": 15.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 15.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 15.0,
+      "usage": 0.0,
+      "remaining": 15.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "subscription.canceled",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2026-01-01T00:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "month"
+        }
+      },
+      {
+        "id": "change",
+        "at": "2026-01-15T00:00:00Z",
+        "name": "subscription.canceled",
+        "data": {
+          "meter_interval": "week"
+        }
+      }
+    ],
+    "credits": [["2026-01-01T00:00:00Z", 100]],
+    "usage": [["2026-01-02T00:00:00Z", 20]],
+    "until": "2026-02-10T00:00:00Z",
+    "expected": {
+      "at": "2026-02-10T00:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2026-01-15T00:00:00Z",
+        "anchor": "2026-01-01T00:00:00Z",
+        "meter_interval": "month",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": true,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2026-01-01T00:00:00Z",
+      "boundaries": ["2026-01-01T00:00:00Z"],
+      "cycles": {},
+      "credits": 100.0,
+      "usage": 20.0,
+      "remaining": 80.0,
+      "overage": 0.0
+    }
+  },
+  {
+    "name": "subscription.revoked",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2026-01-01T00:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "month"
+        }
+      },
+      {
+        "id": "change",
+        "at": "2026-01-15T00:00:00Z",
+        "name": "subscription.revoked",
+        "data": {
+          "meter_interval": "week"
+        }
+      }
+    ],
+    "credits": [["2026-01-01T00:00:00Z", 100]],
+    "usage": [["2026-01-02T00:00:00Z", 20]],
+    "until": "2026-02-10T00:00:00Z",
+    "expected": {
+      "at": "2026-02-10T00:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2026-01-15T00:00:00Z",
+        "anchor": "2026-01-01T00:00:00Z",
+        "meter_interval": "month",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": true,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2026-01-01T00:00:00Z",
+      "boundaries": ["2026-01-01T00:00:00Z"],
+      "cycles": {},
+      "credits": 0.0,
+      "usage": 20.0,
+      "remaining": 0.0,
+      "overage": 20.0
+    }
+  },
+  {
+    "name": "subscription.updated",
+    "events": [
+      {
+        "id": "sub",
+        "at": "2026-01-01T00:00:00Z",
+        "name": "subscription.created",
+        "data": {
+          "meter_interval": "month"
+        }
+      },
+      {
+        "id": "change",
+        "at": "2026-01-15T00:00:00Z",
+        "name": "subscription.updated",
+        "data": {
+          "meter_interval": "week"
+        }
+      }
+    ],
+    "credits": [["2026-01-01T00:00:00Z", 100]],
+    "usage": [["2026-01-02T00:00:00Z", 20]],
+    "until": "2026-02-10T00:00:00Z",
+    "expected": {
+      "at": "2026-02-10T00:00:00Z",
+      "subscription": {
+        "id": "sub",
+        "at": "2026-01-15T00:00:00Z",
+        "anchor": "2026-01-01T00:00:00Z",
+        "meter_interval": "week",
+        "meter_interval_count": 1,
+        "rollover_cap": null,
+        "ended": false,
+        "included": 0,
+        "limit": "hard"
+      },
+      "boundary": "2026-02-05T00:00:00Z",
+      "boundaries": [
+        "2026-01-01T00:00:00Z",
+        "2026-01-15T00:00:00Z",
+        "2026-01-22T00:00:00Z",
+        "2026-01-29T00:00:00Z",
+        "2026-02-05T00:00:00Z"
+      ],
+      "cycles": {
+        "2026-01-15T00:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2026-01-01T00:00:00Z",
+          "period_end": "2026-01-15T00:00:00Z",
+          "credits": 100.0,
+          "usage": 20.0,
+          "expired": 0.0,
+          "rollover": 80.0,
+          "overage": 0.0
+        },
+        "2026-01-22T00:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2026-01-15T00:00:00Z",
+          "period_end": "2026-01-22T00:00:00Z",
+          "credits": 80.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 80.0,
+          "overage": 0.0
+        },
+        "2026-01-29T00:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2026-01-22T00:00:00Z",
+          "period_end": "2026-01-29T00:00:00Z",
+          "credits": 80.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 80.0,
+          "overage": 0.0
+        },
+        "2026-02-05T00:00:00Z": {
+          "subscription_id": "sub",
+          "period_start": "2026-01-29T00:00:00Z",
+          "period_end": "2026-02-05T00:00:00Z",
+          "credits": 80.0,
+          "usage": 0.0,
+          "expired": 0.0,
+          "rollover": 80.0,
+          "overage": 0.0
+        }
+      },
+      "credits": 80.0,
+      "usage": 0.0,
+      "remaining": 80.0,
+      "overage": 0.0
+    }
+  }
+]

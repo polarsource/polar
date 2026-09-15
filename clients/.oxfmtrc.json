@@ -12,6 +12,7 @@
     "dist",
     "coverage",
     ".changeset",
-    "**/CHANGELOG.md"
+    "**/CHANGELOG.md",
+    "packages/void-sdk/src/api/generated.ts"
   ]
 }

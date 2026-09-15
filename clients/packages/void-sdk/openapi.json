@@ -1,0 +1,5678 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Void API",
+    "summary": "Void HTTP API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8001",
+      "x-speakeasy-server-id": "production"
+    }
+  ],
+  "paths": {
+    "/v1/organizations": {
+      "get": {
+        "tags": ["organizations"],
+        "summary": "List",
+        "operationId": "organizations:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  },
+                  "type": "array",
+                  "title": "Response Organizations:List"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["organizations"],
+        "summary": "Create",
+        "operationId": "organizations:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organizations/current": {
+      "get": {
+        "tags": ["organizations"],
+        "summary": "Current",
+        "description": "Return the organization authenticated by the supplied access token.",
+        "operationId": "organizations:current",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["organizations"],
+        "summary": "Updatecurrent",
+        "description": "Update settings for the authenticated organization.",
+        "operationId": "organizations:updateCurrent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{id}": {
+      "get": {
+        "tags": ["organizations"],
+        "summary": "Get",
+        "operationId": "organizations:get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities": {
+      "get": {
+        "tags": ["identities"],
+        "summary": "List",
+        "operationId": "identities:list",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "parent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only children of this identity",
+              "title": "Parent"
+            },
+            "description": "Only children of this identity"
+          },
+          {
+            "name": "root",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only identities with no parent",
+              "default": false,
+              "title": "Root"
+            },
+            "description": "Only identities with no parent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "title": "Response Identities:List"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["identities"],
+        "summary": "Ensure",
+        "description": "Idempotent. Creates the identity on first touch, returns it after.",
+        "operationId": "identities:ensure",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/{external_id}": {
+      "get": {
+        "tags": ["identities"],
+        "summary": "Get",
+        "operationId": "identities:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/{external_id}/snapshot": {
+      "get": {
+        "tags": ["identities"],
+        "summary": "Snapshot",
+        "description": "One point-in-time view of an identity and its billing state.",
+        "operationId": "identities:snapshot",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          },
+          {
+            "name": "variant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Variant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentitySnapshot"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/{external_id}/entitlements": {
+      "get": {
+        "tags": ["identities"],
+        "summary": "Entitlements",
+        "description": "Entitlements this identity holds, including those granted to any\nancestor's subscription.",
+        "operationId": "identities:entitlements",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityEntitlements"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["identities"],
+        "summary": "Assignentitlements",
+        "description": "Record a replacement assignment. Effective after reducer processing.",
+        "operationId": "identities:assignEntitlements",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntitlementUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitlementAssignment"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers": {
+      "get": {
+        "tags": ["customers"],
+        "summary": "List",
+        "operationId": "customers:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Customer"
+                  },
+                  "type": "array",
+                  "title": "Response Customers:List"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["customers"],
+        "summary": "Create",
+        "operationId": "customers:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/customers/{external_id}": {
+      "get": {
+        "tags": ["customers"],
+        "summary": "Get",
+        "operationId": "customers:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/{external_id}/state": {
+      "get": {
+        "tags": ["customers"],
+        "summary": "State",
+        "operationId": "customers:state",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "variant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Variant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "tags": ["events"],
+        "summary": "List",
+        "operationId": "events:list",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only events with this name",
+              "title": "Name"
+            },
+            "description": "Only events with this name"
+          },
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this actor",
+              "title": "External Identity Id"
+            },
+            "description": "Only this actor"
+          },
+          {
+            "name": "external_root_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this tree, by its root's key",
+              "title": "External Root Id"
+            },
+            "description": "Only this tree, by its root's key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["events"],
+        "summary": "Ingest",
+        "operationId": "events:ingest",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EventCreate"
+                },
+                "title": "Events"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsIngestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reducers": {
+      "get": {
+        "tags": ["reducers"],
+        "summary": "List",
+        "operationId": "reducers:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Reducer"
+                  },
+                  "type": "array",
+                  "title": "Response Reducers:List"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["reducers"],
+        "summary": "Create",
+        "operationId": "reducers:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReducerCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reducer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/reducers/{id}": {
+      "get": {
+        "tags": ["reducers"],
+        "summary": "Get",
+        "operationId": "reducers:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reducer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reducers/{id}/records": {
+      "get": {
+        "tags": ["reducers"],
+        "summary": "Records",
+        "operationId": "reducers:records",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "External Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReducerRecord"
+                  },
+                  "title": "Response Reducers:Records"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meters": {
+      "get": {
+        "tags": ["meters"],
+        "summary": "List",
+        "operationId": "meters:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Meter"
+                  },
+                  "type": "array",
+                  "title": "Response Meters:List"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["meters"],
+        "summary": "Create",
+        "operationId": "meters:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeterCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meter"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/meters/{id}": {
+      "get": {
+        "tags": ["meters"],
+        "summary": "Get",
+        "operationId": "meters:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meter"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meters/{id}/balance": {
+      "get": {
+        "tags": ["meters"],
+        "summary": "Balance",
+        "operationId": "meters:balance",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Identity Id"
+            }
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "At"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Balance"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meters/{id}/check": {
+      "get": {
+        "tags": ["meters"],
+        "summary": "Check",
+        "operationId": "meters:check",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Identity Id"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Check"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metrics/compare": {
+      "get": {
+        "tags": ["metrics"],
+        "summary": "Compare",
+        "operationId": "metrics:compare",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "baseline",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Subscription history variant; empty means unversioned.",
+              "title": "Baseline"
+            },
+            "description": "Subscription history variant; empty means unversioned."
+          },
+          {
+            "name": "candidate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Pricing variant; empty means unversioned.",
+              "title": "Candidate"
+            },
+            "description": "Pricing variant; empty means unversioned."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricComparison"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metrics": {
+      "get": {
+        "tags": ["metrics"],
+        "summary": "Get",
+        "operationId": "metrics:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reducer_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Reducer Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "End"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TimeInterval"
+            }
+          },
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict to this billing identity and everything below it. A root gives the customer's total.",
+              "title": "External Identity Id"
+            },
+            "description": "Restrict to this billing identity and everything below it. A root gives the customer's total."
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GroupBy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "One series per actor (`external_identity_id`) or one per billable root (`external_root_id`, the top of the actor's tree).",
+              "title": "Group By"
+            },
+            "description": "One series per actor (`external_identity_id`) or one per billable root (`external_root_id`, the top of the actor's tree)."
+          },
+          {
+            "name": "cumulative",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Cumulative"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entitlements": {
+      "get": {
+        "tags": ["entitlements"],
+        "summary": "List",
+        "operationId": "entitlements:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Entitlement"
+                  },
+                  "type": "array",
+                  "title": "Response Entitlements:List"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["entitlements"],
+        "summary": "Create",
+        "description": "Create by slug, or update the display fields of an existing one.",
+        "operationId": "entitlements:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntitlementCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entitlement"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/entitlements/{id}": {
+      "get": {
+        "tags": ["entitlements"],
+        "summary": "Get",
+        "operationId": "entitlements:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entitlement"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/products": {
+      "get": {
+        "tags": ["products"],
+        "summary": "List",
+        "description": "Every product generation; by default only the ones still sold.",
+        "operationId": "products:list",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  },
+                  "title": "Response Products:List"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["products"],
+        "summary": "Create",
+        "description": "Insert the next generation of the slug and archive the previous one.",
+        "operationId": "products:create",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/products/{id}": {
+      "get": {
+        "tags": ["products"],
+        "summary": "Get",
+        "operationId": "products:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions": {
+      "get": {
+        "tags": ["subscriptions"],
+        "summary": "List",
+        "description": "Subscriptions of the organization, or of one identity. `active` keeps\nonly the ones granting access right now.",
+        "operationId": "subscriptions:list",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "External Identity Id"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductSubscription"
+                  },
+                  "title": "Response Subscriptions:List"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["subscriptions"],
+        "summary": "Create",
+        "description": "Subscribe an identity to a product generation, or record a one-time\npurchase. Writes the row and the events derived from it together.",
+        "operationId": "subscriptions:create",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSubscription"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/rebuild": {
+      "post": {
+        "tags": ["subscriptions"],
+        "summary": "Rebuild",
+        "description": "Re-project the subscriptions table from the lifecycle events in the\nstream. `dry_run` only reports the differences: the consistency check.",
+        "operationId": "subscriptions:rebuild",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Dry Run"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionRebuild"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/{id}": {
+      "get": {
+        "tags": ["subscriptions"],
+        "summary": "Get",
+        "operationId": "subscriptions:get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSubscription"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/{id}/cancel": {
+      "post": {
+        "tags": ["subscriptions"],
+        "summary": "Cancel",
+        "operationId": "subscriptions:cancel",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionCancel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSubscription"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/{id}/revoke": {
+      "post": {
+        "tags": ["subscriptions"],
+        "summary": "Revoke",
+        "description": "End access immediately.",
+        "operationId": "subscriptions:revoke",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSubscription"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/{id}/cycles": {
+      "get": {
+        "tags": ["subscriptions"],
+        "summary": "Cycles",
+        "description": "Closed periods with the fixed amount and each meter's usage priced.",
+        "operationId": "subscriptions:cycles",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionCycle"
+                  },
+                  "title": "Response Subscriptions:Cycles"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deploys": {
+      "post": {
+        "tags": ["deploys"],
+        "summary": "Create",
+        "description": "Reconcile a compiled config: create or version reducers, upsert meters\nby slug, report orphans. `dry_run` returns the plan without writing.",
+        "operationId": "deploys:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeployCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/deploys/latest": {
+      "get": {
+        "tags": ["deploys"],
+        "summary": "Latest",
+        "operationId": "deploys:latest",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "variant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Variant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Balance": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Subscription"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "boundary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boundary"
+          },
+          "boundaries": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "title": "Boundaries"
+          },
+          "cycles": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterCycle"
+            },
+            "propertyNames": {
+              "format": "date-time"
+            },
+            "type": "object",
+            "title": "Cycles"
+          },
+          "credits": {
+            "type": "number",
+            "title": "Credits",
+            "default": 0
+          },
+          "usage": {
+            "type": "number",
+            "title": "Usage",
+            "default": 0
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Meter Id"
+          },
+          "external_identity_id": {
+            "type": "string",
+            "title": "External Identity Id"
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining",
+            "description": "What the tightest holder or cap up the chain has left; None when nothing limits it."
+          },
+          "overage": {
+            "type": "number",
+            "title": "Overage",
+            "description": "The tightest holder's usage past its credits.",
+            "default": 0
+          },
+          "limited_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limited By",
+            "description": "The identity whose holding or cap sets `remaining`."
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["hard", "soft", "unlimited"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "no_holder",
+              "exhausted",
+              "access_denied",
+              "missing_period"
+            ],
+            "title": "Reason",
+            "default": "ok"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          }
+        },
+        "type": "object",
+        "required": ["meter_id", "external_identity_id", "remaining"],
+        "title": "Balance",
+        "description": "Where one identity stands on a meter.\n\n`usage` and `credits` are the identity's own: what its subtree spent and\nwhat it holds. `remaining` and the fields after it come from the chain,\nthe way `check` sees it: the tightest holder or cap above or at this\nidentity. A child that holds nothing still gets a real number here."
+      },
+      "Check": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining",
+            "description": "What the tightest holder up the chain has left."
+          },
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id",
+            "description": "The holder with the least remaining, or None if there is none."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "no_holder",
+              "exhausted",
+              "access_denied",
+              "missing_period"
+            ],
+            "title": "Reason",
+            "default": "ok"
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/MeterEntitlementState"
+            },
+            "type": "array",
+            "title": "Entitlements"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["hard", "soft", "unlimited"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "overage": {
+            "type": "number",
+            "title": "Overage",
+            "default": 0
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          }
+        },
+        "type": "object",
+        "required": ["allowed", "remaining", "external_identity_id"],
+        "title": "Check"
+      },
+      "ComparisonMetric": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "func": {
+            "type": "string",
+            "title": "Func"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/Metrics"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "func", "metrics"],
+        "title": "ComparisonMetric"
+      },
+      "CountAggregation": {
+        "properties": {
+          "func": {
+            "type": "string",
+            "const": "count",
+            "title": "Func",
+            "default": "count"
+          }
+        },
+        "type": "object",
+        "title": "CountAggregation"
+      },
+      "Customer": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": ["id", "external_id", "email", "name", "created_at"],
+        "title": "Customer"
+      },
+      "CustomerCreate": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "External Id"
+          },
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["external_id", "email"],
+        "title": "CustomerCreate"
+      },
+      "CustomerMeterState": {
+        "properties": {
+          "meter": {
+            "$ref": "#/components/schemas/Meter"
+          },
+          "usage_last_processed_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastProcessedEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "credit_last_processed_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastProcessedEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/MeterHolderState"
+            },
+            "type": "array",
+            "title": "Holders"
+          }
+        },
+        "type": "object",
+        "required": ["meter", "holders"],
+        "title": "CustomerMeterState"
+      },
+      "CustomerState": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "next_change_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Change At",
+            "description": "Next known billing boundary or subscription change."
+          },
+          "identities": {
+            "items": {
+              "$ref": "#/components/schemas/StateIdentity"
+            },
+            "type": "array",
+            "title": "Identities"
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerMeterState"
+            },
+            "type": "array",
+            "title": "Meters"
+          },
+          "reducers": {
+            "items": {
+              "$ref": "#/components/schemas/Reducer"
+            },
+            "type": "array",
+            "title": "Reducers"
+          },
+          "buckets": {
+            "items": {
+              "$ref": "#/components/schemas/ReducerState"
+            },
+            "type": "array",
+            "title": "Buckets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "customer",
+          "at",
+          "since",
+          "identities",
+          "meters",
+          "reducers",
+          "buckets"
+        ],
+        "title": "CustomerState"
+      },
+      "Deploy": {
+        "properties": {
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "Unset on a dry run."
+          },
+          "checksum": {
+            "type": "string",
+            "title": "Checksum"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": ["checksum", "applied", "entries", "created_at"],
+        "title": "Deploy"
+      },
+      "DeployCreate": {
+        "properties": {
+          "checksum": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Checksum",
+            "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Compute the plan against current state; write nothing.",
+            "default": false
+          },
+          "reducers": {
+            "items": {
+              "$ref": "#/components/schemas/DeployReducer"
+            },
+            "type": "array",
+            "title": "Reducers",
+            "default": []
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/DeployMeter"
+            },
+            "type": "array",
+            "title": "Meters",
+            "default": []
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntitlement"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "default": []
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/DeployProduct"
+            },
+            "type": "array",
+            "title": "Products",
+            "default": []
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricePreviewWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Compare changed usage prices without applying them."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["checksum"],
+        "title": "DeployCreate"
+      },
+      "DeployEntitlement": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": ["slug"],
+        "title": "DeployEntitlement"
+      },
+      "DeployEntry": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["reducer", "meter", "entitlement", "product"],
+            "title": "Kind"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["create", "replace", "update", "unchanged", "orphan"],
+            "title": "Action"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The server id after apply. Unset on a dry run create."
+          },
+          "price_preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeterPricePreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["kind", "key", "action"],
+        "title": "DeployEntry"
+      },
+      "DeployMeter": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "reducer": {
+            "type": "string",
+            "title": "Reducer",
+            "description": "Slug of a scalar reducer in this deploy."
+          },
+          "credit_reducer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Reducer",
+            "description": "Slug of a sum reducer in this deploy supplying credits. When omitted, a credit.granted reducer is created automatically."
+          },
+          "unit_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Unit Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "usd"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "reducer", "unit_amount"],
+        "title": "DeployMeter"
+      },
+      "DeployProduct": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "price": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RecurringPrice-Input"
+              },
+              {
+                "$ref": "#/components/schemas/OneTimePrice-Input"
+              }
+            ],
+            "title": "Price",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "one_time": "#/components/schemas/OneTimePrice-Input",
+                "recurring": "#/components/schemas/RecurringPrice-Input"
+              }
+            }
+          },
+          "meters": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/components/schemas/DeployProductMeter"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Meters",
+            "description": "Slugs of meters in this deploy."
+          },
+          "entitlements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "description": "Slugs of entitlements in this deploy."
+          }
+        },
+        "type": "object",
+        "required": ["slug", "name", "price"],
+        "title": "DeployProduct"
+      },
+      "DeployProductMeter": {
+        "properties": {
+          "included": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Included",
+            "default": 0
+          },
+          "limit": {
+            "type": "string",
+            "enum": ["hard", "soft", "unlimited"],
+            "title": "Limit",
+            "default": "hard"
+          },
+          "rollover_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollover Cap",
+            "default": 0
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          }
+        },
+        "type": "object",
+        "required": ["slug"],
+        "title": "DeployProductMeter"
+      },
+      "DeployReducer": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "filter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Filter-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CountAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/PropertyAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/RecordAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/DerivedAggregation"
+              }
+            ],
+            "title": "Aggregation",
+            "discriminator": {
+              "propertyName": "func",
+              "mapping": {
+                "count": "#/components/schemas/CountAggregation",
+                "derive": "#/components/schemas/DerivedAggregation",
+                "first": "#/components/schemas/RecordAggregation",
+                "last": "#/components/schemas/RecordAggregation",
+                "max": "#/components/schemas/PropertyAggregation",
+                "min": "#/components/schemas/PropertyAggregation",
+                "sum": "#/components/schemas/PropertyAggregation"
+              }
+            }
+          },
+          "map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Map"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "aggregation"],
+        "title": "DeployReducer"
+      },
+      "DerivedAggregation": {
+        "properties": {
+          "func": {
+            "type": "string",
+            "const": "derive",
+            "title": "Func",
+            "default": "derive"
+          },
+          "inputs": {
+            "patternProperties": {
+              "^[A-Za-z_][A-Za-z0-9_]*$": {
+                "type": "string"
+              }
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Inputs"
+          },
+          "expression": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Expression"
+          }
+        },
+        "type": "object",
+        "required": ["inputs", "expression"],
+        "title": "DerivedAggregation"
+      },
+      "Entitlement": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": ["id", "slug", "name", "description", "created_at"],
+        "title": "Entitlement"
+      },
+      "EntitlementAssignment": {
+        "properties": {
+          "features": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          },
+          "meters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MeterEntitlement"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EntitlementAssignment",
+        "description": "Narrow inherited access. None inherits; an empty list denies all."
+      },
+      "EntitlementCreate": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Display name; defaults to the slug."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": ["slug"],
+        "title": "EntitlementCreate"
+      },
+      "EntitlementGrant": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "subscription_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Subscription Id"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "product_slug": {
+            "type": "string",
+            "title": "Product Slug"
+          },
+          "external_identity_id": {
+            "type": "string",
+            "title": "External Identity Id",
+            "description": "The holder in the chain whose subscription grants this."
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "subscription_id",
+          "product_id",
+          "product_slug",
+          "external_identity_id"
+        ],
+        "title": "EntitlementGrant",
+        "description": "One held entitlement and the subscription up the chain that grants it."
+      },
+      "EntitlementUpdate": {
+        "properties": {
+          "features": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          },
+          "meters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MeterEntitlement"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meters"
+          },
+          "external_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "External Id",
+            "description": "Stable event id for retrying this assignment change."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["external_id"],
+        "title": "EntitlementUpdate"
+      },
+      "Event": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EventSource"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id"
+          },
+          "external_root_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Root Id",
+            "description": "The root of the actor's tree, stamped at ingest: the billable identity a customer owns. Never sent by the merchant."
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "name",
+          "source",
+          "external_id",
+          "external_identity_id",
+          "external_root_id",
+          "metadata"
+        ],
+        "title": "Event"
+      },
+      "EventCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id",
+            "description": "Who performed the action: a billing identity that already exists. Usage rolls up from it through its parents to the root of its tree."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": ["name", "external_id"],
+        "title": "EventCreate"
+      },
+      "EventSource": {
+        "type": "string",
+        "enum": ["user", "system"],
+        "title": "EventSource"
+      },
+      "EventsIngestResponse": {
+        "properties": {
+          "saved": {
+            "type": "integer",
+            "title": "Saved"
+          },
+          "ignored": {
+            "type": "integer",
+            "title": "Ignored"
+          }
+        },
+        "type": "object",
+        "required": ["saved", "ignored"],
+        "title": "EventsIngestResponse"
+      },
+      "EventsList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": ["items", "pagination"],
+        "title": "EventsList"
+      },
+      "Filter-Input": {
+        "properties": {
+          "conjunction": {
+            "$ref": "#/components/schemas/FilterConjunction"
+          },
+          "clauses": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FilterClause"
+                },
+                {
+                  "$ref": "#/components/schemas/Filter-Input"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Clauses"
+          }
+        },
+        "type": "object",
+        "required": ["conjunction", "clauses"],
+        "title": "Filter"
+      },
+      "Filter-Output": {
+        "properties": {
+          "conjunction": {
+            "$ref": "#/components/schemas/FilterConjunction"
+          },
+          "clauses": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FilterClause"
+                },
+                {
+                  "$ref": "#/components/schemas/Filter-Output"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Clauses"
+          }
+        },
+        "type": "object",
+        "required": ["conjunction", "clauses"],
+        "title": "Filter"
+      },
+      "FilterClause": {
+        "properties": {
+          "property": {
+            "type": "string",
+            "title": "Property"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/FilterOperator"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": -2147483648.0
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": ["property", "operator", "value"],
+        "title": "FilterClause"
+      },
+      "FilterConjunction": {
+        "type": "string",
+        "enum": ["and", "or"],
+        "title": "FilterConjunction"
+      },
+      "FilterOperator": {
+        "type": "string",
+        "enum": ["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"],
+        "title": "FilterOperator"
+      },
+      "GroupBy": {
+        "type": "string",
+        "enum": ["external_identity_id", "external_root_id"],
+        "title": "GroupBy"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Identity": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "parent_external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent External Id"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "external_id",
+          "parent_external_id",
+          "metadata",
+          "created_at"
+        ],
+        "title": "Identity"
+      },
+      "IdentityCreate": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "External Id"
+          },
+          "parent_external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent External Id",
+            "description": "Where a brand new identity is attached. Read on first touch only; an identity keeps its parent for life."
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Free-form and never read by the billing layer."
+          }
+        },
+        "type": "object",
+        "required": ["external_id"],
+        "title": "IdentityCreate"
+      },
+      "IdentityDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "parent_external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent External Id"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Chain",
+            "description": "External ids from this identity up to its root, self first."
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/Identity"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "external_id",
+          "parent_external_id",
+          "metadata",
+          "created_at",
+          "chain",
+          "children"
+        ],
+        "title": "IdentityDetail"
+      },
+      "IdentityEntitlements": {
+        "properties": {
+          "external_identity_id": {
+            "type": "string",
+            "title": "External Identity Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/EntitlementGrant"
+            },
+            "type": "array",
+            "title": "Entitlements"
+          },
+          "slugs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Slugs",
+            "description": "Held entitlement slugs, sorted, unique."
+          },
+          "assignments": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EntitlementAssignment"
+            },
+            "type": "object",
+            "title": "Assignments"
+          }
+        },
+        "type": "object",
+        "required": ["external_identity_id", "at", "entitlements", "slugs"],
+        "title": "IdentityEntitlements"
+      },
+      "IdentitySnapshot": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "root": {
+            "$ref": "#/components/schemas/Identity"
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Balance"
+            },
+            "type": "object",
+            "title": "Meters",
+            "description": "Current mainline meter balances, keyed by meter slug."
+          },
+          "entitlements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "description": "Entitlement slugs held through this identity's chain."
+          }
+        },
+        "type": "object",
+        "required": ["at", "identity", "root", "customer", "meters"],
+        "title": "IdentitySnapshot"
+      },
+      "JsonValue": {},
+      "LastProcessedEvent": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          }
+        },
+        "type": "object",
+        "required": ["external_id", "timestamp", "ingested_at"],
+        "title": "LastProcessedEvent"
+      },
+      "Meter": {
+        "properties": {
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "branch_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Id"
+          },
+          "usage_reducer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Usage Reducer Id"
+          },
+          "credit_reducer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Credit Reducer Id"
+          },
+          "unit_amount": {
+            "type": "string",
+            "title": "Unit Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "usd"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "generation_id": {
+            "type": "integer",
+            "title": "Generation Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "slug",
+          "usage_reducer_id",
+          "credit_reducer_id",
+          "unit_amount",
+          "id",
+          "generation_id",
+          "created_at"
+        ],
+        "title": "Meter"
+      },
+      "MeterCreate": {
+        "properties": {
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "branch_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Id"
+          },
+          "usage_reducer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Usage Reducer Id"
+          },
+          "credit_reducer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Credit Reducer Id"
+          },
+          "unit_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Unit Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "slug",
+          "usage_reducer_id",
+          "credit_reducer_id",
+          "unit_amount"
+        ],
+        "title": "MeterCreate"
+      },
+      "MeterCycle": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period End"
+          },
+          "credits": {
+            "type": "number",
+            "title": "Credits"
+          },
+          "usage": {
+            "type": "number",
+            "title": "Usage"
+          },
+          "expired": {
+            "type": "number",
+            "title": "Expired"
+          },
+          "rollover": {
+            "type": "number",
+            "title": "Rollover"
+          },
+          "overage": {
+            "type": "number",
+            "title": "Overage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id",
+          "period_start",
+          "period_end",
+          "credits",
+          "usage",
+          "expired",
+          "rollover",
+          "overage"
+        ],
+        "title": "MeterCycle"
+      },
+      "MeterEntitlement": {
+        "properties": {
+          "meter": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Meter"
+          },
+          "cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["meter"],
+        "title": "MeterEntitlement",
+        "description": "Access to an inherited meter, optionally capped in its usage units."
+      },
+      "MeterEntitlementState": {
+        "properties": {
+          "external_identity_id": {
+            "type": "string",
+            "title": "External Identity Id"
+          },
+          "cap": {
+            "type": "number",
+            "title": "Cap"
+          },
+          "usage": {
+            "type": "number",
+            "title": "Usage"
+          },
+          "remaining": {
+            "type": "number",
+            "title": "Remaining"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_identity_id",
+          "cap",
+          "usage",
+          "remaining",
+          "period_start",
+          "period_end"
+        ],
+        "title": "MeterEntitlementState"
+      },
+      "MeterEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": ["id", "at", "name", "data"],
+        "title": "MeterEvent"
+      },
+      "MeterHolderState": {
+        "properties": {
+          "external_identity_id": {
+            "type": "string",
+            "title": "External Identity Id"
+          },
+          "balance": {
+            "$ref": "#/components/schemas/State"
+          },
+          "base": {
+            "$ref": "#/components/schemas/State"
+          },
+          "credit_base": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Base"
+          },
+          "usage_base": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Base"
+          },
+          "is_holder": {
+            "type": "boolean",
+            "title": "Is Holder"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/MeterEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "entitlement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeterEntitlementState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entitlement_usage_base": {
+            "type": "number",
+            "title": "Entitlement Usage Base",
+            "description": "Reduced usage from entitlement period start up to snapshot.since.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_identity_id",
+          "balance",
+          "base",
+          "is_holder",
+          "events"
+        ],
+        "title": "MeterHolderState"
+      },
+      "MeterPricePreview": {
+        "properties": {
+          "window": {
+            "$ref": "#/components/schemas/PricePreviewWindow"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "current_unit_amount": {
+            "type": "string",
+            "title": "Current Unit Amount"
+          },
+          "proposed_unit_amount": {
+            "type": "string",
+            "title": "Proposed Unit Amount"
+          },
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/PricePreviewCustomer"
+            },
+            "type": "array",
+            "title": "Customers"
+          },
+          "billable_units": {
+            "type": "string",
+            "title": "Billable Units",
+            "default": "0"
+          },
+          "current_amount": {
+            "type": "string",
+            "title": "Current Amount",
+            "default": "0"
+          },
+          "proposed_amount": {
+            "type": "string",
+            "title": "Proposed Amount",
+            "default": "0"
+          },
+          "difference": {
+            "type": "string",
+            "title": "Difference",
+            "default": "0"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable"
+          },
+          "excluded_customers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded Customers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window",
+          "currency",
+          "current_unit_amount",
+          "proposed_unit_amount"
+        ],
+        "title": "MeterPricePreview"
+      },
+      "MeterTerms": {
+        "properties": {
+          "included": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Included",
+            "default": 0
+          },
+          "limit": {
+            "type": "string",
+            "enum": ["hard", "soft", "unlimited"],
+            "title": "Limit",
+            "default": "hard"
+          },
+          "rollover_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollover Cap",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "MeterTerms"
+      },
+      "MetricComparison": {
+        "properties": {
+          "baseline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate"
+          },
+          "window": {
+            "$ref": "#/components/schemas/PricePreviewWindow"
+          },
+          "customer_count": {
+            "type": "integer",
+            "title": "Customer Count"
+          },
+          "shared_metrics": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonMetric"
+            },
+            "type": "array",
+            "title": "Shared Metrics"
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntry"
+            },
+            "type": "array",
+            "title": "Meters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "baseline",
+          "candidate",
+          "window",
+          "customer_count",
+          "shared_metrics",
+          "meters"
+        ],
+        "title": "MetricComparison"
+      },
+      "MetricPeriod": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": ["timestamp", "value"],
+        "title": "MetricPeriod"
+      },
+      "MetricSeries": {
+        "properties": {
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id"
+          },
+          "external_root_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Root Id"
+          },
+          "periods": {
+            "items": {
+              "$ref": "#/components/schemas/MetricPeriod"
+            },
+            "type": "array",
+            "title": "Periods"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_identity_id",
+          "external_root_id",
+          "periods",
+          "total"
+        ],
+        "title": "MetricSeries"
+      },
+      "Metrics": {
+        "properties": {
+          "reducer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reducer Id"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/TimeInterval"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/MetricSeries"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": ["reducer_id", "interval", "series"],
+        "title": "Metrics"
+      },
+      "OneTimePrice-Input": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "one_time",
+            "title": "Type"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "amount", "currency"],
+        "title": "OneTimePrice"
+      },
+      "OneTimePrice-Output": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "one_time",
+            "title": "Type"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "amount", "currency"],
+        "title": "OneTimePrice"
+      },
+      "Organization": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "default_variant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Variant Id"
+          }
+        },
+        "type": "object",
+        "required": ["id", "name", "slug", "created_at"],
+        "title": "Organization"
+      },
+      "OrganizationCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          }
+        },
+        "type": "object",
+        "required": ["name", "slug"],
+        "title": "OrganizationCreate"
+      },
+      "OrganizationUpdate": {
+        "properties": {
+          "default_variant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Variant Id",
+            "description": "Default configuration variant. Null selects the unnamed variant."
+          }
+        },
+        "type": "object",
+        "required": ["default_variant_id"],
+        "title": "OrganizationUpdate"
+      },
+      "Pagination": {
+        "properties": {
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          }
+        },
+        "type": "object",
+        "required": ["total_count"],
+        "title": "Pagination"
+      },
+      "PricePreviewCustomer": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "billable_units": {
+            "type": "string",
+            "title": "Billable Units"
+          },
+          "current_amount": {
+            "type": "string",
+            "title": "Current Amount"
+          },
+          "proposed_amount": {
+            "type": "string",
+            "title": "Proposed Amount"
+          },
+          "difference": {
+            "type": "string",
+            "title": "Difference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_id",
+          "name",
+          "billable_units",
+          "current_amount",
+          "proposed_amount",
+          "difference"
+        ],
+        "title": "PricePreviewCustomer"
+      },
+      "PricePreviewWindow": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start",
+            "description": "Inclusive UTC date, using processed buckets."
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End",
+            "description": "Exclusive UTC date."
+          }
+        },
+        "type": "object",
+        "required": ["start", "end"],
+        "title": "PricePreviewWindow"
+      },
+      "ProcessedEvent": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Event Ids",
+            "description": "Exact events represented by this bucket result."
+          }
+        },
+        "type": "object",
+        "required": ["external_id", "timestamp", "ingested_at", "event_ids"],
+        "title": "ProcessedEvent"
+      },
+      "Product": {
+        "properties": {
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "generation_id": {
+            "type": "integer",
+            "title": "Generation Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "price": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RecurringPrice-Output"
+              },
+              {
+                "$ref": "#/components/schemas/OneTimePrice-Output"
+              }
+            ],
+            "title": "Price",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "one_time": "#/components/schemas/OneTimePrice-Output",
+                "recurring": "#/components/schemas/RecurringPrice-Output"
+              }
+            }
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/Meter"
+            },
+            "type": "array",
+            "title": "Meters"
+          },
+          "meter_terms": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterTerms"
+            },
+            "type": "object",
+            "title": "Meter Terms"
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/Entitlement"
+            },
+            "type": "array",
+            "title": "Entitlements"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "generation_id",
+          "name",
+          "description",
+          "price",
+          "meters",
+          "entitlements",
+          "archived_at",
+          "created_at"
+        ],
+        "title": "Product"
+      },
+      "ProductCreate": {
+        "properties": {
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant Id"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "price": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RecurringPrice-Input"
+              },
+              {
+                "$ref": "#/components/schemas/OneTimePrice-Input"
+              }
+            ],
+            "title": "Price",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "one_time": "#/components/schemas/OneTimePrice-Input",
+                "recurring": "#/components/schemas/RecurringPrice-Input"
+              }
+            }
+          },
+          "meter_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Meter Ids",
+            "description": "Meters billed at each boundary. Recurring products only."
+          },
+          "meter_terms": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterTerms"
+            },
+            "type": "object",
+            "title": "Meter Terms"
+          },
+          "entitlement_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Entitlement Ids"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "name", "price"],
+        "title": "ProductCreate"
+      },
+      "ProductSubscription": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "product": {
+            "$ref": "#/components/schemas/Product"
+          },
+          "external_identity_id": {
+            "type": "string",
+            "title": "External Identity Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "canceled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canceled At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "When access stops. Unset while running without a cancel."
+          },
+          "current_period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Period Start",
+            "description": "Unset for one-time products and ended subscriptions."
+          },
+          "current_period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Period End"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "product",
+          "external_identity_id",
+          "status",
+          "started_at",
+          "canceled_at",
+          "ends_at",
+          "current_period_start",
+          "current_period_end",
+          "created_at"
+        ],
+        "title": "ProductSubscription"
+      },
+      "PropertyAggregation": {
+        "properties": {
+          "func": {
+            "type": "string",
+            "enum": ["sum", "max", "min"],
+            "title": "Func"
+          },
+          "property": {
+            "type": "string",
+            "title": "Property"
+          }
+        },
+        "type": "object",
+        "required": ["func", "property"],
+        "title": "PropertyAggregation"
+      },
+      "RecordAggregation": {
+        "properties": {
+          "func": {
+            "type": "string",
+            "enum": ["first", "last"],
+            "title": "Func"
+          }
+        },
+        "type": "object",
+        "required": ["func"],
+        "title": "RecordAggregation"
+      },
+      "RecurringPrice-Input": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "recurring",
+            "title": "Type"
+          },
+          "interval": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"],
+            "title": "Interval"
+          },
+          "interval_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Interval Count",
+            "default": 1
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount",
+            "description": "Fixed amount per interval."
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "interval", "amount", "currency"],
+        "title": "RecurringPrice"
+      },
+      "RecurringPrice-Output": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "recurring",
+            "title": "Type"
+          },
+          "interval": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"],
+            "title": "Interval"
+          },
+          "interval_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Interval Count",
+            "default": 1
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "description": "Fixed amount per interval."
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "interval", "amount", "currency"],
+        "title": "RecurringPrice"
+      },
+      "Reducer": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "filter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Filter-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CountAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/PropertyAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/RecordAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/DerivedAggregation"
+              }
+            ],
+            "title": "Aggregation",
+            "discriminator": {
+              "propertyName": "func",
+              "mapping": {
+                "count": "#/components/schemas/CountAggregation",
+                "derive": "#/components/schemas/DerivedAggregation",
+                "first": "#/components/schemas/RecordAggregation",
+                "last": "#/components/schemas/RecordAggregation",
+                "max": "#/components/schemas/PropertyAggregation",
+                "min": "#/components/schemas/PropertyAggregation",
+                "sum": "#/components/schemas/PropertyAggregation"
+              }
+            }
+          },
+          "map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Map"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["scalar", "dict"],
+            "title": "Type",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": ["slug", "aggregation", "id", "created_at", "type"],
+        "title": "Reducer"
+      },
+      "ReducerCreate": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "filter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Filter-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CountAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/PropertyAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/RecordAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/DerivedAggregation"
+              }
+            ],
+            "title": "Aggregation",
+            "discriminator": {
+              "propertyName": "func",
+              "mapping": {
+                "count": "#/components/schemas/CountAggregation",
+                "derive": "#/components/schemas/DerivedAggregation",
+                "first": "#/components/schemas/RecordAggregation",
+                "last": "#/components/schemas/RecordAggregation",
+                "max": "#/components/schemas/PropertyAggregation",
+                "min": "#/components/schemas/PropertyAggregation",
+                "sum": "#/components/schemas/PropertyAggregation"
+              }
+            }
+          },
+          "map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Map"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "aggregation"],
+        "title": "ReducerCreate"
+      },
+      "ReducerRecord": {
+        "properties": {
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": ["external_identity_id", "timestamp", "data"],
+        "title": "ReducerRecord"
+      },
+      "ReducerState": {
+        "properties": {
+          "reducer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reducer Id"
+          },
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id"
+          },
+          "bucket_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bucket Start"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "last_processed_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessedEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "reducer_id",
+          "external_identity_id",
+          "bucket_start",
+          "value",
+          "last_processed_event"
+        ],
+        "title": "ReducerState"
+      },
+      "State": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Subscription"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "boundary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boundary"
+          },
+          "boundaries": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "title": "Boundaries"
+          },
+          "cycles": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterCycle"
+            },
+            "propertyNames": {
+              "format": "date-time"
+            },
+            "type": "object",
+            "title": "Cycles"
+          },
+          "credits": {
+            "type": "number",
+            "title": "Credits",
+            "default": 0
+          },
+          "usage": {
+            "type": "number",
+            "title": "Usage",
+            "default": 0
+          },
+          "remaining": {
+            "type": "number",
+            "title": "Remaining",
+            "readOnly": true
+          },
+          "overage": {
+            "type": "number",
+            "title": "Overage",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": ["remaining", "overage"],
+        "title": "State",
+        "description": "The ledger seen on its own: remaining and overage from its own credits."
+      },
+      "StateIdentity": {
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "parent_external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent External Id"
+          },
+          "entitlements": {
+            "$ref": "#/components/schemas/EntitlementAssignment"
+          }
+        },
+        "type": "object",
+        "required": ["external_id", "parent_external_id"],
+        "title": "StateIdentity"
+      },
+      "Subscription": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "anchor": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Anchor"
+          },
+          "meter_interval": {
+            "$ref": "#/components/schemas/TimeInterval"
+          },
+          "meter_interval_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Meter Interval Count",
+            "default": 1
+          },
+          "rollover_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollover Cap"
+          },
+          "included": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Included",
+            "default": 0
+          },
+          "limit": {
+            "type": "string",
+            "enum": ["hard", "soft", "unlimited"],
+            "title": "Limit",
+            "default": "hard"
+          },
+          "ended": {
+            "type": "boolean",
+            "title": "Ended",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["id", "at", "anchor", "meter_interval"],
+        "title": "Subscription"
+      },
+      "SubscriptionCancel": {
+        "properties": {
+          "at_period_end": {
+            "type": "boolean",
+            "title": "At Period End",
+            "description": "Keep access until the next boundary. False ends it now.",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "SubscriptionCancel"
+      },
+      "SubscriptionCreate": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id",
+            "description": "The product generation to sell; the newest one, normally."
+          },
+          "external_identity_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Identity Id"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At",
+            "description": "Anchor for every boundary. Defaults to now; never in the future."
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "Import an already-ended subscription: canceled at this past moment, with its cancel events stamped there. Must follow starts_at."
+          }
+        },
+        "type": "object",
+        "required": ["product_id", "external_identity_id"],
+        "title": "SubscriptionCreate"
+      },
+      "SubscriptionCycle": {
+        "properties": {
+          "period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period End"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "fixed_amount": {
+            "type": "string",
+            "title": "Fixed Amount"
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionCycleMeter"
+            },
+            "type": "array",
+            "title": "Meters"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_start",
+          "period_end",
+          "currency",
+          "fixed_amount",
+          "meters",
+          "total"
+        ],
+        "title": "SubscriptionCycle",
+        "description": "One closed period, priced at read time from the stored meter cycles."
+      },
+      "SubscriptionCycleMeter": {
+        "properties": {
+          "meter_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Meter Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "usage": {
+            "type": "number",
+            "title": "Usage"
+          },
+          "unit_amount": {
+            "type": "string",
+            "title": "Unit Amount"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": ["meter_id", "slug", "usage", "unit_amount", "amount"],
+        "title": "SubscriptionCycleMeter"
+      },
+      "SubscriptionRebuild": {
+        "properties": {
+          "subscriptions": {
+            "type": "integer",
+            "title": "Subscriptions",
+            "description": "Distinct subscription ids in the stream."
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged"
+          },
+          "orphaned": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Orphaned",
+            "description": "Rows with no lifecycle events behind them. Left in place."
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscriptions",
+          "created",
+          "updated",
+          "unchanged",
+          "orphaned",
+          "applied"
+        ],
+        "title": "SubscriptionRebuild",
+        "description": "What re-projecting rows from the lifecycle events changed."
+      },
+      "SubscriptionStatus": {
+        "type": "string",
+        "enum": ["active", "canceled", "revoked"],
+        "title": "SubscriptionStatus"
+      },
+      "TimeInterval": {
+        "type": "string",
+        "enum": ["hour", "day", "week", "month", "year"],
+        "title": "TimeInterval"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

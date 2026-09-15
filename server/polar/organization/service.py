@@ -284,6 +284,12 @@ class OrganizationDeletionCheckResult(BaseModel):
 class OrganizationError(PolarError): ...
 
 
+class UnknownAccountRiskEvaluation(OrganizationError):
+    def __init__(self, evaluation_id: str) -> None:
+        self.evaluation_id = evaluation_id
+        super().__init__(f"No pending website evaluation for {evaluation_id}.")
+
+
 class ActivationGate(StrEnum):
     details = "Organization details submitted"
     payout_account = "Payout account ready"
@@ -1980,6 +1986,8 @@ class OrganizationService:
                 evaluation_id=signal.evaluation_id,
                 signal_type=signal.type,
             )
+            if signal.evaluation_id is not None and pending is None:
+                raise UnknownAccountRiskEvaluation(signal.evaluation_id)
             return
 
         for organization in organizations:

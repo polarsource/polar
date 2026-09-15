@@ -1,4 +1,6 @@
+from dataclasses import replace
 from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
 
@@ -35,7 +37,7 @@ from polar.models.merchant_migration_record import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_payment_method
-from tests.merchant_migration._helpers import canonical_subscription
+from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
 
 
 async def _create_migration(
@@ -48,6 +50,75 @@ async def _create_migration(
     )
     await save_fixture(migration)
     return migration
+
+
+async def _stage_ready_subscription(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    product: Product,
+    *,
+    discount_source_ids: list[str] | None = None,
+) -> tuple[MerchantMigration, MerchantMigrationRecord]:
+    migration = await _create_migration(save_fixture, organization)
+    customer = await create_customer(
+        save_fixture, organization=organization, email="ready@example.com"
+    )
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id="cus_ready",
+            target_id=customer.id,
+            canonical={},
+        )
+    )
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.product,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id="prod_1:month:1",
+            target_id=product.id,
+            canonical=serialize(
+                CanonicalProduct(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="Product",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_ready",
+                            currency="usd",
+                            amount=1000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                )
+            ),
+        )
+    )
+    pending = MerchantMigrationRecord(
+        merchant_migration=migration,
+        organization=organization,
+        type=MerchantMigrationRecordType.subscription,
+        status=MerchantMigrationRecordStatus.pending,
+        source_id="sub_ready",
+        canonical=serialize(
+            canonical_subscription(
+                source_id="sub_ready",
+                customer_source_id="cus_ready",
+                price_source_id="price_ready",
+                has_discount=bool(discount_source_ids),
+                discount_source_ids=discount_source_ids,
+            )
+        ),
+    )
+    await save_fixture(pending)
+    return migration, pending
 
 
 @pytest.mark.asyncio
@@ -257,6 +328,26 @@ class TestUpsert:
         assert [price["source_id"] for price in reused.canonical["prices"]] == [
             "price_current"
         ]
+
+    async def test_merges_promotion_codes_onto_a_pending_coupon(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = canonical_discount(code=None)
+        await repository.upsert(migration, organization, coupon)
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="LAUNCH")
+        )
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="SAVE")
+        )
+
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["extra_codes"] == 1
 
 
 @pytest.mark.asyncio
@@ -488,3 +579,87 @@ class TestSwitchableSubscriptions:
         )
         assert found is not None
         assert found.merchant_migration_id == earlier.id
+
+    async def test_pending_subscription_needs_the_kept_coupon_imported(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration, _pending = await _stage_ready_subscription(
+            save_fixture,
+            organization,
+            product,
+            discount_source_ids=["coupon_kept", "coupon_other"],
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.discount,
+                status=MerchantMigrationRecordStatus.pending,
+                source_id="coupon_kept",
+                canonical={},
+            )
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.discount,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="coupon_other",
+                target_id=uuid4(),
+                canonical={},
+            )
+        )
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        records = await repository.list_imported_subscriptions(
+            migration.id, offset=0, limit=10
+        )
+
+        assert records == []
+
+    async def test_pending_subscription_skips_unimportable_coupon_when_kept_imported(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration, pending = await _stage_ready_subscription(
+            save_fixture,
+            organization,
+            product,
+            discount_source_ids=["coupon_bad", "coupon_kept"],
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.discount,
+                status=MerchantMigrationRecordStatus.skipped,
+                source_id="coupon_bad",
+                canonical={},
+            )
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.discount,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="coupon_kept",
+                target_id=uuid4(),
+                canonical={},
+            )
+        )
+        repository = MerchantMigrationRecordRepository.from_session(session)
+
+        records = await repository.list_imported_subscriptions(
+            migration.id, offset=0, limit=10
+        )
+
+        assert [record.id for record in records] == [pending.id]

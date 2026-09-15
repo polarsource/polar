@@ -859,6 +859,8 @@ class SubscriptionService:
         current_period_end: datetime | None,
         anchor_day: int | None = None,
         user_metadata: dict[str, Any],
+        discount: Discount | None = None,
+        discount_applied_at: datetime | None = None,
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
         so nothing bills until the merchant cuts over, and grants no benefits.
@@ -901,7 +903,12 @@ class SubscriptionService:
             currency=price.price_currency,
             user_metadata=user_metadata,
             pending_update=None,
+            discount=discount,
         )
+        # The discount listener clears applied_at on set; restore the source start
+        # so once/repeating duration does not restart at cutover.
+        if discount is not None:
+            subscription.discount_applied_at = discount_applied_at or start
         subscription.initialize_meter_period(start)
 
         repository = SubscriptionRepository.from_session(session)

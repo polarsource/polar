@@ -10,6 +10,8 @@ const REQUIRED_PERMISSIONS: { resource: string; access: 'Read' | 'Write' }[] = [
   { resource: 'Customers', access: 'Read' },
   { resource: 'Products', access: 'Read' },
   { resource: 'Prices', access: 'Read' },
+  { resource: 'Coupons', access: 'Read' },
+  { resource: 'Promotion codes', access: 'Read' },
   { resource: 'Subscriptions', access: 'Write' },
   { resource: 'Payment methods', access: 'Read' },
 ]

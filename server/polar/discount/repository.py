@@ -37,7 +37,6 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         *,
         nowait: bool = False,
     ) -> Discount | None:
-        """Get discount by code and organization with FOR UPDATE lock."""
         statement = (
             select(Discount)
             .where(

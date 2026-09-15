@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
@@ -33,25 +34,26 @@ class PaymentRepository(
     model = Payment
 
     async def get_succeeded_without_transaction_ids(
-        self, *, limit: int
-    ) -> tuple[list[UUID], int]:
+        self, since: datetime, *, limit: int
+    ) -> Sequence[UUID]:
         statement = (
-            select(Payment.id, func.count().over())
+            select(Payment.id)
             .where(
                 Payment.status == PaymentStatus.succeeded,
-                Payment.processor_id.not_in(
-                    select(Transaction.charge_id).where(
-                        Transaction.type == TransactionType.payment,
-                        Transaction.charge_id.is_not(None),
-                    )
-                ),
+                Payment.created_at > since,
+                ~select(Transaction.id)
+                .where(
+                    Transaction.type == TransactionType.payment,
+                    Transaction.charge_id == Payment.processor_id,
+                    Transaction.created_at > since,
+                )
+                .exists(),
             )
             .order_by(Payment.created_at.asc(), Payment.id.asc())
             .limit(limit)
         )
         result = await self.session.execute(statement)
-        rows = result.fetchall()
-        return [row[0] for row in rows], rows[0][1] if rows else 0
+        return result.scalars().all()
 
     async def get_all_by_customer(
         self, customer_id: UUID, *, status: PaymentStatus | None = None

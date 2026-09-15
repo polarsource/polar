@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 
+from polar.kit.utils import utc_now
 from polar.models import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.transaction import TransactionType
@@ -15,7 +18,7 @@ from tests.transaction.conftest import create_transaction
 
 @pytest.mark.asyncio
 class TestCheck:
-    @pytest.mark.parametrize("count", [0, 1, 15])
+    @pytest.mark.parametrize("count", [0, 1, 10, 15])
     async def test_missing_transactions(
         self,
         session: AsyncSession,
@@ -31,9 +34,18 @@ class TestCheck:
                 )
         await create_payment_transaction(save_fixture, charge_id=None)
 
+        old_payment = await create_payment(save_fixture, organization)
+        old_payment.created_at = utc_now() - timedelta(days=31)
+        await save_fixture(old_payment)
+
         payments = []
         for _ in range(count):
             payment = await create_payment(save_fixture, organization)
+            await create_payment_transaction(
+                save_fixture,
+                charge_id=payment.processor_id,
+                created_at=utc_now() - timedelta(days=31),
+            )
             await create_transaction(
                 save_fixture,
                 type=TransactionType.refund,
@@ -48,7 +60,7 @@ class TestCheck:
             with pytest.raises(PaymentsMissingTransactionsInvariantError) as exc_info:
                 await invariant.check()
             assert exc_info.value.context == {
-                "count": count,
+                "count": min(count, 10),
                 "payments": {
                     "ids": [
                         payment.id
@@ -57,6 +69,6 @@ class TestCheck:
                             key=lambda payment: (payment.created_at, payment.id),
                         )[:10]
                     ],
-                    "has_more": count > 10,
+                    "has_more": count >= 10,
                 },
             }

@@ -497,9 +497,21 @@ class OrganizationRiskSignalRepository(
         """Signals for an organization, most recent first, capped at `limit`."""
         statement = (
             self.get_base_statement()
-            .where(OrganizationRiskSignal.organization_id == organization_id)
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.risk_level
+                != OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())
+
+    async def get_by_account_evaluation(
+        self, evaluation_id: str
+    ) -> OrganizationRiskSignal | None:
+        statement = self.get_base_statement().where(
+            OrganizationRiskSignal.account_evaluation_id == evaluation_id,
+        )
+        return await self.get_one_or_none(statement)

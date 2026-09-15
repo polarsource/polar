@@ -131,18 +131,6 @@ variable "ec2_tailscale_oauth_client_secret" {
 }
 
 # AWS S3 - Sandbox
-variable "aws_access_key_id_sandbox" {
-  description = "AWS Access Key ID for sandbox"
-  type        = string
-  sensitive   = true
-}
-
-variable "aws_secret_access_key_sandbox" {
-  description = "AWS Secret Access Key for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "s3_files_download_salt_sandbox" {
   description = "S3 Files Download Salt for sandbox"
   type        = string

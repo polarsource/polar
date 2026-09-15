@@ -233,30 +233,6 @@ resource "tfe_variable" "lambda_worker_tailscale_token_sandbox" {
   }
 }
 
-resource "tfe_variable" "aws_access_key_id_sandbox" {
-  key             = "aws_access_key_id_sandbox"
-  category        = "terraform"
-  description     = "AWS Access Key ID for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "aws_secret_access_key_sandbox" {
-  key             = "aws_secret_access_key_sandbox"
-  category        = "terraform"
-  description     = "AWS Secret Access Key for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "s3_files_download_salt_sandbox" {
   key             = "s3_files_download_salt_sandbox"
   category        = "terraform"

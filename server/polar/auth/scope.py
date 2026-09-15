@@ -12,9 +12,6 @@ class Scope(StrEnum):
     user_read = "user:read"
     user_write = "user:write"
 
-    void_read = "void:read"
-    void_write = "void:write"
-
     organizations_read = "organizations:read"
     organizations_write = "organizations:write"
 
@@ -118,7 +115,6 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.email,
     Scope.user_read,
     Scope.organizations_read,
-    Scope.void_read,
     Scope.custom_fields_read,
     Scope.discounts_read,
     Scope.checkout_links_read,
@@ -154,8 +150,6 @@ SCOPES_SUPPORTED = [
     for s in Scope
     if s
     not in {
-        Scope.void_read,
-        Scope.void_write,
         Scope.organization_access_tokens_read,
         Scope.organization_access_tokens_write,
     }
@@ -166,8 +160,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.email: "Read your email address",
     Scope.user_read: "Read your user account",
     Scope.user_write: "Manage your user account",
-    Scope.void_read: "Read Void resources",
-    Scope.void_write: "Create or modify Void resources",
     Scope.organizations_read: "Read your organizations",
     Scope.organizations_write: "Create or modify organizations",
     Scope.custom_fields_read: "Read custom fields",

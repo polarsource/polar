@@ -1,8 +1,0 @@
-{
-  "extends": "@polar-sh/typescript-config/bundled.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "allowImportingTsExtensions": true
-  },
-  "include": ["src", "test", "scripts"]
-}

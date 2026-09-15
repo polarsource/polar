@@ -18,7 +18,6 @@ from sqlalchemy import (
     Column,
     ColumnElement,
     ForeignKey,
-    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -44,7 +43,6 @@ if TYPE_CHECKING:
     from .organization import Organization
     from .payment_method import PaymentMethod
     from .subscription import Subscription
-    from .void_billing_identity import VoidBillingIdentity
 
 
 def short_id_to_base26(short_id: int) -> str:
@@ -157,23 +155,12 @@ class Customer(MetadataMixin, RecordModel):
         ),
         UniqueConstraint("organization_id", "external_id"),
         UniqueConstraint("organization_id", "short_id"),
-        ForeignKeyConstraint(
-            ["organization_id", "root_identity_id"],
-            ["void_identities.organization_id", "void_identities.id"],
-        ),
     )
     short_id_sequence = sa.Sequence("customer_short_id_seq", start=1)
 
     search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
-    root_identity_id: Mapped[UUID | None] = mapped_column(
-        Uuid, nullable=True, unique=True, default=None
-    )
-    root_identity: Mapped["VoidBillingIdentity | None"] = relationship(
-        foreign_keys=[root_identity_id], lazy="raise"
-    )
-
     short_id: Mapped[int] = mapped_column(
         sa.BigInteger,
         nullable=False,

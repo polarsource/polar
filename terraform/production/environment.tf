@@ -112,8 +112,6 @@ locals {
   }
 
   aws_s3_secrets = {
-    access_key_id         = var.aws_access_key_id_production
-    secret_access_key     = var.aws_secret_access_key_production
     files_download_salt   = var.s3_files_download_salt_production
     files_download_secret = var.s3_files_download_secret_production
   }

@@ -1,3 +1,4 @@
+import time
 import typing
 import uuid
 
@@ -30,7 +31,12 @@ from polar.models import (
     User,
 )
 
-from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
+from ..constants import (
+    AUTHORIZATION_CODE_PREFIX,
+    ID_TOKEN_EXPIRES_IN,
+    ID_TOKEN_SIGNING_ALG,
+    ISSUER,
+)
 from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
@@ -237,7 +243,25 @@ class CodeChallenge(_CodeChallenge):
     pass
 
 
-class OpenIDCode(_OpenIDCode):
+class IDTokenSigning:
+    """Resolves the signing key on each issuance, so a rotated key set applies
+    without a restart, and names it in the `kid` header so a relying party can
+    pick the right key out of the published set."""
+
+    def resolve_client_private_key(self, client: OAuth2Client) -> typing.Any:
+        return settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID)
+
+    def get_client_algorithm(self, client: OAuth2Client) -> str:
+        return ID_TOKEN_SIGNING_ALG
+
+    def get_client_claims(self, client: OAuth2Client) -> dict[str, typing.Any]:
+        return {"iss": ISSUER, "exp": int(time.time()) + ID_TOKEN_EXPIRES_IN}
+
+    def get_encode_header(self, client: OAuth2Client) -> dict[str, typing.Any]:
+        return {"alg": ID_TOKEN_SIGNING_ALG, "kid": settings.CURRENT_JWK_KID}
+
+
+class OpenIDCode(IDTokenSigning, _OpenIDCode):
     def __init__(self, session: Session, require_nonce: bool = False):
         super().__init__(require_nonce)
         self._session = session
@@ -245,17 +269,11 @@ class OpenIDCode(_OpenIDCode):
     def exists_nonce(self, nonce: str, request: StarletteOAuth2Request) -> bool:
         return _exists_nonce(self._session, nonce, request)
 
-    def get_jwt_config(self, grant: AuthorizationCodeGrant) -> dict[str, typing.Any]:
-        return JWT_CONFIG
-
     def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
         return generate_user_info(user, scope)
 
 
-class OpenIDToken(_OpenIDToken):
-    def get_jwt_config(self, grant: AuthorizationCodeGrant) -> dict[str, typing.Any]:
-        return JWT_CONFIG
-
+class OpenIDToken(IDTokenSigning, _OpenIDToken):
     def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
         return generate_user_info(user, scope)
 

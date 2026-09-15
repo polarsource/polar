@@ -1,4 +1,5 @@
-const STRIPE_INDIGO = '#635BFF'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 const STRIPE_S =
   'M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 ' +
@@ -10,23 +11,31 @@ const STRIPE_S =
   '2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z'
 
 export function StripeMark({ size = 44 }: { size?: number }) {
-  const inset = (size - size * 0.55) / 2
-  const scale = (size * 0.55) / 24
+  const glyph = size * 0.55
   return (
-    <svg
+    <Box
       width={size}
       height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      fill="none"
+      flexShrink={0}
+      alignItems="center"
+      justifyContent="center"
+      borderRadius="s"
+      backgroundColor="background-inverse"
+      overflow="hidden"
       role="img"
       aria-label="Stripe"
     >
-      <rect width={size} height={size} rx={size * 0.25} fill={STRIPE_INDIGO} />
-      <path
-        d={STRIPE_S}
-        fill="#ffffff"
-        transform={`translate(${inset} ${inset}) scale(${scale})`}
-      />
-    </svg>
+      <Text as="span" color="inverse">
+        <svg
+          width={glyph}
+          height={glyph}
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d={STRIPE_S} fill="currentColor" />
+        </svg>
+      </Text>
+    </Box>
   )
 }

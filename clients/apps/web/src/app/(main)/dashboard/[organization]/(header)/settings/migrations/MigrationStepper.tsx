@@ -6,8 +6,8 @@ import { currentPosition, MIGRATION_STEPS } from './steps'
 
 // One derived control: every segment carries the same 2px top track, and the
 // filled length of that track is the only dimension encoding progress. Position
-// and one consistent marker shape carry state; the accent is spent on the
-// current step alone (its marker and its label).
+// and one consistent marker shape carry state; the current step uses primary
+// (monochrome) color for its marker and label.
 export function MigrationStepper({
   migration,
   panCurrentStepKey,

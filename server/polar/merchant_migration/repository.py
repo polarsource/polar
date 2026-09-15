@@ -61,7 +61,9 @@ class MerchantMigrationRepository(
             self.session, "merchant_migration.stripe_account", stripe_account_id
         )
 
-    async def stripe_account_id_exists(self, stripe_account_id: str) -> bool:
+    async def stripe_account_id_exists(
+        self, stripe_account_id: str, *, exclude_organization_id: UUID
+    ) -> bool:
         statement = select(
             self.get_base_statement()
             .where(
@@ -69,6 +71,7 @@ class MerchantMigrationRepository(
                 == MerchantMigrationSourcePlatform.stripe,
                 MerchantMigration.source_credentials["stripe_user_id"].astext
                 == stripe_account_id,
+                MerchantMigration.organization_id != exclude_organization_id,
             )
             .exists()
         )

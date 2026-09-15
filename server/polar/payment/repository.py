@@ -13,12 +13,13 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Order, Payment
+from polar.models import Order, Payment, Transaction
 from polar.models.payment import (
     DUNNING_COUNTING_TRIGGERS,
     PaymentStatus,
     PaymentTrigger,
 )
+from polar.models.transaction import TransactionType
 
 from .sorting import PaymentSortProperty
 
@@ -30,6 +31,27 @@ class PaymentRepository(
     RepositoryBase[Payment],
 ):
     model = Payment
+
+    async def get_succeeded_without_transaction_ids(
+        self, *, limit: int
+    ) -> tuple[list[UUID], int]:
+        statement = (
+            select(Payment.id, func.count().over())
+            .where(
+                Payment.status == PaymentStatus.succeeded,
+                Payment.processor_id.not_in(
+                    select(Transaction.charge_id).where(
+                        Transaction.type == TransactionType.payment,
+                        Transaction.charge_id.is_not(None),
+                    )
+                ),
+            )
+            .order_by(Payment.created_at.asc(), Payment.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        rows = result.fetchall()
+        return [row[0] for row in rows], rows[0][1] if rows else 0
 
     async def get_all_by_customer(
         self, customer_id: UUID, *, status: PaymentStatus | None = None

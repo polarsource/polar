@@ -1,6 +1,6 @@
+import asyncio
 import datetime
-import subprocess
-import sys
+import multiprocessing
 
 import anyio
 import pytest
@@ -9,8 +9,8 @@ from polar.invoice.generator import InvoiceItem
 from polar.kit.address import Address, CountryAlpha2
 from polar.receipt.generator import Receipt, ReceiptRefund
 from polar.receipt.render import (
-    SERVER_DIRECTORY,
     ReceiptRenderError,
+    ReceiptRenderRequest,
     render_receipt_pdf,
 )
 
@@ -62,51 +62,45 @@ def receipt() -> Receipt:
 
 
 @pytest.mark.asyncio
-async def test_render_receipt_pdf(receipt: Receipt) -> None:
-    pdf = await render_receipt_pdf(receipt)
+class TestRenderReceiptPDF:
+    async def test_concurrent_renders(self, receipt: Receipt) -> None:
+        pdfs = await asyncio.gather(
+            *(
+                render_receipt_pdf(receipt.model_copy(update={"number": f"RCPT-{i}"}))
+                for i in range(3)
+            )
+        )
 
-    assert pdf.startswith(b"%PDF")
+        assert all(pdf.startswith(b"%PDF") for pdf in pdfs)
+        assert len(set(pdfs)) == 3
+        assert not multiprocessing.active_children()
 
+    async def test_renderer_error(
+        self, receipt: Receipt, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(ReceiptRenderRequest, "model_dump_json", lambda self: "{}")
 
-@pytest.mark.asyncio
-async def test_render_receipt_pdf_raises_on_subprocess_failure(
-    receipt: Receipt, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    async def run_process(
-        command: list[str], **kwargs: object
-    ) -> subprocess.CompletedProcess[bytes]:
-        assert command == [sys.executable, "-m", "polar.receipt.render"]
-        assert kwargs["input"]
-        assert kwargs["check"] is False
-        assert kwargs["cwd"] == SERVER_DIRECTORY
-        return subprocess.CompletedProcess(command, 1, stdout=b"", stderr=b"boom")
+        with pytest.raises(ReceiptRenderError, match="Receipt renderer failed:"):
+            await render_receipt_pdf(receipt)
 
-    monkeypatch.setattr("polar.receipt.render.anyio.run_process", run_process)
+        assert not multiprocessing.active_children()
 
-    with pytest.raises(ReceiptRenderError, match="Receipt renderer failed: boom"):
-        await render_receipt_pdf(receipt)
+    async def test_timeout_kills_renderer(
+        self, receipt: Receipt, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("polar.receipt.render.RENDER_TIMEOUT_SECONDS", 0.001)
 
+        with pytest.raises(ReceiptRenderError, match="timed out"):
+            await render_receipt_pdf(receipt)
 
-@pytest.mark.asyncio
-async def test_render_receipt_pdf_timeout(
-    receipt: Receipt, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    cancelled = False
+        assert not multiprocessing.active_children()
 
-    async def run_process(
-        command: list[str], **kwargs: object
-    ) -> subprocess.CompletedProcess[bytes]:
-        nonlocal cancelled
-        try:
-            await anyio.sleep_forever()
-            raise AssertionError("unreachable")
-        finally:
-            cancelled = True
+    async def test_cancellation_kills_renderer(self, receipt: Receipt) -> None:
+        with anyio.move_on_after(0.001) as scope:
+            await render_receipt_pdf(receipt)
 
-    monkeypatch.setattr("polar.receipt.render.anyio.run_process", run_process)
-    monkeypatch.setattr("polar.receipt.render.RENDER_TIMEOUT_SECONDS", 0.1)
+        assert scope.cancel_called
+        assert not multiprocessing.active_children()
 
-    with pytest.raises(ReceiptRenderError, match="timed out"):
-        await render_receipt_pdf(receipt)
-
-    assert cancelled
+        pdf = await render_receipt_pdf(receipt)
+        assert pdf.startswith(b"%PDF")

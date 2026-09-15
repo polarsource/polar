@@ -21,23 +21,6 @@ const JOBS = [
       },
     ],
   },
-  {
-    category: 'Merchant Operations',
-    roles: [
-      {
-        role: 'Risk & Compliance Specialist',
-        link: 'https://jobs.ashbyhq.com/polar/87773c6c-4cd4-4948-9779-20fdc8f8ea7b',
-        location: 'Remote, United States',
-        experience: '2+ Years Experience',
-      },
-      {
-        role: 'Merchant Support Specialist',
-        link: 'https://jobs.ashbyhq.com/polar/2f3744b5-f33b-4611-bdfa-d99700dfa0e7',
-        location: 'Remote, United States',
-        experience: '2+ Years Experience',
-      },
-    ],
-  },
 ]
 
 export const OpenRoles = () => (

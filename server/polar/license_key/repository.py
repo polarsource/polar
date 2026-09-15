@@ -84,6 +84,7 @@ class LicenseKeyRepository(
     def get_eager_options(self) -> Options:
         return (
             joinedload(LicenseKey.customer),
+            joinedload(LicenseKey.member),
             joinedload(LicenseKey.activations),
             joinedload(LicenseKey.benefit),
         )

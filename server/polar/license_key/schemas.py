@@ -21,7 +21,9 @@ from polar.kit.metadata import (
 )
 from polar.kit.schemas import IDSchema, Int32, Schema, TimestampedSchema
 from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.versioning import Version
 from polar.models.license_key import LicenseKeyStatus
+from polar.version import V2026_10
 
 ###############################################################################
 # RESPONSES
@@ -104,6 +106,13 @@ class LicenseKeyDeactivate(Schema):
 class LicenseKeyCustomer(CustomerBase): ...
 
 
+class LicenseKeyMember(IDSchema):
+    email: str = Field(description="The email address of the seat member.")
+    external_id: str | None = Field(
+        description="The external ID of the seat member, if set."
+    )
+
+
 class LicenseKeyUser(Schema):
     id: UUID4 = Field(
         validation_alias=AliasChoices(
@@ -147,6 +156,21 @@ class LicenseKeyRead(TimestampedSchema, IDSchema):
         deprecated="Use `customer`.",
     )
     customer: LicenseKeyCustomer
+    member_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2026_10),
+        Field(description="The ID of the seat member holding this key, if any."),
+    ]
+    member: Annotated[
+        LicenseKeyMember | None,
+        Version(starting_from=V2026_10),
+        Field(
+            description=(
+                "The seat member holding this key. Set for keys granted through a "
+                "seat-based product; `null` for keys granted to the customer directly."
+            )
+        ),
+    ]
     benefit_id: BenefitID
     key: str
     display_key: str

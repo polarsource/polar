@@ -108,7 +108,8 @@
               "engineering/decisions/0006-migration-and-backfill-safety",
               "engineering/decisions/0007-no-default-in-output-schemas",
               "engineering/decisions/0008-encrypt-secrets-at-rest",
-              "engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates"
+              "engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates",
+              "engineering/decisions/0010-jwks-signing-keys-in-kms"
             ]
           },
           "engineering/tech-notes",
@@ -120,7 +121,8 @@
               "engineering/oncall/merge-accounts",
               "engineering/oncall/deploy-infra",
               "engineering/oncall/trigger-webhooks",
-              "engineering/oncall/run-one-off-jobs"
+              "engineering/oncall/run-one-off-jobs",
+              "engineering/oncall/vendor-security-monitoring"
             ]
           }
         ]

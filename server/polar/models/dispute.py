@@ -15,6 +15,7 @@ from sqlalchemy import (
     Uuid,
     select,
 )
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
@@ -29,7 +30,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import Customer, Order, Payment
+    from polar.models import Customer, Order, Organization, Payment
 
 
 class DisputeStatus(StrEnum):
@@ -124,6 +125,17 @@ class Dispute(RecordModel):
     @declared_attr
     def order(cls) -> Mapped["Order"]:
         return relationship("Order", lazy="raise")
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="restrict"),
+        nullable=True,
+        index=True,
+    )
+
+    organization: AssociationProxy["Organization"] = association_proxy(
+        "order", "organization"
+    )
 
     payment_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("payments.id"), nullable=False, index=True

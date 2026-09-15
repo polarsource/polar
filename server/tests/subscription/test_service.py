@@ -9786,6 +9786,180 @@ class TestUpdateBillingPeriod:
                     new_period_end=new_period_end,
                 )
 
+    async def test_pending_update_follows_new_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        old_period_end = subscription.current_period_end
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.applies_at == old_period_end
+        assert subscription_update.new_cycle_end == old_period_end
+
+        new_period_end = old_period_end + timedelta(days=7)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+            )
+
+        assert subscription_update.applies_at == new_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product == product_second
+        assert updated_subscription.current_period_start == new_period_end
+        assert (
+            updated_subscription.current_period_end
+            == SubscriptionRecurringInterval.month.get_next_period(
+                new_period_end, new_period_end.day
+            )
+        )
+
+    async def test_pending_interval_change_follows_new_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        old_period_end = subscription.current_period_end
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=yearly_product,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_start == old_period_end
+
+        new_period_end = old_period_end + timedelta(days=7)
+        expected_new_cycle_end = SubscriptionRecurringInterval.year.get_next_period(
+            new_period_end, new_period_end.day
+        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+            )
+
+        assert subscription_update.new_cycle_start == new_period_end
+        assert subscription_update.new_cycle_end == expected_new_cycle_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product == yearly_product
+        assert updated_subscription.current_period_start == new_period_end
+        assert updated_subscription.current_period_end == expected_new_cycle_end
+
+    async def test_pending_reset_update_follows_new_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        old_period_end = subscription.current_period_end
+
+        with freeze_time(old_period_end):
+            subscription_update, _ = generate_subscription_update(
+                subscription,
+                SubscriptionProrationBehavior.reset,
+                product=product_second,
+            )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert not subscription_update.is_interval_changed()
+
+        new_period_end = old_period_end + timedelta(days=7)
+        expected_new_cycle_end = SubscriptionRecurringInterval.month.get_next_period(
+            new_period_end, new_period_end.day
+        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+            )
+
+        assert subscription_update.new_cycle_start == new_period_end
+        assert subscription_update.new_cycle_end == expected_new_cycle_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        # A reset update carries the whole period: `cycle` doesn't advance the
+        # dates itself, so the update must open a fresh period at the new end.
+        assert updated_subscription.current_period_start == new_period_end
+        assert updated_subscription.current_period_end == expected_new_cycle_end
+
 
 @pytest.mark.asyncio
 class TestCancelCustomer:

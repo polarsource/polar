@@ -2218,6 +2218,62 @@ class SubscriptionService:
             )
             return subscription
 
+    async def _realign_pending_update_cycle(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        """Re-anchor a pending update on the subscription's current period.
+
+        A pending update is scheduled for the period end that was current when
+        it was created, and snapshots that cycle in `applies_at` and the
+        `new_cycle_*` fields. Once the period end moves, those snapshots are
+        stale and `apply_update` would rewind the subscription to the old cycle
+        the next time it cycles.
+        """
+        pending_update = subscription.pending_update
+        if pending_update is None:
+            return
+
+        new_period_end = subscription.current_period_end
+        pending_update.applies_at = new_period_end
+
+        new_product: Product | None = None
+        if pending_update.product_id is not None:
+            product_repository = ProductRepository.from_session(session)
+            new_product = await product_repository.get_by_id(pending_update.product_id)
+
+        recurring_interval = subscription.recurring_interval
+        recurring_interval_count = subscription.recurring_interval_count
+        if new_product is not None and is_recurring_product(new_product):
+            recurring_interval = new_product.recurring_interval
+            recurring_interval_count = new_product.recurring_interval_count
+
+        # Same condition as `cycle`, which leaves the period dates entirely to an
+        # update that resets the cycle: such an update has to carry the whole new
+        # period, so recompute it from the new period end.
+        if (
+            pending_update.proration_behavior == SubscriptionProrationBehavior.reset
+            or recurring_interval != subscription.recurring_interval
+            or recurring_interval_count != subscription.recurring_interval_count
+        ):
+            pending_update.new_cycle_start = new_period_end
+            pending_update.new_cycle_end = recurring_interval.get_next_period(
+                new_period_end,
+                new_period_end.day,
+                recurring_interval_count,
+            )
+        else:
+            # The update keeps the subscription's own cycle: stop pinning it, so
+            # `cycle` derives the next period from the new period end.
+            pending_update.new_cycle_start = None
+            pending_update.new_cycle_end = None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        await subscription_update_repository.update(pending_update)
+
     async def update_trial(
         self,
         session: AsyncSession,
@@ -2271,15 +2327,7 @@ class SubscriptionService:
                 subscription.trial_start = utc_now()
                 subscription.trial_end = subscription.current_period_end = trial_end
 
-        # Keep any pending update's cycle end in sync with the new period end,
-        # otherwise apply_update() will clobber current_period_end back to the
-        # stale value when cycle() next runs.
-        if subscription.pending_update is not None:
-            subscription_update_repository = SubscriptionUpdateRepository.from_session(
-                session
-            )
-            subscription.pending_update.new_cycle_end = subscription.current_period_end
-            await subscription_update_repository.update(subscription.pending_update)
+        await self._realign_pending_update_cycle(session, subscription)
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
@@ -2563,6 +2611,8 @@ class SubscriptionService:
 
         if subscription.cancel_at_period_end:
             subscription.ends_at = new_period_end
+
+        await self._realign_pending_update_cycle(session, subscription)
 
         await event_service.create_event(
             session,

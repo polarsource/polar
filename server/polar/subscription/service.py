@@ -956,6 +956,7 @@ class SubscriptionService:
         subscription = await repository.update(subscription, flush=True)
 
         await self.enqueue_benefits_grants(session, subscription)
+        await self._on_subscription_updated(session, subscription)
         await self._on_subscription_migrated(
             session,
             subscription,

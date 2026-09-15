@@ -30,7 +30,7 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
-from polar.version import CURRENT_API_VERSION, V2026_10
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.constants import (
     WEBHOOK_SECRET_KEY_BYTES,
     WEBHOOK_SECRET_PREFIX,
@@ -303,7 +303,7 @@ async def test_webhook_send_subscription_migrated(
         organization_id=organization.id,
         secret="mysecret",
         events=[WebhookEventType.subscription_migrated],
-        api_version=V2026_10,
+        api_version=CURRENT_API_VERSION,
     )
     await save_fixture(endpoint)
 
@@ -328,36 +328,6 @@ async def test_webhook_send_subscription_migrated(
     enqueue_job_mock.assert_called_once_with(
         "webhook_event.send", webhook_event_id=events[0].id
     )
-
-
-@pytest.mark.asyncio
-async def test_webhook_send_subscription_migrated_skips_current_api_version(
-    session: AsyncSession,
-    save_fixture: SaveFixture,
-    enqueue_job_mock: MagicMock,
-    organization: Organization,
-    subscription: Subscription,
-) -> None:
-    endpoint = WebhookEndpoint(
-        url="https://example.com/hook",
-        format=WebhookFormat.raw,
-        organization_id=organization.id,
-        secret="mysecret",
-        events=[WebhookEventType.subscription_migrated],
-        api_version=CURRENT_API_VERSION,
-    )
-    await save_fixture(endpoint)
-
-    events = await webhook_service.send(
-        session,
-        organization,
-        WebhookEventType.subscription_migrated,
-        subscription,
-        provider="stripe",
-        provider_subscription_id="sub_123",
-    )
-    assert events == []
-    enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

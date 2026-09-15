@@ -4105,7 +4105,7 @@ class TestActivateImported:
             provider_subscription_id="sub_1",
         )
 
-        assert_hooks_called_once(subscription_hooks, {"migrated"})
+        assert_hooks_called_once(subscription_hooks, {"migrated", "updated"})
 
     async def test_keeps_the_billing_anchor_the_import_captured(
         self,
@@ -4177,8 +4177,11 @@ class TestActivateImported:
             provider="paddle",
             provider_subscription_id="sub_ext_1",
         )
-        assert_webhook_not_sent(
-            webhook_service_send_mock, WebhookEventType.subscription_updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            product.organization,
+            subscription,
         )
         assert_webhook_not_sent(
             webhook_service_send_mock, WebhookEventType.subscription_created

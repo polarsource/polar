@@ -77,13 +77,6 @@ def get_openapi(
     route_contexts: Sequence[RouteContext],
     webhooks: Sequence[BaseRoute],
 ) -> dict[str, Any]:
-    from polar.webhook.webhooks import WebhookAPIRoute
-
-    versioned_webhooks = [
-        route
-        for route in webhooks
-        if not isinstance(route, WebhookAPIRoute) or route.is_available_in(version)
-    ]
     with api_version_context(version):
         openapi_schema = _get_openapi(
             title="Polar API",
@@ -91,7 +84,7 @@ def get_openapi(
             summary="Polar HTTP and Webhooks API",
             description="Read the docs at https://polar.sh/docs/api-reference",
             routes=route_contexts,
-            webhooks=versioned_webhooks,
+            webhooks=webhooks,
             tags=APITag.metadata(),  # type: ignore
             servers=[
                 {

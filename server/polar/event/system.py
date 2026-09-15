@@ -382,7 +382,7 @@ class SubscriptionMigratedMetadata(TypedDict):
     subscription_id: str
     provider: str
     provider_subscription_id: str
-    product_id: NotRequired[str]
+    product_id: str
 
 
 class SubscriptionMigratedEvent(Event):

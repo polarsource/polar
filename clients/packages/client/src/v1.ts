@@ -7029,6 +7029,32 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'subscription.migrated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription_migrated
+     * @description Sent when Polar takes over billing of a subscription migrated from another provider.
+     *
+     *     This fires at cutover, once the subscription is live on Polar. `provider`
+     *     and `provider_subscription_id` identify the subscription on the billing
+     *     provider so you can correlate the two.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointsubscription_migrated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'refund.created': {
     parameters: {
       query?: never
@@ -35849,7 +35875,7 @@ export interface components {
       /** Provider Subscription Id */
       provider_subscription_id: string
       /** Product Id */
-      product_id?: string
+      product_id: string
     }
     /** SubscriptionNotScheduledToCancel */
     SubscriptionNotScheduledToCancel: {
@@ -40086,6 +40112,45 @@ export interface components {
       /** Api Version */
       api_version: string
       data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionMigratedPayload
+     * @description Sent when Polar takes over billing of a subscription migrated from another provider.
+     *
+     *     This fires at cutover, once the subscription is live on Polar. `provider`
+     *     and `provider_subscription_id` identify the subscription on the billing
+     *     provider so you can correlate the two.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookSubscriptionMigratedPayload: {
+      /**
+       * Type
+       * @example subscription.migrated
+       * @constant
+       */
+      type: 'subscription.migrated'
+      /**
+       * Timestamp
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /** Api Version */
+      api_version: string
+      data: components['schemas']['Subscription']
+      /**
+       * Provider
+       * @description The billing provider the subscription was migrated from.
+       * @example stripe
+       */
+      provider: string
+      /**
+       * Provider Subscription Id
+       * @description The identifier of the subscription on the billing provider.
+       * @example sub_1Sabc2Def3Ghi
+       */
+      provider_subscription_id: string
     }
     /**
      * WebhookSubscriptionPastDuePayload
@@ -62333,6 +62398,39 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['WebhookSubscriptionResumedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointsubscription_migrated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionMigratedPayload']
       }
     }
     responses: {

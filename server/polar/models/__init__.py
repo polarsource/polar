@@ -127,6 +127,7 @@ from .void_billing_identity import VoidBillingIdentity
 from .void_customer_binding import VoidCustomerBinding
 from .void_deployment import VoidDeployment
 from .void_entitlement import VoidEntitlement
+from .void_event import VoidEvent
 from .void_meter import VoidMeter
 from .void_organization_settings import VoidOrganizationSettings
 from .void_product import VoidProduct
@@ -267,6 +268,7 @@ __all__ = [
     "VoidCustomerBinding",
     "VoidDeployment",
     "VoidEntitlement",
+    "VoidEvent",
     "VoidMeter",
     "VoidOrganizationSettings",
     "VoidProduct",

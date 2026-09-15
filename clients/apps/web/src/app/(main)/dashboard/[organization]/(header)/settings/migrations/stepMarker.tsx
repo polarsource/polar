@@ -14,11 +14,9 @@ export const STATE_LABELS: Record<StepState, string> = {
   upcoming: 'not started',
 }
 
-// Named for `Text`, not `Box`: Box's `color` prop has no accent entry, so
-// setting it there typechecks and then silently does nothing.
 export const STATE_COLORS: Record<StepState, TextColor> = {
   done: 'muted',
-  current: 'accent',
+  current: 'default',
   upcoming: 'disabled',
 }
 

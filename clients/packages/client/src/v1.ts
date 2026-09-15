@@ -35850,14 +35850,6 @@ export interface components {
       source_id: string
       /** Product Id */
       product_id?: string
-      /** Amount */
-      amount?: number
-      /** Currency */
-      currency?: string
-      /** Recurring Interval */
-      recurring_interval?: string
-      /** Recurring Interval Count */
-      recurring_interval_count?: number
     }
     /** SubscriptionNotScheduledToCancel */
     SubscriptionNotScheduledToCancel: {

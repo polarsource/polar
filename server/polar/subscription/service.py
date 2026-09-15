@@ -3934,10 +3934,6 @@ class SubscriptionService:
                     platform=platform,
                     source_id=source_id,
                     product_id=str(subscription.product_id),
-                    amount=subscription.amount,
-                    currency=subscription.currency,
-                    recurring_interval=subscription.recurring_interval.value,
-                    recurring_interval_count=subscription.recurring_interval_count,
                 ),
             ),
         )

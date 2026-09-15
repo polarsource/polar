@@ -4199,10 +4199,6 @@ class TestActivateImported:
             "platform": "paddle",
             "source_id": "sub_ext_1",
             "product_id": str(product.id),
-            "amount": subscription.amount,
-            "currency": subscription.currency,
-            "recurring_interval": subscription.recurring_interval.value,
-            "recurring_interval_count": subscription.recurring_interval_count,
         }
 
 

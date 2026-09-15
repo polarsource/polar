@@ -383,10 +383,6 @@ class SubscriptionMigratedMetadata(TypedDict):
     platform: str
     source_id: str
     product_id: NotRequired[str]
-    amount: NotRequired[int]
-    currency: NotRequired[str]
-    recurring_interval: NotRequired[str]
-    recurring_interval_count: NotRequired[int]
 
 
 class SubscriptionMigratedEvent(Event):

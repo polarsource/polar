@@ -1,5 +1,5 @@
 export const MigrationFlow = () => {
-  // Mintlify inlines only this export into the MDX module, so stage data
+  // Mintlify inlines only this export into the MDX module, so phase data
   // must live inside the component — a file-level const is dropped.
   const PHASES = [
     {
@@ -11,9 +11,25 @@ export const MigrationFlow = () => {
       polarNote: 'Selling',
       packets: [{ path: 'right-down', label: 'New checkout' }],
       rows: [
-        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Stripe' },
-        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
-        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
+        {
+          id: 'sub_4821',
+          name: 'Pro monthly',
+          renews: 'Stripe',
+          comment: 'Untouched',
+        },
+        {
+          id: 'sub_5190',
+          name: 'Team yearly',
+          renews: 'Stripe',
+          comment: 'Untouched',
+        },
+        {
+          id: 'sub_9002',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'New signup, created in Polar',
+          highlight: true,
+        },
       ],
     },
     {
@@ -25,9 +41,26 @@ export const MigrationFlow = () => {
       polarNote: 'Preparing',
       packets: [{ path: 'sibling', label: 'Products + customers' }],
       rows: [
-        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Stripe' },
-        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
-        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
+        {
+          id: 'sub_4821',
+          name: 'Pro monthly',
+          renews: 'Stripe',
+          comment: 'Product and customer ready in Polar',
+          highlight: true,
+        },
+        {
+          id: 'sub_5190',
+          name: 'Team yearly',
+          renews: 'Stripe',
+          comment: 'Product and customer ready in Polar',
+          highlight: true,
+        },
+        {
+          id: 'sub_9002',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'Already in Polar',
+        },
       ],
     },
     {
@@ -39,9 +72,26 @@ export const MigrationFlow = () => {
       polarNote: 'Verifying',
       packets: [{ path: 'sibling', label: 'Saved cards' }],
       rows: [
-        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Stripe' },
-        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
-        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
+        {
+          id: 'sub_4821',
+          name: 'Pro monthly',
+          renews: 'Stripe',
+          comment: 'Card copied and verified',
+          highlight: true,
+        },
+        {
+          id: 'sub_5190',
+          name: 'Team yearly',
+          renews: 'Stripe',
+          comment: 'No usable card yet',
+          warn: true,
+        },
+        {
+          id: 'sub_9002',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'Card added at checkout',
+        },
       ],
     },
     {
@@ -52,19 +102,37 @@ export const MigrationFlow = () => {
       stripeNote: 'Stopping',
       polarNote: 'Activating',
       packets: [
-        { path: 'sibling', label: 'Billing owner' },
-        { path: 'right-up', label: 'subscription.updated' },
+        { path: 'sibling', label: 'Subscription moves' },
+        { path: 'right-up', label: 'subscription.migrated', soon: true },
       ],
+      footnote: true,
       rows: [
-        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Polar', moved: true },
-        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe' },
-        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
+        {
+          id: 'sub_4821',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'Moved, paid period kept',
+          highlight: true,
+        },
+        {
+          id: 'sub_5190',
+          name: 'Team yearly',
+          renews: 'Stripe',
+          comment: 'Skipped, renews within 24 hours',
+          warn: true,
+        },
+        {
+          id: 'sub_9002',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'Not part of the migration',
+        },
       ],
     },
     {
       key: 'reconcile',
       short: 'Reconcile',
-      caption: 'Every subscription has one owner. Your app reads both systems.',
+      caption: 'Every subscription has one renewal system. Your app reads both.',
       appNote: 'One lookup',
       stripeNote: 'History only',
       polarNote: 'Renewing',
@@ -73,9 +141,25 @@ export const MigrationFlow = () => {
         { path: 'right-up', label: 'Renewals' },
       ],
       rows: [
-        { id: 'sub_4821', plan: 'Pro · monthly', owner: 'Polar' },
-        { id: 'sub_5190', plan: 'Team · yearly', owner: 'Stripe', kept: true },
-        { id: 'sub_9002', plan: 'Pro · monthly', owner: 'Polar' },
+        {
+          id: 'sub_4821',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'Verified after first Polar renewal',
+        },
+        {
+          id: 'sub_5190',
+          name: 'Team yearly',
+          renews: 'Stripe',
+          comment: 'Left on Stripe on purpose',
+          warn: true,
+        },
+        {
+          id: 'sub_9002',
+          name: 'Pro monthly',
+          renews: 'Polar',
+          comment: 'Verified',
+        },
       ],
     },
   ]
@@ -87,8 +171,8 @@ export const MigrationFlow = () => {
   const containerRef = useRef(null)
 
   const phase = PHASES[activeIndex]
-  const stripeCount = phase.rows.filter((row) => row.owner === 'Stripe').length
-  const polarCount = phase.rows.filter((row) => row.owner === 'Polar').length
+  const stripeCount = phase.rows.filter((row) => row.renews === 'Stripe').length
+  const polarCount = phase.rows.filter((row) => row.renews === 'Polar').length
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -125,7 +209,7 @@ export const MigrationFlow = () => {
 
     const timeout = window.setTimeout(() => {
       setActiveIndex((current) => (current + 1) % PHASES.length)
-    }, 3800)
+    }, 4200)
 
     return () => window.clearTimeout(timeout)
   }, [activeIndex, isPlaying, isVisible, prefersReducedMotion])
@@ -144,7 +228,7 @@ export const MigrationFlow = () => {
     <section
       ref={containerRef}
       className={`migration-flow migration-flow--${phase.key}`}
-      aria-label="How billing ownership moves during a Stripe migration"
+      aria-label="How renewals move during a Stripe migration"
     >
       <div className="migration-flow__topbar">
         <p className="migration-flow__counter">
@@ -213,6 +297,9 @@ export const MigrationFlow = () => {
               className="migration-flow__packet migration-flow__packet--right migration-flow__packet--up"
             >
               {packetFor('right-up').label}
+              {packetFor('right-up').soon ? (
+                <span className="migration-flow__packet-soon">soon</span>
+              ) : null}
             </span>
           ) : null}
         </div>
@@ -222,7 +309,7 @@ export const MigrationFlow = () => {
             <span className="migration-flow__node-name">Stripe</span>
             <span className="migration-flow__node-note">{phase.stripeNote}</span>
             <span className="migration-flow__node-count">
-              {stripeCount} subscription{stripeCount === 1 ? '' : 's'}
+              Renews {stripeCount} of {phase.rows.length}
             </span>
           </div>
 
@@ -239,43 +326,55 @@ export const MigrationFlow = () => {
             <span className="migration-flow__node-name">Polar</span>
             <span className="migration-flow__node-note">{phase.polarNote}</span>
             <span className="migration-flow__node-count">
-              {polarCount} subscription{polarCount === 1 ? '' : 's'}
+              Renews {polarCount} of {phase.rows.length}
             </span>
           </div>
         </div>
       </div>
 
-      <table className="migration-flow__table">
-        <thead>
-          <tr>
-            <th>Subscription</th>
-            <th>Renews in</th>
-          </tr>
-        </thead>
-        <tbody>
-          {phase.rows.map((row) => (
-            <tr key={row.id}>
-              <td>
-                <code>{row.id}</code>
-                <span>{row.plan}</span>
-              </td>
-              <td>
-                <span
-                  className={`migration-flow__owner migration-flow__owner--${row.owner.toLowerCase()}`}
-                >
-                  {row.owner}
-                </span>
-                {row.moved ? (
-                  <span className="migration-flow__flag">just moved</span>
-                ) : null}
-                {row.kept ? (
-                  <span className="migration-flow__flag">left on purpose</span>
-                ) : null}
-              </td>
+      <div className="migration-flow__table-scroll">
+        <table className="migration-flow__table">
+          <thead>
+            <tr>
+              <th>Subscription</th>
+              <th>Name</th>
+              <th>Renews in</th>
+              <th>What changed</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {phase.rows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <code>{row.id}</code>
+                </td>
+                <td className="migration-flow__plan">{row.name}</td>
+                <td>
+                  <span
+                    className={`migration-flow__renews migration-flow__renews--${row.renews.toLowerCase()}`}
+                  >
+                    {row.renews}
+                  </span>
+                </td>
+                <td
+                  className={`migration-flow__comment${
+                    row.highlight ? ' migration-flow__comment--change' : ''
+                  }${row.warn ? ' migration-flow__comment--warn' : ''}`}
+                >
+                  {row.comment}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {phase.footnote ? (
+        <p className="migration-flow__footnote">
+          <code>subscription.migrated</code> is coming. Until it ships, the switch
+          emits <code>subscription.updated</code>.
+        </p>
+      ) : null}
 
       <div className="migration-flow__controls">
         <button type="button" onClick={() => goTo(activeIndex - 1)}>

@@ -26,10 +26,12 @@ def test_production_uses_default_credential_chain(mocker: MockerFixture) -> None
     assert kwargs["aws_secret_access_key"] is None
 
 
-def test_local_endpoint_uses_static_credentials(mocker: MockerFixture) -> None:
+def test_endpoint_url_does_not_select_static_credentials(
+    mocker: MockerFixture,
+) -> None:
     mocker.patch.object(settings, "ENV", Environment.production)
 
     kwargs = get_boto3_client_kwargs(mocker, endpoint_url="http://127.0.0.1:9000")
 
-    assert kwargs["aws_access_key_id"] == settings.AWS_ACCESS_KEY_ID
-    assert kwargs["aws_secret_access_key"] == settings.AWS_SECRET_ACCESS_KEY
+    assert kwargs["aws_access_key_id"] is None
+    assert kwargs["aws_secret_access_key"] is None

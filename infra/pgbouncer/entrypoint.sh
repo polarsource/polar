@@ -12,7 +12,7 @@ chmod 600 /etc/pgbouncer/userlist.txt
 
 cat > /etc/pgbouncer/pgbouncer.ini <<EOF
 [databases]
-* = host=${DB_HOST} port=${DB_PORT:-5432}
+* = host=${DB_HOST} port=${DB_PORT:-5432}${CONNECT_QUERY:+ connect_query='${CONNECT_QUERY}'}
 
 [pgbouncer]
 listen_addr = 0.0.0.0

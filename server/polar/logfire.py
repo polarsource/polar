@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from opentelemetry.util.types import Attributes
 
 from polar.config import settings
+from polar.kit.aws import get_credentials
 from polar.kit.db.postgres import Engine
 from polar.observability.otel_prometheus import PrometheusMeterProvider
 
@@ -166,14 +167,17 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
 
     additional_span_processors: list[SpanProcessor] = [PidSpanProcessor()]
     if settings.S3_LOGS_BUCKET_NAME is not None:
+        access_key_id, secret_access_key = get_credentials(
+            endpoint_url=settings.S3_ENDPOINT_URL
+        )
         additional_span_processors.append(
             BatchSpanProcessor(
                 S3SpanExporter(
                     bucket_name=settings.S3_LOGS_BUCKET_NAME,
                     service_name=resolved_service_name,
                     endpoint_url=settings.S3_ENDPOINT_URL,
-                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                    aws_access_key_id=access_key_id,
+                    aws_secret_access_key=secret_access_key,
                     region_name=settings.AWS_REGION,
                     scrub_patterns=[
                         r"email",

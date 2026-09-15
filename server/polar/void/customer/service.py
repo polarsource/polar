@@ -8,14 +8,14 @@ from polar.authz.service import assert_organization_permission
 from polar.customer.schemas.customer import CustomerIndividualCreate, CustomerUpdate
 from polar.customer.service import customer as polar_customer_service
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
-from polar.models import Organization, VoidCustomerBinding
+from polar.models import Customer, Organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.identity.repository import IdentityRepository
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import DeletedIdentityConflict
 from polar.void.identity.service import identity as identity_service
 
-from .repository import CustomerBindingRepository
+from .repository import CustomerRepository
 from .schemas import Customer as CustomerSchema
 from .schemas import CustomerCreate
 
@@ -37,10 +37,10 @@ class CustomerService:
             auth_subject.subject.id,
             OrganizationPermission.customers_read,
         )
-        bindings = await CustomerBindingRepository.from_session(session).list(
+        customers = await CustomerRepository.from_session(session).list(
             auth_subject.subject.id
         )
-        return [self._serialize(binding) for binding in bindings]
+        return [self._serialize(customer) for customer in customers]
 
     async def get(
         self,
@@ -48,17 +48,15 @@ class CustomerService:
         auth_subject: AuthSubject[Organization],
         external_id: str,
     ) -> CustomerSchema:
-        binding = await CustomerBindingRepository.from_session(
+        customer = await CustomerRepository.from_session(
             session
         ).get_active_by_external_id(auth_subject.subject.id, external_id)
-        if binding is None:
+        if customer is None:
             raise ResourceNotFound("No bound customer with this external ID.")
-        native = await polar_customer_service.get(
-            session, auth_subject, binding.customer_id
-        )
+        native = await polar_customer_service.get(session, auth_subject, customer.id)
         if native is None:
             raise ResourceNotFound("No bound customer with this external ID.")
-        return self._serialize(binding)
+        return self._serialize(customer)
 
     async def create(
         self,
@@ -91,8 +89,7 @@ class CustomerService:
                 for constraint in (
                     "customers_organization_id_external_id_key",
                     "ix_customers_organization_id_email_not_null",
-                    "void_customer_bindings_customer_id_key",
-                    "void_customer_bindings_billing_identity_id_key",
+                    "customers_root_identity_id_key",
                 )
             ):
                 raise CustomerBindingConflict() from exc
@@ -105,7 +102,7 @@ class CustomerService:
         create_schema: CustomerCreate,
     ) -> CustomerSchema:
         organization = auth_subject.subject
-        repository = CustomerBindingRepository.from_session(session)
+        repository = CustomerRepository.from_session(session)
         root, _ = await identity_service.ensure(
             session,
             organization,
@@ -151,10 +148,7 @@ class CustomerService:
                 raise CustomerBindingConflict(
                     "The customer has a different external ID."
                 )
-            if (
-                await repository.get_by_customer_id(organization.id, native.id)
-                is not None
-            ):
+            if native.root_identity_id is not None:
                 raise CustomerBindingConflict(
                     "This customer already has a root identity."
                 )
@@ -177,22 +171,16 @@ class CustomerService:
                 auth_subject,
             )
 
-        binding = await repository.create(
-            VoidCustomerBinding(
-                organization=organization,
-                customer=native,
-                billing_identity=root,
-            ),
-            flush=True,
-        )
-        return self._serialize(binding)
+        native.root_identity = root
+        await repository.update(native, flush=True)
+        return self._serialize(native)
 
-    def _serialize(self, binding: VoidCustomerBinding) -> CustomerSchema:
-        native = binding.customer
+    def _serialize(self, native: Customer) -> CustomerSchema:
+        assert native.root_identity is not None
         return CustomerSchema.model_validate(
             {
                 "id": native.id,
-                "external_id": binding.billing_identity.external_id,
+                "external_id": native.root_identity.external_id,
                 "email": native.email,
                 "name": native.name,
                 "created_at": native.created_at,

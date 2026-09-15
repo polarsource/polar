@@ -35,7 +35,7 @@ class VoidSubscription(RecordModel):
         ),
         ForeignKeyConstraint(
             ["organization_id", "billing_identity_id"],
-            ["void_billing_identities.organization_id", "void_billing_identities.id"],
+            ["void_identities.organization_id", "void_identities.id"],
         ),
     )
 

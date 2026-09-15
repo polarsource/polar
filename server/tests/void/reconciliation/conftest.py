@@ -14,7 +14,6 @@ from polar.models import (
     Customer,
     Organization,
     VoidBillingIdentity,
-    VoidCustomerBinding,
     VoidMeter,
     VoidReducer,
     VoidReducerBucket,
@@ -104,11 +103,8 @@ async def graph(
     await identity_service.ensure(
         session, organization, IdentityCreate(external_id="outsider")
     )
-    await save_fixture(
-        VoidCustomerBinding(
-            organization=organization, customer=customer, billing_identity=root
-        )
-    )
+    customer.root_identity = root
+    await save_fixture(customer)
     usage = await reducer_service.create(
         session,
         organization.id,

@@ -15,12 +15,12 @@ class VoidBillingIdentity(RecordModel):
     """A node in a tree keyed by the merchant. A root has no parent and is
     what a customer owns. `metadata` is never read by the billing layer."""
 
-    __tablename__ = "void_billing_identities"
+    __tablename__ = "void_identities"
     __table_args__ = (
         UniqueConstraint("organization_id", "id"),
         ForeignKeyConstraint(
             ["organization_id", "parent_id"],
-            ["void_billing_identities.organization_id", "void_billing_identities.id"],
+            ["void_identities.organization_id", "void_identities.id"],
             ondelete="restrict",
         ),
         UniqueConstraint("organization_id", "external_id"),

@@ -4,7 +4,7 @@ from polar.auth.models import AuthSubject
 from polar.kit.utils import utc_now
 from polar.models import Organization, VoidMeter
 from polar.postgres import AsyncSession
-from polar.void.customer.repository import CustomerBindingRepository
+from polar.void.customer.repository import CustomerRepository
 from polar.void.customer.service import customer as customer_service
 from polar.void.meter.service import meter as meter_service
 from polar.void.subscription.service import subscription as subscription_service
@@ -40,11 +40,11 @@ class IdentitySnapshotService:
         at = utc_now()
         identity = await identity_service.get(session, organization_id, external_id)
         root = await identity_service.root_of(session, identity)
-        binding = await CustomerBindingRepository.from_session(
+        native = await CustomerRepository.from_session(
             session
         ).get_active_by_identity_id(organization_id, root.id)
         customer = None
-        if binding is not None:
+        if native is not None:
             customer = await customer_service.get(
                 session, auth_subject, root.external_id
             )

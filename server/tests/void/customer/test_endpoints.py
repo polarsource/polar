@@ -13,7 +13,6 @@ from polar.models import (
     Member,
     Organization,
     VoidBillingIdentity,
-    VoidCustomerBinding,
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -79,29 +78,58 @@ class TestCustomerAuthentication:
 
 @pytest.mark.asyncio
 class TestCreate:
-    async def test_creates_native_customer_and_root_binding(
+    async def test_creates_native_customer_and_root_identity(
         self, customer_client: AsyncClient, session: AsyncSession
     ) -> None:
         response = await customer_client.post(PATH, json=BODY)
         assert response.status_code == 201, response.text
         data = response.json()
         assert data.items() >= BODY.items()
-        binding = (
+        native = (
             await session.execute(
-                select(VoidCustomerBinding).options(
-                    selectinload(VoidCustomerBinding.customer),
-                    selectinload(VoidCustomerBinding.billing_identity),
+                select(Customer)
+                .where(Customer.id == UUID(data["id"]))
+                .options(
+                    selectinload(Customer.root_identity),
                 )
             )
         ).scalar_one()
-        assert data["id"] == str(binding.customer_id)
-        assert binding.customer.external_id == "acme"
-        assert binding.billing_identity.external_id == "acme"
-        assert binding.billing_identity.parent_id is None
-        assert binding.organization_id == binding.customer.organization_id
+        assert native.external_id == "acme"
+        assert native.root_identity is not None
+        assert native.root_identity_id == native.root_identity.id
+        assert native.root_identity.external_id == "acme"
+        assert native.root_identity.parent_id is None
+        assert native.root_identity.organization_id == native.organization_id
         owner = (await session.execute(select(Member))).scalar_one()
-        assert owner.customer_id == binding.customer_id
+        assert owner.customer_id == native.id
         assert owner.email == BODY["email"]
+
+    async def test_native_customer_creation_does_not_create_root(
+        self, customer_client: AsyncClient, session: AsyncSession
+    ) -> None:
+        response = await customer_client.post("/v1/customers/", json=BODY)
+        assert response.status_code == 201, response.text
+        native = await session.get(Customer, UUID(response.json()["id"]))
+        assert native is not None
+        assert native.root_identity_id is None
+        assert (await session.scalars(select(VoidBillingIdentity))).all() == []
+
+    async def test_reuses_existing_root(
+        self,
+        customer_client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        root = VoidBillingIdentity(organization=organization, external_id="acme")
+        await save_fixture(root)
+        root_id = root.id
+        response = await customer_client.post(PATH, json=BODY)
+        assert response.status_code == 201, response.text
+        native = await session.get(Customer, UUID(response.json()["id"]))
+        assert native is not None
+        assert native.root_identity_id == root_id
+        assert len((await session.scalars(select(VoidBillingIdentity))).all()) == 1
 
     async def test_reuses_native_customer_and_preserves_contact_details(
         self,
@@ -159,12 +187,10 @@ class TestCreate:
         assert (
             await session.execute(select(VoidBillingIdentity))
         ).scalars().all() == []
-        assert (
-            await session.execute(select(VoidCustomerBinding))
-        ).scalars().all() == []
         native = await session.get(Customer, customer.id)
         assert native is not None
         assert native.external_id is None
+        assert native.root_identity_id is None
 
     async def test_repeated_binding_conflicts(
         self, customer_client: AsyncClient
@@ -309,12 +335,10 @@ class TestRead:
         )
         assert rebound.status_code == 409
 
-    @pytest.mark.parametrize(
-        "deleted_model", [Customer, VoidBillingIdentity, VoidCustomerBinding]
-    )
+    @pytest.mark.parametrize("deleted_model", [Customer, VoidBillingIdentity])
     async def test_deleted_records_are_hidden(
         self,
-        deleted_model: type[Customer | VoidBillingIdentity | VoidCustomerBinding],
+        deleted_model: type[Customer | VoidBillingIdentity],
         customer_client: AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -344,10 +368,7 @@ class TestRead:
             organization=organization_second, external_id="other"
         )
         await save_fixture(root)
-        await save_fixture(
-            VoidCustomerBinding(
-                organization=organization_second, customer=native, billing_identity=root
-            )
-        )
+        native.root_identity = root
+        await save_fixture(native)
         assert (await customer_client.get(PATH)).json() == []
         assert (await customer_client.get(f"{PATH}/other")).status_code == 404

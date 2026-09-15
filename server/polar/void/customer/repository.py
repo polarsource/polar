@@ -3,43 +3,35 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, String, Uuid, column, or_, select, true, values
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.kit.repository import RepositoryBase
 from polar.models import (
     Customer,
     VoidBillingIdentity,
-    VoidCustomerBinding,
     VoidReducer,
     VoidReducerBucket,
     VoidSubscription,
 )
 
 
-class CustomerBindingRepository(RepositoryBase[VoidCustomerBinding]):
-    model = VoidCustomerBinding
+class CustomerRepository(RepositoryBase[Customer]):
+    model = Customer
 
-    def get_active_statement(
-        self, organization_id: UUID
-    ) -> Select[tuple[VoidCustomerBinding]]:
+    def get_active_statement(self, organization_id: UUID) -> Select[tuple[Customer]]:
         return (
             self.get_base_statement()
-            .join(VoidCustomerBinding.customer)
-            .join(VoidCustomerBinding.billing_identity)
+            .join(Customer.root_identity)
             .where(
-                VoidCustomerBinding.organization_id == organization_id,
-                VoidCustomerBinding.deleted_at.is_(None),
+                Customer.organization_id == organization_id,
                 Customer.deleted_at.is_(None),
                 VoidBillingIdentity.deleted_at.is_(None),
                 VoidBillingIdentity.parent_id.is_(None),
             )
-            .options(
-                contains_eager(VoidCustomerBinding.customer),
-                contains_eager(VoidCustomerBinding.billing_identity),
-            )
+            .options(contains_eager(Customer.root_identity))
         )
 
-    async def list(self, organization_id: UUID) -> Sequence[VoidCustomerBinding]:
+    async def list(self, organization_id: UUID) -> Sequence[Customer]:
         return await self.get_all(
             self.get_active_statement(organization_id).order_by(
                 Customer.created_at, Customer.id
@@ -48,35 +40,21 @@ class CustomerBindingRepository(RepositoryBase[VoidCustomerBinding]):
 
     async def get_active_by_external_id(
         self, organization_id: UUID, external_id: str
-    ) -> VoidCustomerBinding | None:
+    ) -> Customer | None:
         return await self.get_one_or_none(
             self.get_active_statement(organization_id).where(
                 VoidBillingIdentity.external_id == external_id
             )
         )
 
-    async def get_by_customer_id(
-        self, organization_id: UUID, customer_id: UUID
-    ) -> VoidCustomerBinding | None:
-        return await self.get_one_or_none(
-            self.get_base_statement()
-            .where(
-                VoidCustomerBinding.organization_id == organization_id,
-                VoidCustomerBinding.customer_id == customer_id,
-            )
-            .options(joinedload(VoidCustomerBinding.customer))
-        )
-
     async def get_by_identity_id(
         self, organization_id: UUID, identity_id: UUID
-    ) -> VoidCustomerBinding | None:
+    ) -> Customer | None:
         return await self.get_one_or_none(
-            self.get_base_statement()
-            .where(
-                VoidCustomerBinding.organization_id == organization_id,
-                VoidCustomerBinding.billing_identity_id == identity_id,
+            self.get_base_statement().where(
+                Customer.organization_id == organization_id,
+                Customer.root_identity_id == identity_id,
             )
-            .options(joinedload(VoidCustomerBinding.customer))
         )
 
     async def lock_customer(
@@ -96,10 +74,10 @@ class CustomerBindingRepository(RepositoryBase[VoidCustomerBinding]):
 
     async def get_active_by_identity_id(
         self, organization_id: UUID, identity_id: UUID
-    ) -> VoidCustomerBinding | None:
+    ) -> Customer | None:
         return await self.get_one_or_none(
             self.get_active_statement(organization_id).where(
-                VoidCustomerBinding.billing_identity_id == identity_id
+                Customer.root_identity_id == identity_id
             )
         )
 

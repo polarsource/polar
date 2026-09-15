@@ -25,7 +25,7 @@ from polar.void.reducer.buckets import bucket_start
 from polar.void.reducer.schemas import Reducer as ReducerSchema
 from polar.void.tinybird import TinybirdApi
 
-from .repository import CustomerBindingRepository, CustomerStateRepository
+from .repository import CustomerRepository, CustomerStateRepository
 from .schemas import (
     CustomerMeterState,
     CustomerState,
@@ -55,12 +55,13 @@ async def customer_state(
 ) -> CustomerState:
     organization_id = auth_subject.subject.id
     customer = await customer_service.get(session, auth_subject, external_id)
-    binding = await CustomerBindingRepository.from_session(
-        session
-    ).get_active_by_external_id(organization_id, external_id)
-    if binding is None:
+    native = await CustomerRepository.from_session(session).get_active_by_external_id(
+        organization_id, external_id
+    )
+    if native is None:
         raise ResourceNotFound("No bound customer with this external ID.")
-    identities = await identity_service.subtree(session, binding.billing_identity)
+    assert native.root_identity is not None
+    identities = await identity_service.subtree(session, native.root_identity)
     repository = CustomerStateRepository.from_session(session)
     identity_ids = {node.external_id for node in identities}
     assignments = await entitlement_service.assignments(session, organization_id)
@@ -149,7 +150,7 @@ async def customer_state(
                 at,
                 events=events,
             )
-            if node.external_id == binding.billing_identity.external_id:
+            if node.external_id == native.root_identity.external_id:
                 root_state = current
             entitlement = None
             entitlement_usage_base = 0.0

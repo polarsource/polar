@@ -140,7 +140,7 @@ jobs:
           token=$(uv run python -m scripts.tinybird_test_workspace)
           echo "::add-mask::$token"
           echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
-      - name: Verify additive Void migrations and schema drift
+      - name: Verify Void migration round trip and schema drift
         working-directory: server
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
@@ -151,11 +151,6 @@ jobs:
             --exclude-table='public.void_*' --exclude-table=public.alembic_version \
             > /tmp/polar-before-void.sql
           uv run alembic upgrade b2c26017068c
-          docker exec "$POSTGRES_CONTAINER_ID" pg_dump -U polar -d polar_test \
-            --schema-only --no-owner --no-privileges \
-            --exclude-table='public.void_*' --exclude-table=public.alembic_version \
-            > /tmp/polar-after-void.sql
-          diff -u /tmp/polar-before-void.sql /tmp/polar-after-void.sql
           uv run alembic downgrade 38a9961f9d09
           docker exec "$POSTGRES_CONTAINER_ID" pg_dump -U polar -d polar_test \
             --schema-only --no-owner --no-privileges \

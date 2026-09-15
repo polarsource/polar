@@ -17,7 +17,6 @@ from polar.models import (
     Product,
     Subscription,
     VoidBillingIdentity,
-    VoidCustomerBinding,
     VoidDeployment,
     VoidEntitlement,
     VoidMeter,
@@ -232,44 +231,35 @@ class TestGenerationKeys:
 
 
 @pytest.mark.asyncio
-class TestCustomerBinding:
-    @pytest.mark.parametrize("duplicate", ["customer", "billing_identity"])
-    async def test_customer_and_root_can_only_be_bound_once(
+class TestCustomerRootIdentity:
+    async def test_root_can_only_be_owned_once(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        organization: Organization,
         customer: Customer,
         customer_second: Customer,
         void_identity: VoidBillingIdentity,
-        duplicate: str,
     ) -> None:
-        second_identity = VoidBillingIdentity(
-            organization=organization, external_id="second"
-        )
-        await save_fixture(second_identity)
-        await save_fixture(
-            VoidCustomerBinding(
-                organization=organization,
-                customer=customer,
-                billing_identity=void_identity,
-            )
-        )
+        customer.root_identity = void_identity
+        await save_fixture(customer)
         with pytest.raises(IntegrityError):
             async with session.begin_nested():
-                await save_fixture(
-                    VoidCustomerBinding(
-                        organization=organization,
-                        customer=customer
-                        if duplicate == "customer"
-                        else customer_second,
-                        billing_identity=(
-                            void_identity
-                            if duplicate == "billing_identity"
-                            else second_identity
-                        ),
-                    )
-                )
+                customer_second.root_identity = void_identity
+                await save_fixture(customer_second)
+
+    async def test_root_must_belong_to_customer_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization_second: Organization,
+    ) -> None:
+        root = VoidBillingIdentity(organization=organization_second, external_id="root")
+        await save_fixture(root)
+        with pytest.raises(IntegrityError):
+            async with session.begin_nested():
+                customer.root_identity = root
+                await save_fixture(customer)
 
 
 @pytest.mark.asyncio
@@ -407,10 +397,8 @@ class TestPersistence:
             str(void_meter.id): {"included": 100, "limit": None}
         }
         await save_fixture(void_product)
-        binding = VoidCustomerBinding(
-            organization=organization, customer=customer, billing_identity=void_identity
-        )
-        await save_fixture(binding)
+        customer.root_identity = void_identity
+        await save_fixture(customer)
         started_at = datetime(2026, 9, 1, tzinfo=UTC)
         void_subscription = VoidSubscription(
             organization=organization,

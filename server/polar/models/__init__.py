@@ -124,7 +124,6 @@ from .user_organization import UserOrganization
 from .user_session import UserSession
 from .user_session_organization import UserSessionOrganization
 from .void_billing_identity import VoidBillingIdentity
-from .void_customer_binding import VoidCustomerBinding
 from .void_deployment import VoidDeployment
 from .void_entitlement import VoidEntitlement
 from .void_event import VoidEvent
@@ -265,7 +264,6 @@ __all__ = [
     "UserSession",
     "UserSessionOrganization",
     "VoidBillingIdentity",
-    "VoidCustomerBinding",
     "VoidDeployment",
     "VoidEntitlement",
     "VoidEvent",

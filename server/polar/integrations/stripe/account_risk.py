@@ -3,15 +3,17 @@
 Normalizes the two live signals (fraudulent website, fraudulent merchant) into
 one small shape.
 
-Website evaluations still arrive as ``v2.core.account_signals.*`` snapshot
-events: the full event (fetched by id) carries fields under ``data``. Merchant
-signals — and the newer website events — are thin ``v2.signals.account_signal.*``
-notifications. ``data`` is empty; ``related_object.id`` is an Account Signal
-(``acctsig_…``) fetched from ``/v2/signals/account_signals/:id``.
+Merchant and website evaluations on the Signals API arrive as thin
+``v2.signals.account_signal.*`` notifications. ``data`` is empty;
+``related_object.id`` is an Account Signal (``acctsig_…``) fetched from
+``/v2/signals/account_signals/:id``. Older website snapshots
+(``v2.core.account_signals.*``) still carry fields under ``data``.
 
 That resource nests type-specific fields (``fraudulent_merchant``,
-``fraudulent_website``) and puts the connected account on
-``account_details.account``. Older website snapshots were flat under ``data``.
+``fraudulent_website``). Merchant signals put the connected account on
+``account_details.account``. Website evaluations are requested with the URL
+itself, so the signal may have no account and instead echo the URL under
+``account_details.data.defaults.profile.business_url``.
 
 ``data`` / the Account Signal is stored verbatim as
 ``OrganizationRiskSignal.payload``. ``parse_merchant_payload`` and
@@ -74,8 +76,9 @@ ACCOUNT_SIGNAL_OBJECT_TYPES: dict[str, OrganizationRiskSignal.Type] = {
 @dataclass(frozen=True)
 class AccountRiskSignal:
     type: OrganizationRiskSignal.Type
-    account_id: str
     risk_level: StripeAccountRiskLevel
+    account_id: str | None = None
+    website_url: str | None = None
     description: str | None = None
     payload: dict[str, Any] = field(default_factory=dict)
 
@@ -135,6 +138,21 @@ def _account_id(data: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _website_url(data: Mapping[str, Any]) -> str | None:
+    details = data.get("account_details")
+    if not isinstance(details, Mapping):
+        return None
+    extra = details.get("data")
+    profile_source = extra if isinstance(extra, Mapping) else details
+    defaults = profile_source.get("defaults")
+    if not isinstance(defaults, Mapping):
+        return None
+    profile = defaults.get("profile")
+    if isinstance(profile, Mapping) and profile.get("business_url"):
+        return str(profile["business_url"])
+    return None
+
+
 def _signal_inner(
     signal_type: OrganizationRiskSignal.Type, data: Mapping[str, Any]
 ) -> Mapping[str, Any]:
@@ -180,7 +198,11 @@ def _parse_payload(
     signal_type: OrganizationRiskSignal.Type, data: Mapping[str, Any]
 ) -> AccountRiskSignal | None:
     account_id = _account_id(data)
-    if not account_id:
+    website_url = _website_url(data)
+    if signal_type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT:
+        if not account_id:
+            return None
+    elif not account_id and not website_url:
         return None
 
     inner = _signal_inner(signal_type, data)
@@ -193,8 +215,9 @@ def _parse_payload(
 
     return AccountRiskSignal(
         type=signal_type,
-        account_id=account_id,
         risk_level=risk_level,
+        account_id=account_id,
+        website_url=website_url,
         description=description,
         payload=dict(data),
     )
@@ -203,7 +226,7 @@ def _parse_payload(
 def parse_account_risk_event(event: Mapping[str, Any]) -> AccountRiskSignal | None:
     """Read a fetched risk event, or None if it can't be used.
 
-    Returns None when the event isn't a known signal or has no account.
+    Returns None when the event isn't a known signal or has no account or website.
     """
     signal_type = ACCOUNT_RISK_EVENT_TYPES.get(str(event.get("type")))
     if signal_type is None:

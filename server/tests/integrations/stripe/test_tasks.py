@@ -115,6 +115,67 @@ class TestAccountRiskSignal:
         assert updated is not None
         assert updated.status == OrganizationStatus.REVIEW
 
+    async def test_website_thin_event_matches_org_by_url(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+
+        event_mock = mocker.MagicMock()
+        event_mock.data = {
+            "id": "evt_website",
+            "type": "v2.signals.account_signal.fraudulent_website_ready",
+            "data": {},
+            "related_object": {
+                "id": "acctsig_789",
+                "type": "v2.signals.account_signal",
+            },
+        }
+        context_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
+        )
+        context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
+        context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        event_fetch = mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_risk_event",
+            new=AsyncMock(),
+        )
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_signal",
+            new=AsyncMock(
+                return_value={
+                    "id": "acctsig_789",
+                    "type": "fraudulent_website",
+                    "account_details": {
+                        "account": None,
+                        "data": {
+                            "defaults": {
+                                "profile": {"business_url": "https://example.com"},
+                            }
+                        },
+                    },
+                    "fraudulent_website": {
+                        "risk_level": "highest",
+                        "details": "Deceptive website",
+                    },
+                }
+            ),
+        )
+
+        await account_risk_signal(uuid.uuid4())
+
+        event_fetch.assert_not_called()
+        organization_repository = OrganizationRepository.from_session(session)
+        updated = await organization_repository.get_by_id(organization.id)
+        assert updated is not None
+        assert updated.status == OrganizationStatus.REVIEW
+
     async def test_unparseable_event_is_a_noop(
         self,
         mocker: MockerFixture,

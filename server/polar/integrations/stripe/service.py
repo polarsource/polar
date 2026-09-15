@@ -619,18 +619,24 @@ class StripeService:
     async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
         return await stripe_lib.TaxRate.retrieve_async(id)
 
-    async def create_website_risk_evaluation(self, account_id: str) -> dict[str, Any]:
-        """Ask Stripe to evaluate a connected account's website for fraud.
+    async def create_website_risk_evaluation(self, website_url: str) -> dict[str, Any]:
+        """Ask Stripe to evaluate a website for fraud.
 
         Result arrives asynchronously as a fraudulent_website_ready event.
         Uses raw_request because the endpoint is preview-only (no typed SDK).
         """
         response = await stripe_risk_client.raw_request_async(
             "post",
-            "/v2/core/account_evaluations",
-            account=account_id,
-            signals=["fraudulent_website"],
-            stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,
+            "/v2/signals/account_evaluations",
+            account_details={
+                "data": {
+                    "defaults": {
+                        "profile": {"business_url": website_url},
+                    }
+                }
+            },
+            requested_signals=["fraudulent_website"],
+            stripe_version=STRIPE_ACCOUNT_SIGNALS_API_VERSION,
         )
         return cast(dict[str, Any], json.loads(response.body))
 

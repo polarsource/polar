@@ -80,9 +80,9 @@ async def _resolve_account_risk_signal(
 ) -> AccountRiskSignal | None:
     """Turn a stored thin event into a parsed signal.
 
-    Core snapshot events (website evaluations) have usable ``data`` once the
-    full event is fetched. ``v2.signals.account_signal.*`` events leave
-    ``data`` empty; the Account Signal lives at ``related_object``.
+    ``v2.signals.account_signal.*`` events leave ``data`` empty; the Account
+    Signal lives at ``related_object``. Older core snapshot events have usable
+    ``data`` once the full event is fetched.
     """
     parsed = parse_account_risk_event(payload)
     if parsed is not None:

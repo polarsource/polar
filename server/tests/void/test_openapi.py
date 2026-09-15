@@ -14,7 +14,13 @@ class TestGetVoidOpenAPI:
         schema = get_void_openapi(version)
 
         assert schema["info"]["version"] == str(version)
-        assert set(schema["paths"]) == {"/v1/void/organizations/current"}
+        assert set(schema["paths"]) == {
+            "/v1/void/organizations/current",
+            "/v1/void/identities",
+            "/v1/void/identities/{external_id}",
+            "/v1/void/customers",
+            "/v1/void/customers/{external_id}",
+        }
         operation = schema["paths"]["/v1/void/organizations/current"]["get"]
         assert operation["operationId"] == "organizations:current"
         assert operation["responses"]["200"]["content"]["application/json"][
@@ -27,6 +33,27 @@ class TestGetVoidOpenAPI:
         assert operation["security"] == [
             {"oat": ["void:read"]},
             {"oat": ["void:write"]},
+        ]
+
+    @pytest.mark.parametrize("version", VERSIONS)
+    def test_customer_permissions_require_both_scope_groups(
+        self, version: APIVersion
+    ) -> None:
+        paths = get_void_openapi(version)["paths"]
+        expected_read = {
+            frozenset((void, customer))
+            for void in ("void:read", "void:write")
+            for customer in ("customers:read", "customers:write")
+        }
+        for path in ("/v1/void/customers", "/v1/void/customers/{external_id}"):
+            assert {
+                frozenset(item["oat"]) for item in paths[path]["get"]["security"]
+            } == expected_read
+        assert paths["/v1/void/customers"]["post"]["security"] == [
+            {"oat": ["customers:write", "void:write"]}
+        ]
+        assert paths["/v1/void/identities"]["post"]["security"] == [
+            {"oat": ["void:write"]}
         ]
 
     def test_does_not_expose_void_in_polar_schema(self) -> None:

@@ -15,7 +15,9 @@ from polar.organization_access_token.service import TOKEN_PREFIX
 from polar.postgres import AsyncSession, create_async_engine
 
 
-async def generate_void_token(session: AsyncSession, organization: str) -> str:
+async def generate_void_token(
+    session: AsyncSession, organization: str, *, customers: bool = False
+) -> str:
     if not (settings.is_development() or settings.is_testing()):
         raise ValueError("Void tokens can only be issued in development or testing")
     if not settings.VOID_ENABLED:
@@ -35,6 +37,10 @@ async def generate_void_token(session: AsyncSession, organization: str) -> str:
     if not resolved_organization.can_authenticate:
         raise ValueError("Organization cannot authenticate")
 
+    scopes = {Scope.void_read, Scope.void_write}
+    if customers:
+        scopes.update({Scope.customers_read, Scope.customers_write})
+
     token, token_hash = generate_token_hash_pair(
         secret=settings.SECRET, prefix=TOKEN_PREFIX
     )
@@ -43,7 +49,7 @@ async def generate_void_token(session: AsyncSession, organization: str) -> str:
         OrganizationAccessToken(
             organization=resolved_organization,
             token=token_hash,
-            scope=f"{Scope.void_read} {Scope.void_write}",
+            scope=" ".join(sorted(scopes)),
             expires_at=utc_now() + timedelta(hours=24),
             comment="Void local development",
         ),
@@ -52,12 +58,12 @@ async def generate_void_token(session: AsyncSession, organization: str) -> str:
     return token
 
 
-async def run(organization: str) -> str:
+async def run(organization: str, *, customers: bool = False) -> str:
     engine = create_async_engine("script")
     try:
         sessionmaker = create_async_sessionmaker(engine)
         async with sessionmaker() as session, session.begin():
-            return await generate_void_token(session, organization)
+            return await generate_void_token(session, organization, customers=customers)
     finally:
         await engine.dispose()
 
@@ -67,9 +73,14 @@ def main() -> None:
         description="Issue a 24-hour Void organization token for local development"
     )
     parser.add_argument("organization", help="Existing organization UUID or slug")
+    parser.add_argument(
+        "--customers",
+        action="store_true",
+        help="Also grant Polar customer read/write access for Void customer operations",
+    )
     arguments = parser.parse_args()
     try:
-        token = asyncio.run(run(arguments.organization))
+        token = asyncio.run(run(arguments.organization, customers=arguments.customers))
     except ValueError as error:
         parser.error(str(error))
     print(token)

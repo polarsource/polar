@@ -6,6 +6,7 @@ from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.customer.auth import CustomerRead, CustomerWrite
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.models import Organization, OrganizationAccessToken
 
@@ -50,3 +51,21 @@ async def _void_write(
 
 VoidRead = Annotated[AuthSubject[Organization], Depends(_void_read)]
 VoidWrite = Annotated[AuthSubject[Organization], Depends(_void_write)]
+
+
+async def _void_customer_read(
+    auth_subject: VoidRead,
+    _customer_auth_subject: CustomerRead,
+) -> AuthSubject[Organization]:
+    return auth_subject
+
+
+async def _void_customer_write(
+    auth_subject: VoidWrite,
+    _customer_auth_subject: CustomerWrite,
+) -> AuthSubject[Organization]:
+    return auth_subject
+
+
+VoidCustomerRead = Annotated[AuthSubject[Organization], Depends(_void_customer_read)]
+VoidCustomerWrite = Annotated[AuthSubject[Organization], Depends(_void_customer_write)]

@@ -47,7 +47,6 @@ it('pending operations send Polar credentials only to Void routes and preserve S
     for (const request of [
       () => client.api.events.ingest([]),
       () => client.api.products.list(),
-      () => client.api.customers.list(),
       () => client.api.subscriptions.list(),
     ]) {
       await assert.rejects(request(), (error: unknown) => {
@@ -61,12 +60,7 @@ it('pending operations send Polar credentials only to Void routes and preserve S
     }
     assert.deepEqual(
       requests.map((request) => new URL(request.url).pathname),
-      [
-        '/v1/void/events',
-        '/v1/void/products',
-        '/v1/void/customers',
-        '/v1/void/subscriptions',
-      ],
+      ['/v1/void/events', '/v1/void/products', '/v1/void/subscriptions'],
     )
     for (const request of requests) {
       assert.equal(

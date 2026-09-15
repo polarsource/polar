@@ -6,6 +6,8 @@ from polar.openapi import APITag
 from polar.routing import APIRouter
 
 from .auth import VoidRead, require_void_enabled
+from .customer.endpoints import router as customer_router
+from .identity.endpoints import router as identity_router
 from .schemas import VoidOrganization
 
 router = APIRouter(
@@ -24,3 +26,7 @@ router = APIRouter(
 )
 async def current(auth_subject: VoidRead) -> Organization:
     return auth_subject.subject
+
+
+router.include_router(identity_router)
+router.include_router(customer_router)

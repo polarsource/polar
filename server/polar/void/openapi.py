@@ -1,11 +1,14 @@
 from copy import copy
 from dataclasses import replace
+from itertools import product
 from typing import Any
 
+from fastapi.dependencies.models import Dependant
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
 
 from polar.api import router
+from polar.auth.dependencies import _Authenticator
 from polar.kit.versioning import (
     APIVersion,
     api_version_context,
@@ -13,6 +16,17 @@ from polar.kit.versioning import (
     routes_for_version,
 )
 from polar.version import CURRENT_API_VERSION, VERSIONS
+
+
+def _scope_groups(dependant: Dependant) -> set[tuple[str, ...]]:
+    groups = set()
+    if isinstance(dependant.call, _Authenticator) and dependant.call.required_scopes:
+        groups.add(
+            tuple(sorted(str(scope) for scope in dependant.call.required_scopes))
+        )
+    for dependency in dependant.dependencies:
+        groups.update(_scope_groups(dependency))
+    return groups
 
 
 def get_void_openapi(version: APIVersion = CURRENT_API_VERSION) -> dict[str, Any]:
@@ -35,24 +49,27 @@ def get_void_openapi(version: APIVersion = CURRENT_API_VERSION) -> dict[str, Any
         route_contexts.append(RouteContext(route, effective_context))
 
     finalize_versioned_routes(route_contexts, VERSIONS)
+    version_routes = routes_for_version(route_contexts, version)
     with api_version_context(version):
         schema = get_openapi(
             title="Void API",
             version=str(version),
             summary="Experimental Void API in Polar",
-            routes=routes_for_version(route_contexts, version),
+            routes=version_routes,
         )
 
-    for path in schema["paths"].values():
-        for operation in path.values():
-            if not isinstance(operation, dict) or "security" not in operation:
-                continue
-            scopes = {
-                scope
-                for requirement in operation["security"]
-                for scope in requirement.get("oat", [])
-            }
-            operation["security"] = [{"oat": [scope]} for scope in sorted(scopes)]
+    for context in version_routes:
+        version_route = context.original_route
+        if not isinstance(version_route, APIRoute):
+            continue
+        # FastAPI merges scopes; our authenticators accept any scope within each group.
+        scope_groups = _scope_groups(version_route.dependant)
+        for method in context.methods or ():
+            operation = schema["paths"][context.path][method.lower()]
+            operation["security"] = [
+                {"oat": sorted(set(scopes))}
+                for scopes in product(*sorted(scope_groups))
+            ]
             operation.pop("x-speakeasy-ignore", None)
     oat_scheme = schema["components"]["securitySchemes"]["oat"]
     oat_scheme["description"] = (

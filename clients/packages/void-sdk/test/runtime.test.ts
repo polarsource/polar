@@ -586,7 +586,7 @@ it('resource writes forward inputs and preserve metadata keys', async () => {
       email: 'hello@example.com',
       name: null,
     })
-    expectTypeOf(customer.email).toEqualTypeOf<string>()
+    expectTypeOf(customer.email).toEqualTypeOf<string | null>()
     assert.equal(customer.external_id, 'customer_456')
     assert.deepEqual(server.calls[0]?.body, {
       external_id: 'customer_456',

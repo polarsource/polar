@@ -4,7 +4,7 @@
     "title": "Void API",
     "summary": "Void HTTP API",
     "version": "1.0.0",
-    "description": "Void migration compatibility contract. Only GET /v1/void/organizations/current is implemented in Polar at this stage. Other operations preserve the imported SDK API for later backend migration."
+    "description": "Void migration compatibility contract. Organization login, identity creation and navigation, and customer bindings are implemented in Polar. Other operations preserve the imported SDK API for later backend migration."
   },
   "servers": [
     {
@@ -192,12 +192,16 @@
     },
     "/v1/void/identities": {
       "get": {
-        "tags": ["identities"],
-        "summary": "List",
+        "tags": ["void", "private", "identities"],
+        "summary": "List Identities",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "identities:list",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -247,6 +251,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -258,16 +272,19 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "identities",
+        "x-speakeasy-name-override": "list_identities",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["identities"],
-        "summary": "Ensure",
-        "description": "Idempotent. Creates the identity on first touch, returns it after.",
+        "tags": ["void", "private", "identities"],
+        "summary": "Ensure Identity",
+        "description": "**Scopes**: `void:write`",
         "operationId": "identities:ensure",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:write"]
           }
         ],
         "requestBody": {
@@ -291,6 +308,44 @@
               }
             }
           },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DeletedIdentityConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IdentityHierarchyConflict"
+                    }
+                  ],
+                  "title": "Response 409 Identities:Ensure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -302,17 +357,24 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "identities",
+        "x-speakeasy-name-override": "ensure_identity",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/identities/{external_id}": {
       "get": {
-        "tags": ["identities"],
-        "summary": "Get",
+        "tags": ["void", "private", "identities"],
+        "summary": "Get Identity",
+        "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "identities:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
           }
         ],
         "parameters": [
@@ -337,6 +399,26 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityHierarchyConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -348,7 +430,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "identities",
+        "x-speakeasy-name-override": "get_identity",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/identities/{external_id}/snapshot": {
@@ -518,8 +603,9 @@
     },
     "/v1/void/customers": {
       "get": {
-        "tags": ["customers"],
-        "summary": "List",
+        "tags": ["void", "private", "customers", "private"],
+        "summary": "List Customers",
+        "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "customers:list",
         "responses": {
           "200": {
@@ -539,14 +625,27 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["customers:read", "void:read"]
+          },
+          {
+            "oat": ["customers:read", "void:write"]
+          },
+          {
+            "oat": ["customers:write", "void:read"]
+          },
+          {
+            "oat": ["customers:write", "void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-speakeasy-group": "customers",
+        "x-speakeasy-name-override": "list_customers",
+        "x-void-migration-status": "implemented"
       },
       "post": {
-        "tags": ["customers"],
-        "summary": "Create",
+        "tags": ["void", "private", "customers", "private"],
+        "summary": "Create Customer",
+        "description": "**Scopes**: `customers:write`",
         "operationId": "customers:create",
         "requestBody": {
           "content": {
@@ -569,6 +668,26 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBindingConflict"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -582,20 +701,33 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["customers:write", "void:write"]
           }
         ],
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-speakeasy-group": "customers",
+        "x-speakeasy-name-override": "create_customer",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/customers/{external_id}": {
       "get": {
-        "tags": ["customers"],
-        "summary": "Get",
+        "tags": ["void", "private", "customers", "private"],
+        "summary": "Get Customer",
+        "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "customers:get",
         "security": [
           {
-            "HTTPBearer": []
+            "oat": ["customers:read", "void:read"]
+          },
+          {
+            "oat": ["customers:read", "void:write"]
+          },
+          {
+            "oat": ["customers:write", "void:read"]
+          },
+          {
+            "oat": ["customers:write", "void:write"]
           }
         ],
         "parameters": [
@@ -620,6 +752,16 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -631,7 +773,10 @@
             }
           }
         },
-        "x-void-migration-status": "pending"
+        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-speakeasy-group": "customers",
+        "x-speakeasy-name-override": "get_customer",
+        "x-void-migration-status": "implemented"
       }
     },
     "/v1/void/customers/{external_id}/state": {
@@ -2522,15 +2667,23 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid",
-            "title": "Id"
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "external_id": {
             "type": "string",
             "title": "External Id"
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email"
           },
           "name": {
@@ -2547,7 +2700,8 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           }
         },
         "type": "object",
@@ -2560,24 +2714,38 @@
             "type": "string",
             "maxLength": 255,
             "minLength": 1,
+            "pattern": "\\S",
             "title": "External Id"
           },
           "email": {
             "type": "string",
-            "minLength": 3,
-            "pattern": "^[^@\\s]+@[^@\\s]+$",
+            "format": "email",
             "title": "Email"
           },
           "name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
               }
             ],
             "title": "Name"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "Existing Polar customer to bind. Its external ID must match or be unset."
           }
         },
         "type": "object",
@@ -2931,7 +3099,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "string"
@@ -3025,7 +3193,7 @@
         "properties": {
           "included": {
             "type": "number",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Included",
             "default": 0
           },
@@ -3039,7 +3207,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -3552,8 +3720,8 @@
               },
               {
                 "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": -2147483648.0
+                "maximum": 2147483647,
+                "minimum": -2147483648
               },
               {
                 "type": "boolean"
@@ -3598,8 +3766,9 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid",
-            "title": "Id"
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "external_id": {
             "type": "string",
@@ -3624,7 +3793,8 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           }
         },
         "type": "object",
@@ -3648,20 +3818,21 @@
           "parent_external_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
               },
               {
                 "type": "null"
               }
             ],
             "title": "Parent External Id",
-            "description": "Where a brand new identity is attached. Read on first touch only; an identity keeps its parent for life."
+            "description": "Parent for a new identity. Existing identities keep their parent."
           },
           "metadata": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Metadata",
-            "description": "Free-form and never read by the billing layer."
+            "title": "Metadata"
           }
         },
         "type": "object",
@@ -3672,8 +3843,9 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid",
-            "title": "Id"
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "external_id": {
             "type": "string",
@@ -3698,7 +3870,8 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
           },
           "chain": {
             "items": {
@@ -3706,7 +3879,7 @@
             },
             "type": "array",
             "title": "Chain",
-            "description": "External ids from this identity up to its root, self first."
+            "description": "External IDs from this identity to its root."
           },
           "children": {
             "items": {
@@ -3969,7 +4142,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "string"
@@ -4057,7 +4230,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -4299,7 +4472,7 @@
         "properties": {
           "included": {
             "type": "number",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Included",
             "default": 0
           },
@@ -4313,7 +4486,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -4491,7 +4664,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "string"
@@ -5038,7 +5211,7 @@
           },
           "interval_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Interval Count",
             "default": 1
           },
@@ -5046,7 +5219,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "string"
@@ -5080,7 +5253,7 @@
           },
           "interval_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Interval Count",
             "default": 1
           },
@@ -5457,7 +5630,7 @@
           },
           "meter_interval_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Meter Interval Count",
             "default": 1
           },
@@ -5465,7 +5638,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -5475,7 +5648,7 @@
           },
           "included": {
             "type": "number",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Included",
             "default": 0
           },
@@ -5713,6 +5886,74 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "CustomerBindingConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerBindingConflict",
+            "title": "Error",
+            "examples": ["CustomerBindingConflict"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "CustomerBindingConflict"
+      },
+      "DeletedIdentityConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "DeletedIdentityConflict",
+            "title": "Error",
+            "examples": ["DeletedIdentityConflict"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "DeletedIdentityConflict"
+      },
+      "IdentityHierarchyConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "IdentityHierarchyConflict",
+            "title": "Error",
+            "examples": ["IdentityHierarchyConflict"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "IdentityHierarchyConflict"
+      },
+      "ResourceNotFound": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ResourceNotFound",
+            "title": "Error",
+            "examples": ["ResourceNotFound"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "ResourceNotFound"
       }
     },
     "securitySchemes": {

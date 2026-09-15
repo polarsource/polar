@@ -6,14 +6,19 @@ This private package contains the SDK and CLI imported from
 [`polarsource/void` at `495330f3`](https://github.com/polarsource/void/tree/495330f3f00e157f6cd034562cfecfb55075d517/packages/sdk).
 It keeps the `@void/sdk` imports and the `void` command.
 
-Polar now serves `GET /v1/void/organizations/current` for CLI login. The SDK
-sends all requests to `/v1/void/...` with a Polar organization access token and
-`Polar-Version: 2026-04`. Set `apiUrl` to the server origin, without `/v1/void`.
+Polar now serves CLI login, identity creation and navigation, and customer
+bindings under `/v1/void`. The SDK sends a Polar organization access token and
+`Polar-Version: 2026-04` with every request. Set `apiUrl` to the server origin,
+without `/v1/void`.
 
-The remaining SDK operations are preserved for later migration stages and are
-not implemented in Polar yet. `plan`, `deploy`, ingestion, and runtime queries
-will return 404 after login. The examples below describe the full imported SDK;
-only login, logout, local config compilation, and tests are available at this stage.
+The implemented operations are `organizations:current`, `identities:list`,
+`identities:ensure`, `identities:get`, `customers:list`, `customers:create`, and
+`customers:get`. This enables `root()`, `ensure()`, `spawn()` without entitlements,
+identity navigation, and `actor.customer()`.
+
+The remaining SDK operations are preserved for later migration stages.
+`plan`, `deploy`, ingestion, snapshots, customer state, entitlements, and meter or
+reducer queries still return 404. The examples below describe the full imported SDK.
 
 ### Try login locally
 
@@ -46,6 +51,47 @@ pnpm --filter @void/sdk void login --api-url http://127.0.0.1:8000
 pnpm --filter @void/sdk void logout
 ```
 
+### Connect identities and Polar customers
+
+Identity reads require `void:read` or `void:write`. Creating an identity requires
+`void:write`. Customer reads also require `customers:read` or `customers:write`;
+creating a customer binding requires both `void:write` and `customers:write`.
+`actor.customer()` uses both identity and customer reads.
+
+To include customer access in a local development token, add `--customers`:
+
+```sh
+uv run python -m scripts.generate_void_token <organization-uuid-or-slug> --customers
+```
+
+```ts
+// Supply a real billing email when creating a new customer.
+const account = await client.root('acme')
+const member = await account.spawn('alice')
+
+await client.api.customers.create({
+  external_id: account.id,
+  email: billingEmail,
+  name: 'Acme',
+})
+
+await member.chain() // ['alice', 'acme']
+await member.customer() // the Polar customer bound to acme
+```
+
+A binding connects a root identity to a native Polar customer in the authenticated
+organization. An existing native customer with the same `external_id` is reused.
+To bind a customer that has no external ID, pass its UUID as `customer_id` alongside
+`external_id` and `email`. Customers with a different external ID cannot be rebound.
+The response `id` is the native Polar customer UUID. Creating a binding for an
+already bound identity or customer returns 409; use `customers.get()` to read it.
+
+Existing native names and emails are authoritative, including absent values.
+Supplied contact fields apply only when creating a new native customer. The
+response email is nullable because Polar customers can have no email.
+Identities keep the parent assigned on first creation. Customer bindings require a
+root identity, and the server keeps each binding within the token's organization.
+
 From the Polar `clients/` directory:
 
 ```sh
@@ -61,7 +107,7 @@ pnpm --filter @void/sdk generate
 `generate` uses the checked-in `openapi.json` and requires no running server or
 Python environment. This is a migration compatibility contract that retains the
 imported SDK API. Each operation has `x-void-migration-status` set to `implemented`
-or `pending`; only `organizations:current` is implemented.
+or `pending`; seven operations are implemented.
 
 Export the live backend contract from `server/` with
 `uv run python -m scripts.generate_void_openapi 2026-04`. Use it to verify migrated

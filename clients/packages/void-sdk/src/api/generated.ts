@@ -23,11 +23,17 @@ export const ValidationError = Schema.Struct({ "loc": Schema.Array(Schema.Union(
 export type OrganizationUpdate = { readonly "default_variant_id": string | null }
 export const OrganizationUpdate = Schema.Struct({ "default_variant_id": Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), Schema.Null]).annotate({ "title": "Default Variant Id", "description": "Default configuration variant. Null selects the unnamed variant." }) }).annotate({ "title": "OrganizationUpdate", "identifier": "OrganizationUpdate" })
 export type Identity = { readonly "id": string, readonly "external_id": string, readonly "parent_external_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json }, readonly "created_at": string }
-export const Identity = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "format": "date-time" }) }).annotate({ "title": "Identity", "identifier": "Identity" })
+export const Identity = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Identity", "identifier": "Identity" })
+export type ResourceNotFound = { readonly "error": "ResourceNotFound", readonly "detail": string }
+export const ResourceNotFound = Schema.Struct({ "error": Schema.Literal("ResourceNotFound").annotate({ "title": "Error", "examples": ["ResourceNotFound"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "ResourceNotFound", "identifier": "ResourceNotFound" })
 export type IdentityCreate = { readonly "external_id": string, readonly "parent_external_id"?: string | null, readonly "metadata"?: { readonly [x: string]: Schema.Json } }
-export const IdentityCreate = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), "parent_external_id": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id", "description": "Where a brand new identity is attached. Read on first touch only; an identity keeps its parent for life." })), "metadata": Schema.optionalKey(Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata", "description": "Free-form and never read by the billing layer." })) }).annotate({ "title": "IdentityCreate", "identifier": "IdentityCreate" })
-export type Customer = { readonly "id": string, readonly "external_id": string, readonly "email": string, readonly "name": string | null, readonly "created_at": string }
-export const Customer = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "email": Schema.String.annotate({ "title": "Email" }), "name": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Name" }), "created_at": Schema.String.annotate({ "title": "Created At", "format": "date-time" }) }).annotate({ "title": "Customer", "identifier": "Customer" })
+export const IdentityCreate = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), "parent_external_id": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), Schema.Null]).annotate({ "title": "Parent External Id", "description": "Parent for a new identity. Existing identities keep their parent." })), "metadata": Schema.optionalKey(Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" })) }).annotate({ "title": "IdentityCreate", "identifier": "IdentityCreate" })
+export type DeletedIdentityConflict = { readonly "error": "DeletedIdentityConflict", readonly "detail": string }
+export const DeletedIdentityConflict = Schema.Struct({ "error": Schema.Literal("DeletedIdentityConflict").annotate({ "title": "Error", "examples": ["DeletedIdentityConflict"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "DeletedIdentityConflict", "identifier": "DeletedIdentityConflict" })
+export type IdentityHierarchyConflict = { readonly "error": "IdentityHierarchyConflict", readonly "detail": string }
+export const IdentityHierarchyConflict = Schema.Struct({ "error": Schema.Literal("IdentityHierarchyConflict").annotate({ "title": "Error", "examples": ["IdentityHierarchyConflict"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "IdentityHierarchyConflict", "identifier": "IdentityHierarchyConflict" })
+export type Customer = { readonly "id": string, readonly "external_id": string, readonly "email": string | null, readonly "name": string | null, readonly "created_at": string }
+export const Customer = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "email": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Email" }), "name": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Name" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Customer", "identifier": "Customer" })
 export type TimeInterval = "hour" | "day" | "week" | "month" | "year"
 export const TimeInterval = Schema.Literals(["hour", "day", "week", "month", "year"]).annotate({ "title": "TimeInterval", "identifier": "TimeInterval" })
 export type MeterCycle = { readonly "subscription_id": string, readonly "period_start": string, readonly "period_end": string, readonly "credits": number, readonly "usage": number, readonly "expired": number, readonly "rollover": number, readonly "overage": number }
@@ -36,8 +42,10 @@ export type EntitlementGrant = { readonly "slug": string, readonly "name": strin
 export const EntitlementGrant = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }), "name": Schema.String.annotate({ "title": "Name" }), "subscription_id": Schema.String.annotate({ "title": "Subscription Id", "format": "uuid" }), "product_id": Schema.String.annotate({ "title": "Product Id", "format": "uuid" }), "product_slug": Schema.String.annotate({ "title": "Product Slug" }), "external_identity_id": Schema.String.annotate({ "title": "External Identity Id", "description": "The holder in the chain whose subscription grants this." }) }).annotate({ "title": "EntitlementGrant", "description": "One held entitlement and the subscription up the chain that grants it.", "identifier": "EntitlementGrant" })
 export type MeterEntitlement = { readonly "meter": string, readonly "cap"?: number | null }
 export const MeterEntitlement = Schema.Struct({ "meter": Schema.String.annotate({ "title": "Meter" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "cap": Schema.optionalKey(Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.Null]).annotate({ "title": "Cap" })) }).annotate({ "title": "MeterEntitlement", "description": "Access to an inherited meter, optionally capped in its usage units.", "identifier": "MeterEntitlement" })
-export type CustomerCreate = { readonly "external_id": string, readonly "email": string, readonly "name"?: string | null }
-export const CustomerCreate = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), "email": Schema.String.annotate({ "title": "Email" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isPattern(new RegExp("^[^@\\s]+@[^@\\s]+$")).annotate({ "expected": "a string matching the RegExp ^[^@\\s]+@[^@\\s]+$" })), "name": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Name" })) }).annotate({ "title": "CustomerCreate", "identifier": "CustomerCreate" })
+export type CustomerCreate = { readonly "external_id": string, readonly "email": string, readonly "name"?: string | null, readonly "customer_id"?: string | null }
+export const CustomerCreate = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })).check(Schema.isPattern(new RegExp("\\S")).annotate({ "expected": "a string matching the RegExp \\S" })), "email": Schema.String.annotate({ "title": "Email", "format": "email" }), "name": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMaxLength(256).annotate({ "expected": "a value with a length of at most 256" })), Schema.Null]).annotate({ "title": "Name" })), "customer_id": Schema.optionalKey(Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Customer Id", "description": "Existing Polar customer to bind. Its external ID must match or be unset." })) }).annotate({ "title": "CustomerCreate", "identifier": "CustomerCreate" })
+export type CustomerBindingConflict = { readonly "error": "CustomerBindingConflict", readonly "detail": string }
+export const CustomerBindingConflict = Schema.Struct({ "error": Schema.Literal("CustomerBindingConflict").annotate({ "title": "Error", "examples": ["CustomerBindingConflict"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "CustomerBindingConflict", "identifier": "CustomerBindingConflict" })
 export type Meter = { readonly "variant_id"?: string | null, readonly "name": string, readonly "slug": string, readonly "branch_id"?: string | null, readonly "usage_reducer_id": string, readonly "credit_reducer_id": string, readonly "unit_amount": string, readonly "currency"?: string, readonly "id": string, readonly "generation_id": number, readonly "created_at": string }
 export const Meter = Schema.Struct({ "variant_id": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isPattern(new RegExp("^[0-9a-f]{64}$")).annotate({ "expected": "a string matching the RegExp ^[0-9a-f]{64}$" })), Schema.Null]).annotate({ "title": "Variant Id" })), "name": Schema.String.annotate({ "title": "Name" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })), "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "branch_id": Schema.optionalKey(Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Branch Id" })), "usage_reducer_id": Schema.String.annotate({ "title": "Usage Reducer Id", "format": "uuid" }), "credit_reducer_id": Schema.String.annotate({ "title": "Credit Reducer Id", "format": "uuid" }), "unit_amount": Schema.String.annotate({ "title": "Unit Amount" }), "currency": Schema.optionalKey(Schema.String.annotate({ "title": "Currency", "default": "usd" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" }))), "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "generation_id": Schema.Number.annotate({ "title": "Generation Id" }).check(Schema.isInt().annotate({ "expected": "an integer" })), "created_at": Schema.String.annotate({ "title": "Created At", "format": "date-time" }) }).annotate({ "title": "Meter", "identifier": "Meter" })
 export type LastProcessedEvent = { readonly "external_id": string, readonly "timestamp": string, readonly "ingested_at": string }
@@ -115,7 +123,7 @@ export const DeployProductMeter = Schema.Struct({ "included": Schema.optionalKey
 export type HTTPValidationError = { readonly "detail"?: ReadonlyArray<ValidationError> }
 export const HTTPValidationError = Schema.Struct({ "detail": Schema.optionalKey(Schema.Array(ValidationError).annotate({ "title": "Detail" })) }).annotate({ "title": "HTTPValidationError", "identifier": "HTTPValidationError" })
 export type IdentityDetail = { readonly "id": string, readonly "external_id": string, readonly "parent_external_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json }, readonly "created_at": string, readonly "chain": ReadonlyArray<string>, readonly "children": ReadonlyArray<Identity> }
-export const IdentityDetail = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "format": "date-time" }), "chain": Schema.Array(Schema.String).annotate({ "title": "Chain", "description": "External ids from this identity up to its root, self first." }), "children": Schema.Array(Identity).annotate({ "title": "Children" }) }).annotate({ "title": "IdentityDetail", "identifier": "IdentityDetail" })
+export const IdentityDetail = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "chain": Schema.Array(Schema.String).annotate({ "title": "Chain", "description": "External IDs from this identity to its root." }), "children": Schema.Array(Identity).annotate({ "title": "Children" }) }).annotate({ "title": "IdentityDetail", "identifier": "IdentityDetail" })
 export type Subscription = { readonly "id": string, readonly "at": string, readonly "anchor": string, readonly "meter_interval": TimeInterval, readonly "meter_interval_count"?: number, readonly "rollover_cap"?: number | null, readonly "included"?: number, readonly "limit"?: "hard" | "soft" | "unlimited", readonly "ended"?: boolean }
 export const Subscription = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id" }), "at": Schema.String.annotate({ "title": "At", "format": "date-time" }), "anchor": Schema.String.annotate({ "title": "Anchor", "format": "date-time" }), "meter_interval": TimeInterval, "meter_interval_count": Schema.optionalKey(Schema.Number.annotate({ "title": "Meter Interval Count", "default": 1 }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))), "rollover_cap": Schema.optionalKey(Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.Null]).annotate({ "title": "Rollover Cap" })), "included": Schema.optionalKey(Schema.Number.annotate({ "title": "Included", "default": 0 }).check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))), "limit": Schema.optionalKey(Schema.Literals(["hard", "soft", "unlimited"]).annotate({ "title": "Limit", "default": "hard" })), "ended": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Ended", "default": false })) }).annotate({ "title": "Subscription", "identifier": "Subscription" })
 export type EntitlementAssignment = { readonly "features"?: ReadonlyArray<string> | null, readonly "meters"?: ReadonlyArray<MeterEntitlement> | null }
@@ -208,16 +216,28 @@ export type IdentitiesListParams = { readonly "parent"?: string | null, readonly
 export const IdentitiesListParams = Schema.Struct({ "parent": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent", "description": "Only children of this identity" })), "root": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Root", "description": "Only identities with no parent", "default": false })) })
 export type IdentitiesList200 = ReadonlyArray<Identity>
 export const IdentitiesList200 = Schema.Array(Identity).annotate({ "title": "Response Identities:List" })
+export type IdentitiesList404 = ResourceNotFound
+export const IdentitiesList404 = ResourceNotFound
 export type IdentitiesList422 = HTTPValidationError
 export const IdentitiesList422 = HTTPValidationError
 export type IdentitiesEnsureRequestJson = IdentityCreate
 export const IdentitiesEnsureRequestJson = IdentityCreate
 export type IdentitiesEnsure200 = Identity
 export const IdentitiesEnsure200 = Identity
+export type IdentitiesEnsure201 = Identity
+export const IdentitiesEnsure201 = Identity
+export type IdentitiesEnsure404 = ResourceNotFound
+export const IdentitiesEnsure404 = ResourceNotFound
+export type IdentitiesEnsure409 = DeletedIdentityConflict | IdentityHierarchyConflict
+export const IdentitiesEnsure409 = Schema.Union([DeletedIdentityConflict, IdentityHierarchyConflict]).annotate({ "title": "Response 409 Identities:Ensure" })
 export type IdentitiesEnsure422 = HTTPValidationError
 export const IdentitiesEnsure422 = HTTPValidationError
 export type IdentitiesGet200 = IdentityDetail
 export const IdentitiesGet200 = IdentityDetail
+export type IdentitiesGet404 = ResourceNotFound
+export const IdentitiesGet404 = ResourceNotFound
+export type IdentitiesGet409 = IdentityHierarchyConflict
+export const IdentitiesGet409 = IdentityHierarchyConflict
 export type IdentitiesGet422 = HTTPValidationError
 export const IdentitiesGet422 = HTTPValidationError
 export type IdentitiesSnapshotParams = { readonly "variant_id"?: string | null }
@@ -242,10 +262,16 @@ export type CustomersCreateRequestJson = CustomerCreate
 export const CustomersCreateRequestJson = CustomerCreate
 export type CustomersCreate201 = Customer
 export const CustomersCreate201 = Customer
+export type CustomersCreate404 = ResourceNotFound
+export const CustomersCreate404 = ResourceNotFound
+export type CustomersCreate409 = CustomerBindingConflict
+export const CustomersCreate409 = CustomerBindingConflict
 export type CustomersCreate422 = HTTPValidationError
 export const CustomersCreate422 = HTTPValidationError
 export type CustomersGet200 = Customer
 export const CustomersGet200 = Customer
+export type CustomersGet404 = ResourceNotFound
+export const CustomersGet404 = ResourceNotFound
 export type CustomersGet422 = HTTPValidationError
 export const CustomersGet422 = HTTPValidationError
 export type CustomersStateParams = { readonly "since"?: string | null, readonly "variant_id"?: string | null }
@@ -507,6 +533,7 @@ export const make = (
     HttpClientRequest.setUrlParams({ "parent": options?.params?.["parent"] as any, "root": options?.params?.["root"] as any }),
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesList200),
+      "404": decodeError("IdentitiesList404", IdentitiesList404),
       "422": decodeError("IdentitiesList422", IdentitiesList422),
       orElse: unexpectedStatus
     }))
@@ -514,7 +541,10 @@ export const make = (
     "identitiesEnsure": (options) => HttpClientRequest.post(`/v1/void/identities`).pipe(
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
-      "2xx": decodeSuccess(IdentitiesEnsure200),
+      "200": decodeSuccess(IdentitiesEnsure200),
+      "201": decodeSuccess(IdentitiesEnsure201),
+      "404": decodeError("IdentitiesEnsure404", IdentitiesEnsure404),
+      "409": decodeError("IdentitiesEnsure409", IdentitiesEnsure409),
       "422": decodeError("IdentitiesEnsure422", IdentitiesEnsure422),
       orElse: unexpectedStatus
     }))
@@ -522,6 +552,8 @@ export const make = (
     "identitiesGet": (externalId, options) => HttpClientRequest.get(`/v1/void/identities/${externalId}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(IdentitiesGet200),
+      "404": decodeError("IdentitiesGet404", IdentitiesGet404),
+      "409": decodeError("IdentitiesGet409", IdentitiesGet409),
       "422": decodeError("IdentitiesGet422", IdentitiesGet422),
       orElse: unexpectedStatus
     }))
@@ -559,6 +591,8 @@ export const make = (
     HttpClientRequest.bodyJsonUnsafe(options.payload),
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersCreate201),
+      "404": decodeError("CustomersCreate404", CustomersCreate404),
+      "409": decodeError("CustomersCreate409", CustomersCreate409),
       "422": decodeError("CustomersCreate422", CustomersCreate422),
       orElse: unexpectedStatus
     }))
@@ -566,6 +600,7 @@ export const make = (
     "customersGet": (externalId, options) => HttpClientRequest.get(`/v1/void/customers/${externalId}`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersGet200),
+      "404": decodeError("CustomersGet404", CustomersGet404),
       "422": decodeError("CustomersGet422", CustomersGet422),
       orElse: unexpectedStatus
     }))
@@ -815,17 +850,17 @@ readonly "organizationsUpdateCurrent": <Config extends OperationConfig>(options:
 */
 readonly "organizationsGet": <Config extends OperationConfig>(id: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof OrganizationsGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"OrganizationsGet422", typeof OrganizationsGet422.Type>>
   /**
-* List
+* **Scopes**: `void:read` `void:write`
 */
-readonly "identitiesList": <Config extends OperationConfig>(options: { readonly params?: typeof IdentitiesListParams.Encoded | undefined; readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof IdentitiesList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesList422", typeof IdentitiesList422.Type>>
+readonly "identitiesList": <Config extends OperationConfig>(options: { readonly params?: typeof IdentitiesListParams.Encoded | undefined; readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof IdentitiesList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesList404", typeof IdentitiesList404.Type> | VoidApiError<"IdentitiesList422", typeof IdentitiesList422.Type>>
   /**
-* Idempotent. Creates the identity on first touch, returns it after.
+* **Scopes**: `void:write`
 */
-readonly "identitiesEnsure": <Config extends OperationConfig>(options: { readonly payload: typeof IdentitiesEnsureRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof IdentitiesEnsure200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesEnsure422", typeof IdentitiesEnsure422.Type>>
+readonly "identitiesEnsure": <Config extends OperationConfig>(options: { readonly payload: typeof IdentitiesEnsureRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof IdentitiesEnsure200.Type | typeof IdentitiesEnsure201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesEnsure404", typeof IdentitiesEnsure404.Type> | VoidApiError<"IdentitiesEnsure409", typeof IdentitiesEnsure409.Type> | VoidApiError<"IdentitiesEnsure422", typeof IdentitiesEnsure422.Type>>
   /**
-* Get
+* **Scopes**: `void:read` `void:write`
 */
-readonly "identitiesGet": <Config extends OperationConfig>(externalId: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof IdentitiesGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesGet422", typeof IdentitiesGet422.Type>>
+readonly "identitiesGet": <Config extends OperationConfig>(externalId: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof IdentitiesGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesGet404", typeof IdentitiesGet404.Type> | VoidApiError<"IdentitiesGet409", typeof IdentitiesGet409.Type> | VoidApiError<"IdentitiesGet422", typeof IdentitiesGet422.Type>>
   /**
 * One point-in-time view of an identity and its billing state.
 */
@@ -840,17 +875,17 @@ readonly "identitiesEntitlements": <Config extends OperationConfig>(externalId: 
 */
 readonly "identitiesAssignEntitlements": <Config extends OperationConfig>(externalId: string, options: { readonly payload: typeof IdentitiesAssignEntitlementsRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof IdentitiesAssignEntitlements200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"IdentitiesAssignEntitlements422", typeof IdentitiesAssignEntitlements422.Type>>
   /**
-* List
+* **Scopes**: `customers:read` `customers:write`
 */
 readonly "customersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof CustomersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError>
   /**
-* Create
+* **Scopes**: `customers:write`
 */
-readonly "customersCreate": <Config extends OperationConfig>(options: { readonly payload: typeof CustomersCreateRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof CustomersCreate201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"CustomersCreate422", typeof CustomersCreate422.Type>>
+readonly "customersCreate": <Config extends OperationConfig>(options: { readonly payload: typeof CustomersCreateRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof CustomersCreate201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"CustomersCreate404", typeof CustomersCreate404.Type> | VoidApiError<"CustomersCreate409", typeof CustomersCreate409.Type> | VoidApiError<"CustomersCreate422", typeof CustomersCreate422.Type>>
   /**
-* Get
+* **Scopes**: `customers:read` `customers:write`
 */
-readonly "customersGet": <Config extends OperationConfig>(externalId: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof CustomersGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"CustomersGet422", typeof CustomersGet422.Type>>
+readonly "customersGet": <Config extends OperationConfig>(externalId: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof CustomersGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"CustomersGet404", typeof CustomersGet404.Type> | VoidApiError<"CustomersGet422", typeof CustomersGet422.Type>>
   /**
 * State
 */

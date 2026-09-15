@@ -6,10 +6,51 @@ Void is being moved from `polarsource/void` at
 
 ## Current stage
 
-Stages 1–3 provide SDK/CLI imports, gated Polar organization-token login, and
-isolated persistence with pure domain definitions. The only mounted Void endpoint
-is `GET /v1/void/organizations/current`. Customer operations, event processing,
-deployment, and subscription lifecycle operations are still pending.
+Stages 1–4 provide the SDK/CLI, gated Polar organization-token login, isolated
+persistence, identity trees, and bindings to Polar customers. Live routes are:
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/v1/void/organizations/current` | Identify the token's Polar organization |
+| GET, POST | `/v1/void/identities` | List identities or create one on first touch |
+| GET | `/v1/void/identities/{external_id}` | Read the identity, ancestor chain, and children |
+| GET, POST | `/v1/void/customers` | List bound customers or attach a customer to a root |
+| GET | `/v1/void/customers/{external_id}` | Read a customer through its root identity key |
+
+Event processing, configuration deployment, snapshots, and subscription lifecycle
+operations remain pending.
+
+## Identity and customer rules
+
+Identity creation is idempotent. It returns 201 for a new identity and 200 for an
+existing one, preserving the first parent and metadata. Parents must already exist
+in the same organization. A deleted external ID stays reserved. Tree queries filter
+by organization and active records, and terminate if stored data contains a cycle.
+
+A customer owns a root identity. Creating another binding for an already bound
+customer or root returns 409. Identity creation and customer binding share an
+organization row lock until the request commits. Customer creation uses a savepoint
+to roll back both the root and native customer if binding fails.
+
+The adapter uses Polar's customer services and retains their member creation,
+events, and webhook jobs. It reuses a native customer with the same external ID.
+An optional `customer_id` explicitly identifies an existing Polar customer; an
+unset native external ID is established through Polar's update service. A different
+existing external ID is a conflict. Customers are never matched by email alone.
+
+The binding stores the Polar customer UUID. Void's response external ID comes from
+the immutable root identity, so later native changes do not change the identity key.
+Native contact details remain authoritative; response email is required but nullable.
+Deleted customers, roots, and bindings are hidden.
+
+Reads require `void:read` or `void:write`; writes require `void:write`. Customer
+reads additionally require `customers:read` or `customers:write`, and binding writes
+additionally require `customers:write`. Use the local token helper's `--customers`
+option to grant those customer permissions explicitly:
+
+```sh
+uv run python -m scripts.generate_void_token <organization-uuid-or-slug> --customers
+```
 
 ## Persistence
 
@@ -33,11 +74,8 @@ nullable variants and branches. Reducer buckets preserve nullable identity keys
 and the processing-receipt index. Monetary columns retain their original decimal
 precision. Relationships require explicit eager loading through `lazy="raise"`.
 
-The next stages must enforce these service-level rules before exposing writes:
+The next stages must enforce these remaining service-level rules:
 
-- A customer binding must use a customer from the same organization and a root
-  identity. Customer and identity bindings are each unique in the database.
-- Identity parents are immutable; identity creation must prevent cycles.
 - Product meter and entitlement UUID arrays must refer to resources in the same
   organization. ORM relationship reads already filter by organization.
 - Subscription rows remain Void lifecycle projections, separate from Polar's

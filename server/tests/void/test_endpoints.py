@@ -1,16 +1,9 @@
 import time
-from collections.abc import AsyncIterator
 from datetime import timedelta
 
 import pytest
-import pytest_asyncio
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
-from starlette.types import Receive, Send
-from starlette.types import Scope as ASGIScope
+from httpx import AsyncClient
 
-from polar.auth.dependencies import _auth_subject_factory_cache
-from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
@@ -20,48 +13,15 @@ from polar.models import OAuth2Token, Organization, OrganizationAccessToken
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
 from polar.oauth2.sub_type import SubType
 from polar.organization_access_token.service import TOKEN_PREFIX
-from polar.postgres import AsyncSession
-from polar.redis import Redis
 from polar.version import CURRENT_API_VERSION, VERSIONS
 from tests.fixtures.auth import AuthSubjectFixture
-from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
 
 PATH = "/v1/void/organizations/current"
 TOKEN = f"{TOKEN_PREFIX}void_test"
 
 
-@pytest.fixture(autouse=True)
-def enable_void(monkeypatch: pytest.MonkeyPatch, organization: Organization) -> None:
-    monkeypatch.setattr(settings, "VOID_ENABLED", True)
-    monkeypatch.setattr(settings, "VOID_ORGANIZATION_IDS", {organization.id})
-
-
-@pytest_asyncio.fixture
-async def void_client(
-    app: FastAPI, session: AsyncSession, redis: Redis
-) -> AsyncIterator[AsyncClient]:
-    overrides = {
-        dependency: app.dependency_overrides.pop(dependency)
-        for dependency in _auth_subject_factory_cache.values()
-        if dependency in app.dependency_overrides
-    }
-    authenticated_app = AuthSubjectMiddleware(app, redis)
-
-    async def app_with_session(scope: ASGIScope, receive: Receive, send: Send) -> None:
-        scope.setdefault("state", {})["async_session"] = session
-        await authenticated_app(scope, receive, send)
-
-    try:
-        async with IsolatedSessionTestClient(
-            session=session,
-            auto_expunge=True,
-            transport=ASGITransport(app=app_with_session),
-            base_url="http://test",
-        ) as client:
-            yield client
-    finally:
-        app.dependency_overrides.update(overrides)
+pytestmark = pytest.mark.usefixtures("enable_void")
 
 
 async def create_token(

@@ -245,6 +245,13 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
                 else:
                     raise
 
+            # Try to create the payment transaction immediately
+            try:
+                await payment_transaction_service.create_payment(session, charge=charge)
+            # If the Stripe balance is not available, no problem, we'll receive charge.updated later
+            except BalanceTransactionNotAvailableError:
+                return
+
 
 @actor(actor_name="stripe.webhook.charge.updated", priority=TaskPriority.HIGH)
 @stripe_api_connection_error_retry

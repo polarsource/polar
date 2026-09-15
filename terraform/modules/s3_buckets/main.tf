@@ -162,24 +162,6 @@ locals {
   } : {}
 }
 
-
-# resource "aws_s3_bucket" "backups" {
-#   bucket = "polar-sh-backups"
-# }
-#
-# resource "aws_s3_bucket_lifecycle_configuration" "backups_lifecycle" {
-#   bucket = aws_s3_bucket.backups.id
-#
-#   rule {
-#     id     = "14-days-expiration-rule"
-#     status = "Enabled"
-#     filter {}
-#     expiration {
-#       days = 14
-#     }
-#   }
-# }
-
 resource "aws_s3_bucket" "customer_invoices" {
   bucket = "${local.name_prefix}-customer-invoices"
 }

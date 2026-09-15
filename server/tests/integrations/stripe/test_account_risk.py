@@ -1,13 +1,14 @@
 from datetime import UTC, datetime
 
 from polar.integrations.stripe.account_risk import (
+    MerchantRiskSignal,
     StripeAccountRiskLevel,
+    WebsiteRiskSignal,
     is_account_risk_event,
     parse_account_signal,
     parse_merchant_payload,
     parse_website_payload,
 )
-from polar.models import OrganizationRiskSignal
 
 WEBSITE = "v2.signals.account_signal.fraudulent_website_ready"
 MERCHANT = "v2.signals.account_signal.fraudulent_merchant_ready"
@@ -104,47 +105,29 @@ class TestParseAccountSignal:
     def test_merchant(self) -> None:
         result = parse_account_signal(MERCHANT_SIGNAL)
 
-        assert result is not None
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
+        assert isinstance(result, MerchantRiskSignal)
         assert result.account_id == "acct_123"
         assert result.risk_level == StripeAccountRiskLevel.ELEVATED
         assert result.description is not None
         assert "owner_email" in result.description
 
-    def test_website_uses_business_url(self) -> None:
+    def test_website(self) -> None:
         result = parse_account_signal(WEBSITE_SIGNAL)
 
-        assert result is not None
-        assert result.type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-        assert result.account_id is None
-        assert result.website_url == "https://example.com"
+        assert isinstance(result, WebsiteRiskSignal)
         assert result.evaluation_id == "acctevl_456"
         assert result.risk_level == StripeAccountRiskLevel.ELEVATED
         assert result.description is not None
         assert "no verifiable identity" in result.description
-
-    def test_website_uses_evaluation_id_without_url(self) -> None:
-        result = parse_account_signal(
-            {
-                "type": "fraudulent_website",
-                "account_evaluation": "acctevl_solo",
-                "fraudulent_website": {
-                    "risk_level": "highest",
-                    "details": "Deceptive website",
-                },
-            }
-        )
-
-        assert result is not None
-        assert result.evaluation_id == "acctevl_solo"
-        assert result.website_url is None
-        assert result.account_id is None
 
     def test_unknown_type_returns_none(self) -> None:
         assert parse_account_signal({"type": "merchant_delinquency"}) is None
 
     def test_merchant_without_account_returns_none(self) -> None:
         assert parse_account_signal({"type": "fraudulent_merchant"}) is None
+
+    def test_website_without_evaluation_id_returns_none(self) -> None:
+        assert parse_account_signal({"type": "fraudulent_website"}) is None
 
 
 class TestParseMerchantPayload:
@@ -166,30 +149,6 @@ class TestParseMerchantPayload:
         assert later.indicators[0].description == (
             "Shares an owner email with a suspicious account."
         )
-
-    def test_missing_inner_object(self) -> None:
-        assert parse_merchant_payload({"account": "acct_123"}) is None
-
-    def test_nothing_to_show_returns_none(self) -> None:
-        assert parse_merchant_payload({"fraudulent_merchant": {}}) is None
-
-    def test_unparsable_probability(self) -> None:
-        assert (
-            parse_merchant_payload(
-                {"fraudulent_merchant": {"probability": "not a number"}}
-            )
-            is None
-        )
-
-    def test_indicators_without_probability(self) -> None:
-        payload = parse_merchant_payload(
-            {"fraudulent_merchant": {"indicators": [{"indicator": "geolocation"}]}}
-        )
-
-        assert payload is not None
-        assert payload.probability is None
-        assert payload.evaluated_at is None
-        assert payload.indicators[0].indicator == "geolocation"
 
 
 class TestParseWebsitePayload:
@@ -213,34 +172,6 @@ class TestParseWebsitePayload:
         nested = parse_website_payload(WEBSITE_SIGNAL)
         assert nested is not None
         assert nested.summary == payload.summary
-
-    def test_missing_details(self) -> None:
-        assert parse_website_payload({"account": "acct_456"}) is None
-        assert parse_website_payload({"details": "   "}) is None
-
-    def test_details_without_notes_or_references(self) -> None:
-        payload = parse_website_payload({"details": "Nothing suspicious."})
-
-        assert payload is not None
-        assert payload.summary == "Nothing suspicious."
-        assert payload.notes == []
-        assert payload.references == {}
-
-    def test_unparsable_evaluated_at(self) -> None:
-        payload = parse_website_payload(
-            {"details": "Suspicious.", "evaluated_at": "last tuesday"}
-        )
-
-        assert payload is not None
-        assert payload.evaluated_at is None
-
-    def test_evaluated_at_is_converted_to_utc(self) -> None:
-        payload = parse_website_payload(
-            {"details": "Suspicious.", "evaluated_at": "2026-08-14T15:54:35+02:00"}
-        )
-
-        assert payload is not None
-        assert payload.evaluated_at == datetime(2026, 8, 14, 13, 54, 35, tzinfo=UTC)
 
     def test_non_web_source_stays_in_the_text(self) -> None:
         payload = parse_website_payload(

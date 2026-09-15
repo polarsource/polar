@@ -115,7 +115,9 @@ class TestAccountRiskSignal:
                     "account_details": {
                         "data": {
                             "defaults": {
-                                "profile": {"business_url": "https://example.com"}
+                                "profile": {
+                                    "business_url": "https://unrelated.example"
+                                }
                             }
                         }
                     },

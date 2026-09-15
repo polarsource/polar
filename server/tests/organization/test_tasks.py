@@ -225,7 +225,7 @@ class TestEvaluateWebsiteRisk:
         mocker.patch.object(
             settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
         )
-        organization.website = "https://example.com"
+        organization.website = "  https://example.com  "
         await save_fixture(organization)
         evaluate_mock = mocker.patch(
             "polar.organization.service.stripe_service.create_website_risk_evaluation",

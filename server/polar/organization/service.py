@@ -1878,9 +1878,7 @@ class OrganizationService:
 
         return payout_account.stripe_id
 
-    async def evaluate_website_risk(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
+    async def evaluate_website_risk(self, organization: Organization) -> None:
         # Gate the whole feature on the receiving side being configured.
         if not settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET:
             log.info(
@@ -1890,8 +1888,7 @@ class OrganizationService:
             )
             return
 
-        website = organization.website.strip() if organization.website else ""
-        if not website:
+        if not organization.website:
             log.info(
                 "organization.evaluate_website_risk.skipped",
                 reason="no_website",
@@ -1900,13 +1897,13 @@ class OrganizationService:
             return
 
         try:
-            await stripe_service.create_website_risk_evaluation(website)
+            await stripe_service.create_website_risk_evaluation(organization.website)
         except stripe_lib.InvalidRequestError as e:
             log.warning(
                 "organization.evaluate_website_risk.rejected",
                 step="create_evaluation",
                 organization_id=str(organization.id),
-                website=website,
+                website=organization.website,
                 error=str(e),
             )
 

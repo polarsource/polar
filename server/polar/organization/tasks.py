@@ -1220,7 +1220,7 @@ async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        await organization_service.evaluate_website_risk(session, organization)
+        await organization_service.evaluate_website_risk(organization)
 
 
 @actor(actor_name="organization.sync_payout_account_website", priority=TaskPriority.LOW)

@@ -515,7 +515,7 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "no_importable_price"
 
-    def test_subscription_with_discount_is_skipped(self) -> None:
+    def test_subscription_with_importable_discount_imports(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
@@ -531,12 +531,12 @@ class TestClassifyRecords:
 
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_has_discount"
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code is None
         assert items[0].discount_name == "Launch"
         assert items[0].discount_code == "LAUNCH"
 
-    def test_subscription_shows_first_importable_coupon(self) -> None:
+    def test_subscription_keeps_first_importable_coupon(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
@@ -553,39 +553,9 @@ class TestClassifyRecords:
 
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_has_discount"
+        assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].discount_name == "Keep"
         assert items[0].discount_code == "KEEP"
-
-    def test_discount_classifies_as_importable(self) -> None:
-        records: list[CanonicalRecord] = [
-            canonical_discount(),
-        ]
-
-        items = classify_records(records, PrecheckEntity.discounts, "usd")
-
-        assert items[0].status == PrecheckRecordStatus.importable
-        assert items[0].title == "Launch"
-        assert items[0].subtitle == "LAUNCH"
-
-    def test_product_restricted_discount_skipped_when_products_are_not_importable(
-        self,
-    ) -> None:
-        records: list[CanonicalRecord] = [
-            build_product(
-                product_source_id="prod_1",
-                prices=[
-                    build_price(pricing_scheme=CanonicalPricingScheme.tiered),
-                ],
-            ),
-            canonical_discount(product_source_ids=["prod_1"]),
-        ]
-
-        items = classify_records(records, PrecheckEntity.discounts, "usd")
-
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "discount_products_not_importable"
 
     def test_subscription_repeating_discount_without_start_skipped(self) -> None:
         records: list[CanonicalRecord] = [
@@ -607,7 +577,7 @@ class TestClassifyRecords:
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_has_discount"
+        assert items[0].reason_code == "subscription_discount_missing_start"
 
     def test_subscription_with_unresolved_discount_skipped(self) -> None:
         records: list[CanonicalRecord] = [
@@ -621,7 +591,7 @@ class TestClassifyRecords:
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_has_discount"
+        assert items[0].reason_code == "subscription_discount_not_importable"
 
     def test_prices_drop_unsupported_scheme(self) -> None:
         records: list[CanonicalRecord] = [

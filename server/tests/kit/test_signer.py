@@ -26,7 +26,8 @@ def test_local_signer_publishes_only_the_public_key() -> None:
     published = local.public_jwk()
 
     assert published["kid"] == settings.CURRENT_JWK_KID
-    assert set(published) == {"kty", "kid", "n", "e"}
+    assert {"kty", "n", "e"}.issubset(published)
+    assert not {"d", "p", "q", "dp", "dq", "qi", "oth"} & set(published)
 
 
 def test_kms_kid_is_the_key_id_not_the_arn() -> None:

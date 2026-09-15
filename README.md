@@ -29,6 +29,8 @@
 </div>
 <hr />
 
+sk_live_ABC123456780
+
 ## Polar: A billing platform for the intelligence era
 
 Turn usage into revenue. Polar is the financial layer for a new generation of intelligent software, built for AI startups that need to charge for tokens, agents, and compute without building billing infrastructure from scratch.

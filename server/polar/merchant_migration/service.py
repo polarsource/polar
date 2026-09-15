@@ -79,6 +79,7 @@ from .precheck import (
     account_blockers,
     classify_records,
     import_blockers,
+    kept_discount_source_id,
     precheck_engine,
 )
 from .repository import (
@@ -294,15 +295,15 @@ def _staged_subscription(
 
 
 def _subscription_discount_imported(
-    subscription: CanonicalSubscription, imported_discount_source_ids: set[str]
+    subscription: CanonicalSubscription,
+    imported_discount_source_ids: set[str],
+    importable_discount_source_ids: set[str],
 ) -> bool:
     """Whether the coupon this subscription needs is already a Polar discount."""
     if not subscription.has_discount and not subscription.discount_source_ids:
         return True
-    return any(
-        source_id in imported_discount_source_ids
-        for source_id in subscription.discount_source_ids
-    )
+    kept = kept_discount_source_id(subscription, importable_discount_source_ids)
+    return kept is not None and kept in imported_discount_source_ids
 
 
 def _staged_payment_method(
@@ -1621,6 +1622,7 @@ class MerchantMigrationService:
         imported_customer_source_ids: set[str] = set()
         imported_product_price_source_ids: set[str] = set()
         imported_discount_source_ids: set[str] = set()
+        importable_discount_source_ids: set[str] = set()
         if entity == PrecheckEntity.subscriptions:
             imported_rows = [*staged, *extra_dependencies]
             imported_customer_source_ids = {
@@ -1636,6 +1638,16 @@ class MerchantMigrationService:
                 if record.type == MerchantMigrationRecordType.discount
                 and record.status == MerchantMigrationRecordStatus.imported
                 and record.target_id is not None
+            }
+            importable_discount_source_ids = {
+                record.source_id
+                for record in imported_rows
+                if record.type == MerchantMigrationRecordType.discount
+                and record.status
+                in (
+                    MerchantMigrationRecordStatus.pending,
+                    MerchantMigrationRecordStatus.imported,
+                )
             }
             for product_record in imported_rows:
                 if (
@@ -1667,7 +1679,9 @@ class MerchantMigrationService:
                     and subscription.price_source_id
                     in imported_product_price_source_ids
                     and _subscription_discount_imported(
-                        subscription, imported_discount_source_ids
+                        subscription,
+                        imported_discount_source_ids,
+                        importable_discount_source_ids,
                     )
                 )
 

@@ -410,7 +410,10 @@ class CatalogImporter:
             discounts, products, self.organization.default_presentment_currency
         )
         polar_product_ids_by_source: dict[str, list[UUID]] = {}
+        pending_product_source_ids: set[str] = set()
         for record, product in zip(product_records, products, strict=True):
+            if record.status == MerchantMigrationRecordStatus.pending:
+                pending_product_source_ids.add(product.product_source_id)
             if (
                 record.status != MerchantMigrationRecordStatus.imported
                 or record.target_id is None
@@ -437,6 +440,22 @@ class CatalogImporter:
                         polar_product_ids_by_source.get(product_source_id, [])
                     )
                 if not product_ids:
+                    if any(
+                        product_source_id in pending_product_source_ids
+                        for product_source_id in discount.product_source_ids
+                    ):
+                        continue
+                    await self._mark_skipped(
+                        record,
+                        Reason(
+                            "discount_products_not_importable",
+                            (
+                                f"Coupon '{discount.name}' only applies to products "
+                                "that weren't imported, so it stays on the source."
+                            ),
+                        ),
+                    )
+                    counts.skipped += 1
                     continue
             polar_discount = await self._create_discount(discount, product_ids)
             await self._mark_imported(record, polar_discount.id)

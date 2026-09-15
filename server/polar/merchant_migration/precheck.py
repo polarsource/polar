@@ -9,7 +9,7 @@ something, `info` when there is nothing to fix.
 """
 
 from collections import Counter
-from collections.abc import AsyncIterable, Iterable, Sequence
+from collections.abc import AsyncIterable, Container, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -965,6 +965,7 @@ def _subscription_items(
     price_by_key = _price_display_by_key(products)
     discounts_by_source = {discount.source_id: discount for discount in discounts}
     discount_plans = plan_discount_imports(discounts, products, default_currency)
+    importable_discount_ids = _importable_discount_source_ids(discount_plans)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         payment_method = subscription.payment_method
@@ -989,7 +990,7 @@ def _subscription_items(
             else subscription.customer_source_id
         )
         key = subscription_price_key(subscription)
-        kept_id = kept_discount_source_id(subscription, discount_plans)
+        kept_id = kept_discount_source_id(subscription, importable_discount_ids)
         kept_discount = discounts_by_source.get(kept_id) if kept_id else None
         items.append(
             _item(
@@ -1300,13 +1301,19 @@ def plan_discount_imports(
 
 def kept_discount_source_id(
     subscription: CanonicalSubscription,
-    discount_plans: dict[str, Reason | None],
+    importable_discount_source_ids: Container[str],
 ) -> str | None:
-    """The coupon Polar will keep on this subscription, if any."""
+    """The first coupon Polar will keep on this subscription, if any."""
     for source_id in subscription.discount_source_ids:
-        if source_id in discount_plans and discount_plans[source_id] is None:
+        if source_id in importable_discount_source_ids:
             return source_id
     return None
+
+
+def _importable_discount_source_ids(
+    discount_plans: dict[str, Reason | None],
+) -> set[str]:
+    return {source_id for source_id, skip in discount_plans.items() if skip is None}
 
 
 def _subscription_discount_skip(
@@ -1316,7 +1323,9 @@ def _subscription_discount_skip(
 ) -> Reason | None:
     if not subscription.has_discount and not subscription.discount_source_ids:
         return None
-    kept = kept_discount_source_id(subscription, discount_plans)
+    kept = kept_discount_source_id(
+        subscription, _importable_discount_source_ids(discount_plans)
+    )
     discount = discounts_by_source.get(kept) if kept else None
     if discount is None:
         return Reason(

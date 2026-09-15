@@ -1514,6 +1514,126 @@ class TestImportCatalog:
         assert discounts[0].ends_at is not None
 
     @pytest.mark.auth
+    async def test_product_restricted_discount_skips_when_products_were_not_imported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_importable_catalog(),
+                canonical_discount(product_source_ids=["prod_1"]),
+                canonical_subscription(
+                    has_discount=True,
+                    discount_source_ids=["coupon_1"],
+                ),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        for record in await record_repository.list_by_migration(migration.id):
+            if record.type == MerchantMigrationRecordType.product:
+                await record_repository.update(
+                    record,
+                    update_dict={"status": MerchantMigrationRecordStatus.skipped},
+                )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 0
+        assert results[PrecheckEntity.discounts].skipped == 1
+        discount_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert discount_record is not None
+        assert discount_record.status == MerchantMigrationRecordStatus.skipped
+        assert discount_record.error is not None
+        assert "weren't imported" in discount_record.error
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].dependencies_imported is False
+
+    @pytest.mark.auth
+    async def test_subscription_waits_for_kept_coupon_not_a_later_imported_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_importable_catalog(),
+                canonical_discount(source_id="coupon_kept", name="Kept", code="KEPT"),
+                canonical_discount(
+                    source_id="coupon_other", name="Other", code="OTHER"
+                ),
+                canonical_subscription(
+                    has_discount=True,
+                    discount_source_ids=["coupon_kept", "coupon_other"],
+                ),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        kept = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_kept",
+        )
+        assert kept is not None
+        await record_repository.update(
+            kept,
+            update_dict={
+                "status": MerchantMigrationRecordStatus.pending,
+                "target_id": None,
+            },
+        )
+        other = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_other",
+        )
+        assert other is not None
+        assert other.status == MerchantMigrationRecordStatus.imported
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].dependencies_imported is False
+
+    @pytest.mark.auth
     async def test_listing_reflects_import_status_after_import(
         self,
         mocker: MockerFixture,

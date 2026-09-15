@@ -353,6 +353,18 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def list_discount_records(
+        self, organization_id: UUID, source_ids: Sequence[str]
+    ) -> Sequence[MerchantMigrationRecord]:
+        if not source_ids:
+            return []
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == MerchantMigrationRecordType.discount,
+            MerchantMigrationRecord.source_id.in_(source_ids),
+        )
+        return await self.get_all(statement)
+
     async def list_imported_catalog_dependencies(
         self, organization_id: UUID
     ) -> Sequence[MerchantMigrationRecord]:
@@ -380,6 +392,7 @@ class MerchantMigrationRecordRepository(
         CustomerRecord = aliased(MerchantMigrationRecord)
         ProductRecord = aliased(MerchantMigrationRecord)
         DiscountRecord = aliased(MerchantMigrationRecord)
+        EarlierDiscount = aliased(MerchantMigrationRecord)
         no_discount = and_(
             or_(
                 MerchantMigrationRecord.canonical["discount_source_ids"].is_(None),
@@ -393,15 +406,65 @@ class MerchantMigrationRecordRepository(
             )
             != "true",
         )
-        discount_imported = exists().where(
-            DiscountRecord.organization_id == MerchantMigrationRecord.organization_id,
-            DiscountRecord.type == MerchantMigrationRecordType.discount,
-            DiscountRecord.status == MerchantMigrationRecordStatus.imported,
-            DiscountRecord.target_id.is_not(None),
-            MerchantMigrationRecord.canonical["discount_source_ids"].op("@>")(
-                func.jsonb_build_array(DiscountRecord.source_id)
-            ),
-            DiscountRecord.deleted_at.is_(None),
+        kept_idx = (
+            func.generate_series(
+                0,
+                func.jsonb_array_length(
+                    MerchantMigrationRecord.canonical["discount_source_ids"]
+                )
+                - 1,
+            )
+            .table_valued("idx")
+            .alias("kept_discount_idx")
+        )
+        earlier_idx = (
+            func.generate_series(0, kept_idx.c.idx - 1)
+            .table_valued("idx")
+            .alias("earlier_discount_idx")
+        )
+        kept_source_id = func.jsonb_array_element_text(
+            MerchantMigrationRecord.canonical["discount_source_ids"], kept_idx.c.idx
+        )
+        earlier_source_id = func.jsonb_array_element_text(
+            MerchantMigrationRecord.canonical["discount_source_ids"],
+            earlier_idx.c.idx,
+        )
+        earlier_importable = exists(
+            select(1)
+            .select_from(earlier_idx)
+            .join(
+                EarlierDiscount,
+                and_(
+                    EarlierDiscount.source_id == earlier_source_id,
+                    EarlierDiscount.organization_id
+                    == MerchantMigrationRecord.organization_id,
+                    EarlierDiscount.type == MerchantMigrationRecordType.discount,
+                    EarlierDiscount.status.in_(
+                        (
+                            MerchantMigrationRecordStatus.pending,
+                            MerchantMigrationRecordStatus.imported,
+                        )
+                    ),
+                    EarlierDiscount.deleted_at.is_(None),
+                ),
+            )
+        )
+        discount_imported = exists(
+            select(1)
+            .select_from(kept_idx)
+            .join(
+                DiscountRecord,
+                and_(
+                    DiscountRecord.source_id == kept_source_id,
+                    DiscountRecord.organization_id
+                    == MerchantMigrationRecord.organization_id,
+                    DiscountRecord.type == MerchantMigrationRecordType.discount,
+                    DiscountRecord.status == MerchantMigrationRecordStatus.imported,
+                    DiscountRecord.target_id.is_not(None),
+                    DiscountRecord.deleted_at.is_(None),
+                ),
+            )
+            .where(~earlier_importable)
         )
         pending_ready = and_(
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,

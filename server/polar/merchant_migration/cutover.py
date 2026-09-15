@@ -52,7 +52,7 @@ from .importer import (
     create_imported_subscription,
     find_imported_price,
 )
-from .precheck import subscription_import_reason
+from .precheck import kept_discount_source_id, subscription_import_reason
 from .repository import MerchantMigrationRecordRepository
 
 log: Logger = structlog.get_logger()
@@ -234,7 +234,7 @@ class SubscriptionCutover:
             # over would cancel it on the source and then never bill it.
             if not subscription.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
-            reason = self._source_reason(source, record, subscription.currency)
+            reason = await self._source_reason(source, record, subscription.currency)
             if reason is not None:
                 return _skip(reason)
 
@@ -344,7 +344,7 @@ class SubscriptionCutover:
         if not already_stopped:
             if not product.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
-            reason = self._source_reason(source, record, staged.currency)
+            reason = await self._source_reason(source, record, staged.currency)
             if reason is not None:
                 return _skip(reason)
 
@@ -482,7 +482,7 @@ class SubscriptionCutover:
             ),
         )
 
-    def _source_reason(
+    async def _source_reason(
         self,
         source: CanonicalSubscription,
         record: MerchantMigrationRecord,
@@ -515,34 +515,51 @@ class SubscriptionCutover:
                 and source.currency != imported_currency
             ):
                 return _PLAN_CHANGED
-            if self._discount_changed(source, staged):
+            importable = await self._importable_discount_source_ids(
+                staged.discount_source_ids
+            )
+            if self._discount_changed(source, staged, importable):
                 return _DISCOUNT_CHANGED
         return self._renewal_reason(source)
 
-    def _kept_discount_source_id(
-        self, source: CanonicalSubscription, staged: CanonicalSubscription
-    ) -> str | None:
-        source_ids = set(source.discount_source_ids)
-        for source_id in staged.discount_source_ids:
-            if source_id in source_ids:
-                return source_id
-        return None
+    async def _importable_discount_source_ids(self, source_ids: list[str]) -> set[str]:
+        if not source_ids:
+            return set()
+        records = await self.record_repository.list_discount_records(
+            self.migration.organization_id, source_ids
+        )
+        return {
+            record.source_id
+            for record in records
+            if record.status
+            in (
+                MerchantMigrationRecordStatus.pending,
+                MerchantMigrationRecordStatus.imported,
+            )
+        }
 
     def _discount_changed(
-        self, source: CanonicalSubscription, staged: CanonicalSubscription
+        self,
+        source: CanonicalSubscription,
+        staged: CanonicalSubscription,
+        importable_discount_source_ids: set[str],
     ) -> bool:
         staged_has = bool(staged.discount_source_ids) or staged.has_discount
         source_has = bool(source.discount_source_ids) or source.has_discount
         if not staged_has:
             return source_has
-        return self._kept_discount_source_id(source, staged) is None
+        kept = kept_discount_source_id(staged, importable_discount_source_ids)
+        return kept is None or kept not in set(source.discount_source_ids)
 
     async def _imported_discount(
         self, source: CanonicalSubscription, staged: CanonicalSubscription
     ) -> ImportedDiscount:
-        if self._discount_changed(source, staged):
+        importable = await self._importable_discount_source_ids(
+            staged.discount_source_ids
+        )
+        if self._discount_changed(source, staged, importable):
             return ImportedDiscount(skip=_DISCOUNT_CHANGED)
-        kept = self._kept_discount_source_id(source, staged)
+        kept = kept_discount_source_id(staged, importable)
         if kept is None:
             return ImportedDiscount()
         record = await self.record_repository.get_imported_discount_dependency(

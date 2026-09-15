@@ -536,6 +536,27 @@ class TestClassifyRecords:
         assert items[0].discount_name == "Launch"
         assert items[0].discount_code == "LAUNCH"
 
+    def test_subscription_keeps_first_importable_coupon(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(source_id="coupon_bad", name="Bad", basis_points=0),
+            canonical_discount(source_id="coupon_ok", name="Keep", code="KEEP"),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_bad", "coupon_ok"],
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].discount_name == "Keep"
+        assert items[0].discount_code == "KEEP"
+
     def test_subscription_repeating_discount_without_start_skipped(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(

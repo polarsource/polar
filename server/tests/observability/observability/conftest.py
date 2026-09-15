@@ -7,12 +7,45 @@ connection attempts.
 """
 
 import os
-from typing import Any
-
-import pytest
 
 # Set up test environment before any polar imports
 os.environ["POLAR_ENV"] = "testing"
+
+from collections.abc import Iterator
+from typing import Any
+
+import logfire
+import pytest
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from pytest_mock import MockerFixture
+
+from polar.logfire import configure_logfire
+
+
+@pytest.fixture
+def configured_logfire(
+    mocker: MockerFixture,
+) -> Iterator[tuple[logfire.Logfire, InMemorySpanExporter]]:
+    exporter = InMemorySpanExporter()
+    configure = logfire.configure
+    instances: list[logfire.Logfire] = []
+
+    def configure_local(**kwargs: Any) -> logfire.Logfire:
+        kwargs.update(local=True, send_to_logfire=False, metrics=False)
+        kwargs["additional_span_processors"].append(SimpleSpanProcessor(exporter))
+        instance = configure(**kwargs)
+        instance.error("initialize cached tracer")
+        exporter.clear()
+        instances.append(instance)
+        return instance
+
+    mocker.patch("polar.logfire.settings.S3_LOGS_BUCKET_NAME", None)
+    mocker.patch("polar.logfire.logfire.configure", side_effect=configure_local)
+    configure_logfire("server")
+    instance = instances[0]
+    yield instance, exporter
+    instance.config.get_tracer_provider().shutdown()
 
 
 @pytest.fixture(scope="session", autouse=True)

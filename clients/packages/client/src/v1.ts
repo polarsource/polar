@@ -23861,6 +23861,25 @@ export interface components {
        */
       activation_id: string
     }
+    /** LicenseKeyMember */
+    LicenseKeyMember: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Email
+       * @description The email address of the seat member.
+       */
+      email: string
+      /**
+       * External Id
+       * @description The external ID of the seat member, if set.
+       */
+      external_id: string | null
+    }
     /** LicenseKeyRead */
     LicenseKeyRead: {
       /**

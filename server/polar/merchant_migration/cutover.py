@@ -549,7 +549,9 @@ class SubscriptionCutover:
         if not staged_has:
             return source_has
         kept = kept_discount_source_id(staged, importable_discount_source_ids)
-        return kept is None or kept not in set(source.discount_source_ids)
+        if kept is None:
+            return set(source.discount_source_ids) != set(staged.discount_source_ids)
+        return kept not in set(source.discount_source_ids)
 
     async def _imported_discount(
         self, source: CanonicalSubscription, staged: CanonicalSubscription
@@ -561,6 +563,8 @@ class SubscriptionCutover:
             return ImportedDiscount(skip=_DISCOUNT_CHANGED)
         kept = kept_discount_source_id(staged, importable)
         if kept is None:
+            if bool(staged.discount_source_ids) or staged.has_discount:
+                return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
             return ImportedDiscount()
         record = await self.record_repository.get_imported_discount_dependency(
             self.migration.organization_id, kept

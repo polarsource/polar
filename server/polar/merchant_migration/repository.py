@@ -407,20 +407,22 @@ class MerchantMigrationRecordRepository(
             != "true",
         )
         kept_idx = (
-            func.generate_series(
-                0,
-                func.jsonb_array_length(
-                    MerchantMigrationRecord.canonical["discount_source_ids"]
-                )
-                - 1,
+            select(
+                func.generate_series(
+                    0,
+                    func.jsonb_array_length(
+                        MerchantMigrationRecord.canonical["discount_source_ids"]
+                    )
+                    - 1,
+                ).label("idx")
             )
-            .table_valued("idx")
-            .alias("kept_discount_idx")
+            .correlate(MerchantMigrationRecord)
+            .lateral("kept_discount_idx")
         )
         earlier_idx = (
-            func.generate_series(0, kept_idx.c.idx - 1)
-            .table_valued("idx")
-            .alias("earlier_discount_idx")
+            select(func.generate_series(0, kept_idx.c.idx - 1).label("idx"))
+            .correlate(kept_idx)
+            .lateral("earlier_discount_idx")
         )
         kept_source_id = func.jsonb_array_element_text(
             MerchantMigrationRecord.canonical["discount_source_ids"], kept_idx.c.idx

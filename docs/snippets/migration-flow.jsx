@@ -9,12 +9,23 @@ export const MigrationFlow = () => {
       title: 'Polar handles every new checkout',
       description:
         'New customers enter through Polar while existing subscriptions keep renewing in Stripe.',
-      packet: 'New checkout',
+      appTitle: 'Checkout + access',
+      appStatus: 'Dual-source ready',
       stripeTitle: 'Existing subscriptions',
       stripeStatus: 'Renewing',
       polarTitle: 'New sales',
       polarStatus: 'Live',
       owner: 'Existing → Stripe · New → Polar',
+      flows: [
+        { from: 'Merchant app', to: 'Polar', label: 'New checkout' },
+        { from: 'Stripe', to: 'Merchant app', label: 'Legacy webhooks' },
+        { from: 'Polar', to: 'Merchant app', label: 'Order + customer state' },
+      ],
+      records: [
+        { name: 'New checkout', owner: 'Polar', state: 'Live' },
+        { name: 'Existing subscription', owner: 'Stripe', state: 'Renewing' },
+        { name: 'Product access', owner: 'Merchant app', state: 'Both sources' },
+      ],
     },
     {
       key: 'prepare',
@@ -23,12 +34,23 @@ export const MigrationFlow = () => {
       title: 'Prepare the catalog and customer map',
       description:
         'Polar imports the products and customers needed by the subscriptions you select. Billing does not move yet.',
-      packet: 'Products + customers',
+      appTitle: 'Identity map',
+      appStatus: 'Matching IDs',
       stripeTitle: 'Subscriptions',
       stripeStatus: 'Unchanged',
       polarTitle: 'Catalog + customers',
       polarStatus: 'Prepared',
       owner: 'Existing renewals → Stripe',
+      flows: [
+        { from: 'Stripe', to: 'Polar', label: 'Products + customers' },
+        { from: 'Merchant app', to: 'Polar', label: 'External customer ID' },
+        { from: 'Stripe', to: 'Merchant app', label: 'Renewal events' },
+      ],
+      records: [
+        { name: 'Products + prices', owner: 'Polar', state: 'Prepared' },
+        { name: 'Customer mapping', owner: 'Merchant app', state: 'Reviewing' },
+        { name: 'Existing subscription', owner: 'Stripe', state: 'Unchanged' },
+      ],
     },
     {
       key: 'cards',
@@ -37,12 +59,23 @@ export const MigrationFlow = () => {
       title: 'Stripe copies saved cards account to account',
       description:
         'Card details move directly between Stripe accounts. Polar verifies which subscriptions have a usable card.',
-      packet: 'Saved cards',
+      appTitle: 'Customer access',
+      appStatus: 'Unchanged',
       stripeTitle: 'Card vault',
       stripeStatus: 'Copying',
       polarTitle: 'Payment methods',
       polarStatus: 'Verifying',
       owner: 'Existing renewals → Stripe',
+      flows: [
+        { from: 'Stripe', to: 'Polar', label: 'Encrypted card copy' },
+        { from: 'Polar', to: 'Merchant app', label: 'Coverage status' },
+        { from: 'Merchant app', to: 'Customer', label: 'Card update if needed' },
+      ],
+      records: [
+        { name: 'Copied cards', owner: 'Polar', state: 'Verifying' },
+        { name: 'Missing cards', owner: 'Merchant app', state: 'Action needed' },
+        { name: 'Existing subscription', owner: 'Stripe', state: 'Renewing' },
+      ],
     },
     {
       key: 'cutover',
@@ -51,12 +84,23 @@ export const MigrationFlow = () => {
       title: 'Selected subscriptions switch to Polar',
       description:
         'Polar preserves the paid period, stops the Stripe subscription, and activates the matching Polar subscription.',
-      packet: 'Billing owner',
+      appTitle: 'Access state',
+      appStatus: 'Synchronizing',
       stripeTitle: 'Selected subscriptions',
       stripeStatus: 'Stopping',
       polarTitle: 'Same paid periods',
       polarStatus: 'Activating',
       owner: 'Switched renewals → Polar',
+      flows: [
+        { from: 'Stripe', to: 'Polar', label: 'Billing ownership' },
+        { from: 'Polar', to: 'Merchant app', label: 'subscription.updated' },
+        { from: 'Polar', to: 'Merchant app', label: 'customer.state_changed' },
+      ],
+      records: [
+        { name: 'Selected subscription', owner: 'Polar', state: 'Switching' },
+        { name: 'Current paid period', owner: 'Polar', state: 'Preserved' },
+        { name: 'Product access', owner: 'Merchant app', state: 'Synchronizing' },
+      ],
     },
     {
       key: 'reconcile',
@@ -65,12 +109,23 @@ export const MigrationFlow = () => {
       title: 'Every subscription finishes with one owner',
       description:
         'Moved subscriptions renew in Polar. Historical payments and intentional exceptions remain in Stripe.',
-      packet: 'Verified',
+      appTitle: 'Unified access',
+      appStatus: 'Reconciled',
       stripeTitle: 'History + exceptions',
       stripeStatus: 'Retained',
       polarTitle: 'Moved subscriptions',
       polarStatus: 'Renewing',
       owner: 'Exactly one owner per subscription',
+      flows: [
+        { from: 'Stripe', to: 'Merchant app', label: 'History + exceptions' },
+        { from: 'Polar', to: 'Merchant app', label: 'Renewals + webhooks' },
+        { from: 'Merchant app', to: 'Support', label: 'Unified lookup' },
+      ],
+      records: [
+        { name: 'Moved subscriptions', owner: 'Polar', state: 'Verified' },
+        { name: 'Exceptions + history', owner: 'Stripe', state: 'Retained' },
+        { name: 'Product access', owner: 'Merchant app', state: 'Reconciled' },
+      ],
     },
   ]
 
@@ -193,7 +248,18 @@ export const MigrationFlow = () => {
         <p>{stage.description}</p>
       </div>
 
-      <div className="migration-flow__diagram">
+      <div className="migration-flow__systems">
+        <div className="migration-flow__system migration-flow__system--app">
+          <div className="migration-flow__system-heading">
+            <span className="migration-flow__brand-mark migration-flow__brand-mark--app">
+              M
+            </span>
+            <span>Merchant app</span>
+          </div>
+          <p>{stage.appTitle}</p>
+          <span className="migration-flow__status">{stage.appStatus}</span>
+        </div>
+
         <div className="migration-flow__system migration-flow__system--stripe">
           <div className="migration-flow__system-heading">
             <span className="migration-flow__brand-mark migration-flow__brand-mark--stripe">
@@ -203,14 +269,6 @@ export const MigrationFlow = () => {
           </div>
           <p>{stage.stripeTitle}</p>
           <span className="migration-flow__status">{stage.stripeStatus}</span>
-        </div>
-
-        <div className="migration-flow__track" aria-hidden="true">
-          <span className="migration-flow__track-line" />
-          <span key={stage.key} className="migration-flow__packet">
-            {stage.packet}
-          </span>
-          <span className="migration-flow__arrow">→</span>
         </div>
 
         <div className="migration-flow__system migration-flow__system--polar">
@@ -225,9 +283,43 @@ export const MigrationFlow = () => {
         </div>
       </div>
 
+      <div
+        key={`${stage.key}-flows`}
+        className="migration-flow__flows"
+        aria-label={`Data flowing during ${stage.short}`}
+      >
+        {stage.flows.map((flow) => (
+          <div key={`${flow.from}-${flow.to}-${flow.label}`} className="migration-flow__flow">
+            <span>{flow.from}</span>
+            <span className="migration-flow__flow-track">
+              <span className="migration-flow__flow-packet">{flow.label}</span>
+              <span className="migration-flow__flow-arrow" aria-hidden="true">
+                →
+              </span>
+            </span>
+            <span>{flow.to}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="migration-flow__owner">
         <span>Next renewal owner</span>
         <strong>{stage.owner}</strong>
+      </div>
+
+      <div className="migration-flow__records">
+        <div className="migration-flow__record migration-flow__record--header">
+          <span>Data</span>
+          <span>Owner</span>
+          <span>State</span>
+        </div>
+        {stage.records.map((record) => (
+          <div key={record.name} className="migration-flow__record">
+            <strong>{record.name}</strong>
+            <span>{record.owner}</span>
+            <span className="migration-flow__record-state">{record.state}</span>
+          </div>
+        ))}
       </div>
 
       <div className="migration-flow__controls">

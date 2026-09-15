@@ -222,9 +222,9 @@
   line-height: 1.5;
 }
 
-.migration-flow__diagram {
+.migration-flow__systems {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.72fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 0.75rem;
 }
@@ -235,6 +235,10 @@
   background: rgb(255 255 255 / 78%);
   border: 1px solid #e4e4e7;
   border-radius: 1rem;
+}
+
+.migration-flow__system--app {
+  box-shadow: inset 0 2px #2563eb;
 }
 
 .migration-flow__system--stripe {
@@ -261,6 +265,10 @@
   font-size: 0.625rem;
   font-weight: 800;
   border-radius: 0.5rem;
+}
+
+.migration-flow__brand-mark--app {
+  background: #2563eb;
 }
 
 .migration-flow__brand-mark--stripe {
@@ -291,18 +299,41 @@
   border-radius: 999px;
 }
 
-.migration-flow__track {
-  position: relative;
+.migration-flow__flows {
   display: grid;
-  min-height: 8.5rem;
-  place-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
-.migration-flow__track-line {
-  position: absolute;
-  right: 0.5rem;
-  left: 0.5rem;
+.migration-flow__flow {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 0.8fr) minmax(10rem, 1.6fr) minmax(
+      5.5rem,
+      0.8fr
+    );
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  color: #52525b;
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.migration-flow__flow > span:last-child {
+  text-align: right;
+}
+
+.migration-flow__flow-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.migration-flow__flow-track::before {
+  width: 100%;
   height: 1px;
+  content: '';
   background: repeating-linear-gradient(
     90deg,
     #a1a1aa 0,
@@ -312,14 +343,15 @@
   );
 }
 
-.migration-flow__packet {
-  position: relative;
+.migration-flow__flow-packet {
+  position: absolute;
+  left: 50%;
   z-index: 1;
-  max-width: 7.5rem;
-  padding: 0.4375rem 0.625rem;
+  max-width: calc(100% - 2rem);
+  padding: 0.3125rem 0.5rem;
   overflow: hidden;
   color: #ffffff;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 700;
   text-align: center;
   text-overflow: ellipsis;
@@ -327,18 +359,19 @@
   background: var(--migration-accent);
   border-radius: 999px;
   box-shadow: 0 0.5rem 1.5rem rgb(24 24 27 / 16%);
-  animation: migration-flow-packet 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateX(-50%);
+  animation: migration-flow-data 950ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.migration-flow--reconcile .migration-flow__packet {
+.migration-flow--reconcile .migration-flow__flow-packet {
   animation: migration-flow-verified 1200ms ease-out;
 }
 
-.migration-flow__arrow {
+.migration-flow__flow-arrow {
   position: absolute;
-  right: 0.125rem;
+  right: -0.125rem;
   color: #71717a;
-  font-size: 1rem;
+  font-size: 0.875rem;
 }
 
 .migration-flow__owner {
@@ -355,6 +388,55 @@
 .migration-flow__owner strong {
   color: #18181b;
   text-align: right;
+}
+
+.migration-flow__records {
+  margin-top: 0.75rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.875rem;
+}
+
+.migration-flow__record {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(5rem, 0.7fr) minmax(5rem, 0.8fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  color: #52525b;
+  border-top: 1px solid #e4e4e7;
+}
+
+.migration-flow__record:first-child {
+  border-top: 0;
+}
+
+.migration-flow__record strong {
+  overflow: hidden;
+  color: #27272a;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.migration-flow__record--header {
+  color: #71717a;
+  font-size: 0.625rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #f4f4f5;
+}
+
+.migration-flow__record-state {
+  justify-self: start;
+  padding: 0.1875rem 0.4375rem;
+  color: #3f3f46;
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: #f4f4f5;
+  border-radius: 999px;
 }
 
 .migration-flow__controls {
@@ -451,35 +533,56 @@
 }
 
 .dark .migration-flow__status,
-.dark .migration-flow__owner {
+.dark .migration-flow__owner,
+.dark .migration-flow__record-state {
   background: rgb(63 63 70 / 70%);
 }
 
-@keyframes migration-flow-packet {
+.dark .migration-flow__flow,
+.dark .migration-flow__record {
+  color: #a1a1aa;
+}
+
+.dark .migration-flow__records,
+.dark .migration-flow__record {
+  border-color: #3f3f46;
+}
+
+.dark .migration-flow__record strong,
+.dark .migration-flow__record-state {
+  color: #fafafa;
+}
+
+.dark .migration-flow__record--header {
+  color: #a1a1aa;
+  background: #27272a;
+}
+
+@keyframes migration-flow-data {
   from {
     opacity: 0;
-    transform: translateX(-2.5rem) scale(0.92);
+    transform: translateX(calc(-50% - 2.5rem)) scale(0.92);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateX(-50%) scale(1);
   }
 }
 
 @keyframes migration-flow-verified {
   0% {
     opacity: 0;
-    transform: scale(0.82);
+    transform: translateX(-50%) scale(0.82);
   }
 
   55% {
     opacity: 1;
-    transform: scale(1.08);
+    transform: translateX(-50%) scale(1.08);
   }
 
   100% {
-    transform: scale(1);
+    transform: translateX(-50%) scale(1);
   }
 }
 
@@ -509,41 +612,34 @@
     font-size: 1.1875rem;
   }
 
-  .migration-flow__diagram {
+  .migration-flow__systems {
     grid-template-columns: 1fr;
-  }
-
-  .migration-flow__track {
-    min-height: 5.25rem;
-  }
-
-  .migration-flow__track-line {
-    top: 0.25rem;
-    bottom: 0.25rem;
-    left: 50%;
-    width: 1px;
-    height: auto;
-    background: repeating-linear-gradient(
-      180deg,
-      #a1a1aa 0,
-      #a1a1aa 4px,
-      transparent 4px,
-      transparent 9px
-    );
-  }
-
-  .migration-flow__packet {
-    animation-name: migration-flow-packet-mobile;
-  }
-
-  .migration-flow__arrow {
-    right: auto;
-    bottom: -0.125rem;
-    transform: rotate(90deg);
   }
 
   .migration-flow__system p {
     min-height: 0;
+  }
+
+  .migration-flow__flow {
+    grid-template-columns: minmax(4.5rem, 0.75fr) minmax(8rem, 1.5fr) minmax(
+        4.5rem,
+        0.75fr
+      );
+  }
+
+  .migration-flow__flow-packet {
+    animation-name: migration-flow-data-mobile;
+  }
+
+  .migration-flow__record {
+    grid-template-columns: minmax(7.5rem, 1.4fr) minmax(4.5rem, 0.8fr) minmax(
+        5.75rem,
+        0.9fr
+    );
+  }
+
+  .migration-flow__records {
+    overflow-x: auto;
   }
 
   .migration-flow__owner {
@@ -557,15 +653,15 @@
   }
 }
 
-@keyframes migration-flow-packet-mobile {
+@keyframes migration-flow-data-mobile {
   from {
     opacity: 0;
-    transform: translateY(-1.5rem) scale(0.92);
+    transform: translateX(calc(-50% - 1.5rem)) scale(0.92);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) scale(1);
   }
 }
 

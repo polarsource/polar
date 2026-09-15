@@ -17,7 +17,10 @@ from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer_seat.repository import CustomerSeatRepository
-from polar.email.schemas import SubscriptionRevokedEmail
+from polar.email.schemas import (
+    SubscriptionRenewalReminderEmail,
+    SubscriptionRevokedEmail,
+)
 from polar.enums import (
     PaymentProcessor,
     SubscriptionProrationBehavior,
@@ -56,6 +59,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
@@ -122,6 +126,10 @@ from tests.fixtures.random_objects import (
     create_subscription_with_seats,
     create_trialing_subscription,
     set_product_benefits,
+)
+from tests.merchant_migration._helpers import (
+    build_connected_migration,
+    stage_subscription_record,
 )
 
 Hooks = namedtuple(
@@ -7239,6 +7247,35 @@ async def test_send_renewal_reminder_email_formats_long_date(
         send_customer_email_mock.call_args.kwargs["deduplication_key"]
         == f"subscription_renewal_reminder:{subscription.id}:2026-11-07"
     )
+
+
+@pytest.mark.asyncio
+async def test_send_renewal_reminder_email_mentions_stripe_migration(
+    enqueue_email_mock: MagicMock,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    organization: Organization,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_active_subscription(
+        save_fixture, product=product, customer=customer
+    )
+    migration = await build_connected_migration(save_fixture, organization)
+    await stage_subscription_record(
+        save_fixture,
+        migration,
+        organization,
+        subscription,
+        cutover_status=MerchantMigrationCutoverStatus.moved,
+    )
+
+    await subscription_service.send_renewal_reminder_email(session, subscription)
+
+    enqueue_email_mock.assert_called_once()
+    email = enqueue_email_mock.call_args[0][0]
+    assert isinstance(email, SubscriptionRenewalReminderEmail)
+    assert email.props.previous_billing_provider == "Stripe"
 
 
 @pytest.mark.asyncio

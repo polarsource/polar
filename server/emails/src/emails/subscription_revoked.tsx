@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -13,6 +14,7 @@ export function SubscriptionRevoked({
   organization,
   product,
   url,
+  previous_billing_provider,
 }: schemas['SubscriptionRevokedProps']) {
   return (
     <WrapperOrganization
@@ -27,6 +29,12 @@ export function SubscriptionRevoked({
         subscription has ended. If you&rsquo;d like to resubscribe, you can do
         so anytime.
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Button href={url}>View subscription</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
@@ -41,6 +49,7 @@ SubscriptionRevoked.PreviewProps = {
     id: '12345',
     status: 'canceled',
   },
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

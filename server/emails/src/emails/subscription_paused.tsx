@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -14,6 +15,7 @@ export function SubscriptionPaused({
   product,
   subscription,
   url,
+  previous_billing_provider,
 }: schemas['SubscriptionPausedProps']) {
   const formatDate = (value: string) =>
     new Date(value).toLocaleDateString('en-US', {
@@ -40,6 +42,12 @@ export function SubscriptionPaused({
         access until {accessUntil}, and you won&rsquo;t be charged while
         it&rsquo;s paused.
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Text>
         {resumeDate
           ? `Your subscription will automatically resume on ${resumeDate}.`
@@ -61,6 +69,7 @@ SubscriptionPaused.PreviewProps = {
     ).toISOString(),
     resumes_at: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
   },
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

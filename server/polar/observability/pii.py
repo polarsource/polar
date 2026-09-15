@@ -214,7 +214,8 @@ def _replace_pan(match: Any) -> str:
 
 
 def _scrub_string(value: str) -> str:
-    value = _EMAIL_RE.sub(REDACTED, value)
+    # RE2 requires a plain str, not a str-based Enum.
+    value = _EMAIL_RE.sub(REDACTED, str.__str__(value))
     value = _JWT_RE.sub(REDACTED, value)
     value = _BEARER_RE.sub(REDACTED, value)
     value = _STRIPE_SECRET_RE.sub(REDACTED, value)

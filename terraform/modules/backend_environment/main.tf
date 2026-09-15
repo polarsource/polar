@@ -111,7 +111,8 @@ locals {
   }
 
   secrets_kms_environment_variables = {
-    POLAR_AWS_KMS_KEY_ID = var.aws_kms_config.key_id
+    POLAR_AWS_KMS_KEY_ID      = var.aws_kms_config.key_id
+    POLAR_AWS_JWKS_KMS_KEY_ID = var.aws_kms_config.jwks_key_id
   }
 
   secrets_kms_render_environment_variables = {

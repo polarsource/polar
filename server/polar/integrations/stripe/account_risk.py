@@ -150,7 +150,6 @@ def _merchant_description(inner: Mapping[str, Any]) -> str | None:
 
 
 def parse_account_signal(payload: Mapping[str, Any]) -> AccountRiskSignal | None:
-    """Read a fetched Account Signal resource, or None if it can't be used."""
     try:
         signal_type = OrganizationRiskSignal.Type(str(payload.get("type")))
     except ValueError:

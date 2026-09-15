@@ -2129,7 +2129,6 @@ class TestHandleAccountRiskSignal:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
         organization.website = "https://example.com"
         await save_fixture(organization)
         mocker.patch("polar.organization.service.enqueue_job")

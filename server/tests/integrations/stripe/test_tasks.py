@@ -84,7 +84,6 @@ class TestAccountRiskSignal:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
         organization.website = "https://example.com"
         await save_fixture(organization)
 
@@ -133,8 +132,6 @@ class TestAccountRiskSignal:
         organization: Organization,
         user: User,
     ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
-        await save_fixture(organization)
         await create_payout_account(
             save_fixture, organization, user, stripe_id="acct_123"
         )

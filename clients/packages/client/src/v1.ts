@@ -35844,10 +35844,10 @@ export interface components {
     SubscriptionMigratedMetadata: {
       /** Subscription Id */
       subscription_id: string
-      /** Platform */
-      platform: string
-      /** Source Id */
-      source_id: string
+      /** Provider */
+      provider: string
+      /** Provider Subscription Id */
+      provider_subscription_id: string
       /** Product Id */
       product_id?: string
     }

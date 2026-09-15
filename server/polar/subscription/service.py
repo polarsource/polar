@@ -918,8 +918,8 @@ class SubscriptionService:
         trial_end: datetime | None,
         anchor_day: int | None = None,
         payment_method: PaymentMethod,
-        platform: str,
-        source_id: str,
+        provider: str,
+        provider_subscription_id: str,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -959,8 +959,8 @@ class SubscriptionService:
         await self._on_subscription_migrated(
             session,
             subscription,
-            platform=platform,
-            source_id=source_id,
+            provider=provider,
+            provider_subscription_id=provider_subscription_id,
         )
         enqueue_job("customer.state_changed", subscription.customer_id)
 
@@ -3905,8 +3905,8 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         *,
-        platform: str,
-        source_id: str,
+        provider: str,
+        provider_subscription_id: str,
     ) -> None:
         repository = SubscriptionRepository.from_session(session)
         subscription = cast(
@@ -3920,8 +3920,8 @@ class SubscriptionService:
             subscription.organization,
             WebhookEventType.subscription_migrated,
             subscription,
-            platform=platform,
-            source_id=source_id,
+            provider=provider,
+            provider_subscription_id=provider_subscription_id,
         )
         await event_service.create_event(
             session,
@@ -3931,8 +3931,8 @@ class SubscriptionService:
                 organization=subscription.organization,
                 metadata=SubscriptionMigratedMetadata(
                     subscription_id=str(subscription.id),
-                    platform=platform,
-                    source_id=source_id,
+                    provider=provider,
+                    provider_subscription_id=provider_subscription_id,
                     product_id=str(subscription.product_id),
                 ),
             ),

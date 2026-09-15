@@ -1148,11 +1148,11 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
 
 class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
-    Sent when Polar takes over billing of a subscription migrated from another platform.
+    Sent when Polar takes over billing of a subscription migrated from another provider.
 
-    This fires at cutover, once the subscription is live on Polar. `platform` and
-    `source_id` identify the subscription on the source platform so you can
-    correlate the two.
+    This fires at cutover, once the subscription is live on Polar. `provider`
+    and `provider_subscription_id` identify the subscription on the billing
+    provider so you can correlate the two.
 
     **Discord & Slack support:** Full
     """
@@ -1161,12 +1161,12 @@ class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
     type: Literal[WebhookEventType.subscription_migrated]
     data: SubscriptionSchema
-    platform: str = Field(
-        description="The billing platform the subscription was migrated from.",
+    provider: str = Field(
+        description="The billing provider the subscription was migrated from.",
         examples=["stripe"],
     )
-    source_id: str = Field(
-        description="The identifier of the subscription on the source platform.",
+    provider_subscription_id: str = Field(
+        description="The identifier of the subscription on the billing provider.",
         examples=["sub_1Sabc2Def3Ghi"],
     )
 
@@ -1177,8 +1177,11 @@ class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
         fields = self._get_discord_fields(target)
         fields.extend(
             [
-                {"name": "Platform", "value": self.platform},
-                {"name": "Source ID", "value": self.source_id},
+                {"name": "Provider", "value": self.provider},
+                {
+                    "name": "Provider Subscription ID",
+                    "value": self.provider_subscription_id,
+                },
             ]
         )
         payload: DiscordPayload = {
@@ -1188,7 +1191,7 @@ class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
                     {
                         "title": "Migrated Subscription",
                         "description": (
-                            f"A subscription migrated from {self.platform} "
+                            f"A subscription migrated from {self.provider} "
                             f"is now billed by {target.name}."
                         ),
                         "fields": fields,
@@ -1206,8 +1209,13 @@ class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
         fields = self._get_slack_fields(target)
         fields.extend(
             [
-                {"type": "mrkdwn", "text": f"*Platform*\n{self.platform}"},
-                {"type": "mrkdwn", "text": f"*Source ID*\n{self.source_id}"},
+                {"type": "mrkdwn", "text": f"*Provider*\n{self.provider}"},
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*Provider Subscription ID*\n{self.provider_subscription_id}"
+                    ),
+                },
             ]
         )
         payload: SlackPayload = get_branded_slack_payload(
@@ -1219,7 +1227,7 @@ class WebhookSubscriptionMigratedPayload(WebhookSubscriptionUpdatedPayloadBase):
                         "text": {
                             "type": "mrkdwn",
                             "text": (
-                                f"A subscription migrated from {self.platform} "
+                                f"A subscription migrated from {self.provider} "
                                 f"is now billed by {target.name}."
                             ),
                         },

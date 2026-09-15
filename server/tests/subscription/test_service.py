@@ -4060,8 +4060,8 @@ class TestActivateImported:
             current_period_end=period_end,
             trial_end=None,
             payment_method=payment_method,
-            platform="stripe",
-            source_id="sub_1",
+            provider="stripe",
+            provider_subscription_id="sub_1",
         )
 
         assert updated.status == SubscriptionStatus.active
@@ -4101,8 +4101,8 @@ class TestActivateImported:
             current_period_end=utc_now() + timedelta(days=30),
             trial_end=None,
             payment_method=payment_method,
-            platform="stripe",
-            source_id="sub_1",
+            provider="stripe",
+            provider_subscription_id="sub_1",
         )
 
         assert_hooks_called_once(subscription_hooks, {"migrated"})
@@ -4135,8 +4135,8 @@ class TestActivateImported:
             current_period_end=datetime(2026, 3, 31, tzinfo=UTC),
             trial_end=None,
             payment_method=payment_method,
-            platform="stripe",
-            source_id="sub_1",
+            provider="stripe",
+            provider_subscription_id="sub_1",
         )
 
         assert updated.anchor_day == 31
@@ -4165,8 +4165,8 @@ class TestActivateImported:
             current_period_end=utc_now() + timedelta(days=30),
             trial_end=None,
             payment_method=payment_method,
-            platform="paddle",
-            source_id="sub_ext_1",
+            provider="paddle",
+            provider_subscription_id="sub_ext_1",
         )
 
         webhook_service_send_mock.assert_any_call(
@@ -4174,8 +4174,8 @@ class TestActivateImported:
             product.organization,
             WebhookEventType.subscription_migrated,
             ANY,
-            platform="paddle",
-            source_id="sub_ext_1",
+            provider="paddle",
+            provider_subscription_id="sub_ext_1",
         )
         assert_webhook_not_sent(
             webhook_service_send_mock, WebhookEventType.subscription_updated
@@ -4196,8 +4196,8 @@ class TestActivateImported:
         assert len(events) == 1
         assert events[0].user_metadata == {
             "subscription_id": str(subscription.id),
-            "platform": "paddle",
-            "source_id": "sub_ext_1",
+            "provider": "paddle",
+            "provider_subscription_id": "sub_ext_1",
             "product_id": str(product.id),
         }
 

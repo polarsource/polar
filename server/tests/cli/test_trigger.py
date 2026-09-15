@@ -58,8 +58,8 @@ class TestTriggerFixtures:
         assert raw["type"] == event
         assert raw["data"]["id"]
         if event is WebhookEventType.subscription_migrated:
-            assert raw["platform"] == "stripe"
-            assert raw["source_id"] == "sub_123"
+            assert raw["provider"] == "stripe"
+            assert raw["provider_subscription_id"] == "sub_123"
 
     def test_seed_makes_payloads_reproducible(self, organization: Organization) -> None:
         first = TriggerFixtures(organization, seed=7)

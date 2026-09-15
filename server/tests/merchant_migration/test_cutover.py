@@ -230,8 +230,8 @@ class TestRun:
         assert subscription.status == SubscriptionStatus.active
         assert subscription.customer_id == imported_customer.id
         assert subscription.payment_method_id is not None
-        assert subscription.user_metadata["platform"] == "stripe"
-        assert subscription.user_metadata["source_id"] == "sub_1"
+        assert subscription.user_metadata["provider"] == "stripe"
+        assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,
@@ -360,7 +360,7 @@ class TestRun:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.paused,
-            user_metadata={"platform": "stripe", "source_id": "sub_1"},
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         pending_record.target_id = subscription.id
         pending_record.status = MerchantMigrationRecordStatus.imported
@@ -696,7 +696,7 @@ class TestRun:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.paused,
-            user_metadata={"platform": "stripe", "source_id": "sub_1"},
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         pending_record.target_id = subscription.id
         pending_record.status = MerchantMigrationRecordStatus.imported
@@ -751,7 +751,7 @@ class TestAlreadyLiveOnPolar:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.active,
-            user_metadata={"platform": "stripe", "source_id": "sub_1"},
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         return await stage_subscription_record(
             save_fixture, migration, organization, subscription

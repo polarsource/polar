@@ -312,8 +312,8 @@ async def test_webhook_send_subscription_migrated(
         organization,
         WebhookEventType.subscription_migrated,
         subscription,
-        platform="stripe",
-        source_id="sub_123",
+        provider="stripe",
+        provider_subscription_id="sub_123",
     )
     assert len(events) == 1
 
@@ -321,8 +321,8 @@ async def test_webhook_send_subscription_migrated(
     assert raw_payload is not None
     payload = json.loads(raw_payload)
     assert payload["type"] == "subscription.migrated"
-    assert payload["platform"] == "stripe"
-    assert payload["source_id"] == "sub_123"
+    assert payload["provider"] == "stripe"
+    assert payload["provider_subscription_id"] == "sub_123"
     assert payload["data"]["id"] == str(subscription.id)
 
     enqueue_job_mock.assert_called_once_with(
@@ -353,8 +353,8 @@ async def test_webhook_send_subscription_migrated_skips_current_api_version(
         organization,
         WebhookEventType.subscription_migrated,
         subscription,
-        platform="stripe",
-        source_id="sub_123",
+        provider="stripe",
+        provider_subscription_id="sub_123",
     )
     assert events == []
     enqueue_job_mock.assert_not_called()

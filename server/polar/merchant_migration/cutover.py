@@ -256,8 +256,8 @@ class SubscriptionCutover:
                 trial_end=self._trial_end(source),
                 anchor_day=source.anchor_day,
                 payment_method=payment_method,
-                platform=self.migration.source_platform,
-                source_id=record.source_id,
+                provider=self.migration.source_platform,
+                provider_subscription_id=record.source_id,
             )
         except Exception:
             # The source is stopped and this rolls back, ledger row included, so
@@ -379,7 +379,7 @@ class SubscriptionCutover:
             product,
             price,
             customer,
-            platform=self.migration.source_platform,
+            provider=self.migration.source_platform,
         )
         await self.record_repository.update(
             record,
@@ -406,8 +406,8 @@ class SubscriptionCutover:
                 trial_end=self._trial_end(source),
                 anchor_day=source.anchor_day,
                 payment_method=payment_method,
-                platform=self.migration.source_platform,
-                source_id=record.source_id,
+                provider=self.migration.source_platform,
+                provider_subscription_id=record.source_id,
             )
         except Exception:
             log.exception(

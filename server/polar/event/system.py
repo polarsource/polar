@@ -380,8 +380,8 @@ class SubscriptionResumedEvent(Event):
 
 class SubscriptionMigratedMetadata(TypedDict):
     subscription_id: str
-    platform: str
-    source_id: str
+    provider: str
+    provider_subscription_id: str
     product_id: NotRequired[str]
 
 

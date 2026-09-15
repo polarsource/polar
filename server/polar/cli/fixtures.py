@@ -130,8 +130,8 @@ class TriggerFixtures:
             "data": self._data_for(event),
         }
         if event is WebhookEventType.subscription_migrated:
-            payload["platform"] = "stripe"
-            payload["source_id"] = "sub_123"
+            payload["provider"] = "stripe"
+            payload["provider_subscription_id"] = "sub_123"
         return WebhookPayloadTypeAdapter.validate_python(
             payload,
             from_attributes=True,

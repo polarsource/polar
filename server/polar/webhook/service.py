@@ -744,8 +744,8 @@ class WebhookService:
         event: Literal[WebhookEventType.subscription_migrated],
         data: Subscription,
         *,
-        platform: str,
-        source_id: str,
+        provider: str,
+        provider_subscription_id: str,
     ) -> list[WebhookEvent]: ...
 
     @overload

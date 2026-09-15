@@ -74,7 +74,8 @@ const timelineRenderers: TimelineRendererMap = {
   },
   'subscription.migrated': {
     importance: 'medium',
-    summary: ({ metadata }) => `${metadata.platform} · ${metadata.source_id}`,
+    summary: ({ metadata }) =>
+      `${metadata.provider} · ${metadata.provider_subscription_id}`,
   },
   'subscription.cycled': {
     importance: 'medium',

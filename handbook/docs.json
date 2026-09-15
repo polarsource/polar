@@ -121,7 +121,7 @@
               "engineering/oncall/deploy-infra",
               "engineering/oncall/trigger-webhooks",
               "engineering/oncall/run-one-off-jobs",
-              "engineering/oncall/vendor-advisories"
+              "engineering/oncall/vendor-security-monitoring"
             ]
           }
         ]

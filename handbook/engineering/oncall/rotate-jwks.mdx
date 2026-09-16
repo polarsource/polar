@@ -50,12 +50,13 @@ old key keeps `kms:GetPublicKey`.
 
 ## 5. Verify
 
-An OAuth2 authorization-code flow, checking the `id_token`'s `kid`, and an SSO login on an
-organization using **Private key JWT**.
+Run an OAuth2 authorization-code flow: the `id_token`'s `kid` must be the new generation, and
+its signature must verify against the published set. Then an SSO login on a **Private key
+JWT** organization.
 
 ## 6. Wait seven days
 
-Anything the old key signed expires within the hour. The rest is margin.
+Anything the old key signed expires within the hour but we keep a safety margin.
 
 ## 7. Retire it
 

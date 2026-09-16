@@ -137,6 +137,7 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = [
   "auth",
+  "api_version(*versions): Run the test for each APIVersion with its Polar-Version client header",
   "benchmark: performance benchmark, deselected by default (run with -m benchmark)",
 ]
 addopts = "-m 'not benchmark'"

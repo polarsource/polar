@@ -5,11 +5,12 @@ import uuid
 from collections import defaultdict
 from datetime import datetime
 
+from polar.authz.dependencies import AuthzContext
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
+from polar.models import Organization, User
 from polar.models import VoidReducerBucket as ReducerBucket
 from polar.postgres import AsyncSession
-from polar.void.auth import VoidAuth
 from polar.void.entitlement.schemas import (
     EntitlementAssignment,
     EntitlementAssignmentRead,
@@ -48,12 +49,12 @@ def compact(state: State) -> LedgerState:
 async def customer_state(
     session: AsyncSession,
     tinybird: TinybirdApi,
-    auth: VoidAuth,
+    auth: AuthzContext[User | Organization],
     external_id: str,
     since: datetime | None,
     version_id: str | None,
 ) -> CustomerState:
-    organization_id = auth.organization_id
+    organization_id = auth.organization.id
     customer = await customer_service.get(session, auth, external_id)
     native = await CustomerRepository.from_session(session).get_active_by_external_id(
         organization_id, external_id

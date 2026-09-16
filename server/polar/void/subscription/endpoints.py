@@ -46,7 +46,7 @@ async def list_subscriptions(
     now = utc_now()
     subscriptions = await subscription_service.list(
         session,
-        auth.organization_id,
+        auth.organization.id,
         external_identity_id,
         active_at=now if active else None,
     )
@@ -67,7 +67,7 @@ async def create(
     """Subscribe an identity to a product generation, or record a one-time
     purchase. Writes the row and the events derived from it together."""
     subscription = await subscription_service.create(
-        session, auth.organization_id, body
+        session, auth.organization.id, body
     )
     return to_schema(subscription, utc_now())
 
@@ -83,7 +83,7 @@ async def rebuild(
     """Re-project the subscriptions table from the lifecycle events in the
     stream. `dry_run` only reports the differences: the consistency check."""
     return await subscription_service.rebuild(
-        session, auth.organization_id, apply=not dry_run
+        session, auth.organization.id, apply=not dry_run
     )
 
 
@@ -96,7 +96,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     return to_schema(
-        await subscription_service.get(session, auth.organization_id, id), utc_now()
+        await subscription_service.get(session, auth.organization.id, id), utc_now()
     )
 
 
@@ -112,7 +112,7 @@ async def cancel(
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     subscription = await subscription_service.cancel(
-        session, auth.organization_id, id, body.at_period_end
+        session, auth.organization.id, id, body.at_period_end
     )
     return to_schema(subscription, utc_now())
 
@@ -128,7 +128,7 @@ async def revoke(
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     """End access immediately."""
-    subscription = await subscription_service.revoke(session, auth.organization_id, id)
+    subscription = await subscription_service.revoke(session, auth.organization.id, id)
     return to_schema(subscription, utc_now())
 
 
@@ -145,5 +145,5 @@ async def cycles(
 ) -> Sequence[SubscriptionCycle]:
     """Closed periods with the fixed amount and each meter's usage priced."""
     return await subscription_service.cycles(
-        session, tinybird, auth.organization_id, id
+        session, tinybird, auth.organization.id, id
     )

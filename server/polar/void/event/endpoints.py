@@ -25,7 +25,7 @@ async def list_events(
 ) -> EventsList:
     return await event_service.list(
         tinybird,
-        auth.organization_id,
+        auth.organization.id,
         limit,
         external_identity_id,
         external_root_id,
@@ -49,6 +49,6 @@ async def ingest(
     session: AsyncSession = Depends(get_db_session),
 ) -> EventsIngestResponse:
     saved, ignored = await event_service.ingest(
-        session, auth.organization_id, events, EventSource.user
+        session, auth.organization.id, events, EventSource.user
     )
     return EventsIngestResponse(saved=saved, ignored=ignored)

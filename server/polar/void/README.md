@@ -384,8 +384,9 @@ credential (dashboard session, personal access token, or OAuth2 user token) with
 the same scopes names the organization with the `Polar-Organization-ID` header;
 the user must be a member of that organization, and writes additionally require
 the `products:manage` role permission. Both paths return 404 unless the
-organization has `void_enabled` set. Endpoints receive a `VoidAuth` from
-`polar.void.auth` carrying the resolved organization and the auth subject.
+organization has `void_enabled` set. Endpoints receive Polar's `AuthzContext`
+from the `VoidRead` and `VoidWrite` dependencies in `polar.void.auth`, carrying the
+resolved organization and the auth subject.
 Subscription rows remain Void lifecycle projections, separate from Polar's
 payment-backed subscriptions. No native purchase or Stripe lifecycle adapter is installed.
 

@@ -56,7 +56,7 @@ async def create(
     tinybird: Annotated[TinybirdApi | None, Depends(preview_client)],
     session: AsyncSession = Depends(get_db_session),
 ) -> Deploy:
-    plan = await deploy_service.deploy(session, auth.organization_id, body)
+    plan = await deploy_service.deploy(session, auth.organization.id, body)
     if body.preview is not None:
         assert tinybird is not None
         await preview_prices(
@@ -65,7 +65,7 @@ async def create(
             auth,
             body,
             plan,
-            await organization_service.active_version(session, auth.organization_id),
+            await organization_service.active_version(session, auth.organization.id),
         )
     return plan
 
@@ -77,7 +77,7 @@ async def list_deploys(
 ) -> Sequence[Deploy]:
     return [
         deploy_service.to_schema(deployment)
-        for deployment in await deploy_service.list(session, auth.organization_id)
+        for deployment in await deploy_service.list(session, auth.organization.id)
     ]
 
 
@@ -94,7 +94,7 @@ async def latest(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Deploy:
     deployment = await deploy_service.for_version(
-        session, auth.organization_id, version_id
+        session, auth.organization.id, version_id
     )
     if deployment is None:
         raise ResourceNotFound(
@@ -115,7 +115,7 @@ async def get(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Deploy:
     return deploy_service.to_schema(
-        await deploy_service.get(session, auth.organization_id, id)
+        await deploy_service.get(session, auth.organization.id, id)
     )
 
 
@@ -135,4 +135,4 @@ async def activate(
     auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Deploy:
-    return await deploy_service.activate(session, auth.organization_id, id)
+    return await deploy_service.activate(session, auth.organization.id, id)

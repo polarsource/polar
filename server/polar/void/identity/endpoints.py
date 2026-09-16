@@ -47,7 +47,7 @@ async def list_identities(
     parent: str | None = Query(None, description="Only children of this identity"),
     root: bool = Query(False, description="Only identities with no parent"),
 ) -> Sequence[VoidBillingIdentity]:
-    return await identity_service.list(session, auth.organization_id, parent, root)
+    return await identity_service.list(session, auth.organization.id, parent, root)
 
 
 @router.post(
@@ -88,7 +88,7 @@ async def get_identity(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> IdentityDetail:
-    result = await identity_service.get(session, auth.organization_id, external_id)
+    result = await identity_service.get(session, auth.organization.id, external_id)
     chain = await identity_service.chain(session, result)
     children = await identity_service.children(session, result)
     return IdentityDetail.model_validate(
@@ -121,7 +121,7 @@ async def snapshot(
         tinybird,
         auth,
         external_id,
-        await selected_version(session, auth.organization_id, version_id),
+        await selected_version(session, auth.organization.id, version_id),
     )
 
 
@@ -139,7 +139,7 @@ async def entitlements(
     auth: VoidRead,
     session: AsyncSession = Depends(get_snapshot_session),
 ) -> IdentityEntitlements:
-    return await subscription_service.held(session, auth.organization_id, external_id)
+    return await subscription_service.held(session, auth.organization.id, external_id)
 
 
 @router.put(
@@ -162,6 +162,6 @@ async def assign_entitlements(
     session: AsyncSession = Depends(get_db_session),
 ) -> EntitlementAssignmentRead:
     assignment = await entitlement_service.assign(
-        session, auth.organization_id, external_id, body
+        session, auth.organization.id, external_id, body
     )
     return EntitlementAssignmentRead.model_validate(assignment.model_dump())

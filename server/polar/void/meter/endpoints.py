@@ -29,7 +29,7 @@ async def list_meters(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[VoidMeter]:
-    return await meter_service.list(session, auth.organization_id)
+    return await meter_service.list(session, auth.organization.id)
 
 
 @router.get(
@@ -43,7 +43,7 @@ async def get_meter(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> VoidMeter:
-    return await meter_service.get(session, auth.organization_id, id)
+    return await meter_service.get(session, auth.organization.id, id)
 
 
 @router.get(
@@ -64,7 +64,7 @@ async def balance(
     session: AsyncSession = Depends(get_db_session),
 ) -> Balance:
     return await meter_service.balance(
-        session, tinybird, auth.organization_id, id, external_identity_id, at
+        session, tinybird, auth.organization.id, id, external_identity_id, at
     )
 
 
@@ -86,5 +86,5 @@ async def check(
     session: AsyncSession = Depends(get_db_session),
 ) -> Check:
     return await meter_service.check(
-        session, tinybird, auth.organization_id, id, external_identity_id, size
+        session, tinybird, auth.organization.id, id, external_identity_id, size
     )

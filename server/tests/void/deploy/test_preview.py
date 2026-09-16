@@ -11,10 +11,10 @@ import pytest
 from pydantic import ValidationError
 
 from polar.auth.models import AuthSubject
+from polar.authz.dependencies import AuthzContext
 from polar.models import Organization
 from polar.models import VoidMeter as Meter
 from polar.postgres import AsyncSession
-from polar.void.auth import VoidAuth
 from polar.void.customer.service import customer as customer_service
 from polar.void.deploy import preview as module
 from polar.void.deploy.preview_repository import PreviewRepository
@@ -42,8 +42,8 @@ def at(month: int, day: int = 1) -> datetime:
 def scenario(
     monkeypatch: pytest.MonkeyPatch, auth_subject: AuthSubject[Organization]
 ) -> SimpleNamespace:
-    auth = VoidAuth(organization=auth_subject.subject, auth_subject=auth_subject)
-    org = auth.organization_id
+    auth = AuthzContext(organization=auth_subject.subject, auth_subject=auth_subject)
+    org = auth.organization.id
     usage_id, credit_id = uuid.uuid4(), uuid.uuid4()
     current = Meter(
         id=uuid.uuid4(),

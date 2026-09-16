@@ -33,7 +33,7 @@ async def get_metrics(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Metrics:
-    return await metric_service.get(session, auth.organization_id, query)
+    return await metric_service.get(session, auth.organization.id, query)
 
 
 @router.get(

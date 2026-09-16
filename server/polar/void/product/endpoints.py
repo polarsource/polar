@@ -20,7 +20,7 @@ async def list_products(
     session: AsyncReadSession = Depends(get_db_read_session),
     version_id: str | None = None,
 ) -> Sequence[Product]:
-    products = await product_service.list(session, auth.organization_id)
+    products = await product_service.list(session, auth.organization.id)
     return [
         to_schema(product)
         for product in products
@@ -39,4 +39,4 @@ async def get_product(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Product:
-    return to_schema(await product_service.get(session, auth.organization_id, id))
+    return to_schema(await product_service.get(session, auth.organization.id, id))

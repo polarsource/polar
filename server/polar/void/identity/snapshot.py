@@ -1,6 +1,7 @@
+from polar.authz.dependencies import AuthzContext
 from polar.kit.utils import utc_now
+from polar.models import Organization, User
 from polar.postgres import AsyncSession
-from polar.void.auth import VoidAuth
 from polar.void.customer.repository import CustomerRepository
 from polar.void.customer.service import customer as customer_service
 from polar.void.meter.service import meter as meter_service
@@ -17,11 +18,11 @@ class IdentitySnapshotService:
         self,
         session: AsyncSession,
         tinybird: TinybirdApi,
-        auth: VoidAuth,
+        auth: AuthzContext[User | Organization],
         external_id: str,
         version_id: str | None,
     ) -> IdentitySnapshot:
-        organization_id = auth.organization_id
+        organization_id = auth.organization.id
         at = utc_now()
         identity = await identity_service.get(session, organization_id, external_id)
         root = await identity_service.root_of(session, identity)

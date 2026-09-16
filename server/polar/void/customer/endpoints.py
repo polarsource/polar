@@ -87,5 +87,5 @@ async def state(
         auth,
         external_id,
         since,
-        await selected_version(session, auth.organization_id, version_id),
+        await selected_version(session, auth.organization.id, version_id),
     )

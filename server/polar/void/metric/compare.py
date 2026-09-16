@@ -6,10 +6,11 @@ from typing import Self
 
 from pydantic import BaseModel, Field, model_validator
 
+from polar.authz.dependencies import AuthzContext
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
+from polar.models import Organization, User
 from polar.postgres import AsyncSession
-from polar.void.auth import VoidAuth
 from polar.void.customer.service import customer as customer_service
 from polar.void.deploy.preview import preview_prices
 from polar.void.deploy.schemas import (
@@ -65,10 +66,10 @@ class MetricComparison(BaseModel):
 async def compare(
     session: AsyncSession,
     tinybird: TinybirdApi,
-    auth: VoidAuth,
+    auth: AuthzContext[User | Organization],
     query: CompareQuery,
 ) -> MetricComparison:
-    organization_id = auth.organization_id
+    organization_id = auth.organization.id
     baseline_id, candidate_id = query.baseline, query.candidate
     meters = await meter_service.list(session, organization_id)
     baseline = meters_in_version(meters, baseline_id)

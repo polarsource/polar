@@ -1,7 +1,6 @@
 """Void authentication: an organization token acts as its organization; a user
 names the organization with the ``Polar-Organization-ID`` header."""
 
-from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
@@ -11,6 +10,7 @@ from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
+from polar.authz.dependencies import AuthzContext
 from polar.authz.service import (
     assert_organization_permission,
     get_accessible_organization,
@@ -38,22 +38,12 @@ OrganizationHeader = Annotated[
 ]
 
 
-@dataclass(frozen=True)
-class VoidAuth:
-    organization: Organization
-    auth_subject: AuthSubject[User | Organization]
-
-    @property
-    def organization_id(self) -> UUID:
-        return self.organization.id
-
-
 async def resolve(
     session: AsyncSession,
     auth_subject: AuthSubject[User | Organization],
     organization_id: UUID | None,
     permission: OrganizationPermission | None = None,
-) -> VoidAuth:
+) -> AuthzContext[User | Organization]:
     if is_organization(auth_subject):
         if not isinstance(auth_subject.session, OrganizationAccessToken):
             raise Unauthorized()
@@ -90,7 +80,7 @@ async def resolve(
 
     if not organization.is_void_enabled:
         raise ResourceNotFound()
-    return VoidAuth(organization=organization, auth_subject=auth_subject)
+    return AuthzContext(organization=organization, auth_subject=auth_subject)
 
 
 _VoidRead = Authenticator(
@@ -107,7 +97,7 @@ async def _void_read(
     auth_subject: Annotated[AuthSubject[User | Organization], Depends(_VoidRead)],
     organization_id: OrganizationHeader = None,
     session: AsyncSession = Depends(get_db_session),
-) -> VoidAuth:
+) -> AuthzContext[User | Organization]:
     return await resolve(session, auth_subject, organization_id)
 
 
@@ -115,7 +105,7 @@ async def _void_write(
     auth_subject: Annotated[AuthSubject[User | Organization], Depends(_VoidWrite)],
     organization_id: OrganizationHeader = None,
     session: AsyncSession = Depends(get_db_session),
-) -> VoidAuth:
+) -> AuthzContext[User | Organization]:
     return await resolve(
         session,
         auth_subject,
@@ -124,21 +114,25 @@ async def _void_write(
     )
 
 
-VoidRead = Annotated[VoidAuth, Depends(_void_read)]
-VoidWrite = Annotated[VoidAuth, Depends(_void_write)]
+VoidRead = Annotated[AuthzContext[User | Organization], Depends(_void_read)]
+VoidWrite = Annotated[AuthzContext[User | Organization], Depends(_void_write)]
 
 
 async def _void_customer_read(
     auth: VoidRead, _customer_auth_subject: CustomerRead
-) -> VoidAuth:
+) -> AuthzContext[User | Organization]:
     return auth
 
 
 async def _void_customer_write(
     auth: VoidWrite, _customer_auth_subject: CustomerWrite
-) -> VoidAuth:
+) -> AuthzContext[User | Organization]:
     return auth
 
 
-VoidCustomerRead = Annotated[VoidAuth, Depends(_void_customer_read)]
-VoidCustomerWrite = Annotated[VoidAuth, Depends(_void_customer_write)]
+VoidCustomerRead = Annotated[
+    AuthzContext[User | Organization], Depends(_void_customer_read)
+]
+VoidCustomerWrite = Annotated[
+    AuthzContext[User | Organization], Depends(_void_customer_write)
+]

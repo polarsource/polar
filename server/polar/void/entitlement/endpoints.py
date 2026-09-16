@@ -28,7 +28,7 @@ async def list_entitlements(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[VoidEntitlement]:
-    return await entitlement_service.list(session, auth.organization_id)
+    return await entitlement_service.list(session, auth.organization.id)
 
 
 @router.post(
@@ -47,7 +47,7 @@ async def create_entitlement(
     session: AsyncSession = Depends(get_db_session),
 ) -> VoidEntitlement:
     entitlement, _ = await entitlement_service.upsert(
-        session, auth.organization_id, body
+        session, auth.organization.id, body
     )
     return entitlement
 
@@ -63,4 +63,4 @@ async def get_entitlement(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> VoidEntitlement:
-    return await entitlement_service.get(session, auth.organization_id, id)
+    return await entitlement_service.get(session, auth.organization.id, id)

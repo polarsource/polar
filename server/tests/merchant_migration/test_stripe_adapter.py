@@ -503,6 +503,7 @@ def _stripe_coupon(
     duration_in_months: int | None = None,
     max_redemptions: int | None = None,
     times_redeemed: int = 0,
+    redeem_by: int | None = None,
     applies_to: dict[str, Any] | None = None,
 ) -> stripe_lib.Coupon:
     payload: dict[str, Any] = {
@@ -515,11 +516,41 @@ def _stripe_coupon(
         "duration_in_months": duration_in_months,
         "max_redemptions": max_redemptions,
         "times_redeemed": times_redeemed,
-        "redeem_by": None,
+        "redeem_by": redeem_by,
         "currency_options": None,
         "applies_to": applies_to,
     }
     return stripe_lib.Coupon.construct_from(payload, None)
+
+
+def _stripe_promotion_code(
+    *,
+    id: str = "promo_1",
+    code: str = "LAUNCH-10",
+    coupon: stripe_lib.Coupon | None = None,
+    max_redemptions: int | None = None,
+    times_redeemed: int = 0,
+    expires_at: int | None = None,
+    customer: str | None = None,
+    first_time_transaction: bool = False,
+    minimum_amount: int | None = None,
+) -> stripe_lib.PromotionCode:
+    return stripe_lib.PromotionCode.construct_from(
+        {
+            "id": id,
+            "code": code,
+            "max_redemptions": max_redemptions,
+            "times_redeemed": times_redeemed,
+            "expires_at": expires_at,
+            "customer": customer,
+            "promotion": {"coupon": coupon or _stripe_coupon()},
+            "restrictions": {
+                "first_time_transaction": first_time_transaction,
+                "minimum_amount": minimum_amount,
+            },
+        },
+        None,
+    )
 
 
 @pytest.mark.asyncio
@@ -585,6 +616,49 @@ class TestExtractCoupons:
             "starting_after": None,
         }
 
+    async def test_restricted_promotion_codes_are_not_staged(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(id="promo_customer", customer="cus_1"),
+                    _stripe_promotion_code(
+                        id="promo_first", first_time_transaction=True
+                    ),
+                    _stripe_promotion_code(id="promo_min", minimum_amount=1000),
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        assert page.records == []
+
+    async def test_promotion_code_caps_ends_at_with_expires_at(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        coupon=_stripe_coupon(redeem_by=2_000_000_000),
+                        expires_at=1_800_000_000,
+                    )
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.ends_at == datetime(2027, 1, 15, 8, 0, tzinfo=UTC)
+
     async def test_subscription_page_expands_and_maps_coupons(
         self, mocker: MockerFixture
     ) -> None:
@@ -611,6 +685,42 @@ class TestExtractCoupons:
         assert record.discount_started_at == datetime(
             2023, 11, 14, 22, 13, 20, tzinfo=UTC
         )
+        assert record.discount_starts == {
+            "coupon_1": datetime(2023, 11, 14, 22, 13, 20, tzinfo=UTC)
+        }
+
+    async def test_subscription_maps_each_coupon_start(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [
+            {
+                "id": "di_1",
+                "start": 1_700_000_000,
+                "source": {"coupon": {"id": "coupon_old"}},
+            },
+            {
+                "id": "di_2",
+                "start": 1_710_000_000,
+                "source": {"coupon": {"id": "coupon_kept"}},
+            },
+        ]
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalSubscription)
+        assert record.discount_source_ids == ["coupon_old", "coupon_kept"]
+        assert record.discount_started_at == datetime(
+            2023, 11, 14, 22, 13, 20, tzinfo=UTC
+        )
+        assert record.discount_starts["coupon_kept"] == datetime(
+            2024, 3, 9, 16, 0, tzinfo=UTC
+        )
 
     async def test_missing_coupon_scope_is_named(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -622,6 +732,7 @@ class TestExtractCoupons:
             await adapter.extract_page({"phase": "coupons"})
 
         assert exc.value.label == "Coupons"
+        assert exc.value.status_code == 400
 
 
 @pytest.mark.asyncio

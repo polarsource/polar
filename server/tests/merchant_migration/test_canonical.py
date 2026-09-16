@@ -13,6 +13,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
+    discount_started_at_for,
     polar_discount_amounts,
     polar_discount_code,
     serialize,
@@ -160,6 +161,37 @@ class TestDeserialize:
         assert isinstance(result, CanonicalSubscription)
         assert result.has_discount is True
         assert result.discount_source_ids == []
+
+    def test_discount_starts_round_trip(self) -> None:
+        started = datetime(2024, 3, 9, 16, 0, tzinfo=UTC)
+        subscription = canonical_subscription(
+            has_discount=True,
+            discount_source_ids=["coupon_old", "coupon_kept"],
+            discount_started_at=datetime(2023, 11, 14, 22, 13, 20, tzinfo=UTC),
+            discount_starts={"coupon_kept": started},
+        )
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
+
+        assert isinstance(result, CanonicalSubscription)
+        assert result.discount_starts["coupon_kept"] == started
+        assert discount_started_at_for(result, "coupon_kept") == started
+        assert discount_started_at_for(result, "coupon_old") == datetime(
+            2023, 11, 14, 22, 13, 20, tzinfo=UTC
+        )
+
+    def test_discount_started_at_falls_back_to_first_coupon(self) -> None:
+        started = datetime(2023, 11, 14, 22, 13, 20, tzinfo=UTC)
+        subscription = canonical_subscription(
+            has_discount=True,
+            discount_source_ids=["coupon_1"],
+            discount_started_at=started,
+        )
+
+        assert discount_started_at_for(subscription, "coupon_1") == started
+        assert discount_started_at_for(subscription, "coupon_other") is None
 
 
 class TestPolarDiscountHelpers:

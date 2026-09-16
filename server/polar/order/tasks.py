@@ -4,9 +4,11 @@ from datetime import datetime
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
+from polar.models import Order, Product
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.payment import PaymentTrigger
 from polar.payment_method.repository import PaymentMethodRepository
@@ -237,6 +239,24 @@ async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.send_subscription_renewal_notification(session, order)
+
+
+@actor(actor_name="order.admin_notification", priority=TaskPriority.LOW)
+async def order_admin_notification(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id,
+            options=repository.get_eager_options(
+                product_load=joinedload(Order.product).options(
+                    selectinload(Product.product_medias)
+                )
+            ),
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.send_admin_notification(session, order.organization, order)
 
 
 async def _run_order_invoice(order_id: uuid.UUID, force: bool = False) -> None:

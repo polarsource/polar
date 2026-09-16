@@ -162,7 +162,7 @@ module "production" {
     postgres_read_database = "polar_cpit_p9lf"
     allowed_hosts          = "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins           = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
-    custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    custom_domains         = [{ name = "api.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
@@ -339,15 +339,6 @@ resource "cloudflare_dns_record" "api" {
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
   proxied = true
-  ttl     = 1
-}
-
-resource "cloudflare_dns_record" "api_alt" {
-  zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "api-alt.polar.sh"
-  type    = "CNAME"
-  content = replace(module.production.api_service_url, "https://", "")
-  proxied = false
   ttl     = 1
 }
 

@@ -607,7 +607,7 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
-    def test_two_prices_in_one_currency_skip_the_product(self) -> None:
+    def test_two_prices_in_one_currency_import_the_first(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1",
@@ -620,9 +620,14 @@ class TestClassifyRecords:
 
         items = classify_records(records, PrecheckEntity.products, "usd")
 
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "multiple_prices_same_currency"
-        assert items[0].reason_level == PrecheckReasonLevel.action_required
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code is None
+
+        prices = classify_records(records, PrecheckEntity.prices, "usd")
+        by_id = {item.source_id: item for item in prices}
+        assert by_id["price_old"].status == PrecheckRecordStatus.importable
+        assert by_id["price_new"].status == PrecheckRecordStatus.skipped
+        assert by_id["price_new"].reason_code == "multiple_prices_same_currency"
 
     def test_one_price_per_currency_imports(self) -> None:
         records: list[CanonicalRecord] = [
@@ -995,6 +1000,27 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].product_name == "Pro"
 
+    def test_subscription_on_archived_same_currency_price_imports(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_live", amount=1000),
+                    build_price(source_id="price_archived", amount=500),
+                ],
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(
+                build_subscription(source_id="sub_1"),
+                price_source_id="price_archived",
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].product_name == "Pro"
+
     def test_subscription_uses_currency_option_on_shared_price_id(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
@@ -1083,6 +1109,19 @@ class TestPlanProductImports:
 
         assert plan.importable is True
         assert plan.importable_prices == {("price_ok", "usd")}
+
+    def test_keeps_the_first_price_when_two_share_a_currency(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_live", amount=1000),
+                build_price(source_id="price_archived", amount=500),
+            ]
+        )
+
+        plan = plan_product_imports([product], "usd")[product.source_id]
+
+        assert plan.importable is True
+        assert plan.importable_prices == {("price_live", "usd")}
 
     def test_product_with_no_importable_price_is_skipped(self) -> None:
         product = build_product(

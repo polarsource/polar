@@ -205,6 +205,7 @@ class TestUpsert:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        product: Product,
     ) -> None:
         migration = await _create_migration(save_fixture, organization)
         repository = MerchantMigrationRecordRepository.from_session(session)
@@ -243,7 +244,10 @@ class TestUpsert:
         )
         await repository.update(
             imported,
-            update_dict={"status": MerchantMigrationRecordStatus.imported},
+            update_dict={
+                "status": MerchantMigrationRecordStatus.imported,
+                "target_id": product.id,
+            },
         )
 
         reused = await repository.upsert(
@@ -258,6 +262,11 @@ class TestUpsert:
             "price_live",
             "price_archived",
         }
+        resolved = await repository.get_imported_product_dependency(
+            organization.id, "price_archived"
+        )
+        assert resolved is not None
+        assert resolved.id == reused.id
 
     async def test_replaces_prices_when_repointing_a_pending_product(
         self,

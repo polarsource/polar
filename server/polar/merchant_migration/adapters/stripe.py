@@ -23,6 +23,7 @@ from ..canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    canonical_price_key,
 )
 from .base import ExtractionPage
 
@@ -244,9 +245,9 @@ class StripeAdapter:
         if existing is None:
             grouped[product.source_id] = product
             return
-        seen = {(price.source_id, price.currency) for price in existing.prices}
+        seen = {canonical_price_key(price) for price in existing.prices}
         for price in product.prices:
-            key = (price.source_id, price.currency)
+            key = canonical_price_key(price)
             if key not in seen:
                 existing.prices.append(price)
                 seen.add(key)

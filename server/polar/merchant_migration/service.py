@@ -1651,7 +1651,9 @@ class MerchantMigrationService:
         """Stage each record as it streams past, so we persist the catalog in
         the same single pass the precheck reads (extraction stays incremental)."""
         async for record in records:
-            await record_repository.upsert(migration, organization, record)
+            await record_repository.upsert(
+                migration, organization, record, merge_product_prices=True
+            )
             yield record
 
     async def _build_adapter(

@@ -64,7 +64,6 @@ PRODUCT_DROP_CODES = {
     "one_time_product",
     "unsupported_recurring_interval",
     "product_name_too_short",
-    "multiple_prices_same_currency",
     "missing_default_currency_price",
 }
 PRICE_DROP_CODES = {
@@ -87,7 +86,6 @@ ACTION_REQUIRED_CODES = {
     "duplicate_customer_email",
     "product_name_too_short",
     "missing_default_currency_price",
-    "multiple_prices_same_currency",
     "subscription_has_discount",
     "send_invoice_collection",
 }
@@ -96,6 +94,10 @@ _DUPLICATE_PRODUCT_NAME_REASON = (
 )
 _EXISTING_PRODUCT_NAME_REASON = (
     "A Polar product already uses this name. Importing adds a second one."
+)
+_EXTRA_SAME_CURRENCY_PRICE_REASON = (
+    "Polar allows one price per currency, so this extra price isn't created. "
+    "Subscriptions on it still import onto the remaining price."
 )
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another source customer uses this email, and a Polar customer can only carry "
@@ -340,8 +342,9 @@ class PrecheckEngine:
                     code="multiple_prices_same_currency",
                     message=(
                         f"Product '{product.name}' has {count} prices in "
-                        f"{currency.upper()}; Polar allows one per currency, so it "
-                        "and its subscriptions won't be imported."
+                        f"{currency.upper()}; Polar allows one per currency, so "
+                        f"only the first {currency.upper()} price is created. "
+                        "Subscriptions on the others still import."
                     ),
                     source_id=product.source_id,
                 )
@@ -801,17 +804,24 @@ def _price_items(
     products: Sequence[CanonicalProduct],
     default_currency: str,
 ) -> list[MerchantMigrationRecordItem]:
+    plans = plan_product_imports(products, default_currency)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
-        # A price under a product that won't import can't import either.
-        product_skip = _drop_reason(
-            precheck_engine._check_product(product, default_currency),
-            PRODUCT_DROP_CODES,
-        )
+        plan = plans[product.source_id]
         for price in product.prices:
-            skip = product_skip or _drop_reason(
+            skip = _drop_reason(
                 precheck_engine._check_price(product, price), PRICE_DROP_CODES
             )
+            if skip is None and plan.skip is not None:
+                skip = plan.skip
+            if (
+                skip is None
+                and canonical_price_key(price) not in plan.importable_prices
+            ):
+                skip = Reason(
+                    "multiple_prices_same_currency",
+                    _EXTRA_SAME_CURRENCY_PRICE_REASON,
+                )
             subtitle = (
                 "No amount"
                 if price.amount is None
@@ -959,6 +969,36 @@ def _product_for_subscription(
     return product_by_price_id.get(subscription.price_source_id)
 
 
+def _subscription_price_is_importable(
+    subscription: CanonicalSubscription,
+    importable_prices: set[PriceKey],
+    product_plans: dict[str, ProductImportPlan],
+    product_by_price: dict[PriceKey, CanonicalProduct],
+    product_by_price_id: dict[str, CanonicalProduct],
+) -> bool:
+    """True when Polar can take this subscription's price, including a
+    grandfathered Stripe price that shares currency with the one Polar creates."""
+    key = subscription_price_key(subscription)
+    if key is not None and key in importable_prices:
+        return True
+    product = _product_for_subscription(
+        subscription, product_by_price, product_by_price_id
+    )
+    if product is None:
+        return False
+    plan = product_plans.get(product.source_id)
+    if plan is None or plan.skip is not None:
+        return False
+    currency = subscription.currency.lower() if subscription.currency else None
+    if currency is None:
+        return False
+    return any(
+        canonical_price_key(price) in plan.importable_prices
+        and price.currency.lower() == currency
+        for price in product.prices
+    )
+
+
 def _subscription_product_skip_reason(
     subscription: CanonicalSubscription,
     products: Sequence[CanonicalProduct],
@@ -1084,7 +1124,8 @@ def plan_product_imports(
     no price in the organization's default currency) or when none of its prices
     can be imported (a product with no price is unsellable). Otherwise it imports
     with the prices that pass. Sharing a name with another product is fine: Polar
-    doesn't require unique names.
+    doesn't require unique names. Extra source prices in a currency Polar already
+    has stay on the snapshot so subscriptions can resolve them, but are not created.
     """
     plans: dict[str, ProductImportPlan] = {}
     for product in products:
@@ -1095,14 +1136,7 @@ def plan_product_imports(
         if skip is not None:
             plans[product.source_id] = ProductImportPlan(skip, set())
             continue
-        prices = {
-            canonical_price_key(price)
-            for price in product.prices
-            if _drop_reason(
-                precheck_engine._check_price(product, price), PRICE_DROP_CODES
-            )
-            is None
-        }
+        prices = _polar_importable_prices(product)
         if not prices:
             plans[product.source_id] = ProductImportPlan(
                 Reason("no_importable_price", _NO_IMPORTABLE_PRICE_REASON), set()
@@ -1110,6 +1144,24 @@ def plan_product_imports(
         else:
             plans[product.source_id] = ProductImportPlan(None, prices)
     return plans
+
+
+def _polar_importable_prices(product: CanonicalProduct) -> set[PriceKey]:
+    """Prices Polar will create: the first importable price per currency."""
+    selected: set[PriceKey] = set()
+    seen_currencies: set[str] = set()
+    for price in product.prices:
+        if (
+            _drop_reason(precheck_engine._check_price(product, price), PRICE_DROP_CODES)
+            is not None
+        ):
+            continue
+        currency = price.currency.lower()
+        if currency in seen_currencies:
+            continue
+        seen_currencies.add(currency)
+        selected.add(canonical_price_key(price))
+    return selected
 
 
 def plan_customer_imports(
@@ -1155,9 +1207,12 @@ def plan_subscription_imports(
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         skip = subscription_import_reason(subscription)
-        if (
-            skip is None
-            and subscription_price_key(subscription) not in importable_prices
+        if skip is None and not _subscription_price_is_importable(
+            subscription,
+            importable_prices,
+            product_plans,
+            product_by_price,
+            product_by_price_id,
         ):
             skip = _subscription_product_skip_reason(
                 subscription,

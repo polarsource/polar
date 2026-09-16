@@ -1,0 +1,98 @@
+name: "Emergency merge test failure alert"
+
+# Emergency merges (`/emergency`) skip the PR checks, so the test run on main
+# is the first one that code gets. When it fails, tell #incidents. Ordinary
+# merges came through the queue with passing checks and are left alone.
+#
+# An emergency merge is recognised by, in order: the `Emergency-Merge:` trailer
+# the emergency workflow puts in the merge commit, the `emergency-merge` label
+# it puts on the PR, and as a last resort the PR having been merged by the
+# emergency merge App.
+on:
+  workflow_run:
+    workflows: ["Server", "Client", "SDK", "Dev CLI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  alert:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack if the commit was an emergency merge
+        uses: actions/github-script@v9
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: C093CJXJXPT
+          EMERGENCY_MERGE_BOT: polar-merge-bot
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          COMMIT_MESSAGE: ${{ github.event.workflow_run.head_commit.message }}
+        with:
+          script: |
+            const sha = process.env.HEAD_SHA;
+            const hasTrailer = /^Emergency-Merge:/m.test(process.env.COMMIT_MESSAGE || '');
+            const isEmergencyBot = (login) =>
+              (login || '').replace(/^app\//, '').replace(/\[bot\]$/, '') === process.env.EMERGENCY_MERGE_BOT;
+
+            const { data: associated } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            const merged = associated.find((p) => p.merged_at);
+            if (!merged && !hasTrailer) {
+              core.info(`No merged PR for ${sha} — not an emergency merge`);
+              return;
+            }
+
+            let pr = null;
+            if (merged) {
+              const { data } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: merged.number,
+              });
+              pr = data;
+            }
+            const hasLabel = pr?.labels.some((label) => label.name === 'emergency-merge') ?? false;
+            const mergedByBot = isEmergencyBot(pr?.merged_by?.login);
+            if (!hasTrailer && !hasLabel && !mergedByBot) {
+              core.info(`${pr ? `#${pr.number}` : sha} was not an emergency merge`);
+              return;
+            }
+
+            const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
+            const subject = (process.env.COMMIT_MESSAGE || '').split('\n')[0];
+            const change = pr
+              ? `<${pr.html_url}|#${pr.number}: ${pr.title}> by ${pr.user?.login ?? 'unknown'}`
+              : `<${commitUrl}|${sha.slice(0, 7)}: ${subject}>`;
+            const text =
+              `:rotating_light: *Emergency merge broke \`main\`* — <${process.env.RUN_URL}|${process.env.WORKFLOW_NAME}> failed\n` +
+              `${change} was merged with \`/emergency\`, so it skipped the PR checks.\n` +
+              `Check it now and revert unless you're sure.`;
+
+            const response = await fetch('https://slack.com/api/chat.postMessage', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+              },
+              body: JSON.stringify({
+                channel: process.env.SLACK_CHANNEL,
+                text: `${process.env.WORKFLOW_NAME} failed on main after an emergency merge`,
+                blocks: [{ type: 'section', text: { type: 'mrkdwn', text } }],
+              }),
+            });
+
+            const result = await response.json();
+            if (!result.ok) {
+              core.setFailed(`Slack notification failed: ${result.error}`);
+            }

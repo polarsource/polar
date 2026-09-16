@@ -24,7 +24,6 @@ locals {
 
   backend_secrets = {
     stripe_publishable_key         = var.stripe_publishable_key
-    current_jwk_kid                = var.backend_current_jwk_kid
     discord_bot_token              = var.backend_discord_bot_token
     discord_client_id              = var.backend_discord_client_id
     discord_client_secret          = var.backend_discord_client_secret

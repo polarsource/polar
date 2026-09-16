@@ -60,7 +60,6 @@ variable "backend_config" {
 variable "backend_secrets" {
   type = object({
     stripe_publishable_key         = string
-    current_jwk_kid                = string
     discord_bot_token              = string
     discord_client_id              = string
     discord_client_secret          = string

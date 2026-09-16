@@ -77,18 +77,6 @@ resource "tfe_variable" "pydantic_ai_gateway_api_key_test" {
   }
 }
 
-resource "tfe_variable" "backend_current_jwk_kid_test" {
-  key             = "backend_current_jwk_kid"
-  category        = "terraform"
-  description     = "Current JWK KID for test"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "backend_discord_bot_token_test" {
   key             = "backend_discord_bot_token"
   category        = "terraform"

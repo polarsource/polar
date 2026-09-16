@@ -48,12 +48,6 @@ variable "pydantic_ai_gateway_api_key_production" {
 }
 
 # Backend - Production
-variable "backend_current_jwk_kid_production" {
-  description = "Current JWK KID for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_discord_bot_token_production" {
   description = "Discord Bot Token for production"
   type        = string

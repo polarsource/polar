@@ -115,7 +115,6 @@ variable "environment_groups" {
       POLAR_INVOICES_ADDITIONAL_INFO             = string
       POLAR_INVOICES_VAT_NUMBERS                 = string
       POLAR_STRIPE_PUBLISHABLE_KEY               = string
-      POLAR_CURRENT_JWK_KID                      = string
       POLAR_DISCORD_BOT_TOKEN                    = string
       POLAR_DISCORD_CLIENT_ID                    = string
       POLAR_DISCORD_CLIENT_SECRET                = string

@@ -14,6 +14,7 @@ Write a design document **before** the code pull request if any of this is true:
 - Polar will store or process a set of new data (personal data, money information, or secrets).
 - Considerable changes on authentication or authorization.
 - We add a new architectural change (new database, workers, etc.)
+- A new third-party tool will see merchant or customer data.
 
 **Do not** write a new design document for:
 - New API endpoints that expose the same data and uses the same auth rules as other ones. A pull request is enough.
@@ -22,7 +23,9 @@ Write a design document **before** the code pull request if any of this is true:
 
 ## When we review security
 
-We run security reviews when a changes touches any of the thing mentioned above, we are not expected to run them on a fixed schedule.
+We run security reviews when a change touches any of the things mentioned above. We do not run them on a fixed schedule.
+
+Filling in **Security considerations** in the design document is that review.
 
 ## How to add a design document
 

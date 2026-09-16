@@ -166,9 +166,9 @@ Treat **Accepted** ADRs as binding:
 
 - **Handbook**: https://handbook.polar.sh/engineering/
 - **Design docs**: `handbook/engineering/design-documents/` — write one only when
-  Polar stores or processes new data, changes login or permissions, or adds a
-  new system (database, workers, and so on). Not every new API endpoint.
-  Copy `template.mdx`.
+  Polar stores or processes new data, changes login or permissions, adds a
+  new system, or adds a third-party tool that can see Polar data. Not every
+  new API endpoint. Copy `template.mdx`.
   https://handbook.polar.sh/engineering/design-documents/
 - **API guidelines**: https://handbook.polar.sh/engineering/rest-api-guidelines
 - **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally.

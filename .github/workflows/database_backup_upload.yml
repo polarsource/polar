@@ -2,8 +2,12 @@ name: Upload database backup to S3
 
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 12 * * *"
   workflow_dispatch:
+    inputs:
+      date:
+        description: Export date to upload (YYYY-MM-DD), defaults to today
+        required: false
 
 permissions:
   id-token: write
@@ -25,24 +29,31 @@ jobs:
           RENDER_DATABASE_ID: ${{ secrets.RENDER_DATABASE_ID }}
         run: |
           mkdir -p backups
-
-          if ! DOWNLOAD_URL=$(curl -s -X GET "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
-            -H "Authorization: Bearer $RENDER_API_KEY" \
-            -H "Content-Type: application/json" | jq -r '.[0].url'); then
-            echo "Error: Failed to fetch database export list" >&2
+          BACKUP_DATE="${{ inputs.date }}"
+          [[ -n "$BACKUP_DATE" ]] || BACKUP_DATE=$(date -u +%Y-%m-%d)
+          if [[ ! "$BACKUP_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Error: Invalid BACKUP_DATE '$BACKUP_DATE', expected YYYY-MM-DD" >&2
             exit 1
           fi
+          echo "BACKUP_DATE=$BACKUP_DATE" >> "$GITHUB_ENV"
 
-          if [[ "$DOWNLOAD_URL" == "null" || -z "$DOWNLOAD_URL" ]]; then
-            echo "Error: No valid export URL found" >&2
+          DOWNLOAD_URL=$(curl -fsS "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            | jq -r --arg d "$BACKUP_DATE" '[.[] | select(.createdAt | startswith($d))][0].url // empty')
+
+          if [[ -z "$DOWNLOAD_URL" ]]; then
+            echo "Error: No export for $BACKUP_DATE found" >&2
             exit 1
           fi
 
           echo "Downloading database backup..."
-          if ! curl -s -o "backups/$(date +%Y%m%d)_backup.tar.gz" "$DOWNLOAD_URL"; then
-            echo "Error: Failed to download backup" >&2
-            exit 1
-          fi
+          for attempt in $(seq 1 5); do
+            curl -fsS -C - -o "backups/${BACKUP_DATE//-/}_backup.tar.gz" "$DOWNLOAD_URL" && break
+            echo "Download attempt $attempt failed, resuming in 30 seconds..." >&2
+            sleep 30
+            [[ "$attempt" -eq 5 ]] && exit 1
+          done
 
           echo "Download completed successfully"
 
@@ -55,7 +66,7 @@ jobs:
           if [ "$BACKUP_COUNT" -gt 0 ]; then
             echo "Uploading $BACKUP_COUNT backup file(s) to S3..."
 
-            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/$(date +%Y%m%d)/" --checksum-algorithm SHA256 --no-progress; then
+            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/${BACKUP_DATE//-/}/" --checksum-algorithm SHA256 --no-progress; then
               echo "Error: Failed to upload backups to S3" >&2
               exit 1
             fi

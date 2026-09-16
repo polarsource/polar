@@ -22,6 +22,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from polar.config import settings
+from polar.kit.jwk import load_jwks
 
 ALGORITHM = "RS256"
 KMS_SIGNING_ALGORITHM = "RSASSA_PKCS1_V1_5_SHA_256"
@@ -114,7 +115,7 @@ def _kms_signer(key_id: str) -> KMSSigner:
 
 @functools.cache
 def _local_signer(kid: str) -> LocalSigner:
-    return LocalSigner(settings.JWKS, kid)
+    return LocalSigner(load_jwks(settings.LOCAL_JWKS), kid)
 
 
 def get_signer() -> Signer:
@@ -127,7 +128,7 @@ def get_signer() -> Signer:
                 "POLAR_AWS_JWKS_KMS_KEY_ID is required in this environment"
             )
         return _kms_signer(key_id)
-    return _local_signer(settings.CURRENT_JWK_KID)
+    return _local_signer(settings.LOCAL_JWK_KID)
 
 
 def get_published_signers() -> list[Signer]:

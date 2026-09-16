@@ -108,7 +108,6 @@ jobs:
         working-directory: ./server
         run: |
           uv sync --dev --frozen
-          uv run task generate_dev_jwks
 
       - name: 📚 Setup documentation
         working-directory: ./docs

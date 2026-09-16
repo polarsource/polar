@@ -96,7 +96,6 @@ jobs:
         working-directory: ./server
         run: |
           uv sync --frozen
-          uv run task generate_dev_jwks
 
       - name: Install client dependencies
         working-directory: ./clients

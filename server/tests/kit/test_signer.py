@@ -5,11 +5,11 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 from polar.config import Environment, settings
 from polar.kit import signer
-from polar.kit.signer import KMSSigner, LocalSigner
+from polar.kit.signer import KMSSigner
 
 
 def test_local_signature_verifies_against_the_published_key() -> None:
-    local = LocalSigner(settings.JWKS, settings.CURRENT_JWK_KID)
+    local = signer.get_signer()
     signing_input = b"header.claims"
 
     signature = local.sign(signing_input)
@@ -21,11 +21,11 @@ def test_local_signature_verifies_against_the_published_key() -> None:
 
 
 def test_local_signer_publishes_only_the_public_key() -> None:
-    local = LocalSigner(settings.JWKS, settings.CURRENT_JWK_KID)
+    local = signer.get_signer()
 
     published = local.public_jwk()
 
-    assert published["kid"] == settings.CURRENT_JWK_KID
+    assert published["kid"] == settings.LOCAL_JWK_KID
     assert {"kty", "n", "e"}.issubset(published)
     assert not {"d", "p", "q", "dp", "dq", "qi", "oth"} & set(published)
 

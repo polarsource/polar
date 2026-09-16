@@ -71,7 +71,6 @@ jobs:
         run: |
           touch /tmp/email-renderer
           uv sync --frozen
-          uv run task generate_dev_jwks
 
       - name: Install generator dependencies
         working-directory: ./sdk/generator

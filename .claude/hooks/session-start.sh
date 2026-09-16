@@ -89,11 +89,8 @@ DOCKER_LAUNCHED=0
 step "docker daemon" launch_dockerd && DOCKER_LAUNCHED=1
 
 # Must precede compose, which interpolates the Postgres credentials and MinIO bucket
-# names from server/.env and silently starts dead containers without them. Skipped when
-# already present: setup-environment mints a fresh JWKS every run, invalidating the
-# tokens a running API has issued.
+# names from server/.env and silently starts dead containers without them.
 if [ ! -f "$ROOT/server/.env" ] ||
-  [ ! -f "$ROOT/server/.jwks.json" ] ||
   [ ! -f "$ROOT/clients/apps/web/.env.local" ]; then
   step "env files" "$ROOT/dev/setup-environment"
 fi
@@ -117,11 +114,6 @@ PNPM_PID=$!
 
 # --dev carries pytest, mypy, ruff, fakeredis and xdist.
 step "uv sync" uv sync --dev --frozen --directory "$ROOT/server"
-
-# Import-blocking, and only missing here if the env files step failed partway.
-if [ ! -f "$ROOT/server/.jwks.json" ]; then
-  step "jwks" uv run --directory "$ROOT/server" task generate_dev_jwks
-fi
 
 # The other import-blocking artifact. polar.config only checks that the path exists, so
 # fall back to the stub test_sdk.yaml already relies on rather than leaving it unimportable.

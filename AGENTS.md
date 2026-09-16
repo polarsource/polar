@@ -88,12 +88,13 @@ pnpm install && pnpm dev
 **Fresh worktrees** (`.claude/worktrees/`) don't carry `.env` or built artifacts. Before running
 tests in a new worktree, from the repo root:
 ```bash
-./dev/setup-environment       # generates server/.env, server/.jwks.json, clients/apps/web/.env.local
+./dev/setup-environment       # generates server/.env and clients/apps/web/.env.local
 uv run --directory server task emails   # builds server/emails/bin/react-email-pkg
 ```
-Without these, pytest fails at config load with `JWKS` and `EMAIL_RENDERER_BINARY_PATH` errors.
+Without the email renderer, pytest fails at config load with an
+`EMAIL_RENDERER_BINARY_PATH` error.
 
-Only two artifacts actually block config import: `server/.jwks.json` and *any existing file* at
+One artifact actually blocks config import: *any existing file* at
 `EMAIL_RENDERER_BINARY_PATH` — the validator only checks that the path exists. When you need to
 collect tests, lint or typecheck without waiting on the ~60s email build, do what
 `test_sdk.yaml` does: `touch /tmp/email-renderer` and set
@@ -250,9 +251,8 @@ VM; don't remove it. The `ubuntu` user is in the `docker` group. Elsewhere the f
 exist and the daemon may run as root on `overlayfs`; check `docker info` rather than assuming.
 
 **Backend config artifacts.** Config import fails without the email renderer binary
-(`server/emails/bin/react-email-pkg`, built by `dev up` / `uv run task emails`) and
-`server/.jwks.json` (from `./dev/setup-environment` / `dev up`). Missing → pydantic
-`EMAIL_RENDERER_BINARY_PATH` / `JWKS` errors. `server/.env` is **not** among them for tests:
+(`server/emails/bin/react-email-pkg`, built by `dev up` / `uv run task emails`) → pydantic
+`EMAIL_RENDERER_BINARY_PATH` error. `server/.env` is **not** among them for tests:
 under `POLAR_ENV=testing` (which `tests/conftest.py` forces) `polar/config.py` loads the
 committed `server/.env.testing`. `server/.env` is still required before `docker compose up -d`,
 which interpolates it. `dev status` reports "Worker unknown (check manually)" by design —

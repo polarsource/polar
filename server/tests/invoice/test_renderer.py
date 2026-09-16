@@ -14,7 +14,6 @@ class TestRendererEnvironment:
     ) -> None:
         server_directory = Path(__file__).resolve().parents[2]
         monkeypatch.setenv("POLAR_ENV", "testing")
-        monkeypatch.setenv("POLAR_JWKS", str(server_directory / ".jwks.json"))
         monkeypatch.setenv("POLAR_EMAIL_RENDERER_BINARY_PATH", sys.executable)
         monkeypatch.delenv("POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME", raising=False)
         monkeypatch.setenv("PYTHONPATH", str(server_directory))

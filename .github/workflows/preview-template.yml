@@ -58,7 +58,6 @@ jobs:
         run: |
           set -euo pipefail
           uv run task emails
-          uv run python -m polar.kit.jwk polar_preview > .jwks.json
 
       - name: Migrate template database
         working-directory: ./server
@@ -84,6 +83,5 @@ jobs:
           )"
           export POLAR_POSTGRES_DATABASE="$TEMPLATE_DATABASE"
           export POLAR_ENV=development
-          export POLAR_CURRENT_JWK_KID=polar_preview
 
           uv run alembic upgrade head

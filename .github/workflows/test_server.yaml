@@ -361,7 +361,6 @@ jobs:
         working-directory: ./server
         run: |
           uv sync --dev --frozen
-          uv run task generate_dev_jwks
 
       - name: 🐦 Install Tinybird CLI
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH

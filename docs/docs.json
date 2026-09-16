@@ -536,7 +536,8 @@
                           "webhook subscription.revoked",
                           "webhook subscription.past_due",
                           "webhook subscription.paused",
-                          "webhook subscription.resumed"
+                          "webhook subscription.resumed",
+                          "webhook subscription.migrated"
                         ]
                       },
                       {
@@ -944,7 +945,8 @@
                           "webhook subscription.revoked",
                           "webhook subscription.past_due",
                           "webhook subscription.paused",
-                          "webhook subscription.resumed"
+                          "webhook subscription.resumed",
+                          "webhook subscription.migrated"
                         ]
                       },
                       {
@@ -1838,6 +1840,10 @@
       "destination": "/api-reference/current/subscription_updated"
     },
     {
+      "source": "/api-reference/webhooks/subscription.migrated",
+      "destination": "/api-reference/current/subscription_migrated"
+    },
+    {
       "source": "/api-reference/benefits/:path*",
       "destination": "/api-reference/current"
     },
@@ -2450,6 +2456,10 @@
       "destination": "/api-reference/2026-04/subscription_resumed"
     },
     {
+      "source": "/api-reference/2026-04/subscriptionmigrated",
+      "destination": "/api-reference/2026-04/subscription_migrated"
+    },
+    {
       "source": "/api-reference/2026-04/refundcreated",
       "destination": "/api-reference/2026-04/refund_created"
     },
@@ -2612,6 +2622,10 @@
     {
       "source": "/api-reference/2026-10/subscriptionresumed",
       "destination": "/api-reference/2026-10/subscription_resumed"
+    },
+    {
+      "source": "/api-reference/2026-10/subscriptionmigrated",
+      "destination": "/api-reference/2026-10/subscription_migrated"
     },
     {
       "source": "/api-reference/2026-10/refundcreated",

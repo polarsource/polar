@@ -170,6 +170,16 @@ Treat **Accepted** ADRs as binding:
 - **API guidelines**: https://handbook.polar.sh/engineering/rest-api-guidelines
 - **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally.
 
+Mintlify API reference is generated from committed `docs/openapi/{version}.openapi.json`. After
+changing public endpoints or webhooks, from `sdk/generator/`:
+
+```bash
+just openapi        # server → sdk/generator/openapi/
+just docs-openapi   # public spec + SDK samples → docs/openapi/
+```
+
+Add new operations and webhooks to the matching groups in `docs/docs.json`; that file is not generated.
+
 ## Key Integrations
 
 - **Stripe**: payments and subscriptions. Needs API keys + webhook secret in `server/.env`.

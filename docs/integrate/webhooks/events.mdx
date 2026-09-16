@@ -136,8 +136,8 @@ In order to properly implement logic for handling subscriptions, you should look
     Use this event if you want to handle cancellations, un-cancellations, etc. The
     updated event is a catch-all event for `subscription.active`,
     `subscription.canceled`, `subscription.uncanceled`, `subscription.cycled`,
-    `subscription.past_due`, `subscription.revoked`, `subscription.paused` and
-    `subscription.resumed`.
+    `subscription.past_due`, `subscription.revoked`, `subscription.paused`,
+    `subscription.resumed` and `subscription.migrated`.
   </Card>
 
   <Card
@@ -175,6 +175,15 @@ In order to properly implement logic for handling subscriptions, you should look
     horizontal
   >
     Fired when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
+  </Card>
+
+  <Card
+    title="subscription.migrated"
+    icon="link"
+    href="/api-reference/current/subscription_migrated"
+    horizontal
+  >
+    Fired when Polar takes over billing of a subscription migrated from another provider. Includes `provider` and `provider_subscription_id` so you can correlate the two. Does not send `subscription.created` or `subscription.active`.
   </Card>
 </Columns>
 
@@ -261,6 +270,15 @@ When a paused subscription resumes, either immediately when you resume it or aut
 3. `order.created`
 
 The subscription data reflects the new period through `current_period_start` and `current_period_end`, and the order represents the immediate charge for the new cycle.
+
+#### Migration Sequences
+
+When Polar takes over billing of a subscription imported from another provider, these events are sent at cutover:
+
+1. `subscription.updated`
+2. `subscription.migrated`
+
+`subscription.migrated` carries `provider` and `provider_subscription_id` so you can match the Polar subscription to the source. Polar does not send `subscription.created` or `subscription.active` for this path.
 
 ### Orders
 

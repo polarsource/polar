@@ -1,0 +1,73 @@
+locals {
+  retention_days = 30
+}
+
+resource "aws_s3_bucket" "primary" {
+  bucket = "polar-sh-backups"
+}
+
+resource "aws_s3_bucket_versioning" "primary" {
+  bucket = aws_s3_bucket.primary.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "primary" {
+  bucket = aws_s3_bucket_versioning.primary.id
+
+  rule {
+    default_retention {
+      mode = "COMPLIANCE"
+      days = local.retention_days
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "primary" {
+  bucket = aws_s3_bucket.primary.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "primary" {
+  bucket = aws_s3_bucket_versioning.primary.id
+
+  rule {
+    id     = "${local.retention_days}-days-expiration-rule"
+    status = "Enabled"
+    filter {}
+    expiration {
+      days = local.retention_days
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+}
+
+resource "aws_iam_policy" "uploader" {
+  name = "polar-sh-backups"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "VisualEditor0"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectAttributes",
+          "s3:GetObjectVersion",
+          "s3:GetObjectVersionAttributes",
+          "s3:PutObject",
+        ]
+        Resource = "${aws_s3_bucket.primary.arn}/*"
+      },
+    ]
+  })
+}

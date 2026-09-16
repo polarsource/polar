@@ -313,29 +313,6 @@ resource "aws_iam_policy" "production_e2e_reports_upload" {
   })
 }
 
-resource "aws_iam_policy" "production_polar_sh_backups" {
-  provider = aws.us_east_2
-
-  name = "polar-sh-backups"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "VisualEditor0"
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:GetObjectAttributes",
-          "s3:GetObjectVersion",
-          "s3:GetObjectVersionAttributes",
-          "s3:PutObject",
-        ]
-        Resource = "${aws_s3_bucket.production_backups.arn}/*"
-      },
-    ]
-  })
-}
-
 module "production_github_oidc_backup" {
   source = "../modules/github_oidc"
   providers = {
@@ -350,7 +327,7 @@ module "production_github_oidc_backup" {
     "pull_request",
   ]
   policy_arns = {
-    backups          = aws_iam_policy.production_polar_sh_backups.arn
+    backups          = module.production_backups.uploader_policy_arn
     lambda_artifacts = aws_iam_policy.production_lambda_artifacts_upload.arn
     e2e_reports      = aws_iam_policy.production_e2e_reports_upload.arn
   }
@@ -365,65 +342,6 @@ module "production_athena_spans" {
 
   environment      = "production"
   logs_bucket_name = "polar-production-logs"
-}
-
-resource "aws_s3_bucket" "production_backups" {
-  provider = aws.us_east_2
-
-  bucket = "polar-sh-backups"
-}
-
-resource "aws_s3_bucket_versioning" "production_backups" {
-  provider = aws.us_east_2
-
-  bucket = aws_s3_bucket.production_backups.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_object_lock_configuration" "production_backups" {
-  provider = aws.us_east_2
-
-  bucket = aws_s3_bucket_versioning.production_backups.id
-
-  rule {
-    default_retention {
-      mode = "COMPLIANCE"
-      days = 30
-    }
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "production_backups" {
-  provider = aws.us_east_2
-
-  bucket = aws_s3_bucket.production_backups.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "production_backups" {
-  provider = aws.us_east_2
-
-  bucket = aws_s3_bucket_versioning.production_backups.id
-
-  rule {
-    id     = "30-days-expiration-rule"
-    status = "Enabled"
-    filter {}
-    expiration {
-      days = 30
-    }
-    noncurrent_version_expiration {
-      noncurrent_days = 1
-    }
-  }
 }
 
 import {
@@ -677,11 +595,6 @@ import {
 }
 
 import {
-  to = aws_iam_policy.production_polar_sh_backups
-  id = "arn:aws:iam::975049931254:policy/polar-sh-backups"
-}
-
-import {
   to = module.production_github_oidc_backup.aws_iam_openid_connect_provider.github
   id = "arn:aws:iam::975049931254:oidc-provider/token.actions.githubusercontent.com"
 }
@@ -729,24 +642,4 @@ import {
 import {
   to = module.production_athena_spans.aws_athena_workgroup.spans
   id = "polar-production-spans"
-}
-
-import {
-  to = aws_s3_bucket.production_backups
-  id = "polar-sh-backups"
-}
-
-import {
-  to = aws_s3_bucket_lifecycle_configuration.production_backups
-  id = "polar-sh-backups"
-}
-
-import {
-  to = aws_s3_bucket_server_side_encryption_configuration.production_backups
-  id = "polar-sh-backups"
-}
-
-import {
-  to = aws_s3_bucket_versioning.production_backups
-  id = "polar-sh-backups"
 }

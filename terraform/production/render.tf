@@ -15,7 +15,7 @@ resource "render_registry_credential" "ghcr" {
 # =============================================================================
 
 locals {
-  private_backoffice_hostname = "backoffice-new.polar.sh"
+  private_backoffice_hostname = "backoffice.polar.sh"
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = render_postgres.db.id
@@ -160,9 +160,9 @@ module "production" {
   api_service_config = {
     postgres_database      = "polar_cpit_p9lf"
     postgres_read_database = "polar_cpit_p9lf"
-    allowed_hosts          = jsonencode(["polar.sh", "backoffice.polar.sh", local.private_backoffice_hostname])
+    allowed_hosts          = jsonencode(["polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
-    custom_domains         = [{ name = "api.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    custom_domains         = [{ name = "api.polar.sh" }, { name = "buy.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
@@ -351,13 +351,20 @@ resource "cloudflare_dns_record" "buy" {
   ttl     = 1
 }
 
+moved {
+  from = cloudflare_dns_record.backoffice
+  to   = cloudflare_dns_record.backoffice[0]
+}
+
 resource "cloudflare_dns_record" "backoffice" {
+  count = var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "backoffice.polar.sh"
-  type    = "CNAME"
-  content = replace(module.production.api_service_url, "https://", "")
-  proxied = true
-  ttl     = 1
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
 }
 
 resource "cloudflare_dns_record" "worker" {
@@ -367,17 +374,6 @@ resource "cloudflare_dns_record" "worker" {
   content = replace(module.production.worker_urls["worker"], "https://", "")
   proxied = false
   ttl     = 1
-}
-
-resource "cloudflare_dns_record" "private_backoffice" {
-  count = var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
-
-  zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = local.private_backoffice_hostname
-  type    = "A"
-  content = var.private_backoffice_tailscale_ip
-  proxied = false
-  ttl     = 300
 }
 
 output "private_backoffice_service_id" {

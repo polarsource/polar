@@ -26217,6 +26217,49 @@
         }
       }
     },
+    "subscription.migrated": {
+      "post": {
+        "summary": "subscription_migrated",
+        "description": "Sent when Polar takes over billing of a subscription migrated from another provider.\n\nThis fires at cutover, once the subscription is live on Polar. `provider`\nand `provider_subscription_id` identify the subscription on the billing\nprovider so you can correlate the two.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointsubscription_migrated_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionMigratedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "metadata": {
+            "title": "subscription.migrated",
+            "sidebarTitle": "subscription.migrated"
+          }
+        }
+      }
+    },
     "refund.created": {
       "post": {
         "summary": "refund_created",
@@ -87624,6 +87667,177 @@
         ],
         "title": "SubscriptionLocked"
       },
+      "SubscriptionMigratedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "subscription.migrated",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SubscriptionMigratedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "SubscriptionMigratedEvent",
+        "description": "An event created by Polar when a subscription is migrated to Polar."
+      },
+      "SubscriptionMigratedMetadata": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "provider_subscription_id": {
+            "type": "string",
+            "title": "Provider Subscription Id"
+          },
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id",
+          "provider",
+          "provider_subscription_id",
+          "product_id"
+        ],
+        "title": "SubscriptionMigratedMetadata"
+      },
       "SubscriptionMeter": {
         "properties": {
           "created_at": {
@@ -90815,6 +91029,9 @@
             "$ref": "#/components/schemas/SubscriptionResumedEvent"
           },
           {
+            "$ref": "#/components/schemas/SubscriptionMigratedEvent"
+          },
+          {
             "$ref": "#/components/schemas/SubscriptionUncanceledEvent"
           },
           {
@@ -90902,6 +91119,7 @@
             "subscription.canceled": "#/components/schemas/SubscriptionCanceledEvent",
             "subscription.created": "#/components/schemas/SubscriptionCreatedEvent",
             "subscription.cycled": "#/components/schemas/SubscriptionCycledEvent",
+            "subscription.migrated": "#/components/schemas/SubscriptionMigratedEvent",
             "subscription.past_due": "#/components/schemas/SubscriptionPastDueEvent",
             "subscription.paused": "#/components/schemas/SubscriptionPausedEvent",
             "subscription.product_updated": "#/components/schemas/SubscriptionProductUpdatedEvent",
@@ -95401,6 +95619,7 @@
           "subscription.past_due",
           "subscription.paused",
           "subscription.resumed",
+          "subscription.migrated",
           "refund.created",
           "refund.updated",
           "product.created",
@@ -96002,6 +96221,60 @@
         ],
         "title": "WebhookSubscriptionCycledPayload",
         "description": "Sent when a subscription enters a new billing period.\n\nThe payload carries the new `current_period_start` and `current_period_end`.\nIt fires when the period rolls over, before the renewal order exists and\nregardless of whether the renewal payment succeeds \u2014 listen to `order.paid`\nif you need the payment.\n\nA trial converting to a paid subscription starts a new period, so it fires\nthere too. Read `status` to tell the two apart.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookSubscriptionMigratedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "subscription.migrated",
+            "title": "Type",
+            "examples": [
+              "subscription.migrated"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "api_version": {
+            "type": "string",
+            "title": "Api Version"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Subscription"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "The billing provider the subscription was migrated from.",
+            "examples": [
+              "stripe"
+            ]
+          },
+          "provider_subscription_id": {
+            "type": "string",
+            "title": "Provider Subscription Id",
+            "description": "The identifier of the subscription on the billing provider.",
+            "examples": [
+              "sub_1Sabc2Def3Ghi"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "api_version",
+          "data",
+          "provider",
+          "provider_subscription_id"
+        ],
+        "title": "WebhookSubscriptionMigratedPayload",
+        "description": "Sent when Polar takes over billing of a subscription migrated from another provider.\n\nThis fires at cutover, once the subscription is live on Polar. `provider`\nand `provider_subscription_id` identify the subscription on the billing\nprovider so you can correlate the two.\n\n**Discord & Slack support:** Basic"
       },
       "WebhookSubscriptionPastDuePayload": {
         "properties": {

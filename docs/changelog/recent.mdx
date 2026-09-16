@@ -4,6 +4,12 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2026-09-16">
+## `subscription.migrated` webhook
+
+Polar now sends [`subscription.migrated`](/api-reference/current/subscription_migrated) when it takes over billing of a subscription imported from another provider. The payload includes `provider` and `provider_subscription_id` so you can correlate the Polar subscription with the source. Cutover also sends `subscription.updated`; it does not send `subscription.created` or `subscription.active`.
+</Update>
+
 <Update label="2026-09-01">
 ## New webhook IP addresses
 

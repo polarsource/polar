@@ -3,7 +3,17 @@ from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    and_,
+    delete,
+    exists,
+    func,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -632,15 +642,15 @@ class MerchantMigrationRecordRepository(
     async def adopt_settled(self, *, organization_id: UUID, migration_id: UUID) -> None:
         """Attach imported/skipped/failed rows from earlier runs to this
         migration so a new catalog read shows them as already settled."""
-        statement = self.get_base_statement().where(
-            MerchantMigrationRecord.organization_id == organization_id,
-            MerchantMigrationRecord.merchant_migration_id != migration_id,
-            MerchantMigrationRecord.status != MerchantMigrationRecordStatus.pending,
-        )
-        for record in await self.get_all(statement):
-            await self.update(
-                record, update_dict={"merchant_migration_id": migration_id}
+        await self.session.execute(
+            update(MerchantMigrationRecord)
+            .where(
+                MerchantMigrationRecord.organization_id == organization_id,
+                MerchantMigrationRecord.merchant_migration_id != migration_id,
+                MerchantMigrationRecord.status != MerchantMigrationRecordStatus.pending,
             )
+            .values(merchant_migration_id=migration_id)
+        )
 
     async def upsert(
         self,

@@ -224,48 +224,6 @@ class TestUpsert:
         assert reused.status == MerchantMigrationRecordStatus.imported
         assert reused.canonical["email"] == "a@example.com"
 
-    async def test_adopt_settled_moves_imported_rows_onto_the_current_migration(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        first_migration = await _create_migration(save_fixture, organization)
-        second_migration = await _create_migration(save_fixture, organization)
-        repository = MerchantMigrationRecordRepository.from_session(session)
-        customer = CanonicalCustomer(
-            source_id="cus_1", email="a@example.com", name="A", country="US"
-        )
-        pending = CanonicalCustomer(
-            source_id="cus_2", email="b@example.com", name="B", country="US"
-        )
-        imported = await repository.upsert(first_migration, organization, customer)
-        await repository.update(
-            imported,
-            update_dict={"status": MerchantMigrationRecordStatus.imported},
-        )
-        await repository.upsert(first_migration, organization, pending)
-
-        await repository.adopt_settled(
-            organization_id=organization.id,
-            migration_id=second_migration.id,
-        )
-
-        adopted = await repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.customer,
-            source_id="cus_1",
-        )
-        still_pending = await repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.customer,
-            source_id="cus_2",
-        )
-        assert adopted is not None
-        assert adopted.merchant_migration_id == second_migration.id
-        assert still_pending is not None
-        assert still_pending.merchant_migration_id == first_migration.id
-
     async def test_replaces_prices_when_repointing_a_pending_product(
         self,
         session: AsyncSession,
@@ -323,6 +281,51 @@ class TestUpsert:
         assert [price["source_id"] for price in reused.canonical["prices"]] == [
             "price_current"
         ]
+
+
+@pytest.mark.asyncio
+class TestAdoptSettled:
+    async def test_moves_imported_rows_onto_the_current_migration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        first_migration = await _create_migration(save_fixture, organization)
+        second_migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        customer = CanonicalCustomer(
+            source_id="cus_1", email="a@example.com", name="A", country="US"
+        )
+        pending = CanonicalCustomer(
+            source_id="cus_2", email="b@example.com", name="B", country="US"
+        )
+        imported = await repository.upsert(first_migration, organization, customer)
+        await repository.update(
+            imported,
+            update_dict={"status": MerchantMigrationRecordStatus.imported},
+        )
+        await repository.upsert(first_migration, organization, pending)
+
+        await repository.adopt_settled(
+            organization_id=organization.id,
+            migration_id=second_migration.id,
+        )
+
+        adopted = await repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_1",
+        )
+        still_pending = await repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_2",
+        )
+        assert adopted is not None
+        assert adopted.merchant_migration_id == second_migration.id
+        assert still_pending is not None
+        assert still_pending.merchant_migration_id == first_migration.id
 
 
 @pytest.mark.asyncio

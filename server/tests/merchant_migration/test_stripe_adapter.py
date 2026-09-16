@@ -41,6 +41,9 @@ def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
     client.v1.subscriptions.cancel_async = mocker.AsyncMock(
         side_effect=stripe_lib.InvalidRequestError("no such subscription", "id")
     )
+    client.v1.accounts.retrieve_current_async = mocker.AsyncMock(
+        return_value=mocker.MagicMock(id="acct_123", country="US")
+    )
 
 
 @pytest.mark.asyncio
@@ -68,6 +71,27 @@ class TestVerifyScopes:
         )
 
         assert await adapter.verify_scopes() == ["Subscriptions (write)"]
+
+    async def test_missing_account_read_scope_reported(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _all_scopes_present(mocker, client)
+        client.v1.accounts.retrieve_current_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError("missing account scope")
+        )
+
+        assert await adapter.verify_scopes() == ["All accounts"]
+
+    async def test_account_probe_caches_for_get_account_id(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _all_scopes_present(mocker, client)
+
+        assert await adapter.verify_scopes() == []
+        assert await adapter.get_account_id() == "acct_123"
+        client.v1.accounts.retrieve_current_async.assert_awaited_once()
 
     async def test_invalid_key_raises(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

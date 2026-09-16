@@ -12,6 +12,7 @@ const REQUIRED_PERMISSIONS: { resource: string; access: 'Read' | 'Write' }[] = [
   { resource: 'Prices', access: 'Read' },
   { resource: 'Subscriptions', access: 'Write' },
   { resource: 'Payment methods', access: 'Read' },
+  { resource: 'All accounts', access: 'Read' },
 ]
 
 export function ConnectGuide() {
@@ -72,6 +73,11 @@ export function ConnectGuide() {
           Subscriptions needs Write so that at cutover Polar can cancel each
           subscription on Stripe and recreate it on Polar &mdash; moving the
           billing cycle across without charging the customer twice.
+        </Text>
+        <Text variant="caption" color="muted">
+          All accounts Read lets Polar identify the Stripe account and reject
+          Connect platforms before the migration is saved. It is under Connect
+          in Stripe&rsquo;s key form.
         </Text>
       </Box>
 

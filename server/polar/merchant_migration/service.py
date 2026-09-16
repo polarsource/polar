@@ -448,7 +448,7 @@ class MerchantMigrationService:
         )
         repository = MerchantMigrationRepository.from_session(session)
         if stripe_account_id is None:
-            raise SourceVerificationUnavailable()
+            raise MissingStripeScopes(["All accounts"])
         await repository.lock_stripe_account(stripe_account_id)
         if await repository.stripe_account_id_exists(
             stripe_account_id,

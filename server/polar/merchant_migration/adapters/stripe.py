@@ -76,7 +76,9 @@ class StripeAdapter:
         other failure — an invalid key (``AuthenticationError``), a rate limit, a
         network blip — propagates, so we fail closed rather than accept a key we
         couldn't fully check. The probes cover exactly what ``extract()`` reads
-        plus the ``subscription_write`` needed to stop billing at cutover.
+        plus the ``subscription_write`` needed to stop billing at cutover and
+        All accounts Read so we can store the Stripe account id and check
+        country / Connect blockers.
         """
         v1 = self._client.v1
         probes: list[tuple[str, Callable[[], Awaitable[Any]]]] = [
@@ -90,6 +92,7 @@ class StripeAdapter:
                     params={"limit": 1, "type": "card"}
                 ),
             ),
+            ("All accounts", self._probe_account_read),
             ("Subscriptions (write)", self._probe_subscription_write),
         ]
         results = await asyncio.gather(
@@ -116,11 +119,15 @@ class StripeAdapter:
         except stripe_lib.InvalidRequestError:
             pass
 
+    async def _probe_account_read(self) -> None:
+        # Direct retrieve so PermissionError isn't swallowed by _current_account.
+        self._account = await self._client.v1.accounts.retrieve_current_async()
+
     async def _current_account(self) -> stripe_lib.Account | None:
-        # Best-effort: a restricted key may lack account read scope. Only a
-        # successful read is cached — creating a migration needs both the account
-        # id and its country, but a rate-limited read must not stick and cost the
-        # id we would otherwise have stored.
+        # Create probes this via verify_scopes. Extract still best-effort for
+        # keys stored before All accounts Read was required. Only a successful
+        # read is cached — a rate-limited read must not stick and cost the id
+        # we would otherwise have stored.
         if self._account is None:
             try:
                 self._account = await self._client.v1.accounts.retrieve_current_async()

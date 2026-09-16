@@ -179,7 +179,7 @@ Three concepts:
   /scenarios/{id}/promote` deploys the resolved configuration as an ordinary
   draft; `POST /scenarios/{id}/preview` reprices the base version's usage under
   it. Scenarios stay pinned to their base when a newer version activates, and
-  persist until deleted (see ADR-0011).
+  persist until deleted.
 
 `POST /deploys` reconciles reducers, meters, entitlements and products together.
 Both planning and applying require `void:write`. `dry_run: true` validates and

@@ -29,10 +29,10 @@ router = APIRouter(
 
 @router.get("", response_model=list[Customer], operation_id="customers:list")
 async def list_customers(
-    auth_subject: VoidCustomerRead,
+    auth: VoidCustomerRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[Customer]:
-    return await customer_service.list(session, auth_subject)
+    return await customer_service.list(session, auth)
 
 
 @router.post(
@@ -47,10 +47,10 @@ async def list_customers(
 )
 async def create_customer(
     body: CustomerCreate,
-    auth_subject: VoidCustomerWrite,
+    auth: VoidCustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
-    return await customer_service.create(session, auth_subject, body)
+    return await customer_service.create(session, auth, body)
 
 
 @router.get(
@@ -61,10 +61,10 @@ async def create_customer(
 )
 async def get_customer(
     external_id: str,
-    auth_subject: VoidCustomerRead,
+    auth: VoidCustomerRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Customer:
-    return await customer_service.get(session, auth_subject, external_id)
+    return await customer_service.get(session, auth, external_id)
 
 
 @router.get(
@@ -75,7 +75,7 @@ async def get_customer(
 )
 async def state(
     external_id: str,
-    auth_subject: VoidCustomerRead,
+    auth: VoidCustomerRead,
     tinybird: TinybirdClient,
     since: AwareDatetime | None = None,
     version_id: str | None = None,
@@ -84,8 +84,8 @@ async def state(
     return await customer_state(
         session,
         tinybird,
-        auth_subject,
+        auth,
         external_id,
         since,
-        await selected_version(session, auth_subject.subject.id, version_id),
+        await selected_version(session, auth.organization_id, version_id),
     )

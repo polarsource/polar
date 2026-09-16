@@ -24,9 +24,9 @@ router = APIRouter(prefix="/reducers", tags=["reducers"], include_in_schema=Fals
 
 @router.get("", response_model=list[Reducer], operation_id="reducers:list")
 async def list_reducers(
-    auth_subject: VoidRead, session: AsyncReadSession = Depends(get_db_read_session)
+    auth: VoidRead, session: AsyncReadSession = Depends(get_db_read_session)
 ) -> Sequence[VoidReducer]:
-    return await reducer_service.list(session, auth_subject.subject.id)
+    return await reducer_service.list(session, auth.organization_id)
 
 
 @router.post(
@@ -41,10 +41,10 @@ async def list_reducers(
 )
 async def create_reducer(
     body: ReducerCreate,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> VoidReducer:
-    return await reducer_service.create(session, auth_subject.subject.id, body)
+    return await reducer_service.create(session, auth.organization_id, body)
 
 
 @router.get(
@@ -55,10 +55,10 @@ async def create_reducer(
 )
 async def get_reducer(
     id: UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> VoidReducer:
-    return await reducer_service.get(session, auth_subject.subject.id, id)
+    return await reducer_service.get(session, auth.organization_id, id)
 
 
 @router.get(
@@ -72,10 +72,10 @@ async def get_reducer(
 )
 async def records(
     id: UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     external_identity_id: str | None = None,
 ) -> Sequence[ReducerRecord]:
     return await reducer_service.records(
-        session, auth_subject.subject.id, id, external_identity_id
+        session, auth.organization_id, id, external_identity_id
     )

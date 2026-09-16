@@ -1,64 +1,144 @@
-from typing import Annotated
+"""Void authentication: an organization token acts as its organization; a user
+names the organization with the ``Polar-Organization-ID`` header."""
 
-from fastapi import Depends
+from dataclasses import dataclass
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import Depends, Header
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_organization,
+)
 from polar.customer.auth import CustomerRead, CustomerWrite
-from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.models import Organization, OrganizationAccessToken
+from polar.exceptions import (
+    PolarRequestValidationError,
+    ResourceNotFound,
+    Unauthorized,
+)
+from polar.models import Organization, OrganizationAccessToken, User
+from polar.postgres import AsyncSession, get_db_session
+
+ORGANIZATION_HEADER = "Polar-Organization-ID"
+
+OrganizationHeader = Annotated[
+    UUID | None,
+    Header(
+        alias=ORGANIZATION_HEADER,
+        description=(
+            "The organization to act on. Required for user credentials; "
+            "organization tokens always act on their own organization."
+        ),
+    ),
+]
 
 
-def _require_void_organization(
-    auth_subject: AuthSubject[Organization],
-) -> AuthSubject[Organization]:
-    if not isinstance(auth_subject.session, OrganizationAccessToken):
+@dataclass(frozen=True)
+class VoidAuth:
+    organization: Organization
+    auth_subject: AuthSubject[User | Organization]
+
+    @property
+    def organization_id(self) -> UUID:
+        return self.organization.id
+
+
+async def resolve(
+    session: AsyncSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization_id: UUID | None,
+    permission: OrganizationPermission | None = None,
+) -> VoidAuth:
+    if is_organization(auth_subject):
+        if not isinstance(auth_subject.session, OrganizationAccessToken):
+            raise Unauthorized()
+        if organization_id is not None and organization_id != auth_subject.subject.id:
+            raise ResourceNotFound()
+        organization = auth_subject.subject
+    elif is_user(auth_subject):
+        if organization_id is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "missing",
+                        "loc": ("header", ORGANIZATION_HEADER),
+                        "msg": (
+                            f"The {ORGANIZATION_HEADER} header is required "
+                            "with user credentials."
+                        ),
+                        "input": None,
+                    }
+                ]
+            )
+        accessible = await get_accessible_organization(
+            session, auth_subject, organization_id
+        )
+        if accessible is None:
+            raise ResourceNotFound()
+        if permission is not None:
+            await assert_organization_permission(
+                session, auth_subject, accessible.id, permission
+            )
+        organization = accessible
+    else:
         raise Unauthorized()
-    if not auth_subject.subject.is_void_enabled:
+
+    if not organization.is_void_enabled:
         raise ResourceNotFound()
-    return auth_subject
+    return VoidAuth(organization=organization, auth_subject=auth_subject)
 
 
 _VoidRead = Authenticator(
-    allowed_subjects={Organization},
+    allowed_subjects={User, Organization},
     required_scopes={Scope.void_read, Scope.void_write},
 )
 _VoidWrite = Authenticator(
-    allowed_subjects={Organization},
+    allowed_subjects={User, Organization},
     required_scopes={Scope.void_write},
 )
 
 
 async def _void_read(
-    auth_subject: Annotated[AuthSubject[Organization], Depends(_VoidRead)],
-) -> AuthSubject[Organization]:
-    return _require_void_organization(auth_subject)
+    auth_subject: Annotated[AuthSubject[User | Organization], Depends(_VoidRead)],
+    organization_id: OrganizationHeader = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> VoidAuth:
+    return await resolve(session, auth_subject, organization_id)
 
 
 async def _void_write(
-    auth_subject: Annotated[AuthSubject[Organization], Depends(_VoidWrite)],
-) -> AuthSubject[Organization]:
-    return _require_void_organization(auth_subject)
+    auth_subject: Annotated[AuthSubject[User | Organization], Depends(_VoidWrite)],
+    organization_id: OrganizationHeader = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> VoidAuth:
+    return await resolve(
+        session,
+        auth_subject,
+        organization_id,
+        OrganizationPermission.products_manage,
+    )
 
 
-VoidRead = Annotated[AuthSubject[Organization], Depends(_void_read)]
-VoidWrite = Annotated[AuthSubject[Organization], Depends(_void_write)]
+VoidRead = Annotated[VoidAuth, Depends(_void_read)]
+VoidWrite = Annotated[VoidAuth, Depends(_void_write)]
 
 
 async def _void_customer_read(
-    auth_subject: VoidRead,
-    _customer_auth_subject: CustomerRead,
-) -> AuthSubject[Organization]:
-    return auth_subject
+    auth: VoidRead, _customer_auth_subject: CustomerRead
+) -> VoidAuth:
+    return auth
 
 
 async def _void_customer_write(
-    auth_subject: VoidWrite,
-    _customer_auth_subject: CustomerWrite,
-) -> AuthSubject[Organization]:
-    return auth_subject
+    auth: VoidWrite, _customer_auth_subject: CustomerWrite
+) -> VoidAuth:
+    return auth
 
 
-VoidCustomerRead = Annotated[AuthSubject[Organization], Depends(_void_customer_read)]
-VoidCustomerWrite = Annotated[AuthSubject[Organization], Depends(_void_customer_write)]
+VoidCustomerRead = Annotated[VoidAuth, Depends(_void_customer_read)]
+VoidCustomerWrite = Annotated[VoidAuth, Depends(_void_customer_write)]

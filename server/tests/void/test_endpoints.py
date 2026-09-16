@@ -9,17 +9,33 @@ from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.kit.versioning import VERSION_HEADER, APIVersion
-from polar.models import OAuth2Token, Organization, OrganizationAccessToken
+from polar.models import (
+    OAuth2Token,
+    Organization,
+    OrganizationAccessToken,
+    PersonalAccessToken,
+    User,
+    UserOrganization,
+)
+from polar.models.user_organization import OrganizationRole
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
 from polar.oauth2.sub_type import SubType
 from polar.organization_access_token.service import TOKEN_PREFIX
+from polar.personal_access_token.service import TOKEN_PREFIX as PAT_PREFIX
 from polar.postgres import AsyncSession
 from polar.version import CURRENT_API_VERSION, VERSIONS
+from polar.void.auth import ORGANIZATION_HEADER
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 PATH = "/v1/void/organizations/current"
 TOKEN = f"{TOKEN_PREFIX}void_test"
+USER_TOKEN = f"{PAT_PREFIX}void_test"
+REDUCER_BODY = {
+    "slug": "count",
+    "filter": {"conjunction": "and", "clauses": []},
+    "aggregation": {"func": "count"},
+}
 
 
 pytestmark = pytest.mark.usefixtures("enable_void")
@@ -221,7 +237,6 @@ class TestCurrentOrganization:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.void_read}),
         AuthSubjectFixture(subject="customer", scopes={Scope.void_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.void_read}),
     )
@@ -257,3 +272,194 @@ class TestCurrentOrganization:
         )
 
         assert response.status_code == 401
+
+
+async def create_user_token(
+    save_fixture: SaveFixture,
+    user: User,
+    *,
+    scopes: set[Scope] | None = None,
+    token: str = USER_TOKEN,
+) -> PersonalAccessToken:
+    access_token = PersonalAccessToken(
+        user=user,
+        token=get_token_hash(token, secret=settings.SECRET),
+        scope=" ".join(
+            scope.value
+            for scope in (scopes if scopes is not None else {Scope.void_write})
+        ),
+        comment="Void test",
+        expires_at=None,
+    )
+    await save_fixture(access_token)
+    return access_token
+
+
+def user_headers(organization: Organization | None) -> dict[str, str]:
+    headers = {"Authorization": f"Bearer {USER_TOKEN}"}
+    if organization is not None:
+        headers[ORGANIZATION_HEADER] = str(organization.id)
+    return headers
+
+
+@pytest.mark.asyncio
+class TestUserCredentials:
+    @pytest.mark.parametrize("scope", [Scope.void_read, Scope.void_write])
+    async def test_member_selects_organization_with_header(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+        scope: Scope,
+    ) -> None:
+        await create_user_token(save_fixture, user, scopes={scope})
+
+        response = await void_client.get(PATH, headers=user_headers(organization))
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(organization.id)
+
+    async def test_header_is_required(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_user_token(save_fixture, user)
+
+        response = await void_client.get(PATH, headers=user_headers(None))
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["header", ORGANIZATION_HEADER]
+
+    async def test_non_member_organization_is_not_found(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization_second: Organization,
+    ) -> None:
+        organization_second.feature_settings = {
+            **organization_second.feature_settings,
+            "void_enabled": True,
+        }
+        await save_fixture(organization_second)
+        await create_user_token(save_fixture, user)
+
+        response = await void_client.get(
+            PATH, headers=user_headers(organization_second)
+        )
+
+        assert response.status_code == 404
+
+    async def test_organization_without_void_is_not_found(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "void_enabled": False,
+        }
+        await save_fixture(organization)
+        await create_user_token(save_fixture, user)
+
+        response = await void_client.get(PATH, headers=user_headers(organization))
+
+        assert response.status_code == 404
+
+    async def test_member_can_write(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await create_user_token(save_fixture, user)
+
+        response = await void_client.post(
+            "/v1/void/reducers", json=REDUCER_BODY, headers=user_headers(organization)
+        )
+
+        assert response.status_code == 201
+
+    async def test_read_scope_cannot_write(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await create_user_token(save_fixture, user, scopes={Scope.void_read})
+
+        response = await void_client.post(
+            "/v1/void/reducers", json=REDUCER_BODY, headers=user_headers(organization)
+        )
+
+        assert response.status_code == 403
+
+    async def test_finance_role_can_read_but_not_write(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        user_organization.role = OrganizationRole.finance
+        await save_fixture(user_organization)
+        await create_user_token(save_fixture, user)
+
+        read = await void_client.get(PATH, headers=user_headers(organization))
+        write = await void_client.post(
+            "/v1/void/reducers", json=REDUCER_BODY, headers=user_headers(organization)
+        )
+
+        assert read.status_code == 200
+        assert write.status_code == 403
+
+    async def test_organization_token_accepts_its_own_header(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_token(save_fixture, organization)
+
+        response = await void_client.get(
+            PATH,
+            headers={
+                "Authorization": f"Bearer {TOKEN}",
+                ORGANIZATION_HEADER: str(organization.id),
+            },
+        )
+
+        assert response.status_code == 200
+
+    async def test_organization_token_rejects_other_header(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await create_token(save_fixture, organization)
+
+        response = await void_client.get(
+            PATH,
+            headers={
+                "Authorization": f"Bearer {TOKEN}",
+                ORGANIZATION_HEADER: str(organization_second.id),
+            },
+        )
+
+        assert response.status_code == 404

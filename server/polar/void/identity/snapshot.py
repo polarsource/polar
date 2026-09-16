@@ -1,7 +1,6 @@
-from polar.auth.models import AuthSubject
 from polar.kit.utils import utc_now
-from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.void.auth import VoidAuth
 from polar.void.customer.repository import CustomerRepository
 from polar.void.customer.service import customer as customer_service
 from polar.void.meter.service import meter as meter_service
@@ -18,11 +17,11 @@ class IdentitySnapshotService:
         self,
         session: AsyncSession,
         tinybird: TinybirdApi,
-        auth_subject: AuthSubject[Organization],
+        auth: VoidAuth,
         external_id: str,
         version_id: str | None,
     ) -> IdentitySnapshot:
-        organization_id = auth_subject.subject.id
+        organization_id = auth.organization_id
         at = utc_now()
         identity = await identity_service.get(session, organization_id, external_id)
         root = await identity_service.root_of(session, identity)
@@ -31,9 +30,7 @@ class IdentitySnapshotService:
         ).get_active_by_identity_id(organization_id, root.id)
         customer = None
         if native is not None:
-            customer = await customer_service.get(
-                session, auth_subject, root.external_id
-            )
+            customer = await customer_service.get(session, auth, root.external_id)
         meters = meters_in_version(
             await meter_service.list(session, organization_id), version_id
         )

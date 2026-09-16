@@ -74,7 +74,9 @@ uv run python -m scripts.generate_void_token <organization-uuid-or-slug>
 
 The helper creates a token that expires after 24 hours and is limited to local
 development and testing. Login requires an organization access token with either
-`void:read` or `void:write`. The organization must also have its `void_enabled` feature flag set; enabling
+`void:read` or `void:write`. The API also accepts user credentials that name the
+organization with the `Polar-Organization-ID` header; the CLI does not use that
+path yet. The organization must also have its `void_enabled` feature flag set; enabling
 the route alone grants no access.
 
 From `clients/`, run:

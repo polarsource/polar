@@ -30,10 +30,10 @@ router = APIRouter(prefix="/metrics", tags=["metrics"], include_in_schema=False)
 )
 async def get_metrics(
     query: Annotated[MetricsQuery, Query()],
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Metrics:
-    return await metric_service.get(session, auth_subject.subject.id, query)
+    return await metric_service.get(session, auth.organization_id, query)
 
 
 @router.get(
@@ -44,8 +44,8 @@ async def get_metrics(
 )
 async def compare_versions(
     query: Annotated[CompareQuery, Query()],
-    auth_subject: VoidCustomerRead,
+    auth: VoidCustomerRead,
     tinybird: TinybirdClient,
     session: AsyncSession = Depends(get_snapshot_session),
 ) -> MetricComparison:
-    return await compare(session, tinybird, auth_subject, query)
+    return await compare(session, tinybird, auth, query)

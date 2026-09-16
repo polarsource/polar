@@ -16,11 +16,11 @@ router = APIRouter(prefix="/products", tags=["products"], include_in_schema=Fals
 
 @router.get("", response_model=list[Product], operation_id="products:list")
 async def list_products(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     version_id: str | None = None,
 ) -> Sequence[Product]:
-    products = await product_service.list(session, auth_subject.subject.id)
+    products = await product_service.list(session, auth.organization_id)
     return [
         to_schema(product)
         for product in products
@@ -36,7 +36,7 @@ async def list_products(
 )
 async def get_product(
     id: UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Product:
-    return to_schema(await product_service.get(session, auth_subject.subject.id, id))
+    return to_schema(await product_service.get(session, auth.organization_id, id))

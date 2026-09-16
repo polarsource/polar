@@ -36,7 +36,7 @@ router = APIRouter(
     "", operation_id="subscriptions:list", response_model=list[ProductSubscription]
 )
 async def list_subscriptions(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     external_identity_id: str | None = None,
     active: bool = False,
     session: AsyncSession = Depends(get_db_session),
@@ -46,7 +46,7 @@ async def list_subscriptions(
     now = utc_now()
     subscriptions = await subscription_service.list(
         session,
-        auth_subject.subject.id,
+        auth.organization_id,
         external_identity_id,
         active_at=now if active else None,
     )
@@ -61,13 +61,13 @@ async def list_subscriptions(
 )
 async def create(
     body: SubscriptionCreate,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     """Subscribe an identity to a product generation, or record a one-time
     purchase. Writes the row and the events derived from it together."""
     subscription = await subscription_service.create(
-        session, auth_subject.subject.id, body
+        session, auth.organization_id, body
     )
     return to_schema(subscription, utc_now())
 
@@ -76,14 +76,14 @@ async def create(
     "/rebuild", operation_id="subscriptions:rebuild", response_model=SubscriptionRebuild
 )
 async def rebuild(
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     dry_run: bool = False,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionRebuild:
     """Re-project the subscriptions table from the lifecycle events in the
     stream. `dry_run` only reports the differences: the consistency check."""
     return await subscription_service.rebuild(
-        session, auth_subject.subject.id, apply=not dry_run
+        session, auth.organization_id, apply=not dry_run
     )
 
 
@@ -92,11 +92,11 @@ async def rebuild(
 )
 async def get(
     id: uuid.UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     return to_schema(
-        await subscription_service.get(session, auth_subject.subject.id, id), utc_now()
+        await subscription_service.get(session, auth.organization_id, id), utc_now()
     )
 
 
@@ -108,11 +108,11 @@ async def get(
 async def cancel(
     id: uuid.UUID,
     body: SubscriptionCancel,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     subscription = await subscription_service.cancel(
-        session, auth_subject.subject.id, id, body.at_period_end
+        session, auth.organization_id, id, body.at_period_end
     )
     return to_schema(subscription, utc_now())
 
@@ -124,13 +124,11 @@ async def cancel(
 )
 async def revoke(
     id: uuid.UUID,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> ProductSubscription:
     """End access immediately."""
-    subscription = await subscription_service.revoke(
-        session, auth_subject.subject.id, id
-    )
+    subscription = await subscription_service.revoke(session, auth.organization_id, id)
     return to_schema(subscription, utc_now())
 
 
@@ -141,11 +139,11 @@ async def revoke(
 )
 async def cycles(
     id: uuid.UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     tinybird: TinybirdClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[SubscriptionCycle]:
     """Closed periods with the fixed amount and each meter's usage priced."""
     return await subscription_service.cycles(
-        session, tinybird, auth_subject.subject.id, id
+        session, tinybird, auth.organization_id, id
     )

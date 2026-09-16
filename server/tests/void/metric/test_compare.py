@@ -84,7 +84,7 @@ def test_compare_uses_baseline_subscriptions_and_candidate_prices(
         module.compare(
             session,
             Mock(spec=TinybirdApi),
-            scenario.auth_subject,
+            scenario.auth,
             query(),
         )
     )
@@ -113,7 +113,7 @@ def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
         module.compare(
             AsyncMock(),
             Mock(spec=TinybirdApi),
-            scenario.auth_subject,
+            scenario.auth,
             query(baseline="a" * 64, candidate="a" * 64),
         )
     )
@@ -135,7 +135,7 @@ def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
         module.compare(
             AsyncMock(),
             Mock(spec=TinybirdApi),
-            scenario.auth_subject,
+            scenario.auth,
             query(baseline="a" * 64),
         )
     )
@@ -150,7 +150,7 @@ def test_unknown_or_other_organization_version_is_rejected_before_history(
             module.compare(
                 AsyncMock(),
                 Mock(spec=TinybirdApi),
-                scenario.auth_subject,
+                scenario.auth,
                 query(),
             )
         )
@@ -174,7 +174,7 @@ def test_candidate_with_deleted_reducer_is_rejected(scenario: SimpleNamespace) -
             module.compare(
                 AsyncMock(),
                 Mock(spec=TinybirdApi),
-                scenario.auth_subject,
+                scenario.auth,
                 query(baseline="a" * 64, candidate="a" * 64),
             )
         )

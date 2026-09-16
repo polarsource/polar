@@ -26,12 +26,12 @@ router = APIRouter(prefix="/deploys", tags=["deploys"], include_in_schema=False)
 
 
 async def preview_client(
-    body: DeployCreate, auth_subject: VoidWrite
+    body: DeployCreate, auth: VoidWrite
 ) -> AsyncIterator[TinybirdApi | None]:
     if body.preview is None:
         yield None
     else:
-        await _CustomerRead(auth_subject)
+        await _CustomerRead(auth.auth_subject)
         for client in get_client():
             yield client
 
@@ -52,32 +52,32 @@ async def preview_client(
 )
 async def create(
     body: DeployCreate,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     tinybird: Annotated[TinybirdApi | None, Depends(preview_client)],
     session: AsyncSession = Depends(get_db_session),
 ) -> Deploy:
-    plan = await deploy_service.deploy(session, auth_subject.subject.id, body)
+    plan = await deploy_service.deploy(session, auth.organization_id, body)
     if body.preview is not None:
         assert tinybird is not None
         await preview_prices(
             session,
             tinybird,
-            auth_subject,
+            auth,
             body,
             plan,
-            await organization_service.active_version(session, auth_subject.subject.id),
+            await organization_service.active_version(session, auth.organization_id),
         )
     return plan
 
 
 @router.get("", response_model=list[Deploy], operation_id="deploys:list")
 async def list_deploys(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[Deploy]:
     return [
         deploy_service.to_schema(deployment)
-        for deployment in await deploy_service.list(session, auth_subject.subject.id)
+        for deployment in await deploy_service.list(session, auth.organization_id)
     ]
 
 
@@ -89,12 +89,12 @@ async def list_deploys(
     responses={404: {"model": ResourceNotFound.schema()}},
 )
 async def latest(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     version_id: str | None = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Deploy:
     deployment = await deploy_service.for_version(
-        session, auth_subject.subject.id, version_id
+        session, auth.organization_id, version_id
     )
     if deployment is None:
         raise ResourceNotFound(
@@ -111,11 +111,11 @@ async def latest(
 )
 async def get(
     id: UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Deploy:
     return deploy_service.to_schema(
-        await deploy_service.get(session, auth_subject.subject.id, id)
+        await deploy_service.get(session, auth.organization_id, id)
     )
 
 
@@ -132,7 +132,7 @@ async def get(
 )
 async def activate(
     id: UUID,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Deploy:
-    return await deploy_service.activate(session, auth_subject.subject.id, id)
+    return await deploy_service.activate(session, auth.organization_id, id)

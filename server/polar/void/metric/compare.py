@@ -6,11 +6,10 @@ from typing import Self
 
 from pydantic import BaseModel, Field, model_validator
 
-from polar.auth.models import AuthSubject
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.void.auth import VoidAuth
 from polar.void.customer.service import customer as customer_service
 from polar.void.deploy.preview import preview_prices
 from polar.void.deploy.schemas import (
@@ -66,10 +65,10 @@ class MetricComparison(BaseModel):
 async def compare(
     session: AsyncSession,
     tinybird: TinybirdApi,
-    auth_subject: AuthSubject[Organization],
+    auth: VoidAuth,
     query: CompareQuery,
 ) -> MetricComparison:
-    organization_id = auth_subject.subject.id
+    organization_id = auth.organization_id
     baseline_id, candidate_id = query.baseline, query.candidate
     meters = await meter_service.list(session, organization_id)
     baseline = meters_in_version(meters, baseline_id)
@@ -83,7 +82,7 @@ async def compare(
         for meter in candidate.values()
     ):
         raise ResourceNotFound("A candidate meter references a deleted reducer")
-    customers = await customer_service.list(session, auth_subject)
+    customers = await customer_service.list(session, auth)
     end = datetime.combine(query.end, time(), UTC)
     history: dict[tuple[uuid.UUID, str], list[MeterEvent]] = {}
     roots: set[str] = set()
@@ -174,7 +173,7 @@ async def compare(
     await preview_prices(
         session,
         tinybird,
-        auth_subject,
+        auth,
         request,
         preview_plan,
         baseline_id,

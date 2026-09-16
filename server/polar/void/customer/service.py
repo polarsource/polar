@@ -2,14 +2,15 @@ from collections.abc import Sequence
 
 from sqlalchemy.exc import IntegrityError
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.customer.schemas.customer import CustomerIndividualCreate, CustomerUpdate
 from polar.customer.service import customer as polar_customer_service
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
-from polar.models import Customer, Organization
+from polar.models import Customer
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.void.auth import VoidAuth
 from polar.void.identity.repository import IdentityRepository
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import DeletedIdentityConflict
@@ -29,31 +30,33 @@ class CustomerBindingConflict(PolarError):
 
 class CustomerService:
     async def list(
-        self, session: AsyncReadSession, auth_subject: AuthSubject[Organization]
+        self, session: AsyncReadSession, auth: VoidAuth
     ) -> Sequence[CustomerSchema]:
         await assert_organization_permission(
             session,
-            auth_subject,
-            auth_subject.subject.id,
+            auth.auth_subject,
+            auth.organization_id,
             OrganizationPermission.customers_read,
         )
         customers = await CustomerRepository.from_session(session).list(
-            auth_subject.subject.id
+            auth.organization_id
         )
         return [self._serialize(customer) for customer in customers]
 
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[Organization],
+        auth: VoidAuth,
         external_id: str,
     ) -> CustomerSchema:
         customer = await CustomerRepository.from_session(
             session
-        ).get_active_by_external_id(auth_subject.subject.id, external_id)
+        ).get_active_by_external_id(auth.organization_id, external_id)
         if customer is None:
             raise ResourceNotFound("No bound customer with this external ID.")
-        native = await polar_customer_service.get(session, auth_subject, customer.id)
+        native = await polar_customer_service.get(
+            session, auth.auth_subject, customer.id
+        )
         if native is None:
             raise ResourceNotFound("No bound customer with this external ID.")
         return self._serialize(customer)
@@ -61,21 +64,21 @@ class CustomerService:
     async def create(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
+        auth: VoidAuth,
         create_schema: CustomerCreate,
     ) -> CustomerSchema:
         await assert_organization_permission(
             session,
-            auth_subject,
-            auth_subject.subject.id,
+            auth.auth_subject,
+            auth.organization_id,
             OrganizationPermission.customers_manage,
         )
         await IdentityRepository.from_session(session).lock_organization(
-            auth_subject.subject.id
+            auth.organization_id
         )
         try:
             async with session.begin_nested():
-                return await self._create(session, auth_subject, create_schema)
+                return await self._create(session, auth, create_schema)
         except DeletedIdentityConflict as exc:
             raise CustomerBindingConflict(exc.message) from exc
         except PolarRequestValidationError as exc:
@@ -98,10 +101,10 @@ class CustomerService:
     async def _create(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
+        auth: VoidAuth,
         create_schema: CustomerCreate,
     ) -> CustomerSchema:
-        organization = auth_subject.subject
+        organization = auth.organization
         repository = CustomerRepository.from_session(session)
         root, _ = await identity_service.ensure(
             session,
@@ -120,11 +123,13 @@ class CustomerService:
             raise CustomerBindingConflict("This root identity already has an owner.")
 
         native = await polar_customer_service.get_external(
-            session, auth_subject, create_schema.external_id
+            session, auth.auth_subject, create_schema.external_id
         )
+        if native is not None and native.organization_id != organization.id:
+            native = None
         if create_schema.customer_id is not None:
             explicit = await polar_customer_service.get(
-                session, auth_subject, create_schema.customer_id
+                session, auth.auth_subject, create_schema.customer_id
             )
             if explicit is None:
                 raise ResourceNotFound("No Polar customer with this ID.")
@@ -166,9 +171,12 @@ class CustomerService:
                         "external_id": create_schema.external_id,
                         "email": create_schema.email,
                         "name": create_schema.name,
+                        "organization_id": (
+                            organization.id if is_user(auth.auth_subject) else None
+                        ),
                     }
                 ),
-                auth_subject,
+                auth.auth_subject,
             )
 
         native.root_identity = root

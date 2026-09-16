@@ -25,10 +25,10 @@ router = APIRouter(
 
 @router.get("", response_model=list[Entitlement], operation_id="entitlements:list")
 async def list_entitlements(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[VoidEntitlement]:
-    return await entitlement_service.list(session, auth_subject.subject.id)
+    return await entitlement_service.list(session, auth.organization_id)
 
 
 @router.post(
@@ -43,11 +43,11 @@ async def list_entitlements(
 )
 async def create_entitlement(
     body: EntitlementCreate,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> VoidEntitlement:
     entitlement, _ = await entitlement_service.upsert(
-        session, auth_subject.subject.id, body
+        session, auth.organization_id, body
     )
     return entitlement
 
@@ -60,7 +60,7 @@ async def create_entitlement(
 )
 async def get_entitlement(
     id: UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> VoidEntitlement:
-    return await entitlement_service.get(session, auth_subject.subject.id, id)
+    return await entitlement_service.get(session, auth.organization_id, id)

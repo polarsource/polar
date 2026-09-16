@@ -26,10 +26,10 @@ router = APIRouter(prefix="/meters", tags=["meters"], include_in_schema=False)
 
 @router.get("", response_model=list[Meter], operation_id="meters:list")
 async def list_meters(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[VoidMeter]:
-    return await meter_service.list(session, auth_subject.subject.id)
+    return await meter_service.list(session, auth.organization_id)
 
 
 @router.get(
@@ -40,10 +40,10 @@ async def list_meters(
 )
 async def get_meter(
     id: UUID,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> VoidMeter:
-    return await meter_service.get(session, auth_subject.subject.id, id)
+    return await meter_service.get(session, auth.organization_id, id)
 
 
 @router.get(
@@ -58,13 +58,13 @@ async def get_meter(
 async def balance(
     id: UUID,
     external_identity_id: str,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     tinybird: TinybirdClient,
     at: AwareDatetime | None = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> Balance:
     return await meter_service.balance(
-        session, tinybird, auth_subject.subject.id, id, external_identity_id, at
+        session, tinybird, auth.organization_id, id, external_identity_id, at
     )
 
 
@@ -81,10 +81,10 @@ async def check(
     id: UUID,
     external_identity_id: str,
     size: Annotated[float, Query(gt=0, allow_inf_nan=False)],
-    auth_subject: VoidRead,
+    auth: VoidRead,
     tinybird: TinybirdClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Check:
     return await meter_service.check(
-        session, tinybird, auth_subject.subject.id, id, external_identity_id, size
+        session, tinybird, auth.organization_id, id, external_identity_id, size
     )

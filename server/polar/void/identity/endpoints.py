@@ -42,12 +42,12 @@ router = APIRouter(prefix="/identities", tags=["identities"], include_in_schema=
     responses={404: {"model": ResourceNotFound.schema()}},
 )
 async def list_identities(
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     parent: str | None = Query(None, description="Only children of this identity"),
     root: bool = Query(False, description="Only identities with no parent"),
 ) -> Sequence[VoidBillingIdentity]:
-    return await identity_service.list(session, auth_subject.subject.id, parent, root)
+    return await identity_service.list(session, auth.organization_id, parent, root)
 
 
 @router.post(
@@ -66,10 +66,10 @@ async def list_identities(
 async def ensure_identity(
     body: IdentityCreate,
     response: Response,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> VoidBillingIdentity:
-    result, created = await identity_service.ensure(session, auth_subject.subject, body)
+    result, created = await identity_service.ensure(session, auth.organization, body)
     response.status_code = 201 if created else 200
     return result
 
@@ -85,10 +85,10 @@ async def ensure_identity(
 )
 async def get_identity(
     external_id: str,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> IdentityDetail:
-    result = await identity_service.get(session, auth_subject.subject.id, external_id)
+    result = await identity_service.get(session, auth.organization_id, external_id)
     chain = await identity_service.chain(session, result)
     children = await identity_service.children(session, result)
     return IdentityDetail.model_validate(
@@ -111,7 +111,7 @@ async def get_identity(
 )
 async def snapshot(
     external_id: str,
-    auth_subject: VoidCustomerRead,
+    auth: VoidCustomerRead,
     tinybird: TinybirdClient,
     version_id: str | None = None,
     session: AsyncSession = Depends(get_snapshot_session),
@@ -119,9 +119,9 @@ async def snapshot(
     return await snapshot_service.get(
         session,
         tinybird,
-        auth_subject,
+        auth,
         external_id,
-        await selected_version(session, auth_subject.subject.id, version_id),
+        await selected_version(session, auth.organization_id, version_id),
     )
 
 
@@ -136,12 +136,10 @@ async def snapshot(
 )
 async def entitlements(
     external_id: str,
-    auth_subject: VoidRead,
+    auth: VoidRead,
     session: AsyncSession = Depends(get_snapshot_session),
 ) -> IdentityEntitlements:
-    return await subscription_service.held(
-        session, auth_subject.subject.id, external_id
-    )
+    return await subscription_service.held(session, auth.organization_id, external_id)
 
 
 @router.put(
@@ -160,10 +158,10 @@ async def entitlements(
 async def assign_entitlements(
     external_id: str,
     body: EntitlementUpdate,
-    auth_subject: VoidWrite,
+    auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> EntitlementAssignmentRead:
     assignment = await entitlement_service.assign(
-        session, auth_subject.subject.id, external_id, body
+        session, auth.organization_id, external_id, body
     )
     return EntitlementAssignmentRead.model_validate(assignment.model_dump())

@@ -5,9 +5,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, time
 from decimal import Decimal
 
-from polar.auth.models import AuthSubject
-from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.void.auth import VoidAuth
 from polar.void.customer.service import customer as customer_service
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.balance import MeterEvent, State
@@ -48,7 +47,7 @@ def unsupported_history(events: list[MeterEvent]) -> str | None:
 async def preview_prices(
     session: AsyncSession,
     tinybird: TinybirdApi,
-    auth_subject: AuthSubject[Organization],
+    auth: VoidAuth,
     request: DeployCreate,
     plan: Deploy,
     baseline_version_id: str | None,
@@ -56,7 +55,7 @@ async def preview_prices(
     history: dict[tuple[uuid.UUID, str], list[MeterEvent]] | None = None,
 ) -> None:
     """Reprice the baseline version's usage at the proposed unit amounts."""
-    organization_id = auth_subject.subject.id
+    organization_id = auth.organization_id
     window = request.preview
     if window is None:
         return
@@ -122,7 +121,7 @@ async def preview_prices(
             )
             continue
         if customers is None:
-            customers = await customer_service.list(session, auth_subject)
+            customers = await customer_service.list(session, auth)
 
         for customer in customers:
             source = (

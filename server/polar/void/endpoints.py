@@ -33,9 +33,9 @@ router = APIRouter(
     responses={404: {"model": ResourceNotFound.schema()}},
 )
 async def current(
-    auth_subject: VoidRead, session: AsyncReadSession = Depends(get_db_read_session)
+    auth: VoidRead, session: AsyncReadSession = Depends(get_db_read_session)
 ) -> VoidOrganization:
-    return await organization_service.current(session, auth_subject.subject)
+    return await organization_service.current(session, auth.organization)
 
 
 router.include_router(identity_router)

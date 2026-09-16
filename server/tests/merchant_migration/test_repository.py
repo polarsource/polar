@@ -349,6 +349,55 @@ class TestUpsert:
         assert merged.canonical["code"] == "LAUNCH"
         assert merged.canonical["extra_codes"] == 1
 
+    async def test_coupon_reextract_refreshes_terms_and_keeps_promo_code(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = canonical_discount(code=None, name="Launch", max_redemptions=100)
+        await repository.upsert(migration, organization, coupon)
+        await repository.upsert(
+            migration,
+            organization,
+            replace(coupon, code="LAUNCH", max_redemptions=3),
+        )
+
+        merged = await repository.upsert(
+            migration,
+            organization,
+            canonical_discount(
+                code=None, name="Launch 20", basis_points=2000, max_redemptions=50
+            ),
+        )
+
+        assert merged.canonical["name"] == "Launch 20"
+        assert merged.canonical["basis_points"] == 2000
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["max_redemptions"] == 3
+
+    async def test_first_promo_caps_ends_at(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon_ends = datetime(2028, 1, 1, tzinfo=UTC)
+        promo_ends = datetime(2027, 1, 1, tzinfo=UTC)
+        coupon = canonical_discount(code=None, ends_at=coupon_ends)
+        await repository.upsert(migration, organization, coupon)
+
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="LAUNCH", ends_at=promo_ends)
+        )
+
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["ends_at"] == promo_ends.isoformat()
+
 
 @pytest.mark.asyncio
 class TestGetOpsStatement:

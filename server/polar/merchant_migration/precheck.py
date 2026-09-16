@@ -199,6 +199,7 @@ class PrecheckEngine:
 
         products: list[CanonicalProduct] = []
         products_by_name: dict[str, set[str]] = {}
+        discounts: list[CanonicalDiscount] = []
         email_counts: Counter[str] = Counter()
         customers_without_country = 0
         customers_without_email = 0
@@ -220,8 +221,14 @@ class PrecheckEngine:
             elif isinstance(record, CanonicalSubscription):
                 issues.extend(self._check_subscription(record))
             elif isinstance(record, CanonicalDiscount):
+                discounts.append(record)
                 issues.extend(self._check_discount(record))
 
+        issues.extend(
+            self._check_discount_product_eligibility(
+                discounts, products, default_currency
+            )
+        )
         issues.extend(self._check_default_currency(products, default_currency))
         issues.extend(self._check_duplicate_names(products_by_name))
         issues.extend(
@@ -657,6 +664,30 @@ class PrecheckEngine:
                 ),
                 source_id=source_id,
             )
+
+    def _check_discount_product_eligibility(
+        self,
+        discounts: Sequence[CanonicalDiscount],
+        products: Sequence[CanonicalProduct],
+        default_currency: str,
+    ) -> Iterable[PrecheckIssue]:
+        product_plans = plan_product_imports(products, default_currency)
+        importable_product_source_ids = {
+            product.product_source_id
+            for product in products
+            if product_plans[product.source_id].importable
+        }
+        for discount in discounts:
+            skip = _discount_products_not_importable(
+                discount, importable_product_source_ids
+            )
+            if skip is not None:
+                yield PrecheckIssue(
+                    level=PrecheckIssueLevel.warning,
+                    code=skip.code,
+                    message=skip.message,
+                    source_id=discount.source_id,
+                )
 
 
 precheck_engine = PrecheckEngine()
@@ -1280,23 +1311,29 @@ def plan_discount_imports(
         skip = _drop_reason(
             precheck_engine._check_discount(discount), DISCOUNT_DROP_CODES
         )
-        if (
-            skip is None
-            and discount.product_source_ids
-            and not any(
-                product_source_id in importable_product_source_ids
-                for product_source_id in discount.product_source_ids
-            )
-        ):
-            skip = Reason(
-                "discount_products_not_importable",
-                (
-                    f"Coupon '{discount.name}' only applies to products that "
-                    "won't be imported, so it stays on the source."
-                ),
+        if skip is None:
+            skip = _discount_products_not_importable(
+                discount, importable_product_source_ids
             )
         plans[discount.source_id] = skip
     return plans
+
+
+def _discount_products_not_importable(
+    discount: CanonicalDiscount, importable_product_source_ids: set[str]
+) -> Reason | None:
+    if discount.product_source_ids and not any(
+        product_source_id in importable_product_source_ids
+        for product_source_id in discount.product_source_ids
+    ):
+        return Reason(
+            "discount_products_not_importable",
+            (
+                f"Coupon '{discount.name}' only applies to products that "
+                "won't be imported, so it stays on the source."
+            ),
+        )
+    return None
 
 
 def kept_discount_source_id(

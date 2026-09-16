@@ -481,6 +481,23 @@ class TestPrecheckEngine:
             report, PrecheckIssueLevel.warning
         )
 
+    async def test_product_restricted_discount_warns_in_report(self) -> None:
+        report = await run(
+            [
+                build_product(
+                    product_source_id="prod_1",
+                    prices=[
+                        build_price(pricing_scheme=CanonicalPricingScheme.tiered),
+                    ],
+                ),
+                canonical_discount(product_source_ids=["prod_1"]),
+            ]
+        )
+
+        assert "discount_products_not_importable" in codes(
+            report, PrecheckIssueLevel.warning
+        )
+
 
 class TestClassifyRecords:
     def test_products_importable_and_skipped(self) -> None:

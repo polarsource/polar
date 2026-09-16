@@ -29,6 +29,7 @@ from ..canonical import (
     CanonicalSubscriptionStatus,
     polar_discount_code,
 )
+from ..errors import MerchantMigrationError
 from .base import ExtractionPage
 
 # Period data moved onto the subscription item in this version; read it per item.
@@ -38,10 +39,13 @@ PAGE_SIZE = 100
 _T = TypeVar("_T")
 
 
-class StripeMissingScope(Exception):
+class StripeMissingScope(MerchantMigrationError):
     def __init__(self, label: str) -> None:
         self.label = label
-        super().__init__(label)
+        super().__init__(
+            f"The Stripe API key is missing access to: {label}.",
+            400,
+        )
 
 
 SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
@@ -82,6 +86,7 @@ class MappedSubscriptionDiscounts:
     source_ids: list[str]
     started_at: datetime | None
     has_discount: bool
+    starts: dict[str, datetime]
 
 
 class StripeAdapter:
@@ -476,6 +481,7 @@ class StripeAdapter:
             has_discount=discounts.has_discount,
             discount_source_ids=discounts.source_ids,
             discount_started_at=discounts.started_at,
+            discount_starts=discounts.starts,
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
@@ -496,20 +502,25 @@ class StripeAdapter:
         """
         discounts = subscription.get("discounts") or []
         source_ids: list[str] = []
+        starts: dict[str, datetime] = {}
         started_at: datetime | None = None
         for discount in discounts:
             coupon_id = self._coupon_id_of_discount(discount)
             if coupon_id is None or coupon_id in source_ids:
                 continue
             source_ids.append(coupon_id)
+            start = self._to_datetime(
+                discount.get("start") if not isinstance(discount, str) else None
+            )
+            if start is not None:
+                starts[coupon_id] = start
             if started_at is None:
-                started_at = self._to_datetime(
-                    discount.get("start") if not isinstance(discount, str) else None
-                )
+                started_at = start
         return MappedSubscriptionDiscounts(
             source_ids=source_ids,
             started_at=started_at,
             has_discount=bool(discounts) or bool(source_ids),
+            starts=starts,
         )
 
     def _coupon_id_of_discount(self, discount: Any) -> str | None:
@@ -562,6 +573,8 @@ class StripeAdapter:
         coupon = promotion.coupon if promotion is not None else None
         if coupon is None or isinstance(coupon, str):
             return None
+        if self._promotion_code_is_restricted(promotion_code):
+            return None
         mapped = self._map_coupon(coupon)
         if mapped is None:
             return None
@@ -575,6 +588,22 @@ class StripeAdapter:
                     promotion_code.get("times_redeemed") or 0,
                 ),
             ),
+            ends_at=self._earlier(
+                mapped.ends_at,
+                self._to_datetime(promotion_code.get("expires_at")),
+            ),
+        )
+
+    def _promotion_code_is_restricted(
+        self, promotion_code: stripe_lib.PromotionCode
+    ) -> bool:
+        if promotion_code.get("customer"):
+            return True
+        restrictions = promotion_code.get("restrictions")
+        if restrictions is None:
+            return False
+        return bool(restrictions.get("first_time_transaction")) or (
+            restrictions.get("minimum_amount") is not None
         )
 
     def _coupon_amounts(self, coupon: stripe_lib.Coupon) -> dict[str, int]:
@@ -597,6 +626,13 @@ class StripeAdapter:
     @staticmethod
     def _capped_remaining(*caps: int | None) -> int | None:
         defined = [cap for cap in caps if cap is not None]
+        if not defined:
+            return None
+        return min(defined)
+
+    @staticmethod
+    def _earlier(*values: datetime | None) -> datetime | None:
+        defined = [value for value in values if value is not None]
         if not defined:
             return None
         return min(defined)

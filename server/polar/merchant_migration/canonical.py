@@ -122,9 +122,12 @@ class CanonicalSubscription:
     # Coupon ids on the source, first one Polar will keep. Empty means none, or
     # the discounts array couldn't be expanded.
     discount_source_ids: list[str] = field(default_factory=list)
-    # When the kept coupon was first applied, so repeating/once duration
-    # continues from that date instead of restarting at cutover.
+    # When the first coupon was applied. Prefer ``discount_starts`` for the
+    # coupon Polar actually keeps.
     discount_started_at: datetime | None = None
+    # Per-coupon apply times, so a later kept coupon doesn't inherit the first
+    # (discarded) coupon's start.
+    discount_starts: dict[str, datetime] = field(default_factory=dict)
     # The customer already asked to stop: the source won't renew it. Nothing left
     # for Polar to take over, so the cutover leaves it where it is.
     cancel_at_period_end: bool = False
@@ -223,6 +226,18 @@ def subscription_price_key_values(
 _AMOUNT = TypeAdapter(Amount)
 
 
+def discount_started_at_for(
+    subscription: CanonicalSubscription, source_id: str
+) -> datetime | None:
+    """When ``source_id`` was applied. Falls back to the first coupon's start
+    for staged rows extracted before per-coupon timestamps were stored."""
+    if source_id in subscription.discount_starts:
+        return subscription.discount_starts[source_id]
+    if subscription.discount_source_ids[:1] == [source_id]:
+        return subscription.discount_started_at
+    return None
+
+
 def polar_discount_code(raw: str | None) -> str | None:
     """Stripe promotion codes may include dashes; Polar codes are alphanumeric."""
     if raw is None:
@@ -317,6 +332,11 @@ def deserialize(
                 or bool(data.get("discount_source_ids")),
                 discount_source_ids=list(data.get("discount_source_ids") or []),
                 discount_started_at=_parse_datetime(data.get("discount_started_at")),
+                discount_starts={
+                    source_id: started_at
+                    for source_id, raw in (data.get("discount_starts") or {}).items()
+                    if (started_at := _parse_datetime(raw)) is not None
+                },
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),

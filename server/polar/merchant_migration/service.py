@@ -106,6 +106,11 @@ IMPORTABLE_STEPS = {
     MerchantMigrationStep.create_catalog,
 }
 
+LOCKED_STEPS = {
+    MerchantMigrationStep.cleanup,
+    MerchantMigrationStep.completed,
+}
+
 # Entities whose records map 1:1 to a ledger row. Prices live inside a product
 # record and are excluded.
 _ENTITY_RECORD_TYPE = {
@@ -226,6 +231,14 @@ class CutoverNotStarted(MerchantMigrationError):
         super().__init__(
             "Reach the switch step in the card transfer before switching "
             "subscriptions over.",
+            409,
+        )
+
+
+class MigrationCompleted(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This migration is completed and can no longer be modified.",
             409,
         )
 
@@ -638,6 +651,8 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        if migration.step in LOCKED_STEPS:
+            raise MigrationCompleted()
         if self._operation_blocks_new_work(migration):
             raise MigrationOperationInProgress()
         if migration.step not in IMPORTABLE_STEPS:
@@ -1029,6 +1044,8 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        if migration.step in LOCKED_STEPS:
+            raise MigrationCompleted()
         if migration.pan_transfer_steps:
             steps = list(migration.pan_transfer_steps)
             if self._advance_retired_steps(migration, steps):
@@ -1265,7 +1282,7 @@ class MerchantMigrationService:
         if left:
             note += (
                 f" {left} stayed on your source; open the subscriptions list to "
-                "see why, and switch them again once they're sorted."
+                "see why."
             )
         return note
 

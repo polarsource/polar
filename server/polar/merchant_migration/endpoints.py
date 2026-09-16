@@ -50,6 +50,7 @@ from .service import (
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
+    MigrationCompleted,
     MigrationOperationInProgress,
     MissingStripeScopes,
     SourceAccountAlreadyMigrated,
@@ -198,10 +199,11 @@ async def precheck(
         },
         409: {
             "description": "The pre-check hasn't run yet, it reports a blocker, "
-            "or another job is still running.",
+            "another job is still running, or the migration is completed.",
             "model": CatalogImportNotReady.schema()
             | CatalogImportBlocked.schema()
-            | MigrationOperationInProgress.schema(),
+            | MigrationOperationInProgress.schema()
+            | MigrationCompleted.schema(),
         },
     },
 )
@@ -392,8 +394,9 @@ async def get_cutover(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The card transfer hasn't reached the switch step yet.",
-            "model": CutoverNotStarted.schema(),
+            "description": "The card transfer hasn't reached the switch step yet, "
+            "or the migration is completed.",
+            "model": CutoverNotStarted.schema() | MigrationCompleted.schema(),
         },
     },
 )

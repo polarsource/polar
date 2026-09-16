@@ -48,6 +48,7 @@ interface Props {
   rerunning?: boolean
   refreshError?: string
   attentionCount: number
+  locked?: boolean
 }
 
 export function ReviewTableView({
@@ -71,6 +72,7 @@ export function ReviewTableView({
   rerunning = false,
   refreshError,
   attentionCount,
+  locked = false,
 }: Props) {
   const rowTotal = remainingSubscriptionCount(
     counts.subscriptions.total,
@@ -89,7 +91,7 @@ export function ReviewTableView({
           importCount === 1 ? 'subscription' : 'subscriptions'
         }`
       : 'Prepare subscriptions'
-  const canPrepare = filter === 'all' || filter === 'to_prepare'
+  const canPrepare = !locked && (filter === 'all' || filter === 'to_prepare')
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
@@ -101,11 +103,12 @@ export function ReviewTableView({
         headerState:
           selectableTotal > 0 ? headerCheckState(selection) : 'unchecked',
         // It flips every subscription, not this page, so gate it on the same scope.
-        canSelectAll: selectableTotal > 0,
+        canSelectAll: !locked && selectableTotal > 0,
         onToggle,
         onToggleAll,
+        selectable: !locked,
       }),
-    [selectableTotal, selection, onToggle, onToggleAll],
+    [locked, selectableTotal, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -168,7 +171,7 @@ export function ReviewTableView({
             />
           </Box>
           <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
-            {onRerunPrecheck && (
+            {onRerunPrecheck && !locked && (
               <Button
                 size="sm"
                 variant="secondary"

@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { currentPosition } from './steps'
+import { currentPosition, isMigrationLocked } from './steps'
 
 function migration(
   step: schemas['MerchantMigrationStep'],
@@ -39,5 +39,17 @@ describe('currentPosition', () => {
       kind: 'step',
       index: 3,
     })
+  })
+})
+
+describe('isMigrationLocked', () => {
+  it('locks cleanup and completed', () => {
+    expect(isMigrationLocked('cleanup')).toBe(true)
+    expect(isMigrationLocked('completed')).toBe(true)
+  })
+
+  it('leaves the switch step open', () => {
+    expect(isMigrationLocked('activate_subscriptions')).toBe(false)
+    expect(isMigrationLocked(undefined)).toBe(false)
   })
 })

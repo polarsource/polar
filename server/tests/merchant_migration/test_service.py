@@ -59,6 +59,7 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     CutoverNotStarted,
     InvalidSourceCredentials,
+    MigrationCompleted,
     MigrationOperationInProgress,
     MissingStripeScopes,
     SourceAccountAlreadyMigrated,
@@ -2024,6 +2025,22 @@ class TestImportCatalog:
             await service.import_catalog(session, auth_subject, migration.id)
 
     @pytest.mark.auth
+    async def test_rejects_completed_migration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.cleanup
+        await save_fixture(migration)
+
+        with pytest.raises(MigrationCompleted):
+            await service.import_catalog(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
     async def test_multi_currency_price_imports_every_currency(
         self,
         mocker: MockerFixture,
@@ -2795,7 +2812,7 @@ class TestStartCutover:
             await service.start_cutover(session, auth_subject, migration.id)
 
     @pytest.mark.auth
-    async def test_retry_reopens_only_non_moved(
+    async def test_rejects_completed_migration(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2803,58 +2820,17 @@ class TestStartCutover:
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
-        product: Product,
     ) -> None:
-        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        # Already switched once: the step is done and the migration is at cleanup.
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, None
         )
         migration.step = MerchantMigrationStep.cleanup
         await save_fixture(migration)
-        moved = await _imported_subscription(
-            save_fixture,
-            migration,
-            organization,
-            product,
-            source_id="sub_moved",
-            email="moved@example.com",
-        )
-        skipped = await _imported_subscription(
-            save_fixture,
-            migration,
-            organization,
-            product,
-            source_id="sub_skipped",
-            email="skipped@example.com",
-        )
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        await record_repository.update(
-            moved,
-            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
-            flush=True,
-        )
-        await record_repository.update(
-            skipped,
-            update_dict={
-                "cutover_status": MerchantMigrationCutoverStatus.skipped,
-                "cutover_error": "Renews too soon.",
-            },
-            flush=True,
-        )
 
-        await service.start_cutover(session, auth_subject, migration.id)
-
-        await session.refresh(moved)
-        await session.refresh(skipped)
-        # What moved stays moved; the skipped one re-opens for another look.
-        assert moved.cutover_status == MerchantMigrationCutoverStatus.moved
-        assert skipped.cutover_status is None
-        assert skipped.cutover_error is None
-        enqueue.assert_called_once_with(
-            "merchant_migration.cutover", merchant_migration_id=migration.id
-        )
+        with pytest.raises(MigrationCompleted):
+            await service.start_cutover(session, auth_subject, migration.id)
 
 
 @pytest.mark.asyncio

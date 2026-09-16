@@ -18,6 +18,7 @@ interface ColumnContext {
   canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
+  selectable?: boolean
 }
 
 const formatAmount = formatCurrency('accounting', 'en-US')
@@ -28,8 +29,9 @@ export function buildSwitchColumns({
   canSelectAll,
   onToggle,
   onToggleAll,
+  selectable = true,
 }: ColumnContext): DataTableColumnDef<SwitchRow>[] {
-  return [
+  const columns: DataTableColumnDef<SwitchRow>[] = [
     {
       id: 'select',
       size: 44,
@@ -83,6 +85,9 @@ export function buildSwitchColumns({
       cell: ({ row }) => <SwitchStatusIndicator row={row.original} />,
     },
   ]
+  return selectable
+    ? columns
+    : columns.filter((column) => column.id !== 'select')
 }
 
 function PlanCell({ row }: { row: SwitchRow }) {

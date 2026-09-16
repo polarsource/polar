@@ -948,6 +948,25 @@ class TestCutover:
         assert response.status_code == 409
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_completed_returns_409(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, None
+        )
+        migration.step = MerchantMigrationStep.cleanup
+        await save_fixture(migration)
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
+        assert response.status_code == 409
+        assert "can no longer be modified" in response.text
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_confirms_and_reports(
         self,
         client: AsyncClient,

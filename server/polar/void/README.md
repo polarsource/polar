@@ -41,22 +41,13 @@ records it as a version, exactly one version serves traffic, and scenarios are
 scratch space on the side.
 
 - **Configuration**: the deploy body; reducers, meters, entitlements, products.
-- **Version**: SHA-256 of the normalized configuration (request flags, definition
-  order and decimal spelling excluded). Meter and product rows carry the version
-  that declared them, so a subscription knows what it was sold under. The
-  dashboard labels versions v1, v2… by creation order.
-- **Deployment**: one row per version per organization, storing the
-  configuration, with status `draft`, `active` or `archived`. Deploying is
-  idempotent. Activating archives the current active deployment and requires an
-  organization that may accept payments. Activating an archived deployment is a
-  rollback.
-- **Scenario**: a named, mutable patch (product price, name, description, meter
-  terms, unit amounts) pinned to one deployment. It is the Simulate view's
-  sandbox, not lineage: no rows of its own, never serves traffic, does not follow
-  the active version. Its resolved configuration is the base with the patch
-  applied; promote deploys that as a draft, "Copy configuration" hands it back
-  for the repository. Promoting a scenario based on v2 after v3 is active drops
-  v3's changes, so the base version is always shown.
+- **Version**: SHA-256 of the normalized configuration. Meters and products
+  belong to the version that declared them. Labelled v1, v2… in the dashboard.
+- **Deployment**: one row per version, status `draft`, `active` or `archived`.
+  One active per organization; activating archives the previous one.
+- **Scenario**: a mutable pricing patch pinned to one deployment, edited in
+  Simulate. Not part of the lineage and never serves traffic. Promote deploys
+  the result as a draft; "Copy configuration" returns it for the repository.
 
 **Deploying.** `POST /deploys` reconciles all four definition kinds in one
 transaction under the organization lock. `dry_run` returns the plan (`create`,

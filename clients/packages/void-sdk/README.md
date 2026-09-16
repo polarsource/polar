@@ -251,6 +251,26 @@ current.active_version_id // the hash every product, subscription and meter carr
 Runtime lookups follow the active version. `versionId` on `defineConfig` pins a
 deployed draft instead, for testing before activation.
 
+### Pull the deployed configuration
+
+`void pull` writes the active deployment's configuration to `void.json`: the
+compiled form the CLI sends, with `version: 4`. `void plan` and `void deploy`
+accept that file through `--config`, or find it when no `void.ts` exists, and
+send it as it is, so a pulled configuration always plans as unchanged.
+`--version` pulls another deployed version, `--force` overwrites the output.
+
+```sh
+void pull
+void pull --version <hash> --out pricing.json
+void plan --config void.json
+```
+
+`void pull --ts` writes best-effort TypeScript over the define API instead,
+in one canonical form per definition, then loads it back and warns when it
+compiles to a different version. Meter display names, plugins, signals and
+event storage are not part of a deployment and are not recovered; a plugin's
+definitions come back as the events, reducers and meters it deployed.
+
 ### Historical price previews
 
 Planning defaults to configuration changes only. Add `--preview` or a date

@@ -1,4 +1,8 @@
-import { vi } from 'vitest'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { describe, vi } from 'vitest'
 import { NodeServices } from '@effect/platform-node'
 import { assert, expect, it, layer } from '@effect/vitest'
 import { Effect, Layer, Option, Redacted, Schema } from 'effect'
@@ -640,3 +644,140 @@ it.each([
     }
   },
 )
+
+describe('pull', () => {
+  const deploymentIr = compile(deploymentConfig)
+  const stored = JSON.parse(
+    JSON.stringify({
+      reducers: deploymentIr.reducers.map((r) => ({ ...r, map: null })),
+      meters: deploymentIr.meters.map((m) => ({
+        ...m,
+        unit_amount: String(m.unit_amount),
+        credit_reducer: null,
+      })),
+      entitlements: deploymentIr.entitlements,
+      products: deploymentIr.products.map((p) => ({
+        ...p,
+        description: null,
+        price: { ...p.price, amount: String(p.price.amount) },
+      })),
+    }),
+  )
+  const serve = () => {
+    const requests: Request[] = []
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const request = new Request(input, init)
+        requests.push(request)
+        const path = new URL(request.url).pathname
+        if (path === '/v1/void/organizations/current')
+          return Response.json({
+            active_version_id: 'b'.repeat(64),
+            active_deployment_id: 'd1',
+            can_activate: true,
+            id: 'org1',
+            name: 'Test',
+            slug: 'test',
+            created_at: '2026-01-01T00:00:00Z',
+          })
+        if (path === '/v1/void/deploys/latest')
+          return Response.json({
+            version_id: 'b'.repeat(64),
+            id: 'd1',
+            checksum: 'c',
+            applied: true,
+            status: 'active',
+            has_configuration: true,
+            created_at: 't',
+            entries: [],
+          })
+        if (path === '/v1/void/deploys/d1/configuration')
+          return Response.json(stored)
+        return Response.json(
+          {
+            version_id: 'b'.repeat(64),
+            id: null,
+            checksum: 'c',
+            applied: false,
+            status: null,
+            has_configuration: false,
+            created_at: 't',
+            entries: [],
+          },
+          { status: 201 },
+        )
+      })
+    return { requests, fetch }
+  }
+  const auth = ['--api-url', 'http://void', '--token', 'test']
+
+  it('writes the deployed IR as void.json, which plans as it is', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'void-pull-'))
+    const out = join(dir, 'void.json')
+    const { requests, fetch } = serve()
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    try {
+      await run(['pull', '--out', out, ...auth], async () => ({}))
+      assert.deepEqual(JSON.parse(await readFile(out, 'utf8')), deploymentIr)
+      await expect(
+        run(['pull', '--out', out, ...auth], async () => ({})),
+      ).rejects.toThrow('already exists')
+      await run(['pull', '--out', out, '--force', ...auth], async () => ({}))
+      assert.match(log.mock.calls.flat().join('\n'), /version b{64}/)
+
+      requests.length = 0
+      await run(
+        ['plan', '--no-preview', '--config', out, ...auth],
+        async () => ({}),
+      )
+      const deploy = requests.find((r) => r.method === 'POST')!
+      assert.deepEqual(await deploy.json(), {
+        checksum: checksum(deploymentIr),
+        dry_run: true,
+        activate: false,
+        reducers: deploymentIr.reducers,
+        meters: deploymentIr.meters,
+        entitlements: deploymentIr.entitlements,
+        products: deploymentIr.products,
+      })
+    } finally {
+      fetch.mockRestore()
+      log.mockRestore()
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('writes TypeScript with --ts and confirms it compiles back to the same version', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'void-pull-'))
+    const out = join(dir, 'void.ts')
+    const { fetch } = serve()
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    // The generated file imports the published package; point it at the sources.
+    const load = async (url: string) => {
+      const file = fileURLToPath(url)
+      const resolved = file.replace(/\.ts$/, '.resolved.ts')
+      await writeFile(
+        resolved,
+        (await readFile(file, 'utf8')).replace(
+          "'@void/sdk/config'",
+          JSON.stringify(join(import.meta.dirname, '../src/config/index')),
+        ),
+      )
+      return import(pathToFileURL(resolved).href) as Promise<
+        Record<string, unknown>
+      >
+    }
+    try {
+      await run(['pull', '--ts', '--out', out, ...auth], load)
+      const source = await readFile(out, 'utf8')
+      assert.match(source, /^\/\/ Pulled from Polar Void version b{64}\./)
+      assert.match(source, /export const config = defineConfig/)
+      assert.notMatch(log.mock.calls.flat().join('\n'), /warning/)
+    } finally {
+      fetch.mockRestore()
+      log.mockRestore()
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+})

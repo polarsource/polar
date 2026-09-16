@@ -81,6 +81,10 @@ export type {
   RedisEventStorage,
 } from '../storage/redis'
 export { checksum, checksumOf, compile } from './compile'
+export { normalizeIr, parseIr } from './ir'
+export type { IrInput } from './ir'
+export { toSource } from './codegen'
+export type { SourceOptions } from './codegen'
 export type {
   Ir,
   IrClause,

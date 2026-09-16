@@ -14,8 +14,10 @@ import { Command, Flag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { Api } from '../api/index'
 import { apiLayer } from '../api/layers'
-import { checksum, compile } from '../config/compile'
+import { checksum, compile, type Ir } from '../config/compile'
 import type { Config } from '../config/config'
+import { toSource } from '../config/codegen'
+import { normalizeIr, parseIr } from '../config/ir'
 import type { PricePreviewWindow } from '../api/generated'
 import { describePlan, describeSummary } from './format'
 import { PreviewError, previewWindow } from './preview'
@@ -32,7 +34,7 @@ import {
   whoami,
 } from './auth'
 
-const CONFIG_FILES = ['void.ts', 'void.config.ts', 'void.mts']
+const CONFIG_FILES = ['void.ts', 'void.config.ts', 'void.mts', 'void.json']
 
 export type Loader = (url: string) => Promise<Record<string, unknown>>
 
@@ -69,6 +71,18 @@ export const loadConfig = Effect.fn('cli.loadConfig')(function* (
     })
   }
   const found = path
+  if (found.endsWith('.json')) {
+    const text = yield* fs.readFileString(found)
+    return yield* Effect.try({
+      try: () => parseIr(JSON.parse(text)),
+      catch: (cause) =>
+        new ConfigError({
+          path: found,
+          message: cause instanceof Error ? cause.message : String(cause),
+          cause,
+        }),
+    })
+  }
   const module = yield* Effect.tryPromise({
     try: () => load(pathToFileURL(found).href),
     catch: (cause) =>
@@ -111,14 +125,22 @@ export const pluginOrigins = (config: Config): ReadonlyMap<string, string> =>
     ),
   )
 
+/** A `void.json` deploys as the IR it holds; nothing in it comes from a plugin. */
+const compiled = (
+  source: Config | Ir,
+): { ir: Ir; origins: ReadonlyMap<string, string> } =>
+  isConfig(source)
+    ? { ir: compile(source), origins: pluginOrigins(source) }
+    : { ir: source, origins: new Map() }
+
 export const reconcile = Effect.fn('cli.reconcile')(function* (
   command: 'plan' | 'deploy',
-  config: Config,
+  source: Config | Ir,
   preview?: PricePreviewWindow,
   activate = false,
 ) {
   const api = yield* Api
-  const ir = compile(config)
+  const { ir, origins } = compiled(source)
   const sum = checksum(ir)
   const deploy = yield* api.deploysCreate({
     payload: {
@@ -136,7 +158,7 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
   yield* Console.log(`${soft('version', styled)} ${deploy.version_id}`)
   if (deploy.status)
     yield* Console.log(`${soft('status', styled)} ${deploy.status}`)
-  const plan = describePlan(deploy.entries, styled, pluginOrigins(config))
+  const plan = describePlan(deploy.entries, styled, origins)
   if (plan) yield* Console.log(`\n${plan}`)
   yield* Console.log('')
   yield* Console.log(
@@ -146,6 +168,76 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
       styled,
     ),
   )
+})
+
+/**
+ * Writes the deployed configuration to a file: the IR as `void.json`, which
+ * deploys as it is, or best-effort TypeScript. The TypeScript is loaded back
+ * and compiled so a version that would not round-trip is reported.
+ */
+export const pull = Effect.fn('cli.pull')(function* (
+  load: Loader,
+  options: {
+    versionId?: string
+    out?: string
+    ts?: boolean
+    force?: boolean
+  },
+) {
+  const api = yield* Api
+  const fs = yield* FileSystem.FileSystem
+  const out = resolve(options.out ?? (options.ts ? 'void.ts' : 'void.json'))
+  if (!options.force && (yield* fs.exists(out))) {
+    return yield* new ConfigError({
+      path: out,
+      message: 'already exists; pass --force to overwrite it',
+    })
+  }
+  const deployment = yield* api.deploysLatest({
+    params: { version_id: options.versionId },
+  })
+  if (deployment.id === null) {
+    return yield* new ConfigError({
+      path: out,
+      message: 'no deployment to pull',
+    })
+  }
+  const ir = normalizeIr(
+    yield* api.deploysConfiguration(deployment.id, undefined),
+  )
+  const styled = styleEnabled()
+  yield* Console.log(`${soft('version', styled)} ${deployment.version_id}`)
+  if (!options.ts) {
+    yield* fs.writeFileString(out, `${JSON.stringify(ir, null, 2)}\n`)
+    yield* Console.log(`wrote ${out}`)
+    return
+  }
+  yield* fs.writeFileString(
+    out,
+    toSource(ir, { version: deployment.version_id }),
+  )
+  yield* Console.log(`wrote ${out}`)
+  const roundTrip = yield* Effect.tryPromise(() =>
+    load(pathToFileURL(out).href),
+  ).pipe(
+    Effect.map((module) => [module.config, module.default].find(isConfig)),
+    Effect.map((config) =>
+      config === undefined
+        ? 'exports no config'
+        : checksum(compile(config)) === checksum(ir)
+          ? undefined
+          : 'compiles to a different configuration',
+    ),
+    Effect.catch((cause) =>
+      Effect.succeed(
+        `could not be loaded: ${cause.cause instanceof Error ? cause.cause.message : String(cause.cause)}`,
+      ),
+    ),
+  )
+  if (roundTrip !== undefined)
+    yield* Console.log(
+      `warning: the generated config ${roundTrip}; review it before deploying`,
+    )
 })
 
 export const activateDeployment = Effect.fn('cli.activate')(function* (
@@ -279,6 +371,60 @@ const activate = Command.make(
   ),
 )
 
+const pullCommand = (load: Loader) =>
+  Command.make(
+    'pull',
+    {
+      version: Flag.string('version').pipe(
+        Flag.withDescription(
+          'Configuration version to pull; defaults to the active deployment',
+        ),
+        Flag.optional,
+      ),
+      out: Flag.string('out').pipe(
+        Flag.withDescription(
+          'Output file; defaults to void.json, or void.ts with --ts',
+        ),
+        Flag.optional,
+      ),
+      ts: Flag.boolean('ts').pipe(
+        Flag.withDescription('Write best-effort TypeScript instead of the IR'),
+      ),
+      force: Flag.boolean('force').pipe(
+        Flag.withDescription('Overwrite the output file if it exists'),
+      ),
+      ...authFlags,
+    },
+    ({ version, out, ts, force, apiUrl, token, profile }) =>
+      Effect.gen(function* () {
+        const credentials = yield* resolveCredentials(
+          Option.getOrUndefined(apiUrl),
+          Option.getOrUndefined(token),
+          Option.getOrUndefined(profile),
+        )
+        yield* Effect.gen(function* () {
+          yield* showTarget(credentials)
+          yield* pull(load, {
+            versionId: Option.getOrUndefined(version),
+            out: Option.getOrUndefined(out),
+            ts,
+            force,
+          })
+        }).pipe(
+          Effect.provide(
+            apiLayer({
+              apiUrl: credentials.apiUrl,
+              token: Redacted.value(credentials.token),
+            }),
+          ),
+        )
+      }),
+  ).pipe(
+    Command.withDescription(
+      'Write the deployed configuration to void.json, or to void.ts with --ts',
+    ),
+  )
+
 const cli = (load: Loader) =>
   Command.make('void').pipe(
     Command.withDescription('Deploy a void config'),
@@ -295,6 +441,7 @@ const cli = (load: Loader) =>
         load,
       ),
       activate,
+      pullCommand(load),
     ]),
   )
 

@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useContext, useMemo } from 'react'
 import { useModal } from '@/components/Modal/useModal'
+import { useToast } from '@/components/Toast/use-toast'
 import { changedLevers } from './baseline'
 import { project, replay } from './engine'
 import { ScenarioCustomers } from './ScenarioCustomers'
@@ -34,6 +35,18 @@ export const VoidScenarioPage = () => {
   const { scenarios, duplicate, update, remove, promote } = useScenarios()
   const scenario = scenarios.find((candidate) => candidate.id === id)
   const editModal = useModal()
+  const { toast } = useToast()
+
+  const copyConfiguration = async () => {
+    if (!scenario) return
+    const { checksum: _checksum, ...configuration } = scenario.configuration
+    await navigator.clipboard.writeText(JSON.stringify(configuration, null, 2))
+    toast({
+      title: 'Configuration copied',
+      description:
+        'Paste it into your Void config and push to make this the real version.',
+    })
+  }
 
   const result = useMemo(
     () => (scenario ? replay(scenario.levers, scenario.baseLevers) : null),
@@ -67,7 +80,11 @@ export const VoidScenarioPage = () => {
       contextViewClassName="md:max-w-[320px] xl:max-w-[360px]"
       header={
         <Box alignItems="center" columnGap="s">
-          {scenario.promotedAs ? null : (
+          {scenario.promotedAs ? (
+            <Text color="muted" variant="body">
+              Promoted as {scenario.promotedAs}
+            </Text>
+          ) : (
             <Button
               onClick={() => promote(scenario.id)}
               disabled={changes.length === 0}
@@ -75,6 +92,9 @@ export const VoidScenarioPage = () => {
               Promote to draft
             </Button>
           )}
+          <Button variant="secondary" onClick={copyConfiguration}>
+            Copy configuration
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none" asChild>
               <Button

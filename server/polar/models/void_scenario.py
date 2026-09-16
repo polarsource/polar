@@ -13,15 +13,16 @@ if TYPE_CHECKING:
     from .organization import Organization
 
 
-class VoidBranch(RecordModel):
-    """A mutable fork of one configuration version, edited in the dashboard.
+class VoidScenario(RecordModel):
+    """A pricing sandbox: a mutable patch on one deployed version, edited in
+    the dashboard's Simulate view.
 
-    A branch never serves traffic: it has no meter or product rows of its own.
+    A scenario is not part of the version lineage and never serves traffic: it has no meter or product rows of its own.
     Its patch is applied to the base deployment's configuration on read, and
     promoting it deploys that resolved configuration as an ordinary draft.
     """
 
-    __tablename__ = "void_branches"
+    __tablename__ = "void_scenarios"
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     base_version_id: Mapped[str] = mapped_column(String, nullable=False, index=True)

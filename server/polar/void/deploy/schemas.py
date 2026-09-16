@@ -149,7 +149,7 @@ class Deploy(BaseModel):
     status: VoidDeploymentStatus | None = Field(description="Unset on a dry run.")
     has_configuration: bool = Field(
         description="Whether the configuration is stored, so the version can be "
-        "branched. False for deployments created before configurations were kept."
+        "used as a scenario base. False for deployments created before configurations were kept."
     )
     entries: list[DeployEntry]
     created_at: datetime

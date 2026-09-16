@@ -17,27 +17,20 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
-import {
-  shortVersion,
-  useVoidBranches,
-  useVoidDeploys,
-  versionLabels,
-  VoidBranch,
-  VoidDeploy,
-} from './api'
+import { shortVersion, useVoidDeploys, versionLabels, VoidDeploy } from './api'
 import { DataSourceMenuItem } from './DataSourceMenuItem'
 
 interface VoidDefinition {
   id: string
   name: string
   version: string
-  status: 'Active' | 'Draft' | 'Archived' | 'Branch'
+  status: 'Active' | 'Draft' | 'Archived'
 }
 
 const STATUS_COLOR: Record<
   VoidDefinition['status'],
   'green' | 'blue' | 'gray'
-> = { Active: 'green', Draft: 'blue', Archived: 'gray', Branch: 'blue' }
+> = { Active: 'green', Draft: 'blue', Archived: 'gray' }
 
 const STATUS_ORDER: Record<NonNullable<VoidDeploy['status']>, number> = {
   active: 0,
@@ -57,35 +50,22 @@ const statusLabel = (status: VoidDeploy['status']): VoidDefinition['status'] =>
   status === 'active' ? 'Active' : status === 'archived' ? 'Archived' : 'Draft'
 
 /**
- * Deployed versions in lineage order, each followed by the branches that
- * fork it. Versions carry their short hash; branches carry their name.
+ * Deployed versions in lineage order: active, then drafts, then archived,
+ * newest first. Scenarios are a Simulate concept and are not listed here.
  */
-export const definitionsOf = (
-  deploys: VoidDeploy[],
-  branches: VoidBranch[],
-): VoidDefinition[] => {
+export const definitionsOf = (deploys: VoidDeploy[]): VoidDefinition[] => {
   const labels = versionLabels(deploys)
   const ordered = [...deploys].sort(
     (a, b) =>
       STATUS_ORDER[a.status ?? 'draft'] - STATUS_ORDER[b.status ?? 'draft'] ||
       b.created_at.localeCompare(a.created_at),
   )
-  return ordered.flatMap((deploy) => [
-    {
-      id: deploy.id ?? deploy.version_id,
-      name: labels.get(deploy.version_id) ?? shortVersion(deploy.version_id),
-      version: `${shortVersion(deploy.version_id)} · ${relative(deploy.created_at)}`,
-      status: statusLabel(deploy.status),
-    },
-    ...branches
-      .filter((branch) => branch.base_version_id === deploy.version_id)
-      .map((branch) => ({
-        id: branch.id,
-        name: branch.name,
-        version: `branch of ${labels.get(branch.base_version_id) ?? shortVersion(branch.base_version_id)}`,
-        status: 'Branch' as const,
-      })),
-  ])
+  return ordered.map((deploy) => ({
+    id: deploy.id ?? deploy.version_id,
+    name: labels.get(deploy.version_id) ?? shortVersion(deploy.version_id),
+    version: `${shortVersion(deploy.version_id)} · ${relative(deploy.created_at)}`,
+    status: statusLabel(deploy.status),
+  }))
 }
 
 export const VoidDefinitionSelectorLive = ({
@@ -94,10 +74,9 @@ export const VoidDefinitionSelectorLive = ({
   organization: schemas['Organization']
 }) => {
   const deploys = useVoidDeploys(organization.id)
-  const branches = useVoidBranches(organization.id)
   const definitions = useMemo(
-    () => definitionsOf(deploys.data ?? [], branches.data ?? []),
-    [deploys.data, branches.data],
+    () => definitionsOf(deploys.data ?? []),
+    [deploys.data],
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected =
@@ -144,13 +123,7 @@ export const VoidDefinitionSelectorLive = ({
                 className="dark:hover:bg-polar-800! flex flex-row items-center gap-x-2 duration-75 hover:bg-gray-100! hover:text-black! dark:hover:text-white!"
                 onClick={() => setSelectedId(definition.id)}
               >
-                <span
-                  className={
-                    definition.status === 'Branch'
-                      ? 'flex min-w-0 flex-col pl-3'
-                      : 'flex min-w-0 flex-col'
-                  }
-                >
+                <span className="flex min-w-0 flex-col">
                   <span className="truncate">{definition.name}</span>
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     {definition.version}

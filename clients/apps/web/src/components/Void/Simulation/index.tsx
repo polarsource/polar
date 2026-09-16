@@ -9,7 +9,7 @@ import { VoidSimulationList as LiveSimulationList } from './VoidSimulationList'
 /**
  * Simulate has two implementations: the fixture one from before the Void API
  * was wired in, kept verbatim under `./fixture`, and the live one backed by
- * branches. The data source toggle picks which renders.
+ * scenarios. The data source toggle picks which renders.
  */
 export const SimulationListPage = () =>
   useVoidDataSource() === 'live' ? (

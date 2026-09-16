@@ -32,7 +32,7 @@ class MeterPatch(BaseModel):
     )
 
 
-class BranchPatch(BaseModel):
+class ScenarioPatch(BaseModel):
     """A configuration-level diff against the base version, keyed by slug."""
 
     model_config = ConfigDict(extra="forbid")
@@ -41,42 +41,42 @@ class BranchPatch(BaseModel):
     meters: dict[str, MeterPatch] = Field(default_factory=dict)
 
 
-class BranchCreate(BaseModel):
+class ScenarioCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=120)
     base_version_id: str = Field(
         pattern=r"^[0-9a-f]{64}$",
-        description="The deployed version this branch forks. A branch stays "
+        description="The deployed version this scenario starts from. A scenario stays "
         "pinned to it; it never follows the active version.",
     )
-    patch: BranchPatch = Field(default_factory=BranchPatch)
+    patch: ScenarioPatch = Field(default_factory=ScenarioPatch)
 
 
-class BranchUpdate(BaseModel):
+class ScenarioUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str | None = Field(default=None, min_length=1, max_length=120)
-    patch: BranchPatch | None = Field(
+    patch: ScenarioPatch | None = Field(
         default=None, description="Replaces the whole patch when given."
     )
 
 
-class BranchPreview(BaseModel):
+class ScenarioPreview(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     window: PricePreviewWindow
 
 
-class Branch(Schema):
+class Scenario(Schema):
     id: uuid.UUID
     name: str
     base_version_id: str
     base_deployment_id: uuid.UUID
-    patch: BranchPatch
+    patch: ScenarioPatch
     version_id: str = Field(
         description="SHA-256 of the resolved configuration: the version this "
-        "branch would become when promoted."
+        "scenario would become when promoted."
     )
     deployment_id: uuid.UUID | None = Field(
         description="The deployment that already has this resolved version, if any."

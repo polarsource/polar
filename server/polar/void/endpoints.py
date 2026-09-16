@@ -6,7 +6,6 @@ from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from .auth import VoidRead
-from .branch.endpoints import router as branch_router
 from .customer.endpoints import router as customer_router
 from .deploy.endpoints import router as deploy_router
 from .entitlement.endpoints import router as entitlement_router
@@ -17,6 +16,7 @@ from .metric.endpoints import router as metric_router
 from .organization.service import organization as organization_service
 from .product.endpoints import router as product_router
 from .reducer.endpoints import router as reducer_router
+from .scenario.endpoints import router as scenario_router
 from .schemas import VoidOrganization
 from .subscription.endpoints import router as subscription_router
 
@@ -47,7 +47,7 @@ router.include_router(reducer_router)
 router.include_router(metric_router)
 
 router.include_router(deploy_router)
-router.include_router(branch_router)
+router.include_router(scenario_router)
 router.include_router(entitlement_router)
 router.include_router(meter_router)
 router.include_router(product_router)

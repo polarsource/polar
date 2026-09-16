@@ -27,7 +27,7 @@ REQUEST_FIELDS = {"checksum", "dry_run", "preview", "activate"}
 
 
 def configuration_payload(config: BaseModel) -> dict[str, Any]:
-    """The configuration alone, as stored on a deployment for branches to fork."""
+    """The configuration alone, as stored on a deployment for scenarios to start from."""
     return config.model_dump(mode="json", exclude=REQUEST_FIELDS)
 
 

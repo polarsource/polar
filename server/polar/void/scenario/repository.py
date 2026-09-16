@@ -5,32 +5,32 @@ from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidBranch, VoidDeployment
+from polar.models import VoidDeployment, VoidScenario
 
 
-class BranchRepository(RepositoryBase[VoidBranch]):
-    model = VoidBranch
+class ScenarioRepository(RepositoryBase[VoidScenario]):
+    model = VoidScenario
 
-    def scoped_statement(self, organization_id: UUID) -> Select[tuple[VoidBranch]]:
+    def scoped_statement(self, organization_id: UUID) -> Select[tuple[VoidScenario]]:
         return (
-            select(VoidBranch)
+            select(VoidScenario)
             .where(
-                VoidBranch.organization_id == organization_id,
-                VoidBranch.deleted_at.is_(None),
+                VoidScenario.organization_id == organization_id,
+                VoidScenario.deleted_at.is_(None),
             )
-            .options(joinedload(VoidBranch.base_deployment))
+            .options(joinedload(VoidScenario.base_deployment))
         )
 
-    async def list(self, organization_id: UUID) -> Sequence[VoidBranch]:
+    async def list(self, organization_id: UUID) -> Sequence[VoidScenario]:
         return await self.get_all(
             self.scoped_statement(organization_id).order_by(
-                VoidBranch.created_at.desc(), VoidBranch.id.desc()
+                VoidScenario.created_at.desc(), VoidScenario.id.desc()
             )
         )
 
-    async def get(self, organization_id: UUID, id: UUID) -> VoidBranch | None:
+    async def get(self, organization_id: UUID, id: UUID) -> VoidScenario | None:
         return await self.get_one_or_none(
-            self.scoped_statement(organization_id).where(VoidBranch.id == id)
+            self.scoped_statement(organization_id).where(VoidScenario.id == id)
         )
 
     async def deployments_by_version(

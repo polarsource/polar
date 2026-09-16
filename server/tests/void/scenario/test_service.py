@@ -8,13 +8,13 @@ from polar.exceptions import ResourceNotFound
 from polar.models import Organization, VoidDeployment, VoidProduct
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncSession
-from polar.void.branch.exceptions import BranchBaseUnavailable, InvalidBranch
-from polar.void.branch.schemas import BranchCreate, BranchPatch, BranchUpdate
-from polar.void.branch.service import branch as branch_service
-from polar.void.branch.service import resolve
 from polar.void.deploy.schemas import DeployCreate
 from polar.void.deploy.service import deploy as deploy_service
 from polar.void.product.service import product as product_service
+from polar.void.scenario.exceptions import InvalidScenario, ScenarioBaseUnavailable
+from polar.void.scenario.schemas import ScenarioCreate, ScenarioPatch, ScenarioUpdate
+from polar.void.scenario.service import resolve
+from polar.void.scenario.service import scenario as scenario_service
 from tests.fixtures.database import SaveFixture
 from tests.void.deploy.test_service import CONFIG
 
@@ -44,7 +44,7 @@ async def deploy_base(session: AsyncSession, organization: Organization) -> str:
 class TestResolve:
     def test_applies_patch_and_changes_version(self) -> None:
         base = DeployCreate(**CONFIG)
-        resolved = resolve(base, BranchPatch.model_validate(PATCH))
+        resolved = resolve(base, ScenarioPatch.model_validate(PATCH))
         assert resolved.version_id != base.version_id
         assert resolved.products[0].price.amount == Decimal(30)
         terms = resolved.products[0].meters[0]
@@ -55,7 +55,7 @@ class TestResolve:
 
     def test_empty_patch_keeps_version(self) -> None:
         base = DeployCreate(**CONFIG)
-        assert resolve(base, BranchPatch()).version_id == base.version_id
+        assert resolve(base, ScenarioPatch()).version_id == base.version_id
 
     @pytest.mark.parametrize(
         "patch",
@@ -66,47 +66,47 @@ class TestResolve:
         ],
     )
     def test_rejects_unknown_slugs(self, patch: dict[str, Any]) -> None:
-        with pytest.raises(InvalidBranch):
-            resolve(DeployCreate(**CONFIG), BranchPatch.model_validate(patch))
+        with pytest.raises(InvalidScenario):
+            resolve(DeployCreate(**CONFIG), ScenarioPatch.model_validate(patch))
 
 
 @pytest.mark.asyncio
-class TestBranchService:
+class TestScenarioService:
     async def test_create_update_promote(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         base_version = await deploy_base(session, organization)
-        created = await branch_service.create(
+        created = await scenario_service.create(
             session,
             organization.id,
-            BranchCreate(name="Usage-first", base_version_id=base_version),
+            ScenarioCreate(name="Usage-first", base_version_id=base_version),
         )
         assert created.version_id == base_version
         assert created.deployment_id is not None
         assert created.promoted_deployment_id is None
-        assert created.configuration.checksum == f"branch:{created.id}"
+        assert created.configuration.checksum == f"scenario:{created.id}"
 
-        updated = await branch_service.update(
+        updated = await scenario_service.update(
             session,
             organization.id,
             created.id,
-            BranchUpdate(patch=BranchPatch.model_validate(PATCH)),
+            ScenarioUpdate(patch=ScenarioPatch.model_validate(PATCH)),
         )
         assert updated.version_id != base_version
         assert updated.deployment_id is None
         assert updated.patch.meters["tokens"].unit_amount == Decimal("0.02")
 
-        promoted = await branch_service.promote(session, organization.id, created.id)
+        promoted = await scenario_service.promote(session, organization.id, created.id)
         assert promoted.status == VoidDeploymentStatus.draft
         assert promoted.version_id == updated.version_id
-        assert promoted.checksum == f"branch:{created.id}"
+        assert promoted.checksum == f"scenario:{created.id}"
         deployment = await session.get(VoidDeployment, promoted.id)
         assert deployment is not None
         assert deployment.configuration is not None
         assert deployment.configuration["products"][0]["price"]["amount"] == "30"
 
-        after = await branch_service.to_schema(
-            session, await branch_service.get(session, organization.id, created.id)
+        after = await scenario_service.to_schema(
+            session, await scenario_service.get(session, organization.id, created.id)
         )
         assert after.promoted_deployment_id == promoted.id
         assert after.deployment_id == promoted.id
@@ -117,22 +117,22 @@ class TestBranchService:
         assert Decimal(by_version[promoted.version_id].amount) == Decimal(30)
         assert isinstance(by_version[base_version], VoidProduct)
 
-        again = await branch_service.promote(session, organization.id, created.id)
+        again = await scenario_service.promote(session, organization.id, created.id)
         assert again.id == promoted.id
 
-    async def test_branch_is_pinned_to_base(
+    async def test_scenario_is_pinned_to_base(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         base_version = await deploy_base(session, organization)
-        created = await branch_service.create(
+        created = await scenario_service.create(
             session,
             organization.id,
-            BranchCreate(name="Pinned", base_version_id=base_version),
+            ScenarioCreate(name="Pinned", base_version_id=base_version),
         )
         newer = deepcopy(CONFIG)
         newer["products"][0]["name"] = "Pro v2"
         await deploy_service.deploy(session, organization.id, DeployCreate(**newer))
-        listed = await branch_service.list(session, organization.id)
+        listed = await scenario_service.list(session, organization.id)
         assert [b.base_version_id for b in listed] == [base_version]
         assert listed[0].configuration.products[0].name == "Pro"
         assert listed[0].id == created.id
@@ -151,29 +151,29 @@ class TestBranchService:
             entries=[],
         )
         await save_fixture(legacy)
-        with pytest.raises(BranchBaseUnavailable):
-            await branch_service.create(
+        with pytest.raises(ScenarioBaseUnavailable):
+            await scenario_service.create(
                 session,
                 organization.id,
-                BranchCreate(name="Legacy", base_version_id="b" * 64),
+                ScenarioCreate(name="Legacy", base_version_id="b" * 64),
             )
         with pytest.raises(ResourceNotFound):
-            await branch_service.create(
+            await scenario_service.create(
                 session,
                 organization.id,
-                BranchCreate(name="Missing", base_version_id="c" * 64),
+                ScenarioCreate(name="Missing", base_version_id="c" * 64),
             )
 
-    async def test_delete_hides_branch(
+    async def test_delete_hides_scenario(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         base_version = await deploy_base(session, organization)
-        created = await branch_service.create(
+        created = await scenario_service.create(
             session,
             organization.id,
-            BranchCreate(name="Gone", base_version_id=base_version),
+            ScenarioCreate(name="Gone", base_version_id=base_version),
         )
-        await branch_service.delete(session, organization.id, created.id)
-        assert await branch_service.list(session, organization.id) == []
+        await scenario_service.delete(session, organization.id, created.id)
+        assert await scenario_service.list(session, organization.id) == []
         with pytest.raises(ResourceNotFound):
-            await branch_service.get(session, organization.id, created.id)
+            await scenario_service.get(session, organization.id, created.id)

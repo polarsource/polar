@@ -3,12 +3,12 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { useContext, useMemo, useRef } from 'react'
 import {
-  useVoidBranches,
-  useVoidBranchMutations,
+  useVoidScenarios,
+  useVoidScenarioMutations,
   useVoidDeploys,
   versionLabel,
   versionLabels,
-  VoidBranch,
+  VoidScenario,
   VoidDeploy,
 } from '../api'
 import {
@@ -39,27 +39,31 @@ const saveAssumptions = (all: Record<string, Assumptions>) => {
 }
 
 const toScenario = (
-  branch: VoidBranch,
+  scenario: VoidScenario,
   deploys: VoidDeploy[],
   assumptions: Assumptions,
 ): Scenario => {
-  const promoted = deploys.find((d) => d.id === branch.promoted_deployment_id)
+  const promoted = deploys.find((d) => d.id === scenario.promoted_deployment_id)
   const labels = versionLabels(deploys)
   return {
-    id: branch.id,
-    name: branch.name,
+    id: scenario.id,
+    name: scenario.name,
     basedOn: {
-      version: branch.base_version_id,
-      label: versionLabel(labels, branch.base_version_id),
+      version: scenario.base_version_id,
+      label: versionLabel(labels, scenario.base_version_id),
     },
-    createdAt: branch.created_at,
-    updatedAt: branch.modified_at ?? branch.created_at,
-    promotedAs: branch.promoted_deployment_id
-      ? versionLabel(labels, promoted?.version_id ?? branch.version_id)
+    createdAt: scenario.created_at,
+    updatedAt: scenario.modified_at ?? scenario.created_at,
+    promotedAs: scenario.promoted_deployment_id
+      ? versionLabel(labels, promoted?.version_id ?? scenario.version_id)
       : null,
-    levers: leversFromConfiguration(branch.configuration, assumptions),
-    baseLevers: leversFromConfiguration(branch.base_configuration, assumptions),
-    patch: branch.patch,
+    levers: leversFromConfiguration(scenario.configuration, assumptions),
+    baseLevers: leversFromConfiguration(
+      scenario.base_configuration,
+      assumptions,
+    ),
+    patch: scenario.patch,
+    configuration: scenario.configuration,
   }
 }
 
@@ -69,9 +73,9 @@ const PERSIST_DELAY = 500
 
 export const useScenarios = () => {
   const { organization } = useContext(OrganizationContext)
-  const branches = useVoidBranches(organization.id)
+  const scenarioQuery = useVoidScenarios(organization.id)
   const deploys = useVoidDeploys(organization.id)
-  const mutations = useVoidBranchMutations(organization.id)
+  const mutations = useVoidScenarioMutations(organization.id)
   const timers = useRef<Record<string, number>>({})
 
   const assumptions = useRef<Record<string, Assumptions> | null>(null)
@@ -80,34 +84,34 @@ export const useScenarios = () => {
 
   const scenarios = useMemo(
     () =>
-      (branches.data ?? []).map((branch) =>
-        toScenario(branch, deploys.data ?? [], assumptionsFor(branch.id)),
+      (scenarioQuery.data ?? []).map((scenario) =>
+        toScenario(scenario, deploys.data ?? [], assumptionsFor(scenario.id)),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [branches.data, deploys.data],
+    [scenarioQuery.data, deploys.data],
   )
 
   return useMemo(() => {
-    const branchOf = (id: string) =>
-      branches.data?.find((branch) => branch.id === id)
+    const scenarioOf = (id: string) =>
+      scenarioQuery.data?.find((scenario) => scenario.id === id)
 
     const create = async (input: NewScenario): Promise<Scenario> => {
-      const branch = await mutations.create.mutateAsync({
+      const scenario = await mutations.create.mutateAsync({
         name: input.name,
         base_version_id: input.basedOn.version,
       })
-      return toScenario(branch, deploys.data ?? [], DEFAULT_ASSUMPTIONS)
+      return toScenario(scenario, deploys.data ?? [], DEFAULT_ASSUMPTIONS)
     }
 
     const duplicate = async (id: string): Promise<Scenario | undefined> => {
-      const source = branchOf(id)
+      const source = scenarioOf(id)
       if (!source) return undefined
-      const branch = await mutations.create.mutateAsync({
+      const scenario = await mutations.create.mutateAsync({
         name: `${source.name} (copy)`,
         base_version_id: source.base_version_id,
         patch: source.patch,
       })
-      return toScenario(branch, deploys.data ?? [], assumptionsFor(id))
+      return toScenario(scenario, deploys.data ?? [], assumptionsFor(id))
     }
 
     const update = (id: string, patch: Partial<Pick<Scenario, 'name'>>) => {
@@ -120,10 +124,10 @@ export const useScenarios = () => {
       id: string,
       mutate: (levers: ScenarioLevers) => void,
     ) => {
-      const branch = branchOf(id)
-      if (!branch) return
+      const scenario = scenarioOf(id)
+      if (!scenario) return
       const levers = leversFromConfiguration(
-        branch.configuration,
+        scenario.configuration,
         assumptionsFor(id),
       )
       mutate(levers)
@@ -132,18 +136,18 @@ export const useScenarios = () => {
         all[id] = levers.assumptions
         saveAssumptions(all)
       }
-      const patch = patchFromLevers(levers, branch.base_configuration)
-      if (JSON.stringify(patch) === JSON.stringify(branch.patch)) {
-        mutations.setBranch({ ...branch })
+      const patch = patchFromLevers(levers, scenario.base_configuration)
+      if (JSON.stringify(patch) === JSON.stringify(scenario.patch)) {
+        mutations.setScenario({ ...scenario })
         return
       }
       // Optimistic: reflect the edit at once, persist after typing settles.
-      mutations.setBranch({
-        ...branch,
+      mutations.setScenario({
+        ...scenario,
         patch,
         configuration: configurationFromLevers(
           levers,
-          branch.base_configuration,
+          scenario.base_configuration,
         ),
       })
       window.clearTimeout(timers.current[id])
@@ -160,8 +164,8 @@ export const useScenarios = () => {
 
     return {
       scenarios,
-      isLoading: branches.isLoading || deploys.isLoading,
-      error: branches.error ?? deploys.error,
+      isLoading: scenarioQuery.isLoading || deploys.isLoading,
+      error: scenarioQuery.error ?? deploys.error,
       create,
       duplicate,
       update,
@@ -170,5 +174,5 @@ export const useScenarios = () => {
       promote,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenarios, branches.data, deploys.data])
+  }, [scenarios, scenarioQuery.data, deploys.data])
 }

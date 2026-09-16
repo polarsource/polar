@@ -73,17 +73,17 @@ export interface VoidProductPatch {
   meters?: Record<string, VoidMeterTerms>
 }
 
-export interface VoidBranchPatch {
+export interface VoidScenarioPatch {
   products: Record<string, VoidProductPatch>
   meters: Record<string, { unit_amount?: string | null }>
 }
 
-export interface VoidBranch {
+export interface VoidScenario {
   id: string
   name: string
   base_version_id: string
   base_deployment_id: string
-  patch: VoidBranchPatch
+  patch: VoidScenarioPatch
   version_id: string
   deployment_id: string | null
   promoted_deployment_id: string | null
@@ -93,15 +93,15 @@ export interface VoidBranch {
   modified_at: string | null
 }
 
-export interface VoidBranchCreate {
+export interface VoidScenarioCreate {
   name: string
   base_version_id: string
-  patch?: VoidBranchPatch
+  patch?: VoidScenarioPatch
 }
 
-export interface VoidBranchUpdate {
+export interface VoidScenarioUpdate {
   name?: string
-  patch?: VoidBranchPatch
+  patch?: VoidScenarioPatch
 }
 
 export class VoidRequestError extends Error {
@@ -141,7 +141,7 @@ export const voidRequest = async <T>(
 
 export const voidKeys = {
   deploys: (organizationId: string) => ['void_deploys', organizationId],
-  branches: (organizationId: string) => ['void_branches', organizationId],
+  scenarios: (organizationId: string) => ['void_scenarios', organizationId],
 }
 
 export const useVoidDeploys = (
@@ -155,72 +155,72 @@ export const useVoidDeploys = (
     ...options,
   })
 
-export const useVoidBranches = (
+export const useVoidScenarios = (
   organizationId: string,
-  options?: Pick<UseQueryOptions<VoidBranch[]>, 'enabled'>,
+  options?: Pick<UseQueryOptions<VoidScenario[]>, 'enabled'>,
 ) =>
   useQuery({
-    queryKey: voidKeys.branches(organizationId),
-    queryFn: () => voidRequest<VoidBranch[]>(organizationId, '/branches'),
+    queryKey: voidKeys.scenarios(organizationId),
+    queryFn: () => voidRequest<VoidScenario[]>(organizationId, '/scenarios'),
     retry: false,
     ...options,
   })
 
-export const useVoidBranchMutations = (organizationId: string) => {
+export const useVoidScenarioMutations = (organizationId: string) => {
   const queryClient = useQueryClient()
   const invalidate = () =>
     Promise.all([
       queryClient.invalidateQueries({
-        queryKey: voidKeys.branches(organizationId),
+        queryKey: voidKeys.scenarios(organizationId),
       }),
       queryClient.invalidateQueries({
         queryKey: voidKeys.deploys(organizationId),
       }),
     ])
-  const setBranch = (branch: VoidBranch) =>
-    queryClient.setQueryData<VoidBranch[]>(
-      voidKeys.branches(organizationId),
+  const setScenario = (scenario: VoidScenario) =>
+    queryClient.setQueryData<VoidScenario[]>(
+      voidKeys.scenarios(organizationId),
       (current) =>
-        current?.some((b) => b.id === branch.id)
-          ? current.map((b) => (b.id === branch.id ? branch : b))
-          : [branch, ...(current ?? [])],
+        current?.some((b) => b.id === scenario.id)
+          ? current.map((b) => (b.id === scenario.id ? scenario : b))
+          : [scenario, ...(current ?? [])],
     )
 
   const create = useMutation({
-    mutationFn: (body: VoidBranchCreate) =>
-      voidRequest<VoidBranch>(organizationId, '/branches', {
+    mutationFn: (body: VoidScenarioCreate) =>
+      voidRequest<VoidScenario>(organizationId, '/scenarios', {
         method: 'POST',
         body,
       }),
-    onSuccess: setBranch,
+    onSuccess: setScenario,
   })
   const update = useMutation({
-    mutationFn: ({ id, ...body }: VoidBranchUpdate & { id: string }) =>
-      voidRequest<VoidBranch>(organizationId, `/branches/${id}`, {
+    mutationFn: ({ id, ...body }: VoidScenarioUpdate & { id: string }) =>
+      voidRequest<VoidScenario>(organizationId, `/scenarios/${id}`, {
         method: 'PATCH',
         body,
       }),
-    onSuccess: setBranch,
+    onSuccess: setScenario,
   })
   const remove = useMutation({
     mutationFn: (id: string) =>
-      voidRequest<void>(organizationId, `/branches/${id}`, {
+      voidRequest<void>(organizationId, `/scenarios/${id}`, {
         method: 'DELETE',
       }),
     onSuccess: (_, id) =>
-      queryClient.setQueryData<VoidBranch[]>(
-        voidKeys.branches(organizationId),
+      queryClient.setQueryData<VoidScenario[]>(
+        voidKeys.scenarios(organizationId),
         (current) => current?.filter((b) => b.id !== id),
       ),
   })
   const promote = useMutation({
     mutationFn: (id: string) =>
-      voidRequest<VoidDeploy>(organizationId, `/branches/${id}/promote`, {
+      voidRequest<VoidDeploy>(organizationId, `/scenarios/${id}/promote`, {
         method: 'POST',
       }),
     onSuccess: invalidate,
   })
-  return { create, update, remove, promote, setBranch }
+  return { create, update, remove, promote, setScenario }
 }
 
 /** The first seven characters of a hash; fixture labels pass through. */

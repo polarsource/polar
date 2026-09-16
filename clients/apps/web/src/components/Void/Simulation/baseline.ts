@@ -1,6 +1,6 @@
 import {
-  VoidBranch,
-  VoidBranchPatch,
+  VoidScenario,
+  VoidScenarioPatch,
   VoidConfigProduct,
   VoidConfiguration,
   VoidMeterTerms,
@@ -55,16 +55,16 @@ export const leversFromConfiguration = (
 const unitAmount = (priceCents: number) =>
   (priceCents / 100).toFixed(12).replace(/0+$/, '').replace(/\.$/, '')
 
-/** The configuration-level diff the backend stores for a branch. */
+/** The configuration-level diff the backend stores for a scenario. */
 export const patchFromLevers = (
   levers: ScenarioLevers,
   base: VoidConfiguration,
-): VoidBranchPatch => {
-  const patch: VoidBranchPatch = { products: {}, meters: {} }
+): VoidScenarioPatch => {
+  const patch: VoidScenarioPatch = { products: {}, meters: {} }
   for (const plan of levers.plans) {
     const product = base.products.find((p) => p.slug === plan.id)
     if (!product || product.price.type !== 'recurring') continue
-    const changes: VoidBranchPatch['products'][string] = {}
+    const changes: VoidScenarioPatch['products'][string] = {}
     if (cents(product.price.amount) !== plan.monthlyPrice) {
       changes.price = {
         ...product.price,
@@ -137,5 +137,7 @@ export const configurationFromLevers = (
   }
 }
 
-export const baseLeversOf = (branch: VoidBranch, assumptions: Assumptions) =>
-  leversFromConfiguration(branch.base_configuration, assumptions)
+export const baseLeversOf = (
+  scenario: VoidScenario,
+  assumptions: Assumptions,
+) => leversFromConfiguration(scenario.base_configuration, assumptions)

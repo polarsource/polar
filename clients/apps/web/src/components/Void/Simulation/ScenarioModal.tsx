@@ -126,7 +126,7 @@ const Form = ({
                   />
                   {candidate.has_configuration ? null : (
                     <Text variant="caption" color="muted">
-                      not branchable
+                      no stored configuration
                     </Text>
                   )}
                 </Box>

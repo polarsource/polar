@@ -43,7 +43,9 @@ class VoidDeployment(RecordModel):
     )
     entries: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
     configuration: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, nullable=True, comment="The normalized deploy body; branches fork it."
+        JSONB,
+        nullable=True,
+        comment="The normalized deploy body; scenarios start from it.",
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id"), nullable=False, index=True

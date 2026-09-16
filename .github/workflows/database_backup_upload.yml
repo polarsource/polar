@@ -25,24 +25,25 @@ jobs:
           RENDER_DATABASE_ID: ${{ secrets.RENDER_DATABASE_ID }}
         run: |
           mkdir -p backups
+          TODAY=$(date -u +%Y-%m-%d)
 
-          if ! DOWNLOAD_URL=$(curl -s -X GET "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
+          DOWNLOAD_URL=$(curl -fsS "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
-            -H "Content-Type: application/json" | jq -r '.[0].url'); then
-            echo "Error: Failed to fetch database export list" >&2
-            exit 1
-          fi
+            -H "Content-Type: application/json" \
+            | jq -r --arg today "$TODAY" '[.[] | select(.createdAt | startswith($today))][0].url // empty')
 
-          if [[ "$DOWNLOAD_URL" == "null" || -z "$DOWNLOAD_URL" ]]; then
-            echo "Error: No valid export URL found" >&2
+          if [[ -z "$DOWNLOAD_URL" ]]; then
+            echo "Error: No export for $TODAY found" >&2
             exit 1
           fi
 
           echo "Downloading database backup..."
-          if ! curl -s -o "backups/$(date +%Y%m%d)_backup.tar.gz" "$DOWNLOAD_URL"; then
-            echo "Error: Failed to download backup" >&2
-            exit 1
-          fi
+          for attempt in $(seq 1 5); do
+            curl -fsS -C - -o "backups/$(date -u +%Y%m%d)_backup.tar.gz" "$DOWNLOAD_URL" && break
+            echo "Download attempt $attempt failed, resuming in 30 seconds..." >&2
+            sleep 30
+            [[ "$attempt" -eq 5 ]] && exit 1
+          done
 
           echo "Download completed successfully"
 

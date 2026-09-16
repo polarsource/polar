@@ -641,14 +641,29 @@ class MerchantMigrationRecordRepository(
 
     async def adopt_settled(self, *, organization_id: UUID, migration_id: UUID) -> None:
         """Attach imported/skipped/failed rows from earlier runs to this
-        migration so a new catalog read shows them as already settled."""
+        migration so a new catalog read shows them as already settled.
+
+        Only migrations created before this one are adopted, so retrying an
+        older run cannot pull rows off a newer assessment.
+        """
+        current_created_at = (
+            select(MerchantMigration.created_at)
+            .where(MerchantMigration.id == migration_id)
+            .scalar_subquery()
+        )
         await self.session.execute(
             update(MerchantMigrationRecord)
             .where(
                 MerchantMigrationRecord.organization_id == organization_id,
-                MerchantMigrationRecord.merchant_migration_id != migration_id,
                 MerchantMigrationRecord.status != MerchantMigrationRecordStatus.pending,
+                MerchantMigrationRecord.merchant_migration_id.in_(
+                    select(MerchantMigration.id).where(
+                        MerchantMigration.organization_id == organization_id,
+                        MerchantMigration.created_at < current_created_at,
+                    )
+                ),
             )
+            .execution_options(synchronize_session="fetch")
             .values(merchant_migration_id=migration_id)
         )
 
@@ -698,7 +713,12 @@ class MerchantMigrationRecordRepository(
                     },
                     flush=True,
                 )
-            if existing.merchant_migration_id != merchant_migration.id:
+            if (
+                existing.merchant_migration_id != merchant_migration.id
+                and await self._is_from_older_migration(
+                    existing.merchant_migration_id, merchant_migration
+                )
+            ):
                 return await self.update(
                     existing,
                     update_dict={"merchant_migration_id": merchant_migration.id},
@@ -715,3 +735,13 @@ class MerchantMigrationRecordRepository(
             ),
             flush=True,
         )
+
+    async def _is_from_older_migration(
+        self, migration_id: UUID, current: MerchantMigration
+    ) -> bool:
+        created_at = await self.session.scalar(
+            select(MerchantMigration.created_at).where(
+                MerchantMigration.id == migration_id
+            )
+        )
+        return created_at is not None and created_at < current.created_at

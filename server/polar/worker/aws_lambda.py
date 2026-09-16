@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from typing import Any
 
 import logfire
@@ -49,38 +50,48 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     try:
         for record in event.get("Records", []):
             message_id = record["messageId"]
-            try:
-                envelope = parse_envelope(record["body"])
-                _loop.run_until_complete(
-                    run_task(
-                        envelope.actor,
-                        envelope.args,
-                        envelope.kwargs,
-                        receive_count=_effective_receive_count(
-                            record, envelope.attempt
-                        ),
-                        source_correlation_id=envelope.correlation_id,
-                        remaining_time_seconds=(
-                            context.get_remaining_time_in_millis() / 1000
-                            - _REMAINING_TIME_MARGIN_SECONDS
-                        ),
-                        message_timestamp=envelope.message_timestamp,
-                        message_id=envelope.message_id,
-                        debounce_key=envelope.debounce_key,
-                        message_options=envelope.message_options,
+            with contextlib.ExitStack() as stack:
+                try:
+                    envelope = parse_envelope(record["body"])
+                    if envelope.actor not in settings.LOGFIRE_IGNORED_ACTORS:
+                        stack.enter_context(
+                            logfire.span(
+                                "SQS {actor}",
+                                actor=envelope.actor,
+                                message_id=message_id,
+                                source_correlation_id=envelope.correlation_id,
+                            )
+                        )
+                    _loop.run_until_complete(
+                        run_task(
+                            envelope.actor,
+                            envelope.args,
+                            envelope.kwargs,
+                            receive_count=_effective_receive_count(
+                                record, envelope.attempt
+                            ),
+                            source_correlation_id=envelope.correlation_id,
+                            remaining_time_seconds=(
+                                context.get_remaining_time_in_millis() / 1000
+                                - _REMAINING_TIME_MARGIN_SECONDS
+                            ),
+                            message_timestamp=envelope.message_timestamp,
+                            message_id=envelope.message_id,
+                            debounce_key=envelope.debounce_key,
+                            message_options=envelope.message_options,
+                        )
                     )
-                )
-            except Retry as exc:
-                if _apply_retry_backoff(record, exc):
-                    batch_item_failures.append({"itemIdentifier": message_id})
-            except Exception as exc:
-                sentry_sdk.capture_exception(exc)
-                log.exception(
-                    "polar.worker.sqs_task_failed",
-                    message_id=message_id,
-                )
-                if _apply_retry_backoff(record, exc):
-                    batch_item_failures.append({"itemIdentifier": message_id})
+                except Retry as exc:
+                    if _apply_retry_backoff(record, exc):
+                        batch_item_failures.append({"itemIdentifier": message_id})
+                except Exception as exc:
+                    sentry_sdk.capture_exception(exc)
+                    log.exception(
+                        "polar.worker.sqs_task_failed",
+                        message_id=message_id,
+                    )
+                    if _apply_retry_backoff(record, exc):
+                        batch_item_failures.append({"itemIdentifier": message_id})
     finally:
         logfire.force_flush()
     return {"batchItemFailures": batch_item_failures}

@@ -1,0 +1,100 @@
+---
+title: "Rotate the JWKS Signing Key"
+description: "Publish a new signing key generation, move signing to it, and retire the old one."
+---
+
+<Warning>
+  Production operation. This key signs OAuth2 `id_token`s and the SSO client assertion.
+  A misstep stops SSO logins and breaks `id_token` verification for every OAuth2 client.
+  Announce it and coordinate with the on-call engineer.
+</Warning>
+
+The private key never leaves KMS, so rotating it is not about replacing leaked material.
+Publish a second key, move signing to it, retire the first.
+
+See [ADR-0010](/engineering/decisions/0010-jwks-signing-keys-in-kms) for why KMS does not do
+this for us.
+
+## When to use this
+
+- A role holding `kms:Sign` was compromised. The key itself cannot leak, so that is what a
+  leak means here.
+- Routine, scheduled rotation.
+- Moving to a different key spec or algorithm.
+
+## Prerequisites
+
+- Access to the HCP Terraform Cloud workspace (`production` / `sandbox` / `test`)
+- Access to the [Render Dashboard](https://dashboard.render.com/) to redeploy services
+
+## Procedure
+
+Name a generation for the year and month you create it, so generations sort chronologically.
+
+### 1. Publish the new generation
+
+In `terraform/<environment>/aws.tf`, add the generation and leave the pointer alone:
+
+```hcl
+module "jwks_signing_key" {
+  source = "../modules/jwks_signing_key"
+
+  environment        = "production"
+  role_name          = module.secrets_kms.role_name
+  generations        = ["2026-09", "2026-12"]
+  current_generation = "2026-09"
+}
+```
+
+Inspect the plan in [Terraform Cloud](https://app.terraform.io/app/polar-sh/workspaces) and apply.
+
+<Warning>
+  The plan must show one `aws_kms_key` **created** and `aws_iam_role_policy.signing` updated
+  in place, and no key replaced or destroyed. These keys carry no `prevent_destroy`, so
+  nothing stops that for you.
+</Warning>
+
+### 2. Redeploy and confirm both keys are published
+
+The key ids arrive in a shared env group, so services may **not** redeploy on their own.
+Trigger **Manual Deploy → Deploy latest reference** for the API.
+
+```bash
+curl -s https://api.polar.sh/.well-known/jwks.json | jq '.keys[].kid'
+```
+
+Both key ids must appear.
+
+### 3. Wait a day
+
+Merchants paste the JWKS URL into their own identity provider. A provider that caches our set
+on a fixed TTL does not have the new key yet, and signing with a key it has not seen stops
+that merchant's SSO logins.
+
+### 4. Move signing to the new generation
+
+Set `current_generation = "2026-12"`, apply, and redeploy the API.
+
+`kms:Sign` moves to the new key. The old generation keeps `kms:GetPublicKey`: still published,
+still verifying, no longer able to sign.
+
+### 5. Verify both signing paths
+
+- Run an OAuth2 authorization-code flow and decode the `id_token`. Its `kid` header must be
+  the new key id, and the signature must verify against the published set.
+- Log in through SSO on an organization using **Private key JWT**, which signs its client
+  assertion with the same key.
+
+### 6. Wait seven days
+
+An `id_token` lives an hour and an SSO client assertion a minute, so nothing signed by the old
+key is still verified after that. Seven days is margin.
+
+### 7. Retire the old generation
+
+Remove it from `generations` and apply.
+
+<Warning>
+  The plan must destroy the retired key and nothing else. KMS schedules the deletion 30 days
+  out, cancellable in the console until then. That is the only safety net here.
+</Warning>

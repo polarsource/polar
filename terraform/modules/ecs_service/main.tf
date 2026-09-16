@@ -123,10 +123,11 @@ resource "aws_ecs_task_definition" "this" {
     [
       merge(
         {
-          name      = local.full_name
-          image     = var.image
-          essential = true
-          command   = var.command
+          name       = local.full_name
+          image      = var.image
+          essential  = true
+          entryPoint = var.entrypoint
+          command    = var.command
           environment = [
             for key, value in var.environment_variables : { name = key, value = value }
           ]

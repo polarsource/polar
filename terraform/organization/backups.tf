@@ -11,4 +11,7 @@ module "production_backups" {
   }
 
   permissions_boundary_arn = module.permission_boundary_management.policy_arn
+  uploader_role_arns = [
+    "arn:aws:iam::${local.workload_accounts.production.id}:role/polar-production-backup-copy-task",
+  ]
 }

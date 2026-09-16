@@ -1007,3 +1007,27 @@ resource "tfe_variable" "ec2_tailscale_oauth_client_secret_production" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "render_api_key_production" {
+  key             = "render_api_key"
+  category        = "terraform"
+  description     = "Render API key"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backup_alert_slack_bot_token_production" {
+  key             = "backup_alert_slack_bot_token"
+  category        = "terraform"
+  description     = "Slack bot token for database backup copy failure alerts"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

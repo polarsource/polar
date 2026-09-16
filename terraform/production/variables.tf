@@ -595,3 +595,15 @@ variable "private_backoffice_tailscale_ip" {
     error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
   }
 }
+
+variable "render_api_key" {
+  description = "Render API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "backup_alert_slack_bot_token" {
+  description = "Slack bot token for database backup copy failure alerts"
+  type        = string
+  sensitive   = true
+}

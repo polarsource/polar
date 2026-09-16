@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from fastapi import Depends, Request
@@ -16,11 +17,12 @@ router = APIRouter(prefix="/.well-known", tags=["well_known"], include_in_schema
 @router.get("/jwks.json", name="well_known.jwks")
 async def well_known_jwks() -> dict[str, Any]:
     signer = get_signer()
+    signing_key = await asyncio.to_thread(signer.public_jwk)
     # The configured set still verifies id_tokens signed before the key moved.
     configured = settings.JWKS.as_dict(is_private=False)["keys"]
     return {
         "keys": [
-            signer.public_jwk(),
+            signing_key,
             *(key for key in configured if key["kid"] != signer.kid),
         ]
     }

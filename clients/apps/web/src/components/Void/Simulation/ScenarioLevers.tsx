@@ -9,7 +9,7 @@ import {
 } from '@polar-sh/ui/components/atoms/Accordion'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
-import { BASELINE_LEVERS } from './baseline'
+import { DEFAULT_ASSUMPTIONS } from './baseline'
 import { useScenarios } from './store'
 import { Scenario, ScenarioLevers as Levers } from './types'
 
@@ -102,7 +102,7 @@ const Group = ({
 
 export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
   const { updateLevers } = useScenarios()
-  const { levers } = scenario
+  const { levers, baseLevers } = scenario
   const edit = (mutate: (levers: Levers) => void) =>
     updateLevers(scenario.id, mutate)
 
@@ -124,7 +124,10 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
               <LeverField
                 label={`${plan.name} price`}
                 value={plan.monthlyPrice}
-                baseline={BASELINE_LEVERS.plans[index].monthlyPrice}
+                baseline={
+                  baseLevers.plans.find((p) => p.id === plan.id)
+                    ?.monthlyPrice ?? plan.monthlyPrice
+                }
                 prefix="$"
                 suffix="/ mo"
                 scale={100}
@@ -137,7 +140,10 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
               <LeverField
                 label={`${plan.name} allowance`}
                 value={plan.includedUsage}
-                baseline={BASELINE_LEVERS.plans[index].includedUsage}
+                baseline={
+                  baseLevers.plans.find((p) => p.id === plan.id)
+                    ?.includedUsage ?? plan.includedUsage
+                }
                 prefix="$"
                 scale={100}
                 onChange={(value) =>
@@ -160,7 +166,10 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
               key={meter.id}
               label={`${meter.name} / ${meter.unit}`}
               value={meter.price}
-              baseline={BASELINE_LEVERS.meters[index].price}
+              baseline={
+                baseLevers.meters.find((m) => m.id === meter.id)?.price ??
+                meter.price
+              }
               prefix="$"
               step={0.5}
               scale={100}
@@ -181,7 +190,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
           <LeverField
             label="Usage growth"
             value={levers.assumptions.usageGrowth}
-            baseline={BASELINE_LEVERS.assumptions.usageGrowth}
+            baseline={DEFAULT_ASSUMPTIONS.usageGrowth}
             suffix="% / mo"
             onChange={(value) =>
               edit((draft) => {
@@ -192,7 +201,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
           <LeverField
             label="New customers"
             value={levers.assumptions.newCustomers}
-            baseline={BASELINE_LEVERS.assumptions.newCustomers}
+            baseline={DEFAULT_ASSUMPTIONS.newCustomers}
             suffix="/ mo"
             onChange={(value) =>
               edit((draft) => {
@@ -203,7 +212,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
           <LeverField
             label="Churn tolerance"
             value={levers.assumptions.churnTolerance}
-            baseline={BASELINE_LEVERS.assumptions.churnTolerance}
+            baseline={DEFAULT_ASSUMPTIONS.churnTolerance}
             suffix="%"
             onChange={(value) =>
               edit((draft) => {
@@ -214,7 +223,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
           <LeverField
             label="Churn per 10% over"
             value={levers.assumptions.churnElasticity}
-            baseline={BASELINE_LEVERS.assumptions.churnElasticity}
+            baseline={DEFAULT_ASSUMPTIONS.churnElasticity}
             suffix="%"
             onChange={(value) =>
               edit((draft) => {

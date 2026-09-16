@@ -52,7 +52,7 @@ const VoidNavigation = ({
   const routes = useVoidRoutes(organization)
   return (
     <div className="flex w-full flex-col gap-4">
-      <VoidDefinitionSelector />
+      <VoidDefinitionSelector organization={organization} />
       <NavList routes={routes} navType="organization" />
     </div>
   )

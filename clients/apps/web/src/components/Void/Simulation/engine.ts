@@ -2,7 +2,6 @@ import { addMonths, startOfMonth, subDays } from 'date-fns'
 import { buildTree, walk } from '../identities'
 import { getVoidData } from '../mock'
 import { VoidData } from '../types'
-import { BASELINE_LEVERS } from './baseline'
 import {
   Assumptions,
   ComponentResult,
@@ -107,11 +106,14 @@ const round = (value: number) => Math.round(value)
 let cachedData: VoidData | null = null
 const data = () => (cachedData ??= getVoidData())
 
-export const replay = (levers: ScenarioLevers): ReplayResult => {
+export const replay = (
+  levers: ScenarioLevers,
+  base: ScenarioLevers,
+): ReplayResult => {
   const customers = collectCustomers(data())
   const bills = customers.map((customer) => ({
     customer,
-    baseline: billFor(customer, BASELINE_LEVERS),
+    baseline: billFor(customer, base),
     scenario: billFor(customer, levers),
   }))
 
@@ -207,10 +209,13 @@ export const replay = (levers: ScenarioLevers): ReplayResult => {
   }
 }
 
-export const project = (levers: ScenarioLevers): ProjectionPoint[] => {
+export const project = (
+  levers: ScenarioLevers,
+  base: ScenarioLevers,
+): ProjectionPoint[] => {
   const customers = collectCustomers(data())
   const bills = customers.map((customer) => ({
-    baseline: billFor(customer, BASELINE_LEVERS),
+    baseline: billFor(customer, base),
     scenario: billFor(customer, levers),
   }))
   const count = bills.length || 1

@@ -1,5 +1,4 @@
 import { schemas } from '@polar-sh/client'
-import { BASELINE_LEVERS } from './baseline'
 import { ScenarioLevers } from './types'
 
 export type SimulationChange = schemas['SimulationChange']
@@ -45,11 +44,7 @@ export const describeChange = (change: SimulationChange): string => {
       return `${change.name} price ${amount} / mo`
     case 'plan_allowance':
       return `${change.name} allowance ${amount}`
-    case 'meter_price': {
-      const meter = BASELINE_LEVERS.meters.find((m) =>
-        sameName(m.name, change.name),
-      )
-      return `${change.name} ${amount} / ${meter?.unit ?? 'unit'}`
-    }
+    case 'meter_price':
+      return `${change.name} ${amount} / unit`
   }
 }

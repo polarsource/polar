@@ -1,113 +1,167 @@
 'use client'
 
-import { useMemo, useSyncExternalStore } from 'react'
-import { blankScenario, PRESET_SCENARIOS } from './baseline'
-import { Scenario, ScenarioLevers } from './types'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useContext, useMemo, useRef } from 'react'
+import {
+  shortVersion,
+  useVoidBranches,
+  useVoidBranchMutations,
+  useVoidDeploys,
+  VoidBranch,
+  VoidDeploy,
+} from '../api'
+import {
+  configurationFromLevers,
+  DEFAULT_ASSUMPTIONS,
+  leversFromConfiguration,
+  patchFromLevers,
+} from './baseline'
+import { Assumptions, Scenario, ScenarioLevers } from './types'
 
-const STORAGE_KEY = 'void-simulation-scenarios'
+const ASSUMPTIONS_KEY = 'void-simulation-assumptions'
 
-let state: Scenario[] | null = null
-const listeners = new Set<() => void>()
-
-const load = (): Scenario[] | null => {
+const loadAssumptions = (): Record<string, Assumptions> => {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Scenario[]) : null
+    const raw = window.localStorage.getItem(ASSUMPTIONS_KEY)
+    return raw ? (JSON.parse(raw) as Record<string, Assumptions>) : {}
   } catch {
-    return null
+    return {}
   }
 }
 
-const persist = (scenarios: Scenario[]) => {
+const saveAssumptions = (all: Record<string, Assumptions>) => {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios))
+    window.localStorage.setItem(ASSUMPTIONS_KEY, JSON.stringify(all))
   } catch {
-    // Storage may be unavailable; the session still works in memory.
+    // Assumptions are a per-browser convenience; losing them is fine.
   }
 }
 
-const getSnapshot = () => (state ??= load() ?? PRESET_SCENARIOS)
-const getServerSnapshot = () => PRESET_SCENARIOS
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+const toScenario = (
+  branch: VoidBranch,
+  deploys: VoidDeploy[],
+  assumptions: Assumptions,
+): Scenario => {
+  const promoted = deploys.find((d) => d.id === branch.promoted_deployment_id)
+  return {
+    id: branch.id,
+    name: branch.name,
+    basedOn: { version: branch.base_version_id },
+    createdAt: branch.created_at,
+    updatedAt: branch.modified_at ?? branch.created_at,
+    promotedAs: branch.promoted_deployment_id
+      ? shortVersion(promoted?.version_id ?? branch.version_id)
+      : null,
+    levers: leversFromConfiguration(branch.configuration, assumptions),
+    baseLevers: leversFromConfiguration(branch.base_configuration, assumptions),
+    patch: branch.patch,
+  }
 }
-
-const commit = (next: Scenario[]) => {
-  state = next
-  persist(next)
-  listeners.forEach((listener) => listener())
-}
-
-const touch = (scenario: Scenario): Scenario => ({
-  ...scenario,
-  updatedAt: new Date().toISOString(),
-})
-
-const slugify = (name: string) =>
-  name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
 
 export type NewScenario = Pick<Scenario, 'name' | 'basedOn'>
 
-const create = (input: NewScenario): Scenario => {
-  const id = `${slugify(input.name) || 'scenario'}-${Date.now().toString(36)}`
-  const scenario = { ...blankScenario(id, input.name), ...input }
-  commit([scenario, ...getSnapshot()])
-  return scenario
-}
-
-const duplicate = (id: string): Scenario | undefined => {
-  const source = getSnapshot().find((scenario) => scenario.id === id)
-  if (!source) return undefined
-  const copy: Scenario = {
-    ...structuredClone(source),
-    id: `${source.id}-copy-${Date.now().toString(36)}`,
-    name: `${source.name} (copy)`,
-    promotedAs: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-  commit([copy, ...getSnapshot()])
-  return copy
-}
-
-const update = (
-  id: string,
-  patch: Partial<Omit<Scenario, 'id' | 'levers'>>,
-) => {
-  commit(
-    getSnapshot().map((scenario) =>
-      scenario.id === id ? touch({ ...scenario, ...patch }) : scenario,
-    ),
-  )
-}
-
-const updateLevers = (id: string, mutate: (levers: ScenarioLevers) => void) => {
-  commit(
-    getSnapshot().map((scenario) => {
-      if (scenario.id !== id) return scenario
-      const levers = structuredClone(scenario.levers)
-      mutate(levers)
-      return touch({ ...scenario, levers })
-    }),
-  )
-}
-
-const remove = (id: string) => {
-  commit(getSnapshot().filter((scenario) => scenario.id !== id))
-}
+const PERSIST_DELAY = 500
 
 export const useScenarios = () => {
-  const scenarios = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+  const { organization } = useContext(OrganizationContext)
+  const branches = useVoidBranches(organization.id)
+  const deploys = useVoidDeploys(organization.id)
+  const mutations = useVoidBranchMutations(organization.id)
+  const timers = useRef<Record<string, number>>({})
+
+  const assumptions = useRef<Record<string, Assumptions> | null>(null)
+  const assumptionsFor = (id: string) =>
+    (assumptions.current ??= loadAssumptions())[id] ?? DEFAULT_ASSUMPTIONS
+
+  const scenarios = useMemo(
+    () =>
+      (branches.data ?? []).map((branch) =>
+        toScenario(branch, deploys.data ?? [], assumptionsFor(branch.id)),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [branches.data, deploys.data],
   )
-  return useMemo(
-    () => ({ scenarios, create, duplicate, update, updateLevers, remove }),
-    [scenarios],
-  )
+
+  return useMemo(() => {
+    const branchOf = (id: string) =>
+      branches.data?.find((branch) => branch.id === id)
+
+    const create = async (input: NewScenario): Promise<Scenario> => {
+      const branch = await mutations.create.mutateAsync({
+        name: input.name,
+        base_version_id: input.basedOn.version,
+      })
+      return toScenario(branch, deploys.data ?? [], DEFAULT_ASSUMPTIONS)
+    }
+
+    const duplicate = async (id: string): Promise<Scenario | undefined> => {
+      const source = branchOf(id)
+      if (!source) return undefined
+      const branch = await mutations.create.mutateAsync({
+        name: `${source.name} (copy)`,
+        base_version_id: source.base_version_id,
+        patch: source.patch,
+      })
+      return toScenario(branch, deploys.data ?? [], assumptionsFor(id))
+    }
+
+    const update = (id: string, patch: Partial<Pick<Scenario, 'name'>>) => {
+      if (patch.name !== undefined) {
+        mutations.update.mutate({ id, name: patch.name })
+      }
+    }
+
+    const updateLevers = (
+      id: string,
+      mutate: (levers: ScenarioLevers) => void,
+    ) => {
+      const branch = branchOf(id)
+      if (!branch) return
+      const levers = leversFromConfiguration(
+        branch.configuration,
+        assumptionsFor(id),
+      )
+      mutate(levers)
+      if (levers.assumptions !== assumptionsFor(id)) {
+        const all = (assumptions.current ??= loadAssumptions())
+        all[id] = levers.assumptions
+        saveAssumptions(all)
+      }
+      const patch = patchFromLevers(levers, branch.base_configuration)
+      if (JSON.stringify(patch) === JSON.stringify(branch.patch)) {
+        mutations.setBranch({ ...branch })
+        return
+      }
+      // Optimistic: reflect the edit at once, persist after typing settles.
+      mutations.setBranch({
+        ...branch,
+        patch,
+        configuration: configurationFromLevers(
+          levers,
+          branch.base_configuration,
+        ),
+      })
+      window.clearTimeout(timers.current[id])
+      timers.current[id] = window.setTimeout(() => {
+        mutations.update.mutate({ id, patch })
+      }, PERSIST_DELAY)
+    }
+
+    const remove = (id: string) => mutations.remove.mutate(id)
+
+    const promote = (id: string) => mutations.promote.mutateAsync(id)
+
+    return {
+      scenarios,
+      isLoading: branches.isLoading || deploys.isLoading,
+      error: branches.error ?? deploys.error,
+      create,
+      duplicate,
+      update,
+      updateLevers,
+      remove,
+      promote,
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenarios, branches.data, deploys.data])
 }

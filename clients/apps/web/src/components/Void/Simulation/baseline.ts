@@ -1,133 +1,141 @@
-import { Scenario, ScenarioLevers } from './types'
+import {
+  VoidBranch,
+  VoidBranchPatch,
+  VoidConfigProduct,
+  VoidConfiguration,
+  VoidMeterTerms,
+} from '../api'
+import { Assumptions, ScenarioLevers } from './types'
 
-export const BASELINE_LEVERS: ScenarioLevers = {
-  plans: [
-    { id: 'scale', name: 'Scale', monthlyPrice: 49_900, includedUsage: 25_000 },
-    { id: 'team', name: 'Team', monthlyPrice: 9_900, includedUsage: 5_000 },
-    { id: 'starter', name: 'Starter', monthlyPrice: 1_900, includedUsage: 0 },
-  ],
-  meters: [
-    {
-      id: 'output_tokens',
-      name: 'Output tokens',
-      unit: '1M tokens',
-      per: 1_000_000,
-      price: 800,
-    },
-    {
-      id: 'input_tokens',
-      name: 'Input tokens',
-      unit: '1M tokens',
-      per: 1_000_000,
-      price: 150,
-    },
-    {
-      id: 'tool_calls',
-      name: 'Tool calls',
-      unit: '1K calls',
-      per: 1_000,
-      price: 40,
-    },
-  ],
-  assumptions: {
-    usageGrowth: 8,
-    newCustomers: 3,
-    churnTolerance: 20,
-    churnElasticity: 15,
-  },
+export const DEFAULT_ASSUMPTIONS: Assumptions = {
+  usageGrowth: 8,
+  newCustomers: 3,
+  churnTolerance: 20,
+  churnElasticity: 15,
 }
 
-export const BASED_ON = { definition: 'main', version: 'v14' }
+const termsOf = (
+  entry: VoidConfigProduct['meters'][number],
+): { slug: string } & VoidMeterTerms =>
+  typeof entry === 'string'
+    ? { slug: entry, included: 0, limit: 'hard', rollover_cap: 0 }
+    : entry
 
-const withPlans = (
-  overrides: Record<string, Partial<ScenarioLevers['plans'][number]>>,
-) => BASELINE_LEVERS.plans.map((plan) => ({ ...plan, ...overrides[plan.id] }))
+const cents = (amount: string) => Math.round(Number(amount) * 100)
 
-const withMeters = (
-  overrides: Record<string, Partial<ScenarioLevers['meters'][number]>>,
-) =>
-  BASELINE_LEVERS.meters.map((meter) => ({
-    ...meter,
-    ...overrides[meter.id],
-  }))
-
-const at = (daysAgo: number) =>
-  new Date(Date.now() - daysAgo * 86_400_000).toISOString()
-
-export const PRESET_SCENARIOS: Scenario[] = [
-  {
-    id: 'usage-first',
-    name: 'Usage-first',
-    basedOn: BASED_ON,
-    createdAt: at(6),
-    updatedAt: at(1),
-    promotedAs: null,
-    levers: {
-      plans: withPlans({
-        scale: { monthlyPrice: 24_900, includedUsage: 0 },
-        team: { includedUsage: 0 },
-      }),
-      meters: withMeters({ output_tokens: { price: 1_200 } }),
-      assumptions: BASELINE_LEVERS.assumptions,
-    },
-  },
-  {
-    id: 'enterprise-uplift',
-    name: 'Enterprise uplift',
-    basedOn: BASED_ON,
-    createdAt: at(3),
-    updatedAt: at(2),
-    promotedAs: null,
-    levers: {
-      plans: withPlans({
-        scale: { monthlyPrice: 79_900, includedUsage: 50_000 },
-      }),
-      meters: BASELINE_LEVERS.meters,
-      assumptions: BASELINE_LEVERS.assumptions,
-    },
-  },
-  {
-    id: 'free-starter',
-    name: 'Free Starter',
-    basedOn: BASED_ON,
-    createdAt: at(12),
-    updatedAt: at(9),
-    promotedAs: null,
-    levers: {
-      plans: withPlans({
-        starter: { monthlyPrice: 0, includedUsage: 1_000 },
-        team: { monthlyPrice: 12_900 },
-      }),
-      meters: BASELINE_LEVERS.meters,
-      assumptions: { ...BASELINE_LEVERS.assumptions, newCustomers: 6 },
-    },
-  },
-]
-
-export const blankScenario = (id: string, name: string): Scenario => ({
-  id,
-  name,
-  basedOn: BASED_ON,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  promotedAs: null,
-  levers: structuredClone(BASELINE_LEVERS),
+/**
+ * Levers of one configuration. Plans are recurring products, their allowance
+ * is the `included` units of the first meter they bill. Meter prices are per
+ * single unit, in cents, so the engine's `per` is always 1.
+ */
+export const leversFromConfiguration = (
+  configuration: VoidConfiguration,
+  assumptions: Assumptions,
+): ScenarioLevers => ({
+  plans: configuration.products
+    .filter((product) => product.price.type === 'recurring')
+    .map((product) => ({
+      id: product.slug,
+      name: product.name,
+      monthlyPrice: cents(product.price.amount),
+      includedUsage: product.meters[0]
+        ? termsOf(product.meters[0]).included
+        : 0,
+    })),
+  meters: configuration.meters.map((meter) => ({
+    id: meter.slug,
+    name: meter.slug,
+    unit: 'unit',
+    per: 1,
+    price: Number(meter.unit_amount) * 100,
+  })),
+  assumptions,
 })
 
-export const changedLevers = (levers: ScenarioLevers): string[] => {
+const unitAmount = (priceCents: number) =>
+  (priceCents / 100).toFixed(12).replace(/0+$/, '').replace(/\.$/, '')
+
+/** The configuration-level diff the backend stores for a branch. */
+export const patchFromLevers = (
+  levers: ScenarioLevers,
+  base: VoidConfiguration,
+): VoidBranchPatch => {
+  const patch: VoidBranchPatch = { products: {}, meters: {} }
+  for (const plan of levers.plans) {
+    const product = base.products.find((p) => p.slug === plan.id)
+    if (!product || product.price.type !== 'recurring') continue
+    const changes: VoidBranchPatch['products'][string] = {}
+    if (cents(product.price.amount) !== plan.monthlyPrice) {
+      changes.price = {
+        ...product.price,
+        amount: (plan.monthlyPrice / 100).toString(),
+      }
+    }
+    const first = product.meters[0] ? termsOf(product.meters[0]) : null
+    if (first && first.included !== plan.includedUsage) {
+      const { slug, ...terms } = first
+      changes.meters = { [slug]: { ...terms, included: plan.includedUsage } }
+    }
+    if (Object.keys(changes).length > 0) patch.products[plan.id] = changes
+  }
+  for (const meter of levers.meters) {
+    const current = base.meters.find((m) => m.slug === meter.id)
+    if (!current) continue
+    if (Number(current.unit_amount) * 100 !== meter.price) {
+      patch.meters[meter.id] = { unit_amount: unitAmount(meter.price) }
+    }
+  }
+  return patch
+}
+
+export const changedLevers = (
+  levers: ScenarioLevers,
+  base: ScenarioLevers,
+): string[] => {
   const changed: string[] = []
-  levers.plans.forEach((plan, index) => {
-    const base = BASELINE_LEVERS.plans[index]
-    if (plan.monthlyPrice !== base.monthlyPrice)
+  levers.plans.forEach((plan) => {
+    const basePlan = base.plans.find((p) => p.id === plan.id)
+    if (!basePlan) return
+    if (plan.monthlyPrice !== basePlan.monthlyPrice)
       changed.push(`${plan.name} price`)
-    if (plan.includedUsage !== base.includedUsage) {
+    if (plan.includedUsage !== basePlan.includedUsage)
       changed.push(`${plan.name} allowance`)
-    }
   })
-  levers.meters.forEach((meter, index) => {
-    if (meter.price !== BASELINE_LEVERS.meters[index].price) {
+  levers.meters.forEach((meter) => {
+    const baseMeter = base.meters.find((m) => m.id === meter.id)
+    if (baseMeter && meter.price !== baseMeter.price)
       changed.push(`${meter.name} price`)
-    }
   })
   return changed
 }
+
+/** The base configuration with the levers applied, for optimistic display. */
+export const configurationFromLevers = (
+  levers: ScenarioLevers,
+  base: VoidConfiguration,
+): VoidConfiguration => {
+  const patch = patchFromLevers(levers, base)
+  return {
+    ...base,
+    products: base.products.map((product) => {
+      const changes = patch.products[product.slug]
+      if (!changes) return product
+      return {
+        ...product,
+        price: changes.price ?? product.price,
+        meters: product.meters.map((entry) => {
+          const { slug, ...terms } = termsOf(entry)
+          const next = changes.meters?.[slug]
+          return next ? { slug, ...next } : { slug, ...terms }
+        }),
+      }
+    }),
+    meters: base.meters.map((meter) => {
+      const next = patch.meters[meter.slug]?.unit_amount
+      return next ? { ...meter, unit_amount: next } : meter
+    }),
+  }
+}
+
+export const baseLeversOf = (branch: VoidBranch, assumptions: Assumptions) =>
+  leversFromConfiguration(branch.base_configuration, assumptions)

@@ -1,3 +1,5 @@
+import { VoidBranchPatch } from '../api'
+
 export interface PlanLever {
   id: string
   name: string
@@ -37,11 +39,16 @@ export interface ScenarioLevers {
 export interface Scenario {
   id: string
   name: string
-  basedOn: { definition: string; version: string }
+  /** The deployed version this scenario forks. Pinned; it never rebases. */
+  basedOn: { version: string }
   createdAt: string
   updatedAt: string
+  /** Short hash of the draft version this scenario was promoted to. */
   promotedAs: string | null
   levers: ScenarioLevers
+  /** Levers of the base version, what the engine compares against. */
+  baseLevers: ScenarioLevers
+  patch: VoidBranchPatch
 }
 
 export interface CustomerResult {

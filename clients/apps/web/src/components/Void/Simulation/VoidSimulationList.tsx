@@ -16,6 +16,7 @@ import { ScenarioModal } from './ScenarioModal'
 import { ScenarioChart } from './ScenarioChart'
 import { useScenarios } from './store'
 import { DailyPoint, Scenario } from './types'
+import { shortVersion } from '../api'
 
 interface Card {
   id: string
@@ -30,12 +31,12 @@ interface Card {
 }
 
 const toCard = (scenario: Scenario): Card => {
-  const { totals, daily } = replay(scenario.levers)
+  const { totals, daily } = replay(scenario.levers, scenario.baseLevers)
   return {
     id: scenario.id,
     name: scenario.name,
-    basedOn: `${scenario.basedOn.definition} · ${scenario.basedOn.version}`,
-    changes: changedLevers(scenario.levers).length,
+    basedOn: shortVersion(scenario.basedOn.version),
+    changes: changedLevers(scenario.levers, scenario.baseLevers).length,
     promotedAs: scenario.promotedAs,
     baseline: totals.baseline,
     scenario: totals.scenario,
@@ -110,7 +111,9 @@ export const VoidSimulationList = () => {
         hide={hide}
         title="New scenario"
         submitLabel="Create scenario"
-        onSubmit={(input) => router.push(`${base}/${create(input).id}`)}
+        onSubmit={async (input) =>
+          router.push(`${base}/${(await create(input)).id}`)
+        }
       />
       <Grid
         templateColumns={{

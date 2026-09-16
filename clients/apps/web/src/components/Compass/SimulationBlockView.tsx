@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  BASED_ON,
-  BASELINE_LEVERS,
-} from '@/components/Void/Simulation/baseline'
+import { useVoidDeploys } from '@/components/Void/api'
 import {
   applyChanges,
   describeChange,
@@ -15,7 +12,6 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { useMemo } from 'react'
 
 export const SimulationBlockView = ({
   block,
@@ -26,19 +22,17 @@ export const SimulationBlockView = ({
 }) => {
   const router = useRouter()
   const { create, updateLevers } = useScenarios()
-
-  const matched = useMemo(
-    () =>
-      block.changes.filter((change) => {
-        const probe = structuredClone(BASELINE_LEVERS)
-        return applyChanges(probe, [change]).length === 0
-      }),
-    [block.changes],
+  const deploys = useVoidDeploys(organization.id)
+  const active = deploys.data?.find(
+    (deploy) => deploy.status === 'active' && deploy.has_configuration,
   )
-  const unmatched = block.changes.length - matched.length
 
-  const open = () => {
-    const scenario = create({ name: block.title, basedOn: BASED_ON })
+  const open = async () => {
+    if (!active) return
+    const scenario = await create({
+      name: block.title,
+      basedOn: { version: active.version_id },
+    })
     updateLevers(scenario.id, (levers) => {
       applyChanges(levers, block.changes)
     })
@@ -75,11 +69,11 @@ export const SimulationBlockView = ({
       </Box>
       <Box alignItems="center" justifyContent="between" columnGap="m">
         <Text color="muted" variant="caption">
-          {unmatched > 0
-            ? `${unmatched} ${unmatched === 1 ? 'change does' : 'changes do'} not match a plan or meter in main · v14`
-            : 'Rebills the last 30 days of real usage'}
+          {active
+            ? 'Forks the active version and rebills the last 30 days of usage'
+            : 'No active version with a stored configuration to fork'}
         </Text>
-        <Button size="sm" onClick={open} disabled={matched.length === 0}>
+        <Button size="sm" onClick={open} disabled={!active}>
           Open in Simulate
         </Button>
       </Box>

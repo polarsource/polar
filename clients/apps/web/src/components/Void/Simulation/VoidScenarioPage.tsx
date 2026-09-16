@@ -25,24 +25,23 @@ import { ScenarioProjection } from './ScenarioProjection'
 import { ScenarioReplay } from './ScenarioReplay'
 import { ScenarioModal } from './ScenarioModal'
 import { useScenarios } from './store'
-
-const PROMOTED_VERSION = 'v15-draft'
+import { shortVersion } from '../api'
 
 export const VoidScenarioPage = () => {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}`
-  const { scenarios, duplicate, update, remove } = useScenarios()
+  const { scenarios, duplicate, update, remove, promote } = useScenarios()
   const scenario = scenarios.find((candidate) => candidate.id === id)
   const editModal = useModal()
 
   const result = useMemo(
-    () => (scenario ? replay(scenario.levers) : null),
+    () => (scenario ? replay(scenario.levers, scenario.baseLevers) : null),
     [scenario],
   )
   const projection = useMemo(
-    () => (scenario ? project(scenario.levers) : null),
+    () => (scenario ? project(scenario.levers, scenario.baseLevers) : null),
     [scenario],
   )
 
@@ -58,7 +57,7 @@ export const VoidScenarioPage = () => {
     )
   }
 
-  const changes = changedLevers(scenario.levers)
+  const changes = changedLevers(scenario.levers, scenario.baseLevers)
 
   return (
     <DashboardBody
@@ -71,9 +70,7 @@ export const VoidScenarioPage = () => {
         <Box alignItems="center" columnGap="s">
           {scenario.promotedAs ? null : (
             <Button
-              onClick={() =>
-                update(scenario.id, { promotedAs: PROMOTED_VERSION })
-              }
+              onClick={() => promote(scenario.id)}
               disabled={changes.length === 0}
             >
               Promote to draft
@@ -100,8 +97,8 @@ export const VoidScenarioPage = () => {
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => {
-                  const copy = duplicate(scenario.id)
+                onClick={async () => {
+                  const copy = await duplicate(scenario.id)
                   if (copy)
                     router.push(`${base}/definition/simulate/${copy.id}`)
                 }}
@@ -128,7 +125,7 @@ export const VoidScenarioPage = () => {
         title="Edit scenario"
         submitLabel="Save"
         initial={{ name: scenario.name, basedOn: scenario.basedOn }}
-        onSubmit={(input) => update(scenario.id, input)}
+        onSubmit={(input) => update(scenario.id, { name: input.name })}
       />
       <Box flexDirection="column" rowGap="2xl">
         <Box
@@ -140,7 +137,7 @@ export const VoidScenarioPage = () => {
         >
           <Text color="muted" variant="body">
             <Link href={`${base}/definition/products`}>
-              {scenario.basedOn.definition} · {scenario.basedOn.version}
+              Version {shortVersion(scenario.basedOn.version)}
             </Link>
             {' · '}
             {changes.length === 0

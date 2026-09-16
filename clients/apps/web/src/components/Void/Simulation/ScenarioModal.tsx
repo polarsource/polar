@@ -1,5 +1,6 @@
 'use client'
 
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import {
   Button,
   Input,
@@ -13,21 +14,21 @@ import {
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
-import { DEFINITIONS, VoidDefinition } from '../fixtures'
+import { useContext, useState } from 'react'
+import { shortVersion, useVoidDeploys, VoidDeploy } from '../api'
 import { NewScenario } from './store'
 
 const STATUS_COLOR: Record<
-  VoidDefinition['status'],
+  NonNullable<VoidDeploy['status']>,
   'green' | 'blue' | 'gray'
-> = { Active: 'green', Draft: 'blue', Archived: 'gray' }
+> = { active: 'green', draft: 'blue', archived: 'gray' }
 
 interface ScenarioModalProps {
   isShown: boolean
   hide: () => void
   title: string
   submitLabel: string
-  /** Prefills the form; omit to start from the active definition. */
+  /** Prefills the form; the version is pinned once a scenario exists. */
   initial?: NewScenario
   onSubmit: (input: NewScenario) => void
 }
@@ -47,31 +48,28 @@ const Field = ({
   </Box>
 )
 
-const definitionIdFor = (initial?: NewScenario) =>
-  DEFINITIONS.find(
-    (candidate) =>
-      candidate.name === initial?.basedOn.definition &&
-      candidate.version === initial?.basedOn.version,
-  )?.id ?? DEFINITIONS[0].id
-
 const Form = ({
   hide,
   initial,
   submitLabel,
   onSubmit,
 }: Omit<ScenarioModalProps, 'isShown' | 'title'>) => {
-  const [definitionId, setDefinitionId] = useState(definitionIdFor(initial))
+  const { organization } = useContext(OrganizationContext)
+  const deploys = useVoidDeploys(organization.id)
+  const versions = deploys.data ?? []
+  const defaultVersion =
+    initial?.basedOn.version ??
+    versions.find((d) => d.status === 'active' && d.has_configuration)
+      ?.version_id ??
+    versions.find((d) => d.has_configuration)?.version_id ??
+    ''
+  const [versionId, setVersionId] = useState(defaultVersion)
   const [name, setName] = useState(initial?.name ?? '')
-  const definition =
-    DEFINITIONS.find((candidate) => candidate.id === definitionId) ??
-    DEFINITIONS[0]
+  const version = versionId || defaultVersion
 
   const submit = () => {
-    if (!name.trim()) return
-    onSubmit({
-      name: name.trim(),
-      basedOn: { definition: definition.name, version: definition.version },
-    })
+    if (!name.trim() || !version) return
+    onSubmit({ name: name.trim(), basedOn: { version } })
     hide()
   }
 
@@ -87,23 +85,34 @@ const Form = ({
         submit()
       }}
     >
-      <Field label="Definition">
-        <Select value={definitionId} onValueChange={setDefinitionId}>
+      <Field label="Version">
+        <Select
+          value={version}
+          onValueChange={setVersionId}
+          disabled={initial !== undefined}
+        >
           <SelectTrigger>
-            <SelectValue placeholder="Pick a definition" />
+            <SelectValue placeholder="Pick a version" />
           </SelectTrigger>
           <SelectContent>
-            {DEFINITIONS.map((candidate) => (
-              <SelectItem key={candidate.id} value={candidate.id}>
+            {versions.map((candidate) => (
+              <SelectItem
+                key={candidate.version_id}
+                value={candidate.version_id}
+                disabled={!candidate.has_configuration}
+              >
                 <Box alignItems="center" columnGap="s">
-                  <span>
-                    {candidate.name} · {candidate.version}
-                  </span>
+                  <span>{shortVersion(candidate.version_id)}</span>
                   <Status
-                    status={candidate.status}
-                    color={STATUS_COLOR[candidate.status]}
+                    status={candidate.status ?? 'draft'}
+                    color={STATUS_COLOR[candidate.status ?? 'draft']}
                     size="small"
                   />
+                  {candidate.has_configuration ? null : (
+                    <Text variant="caption" color="muted">
+                      not branchable
+                    </Text>
+                  )}
                 </Box>
               </SelectItem>
             ))}
@@ -122,7 +131,7 @@ const Form = ({
         <Button type="button" variant="ghost" onClick={hide}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!name.trim()}>
+        <Button type="submit" disabled={!name.trim() || !version}>
           {submitLabel}
         </Button>
       </Box>

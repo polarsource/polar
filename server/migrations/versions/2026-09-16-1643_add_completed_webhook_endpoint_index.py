@@ -25,12 +25,6 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5s'")
         try:
-            op.drop_index(
-                INDEX_NAME,
-                table_name="webhook_events",
-                if_exists=True,
-                postgresql_concurrently=True,
-            )
             op.create_index(
                 INDEX_NAME,
                 "webhook_events",
@@ -38,6 +32,7 @@ def upgrade() -> None:
                 postgresql_include=["succeeded"],
                 postgresql_where="succeeded IS NOT NULL AND deleted_at IS NULL",
                 postgresql_concurrently=True,
+                if_not_exists=True,
             )
         finally:
             op.execute("RESET lock_timeout")

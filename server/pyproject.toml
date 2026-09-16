@@ -111,6 +111,7 @@ dev = [
 [tool.taskipy.tasks]
 void_dev = { cmd = "python -m scripts.void_dev", help = "run the standalone Void development stack or smoke scenario" }
 void_seed = { cmd = "python -m scripts.seed_void", help = "seed a local Void organization and write development credentials" }
+void_seed_demo = { cmd = "python -m scripts.seed_void_demo", help = "fill the local Void organization with demo versions, customers, usage and scenarios" }
 void_worker = { cmd = "python -m polar.void.worker", help = "run the dedicated Void Temporal worker" }
 void_tb_deploy = { cmd = "python -m scripts.void_tinybird", help = "deploy the dedicated Void Tinybird project" }
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }

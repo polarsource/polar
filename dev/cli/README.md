@@ -67,7 +67,18 @@ dev start
 ```
 
 Sign in at http://127.0.0.1:3000 with `void@polar.sh`. Get the login code from
-the API pane. Select `void-development`, which has Void enabled and no sample data.
+the API pane. Select `void-development`, which has Void enabled and carries a demo
+dataset: four configuration versions (v3 active, v4 a promoted draft), twelve
+customers with agent and service identities, subscriptions on three plans, thirty
+days of usage events and three pricing scenarios. `dev void` must be running for
+the usage to reach Tinybird and the meters. Rebuild the dataset from scratch with:
+
+```bash
+cd server && uv run task void_seed_demo -- --reset
+```
+
+The dashboard's Void pages default to frontend fixtures; switch to live data from
+the last item of the version dropdown.
 
 For SDK login, open another terminal from the repo root:
 
@@ -78,7 +89,6 @@ pnpm --filter @void/sdk void login
 ```
 
 Rerun `dev up --void` and source the file again when the token expires after 24 hours.
-Skip smoke tests to keep the organization empty.
 
 | Service | Port |
 | --- | --- |

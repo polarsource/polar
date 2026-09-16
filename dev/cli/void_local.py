@@ -86,6 +86,7 @@ def setup() -> bool:
     for command in (
         ["uv", "run", "task", "void_tb_deploy", "--local", "--shared"],
         ["uv", "run", "task", "void_seed", "--output", str(ENV_FILE)],
+        ["uv", "run", "task", "void_seed_demo"],
     ):
         result = run_command(command, cwd=SERVER_DIR, env=values)
         if result is None or result.returncode != 0:

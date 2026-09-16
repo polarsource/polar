@@ -130,6 +130,19 @@ def get_signer() -> Signer:
     return _local_signer(settings.CURRENT_JWK_KID)
 
 
+def get_published_signers() -> list[Signer]:
+    """The current signer, then any key kept published through a rotation. The
+    current one is never dropped: a token signed by an unpublished key cannot be
+    verified."""
+    current = get_signer()
+    signers = [current]
+    for key_id in settings.AWS_JWKS_KMS_PUBLISHED_KEY_IDS:
+        signer = _kms_signer(key_id)
+        if signer.kid != current.kid:
+            signers.append(signer)
+    return signers
+
+
 def _b64url(value: bytes) -> bytes:
     return base64.urlsafe_b64encode(value).rstrip(b"=")
 

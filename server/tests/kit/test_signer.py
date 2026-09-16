@@ -36,6 +36,34 @@ def test_kms_kid_is_the_key_id_not_the_arn() -> None:
     assert kms.kid == "2f5a7b1c"
 
 
+def test_published_signers_lead_with_the_current_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "arn:aws:kms:us-east-2:123456789012:key/aaaa1111"
+    retired = "arn:aws:kms:us-east-2:123456789012:key/bbbb2222"
+    monkeypatch.setattr(settings, "ENV", Environment.production)
+    monkeypatch.setattr(settings, "AWS_JWKS_KMS_KEY_ID", current)
+    monkeypatch.setattr(settings, "AWS_JWKS_KMS_PUBLISHED_KEY_IDS", [retired, current])
+
+    published = signer.get_published_signers()
+
+    assert [s.kid for s in published] == ["aaaa1111", "bbbb2222"]
+
+
+def test_published_signers_include_the_current_key_the_list_omits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "arn:aws:kms:us-east-2:123456789012:key/cccc3333"
+    other = "arn:aws:kms:us-east-2:123456789012:key/dddd4444"
+    monkeypatch.setattr(settings, "ENV", Environment.production)
+    monkeypatch.setattr(settings, "AWS_JWKS_KMS_KEY_ID", current)
+    monkeypatch.setattr(settings, "AWS_JWKS_KMS_PUBLISHED_KEY_IDS", [other])
+
+    published = signer.get_published_signers()
+
+    assert [s.kid for s in published] == ["cccc3333", "dddd4444"]
+
+
 def test_get_signer_requires_the_kms_key_in_production(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

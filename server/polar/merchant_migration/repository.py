@@ -629,6 +629,19 @@ class MerchantMigrationRecordRepository(
             )
         )
 
+    async def adopt_settled(self, *, organization_id: UUID, migration_id: UUID) -> None:
+        """Attach imported/skipped/failed rows from earlier runs to this
+        migration so a new catalog read shows them as already settled."""
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.merchant_migration_id != migration_id,
+            MerchantMigrationRecord.status != MerchantMigrationRecordStatus.pending,
+        )
+        for record in await self.get_all(statement):
+            await self.update(
+                record, update_dict={"merchant_migration_id": migration_id}
+            )
+
     async def upsert(
         self,
         merchant_migration: MerchantMigration,
@@ -673,6 +686,12 @@ class MerchantMigrationRecordRepository(
                         "canonical": canonical,
                         "merchant_migration_id": merchant_migration.id,
                     },
+                    flush=True,
+                )
+            if existing.merchant_migration_id != merchant_migration.id:
+                return await self.update(
+                    existing,
+                    update_dict={"merchant_migration_id": merchant_migration.id},
                     flush=True,
                 )
             return existing

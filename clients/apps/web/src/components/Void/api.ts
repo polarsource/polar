@@ -155,11 +155,15 @@ export const useVoidDeploys = (
     ...options,
   })
 
-export const useVoidBranches = (organizationId: string) =>
+export const useVoidBranches = (
+  organizationId: string,
+  options?: Pick<UseQueryOptions<VoidBranch[]>, 'enabled'>,
+) =>
   useQuery({
     queryKey: voidKeys.branches(organizationId),
     queryFn: () => voidRequest<VoidBranch[]>(organizationId, '/branches'),
     retry: false,
+    ...options,
   })
 
 export const useVoidBranchMutations = (organizationId: string) => {
@@ -219,4 +223,6 @@ export const useVoidBranchMutations = (organizationId: string) => {
   return { create, update, remove, promote, setBranch }
 }
 
-export const shortVersion = (versionId: string) => versionId.slice(0, 7)
+/** The first seven characters of a hash; fixture labels pass through. */
+export const shortVersion = (versionId: string) =>
+  /^[0-9a-f]{64}$/.test(versionId) ? versionId.slice(0, 7) : versionId

@@ -16,7 +16,25 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import { useContext, useState } from 'react'
 import { shortVersion, useVoidDeploys, VoidDeploy } from '../api'
+import { useVoidDataSource } from '../dataSource'
+import { DEFINITIONS } from '../fixtures'
 import { NewScenario } from './store'
+
+type VersionOption = Pick<
+  VoidDeploy,
+  'version_id' | 'status' | 'has_configuration'
+>
+
+const FIXTURE_VERSIONS: VersionOption[] = DEFINITIONS.map((definition) => ({
+  version_id: `${definition.name} · ${definition.version}`,
+  status:
+    definition.status === 'Active'
+      ? 'active'
+      : definition.status === 'Archived'
+        ? 'archived'
+        : 'draft',
+  has_configuration: true,
+}))
 
 const STATUS_COLOR: Record<
   NonNullable<VoidDeploy['status']>,
@@ -55,8 +73,11 @@ const Form = ({
   onSubmit,
 }: Omit<ScenarioModalProps, 'isShown' | 'title'>) => {
   const { organization } = useContext(OrganizationContext)
-  const deploys = useVoidDeploys(organization.id)
-  const versions = deploys.data ?? []
+  const live = useVoidDataSource() === 'live'
+  const deploys = useVoidDeploys(organization.id, { enabled: live })
+  const versions: VersionOption[] = live
+    ? (deploys.data ?? [])
+    : FIXTURE_VERSIONS
   const defaultVersion =
     initial?.basedOn.version ??
     versions.find((d) => d.status === 'active' && d.has_configuration)

@@ -57,3 +57,22 @@ export const PLANS: VoidPlan[] = [
   { name: 'Team', active: 63, mrr: 189_000 },
   { name: 'Starter', active: 22, mrr: 21_800 },
 ]
+
+export interface VoidDefinition {
+  id: string
+  name: string
+  version: string
+  status: 'Active' | 'Draft' | 'Archived' | 'Branch'
+}
+
+export const DEFINITIONS: VoidDefinition[] = [
+  { id: 'main', name: 'main', version: 'v14', status: 'Active' },
+  { id: 'staging', name: 'staging', version: 'v15-rc.2', status: 'Draft' },
+  {
+    id: 'pricing-experiment',
+    name: 'pricing-experiment',
+    version: 'v13',
+    status: 'Draft',
+  },
+  { id: 'legacy', name: 'legacy', version: 'v9', status: 'Archived' },
+]

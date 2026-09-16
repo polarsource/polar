@@ -1,6 +1,8 @@
 'use client'
 
 import { useVoidDeploys } from '@/components/Void/api'
+import { useVoidDataSource } from '@/components/Void/dataSource'
+import { BASED_ON } from '@/components/Void/Simulation/fixtures'
 import {
   applyChanges,
   describeChange,
@@ -22,10 +24,13 @@ export const SimulationBlockView = ({
 }) => {
   const router = useRouter()
   const { create, updateLevers } = useScenarios()
-  const deploys = useVoidDeploys(organization.id)
-  const active = deploys.data?.find(
-    (deploy) => deploy.status === 'active' && deploy.has_configuration,
-  )
+  const live = useVoidDataSource() === 'live'
+  const deploys = useVoidDeploys(organization.id, { enabled: live })
+  const active = live
+    ? deploys.data?.find(
+        (deploy) => deploy.status === 'active' && deploy.has_configuration,
+      )
+    : { version_id: BASED_ON.version }
 
   const open = async () => {
     if (!active) return

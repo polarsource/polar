@@ -13,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
@@ -23,13 +24,8 @@ import {
   VoidBranch,
   VoidDeploy,
 } from './api'
-
-export interface VoidDefinition {
-  id: string
-  name: string
-  version: string
-  status: 'Active' | 'Draft' | 'Archived' | 'Branch'
-}
+import { setVoidDataSource, useVoidDataSource } from './dataSource'
+import { DEFINITIONS, VoidDefinition } from './fixtures'
 
 const STATUS_COLOR: Record<
   VoidDefinition['status'],
@@ -89,11 +85,16 @@ export const VoidDefinitionSelector = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const deploys = useVoidDeploys(organization.id)
-  const branches = useVoidBranches(organization.id)
+  const source = useVoidDataSource()
+  const live = source === 'live'
+  const deploys = useVoidDeploys(organization.id, { enabled: live })
+  const branches = useVoidBranches(organization.id, { enabled: live })
   const definitions = useMemo(
-    () => definitionsOf(deploys.data ?? [], branches.data ?? []),
-    [deploys.data, branches.data],
+    () =>
+      live
+        ? definitionsOf(deploys.data ?? [], branches.data ?? [])
+        : DEFINITIONS,
+    [live, deploys.data, branches.data],
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected =
@@ -161,6 +162,20 @@ export const VoidDefinitionSelector = ({
                 </span>
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="dark:hover:bg-polar-800! flex flex-row items-center gap-x-2 duration-75 hover:bg-gray-100! hover:text-black! dark:hover:text-white!"
+              onClick={() => setVoidDataSource(live ? 'fixtures' : 'live')}
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">
+                  {live ? 'Switch to fixture data' : 'Switch to live data'}
+                </span>
+                <span className="dark:text-polar-500 text-xs text-gray-500">
+                  {live ? 'Reading from the Void API' : 'Reading from fixtures'}
+                </span>
+              </span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

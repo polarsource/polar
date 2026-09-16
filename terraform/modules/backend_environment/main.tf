@@ -124,11 +124,6 @@ locals {
     POLAR_WORKER_SQS_QUEUE_PREFIX = var.worker_sqs_config.queue_prefix
   } : {}
 
-  worker_sqs_render_secrets = var.worker_sqs_config != null && var.worker_sqs_config.aws_access_key_id != null ? {
-    POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = var.worker_sqs_config.aws_access_key_id
-    POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = var.worker_sqs_config.aws_secret_access_key
-  } : {}
-
   github_secrets = {
     POLAR_GITHUB_CLIENT_ID                           = var.github_secrets.client_id
     POLAR_GITHUB_CLIENT_SECRET                       = var.github_secrets.client_secret
@@ -229,7 +224,7 @@ locals {
     backend_production = var.environment == "production" ? merge(local.backend_production_environment_variables, local.backend_production_secrets) : null
     aws_s3             = merge(local.aws_s3_environment_variables, local.aws_s3_secrets)
     secrets_kms        = merge(local.secrets_kms_environment_variables, local.secrets_kms_render_environment_variables)
-    worker_sqs         = var.worker_sqs_config != null ? merge(local.worker_sqs_environment_variables, local.worker_sqs_render_secrets) : null
+    worker_sqs         = var.worker_sqs_config != null ? local.worker_sqs_environment_variables : null
     github             = local.github_secrets
     stripe             = local.stripe_secrets
     logfire            = var.logfire_config != null ? merge(local.logfire_environment_variables, local.logfire_secrets) : null

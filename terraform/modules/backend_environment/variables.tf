@@ -120,11 +120,9 @@ variable "aws_kms_config" {
 
 variable "worker_sqs_config" {
   type = object({
-    enabled               = string
-    actors                = string
-    queue_prefix          = string
-    aws_access_key_id     = optional(string)
-    aws_secret_access_key = optional(string)
+    enabled      = string
+    actors       = string
+    queue_prefix = string
   })
   default   = null
   sensitive = true

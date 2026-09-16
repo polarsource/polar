@@ -76,7 +76,7 @@ jobs:
         with:
           python-version-file: "server/pyproject.toml"
 
-      - uses: pnpm/action-setup@v6.0.10
+      - uses: pnpm/action-setup@v6.1.0
         with:
           package_json_file: clients/package.json
 

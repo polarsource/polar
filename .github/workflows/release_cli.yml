@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: pnpm/action-setup@v6.0.10
+      - uses: pnpm/action-setup@v6.1.0
         with:
           package_json_file: clients/package.json
 
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: pnpm/action-setup@v6.0.10
+      - uses: pnpm/action-setup@v6.1.0
         with:
           package_json_file: clients/package.json
 
@@ -126,7 +126,7 @@ jobs:
 
       - name: Import macOS signing certificate
         if: matrix.sign
-        uses: apple-actions/import-codesign-certs@v6
+        uses: apple-actions/import-codesign-certs@v7
         with:
           p12-file-base64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -177,7 +177,7 @@ jobs:
             --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
             --wait
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.archive }}
           path: clients/packages/cli/${{ matrix.archive }}
@@ -191,7 +191,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: polar-*
           path: release-assets

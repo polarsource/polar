@@ -109,6 +109,8 @@ async def create_imported_subscription(
     product: Product,
     price: ProductPriceFixed,
     customer: Customer,
+    *,
+    provider: str,
 ) -> Subscription:
     return await subscription_service.create_imported(
         session,
@@ -118,7 +120,10 @@ async def create_imported_subscription(
         current_period_start=subscription.current_period_start,
         current_period_end=subscription.current_period_end,
         anchor_day=subscription.anchor_day,
-        user_metadata={"stripe_subscription_id": subscription.source_id},
+        user_metadata={
+            "provider": provider,
+            "provider_subscription_id": subscription.source_id,
+        },
     )
 
 

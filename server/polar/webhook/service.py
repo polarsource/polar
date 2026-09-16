@@ -741,6 +741,18 @@ class WebhookService:
         self,
         session: AsyncSession,
         target: Organization,
+        event: Literal[WebhookEventType.subscription_migrated],
+        data: Subscription,
+        *,
+        provider: str,
+        provider_subscription_id: str,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
         event: Literal[WebhookEventType.refund_created],
         data: Refund,
     ) -> list[WebhookEvent]: ...
@@ -868,6 +880,7 @@ class WebhookService:
         target: Organization,
         event: WebhookEventType,
         data: object,
+        **payload_fields: object,
     ) -> list[WebhookEvent]:
         now = utc_now()
         payload = WebhookPayloadTypeAdapter.validate_python(
@@ -878,6 +891,7 @@ class WebhookService:
                 # Set arbitrary version to build a base payload,
                 # each endpoint will make a copy and set their own version.
                 "api_version": CURRENT_API_VERSION,
+                **payload_fields,
             }
         )
 

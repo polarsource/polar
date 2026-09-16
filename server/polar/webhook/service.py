@@ -419,19 +419,19 @@ class WebhookService:
         if not endpoint.enabled:
             return
 
-        # Get recent events to count the streak
-        recent_events = await webhook_event_repository.get_recent_by_endpoint(
-            endpoint.id, limit=settings.WEBHOOK_FAILURE_THRESHOLD
+        recent_outcomes = (
+            await webhook_event_repository.get_recent_outcomes_by_endpoint(
+                endpoint.id, limit=settings.WEBHOOK_FAILURE_THRESHOLD
+            )
         )
 
-        # Check if all recent events are failures
-        if len(recent_events) >= settings.WEBHOOK_FAILURE_THRESHOLD and all(
-            event.succeeded is False for event in recent_events
+        if len(recent_outcomes) >= settings.WEBHOOK_FAILURE_THRESHOLD and all(
+            succeeded is False for succeeded in recent_outcomes
         ):
             log.warning(
                 "Disabling webhook endpoint due to consecutive failures",
                 webhook_endpoint_id=endpoint.id,
-                failure_count=len(recent_events),
+                failure_count=len(recent_outcomes),
             )
             webhook_endpoint_repository = WebhookEndpointRepository.from_session(
                 session

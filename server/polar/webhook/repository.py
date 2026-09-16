@@ -48,20 +48,12 @@ class WebhookEventRepository(
         result = await self.session.execute(statement)
         return result.scalar_one()
 
-    async def get_recent_by_endpoint(
+    async def get_recent_outcomes_by_endpoint(
         self, endpoint_id: UUID, *, limit: int
-    ) -> Sequence[WebhookEvent]:
-        """
-        Get recent completed events for an endpoint.
-
-        Returns a list of WebhookEvent objects ordered by
-        created_at descending (most recent first).
-
-        Only includes events where succeeded is not NULL (completed events),
-        excluding pending events that are still being retried.
-        """
+    ) -> Sequence[bool | None]:
         statement = (
             self.get_base_statement()
+            .with_only_columns(WebhookEvent.succeeded)
             .where(
                 WebhookEvent.webhook_endpoint_id == endpoint_id,
                 WebhookEvent.succeeded.is_not(None),
@@ -69,7 +61,8 @@ class WebhookEventRepository(
             .order_by(WebhookEvent.created_at.desc())
             .limit(limit)
         )
-        return await self.get_all(statement)
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def get_pending_by_endpoint(
         self, endpoint_id: UUID

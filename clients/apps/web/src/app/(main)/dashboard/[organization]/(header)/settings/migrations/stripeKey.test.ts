@@ -52,6 +52,8 @@ describe('stripeKeyError', () => {
   it('rejects keys that are not Stripe secret or restricted keys', () => {
     expect(stripeKeyError('pk_test_abc', 'test')).toMatch(/rk_test_/)
     expect(stripeKeyError('not-a-key', 'live')).toMatch(/rk_live_/)
+    expect(stripeKeyError('rk_invalid_abc', 'test')).toMatch(/rk_test_/)
+    expect(stripeKeyError('rk_sandbox_abc', 'live')).toMatch(/rk_live_/)
   })
 
   it('rejects a live key in a test environment', () => {

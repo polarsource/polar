@@ -49,6 +49,8 @@ export function stripeCreateKeyUrl(
     : 'https://dashboard.stripe.com/test/apikeys/create'
 }
 
+const STRIPE_KEY_PREFIX = /^(rk|sk)_(live|test)_/
+
 function isLiveStripeKey(apiKey: string): boolean {
   return apiKey.startsWith('rk_live_') || apiKey.startsWith('sk_live_')
 }
@@ -61,7 +63,7 @@ export function stripeKeyError(
   if (!trimmed) {
     return null
   }
-  if (!/^(rk|sk)_/.test(trimmed)) {
+  if (!STRIPE_KEY_PREFIX.test(trimmed)) {
     return `Paste a Stripe restricted key starting with rk_${mode}_.`
   }
   if (isLiveStripeKey(trimmed) !== (mode === 'live')) {

@@ -47,7 +47,10 @@ export function CreateMigrationModal({
       }
       const apiError = result.error ?? {}
       setMissingResources(parseMissingStripeScopes(apiError))
-      setError(extractApiErrorMessage(apiError, CONNECT_FALLBACK))
+      setError(
+        extractApiErrorMessage(apiError, CONNECT_FALLBACK).trim() ||
+          CONNECT_FALLBACK,
+      )
     } catch {
       setError('Something went wrong. Please try again.')
     }

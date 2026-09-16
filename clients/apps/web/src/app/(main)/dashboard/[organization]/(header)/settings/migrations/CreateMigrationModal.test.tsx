@@ -147,4 +147,32 @@ describe('CreateMigrationModal', () => {
       ),
     ).toBeTruthy()
   })
+
+  it('still shows a connection error when the API detail is blank', async () => {
+    mutateAsync.mockResolvedValue({
+      error: { error: 'InvalidSourceCredentials', detail: '' },
+    })
+
+    render(
+      <CreateMigrationModal
+        organizationId="org_1"
+        onCreated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('rk_test_...'), {
+      target: { value: 'rk_test_abc' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: /Validate & create migration/ }),
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("We couldn't connect this account")).toBeTruthy()
+    })
+    expect(
+      screen.getByText('Please check the API key and try again.'),
+    ).toBeTruthy()
+  })
 })

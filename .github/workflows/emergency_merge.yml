@@ -53,6 +53,33 @@ jobs:
           app-id: ${{ secrets.EMERGENCY_MERGE_APP_ID }}
           private-key: ${{ secrets.EMERGENCY_MERGE_APP_PRIVATE_KEY }}
 
+      - name: Label as emergency merge
+        # Set a label so we can run post-merge checks against emergency merged PR's
+        continue-on-error: true
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const name = 'emergency-merge';
+            try {
+              await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name,
+                color: 'B60205',
+                description: 'Merged with /emergency, skipping review and checks',
+              });
+            }
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: [name],
+            });
+
       - name: Merge PR
         id: merge
         uses: actions/github-script@v9
@@ -82,11 +109,35 @@ jobs:
             if (comment.includes('--merge')) method = 'merge';
             if (comment.includes('--rebase')) method = 'rebase';
 
+            // Leave a trailer in the merge commit so the emergency merge is
+            // visible in git history, not only on GitHub. Rebase merges keep
+            // the original commits, so they only get the label.
+            const trailer = `Emergency-Merge: /emergency by ${context.payload.comment.user.login}`;
+            let commitMessage;
+            try {
+              if (method === 'squash') {
+                const commits = await github.paginate(github.rest.pulls.listCommits, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  per_page: 100,
+                });
+                const messages = commits.map((c) => `* ${c.commit.message.trim()}`).join('\n\n');
+                commitMessage = `${messages}\n\n${trailer}`;
+              } else if (method === 'merge') {
+                commitMessage = `${pr.title}\n\n${trailer}`;
+              }
+            } catch (error) {
+              core.warning(`Could not build the merge commit message, merging without the trailer: ${error.message}`);
+              commitMessage = undefined;
+            }
+
             const mergeDirectly = () => github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
               merge_method: method,
+              ...(commitMessage ? { commit_message: commitMessage } : {}),
             });
 
             const isInMergeQueue = (error) =>

@@ -9,13 +9,11 @@ terraform {
   }
 }
 
-# Asymmetric KMS key that signs OAuth2 id_tokens and SSO client assertions. The
-# private key never leaves KMS; the app signs through kms:Sign and publishes the
-# public half from kms:GetPublicKey.
+# Asymmetric KMS keys that sign OAuth2 id_tokens and SSO client assertions.
 #
-# No enable_key_rotation here: KMS supports automatic rotation only for
-# symmetric encryption keys. Rotating this one means creating a second key and
-# moving the published set over to it — see ADR-0010.
+# One key per generation: KMS rotates symmetric encryption keys only, so
+# rotating this one means publishing another and moving the pointer. See
+# ADR-0010 and handbook/engineering/oncall/rotate-jwks.mdx.
 
 variable "environment" {
   description = "Workload environment this runs in."
@@ -32,30 +30,49 @@ variable "role_name" {
   type        = string
 }
 
+variable "generations" {
+  description = "One KMS key per generation. All are published; only the current one signs."
+  type        = list(string)
+}
+
+variable "current_generation" {
+  description = "Generation that signs now. Must appear in generations."
+  type        = string
+}
+
+# No prevent_destroy: retiring a generation has to destroy its key.
+# deletion_window_in_days is the guard — KMS schedules deletion 30 days out.
 resource "aws_kms_key" "signing" {
-  description              = "JWKS signing key for polar-${var.environment}"
+  for_each = toset(var.generations)
+
+  description              = "JWKS signing key ${each.key} for polar-${var.environment}"
   key_usage                = "SIGN_VERIFY"
   customer_master_key_spec = "RSA_2048"
   deletion_window_in_days  = 30
+}
 
-  lifecycle {
-    prevent_destroy = true
-  }
+# The first generation predates for_each; can go once every environment has applied.
+moved {
+  from = aws_kms_key.signing
+  to   = aws_kms_key.signing["2026-09"]
 }
 
 resource "aws_kms_alias" "signing" {
   name          = "alias/polar-${var.environment}-jwks"
-  target_key_id = aws_kms_key.signing.key_id
+  target_key_id = aws_kms_key.signing[var.current_generation].key_id
 }
 
 data "aws_iam_policy_document" "signing" {
   statement {
-    sid = "SignAndPublish"
-    actions = [
-      "kms:Sign",
-      "kms:GetPublicKey",
-    ]
-    resources = [aws_kms_key.signing.arn]
+    sid       = "Sign"
+    actions   = ["kms:Sign"]
+    resources = [aws_kms_key.signing[var.current_generation].arn]
+  }
+
+  statement {
+    sid       = "Publish"
+    actions   = ["kms:GetPublicKey"]
+    resources = [for key in aws_kms_key.signing : key.arn]
   }
 }
 
@@ -65,7 +82,12 @@ resource "aws_iam_role_policy" "signing" {
   policy = data.aws_iam_policy_document.signing.json
 }
 
-output "key_arn" {
-  description = "Full ARN of the JWKS signing key. Passed to the app as POLAR_AWS_JWKS_KMS_KEY_ID."
-  value       = aws_kms_key.signing.arn
+output "current_key_arn" {
+  description = "ARN of the generation that signs now. Passed to the app as POLAR_AWS_JWKS_KMS_KEY_ID."
+  value       = aws_kms_key.signing[var.current_generation].arn
+}
+
+output "published_key_arns" {
+  description = "ARNs of every generation, the current one included. Passed to the app as POLAR_AWS_JWKS_KMS_PUBLISHED_KEY_IDS."
+  value       = [for key in aws_kms_key.signing : key.arn]
 }

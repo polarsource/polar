@@ -6,6 +6,7 @@ from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from .auth import VoidRead
+from .branch.endpoints import router as branch_router
 from .customer.endpoints import router as customer_router
 from .deploy.endpoints import router as deploy_router
 from .entitlement.endpoints import router as entitlement_router
@@ -46,6 +47,7 @@ router.include_router(reducer_router)
 router.include_router(metric_router)
 
 router.include_router(deploy_router)
+router.include_router(branch_router)
 router.include_router(entitlement_router)
 router.include_router(meter_router)
 router.include_router(product_router)

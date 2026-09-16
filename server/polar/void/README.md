@@ -170,7 +170,16 @@ Three concepts:
   `draft`, `active` or `archived`. At most one deployment per organization is
   active; it is production. Activating another deployment archives the current
   one. Activation requires an organization that may accept payments, which is
-  Polar's review outcome.
+  Polar's review outcome. Each deployment stores the normalized configuration
+  it was pushed with.
+- **Branch**: a named, mutable patch pinned to one deployed version, edited in
+  the dashboard. Its configuration is the base deployment's stored configuration
+  with the patch applied, and its hash is the version it would become. A branch
+  has no meter or product rows and never serves traffic. `POST
+  /branches/{id}/promote` deploys the resolved configuration as an ordinary
+  draft; `POST /branches/{id}/preview` reprices the base version's usage under
+  it. Branches stay pinned to their base when a newer version activates, and
+  persist until deleted (see ADR-0011).
 
 `POST /deploys` reconciles reducers, meters, entitlements and products together.
 Both planning and applying require `void:write`. `dry_run: true` validates and

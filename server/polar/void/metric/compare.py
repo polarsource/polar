@@ -154,6 +154,7 @@ async def compare(
         checksum="comparison",
         applied=False,
         status=None,
+        has_configuration=True,
         created_at=utc_now(),
         entries=[
             DeployEntry(

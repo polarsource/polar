@@ -13,6 +13,9 @@ def _normalize(value: Any) -> Any:
         # Equivalent prices (1, 1.0, 1.00) identify the same configuration.
         text = format(value, "f")
         return text.rstrip("0").rstrip(".") if "." in text else text
+    if isinstance(value, float) and value.is_integer():
+        # Whole floats (0.0) and ints (0) identify the same configuration.
+        return int(value)
     if isinstance(value, dict):
         return {key: _normalize(item) for key, item in value.items()}
     if isinstance(value, list):
@@ -20,10 +23,16 @@ def _normalize(value: Any) -> Any:
     return value
 
 
+REQUEST_FIELDS = {"checksum", "dry_run", "preview", "activate"}
+
+
+def configuration_payload(config: BaseModel) -> dict[str, Any]:
+    """The configuration alone, as stored on a deployment for branches to fork."""
+    return config.model_dump(mode="json", exclude=REQUEST_FIELDS)
+
+
 def configuration_hash(config: BaseModel) -> str:
-    payload = _normalize(
-        config.model_dump(exclude={"checksum", "dry_run", "preview", "activate"})
-    )
+    payload = _normalize(config.model_dump(exclude=REQUEST_FIELDS))
     for key in ("reducers", "meters", "products", "entitlements"):
         payload[key].sort(key=lambda item: item["slug"])
     for product in payload["products"]:

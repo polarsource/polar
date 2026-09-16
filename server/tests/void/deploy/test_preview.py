@@ -157,6 +157,7 @@ def scenario(
             checksum="candidate",
             applied=False,
             status=None,
+            has_configuration=True,
             created_at=at(3),
             entries=[
                 DeployEntry(

@@ -33,6 +33,7 @@ from polar.void.reducer.filter import (
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 
+from .config_hash import configuration_payload
 from .exceptions import (
     DeploymentConflict,
     DeploymentNotActivatable,
@@ -116,6 +117,7 @@ def _to_schema(deployment: Deployment) -> Deploy:
         checksum=deployment.checksum,
         applied=True,
         status=VoidDeploymentStatus(deployment.status),
+        has_configuration=deployment.configuration is not None,
         entries=[DeployEntry.model_validate(entry) for entry in deployment.entries],
         created_at=deployment.created_at,
     )
@@ -514,6 +516,7 @@ class DeployService:
                 id=None,
                 applied=False,
                 status=None,
+                has_configuration=True,
                 entries=entries,
                 created_at=utc_now(),
             )
@@ -522,6 +525,7 @@ class DeployService:
             checksum=create_schema.checksum,
             status=VoidDeploymentStatus.draft,
             entries=[entry.model_dump(mode="json") for entry in entries],
+            configuration=configuration_payload(create_schema),
             organization=await organization_service.lock(session, organization_id),
         )
         session.add(deployment)

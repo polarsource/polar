@@ -16,6 +16,7 @@ from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
 from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
+from authlib.oidc.core.util import create_half_hash
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -23,6 +24,7 @@ from polar.auth.models import AuthSubject
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.signer import get_signer, sign_jws
 from polar.models import (
     OAuth2AuthorizationCode,
     OAuth2AuthorizationCodeOrganization,
@@ -34,7 +36,6 @@ from polar.models import (
 from ..constants import (
     AUTHORIZATION_CODE_PREFIX,
     ID_TOKEN_EXPIRES_IN,
-    ID_TOKEN_SIGNING_ALG,
     ISSUER,
 )
 from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
@@ -243,22 +244,27 @@ class CodeChallenge(_CodeChallenge):
     pass
 
 
-class IDTokenSigning:
-    """Resolves the signing key on each issuance, so a rotated key set applies
-    without a restart, and names it in the `kid` header so a relying party can
-    pick the right key out of the published set."""
-
-    def resolve_client_private_key(self, client: OAuth2Client) -> typing.Any:
-        return settings.JWKS.find_by_kid(settings.CURRENT_JWK_KID)
-
-    def get_client_algorithm(self, client: OAuth2Client) -> str:
-        return ID_TOKEN_SIGNING_ALG
+class IDTokenSigning(_OpenIDToken):
+    """The claims are a copy of authlib's; only the signing changes (ADR-0010)."""
 
     def get_client_claims(self, client: OAuth2Client) -> dict[str, typing.Any]:
         return {"iss": ISSUER, "exp": int(time.time()) + ID_TOKEN_EXPIRES_IN}
 
-    def get_encode_header(self, client: OAuth2Client) -> dict[str, typing.Any]:
-        return {"alg": ID_TOKEN_SIGNING_ALG, "kid": settings.CURRENT_JWK_KID}
+    def encode_id_token(
+        self, token: dict[str, typing.Any], request: OAuth2Request
+    ) -> str:
+        signer = get_signer()
+        claims = self.get_compatible_claims(request)
+        if request.authorization_code:
+            claims.update(
+                self.get_authorization_code_claims(request.authorization_code)
+            )
+        if access_token := token.get("access_token"):
+            at_hash = create_half_hash(access_token, signer.algorithm)
+            if at_hash is not None:
+                claims["at_hash"] = at_hash.decode("utf-8")
+        claims.update(self.generate_user_info(request.user, token["scope"]))
+        return sign_jws(claims, signer)
 
 
 class OpenIDCode(IDTokenSigning, _OpenIDCode):

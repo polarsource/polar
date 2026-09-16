@@ -1400,6 +1400,7 @@ class TestOAuth2Token:
         id_token = response.json()["id_token"]
 
         header = jwt.get_unverified_header(id_token)
+        assert header["typ"] == "JWT"
         assert header["alg"] == "RS256"
         assert header["kid"] == settings.CURRENT_JWK_KID
 

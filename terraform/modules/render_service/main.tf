@@ -223,6 +223,7 @@ resource "render_web_service" "api" {
     SERVICE_NAME             = { value = "api${local.env_suffix}" }
     WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
     FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
+    POLAR_BACKOFFICE_ENABLED = { value = "false" }
     POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
     POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
     POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }

@@ -235,10 +235,11 @@ def create_app() -> FastAPI:
     # /healthz
     app.include_router(health_router)
 
-    if settings.BACKOFFICE_HOST is None:
-        app.mount("/backoffice", backoffice_app)
-    else:
-        app.host(settings.BACKOFFICE_HOST, backoffice_app)
+    if settings.BACKOFFICE_ENABLED:
+        if settings.BACKOFFICE_HOST is None:
+            app.mount("/backoffice", backoffice_app)
+        else:
+            app.host(settings.BACKOFFICE_HOST, backoffice_app)
 
     if settings.CHECKOUT_LINK_HOST is not None:
         app.host(settings.CHECKOUT_LINK_HOST, checkout_link_redirect_app)

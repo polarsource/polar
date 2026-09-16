@@ -28,7 +28,7 @@ module "vercel" {
 
   config = {
     next_public_api_url                             = "https://test-api.polar.sh"
-    next_public_backoffice_url                      = "https://test-api.polar.sh/backoffice"
+    next_public_backoffice_url                      = "https://${local.private_backoffice_hostname}"
     next_public_sentry_dsn                          = var.next_public_sentry_dsn
     next_public_posthog_token                       = var.next_public_posthog_token
     next_public_apple_domain_association            = var.next_public_apple_domain_association

@@ -90,6 +90,7 @@ resource "render_private_service" "backoffice" {
   env_vars = {
     SERVICE_NAME             = { value = "backoffice-private${local.env_suffix}" }
     PORT                     = { value = "10001" }
+    POLAR_BACKOFFICE_ENABLED = { value = "true" }
     POLAR_BACKOFFICE_HOST    = { value = var.private_backoffice.hostname }
     POLAR_ALLOWED_HOSTS      = { value = jsonencode(distinct(concat(jsondecode(var.api_service_config.allowed_hosts), [var.private_backoffice.hostname]))) }
     POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }

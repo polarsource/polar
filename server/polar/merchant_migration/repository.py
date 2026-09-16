@@ -751,5 +751,5 @@ class MerchantMigrationRecordRepository(
                 MerchantMigration.organization_id == organization_id
             )
         )
-        self._migration_created_at_cache = dict(result.all())
+        self._migration_created_at_cache = dict(result.tuples().all())
         return self._migration_created_at_cache

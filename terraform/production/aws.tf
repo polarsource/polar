@@ -14,8 +14,10 @@ module "secrets_kms" {
 module "jwks_signing_key" {
   source = "../modules/jwks_signing_key"
 
-  environment = "production"
-  role_name   = module.secrets_kms.role_name
+  environment        = "production"
+  role_name          = module.secrets_kms.role_name
+  generations        = ["2026-09"]
+  current_generation = "2026-09"
 }
 
 module "lambda_worker_ecr" {

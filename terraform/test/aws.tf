@@ -23,8 +23,10 @@ module "jwks_signing_key" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/jwks_signing_key"
 
-  environment = "test"
-  role_name   = module.secrets_kms[0].role_name
+  environment        = "test"
+  role_name          = module.secrets_kms[0].role_name
+  generations        = ["2026-09"]
+  current_generation = "2026-09"
 }
 
 module "redis" {

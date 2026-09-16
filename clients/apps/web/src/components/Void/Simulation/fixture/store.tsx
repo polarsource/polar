@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useSyncExternalStore } from 'react'
-import { blankScenario, PRESET_SCENARIOS, PROMOTED_VERSION } from './fixtures'
+import { blankScenario, PRESET_SCENARIOS } from './baseline'
 import { Scenario, ScenarioLevers } from './types'
 
 const STORAGE_KEY = 'void-simulation-scenarios'
@@ -12,11 +12,7 @@ const listeners = new Set<() => void>()
 const load = (): Scenario[] | null => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? (JSON.parse(raw) as Scenario[]) : null
-    // Scenarios saved before the branch integration lack the base levers.
-    return parsed?.every((scenario) => scenario.baseLevers && scenario.patch)
-      ? parsed
-      : null
+    return raw ? (JSON.parse(raw) as Scenario[]) : null
   } catch {
     return null
   }
@@ -56,14 +52,14 @@ const slugify = (name: string) =>
 
 export type NewScenario = Pick<Scenario, 'name' | 'basedOn'>
 
-const create = async (input: NewScenario): Promise<Scenario> => {
+const create = (input: NewScenario): Scenario => {
   const id = `${slugify(input.name) || 'scenario'}-${Date.now().toString(36)}`
   const scenario = { ...blankScenario(id, input.name), ...input }
   commit([scenario, ...getSnapshot()])
   return scenario
 }
 
-const duplicate = async (id: string): Promise<Scenario | undefined> => {
+const duplicate = (id: string): Scenario | undefined => {
   const source = getSnapshot().find((scenario) => scenario.id === id)
   if (!source) return undefined
   const copy: Scenario = {
@@ -78,7 +74,10 @@ const duplicate = async (id: string): Promise<Scenario | undefined> => {
   return copy
 }
 
-const update = (id: string, patch: Partial<Pick<Scenario, 'name'>>) => {
+const update = (
+  id: string,
+  patch: Partial<Omit<Scenario, 'id' | 'levers'>>,
+) => {
   commit(
     getSnapshot().map((scenario) =>
       scenario.id === id ? touch({ ...scenario, ...patch }) : scenario,
@@ -101,35 +100,14 @@ const remove = (id: string) => {
   commit(getSnapshot().filter((scenario) => scenario.id !== id))
 }
 
-const promote = async (id: string) => {
-  update(id, {})
-  commit(
-    getSnapshot().map((scenario) =>
-      scenario.id === id
-        ? touch({ ...scenario, promotedAs: PROMOTED_VERSION })
-        : scenario,
-    ),
-  )
-}
-
-export const useFixtureScenarios = () => {
+export const useScenarios = () => {
   const scenarios = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getServerSnapshot,
   )
   return useMemo(
-    () => ({
-      scenarios,
-      isLoading: false,
-      error: null,
-      create,
-      duplicate,
-      update,
-      updateLevers,
-      remove,
-      promote,
-    }),
+    () => ({ scenarios, create, duplicate, update, updateLevers, remove }),
     [scenarios],
   )
 }

@@ -1,6 +1,5 @@
 'use client'
 
-import { OrganizationContext } from '@/providers/maintainerOrganization'
 import {
   Button,
   Input,
@@ -14,26 +13,21 @@ import {
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useContext, useState } from 'react'
-import { shortVersion, useVoidDeploys, versionLabels, VoidDeploy } from '../api'
+import { useState } from 'react'
+import { DEFINITIONS, VoidDefinition } from '../../fixtures'
 import { NewScenario } from './store'
 
-type VersionOption = Pick<
-  VoidDeploy,
-  'version_id' | 'status' | 'has_configuration'
-> & { label: string }
-
 const STATUS_COLOR: Record<
-  NonNullable<VoidDeploy['status']>,
+  VoidDefinition['status'],
   'green' | 'blue' | 'gray'
-> = { active: 'green', draft: 'blue', archived: 'gray' }
+> = { Active: 'green', Draft: 'blue', Archived: 'gray' }
 
 interface ScenarioModalProps {
   isShown: boolean
   hide: () => void
   title: string
   submitLabel: string
-  /** Prefills the form; the version is pinned once a scenario exists. */
+  /** Prefills the form; omit to start from the active definition. */
   initial?: NewScenario
   onSubmit: (input: NewScenario) => void
 }
@@ -53,35 +47,30 @@ const Field = ({
   </Box>
 )
 
+const definitionIdFor = (initial?: NewScenario) =>
+  DEFINITIONS.find(
+    (candidate) =>
+      candidate.name === initial?.basedOn.definition &&
+      candidate.version === initial?.basedOn.version,
+  )?.id ?? DEFINITIONS[0].id
+
 const Form = ({
   hide,
   initial,
   submitLabel,
   onSubmit,
 }: Omit<ScenarioModalProps, 'isShown' | 'title'>) => {
-  const { organization } = useContext(OrganizationContext)
-  const deploys = useVoidDeploys(organization.id)
-  const labels = versionLabels(deploys.data ?? [])
-  const versions: VersionOption[] = (deploys.data ?? []).map((deploy) => ({
-    ...deploy,
-    label: labels.get(deploy.version_id) ?? deploy.version_id,
-  }))
-  const defaultVersion =
-    initial?.basedOn.version ??
-    versions.find((d) => d.status === 'active' && d.has_configuration)
-      ?.version_id ??
-    versions.find((d) => d.has_configuration)?.version_id ??
-    ''
-  const [versionId, setVersionId] = useState(defaultVersion)
+  const [definitionId, setDefinitionId] = useState(definitionIdFor(initial))
   const [name, setName] = useState(initial?.name ?? '')
-  const version = versionId || defaultVersion
+  const definition =
+    DEFINITIONS.find((candidate) => candidate.id === definitionId) ??
+    DEFINITIONS[0]
 
   const submit = () => {
-    if (!name.trim() || !version) return
-    const option = versions.find((v) => v.version_id === version)
+    if (!name.trim()) return
     onSubmit({
       name: name.trim(),
-      basedOn: { version, label: option?.label ?? shortVersion(version) },
+      basedOn: { definition: definition.name, version: definition.version },
     })
     hide()
   }
@@ -98,37 +87,23 @@ const Form = ({
         submit()
       }}
     >
-      <Field label="Version">
-        <Select
-          value={version}
-          onValueChange={setVersionId}
-          disabled={initial !== undefined}
-        >
+      <Field label="Definition">
+        <Select value={definitionId} onValueChange={setDefinitionId}>
           <SelectTrigger>
-            <SelectValue placeholder="Pick a version" />
+            <SelectValue placeholder="Pick a definition" />
           </SelectTrigger>
           <SelectContent>
-            {versions.map((candidate) => (
-              <SelectItem
-                key={candidate.version_id}
-                value={candidate.version_id}
-                disabled={!candidate.has_configuration}
-              >
+            {DEFINITIONS.map((candidate) => (
+              <SelectItem key={candidate.id} value={candidate.id}>
                 <Box alignItems="center" columnGap="s">
-                  <span>{candidate.label}</span>
-                  <Text variant="caption" color="muted">
-                    {shortVersion(candidate.version_id)}
-                  </Text>
+                  <span>
+                    {candidate.name} · {candidate.version}
+                  </span>
                   <Status
-                    status={candidate.status ?? 'draft'}
-                    color={STATUS_COLOR[candidate.status ?? 'draft']}
+                    status={candidate.status}
+                    color={STATUS_COLOR[candidate.status]}
                     size="small"
                   />
-                  {candidate.has_configuration ? null : (
-                    <Text variant="caption" color="muted">
-                      not branchable
-                    </Text>
-                  )}
                 </Box>
               </SelectItem>
             ))}
@@ -147,7 +122,7 @@ const Form = ({
         <Button type="button" variant="ghost" onClick={hide}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!name.trim() || !version}>
+        <Button type="submit" disabled={!name.trim()}>
           {submitLabel}
         </Button>
       </Box>

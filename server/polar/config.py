@@ -382,6 +382,7 @@ class Settings(BaseSettings):
     # JWKS signing. Production and sandbox sign through a KMS asymmetric key
     # (AWS_JWKS_KMS_KEY_ID); elsewhere the key set in JWKS signs in process.
     AWS_JWKS_KMS_KEY_ID: str | None = None
+    AWS_JWKS_KMS_PUBLISHED_KEY_IDS: list[str] = []
 
     # Worker SQS/Lambda execution engine (POC)
     # When enabled, jobs enqueued for an allowlisted actor are routed to an

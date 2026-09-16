@@ -152,13 +152,15 @@ module "sandbox" {
   workers = {
     worker-sandbox = {
       start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start"
+      custom_domains     = [{ name = "worker-sandbox.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
     worker-sandbox-drain = {
-      start_command = "uv run dramatiq polar.worker.run -p 2 -t 8"
-      redis_host    = render_redis.redis_sandbox.id
-      redis_port    = "6379"
-      redis_db      = "1"
+      start_command  = "uv run dramatiq polar.worker.run -p 2 -t 8"
+      custom_domains = [{ name = "worker-sandbox-drain.polar.sh" }]
+      redis_host     = render_redis.redis_sandbox.id
+      redis_port     = "6379"
+      redis_db       = "1"
     }
   }
 
@@ -236,6 +238,17 @@ resource "cloudflare_dns_record" "api" {
   type    = "CNAME"
   content = replace(module.sandbox.api_service_url, "https://", "")
   proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "worker" {
+  for_each = module.sandbox.worker_urls
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
+  type    = "CNAME"
+  content = replace(each.value, "https://", "")
+  proxied = false
   ttl     = 1
 }
 

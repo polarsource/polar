@@ -279,11 +279,6 @@ class OpenIDCode(IDTokenSigning, _OpenIDCode):
         return generate_user_info(user, scope)
 
 
-class OpenIDToken(IDTokenSigning, _OpenIDToken):
-    def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
-        return generate_user_info(user, scope)
-
-
 class InvalidSubError(OAuth2Error):
     error = "invalid_sub"
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useVoidDeploys } from '@/components/Void/api'
+import { useVoidDeploys, versionLabels } from '@/components/Void/api'
 import { useVoidDataSource } from '@/components/Void/dataSource'
 import { BASED_ON } from '@/components/Void/Simulation/fixtures'
 import {
@@ -31,12 +31,18 @@ export const SimulationBlockView = ({
         (deploy) => deploy.status === 'active' && deploy.has_configuration,
       )
     : { version_id: BASED_ON.version }
+  const label = live
+    ? versionLabels(deploys.data ?? []).get(active?.version_id ?? '')
+    : BASED_ON.label
 
   const open = async () => {
     if (!active) return
     const scenario = await create({
       name: block.title,
-      basedOn: { version: active.version_id },
+      basedOn: {
+        version: active.version_id,
+        label: label ?? active.version_id,
+      },
     })
     updateLevers(scenario.id, (levers) => {
       applyChanges(levers, block.changes)

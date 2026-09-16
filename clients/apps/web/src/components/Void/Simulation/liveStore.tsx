@@ -3,10 +3,11 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { useContext, useMemo, useRef } from 'react'
 import {
-  shortVersion,
   useVoidBranches,
   useVoidBranchMutations,
   useVoidDeploys,
+  versionLabel,
+  versionLabels,
   VoidBranch,
   VoidDeploy,
 } from '../api'
@@ -43,14 +44,18 @@ const toScenario = (
   assumptions: Assumptions,
 ): Scenario => {
   const promoted = deploys.find((d) => d.id === branch.promoted_deployment_id)
+  const labels = versionLabels(deploys)
   return {
     id: branch.id,
     name: branch.name,
-    basedOn: { version: branch.base_version_id },
+    basedOn: {
+      version: branch.base_version_id,
+      label: versionLabel(labels, branch.base_version_id),
+    },
     createdAt: branch.created_at,
     updatedAt: branch.modified_at ?? branch.created_at,
     promotedAs: branch.promoted_deployment_id
-      ? shortVersion(promoted?.version_id ?? branch.version_id)
+      ? versionLabel(labels, promoted?.version_id ?? branch.version_id)
       : null,
     levers: leversFromConfiguration(branch.configuration, assumptions),
     baseLevers: leversFromConfiguration(branch.base_configuration, assumptions),

@@ -25,7 +25,6 @@ import { ScenarioProjection } from './ScenarioProjection'
 import { ScenarioReplay } from './ScenarioReplay'
 import { ScenarioModal } from './ScenarioModal'
 import { useScenarios } from './store'
-import { shortVersion } from '../api'
 
 export const VoidScenarioPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -137,7 +136,7 @@ export const VoidScenarioPage = () => {
         >
           <Text color="muted" variant="body">
             <Link href={`${base}/definition/products`}>
-              Version {shortVersion(scenario.basedOn.version)}
+              {scenario.basedOn.label}
             </Link>
             {' · '}
             {changes.length === 0

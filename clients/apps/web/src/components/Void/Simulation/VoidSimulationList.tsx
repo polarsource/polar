@@ -16,7 +16,6 @@ import { ScenarioModal } from './ScenarioModal'
 import { ScenarioChart } from './ScenarioChart'
 import { useScenarios } from './store'
 import { DailyPoint, Scenario } from './types'
-import { shortVersion } from '../api'
 
 interface Card {
   id: string
@@ -35,7 +34,7 @@ const toCard = (scenario: Scenario): Card => {
   return {
     id: scenario.id,
     name: scenario.name,
-    basedOn: shortVersion(scenario.basedOn.version),
+    basedOn: scenario.basedOn.label,
     changes: changedLevers(scenario.levers, scenario.baseLevers).length,
     promotedAs: scenario.promotedAs,
     baseline: totals.baseline,

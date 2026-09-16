@@ -21,6 +21,7 @@ import {
   shortVersion,
   useVoidBranches,
   useVoidDeploys,
+  versionLabels,
   VoidBranch,
   VoidDeploy,
 } from './api'
@@ -57,6 +58,7 @@ export const definitionsOf = (
   deploys: VoidDeploy[],
   branches: VoidBranch[],
 ): VoidDefinition[] => {
+  const labels = versionLabels(deploys)
   const ordered = [...deploys].sort(
     (a, b) =>
       STATUS_ORDER[a.status ?? 'draft'] - STATUS_ORDER[b.status ?? 'draft'] ||
@@ -65,8 +67,8 @@ export const definitionsOf = (
   return ordered.flatMap((deploy) => [
     {
       id: deploy.id ?? deploy.version_id,
-      name: shortVersion(deploy.version_id),
-      version: relative(deploy.created_at),
+      name: labels.get(deploy.version_id) ?? shortVersion(deploy.version_id),
+      version: `${shortVersion(deploy.version_id)} · ${relative(deploy.created_at)}`,
       status: statusLabel(deploy.status),
     },
     ...branches
@@ -74,7 +76,7 @@ export const definitionsOf = (
       .map((branch) => ({
         id: branch.id,
         name: branch.name,
-        version: `branch of ${shortVersion(branch.base_version_id)}`,
+        version: `branch of ${labels.get(branch.base_version_id) ?? shortVersion(branch.base_version_id)}`,
         status: 'Branch' as const,
       })),
   ])

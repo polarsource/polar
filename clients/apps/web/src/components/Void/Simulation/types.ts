@@ -40,7 +40,7 @@ export interface Scenario {
   id: string
   name: string
   /** The deployed version this scenario forks. Pinned; it never rebases. */
-  basedOn: { version: string }
+  basedOn: { version: string; label: string }
   createdAt: string
   updatedAt: string
   /** Short hash of the draft version this scenario was promoted to. */

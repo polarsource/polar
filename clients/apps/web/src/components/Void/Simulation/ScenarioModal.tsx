@@ -15,7 +15,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useContext, useState } from 'react'
-import { shortVersion, useVoidDeploys, VoidDeploy } from '../api'
+import { shortVersion, useVoidDeploys, versionLabels, VoidDeploy } from '../api'
 import { useVoidDataSource } from '../dataSource'
 import { DEFINITIONS } from '../fixtures'
 import { NewScenario } from './store'
@@ -23,10 +23,11 @@ import { NewScenario } from './store'
 type VersionOption = Pick<
   VoidDeploy,
   'version_id' | 'status' | 'has_configuration'
->
+> & { label: string }
 
 const FIXTURE_VERSIONS: VersionOption[] = DEFINITIONS.map((definition) => ({
   version_id: `${definition.name} · ${definition.version}`,
+  label: `${definition.name} · ${definition.version}`,
   status:
     definition.status === 'Active'
       ? 'active'
@@ -76,7 +77,13 @@ const Form = ({
   const live = useVoidDataSource() === 'live'
   const deploys = useVoidDeploys(organization.id, { enabled: live })
   const versions: VersionOption[] = live
-    ? (deploys.data ?? [])
+    ? (() => {
+        const labels = versionLabels(deploys.data ?? [])
+        return (deploys.data ?? []).map((deploy) => ({
+          ...deploy,
+          label: labels.get(deploy.version_id) ?? deploy.version_id,
+        }))
+      })()
     : FIXTURE_VERSIONS
   const defaultVersion =
     initial?.basedOn.version ??
@@ -90,7 +97,11 @@ const Form = ({
 
   const submit = () => {
     if (!name.trim() || !version) return
-    onSubmit({ name: name.trim(), basedOn: { version } })
+    const option = versions.find((v) => v.version_id === version)
+    onSubmit({
+      name: name.trim(),
+      basedOn: { version, label: option?.label ?? shortVersion(version) },
+    })
     hide()
   }
 
@@ -123,7 +134,10 @@ const Form = ({
                 disabled={!candidate.has_configuration}
               >
                 <Box alignItems="center" columnGap="s">
-                  <span>{shortVersion(candidate.version_id)}</span>
+                  <span>{candidate.label}</span>
+                  <Text variant="caption" color="muted">
+                    {shortVersion(candidate.version_id)}
+                  </Text>
                   <Status
                     status={candidate.status ?? 'draft'}
                     color={STATUS_COLOR[candidate.status ?? 'draft']}

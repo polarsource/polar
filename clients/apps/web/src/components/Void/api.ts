@@ -226,3 +226,20 @@ export const useVoidBranchMutations = (organizationId: string) => {
 /** The first seven characters of a hash; fixture labels pass through. */
 export const shortVersion = (versionId: string) =>
   /^[0-9a-f]{64}$/.test(versionId) ? versionId.slice(0, 7) : versionId
+
+/**
+ * Sequential labels (v1, v2, …) in deployment order. Deployments form one
+ * chronological list per organization and are never deleted, so the
+ * position is stable; the hash stays the identity, this is only the name.
+ */
+export const versionLabels = (deploys: VoidDeploy[]): Map<string, string> =>
+  new Map(
+    [...deploys]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .map((deploy, index) => [deploy.version_id, `v${index + 1}`]),
+  )
+
+export const versionLabel = (
+  labels: Map<string, string>,
+  versionId: string,
+): string => labels.get(versionId) ?? shortVersion(versionId)

@@ -37,7 +37,7 @@ export const BASELINE_LEVERS: ScenarioLevers = {
   },
 }
 
-export const BASED_ON = { version: 'main · v14' }
+export const BASED_ON = { version: 'main · v14', label: 'main · v14' }
 export const PROMOTED_VERSION = 'v15-draft'
 
 const withPlans = (

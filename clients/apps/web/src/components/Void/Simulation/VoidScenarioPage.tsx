@@ -27,6 +27,9 @@ import { ScenarioReplay } from './ScenarioReplay'
 import { ScenarioModal } from './ScenarioModal'
 import { useScenarios } from './store'
 
+/** Deploy request options the backend echoes back; not part of the config. */
+const REQUEST_FIELDS = new Set(['checksum', 'dry_run', 'preview', 'activate'])
+
 export const VoidScenarioPage = () => {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -39,7 +42,11 @@ export const VoidScenarioPage = () => {
 
   const copyConfiguration = async () => {
     if (!scenario) return
-    const { checksum: _checksum, ...configuration } = scenario.configuration
+    const configuration = Object.fromEntries(
+      Object.entries(scenario.configuration).filter(
+        ([key]) => !REQUEST_FIELDS.has(key),
+      ),
+    )
     await navigator.clipboard.writeText(JSON.stringify(configuration, null, 2))
     toast({
       title: 'Configuration copied',

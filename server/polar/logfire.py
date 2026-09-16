@@ -167,9 +167,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
 
     additional_span_processors: list[SpanProcessor] = [PidSpanProcessor()]
     if settings.S3_LOGS_BUCKET_NAME is not None:
-        access_key_id, secret_access_key = get_credentials(
-            endpoint_url=settings.S3_ENDPOINT_URL
-        )
+        access_key_id, secret_access_key = get_credentials()
         additional_span_processors.append(
             BatchSpanProcessor(
                 S3SpanExporter(

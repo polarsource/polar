@@ -172,11 +172,9 @@ variable "environment_groups" {
       AWS_ROLE_ARN                         = string
     })
     worker_sqs = object({
-      POLAR_WORKER_SQS_ENABLED               = string
-      POLAR_WORKER_SQS_ACTORS                = string
-      POLAR_WORKER_SQS_QUEUE_PREFIX          = string
-      POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = optional(string)
-      POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = optional(string)
+      POLAR_WORKER_SQS_ENABLED      = string
+      POLAR_WORKER_SQS_ACTORS       = string
+      POLAR_WORKER_SQS_QUEUE_PREFIX = string
     })
     github = object({
       POLAR_GITHUB_CLIENT_ID                           = string

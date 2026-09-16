@@ -15,7 +15,7 @@ def get_client(
     signature_version: str = settings.AWS_SIGNATURE_VERSION,
     endpoint_url: str | None = settings.S3_ENDPOINT_URL,
 ) -> "S3Client":
-    access_key_id, secret_access_key = get_credentials(endpoint_url=endpoint_url)
+    access_key_id, secret_access_key = get_credentials()
     return boto3.client(
         "s3",
         endpoint_url=endpoint_url,

@@ -285,6 +285,7 @@ export const browserLogin = (target: OAuthTarget) =>
       state,
       code_challenge: createHash('sha256').update(verifier).digest('base64url'),
       code_challenge_method: 'S256',
+      prompt: 'consent',
       sub_type: 'organization',
     }).toString()
     yield* Console.log('')

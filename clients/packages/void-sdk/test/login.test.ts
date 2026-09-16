@@ -3,8 +3,10 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, it, vi } from 'vitest'
+import { Effect } from 'effect'
 import { defineConfig } from '../src/config/config'
 import { run } from '../src/cli/index'
+import { forgetLogin } from '../src/cli/credentials'
 
 let directory: string
 let file: string
@@ -187,6 +189,22 @@ it('failed login preserves existing credentials and revoked credentials cannot d
       .join('\n')
       .includes('bad-secret'),
   )
+})
+
+it('browser login drops the matching saved profile and leaves others', async () => {
+  await login()
+  const saved = await readFile(file, 'utf8')
+  const name = JSON.parse(saved).profiles[0].name as string
+  await Effect.runPromise(
+    forgetLogin(undefined, 'https://sandbox-api.polar.sh'),
+  )
+  assert.equal(await readFile(file, 'utf8'), saved)
+  await Effect.runPromise(forgetLogin(name, 'https://sandbox-api.polar.sh'))
+  await assert.rejects(readFile(file), { code: 'ENOENT' })
+  await login()
+  await Effect.runPromise(forgetLogin(undefined, 'http://void'))
+  await assert.rejects(readFile(file), { code: 'ENOENT' })
+  await Effect.runPromise(forgetLogin('missing'))
 })
 
 it('logout removes saved credentials and explicit CI credentials need no saved file', async () => {

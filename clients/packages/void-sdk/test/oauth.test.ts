@@ -219,6 +219,8 @@ it.each([true, false])(
         if (!address || typeof address === 'string')
           throw new Error('Expected a TCP listener')
         const url = new URL(authorization)
+        assert.equal(url.searchParams.get('prompt'), 'consent')
+        assert.equal(url.searchParams.get('sub_type'), 'organization')
         const callback = new URL(
           `http://127.0.0.1:${address.port}/oauth/callback`,
         )

@@ -7,6 +7,7 @@ import {
   apiFrom,
   type Credentials,
   CredentialsError,
+  forgetLogin,
   normalizeApiUrl,
   removeLogin,
   resolveCredentials,
@@ -167,6 +168,7 @@ export const login = Command.make(
             message:
               'Login needs a terminal to open the browser, or pass --token / VOID_TOKEN.',
           })
+        yield* forgetLogin(name, target)
         const oauth = yield* resolveOAuthTarget(
           target,
           Option.getOrUndefined(webUrl),

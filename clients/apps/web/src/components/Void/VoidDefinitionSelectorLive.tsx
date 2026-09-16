@@ -95,18 +95,12 @@ export const VoidDefinitionSelectorLive = ({
               <span className="dark:text-polar-500 flex shrink-0 items-center text-[15px] text-gray-500">
                 <GraphicEqOutlined fontSize="inherit" />
               </span>
-              <span className="flex items-center gap-2 truncate text-sm">
-                {selected ? (
-                  <>
-                    <span className="truncate">{selected.name}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate">{selected.version}</span>
-                  </>
-                ) : (
-                  <span className="truncate">
-                    {deploys.isLoading ? 'Loading…' : 'No versions deployed'}
-                  </span>
-                )}
+              <span className="truncate text-sm">
+                {selected
+                  ? selected.name
+                  : deploys.isLoading
+                    ? 'Loading…'
+                    : 'No versions deployed'}
               </span>
 
               <KeyboardArrowDown className="ml-auto" fontSize="inherit" />

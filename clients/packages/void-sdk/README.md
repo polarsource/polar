@@ -186,6 +186,8 @@ Config contains no Void organization ID, API token, or server URL. The same conf
 ### CLI login and deployment
 
 ```sh
+void init
+void init --template usage --storage sqlite
 void login --sandbox
 void login --production
 void login --profile development --api-url http://localhost:8000
@@ -197,9 +199,19 @@ void deploy --profile development
 void logout --profile development
 ```
 
+`void init` writes a `void.ts` in the current directory. In a terminal it
+asks which template and event storage to use. Without a terminal, pass
+`--template` and `--storage`. `--template` is `blank`, `usage`, `llm`, or
+`credits`. `--storage` is `none` or `sqlite`. SQLite uses Node's built-in
+`node:sqlite` and a local `void.db`. An existing `void.ts` is confirmed in a
+terminal, or overwritten with `--force`. The CLI finds `void.ts`
+automatically; `--config` is only needed for a different path.
+
 `void login` opens the Polar dashboard in the browser. Sign in if needed, pick
-an organization, and return to the terminal. It validates the resulting token
-with `GET /v1/void/organizations/current`, displays the organization and server,
+an organization, and return to the terminal. Browser login drops the current
+saved profile (or `--profile`) first so you always pick an organization from
+scratch. It validates the resulting token with
+`GET /v1/void/organizations/current`, displays the organization and server,
 and saves a named profile. Without `--profile`, the name defaults to
 `<organization-slug>@<server-host>`. Logging in activates the profile. An
 existing profile can receive a replacement token for the same organization and
@@ -223,7 +235,7 @@ interactive sandbox/production choice. For local Polar development, use
 
 Without `--profile`, credential precedence remains **flags → environment variables → active profile**. A saved token is used only for its saved server URL. Explicit `--profile` selects saved credentials and rejects `--api-url`, `--token`, `VOID_API_URL`, or `VOID_TOKEN` overrides. CI can supply its own server URL and secret token without any saved profiles. Switching profiles warns when environment credentials would override the selection.
 
-Profiles are stored at `$XDG_CONFIG_HOME/void/credentials.json`, or `~/.config/void/credentials.json` when unset. `VOID_CREDENTIALS_FILE` overrides this path. Tokens are plaintext in an atomically replaced file with mode `0600`; newly created directories use mode `0700`. Existing single-login files are read as a profile named `default` and converted when next saved. Failed authentication preserves saved profiles.
+Profiles are stored at `$XDG_CONFIG_HOME/void/credentials.json`, or `~/.config/void/credentials.json` when unset. `VOID_CREDENTIALS_FILE` overrides this path. Tokens are plaintext in an atomically replaced file with mode `0600`; newly created directories use mode `0700`. Existing single-login files are read as a profile named `default` and converted when next saved. Failed `--token` authentication preserves saved profiles. Canceling a browser login leaves that profile removed.
 
 `void logout` removes the active profile, `void logout --profile <name>` removes one profile, and `void logout --all` removes the file. Removing the active profile leaves no active selection; it does not silently select another organization. Logout does not revoke tokens or change environment variables.
 

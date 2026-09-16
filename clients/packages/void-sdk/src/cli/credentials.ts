@@ -172,6 +172,24 @@ export const removeLogin = Effect.fn('cli.removeLogin')(function* (
   })
 })
 
+export const forgetLogin = Effect.fn('cli.forgetLogin')(function* (
+  profile?: string,
+  apiUrl?: string,
+) {
+  const store = yield* readStore()
+  const name = profile ?? store.activeProfile
+  if (name === null || name === undefined) return
+  const existing = store.profiles.find((entry) => entry.name === name)
+  if (!existing) return
+  if (
+    profile === undefined &&
+    apiUrl !== undefined &&
+    (yield* normalizeApiUrl(existing.apiUrl)) !== apiUrl
+  )
+    return
+  yield* removeLogin(existing.name)
+})
+
 export const apiFrom = (credentials: Credentials) =>
   apiLayer({
     apiUrl: credentials.apiUrl,

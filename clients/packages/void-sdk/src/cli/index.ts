@@ -9,6 +9,7 @@ import { checksum, compile, type Ir } from '../config/compile'
 import type { Config } from '../config/config'
 import { parseIr } from '../config/ir'
 import { ConfigError, isConfig, type Loader } from './config'
+import { initCommand } from './init'
 import { pullCommand } from './pull'
 import type { PricePreviewWindow } from '../api/generated'
 import { describePlan, describeSummary } from './format'
@@ -268,6 +269,7 @@ const cli = (load: Loader) =>
   Command.make('void').pipe(
     Command.withDescription('Deploy a void config'),
     Command.withSubcommands([
+      initCommand,
       login,
       logout,
       whoami,

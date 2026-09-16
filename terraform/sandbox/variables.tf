@@ -45,12 +45,6 @@ variable "pydantic_ai_gateway_api_key_sandbox" {
 }
 
 # Backend - Sandbox
-variable "backend_current_jwk_kid_sandbox" {
-  description = "Current JWK KID for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_discord_bot_token_sandbox" {
   description = "Discord Bot Token for sandbox"
   type        = string
@@ -108,12 +102,6 @@ variable "backend_secret_sandbox" {
 
 variable "backend_sentry_dsn_sandbox" {
   description = "Sentry DSN for sandbox"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_jwks_sandbox" {
-  description = "Backend JWKS content for sandbox"
   type        = string
   sensitive   = true
 }

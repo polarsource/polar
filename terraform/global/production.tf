@@ -77,18 +77,6 @@ resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
   }
 }
 
-resource "tfe_variable" "backend_current_jwk_kid_production" {
-  key             = "backend_current_jwk_kid_production"
-  category        = "terraform"
-  description     = "Current JWK KID for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "backend_discord_bot_token_production" {
   key             = "backend_discord_bot_token_production"
   category        = "terraform"
@@ -261,18 +249,6 @@ resource "tfe_variable" "backend_plain_chat_secret_production" {
   key             = "backend_plain_chat_secret_production"
   category        = "terraform"
   description     = "Plain Chat Secret for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "backend_jwks_production" {
-  key             = "backend_jwks_production"
-  category        = "terraform"
-  description     = "Backend JWKS content for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 

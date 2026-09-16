@@ -12,7 +12,6 @@ locals {
     email_from_domain                                = "notifications.sandbox.polar.sh"
     frontend_base_url                                = "https://sandbox.polar.sh"
     checkout_base_url                                = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    jwks_path                                        = "/etc/secrets/jwks.json"
     log_level                                        = "INFO"
     testing                                          = "0"
     auth_cookie_domain                               = "polar.sh"
@@ -26,7 +25,6 @@ locals {
 
   backend_secrets = {
     stripe_publishable_key         = var.stripe_publishable_key_sandbox
-    current_jwk_kid                = var.backend_current_jwk_kid_sandbox
     discord_bot_token              = var.backend_discord_bot_token_sandbox
     discord_client_id              = var.backend_discord_client_id_sandbox
     discord_client_secret          = var.backend_discord_client_secret_sandbox
@@ -38,7 +36,6 @@ locals {
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_sandbox
     secret                         = var.backend_secret_sandbox
     sentry_dsn                     = var.backend_sentry_dsn_sandbox
-    jwks                           = var.backend_jwks_sandbox
     numeral_api_key                = var.numeral_api_key_sandbox
     turnstile_secret               = var.turnstile_secret
   }

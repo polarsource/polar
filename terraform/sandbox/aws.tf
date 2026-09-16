@@ -104,14 +104,12 @@ locals {
     module.backend_environment.environment_variables,
     module.backend_environment.secret_environment_variables,
     {
-      POLAR_JWKS              = "/tmp/jwks.json"
       POLAR_POSTGRES_DATABASE = "polar_sandbox"
       POLAR_POSTGRES_HOST     = module.pgbouncer_aws.host
       POLAR_POSTGRES_PORT     = module.pgbouncer_aws.port
       POLAR_POSTGRES_USER     = local.db_user
       POLAR_POSTGRES_SSL      = "false"
       POLAR_REDIS_URL         = "rediss://${module.redis.host}:${tostring(module.redis.port)}/1"
-      POLAR_JWKS_CONTENT      = var.backend_jwks_sandbox
       POLAR_POSTGRES_PWD      = local.db_password
       TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
     },

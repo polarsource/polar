@@ -13,7 +13,6 @@ locals {
     email_from_domain                    = "notifications.test.polar.sh"
     frontend_base_url                    = "https://test.polar.sh"
     checkout_base_url                    = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    jwks_path                            = "/etc/secrets/jwks.json"
     log_level                            = "INFO"
     testing                              = "0"
     auth_cookie_domain                   = "test.polar.sh"
@@ -25,7 +24,6 @@ locals {
 
   backend_secrets = {
     stripe_publishable_key         = var.stripe_publishable_key
-    current_jwk_kid                = var.backend_current_jwk_kid
     discord_bot_token              = var.backend_discord_bot_token
     discord_client_id              = var.backend_discord_client_id
     discord_client_secret          = var.backend_discord_client_secret
@@ -37,7 +35,6 @@ locals {
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key
     secret                         = var.backend_secret
     sentry_dsn                     = var.backend_sentry_dsn
-    jwks                           = var.backend_jwks
     numeral_api_key                = var.numeral_api_key
     turnstile_secret               = var.turnstile_secret
   }

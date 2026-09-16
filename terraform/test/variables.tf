@@ -44,12 +44,6 @@ variable "pydantic_ai_gateway_api_key" {
 }
 
 # Backend - Production
-variable "backend_current_jwk_kid" {
-  description = "Current JWK KID for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_discord_bot_token" {
   description = "Discord Bot Token for production"
   type        = string
@@ -105,12 +99,6 @@ variable "backend_sentry_dsn" {
   sensitive   = true
 }
 
-
-variable "backend_jwks" {
-  description = "Backend JWKS content for production"
-  type        = string
-  sensitive   = true
-}
 
 variable "lambda_worker_tailscale_token" {
   description = "Tailscale auth token for test Lambda workers"

@@ -12,7 +12,6 @@ locals {
     email_from_domain                    = "notifications.polar.sh"
     frontend_base_url                    = "https://polar.sh"
     checkout_base_url                    = "https://buy.polar.sh/{client_secret}"
-    jwks_path                            = "/etc/secrets/jwks.json"
     log_level                            = "INFO"
     testing                              = "0"
     auth_cookie_domain                   = "polar.sh"
@@ -66,7 +65,6 @@ locals {
 
   backend_secrets = {
     stripe_publishable_key         = var.stripe_publishable_key_production
-    current_jwk_kid                = var.backend_current_jwk_kid_production
     discord_bot_token              = var.backend_discord_bot_token_production
     discord_client_id              = var.backend_discord_client_id_production
     discord_client_secret          = var.backend_discord_client_secret_production
@@ -83,7 +81,6 @@ locals {
     plain_request_signing_secret   = var.backend_plain_request_signing_secret_production
     plain_token                    = var.backend_plain_token_production
     plain_chat_secret              = var.backend_plain_chat_secret_production
-    jwks                           = var.backend_jwks_production
     app_review_email               = var.backend_app_review_email
     app_review_otp_code            = var.backend_app_review_otp_code
     chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production

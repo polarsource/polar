@@ -25,12 +25,6 @@ resource "render_env_group" "backend" {
   environment_id = var.render_environment_id
   name           = "backend-${var.environment}"
   env_vars       = { for name, value in var.environment_groups.backend : name => { value = value } if value != null }
-
-  secret_files = {
-    "jwks.json" = {
-      content = var.backend_jwks
-    }
-  }
 }
 
 resource "render_env_group" "backend_production" {
@@ -290,14 +284,9 @@ resource "render_cron_job" "cron" {
     }
   }
 
-  # Cron jobs don't support Render secret_files, so we pass JWKS as an env var
-  # and write it to a temp file in the start command. POLAR_JWKS is set here
-  # to override the env group value (/etc/secrets/jwks.json) which doesn't exist.
   env_vars = {
     SERVICE_NAME             = { value = each.key }
     POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
-    POLAR_JWKS               = { value = "/tmp/jwks.json" }
-    POLAR_JWKS_CONTENT       = { value = var.backend_jwks }
   }
 }
 

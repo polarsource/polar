@@ -34,7 +34,6 @@ locals {
       POLAR_INVOICES_ADDITIONAL_INFO             = var.backend_config.invoices_additional_info
       POLAR_INVOICES_VAT_NUMBERS                 = var.backend_config.invoices_vat_numbers
       POLAR_STRIPE_PUBLISHABLE_KEY               = var.backend_secrets.stripe_publishable_key
-      POLAR_CURRENT_JWK_KID                      = var.backend_secrets.current_jwk_kid
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = var.backend_secrets.logo_dev_publishable_key
       POLAR_TAX_PROCESSORS                       = var.backend_config.tax_processors
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
@@ -223,7 +222,6 @@ locals {
     backend = merge(
       local.backend_environment_variables,
       local.backend_secrets,
-      { POLAR_JWKS = var.backend_config.jwks_path },
     )
     backend_production = var.environment == "production" ? merge(local.backend_production_environment_variables, local.backend_production_secrets) : null
     aws_s3             = merge(local.aws_s3_environment_variables, local.aws_s3_secrets)

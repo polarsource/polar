@@ -118,6 +118,7 @@ class Settings(BaseSettings):
     # Base URL for the backend. Used by generate_external_url to
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000"
+    BACKOFFICE_ENABLED: bool = True
     BACKOFFICE_HOST: str | None = None
     CHECKOUT_LINK_HOST: str | None = None  # e.g., "buy.polar.sh" in production
 

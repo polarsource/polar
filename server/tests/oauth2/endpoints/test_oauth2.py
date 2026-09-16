@@ -1402,7 +1402,7 @@ class TestOAuth2Token:
         header = jwt.get_unverified_header(id_token)
         assert header["typ"] == "JWT"
         assert header["alg"] == "RS256"
-        assert header["kid"] == settings.CURRENT_JWK_KID
+        assert header["kid"] == settings.LOCAL_JWK_KID
 
         jwks_response = await client.get("/.well-known/jwks.json")
         signing_key = jwt.PyJWKSet.from_dict(jwks_response.json())[header["kid"]]

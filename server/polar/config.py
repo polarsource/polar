@@ -101,8 +101,8 @@ class Settings(BaseSettings):
 
     SECRET: str = "super secret jwt secret"
     # A path to the key set, or the document itself.
-    JWKS: str = "./.jwks.json"
-    CURRENT_JWK_KID: str = "polar_dev"
+    LOCAL_JWKS: str = "./.jwks.json"
+    LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 
     # JSON list of accepted CORS origins

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
-    Integer,
     Numeric,
     String,
     UniqueConstraint,
@@ -31,21 +30,12 @@ class VoidMeter(RecordModel):
             ["organization_id", "credit_reducer_id"],
             ["void_reducers.organization_id", "void_reducers.id"],
         ),
-        UniqueConstraint(
-            "organization_id",
-            "slug",
-            "version_id",
-            "generation_id",
-            "branch_id",
-            postgresql_nulls_not_distinct=True,
-        ),
+        UniqueConstraint("organization_id", "slug", "version_id"),
     )
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, nullable=False)
-    version_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    generation_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    branch_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    version_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     usage_reducer_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, nullable=False, index=True
     )

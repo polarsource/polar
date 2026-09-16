@@ -48,8 +48,7 @@ def scenario(
         organization_id=org,
         name="Tokens",
         slug="tokens",
-        generation_id=1,
-        branch_id=None,
+        version_id="a" * 64,
         usage_reducer_id=usage_id,
         credit_reducer_id=credit_id,
         unit_amount=Decimal("0.002"),
@@ -152,9 +151,10 @@ def scenario(
     async def run() -> Any:
         plan = Deploy(
             id=None,
-            version_id=None,
+            version_id="c" * 64,
             checksum="candidate",
             applied=False,
+            status=None,
             created_at=at(3),
             entries=[
                 DeployEntry(
@@ -169,7 +169,7 @@ def scenario(
         )
         session = AsyncMock()
         await module.preview_prices(
-            session, Mock(spec=TinybirdApi), auth_subject, request, plan
+            session, Mock(spec=TinybirdApi), auth_subject, request, plan, "a" * 64
         )
         session.add.assert_not_called()
         session.flush.assert_not_called()
@@ -252,30 +252,27 @@ def test_zero_decreased_and_subcent_prices(
     assert preview.difference == preview.proposed_amount - Decimal(70)
 
 
-def test_pinned_old_generation_is_counted_once(scenario: SimpleNamespace) -> None:
-    replacement = Meter(
+def test_other_versions_are_neither_reference_price_nor_usage_source(
+    scenario: SimpleNamespace,
+) -> None:
+    other = Meter(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="tokens",
-        generation_id=2,
-        branch_id=None,
+        version_id="b" * 64,
         usage_reducer_id=scenario.usage_id,
         credit_reducer_id=scenario.credit_id,
         unit_amount=Decimal("0.0025"),
         currency="usd",
     )
-    scenario.meters.append(replacement)
-    # A branch must never become the reference price or a second usage source.
-    scenario.meters.append(
-        Meter(slug="tokens", generation_id=99, branch_id=uuid.uuid4())
-    )
-    scenario.meters.append(
-        Meter(slug="tokens", generation_id=100, version_id="candidate")
+    scenario.meters.append(other)
+    scenario.events[(other.id, "acme")] = list(
+        scenario.events[(scenario.current.id, "acme")]
     )
     preview = asyncio.run(scenario.run())
-    assert preview.current_unit_amount == Decimal("0.0025")
+    assert preview.current_unit_amount == Decimal("0.002")
     assert preview.billable_units == Decimal(35000)
-    assert preview.current_amount == Decimal("87.5")
+    assert preview.current_amount == Decimal(70)
 
 
 @pytest.mark.parametrize(

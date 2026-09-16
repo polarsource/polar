@@ -30,24 +30,6 @@ class MeterRepository(RepositoryBase[VoidMeter]):
             self.scoped_statement(organization_id).where(VoidMeter.id == id)
         )
 
-    async def next_generation(
-        self,
-        organization_id: UUID,
-        slug: str,
-        version_id: str | None,
-        branch_id: UUID | None,
-    ) -> int:
-        value = await self.session.scalar(
-            select(func.coalesce(func.max(VoidMeter.generation_id), 0) + 1).where(
-                VoidMeter.organization_id == organization_id,
-                VoidMeter.slug == slug,
-                VoidMeter.version_id.is_not_distinct_from(version_id),
-                VoidMeter.branch_id.is_not_distinct_from(branch_id),
-            )
-        )
-        assert value is not None
-        return value
-
     async def reducer_values(
         self,
         reducer: VoidReducer,

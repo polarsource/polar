@@ -1,9 +1,7 @@
 import uuid
 from collections.abc import Sequence
-from decimal import Decimal
 
 from polar.exceptions import PolarError, ResourceNotFound
-from polar.kit.utils import utc_now
 from polar.models import VoidProduct
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.entitlement.service import entitlement as entitlement_service
@@ -19,53 +17,22 @@ class ProductInvalid(PolarError):
         super().__init__(message, 400)
 
 
-def latest_products(
-    products: Sequence[VoidProduct], version_id: str | None = None
+def products_in_version(
+    products: Sequence[VoidProduct], version_id: str | None
 ) -> dict[str, VoidProduct]:
-    """The newest generation per slug within one configuration version."""
-    latest: dict[str, VoidProduct] = {}
-    for product in products:
-        if product.version_id != version_id:
-            continue
-        current = latest.get(product.slug)
-        if current is None or product.generation_id > current.generation_id:
-            latest[product.slug] = product
-    return latest
-
-
-def same_definition(wanted: ProductCreate, current: VoidProduct) -> bool:
-    price = wanted.price
-    return (
-        current.name == wanted.name
-        and current.version_id == wanted.version_id
-        and current.description == wanted.description
-        and current.price_type == price.type
-        and current.interval == (price.interval if price.type == "recurring" else None)
-        and current.interval_count
-        == (price.interval_count if price.type == "recurring" else 1)
-        and Decimal(current.amount) == price.amount
-        and current.currency == price.currency
-        and (current.meter_terms or {})
-        == {
-            key: value.model_dump(mode="json")
-            for key, value in wanted.meter_terms.items()
-        }
-        and sorted(current.meter_ids) == sorted(wanted.meter_ids)
-        and sorted(current.entitlement_ids) == sorted(wanted.entitlement_ids)
-    )
+    """The products of one configuration version by slug; empty without a version."""
+    return {
+        product.slug: product
+        for product in products
+        if product.version_id == version_id
+    }
 
 
 class ProductService:
     async def list(
-        self,
-        session: AsyncReadSession,
-        organization_id: uuid.UUID,
-        *,
-        include_archived: bool = True,
+        self, session: AsyncReadSession, organization_id: uuid.UUID
     ) -> Sequence[VoidProduct]:
-        return await ProductRepository.from_session(session).list(
-            organization_id, include_archived=include_archived
-        )
+        return await ProductRepository.from_session(session).list(organization_id)
 
     async def get(
         self, session: AsyncReadSession, organization_id: uuid.UUID, id: uuid.UUID
@@ -103,14 +70,9 @@ class ProductService:
             await entitlement_service.get(session, organization_id, entitlement_id)
             for entitlement_id in dict.fromkeys(create_schema.entitlement_ids)
         ]
-        repository = ProductRepository.from_session(session)
-        generation = await repository.next_generation(
-            organization_id, create_schema.slug, create_schema.version_id
-        )
         product = VoidProduct(
             slug=create_schema.slug,
             version_id=create_schema.version_id,
-            generation_id=generation,
             name=create_schema.name,
             description=create_schema.description,
             price_type=price.type,
@@ -126,16 +88,8 @@ class ProductService:
             entitlement_ids=[e.id for e in entitlements],
             organization=organization,
         )
-        await repository.create(product, flush=True)
-        await repository.archive_previous(product)
-        await session.flush()
+        await ProductRepository.from_session(session).create(product, flush=True)
         return await self.get(session, organization_id, product.id)
-
-    async def archive(self, session: AsyncSession, product: VoidProduct) -> None:
-        await organization_service.lock(session, product.organization_id)
-        if product.archived_at is None:
-            product.archived_at = utc_now()
-            await session.flush()
 
 
 product = ProductService()

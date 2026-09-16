@@ -128,7 +128,6 @@ from .void_deployment import VoidDeployment
 from .void_entitlement import VoidEntitlement
 from .void_event import VoidEvent
 from .void_meter import VoidMeter
-from .void_organization_settings import VoidOrganizationSettings
 from .void_product import VoidProduct
 from .void_reducer import VoidReducer
 from .void_reducer_bucket import VoidReducerBucket
@@ -268,7 +267,6 @@ __all__ = [
     "VoidEntitlement",
     "VoidEvent",
     "VoidMeter",
-    "VoidOrganizationSettings",
     "VoidProduct",
     "VoidReducer",
     "VoidReducerBucket",

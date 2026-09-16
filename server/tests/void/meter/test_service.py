@@ -22,14 +22,11 @@ from polar.void.tinybird import TinybirdApi
 
 def test_build_meter_cycle_event_contains_complete_settlement() -> None:
     meter_id = uuid.uuid4()
-    branch_id = uuid.uuid4()
     meter = Meter(
         id=meter_id,
         name="Tokens",
         slug="tokens",
-        generation_id=4,
         version_id="higher-price",
-        branch_id=branch_id,
         usage_reducer_id=uuid.uuid4(),
         credit_reducer_id=uuid.uuid4(),
         unit_amount=Decimal("0.01"),
@@ -57,9 +54,7 @@ def test_build_meter_cycle_event_contains_complete_settlement() -> None:
     assert event.external_identity_id == "customer-1"
     assert event.metadata == {
         "meter_id": str(meter_id),
-        "meter_generation_id": 4,
         "meter_version_id": "higher-price",
-        "meter_branch_id": str(branch_id),
         "unit_amount": "0.01",
         "currency": "usd",
         "subscription_id": "sub-1",

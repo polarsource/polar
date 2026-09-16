@@ -123,7 +123,7 @@ Live routes are:
 
 | Method | Path | Behavior |
 | --- | --- | --- |
-| GET, PATCH | `/v1/void/organizations/current` | Read the organization or select its default Void version |
+| GET | `/v1/void/organizations/current` | Read the organization and its active deployment |
 | GET, POST | `/v1/void/identities` | List identities or create one on first touch |
 | GET | `/v1/void/identities/{external_id}` | Read the identity, ancestor chain, and children |
 | GET, POST | `/v1/void/customers` | List bound customers or attach a customer to a root |
@@ -133,19 +133,21 @@ Live routes are:
 | GET | `/v1/void/reducers/{id}` | Read a reducer definition |
 | GET | `/v1/void/reducers/{id}/records` | Read first/last dictionary records by actor |
 | GET | `/v1/void/metrics` | Read scalar and derived totals or time series |
-| GET, POST | `/v1/void/meters` | Read or create versioned meter definitions |
-| GET | `/v1/void/meters/{id}` | Read a meter generation |
+| GET | `/v1/void/meters` | Read meter definitions across versions |
+| GET | `/v1/void/meters/{id}` | Read a meter |
 | GET, POST | `/v1/void/entitlements` | Read or upsert entitlement definitions |
 | GET | `/v1/void/entitlements/{id}` | Read an entitlement definition |
-| GET, POST | `/v1/void/products` | Read or create immutable product generations |
-| GET | `/v1/void/products/{id}` | Read a product generation |
-| POST | `/v1/void/deploys` | Plan or apply a complete compiled configuration |
-| GET | `/v1/void/deploys/latest` | Read the latest deployment for a selected version |
+| GET | `/v1/void/products` | Read immutable products, optionally for one version |
+| GET | `/v1/void/products/{id}` | Read a product |
+| GET, POST | `/v1/void/deploys` | List deployments, or plan or apply a complete compiled configuration |
+| GET | `/v1/void/deploys/latest` | Read the active deployment, or one version's deployment |
+| GET | `/v1/void/deploys/{id}` | Read a deployment |
+| POST | `/v1/void/deploys/{id}/activate` | Make a deployment active; archives the previous one |
 | GET | `/v1/void/identities/{external_id}/snapshot` | Identity, customer, balances, and inherited entitlements |
 | GET, PUT | `/v1/void/identities/{external_id}/entitlements` | Read access or replace an assignment |
 | GET | `/v1/void/customers/{external_id}/state` | Customer reconciliation snapshot and processing receipts |
 | GET | `/v1/void/meters/{id}/balance`, `/check` | Fold credits and recurring usage, then check limits |
-| GET, POST | `/v1/void/subscriptions` | Read subscriptions or subscribe a root to a product generation |
+| GET, POST | `/v1/void/subscriptions` | Read subscriptions or subscribe a root to a product of the active version |
 | GET | `/v1/void/subscriptions/{id}`, `/{id}/cycles` | Read a subscription and its closed periods |
 | POST | `/v1/void/subscriptions/{id}/cancel`, `/{id}/revoke` | End access at a boundary or immediately |
 | POST | `/v1/void/subscriptions/rebuild` | Rebuild projections from durable lifecycle events |
@@ -155,50 +157,47 @@ All 40 migrated operations are included in the private OpenAPI export.
 
 ## Configuration deployment
 
-`POST /deploys` reconciles reducers, meters, entitlements, and products together.
+Three concepts:
+
+- **Configuration**: the deploy body, a declaration of reducers, meters,
+  entitlements and products. Credentials select the organization.
+- **Version**: the SHA-256 hash of the normalized configuration. It excludes the
+  SDK checksum, dry-run flag, preview window and activate flag; definition order
+  and equivalent decimal spellings do not change it. Every meter and product row
+  carries the version that declared it, so a product, its subscriptions and its
+  meters can be checked against one hash.
+- **Deployment**: one row per version, in chronological order, with a status of
+  `draft`, `active` or `archived`. At most one deployment per organization is
+  active; it is production. Activating another deployment archives the current
+  one. Activation requires an organization that may accept payments, which is
+  Polar's review outcome.
+
+`POST /deploys` reconciles reducers, meters, entitlements and products together.
 Both planning and applying require `void:write`. `dry_run: true` validates and
-returns the plan without writing definitions, deployment records, settings, or
-backfill jobs. Historical price previews require `dry_run`, customer-read scope,
-and Tinybird access. They reuse the meter fold over processed usage, preserving
-credits and rollover. Unsupported histories and currency or reducer changes are
-reported explicitly.
+returns the plan without writing definitions, deployment records or backfill
+jobs. Historical price previews require `dry_run`, customer-read scope, and
+Tinybird access. They reprice the active version's usage at the proposed unit
+amounts, preserving credits and rollover. Unsupported histories and currency or
+reducer changes are reported explicitly.
 
 Applying uses one transaction and the organization lock shared by definition
-writes and default-version selection. The lock allows the event worker's
-foreign-key checks to proceed. A failed apply rolls back every definition and
-queued backfill. Repeated applies report unchanged resources and append a
-deployment record without creating new definition generations.
+writes and activation. A failed apply rolls back every definition and queued
+backfill. Reducers and entitlements are unique by slug and shared across
+versions. Meters and products belong to the version that declared them; a new
+version gets its own rows even for unchanged definitions. Pushing a version that
+already has a deployment returns that deployment and writes nothing. Plan
+entries (`create`, `replace`, `unchanged`, `orphan`) compare the pushed
+configuration with the active version. Orphans are reported, never deleted;
+subscriptions keep the product row they were sold under. Deleted reducer and
+entitlement slugs stay reserved during both planning and applying.
 
-The SDK's compiled configuration checksum is stored unchanged and returned with
-the deployment. A separate server hash identifies the normalized configuration
-version. It excludes the checksum, dry-run flag, and preview window. Definition
-order and equivalent decimal spellings do not change that version. A changed
-configuration creates another version; it does not reprice the previous version.
-
-Meter and product generations are allocated within their slug and version, with
-meter branches counted separately. Products reference the exact meter and
-entitlement records validated in the same organization. Old product generations
-are archived when replaced within a version. Orphan definitions are reported;
-orphan products in the deployed version are archived. Other versions remain
-available. Deleted reducer and entitlement slugs stay reserved during both
-planning and applying.
-
-Deploying does not select the new version automatically. Use the `version` printed
-by the CLI or `version_id` from the deployment response:
-
-```http
-PATCH /v1/void/organizations/current
-Authorization: Bearer <Void organization token>
-Content-Type: application/json
-
-{"default_version_id": "<version hash>"}
-```
-
-The selected version must contain an active product or a non-branch meter in this
-organization. Send `null` to select the unnamed version. Omitting `version_id` on
-`GET /deploys/latest` follows that default; passing an empty value selects the
-unnamed version explicitly. Settings live in `void_organization_settings`, without
-adding fields to Polar's native organization table.
+A new deployment is a draft until activated. `activate: true` on the deploy
+body activates it in the same transaction; `POST /deploys/{id}/activate`
+activates an existing draft or archived deployment (activating an archived one
+is how a rollback works). Subscriptions can only be created for products of the
+active version. Customer state, identity snapshots and `GET /deploys/latest`
+follow the active version unless `version_id` names another deployed version,
+which is how a draft is tested before activation.
 
 After logging in, run these commands from `clients/`:
 
@@ -208,7 +207,9 @@ pnpm --filter @void/sdk void deploy --config /absolute/path/to/void.ts
 ```
 
 Plain `plan` checks configuration only. `--preview` or explicit `--from` / `--to`
-dates request historical price comparisons against the selected default version.
+dates request historical price comparisons against the active version.
+`void deploy --activate` applies and activates in one step; `void activate --id
+<deployment>` activates a deployment later.
 A complete example used by the CLI tests lives in
 `clients/packages/void-sdk/test/fixtures/deployment.ts`.
 
@@ -349,16 +350,15 @@ ended subscriptions; their historical cycles remain available through cycle read
 
 ## Persistence
 
-Migration `3d19da536d94`, following `38a9961f9d09`, adds eleven tables and the nullable `customers.root_identity_id` reference:
+Migration `3d19da536d94`, following `38a9961f9d09`, adds ten tables and the nullable `customers.root_identity_id` reference:
 
 | Tables | Purpose |
 | --- | --- |
-| `void_organization_settings` | Organization extension for `default_version_id` |
 | `void_identities` | Identity trees owned through `customers.root_identity_id` |
 | `void_reducers`, `void_reducer_buckets` | Reducer definitions, results, and processing receipts |
 | `void_reducer_dependencies`, `void_reducer_jobs` | Derived reducer inputs and transactional outbox |
-| `void_meters`, `void_deployments` | Versioned meters and configuration deployment records |
-| `void_entitlements`, `void_products`, `void_subscriptions` | Entitlements, immutable product generations, and subscription projections |
+| `void_meters`, `void_deployments` | Meters per version and deployment records with status |
+| `void_entitlements`, `void_products`, `void_subscriptions` | Entitlements, immutable products per version, and subscription projections |
 
 Migration `b2c26017068c`, following `3d19da536d94`, adds `void_events` for canonical
 event payloads and durable delivery. It changes no existing Polar tables.
@@ -368,9 +368,9 @@ records reject cross-organization references. The customer root reference is the
 only change to an existing Polar table.
 Customer contact details and access tokens remain in Polar's existing tables.
 
-Source generation uniqueness retains PostgreSQL `NULLS NOT DISTINCT`, including
-nullable versions and branches. Reducer buckets preserve nullable identity keys
-and the processing-receipt index. Monetary columns retain their original decimal
+Meters and products are unique by `(organization_id, slug, version_id)`, and a
+partial unique index keeps one active deployment per organization. Reducer
+buckets preserve nullable identity keys and the processing-receipt index. Monetary columns retain their original decimal
 precision. Relationships require explicit eager loading through `lazy="raise"`.
 
 Product meter and entitlement UUID arrays are validated against active resources

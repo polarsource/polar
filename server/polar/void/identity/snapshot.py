@@ -1,30 +1,16 @@
-from collections.abc import Sequence
-
 from polar.auth.models import AuthSubject
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidMeter
+from polar.models import Organization
 from polar.postgres import AsyncSession
 from polar.void.customer.repository import CustomerRepository
 from polar.void.customer.service import customer as customer_service
 from polar.void.meter.service import meter as meter_service
+from polar.void.meter.versions import meters_in_version
 from polar.void.subscription.service import subscription as subscription_service
 from polar.void.tinybird import TinybirdApi
 
 from .schemas import Identity, IdentitySnapshot
 from .service import identity as identity_service
-
-
-def _latest_meters(
-    meters: Sequence[VoidMeter], version_id: str | None = None
-) -> dict[str, VoidMeter]:
-    latest: dict[str, VoidMeter] = {}
-    for meter in meters:
-        if meter.branch_id is not None or meter.version_id != version_id:
-            continue
-        current = latest.get(meter.slug)
-        if current is None or meter.generation_id > current.generation_id:
-            latest[meter.slug] = meter
-    return latest
 
 
 class IdentitySnapshotService:
@@ -34,7 +20,7 @@ class IdentitySnapshotService:
         tinybird: TinybirdApi,
         auth_subject: AuthSubject[Organization],
         external_id: str,
-        version_id: str | None = None,
+        version_id: str | None,
     ) -> IdentitySnapshot:
         organization_id = auth_subject.subject.id
         at = utc_now()
@@ -48,7 +34,7 @@ class IdentitySnapshotService:
             customer = await customer_service.get(
                 session, auth_subject, root.external_id
             )
-        meters = _latest_meters(
+        meters = meters_in_version(
             await meter_service.list(session, organization_id), version_id
         )
         balances = {

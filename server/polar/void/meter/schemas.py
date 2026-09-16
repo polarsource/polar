@@ -13,10 +13,9 @@ from .balance import MeterCycle
 
 
 class MeterCreate(Schema):
-    version_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$")
+    version_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     name: str = Field(min_length=3)
     slug: str = Field(min_length=1, pattern=SLUG_PATTERN)
-    branch_id: UUID | None = None
     usage_reducer_id: UUID
     credit_reducer_id: UUID
     unit_amount: Decimal = Field(ge=0, max_digits=17, decimal_places=12)
@@ -25,15 +24,13 @@ class MeterCreate(Schema):
 
 class Meter(Schema):
     id: UUID
-    version_id: str | None
+    version_id: str
     name: str
     slug: str
-    branch_id: UUID | None
     usage_reducer_id: UUID
     credit_reducer_id: UUID
     unit_amount: Decimal
     currency: str
-    generation_id: int
     created_at: datetime
 
 

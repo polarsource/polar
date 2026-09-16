@@ -28,6 +28,7 @@ from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi, get_client
 from tests.fixtures.database import SaveFixture
+from tests.void.conftest import VERSION, activate_version
 from tests.void.test_endpoints import TOKEN, create_token
 
 AT = datetime(2026, 9, 15, 12, 4, tzinfo=UTC)
@@ -131,6 +132,7 @@ async def graph(
         session,
         organization.id,
         MeterCreate(
+            version_id=VERSION,
             name="Tokens",
             slug="tokens",
             usage_reducer_id=usage.id,
@@ -162,4 +164,5 @@ async def graph(
                 },
             )
         )
+    await activate_version(save_fixture, organization)
     return Graph(root, child, sibling, usage, credit, meter)

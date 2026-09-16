@@ -1,6 +1,5 @@
 from copy import deepcopy
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -8,7 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import func, select
 
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
@@ -16,20 +15,21 @@ from polar.models import (
     VoidEntitlement,
     VoidEvent,
     VoidMeter,
-    VoidOrganizationSettings,
     VoidProduct,
     VoidReducer,
     VoidReducerDependency,
     VoidReducerJob,
 )
+from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
+from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncSession
+from polar.void.deploy.exceptions import DeploymentNotActivatable
 from polar.void.deploy.schemas import DeployCreate
 from polar.void.deploy.service import deploy as deploy_service
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import entitlement as entitlement_service
-from polar.void.meter.schemas import MeterCreate
 from polar.void.meter.service import meter as meter_service
-from polar.void.product.schemas import OneTimePrice, ProductCreate
+from polar.void.organization.service import organization as organization_service
 from polar.void.product.service import product as product_service
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
@@ -79,9 +79,12 @@ async def counts(session: AsyncSession, organization: Organization) -> list[int]
             VoidEntitlement,
             VoidProduct,
             VoidDeployment,
-            VoidOrganizationSettings,
         )
     ]
+
+
+def entry(plan: Any, kind: str, key: str) -> Any:
+    return next(e for e in plan.entries if e.kind == kind and e.key == key)
 
 
 @pytest.mark.asyncio
@@ -98,10 +101,11 @@ class TestDeploy:
         assert all(
             entry.action == "create" and entry.id is None for entry in plan.entries
         )
-        assert await counts(session, organization) == [0] * 6
+        assert await counts(session, organization) == [0] * 5
         first = await deploy_service.deploy(session, organization.id, config)
         assert first.applied
         assert first.id is not None
+        assert first.status == VoidDeploymentStatus.draft
         assert first.version_id == config.version_id
         assert {entry.kind for entry in first.entries} == {
             "reducer",
@@ -109,16 +113,16 @@ class TestDeploy:
             "entitlement",
             "product",
         }
-        assert await counts(session, organization) == [2, 1, 1, 1, 1, 0]
+        assert await counts(session, organization) == [2, 1, 1, 1, 1]
         repeated = await deploy_service.deploy(
             session,
             organization.id,
             config.model_copy(update={"checksum": "another-source-checksum"}),
         )
-        assert all(entry.action == "unchanged" for entry in repeated.entries)
+        assert repeated.id == first.id
         assert repeated.version_id == first.version_id
-        assert repeated.checksum == "another-source-checksum"
-        assert await counts(session, organization) == [2, 1, 1, 1, 2, 0]
+        assert repeated.checksum == "source-checksum"
+        assert await counts(session, organization) == [2, 1, 1, 1, 1]
         changed = deepcopy(CONFIG)
         changed["meters"][0]["unit_amount"] = "0.02"
         changed["entitlements"][0]["description"] = "Reports"
@@ -126,20 +130,109 @@ class TestDeploy:
             session, organization.id, DeployCreate.model_validate(changed)
         )
         assert second.version_id != first.version_id
-        assert (
-            next(
-                entry for entry in second.entries if entry.kind == "entitlement"
-            ).action
-            == "update"
-        )
+        # Nothing is active yet, so the second version is compared to nothing.
+        assert entry(second, "meter", "tokens").action == "create"
+        assert entry(second, "entitlement", "analytics").action == "update"
         meters = await meter_service.list(session, organization.id)
-        assert len(meters) == 2
-        assert {meter.generation_id for meter in meters} == {1}
+        assert {meter.version_id for meter in meters} == {
+            first.version_id,
+            second.version_id,
+        }
+        products = await product_service.list(session, organization.id)
+        assert {product.version_id for product in products} == {
+            first.version_id,
+            second.version_id,
+        }
         assert (
-            await deploy_service.latest(session, organization.id, first.version_id)
+            await deploy_service.for_version(session, organization.id, first.version_id)
             is not None
         )
-        assert await deploy_service.latest(session, organization.id, "0" * 64) is None
+        assert (
+            await deploy_service.for_version(session, organization.id, "0" * 64) is None
+        )
+        assert await deploy_service.for_version(session, organization.id, None) is None
+
+    async def test_activation_archives_previous_and_diffs_against_active(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        config = DeployCreate.model_validate(CONFIG)
+        first = await deploy_service.deploy(
+            session, organization.id, config.model_copy(update={"activate": True})
+        )
+        assert first.status == VoidDeploymentStatus.active
+        assert first.id is not None
+        assert (
+            await organization_service.active_version(session, organization.id)
+            == first.version_id
+        )
+        changed = deepcopy(CONFIG)
+        changed["meters"][0]["unit_amount"] = "0.02"
+        changed["products"].append(
+            {
+                "slug": "team",
+                "name": "Team",
+                "price": {"type": "one_time", "amount": "5", "currency": "usd"},
+            }
+        )
+        second = await deploy_service.deploy(
+            session, organization.id, DeployCreate.model_validate(changed)
+        )
+        assert second.status == VoidDeploymentStatus.draft
+        assert second.id is not None
+        assert entry(second, "meter", "tokens").action == "replace"
+        assert entry(second, "product", "pro").action == "unchanged"
+        assert entry(second, "product", "team").action == "create"
+        assert entry(second, "reducer", "usage").action == "unchanged"
+        assert (
+            await organization_service.active_version(session, organization.id)
+            == first.version_id
+        )
+        activated = await deploy_service.activate(session, organization.id, second.id)
+        assert activated.status == VoidDeploymentStatus.active
+        previous = await deploy_service.get(session, organization.id, first.id)
+        assert previous.status == VoidDeploymentStatus.archived
+        assert (
+            await organization_service.active_version(session, organization.id)
+            == second.version_id
+        )
+        # Rolling back is activating the earlier deployment again.
+        await deploy_service.activate(session, organization.id, first.id)
+        assert (
+            await organization_service.active_version(session, organization.id)
+            == first.version_id
+        )
+        current = await deploy_service.get(session, organization.id, second.id)
+        assert current.status == VoidDeploymentStatus.archived
+        removed = deepcopy(CONFIG)
+        removed["products"] = []
+        plan = await deploy_service.deploy(
+            session,
+            organization.id,
+            DeployCreate.model_validate({**removed, "dry_run": True}),
+        )
+        assert entry(plan, "product", "pro").action == "orphan"
+        assert plan.status is None
+
+    async def test_activation_requires_reviewed_organization(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
+        await session.flush()
+        config = DeployCreate.model_validate(CONFIG)
+        with pytest.raises(DeploymentNotActivatable):
+            await deploy_service.deploy(
+                session, organization.id, config.model_copy(update={"activate": True})
+            )
+        assert await counts(session, organization) == [0] * 5
+        draft = await deploy_service.deploy(session, organization.id, config)
+        assert draft.id is not None
+        with pytest.raises(DeploymentNotActivatable):
+            await deploy_service.activate(session, organization.id, draft.id)
+        assert (
+            await organization_service.active_version(session, organization.id) is None
+        )
+        with pytest.raises(ResourceNotFound):
+            await deploy_service.activate(session, organization.id, organization.id)
 
     async def test_apply_rolls_back_all_resources_on_late_failure(
         self, session: AsyncSession, organization: Organization, mocker: MockerFixture
@@ -154,36 +247,23 @@ class TestDeploy:
                 session, organization.id, DeployCreate.model_validate(CONFIG)
             )
         create.assert_awaited_once()
-        assert await counts(session, organization) == [0] * 6
+        assert await counts(session, organization) == [0] * 5
 
-    async def test_same_version_replaces_drift_and_reports_orphans(
+    async def test_orphans_are_reported_against_the_active_version(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        config = DeployCreate.model_validate(CONFIG)
-        await deploy_service.deploy(session, organization.id, config)
-        current = (await meter_service.list(session, organization.id))[0]
-        await meter_service.create(
-            session,
-            organization.id,
-            MeterCreate(
-                version_id=config.version_id,
-                name="Changed price",
-                slug="tokens",
-                usage_reducer_id=current.usage_reducer_id,
-                credit_reducer_id=current.credit_reducer_id,
-                unit_amount=Decimal(9),
-                currency="usd",
-            ),
+        old = deepcopy(CONFIG)
+        old["products"].append(
+            {
+                "slug": "old-product",
+                "name": "Old",
+                "price": {"type": "one_time", "amount": "1", "currency": "usd"},
+            }
         )
-        orphan = await product_service.create(
+        active = await deploy_service.deploy(
             session,
             organization.id,
-            ProductCreate(
-                version_id=config.version_id,
-                slug="old-product",
-                name="Old",
-                price=OneTimePrice(type="one_time", amount=Decimal(1), currency="usd"),
-            ),
+            DeployCreate.model_validate({**old, "activate": True}),
         )
         await entitlement_service.upsert(
             session, organization.id, EntitlementCreate(slug="old-feature")
@@ -195,10 +275,10 @@ class TestDeploy:
                 {**CONFIG["reducers"][0], "slug": "old-counter"}
             ),
         )
+        config = DeployCreate.model_validate(CONFIG)
         plan = await deploy_service.deploy(
             session, organization.id, config.model_copy(update={"dry_run": True})
         )
-        assert orphan.archived_at is None
         assert {
             (entry.kind, entry.key)
             for entry in plan.entries
@@ -209,10 +289,15 @@ class TestDeploy:
             ("reducer", "old-counter"),
         }
         result = await deploy_service.deploy(session, organization.id, config)
-        replacement = next(entry for entry in result.entries if entry.kind == "meter")
-        assert replacement.action == "replace"
-        assert replacement.reason == "generation 2 -> 3"
-        assert orphan.archived_at is not None
+        assert entry(result, "meter", "tokens").action == "unchanged"
+        assert entry(result, "product", "pro").action == "unchanged"
+        # The old version's rows are untouched; subscriptions may still pin them.
+        products = await product_service.list(session, organization.id)
+        assert {(p.slug, p.version_id) for p in products} == {
+            ("pro", active.version_id),
+            ("old-product", active.version_id),
+            ("pro", result.version_id),
+        }
 
     @pytest.mark.parametrize("dry_run", [True, False])
     @pytest.mark.parametrize(
@@ -276,7 +361,7 @@ class TestDeploy:
             await deploy_service.deploy(
                 session, organization.id, DeployCreate.model_validate(body)
             )
-        assert await counts(session, organization) == [0] * 6
+        assert await counts(session, organization) == [0] * 5
 
     async def test_preview_plans_without_writing(
         self, session: AsyncSession, organization: Organization, mocker: MockerFixture
@@ -295,7 +380,7 @@ class TestDeploy:
         plan = await deploy_service.deploy(session, organization.id, config)
         assert not plan.applied
         lock.assert_awaited_once()
-        assert await counts(session, organization) == [0] * 6
+        assert await counts(session, organization) == [0] * 5
 
     async def test_derived_order_and_event_backfill(
         self,
@@ -362,7 +447,7 @@ class TestDeploy:
             await deploy_service.deploy(
                 session, organization.id, DeployCreate.model_validate(renamed)
             )
-        assert await counts(session, organization) == [2, 1, 1, 1, 1, 0]
+        assert await counts(session, organization) == [2, 1, 1, 1, 1]
 
     @pytest.mark.parametrize("kind", ["reducer", "automatic_credit", "entitlement"])
     @pytest.mark.parametrize("dry_run", [True, False])
@@ -395,68 +480,14 @@ class TestDeploy:
         assert error.value.status_code == 409
         assert await counts(session, organization) == before
 
-    async def test_replacement_generation_skips_deleted_versions(
+    async def test_dry_run_of_a_deployed_version_returns_the_deployment(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         config = DeployCreate.model_validate(CONFIG)
-        await deploy_service.deploy(session, organization.id, config)
-        current = (await meter_service.list(session, organization.id))[0]
-        for generation in (2, 3):
-            meter = await meter_service.create(
-                session,
-                organization.id,
-                MeterCreate(
-                    version_id=config.version_id,
-                    name="Price drift",
-                    slug="tokens",
-                    usage_reducer_id=current.usage_reducer_id,
-                    credit_reducer_id=current.credit_reducer_id,
-                    unit_amount=Decimal(9),
-                    currency="usd",
-                ),
-            )
-            product = await product_service.create(
-                session,
-                organization.id,
-                ProductCreate(
-                    version_id=config.version_id,
-                    slug="pro",
-                    name="Name drift",
-                    price=OneTimePrice(
-                        type="one_time", amount=Decimal(1), currency="usd"
-                    ),
-                ),
-            )
-            if generation == 3:
-                meter.deleted_at = utc_now()
-                product.deleted_at = utc_now()
-        await session.flush()
+        deployed = await deploy_service.deploy(session, organization.id, config)
         plan = await deploy_service.deploy(
             session, organization.id, config.model_copy(update={"dry_run": True})
         )
-        applied = await deploy_service.deploy(session, organization.id, config)
-        for result in (plan, applied):
-            replacements = [
-                entry for entry in result.entries if entry.kind in {"meter", "product"}
-            ]
-            assert len(replacements) == 2
-            assert all(entry.action == "replace" for entry in replacements)
-            assert all(
-                entry.reason is not None
-                and entry.reason.startswith("generation 2 -> 4")
-                for entry in replacements
-            )
-        assert (
-            max(
-                row.generation_id
-                for row in await meter_service.list(session, organization.id)
-            )
-            == 4
-        )
-        assert (
-            max(
-                row.generation_id
-                for row in await product_service.list(session, organization.id)
-            )
-            == 4
-        )
+        assert plan.id == deployed.id
+        assert plan.applied
+        assert plan.status == VoidDeploymentStatus.draft

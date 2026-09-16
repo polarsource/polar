@@ -25,20 +25,35 @@ class TestSubscriptionRoutes:
             f"{PREFIX}/identities", headers=headers, json={"external_id": "buyer"}
         )
         assert identity.status_code == 201
-        product = await void_client.post(
-            f"{PREFIX}/products",
+        deployed = await void_client.post(
+            f"{PREFIX}/deploys",
             headers=headers,
             json={
-                "slug": "license",
-                "name": "License",
-                "price": {"type": "one_time", "amount": "99", "currency": "usd"},
+                "checksum": "license",
+                "activate": True,
+                "products": [
+                    {
+                        "slug": "license",
+                        "name": "License",
+                        "price": {
+                            "type": "one_time",
+                            "amount": "99",
+                            "currency": "usd",
+                        },
+                    }
+                ],
             },
         )
-        assert product.status_code == 201, product.text
+        assert deployed.status_code == 201, deployed.text
+        product_id = next(
+            entry["id"]
+            for entry in deployed.json()["entries"]
+            if entry["kind"] == "product"
+        )
         created = await void_client.post(
             f"{PREFIX}/subscriptions",
             headers=headers,
-            json={"product_id": product.json()["id"], "external_identity_id": "buyer"},
+            json={"product_id": product_id, "external_identity_id": "buyer"},
         )
         assert created.status_code == 201, created.text
         item = created.json()

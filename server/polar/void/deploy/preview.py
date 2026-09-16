@@ -13,12 +13,12 @@ from polar.void.identity.service import identity as identity_service
 from polar.void.meter.balance import MeterEvent, State
 from polar.void.meter.service import EPOCH
 from polar.void.meter.service import meter as meter_service
+from polar.void.meter.versions import meters_in_version
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
 
 from .preview_repository import PreviewRepository
 from .schemas import Deploy, DeployCreate, MeterPricePreview, PricePreviewCustomer
-from .service import _latest_meters
 
 
 def accrued_units(state: State) -> Decimal:
@@ -51,18 +51,20 @@ async def preview_prices(
     auth_subject: AuthSubject[Organization],
     request: DeployCreate,
     plan: Deploy,
-    baseline_version_id: str | None = None,
+    baseline_version_id: str | None,
     *,
     history: dict[tuple[uuid.UUID, str], list[MeterEvent]] | None = None,
 ) -> None:
+    """Reprice the baseline version's usage at the proposed unit amounts."""
     organization_id = auth_subject.subject.id
     window = request.preview
     if window is None:
         return
     start = datetime.combine(window.start, time(), UTC)
     end = datetime.combine(window.end, time(), UTC)
-    meters = await meter_service.list(session, organization_id)
-    latest = _latest_meters(meters, baseline_version_id)
+    latest = meters_in_version(
+        await meter_service.list(session, organization_id), baseline_version_id
+    )
     reducers = {r.slug: r for r in await reducer_service.list(session, organization_id)}
     wanted = {m.slug: m for m in request.meters}
     customers = None
@@ -119,43 +121,28 @@ async def preview_prices(
                 "Usage and credits need separate reducers for this preview."
             )
             continue
-        generations = [
-            m
-            for m in meters
-            if m.slug == current.slug
-            and m.branch_id is None
-            and m.version_id == baseline_version_id
-        ]
-        if any(
-            m.usage_reducer_id != usage.id or m.credit_reducer_id != credits.id
-            for m in generations
-        ):
-            preview.unavailable = "Historical meter generations use different reducers."
-            continue
         if customers is None:
             customers = await customer_service.list(session, auth_subject)
 
         for customer in customers:
-            events: list[MeterEvent] = []
-            for generation in generations:
-                source = (
-                    history.get((generation.id, customer.external_id), [])
-                    if history is not None
-                    else await meter_service._events(
-                        tinybird, generation, [customer.external_id], EPOCH, end
-                    )
+            source = (
+                history.get((current.id, customer.external_id), [])
+                if history is not None
+                else await meter_service._events(
+                    tinybird, current, [customer.external_id], EPOCH, end
                 )
-                events.extend(
-                    event
-                    for event in source
-                    if event.name
-                    in (
-                        "subscription.created",
-                        "subscription.updated",
-                        "subscription.canceled",
-                        "subscription.revoked",
-                    )
+            )
+            events: list[MeterEvent] = [
+                event
+                for event in source
+                if event.name
+                in (
+                    "subscription.created",
+                    "subscription.updated",
+                    "subscription.canceled",
+                    "subscription.revoked",
                 )
+            ]
             # A comparison uses the source version's subscription holders;
             # credits elsewhere in the organization must not add customers.
             if history is not None and not events:

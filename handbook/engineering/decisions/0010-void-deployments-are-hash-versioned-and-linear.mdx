@@ -1,0 +1,59 @@
+---
+title: "ADR-0010: Void deployments are hash-versioned and linear"
+description: "A Void configuration is identified by the SHA-256 of its normalized content; deployments of it form one chronological list with a single active deployment per organization, and activation is gated on Polar's review."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Cross-cutting
+
+**Date**: 2026-09-16
+</Info>
+
+## Context
+
+Void configs (reducers, meters, entitlements, products) are declared in code and pushed
+to Polar. The port from the standalone Void repository carried three overlapping ways of
+telling "which pricing is this": a hash-based version, an incrementing generation per
+product or meter, and a branch field on meters. Generation could only advance through a
+raw write endpoint, since any change to the config changes its hash, and branch was an
+abandoned earlier attempt. Meanwhile, nothing tied "the configuration customers are billed
+under" to the organization having passed review.
+
+## Decision
+
+A configuration's identity is the SHA-256 of its normalized content, computed by the
+server. Every meter and product row carries the version that declared it, so a product,
+its subscriptions and its meters can be checked against one hash. A deployment is one row
+per version, in chronological order, with a status of `draft`, `active` or `archived`. At
+most one deployment per organization is active, and it is what production serves;
+activating another archives the current one. Activation requires an organization that may
+accept payments. The deploy endpoint is the only writer of meters and products.
+
+## Consequences
+
+- Version, deployment and lineage live in one table (`void_deployments`); there are no
+  generation counters, branch fields, archive timestamps or organization-level default
+  version settings.
+- A new version creates its own meter and product rows even for unchanged definitions.
+  Lookups are equality on the hash; subscriptions pin the row they were sold under.
+- Pushing an identical configuration returns the existing deployment instead of a new one.
+- Rollback is activating an earlier deployment again. Drafts can be exercised by passing
+  `version_id` explicitly; nothing sells from a draft.
+- Merchants who have not passed review can deploy and test but cannot activate.
+
+## Alternatives considered
+
+- **Content-addressed definitions with a version membership table**: fewer duplicate rows,
+  one more table and join on every read. Not worth it at this scale.
+- **Keeping generations as a lineage counter**: redundant with the deployment table's
+  chronological order, and only reachable through raw endpoints that bypassed deploys.
+- **Gating on `status == ACTIVE` only**: Polar lets organizations under review or snoozed
+  accept payments, so the payments capability is the consistent gate.
+
+## References
+
+- `server/polar/void/deploy/` (hash: `config_hash.py`, statuses: `service.py`)
+- `server/polar/models/void_deployment.py`
+- `server/polar/void/README.md`, "Configuration deployment"

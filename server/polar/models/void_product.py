@@ -1,10 +1,8 @@
 import uuid
-from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
-    TIMESTAMP,
     ForeignKey,
     Integer,
     Numeric,
@@ -27,23 +25,16 @@ if TYPE_CHECKING:
 
 
 class VoidProduct(RecordModel):
-    """An immutable product generation pinned by subscription projections."""
+    """An immutable product of one configuration version, pinned by subscriptions."""
 
     __tablename__ = "void_products"
     __table_args__ = (
         UniqueConstraint("organization_id", "id"),
-        UniqueConstraint(
-            "organization_id",
-            "slug",
-            "version_id",
-            "generation_id",
-            postgresql_nulls_not_distinct=True,
-        ),
+        UniqueConstraint("organization_id", "slug", "version_id"),
     )
 
     slug: Mapped[str] = mapped_column(String, nullable=False)
-    version_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    generation_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    version_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     price_type: Mapped[str] = mapped_column(String, nullable=False)
@@ -60,9 +51,6 @@ class VoidProduct(RecordModel):
     )
     entitlement_ids: Mapped[list[uuid.UUID]] = mapped_column(
         ARRAY(Uuid), nullable=False, default=list
-    )
-    archived_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id"), nullable=False, index=True

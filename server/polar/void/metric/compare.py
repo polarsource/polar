@@ -20,10 +20,10 @@ from polar.void.deploy.schemas import (
     DeployMeter,
     PricePreviewWindow,
 )
-from polar.void.deploy.service import _latest_meters
 from polar.void.meter.balance import MeterEvent
 from polar.void.meter.service import EPOCH
 from polar.void.meter.service import meter as meter_service
+from polar.void.meter.versions import meters_in_version
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
 
@@ -33,9 +33,9 @@ from .service import metric as metric_service
 
 class CompareQuery(BaseModel):
     baseline: str = Field(
-        description="Subscription history version; empty means unversioned."
+        min_length=1, description="Version supplying the subscription history."
     )
-    candidate: str = Field(description="Pricing version; empty means unversioned.")
+    candidate: str = Field(min_length=1, description="Version supplying the prices.")
     start: date
     end: date
 
@@ -55,8 +55,8 @@ class ComparisonMetric(BaseModel):
 
 
 class MetricComparison(BaseModel):
-    baseline: str | None
-    candidate: str | None
+    baseline: str
+    candidate: str
     window: PricePreviewWindow
     customer_count: int
     shared_metrics: list[ComparisonMetric]
@@ -70,10 +70,10 @@ async def compare(
     query: CompareQuery,
 ) -> MetricComparison:
     organization_id = auth_subject.subject.id
-    baseline_id, candidate_id = query.baseline or None, query.candidate or None
+    baseline_id, candidate_id = query.baseline, query.candidate
     meters = await meter_service.list(session, organization_id)
-    baseline = _latest_meters(meters, baseline_id)
-    candidate = _latest_meters(meters, candidate_id)
+    baseline = meters_in_version(meters, baseline_id)
+    candidate = meters_in_version(meters, candidate_id)
     if not baseline or not candidate:
         raise ResourceNotFound("Both versions must have meters in this organization")
     reducers = await reducer_service.list(session, organization_id)
@@ -87,9 +87,7 @@ async def compare(
     end = datetime.combine(query.end, time(), UTC)
     history: dict[tuple[uuid.UUID, str], list[MeterEvent]] = {}
     roots: set[str] = set()
-    for meter in meters:
-        if meter.version_id != baseline_id or meter.branch_id is not None:
-            continue
+    for meter in baseline.values():
         for customer in customers:
             events = [
                 event
@@ -155,6 +153,7 @@ async def compare(
         id=None,
         checksum="comparison",
         applied=False,
+        status=None,
         created_at=utc_now(),
         entries=[
             DeployEntry(

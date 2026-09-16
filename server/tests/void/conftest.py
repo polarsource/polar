@@ -9,10 +9,28 @@ from starlette.types import Scope as ASGIScope
 
 from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.middlewares import AuthSubjectMiddleware
-from polar.models import Organization
+from polar.models import Organization, VoidDeployment
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.base import IsolatedSessionTestClient
+from tests.fixtures.database import SaveFixture
+
+VERSION = "a" * 64
+
+
+async def activate_version(
+    save_fixture: SaveFixture, organization: Organization, version_id: str = VERSION
+) -> VoidDeployment:
+    """An active deployment row for a version whose rows tests create directly."""
+    deployment = VoidDeployment(
+        organization=organization,
+        checksum="test",
+        version_id=version_id,
+        status="active",
+        entries=[],
+    )
+    await save_fixture(deployment)
+    return deployment
 
 
 @pytest_asyncio.fixture

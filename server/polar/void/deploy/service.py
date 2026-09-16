@@ -3,21 +3,23 @@ import uuid
 from collections.abc import Sequence
 from decimal import Decimal
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import VoidDeployment as Deployment
 from polar.models import VoidMeter as Meter
+from polar.models import VoidProduct as Product
 from polar.models import VoidReducer as Reducer
+from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import classify as entitlement_action
 from polar.void.entitlement.service import entitlement as entitlement_service
-from polar.void.meter.repository import MeterRepository
 from polar.void.meter.schemas import MeterCreate
 from polar.void.meter.service import meter as meter_service
+from polar.void.meter.versions import meters_in_version
 from polar.void.organization.service import organization as organization_service
-from polar.void.product.repository import ProductRepository
 from polar.void.product.schemas import MeterTerms, ProductCreate
-from polar.void.product.service import ProductInvalid, latest_products, same_definition
+from polar.void.product.service import ProductInvalid, products_in_version
 from polar.void.product.service import product as product_service
 from polar.void.reducer.aggregation import PropertyAggregation
 from polar.void.reducer.derived import ReducerSource, validate_inputs
@@ -31,7 +33,11 @@ from polar.void.reducer.filter import (
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 
-from .exceptions import DeploymentConflict, InvalidDeployment
+from .exceptions import (
+    DeploymentConflict,
+    DeploymentNotActivatable,
+    InvalidDeployment,
+)
 from .repository import DeployRepository
 from .schemas import (
     Action,
@@ -47,19 +53,6 @@ CREDITS_SUFFIX = "-credits"
 
 def _by_slug(reducers: Sequence[Reducer]) -> dict[str, Reducer]:
     return {reducer.slug: reducer for reducer in reducers}
-
-
-def _latest_meters(
-    meters: Sequence[Meter], version_id: str | None = None
-) -> dict[str, Meter]:
-    latest: dict[str, Meter] = {}
-    for meter in meters:
-        if meter.branch_id is not None or meter.version_id != version_id:
-            continue
-        current = latest.get(meter.slug)
-        if current is None or meter.generation_id > current.generation_id:
-            latest[meter.slug] = meter
-    return latest
 
 
 def _same_reducer(wanted: ReducerCreate, current: Reducer) -> bool:
@@ -84,6 +77,47 @@ def _same_meter(
         and current.credit_reducer_id == credit_reducer_id
         and Decimal(current.unit_amount) == wanted.unit_amount
         and current.currency == wanted.currency
+    )
+
+
+def _same_product(wanted: DeployProduct, current: Product) -> bool:
+    """Definition equality across versions: meters compare by slug, since each
+    version has its own meter rows."""
+    price = wanted.price
+    wanted_meters = sorted(
+        entry if isinstance(entry, str) else entry.slug for entry in wanted.meters
+    )
+    wanted_terms = {
+        entry.slug: MeterTerms.model_validate(
+            entry.model_dump(exclude={"slug"})
+        ).model_dump(mode="json")
+        for entry in wanted.meters
+        if not isinstance(entry, str)
+    }
+    return (
+        current.name == wanted.name
+        and current.description == wanted.description
+        and current.price_type == price.type
+        and current.interval == (price.interval if price.type == "recurring" else None)
+        and current.interval_count
+        == (price.interval_count if price.type == "recurring" else 1)
+        and Decimal(current.amount) == price.amount
+        and current.currency == price.currency
+        and (current.meter_terms or {}) == wanted_terms
+        and sorted(m.slug for m in current.meters) == wanted_meters
+        and sorted(e.slug for e in current.entitlements) == sorted(wanted.entitlements)
+    )
+
+
+def _to_schema(deployment: Deployment) -> Deploy:
+    return Deploy(
+        version_id=deployment.version_id,
+        id=deployment.id,
+        checksum=deployment.checksum,
+        applied=True,
+        status=VoidDeploymentStatus(deployment.status),
+        entries=[DeployEntry.model_validate(entry) for entry in deployment.entries],
+        created_at=deployment.created_at,
     )
 
 
@@ -123,13 +157,58 @@ class DeployService:
         """Reconcile one compiled config against the organization's resources.
 
         Runs under a per-organization lock so two deploys cannot interleave.
-        Reducers are unique by slug. Meters are versioned: a changed one is
-        created again and the server bumps its generation. Nothing is ever
-        deleted; what the config no longer names is reported as an orphan.
+        Reducers and entitlements are unique by slug. Meters and products belong
+        to the configuration version that declared them, so a new version gets
+        its own rows. Nothing is ever deleted; what the config no longer names
+        is reported as an orphan relative to the active version. Pushing a
+        version that already has a deployment returns that deployment.
         """
         await organization_service.lock(session, organization_id)
         async with session.begin_nested():
+            repository = DeployRepository.from_session(session)
+            existing = await repository.by_version(
+                organization_id, create_schema.version_id
+            )
+            if existing is not None:
+                if create_schema.activate and not existing.is_active:
+                    await self._activate(session, organization_id, existing)
+                return _to_schema(existing)
             return await self._reconcile(session, organization_id, create_schema)
+
+    async def activate(
+        self, session: AsyncSession, organization_id: uuid.UUID, id: uuid.UUID
+    ) -> Deploy:
+        """Make one deployment the organization's production configuration.
+
+        The previously active deployment is archived. Requires an organization
+        that has passed review.
+        """
+        await organization_service.lock(session, organization_id)
+        async with session.begin_nested():
+            deployment = await DeployRepository.from_session(session).get(
+                organization_id, id
+            )
+            if deployment is None:
+                raise ResourceNotFound()
+            if not deployment.is_active:
+                await self._activate(session, organization_id, deployment)
+            return _to_schema(deployment)
+
+    async def _activate(
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        deployment: Deployment,
+    ) -> None:
+        organization = await organization_service.lock(session, organization_id)
+        if not organization.can_accept_payments:
+            raise DeploymentNotActivatable()
+        current = await DeployRepository.from_session(session).active(organization_id)
+        if current is not None:
+            current.status = VoidDeploymentStatus.archived
+            await session.flush()
+        deployment.status = VoidDeploymentStatus.active
+        await session.flush()
 
     @staticmethod
     def _validate(config: DeployCreate, current_reducers: dict[str, Reducer]) -> None:
@@ -225,12 +304,16 @@ class DeployService:
         create_schema: DeployCreate,
     ) -> Deploy:
         apply = not create_schema.dry_run
+        version_id = create_schema.version_id
+        baseline_version_id = await organization_service.active_version(
+            session, organization_id
+        )
         current_reducers = _by_slug(
             await reducer_service.list(session, organization_id)
         )
-        current_meters = _latest_meters(
-            await meter_service.list(session, organization_id), create_schema.version_id
-        )
+        all_meters = await meter_service.list(session, organization_id)
+        current_meters = meters_in_version(all_meters, baseline_version_id)
+        existing_meters = meters_in_version(all_meters, version_id)
         self._validate(create_schema, current_reducers)
         reserved = await DeployRepository.from_session(session).reserved_slugs(
             organization_id,
@@ -354,36 +437,11 @@ class DeployService:
                     credit_reducer_id = created_credit_id
                     reducer_ids[credit_slug] = created_credit_id
             current_meter = current_meters.get(wanted_meter.slug)
-            if (
-                current_meter is not None
-                and usage_reducer_id is not None
-                and credit_reducer_id is not None
-                and _same_meter(
-                    wanted_meter,
-                    current_meter,
-                    usage_reducer_id,
-                    credit_reducer_id,
-                )
-            ):
-                entries.append(
-                    DeployEntry(
-                        reason=None,
-                        price_preview=None,
-                        kind="meter",
-                        key=wanted_meter.slug,
-                        action="unchanged",
-                        id=current_meter.id,
-                    )
-                )
-                meter_ids[wanted_meter.slug] = current_meter.id
-                continue
-            next_generation = await MeterRepository.from_session(
-                session
-            ).next_generation(
-                organization_id, wanted_meter.slug, create_schema.version_id, None
+            existing_meter = existing_meters.get(wanted_meter.slug)
+            meter_id: uuid.UUID | None = (
+                existing_meter.id if existing_meter is not None else None
             )
-            meter_id: uuid.UUID | None = None
-            if apply:
+            if existing_meter is None and apply:
                 assert usage_reducer_id is not None
                 assert credit_reducer_id is not None
                 created_meter = await meter_service.create(
@@ -394,7 +452,7 @@ class DeployService:
                         if current_meter is not None
                         else wanted_meter.slug,
                         slug=wanted_meter.slug,
-                        version_id=create_schema.version_id,
+                        version_id=version_id,
                         usage_reducer_id=usage_reducer_id,
                         credit_reducer_id=credit_reducer_id,
                         unit_amount=wanted_meter.unit_amount,
@@ -402,19 +460,26 @@ class DeployService:
                     ),
                 )
                 meter_id = created_meter.id
-            action: Action = "create" if current_meter is None else "replace"
-            reason = (
-                None
-                if current_meter is None
-                else f"generation {current_meter.generation_id} -> {next_generation}"
-            )
+            action: Action
+            if current_meter is None:
+                action = "create"
+            elif (
+                usage_reducer_id is not None
+                and credit_reducer_id is not None
+                and _same_meter(
+                    wanted_meter, current_meter, usage_reducer_id, credit_reducer_id
+                )
+            ):
+                action = "unchanged"
+            else:
+                action = "replace"
             entries.append(
                 DeployEntry(
                     price_preview=None,
                     kind="meter",
                     key=wanted_meter.slug,
                     action=action,
-                    reason=reason,
+                    reason=None,
                     id=meter_id,
                 )
             )
@@ -434,34 +499,36 @@ class DeployService:
                 )
 
         entries += await self._deploy_entitlements_and_products(
-            session, organization_id, create_schema, meter_ids, apply
+            session,
+            organization_id,
+            create_schema,
+            meter_ids,
+            apply,
+            baseline_version_id,
         )
 
         if not apply:
             return Deploy(
-                version_id=create_schema.version_id,
+                version_id=version_id,
                 checksum=create_schema.checksum,
                 id=None,
                 applied=False,
+                status=None,
                 entries=entries,
                 created_at=utc_now(),
             )
         deployment = Deployment(
-            version_id=create_schema.version_id,
+            version_id=version_id,
             checksum=create_schema.checksum,
+            status=VoidDeploymentStatus.draft,
             entries=[entry.model_dump(mode="json") for entry in entries],
             organization=await organization_service.lock(session, organization_id),
         )
         session.add(deployment)
         await session.flush()
-        return Deploy(
-            version_id=deployment.version_id,
-            id=deployment.id,
-            checksum=deployment.checksum,
-            applied=True,
-            entries=entries,
-            created_at=deployment.created_at,
-        )
+        if create_schema.activate:
+            await self._activate(session, organization_id, deployment)
+        return _to_schema(deployment)
 
     async def _deploy_entitlements_and_products(
         self,
@@ -470,10 +537,11 @@ class DeployService:
         create_schema: DeployCreate,
         meter_ids: dict[str, uuid.UUID | None],
         apply: bool,
+        baseline_version_id: str | None,
     ) -> list[DeployEntry]:
-        """Entitlements upsert by slug. Products are versioned like meters: a
-        changed definition inserts the next generation, and one the config no
-        longer names is archived so nothing new is sold under it."""
+        """Entitlements upsert by slug. Products belong to their version like
+        meters; one the config no longer names is reported as an orphan, and
+        existing subscriptions keep the version they were sold under."""
         entries: list[DeployEntry] = []
         current_entitlements = {
             e.slug: e for e in await entitlement_service.list(session, organization_id)
@@ -521,74 +589,53 @@ class DeployService:
                     )
                 )
 
-        current_products = latest_products(
-            await product_service.list(session, organization_id),
-            create_schema.version_id,
-        )
+        all_products = await product_service.list(session, organization_id)
+        current_products = products_in_version(all_products, baseline_version_id)
+        existing_products = products_in_version(all_products, create_schema.version_id)
         for wanted_product in create_schema.products:
-            create = self._product_create(wanted_product, meter_ids, entitlement_ids)
-            if create is not None:
-                create.version_id = create_schema.version_id
             current_product = current_products.get(wanted_product.slug)
-            if (
-                current_product is not None
-                and current_product.archived_at is None
-                and create is not None
-                and same_definition(create, current_product)
-            ):
-                entries.append(
-                    DeployEntry(
-                        reason=None,
-                        price_preview=None,
-                        kind="product",
-                        key=wanted_product.slug,
-                        action="unchanged",
-                        id=current_product.id,
-                    )
-                )
-                continue
-            next_generation = await ProductRepository.from_session(
-                session
-            ).next_generation(
-                organization_id, wanted_product.slug, create_schema.version_id
+            existing_product = existing_products.get(wanted_product.slug)
+            product_id: uuid.UUID | None = (
+                existing_product.id if existing_product is not None else None
             )
-            product_id: uuid.UUID | None = None
-            if apply:
+            if existing_product is None and apply:
+                create = self._product_create(
+                    wanted_product, meter_ids, entitlement_ids, create_schema.version_id
+                )
                 assert create is not None
                 created = await product_service.create(session, organization_id, create)
                 product_id = created.id
+            elif not apply:
+                self._product_create(
+                    wanted_product, meter_ids, entitlement_ids, create_schema.version_id
+                )
             if current_product is None:
-                action, reason = "create", None
+                action = "create"
+            elif _same_product(wanted_product, current_product):
+                action = "unchanged"
             else:
                 action = "replace"
-                reason = (
-                    f"generation {current_product.generation_id} -> {next_generation}"
-                )
-                if current_product.archived_at is not None:
-                    reason += " (was archived)"
             entries.append(
                 DeployEntry(
                     price_preview=None,
                     kind="product",
                     key=wanted_product.slug,
                     action=action,
-                    reason=reason,
+                    reason=None,
                     id=product_id,
                 )
             )
         wanted_products = {p.slug for p in create_schema.products}
         for slug, current_product in current_products.items():
-            if slug in wanted_products or current_product.archived_at is not None:
+            if slug in wanted_products:
                 continue
-            if apply:
-                await product_service.archive(session, current_product)
             entries.append(
                 DeployEntry(
                     price_preview=None,
                     kind="product",
                     key=slug,
                     action="orphan",
-                    reason="archived; existing subscriptions keep this generation",
+                    reason="not in this version; existing subscriptions keep theirs",
                     id=current_product.id,
                 )
             )
@@ -599,9 +646,11 @@ class DeployService:
         wanted: DeployProduct,
         meter_ids: dict[str, uuid.UUID | None],
         entitlement_ids: dict[str, uuid.UUID | None],
+        version_id: str,
     ) -> ProductCreate | None:
         """None on a dry run whose referenced meters or entitlements do not
-        exist yet; the plan then reports a create without an id."""
+        exist yet; the plan then reports a create without an id. Always
+        validates the references."""
         slugs = [
             entry if isinstance(entry, str) else entry.slug for entry in wanted.meters
         ]
@@ -622,6 +671,7 @@ class DeployService:
         if any(i is None for i in meters) or any(i is None for i in entitlements):
             return None
         return ProductCreate(
+            version_id=version_id,
             slug=wanted.slug,
             name=wanted.name,
             description=wanted.description,
@@ -637,15 +687,35 @@ class DeployService:
             entitlement_ids=[i for i in entitlements if i is not None],
         )
 
-    async def latest(
+    async def list(
+        self, session: AsyncReadSession, organization_id: uuid.UUID
+    ) -> Sequence[Deployment]:
+        return await DeployRepository.from_session(session).list(organization_id)
+
+    async def get(
+        self, session: AsyncReadSession, organization_id: uuid.UUID, id: uuid.UUID
+    ) -> Deployment:
+        deployment = await DeployRepository.from_session(session).get(
+            organization_id, id
+        )
+        if deployment is None:
+            raise ResourceNotFound()
+        return deployment
+
+    async def for_version(
         self,
         session: AsyncReadSession,
         organization_id: uuid.UUID,
-        version_id: str | None = None,
+        version_id: str | None,
     ) -> Deployment | None:
-        return await DeployRepository.from_session(session).latest(
-            organization_id, version_id
-        )
+        """The deployment of one version, or the active one when none is given."""
+        repository = DeployRepository.from_session(session)
+        if version_id is None:
+            return await repository.active(organization_id)
+        return await repository.by_version(organization_id, version_id)
+
+    def to_schema(self, deployment: Deployment) -> Deploy:
+        return _to_schema(deployment)
 
 
 deploy = DeployService()

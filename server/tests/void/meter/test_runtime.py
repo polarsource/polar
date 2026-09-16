@@ -50,6 +50,7 @@ async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
         session,
         organization.id,
         MeterCreate(
+            version_id="a" * 64,
             slug="requests",
             name="Requests",
             usage_reducer_id=reducers[0].id,

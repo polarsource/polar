@@ -12,7 +12,7 @@ from polar.void.product.schemas import Product
 
 class SubscriptionCreate(Schema):
     product_id: uuid.UUID = Field(
-        description="The product generation to sell; the newest one, normally."
+        description="A product of the active deployment's version."
     )
     external_identity_id: str = Field(min_length=1, max_length=255)
     starts_at: AwareDatetime | None = Field(

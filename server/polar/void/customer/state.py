@@ -8,7 +8,7 @@ from datetime import datetime
 from polar.auth.models import AuthSubject
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidMeter
+from polar.models import Organization
 from polar.models import VoidReducerBucket as ReducerBucket
 from polar.postgres import AsyncSession
 from polar.void.entitlement.schemas import (
@@ -21,6 +21,7 @@ from polar.void.meter.balance import MeterEvent, State, _next_boundary
 from polar.void.meter.schemas import Meter as MeterSchema
 from polar.void.meter.service import EPOCH, _parse_time
 from polar.void.meter.service import meter as meter_service
+from polar.void.meter.versions import meters_in_version
 from polar.void.reducer.buckets import bucket_start
 from polar.void.reducer.schemas import Reducer as ReducerSchema
 from polar.void.tinybird import TinybirdApi
@@ -50,8 +51,8 @@ async def customer_state(
     tinybird: TinybirdApi,
     auth_subject: AuthSubject[Organization],
     external_id: str,
-    since: datetime | None = None,
-    version_id: str | None = None,
+    since: datetime | None,
+    version_id: str | None,
 ) -> CustomerState:
     organization_id = auth_subject.subject.id
     customer = await customer_service.get(session, auth_subject, external_id)
@@ -73,15 +74,12 @@ async def customer_state(
         )
     )
     cutoff = max(EPOCH, min(since, at)) if since is not None else at
-    # Retired generations have no place in the current customer state.
-    latest: dict[str, VoidMeter] = {}
-    for meter in await meter_service.list(session, organization_id):
-        if meter.branch_id is not None or meter.version_id != version_id:
-            continue
-        previous = latest.get(meter.slug)
-        if previous is None or meter.generation_id > previous.generation_id:
-            latest[meter.slug] = meter
-    meters = list(latest.values())
+    # Only the selected version's meters belong in the customer state.
+    meters = list(
+        meters_in_version(
+            await meter_service.list(session, organization_id), version_id
+        ).values()
+    )
     reducer_ids = {r for m in meters for r in (m.usage_reducer_id, m.credit_reducer_id)}
     reducers = await repository.reducers(organization_id, sorted(reducer_ids))
     last_processed: dict[uuid.UUID, LastProcessedEvent] = {}

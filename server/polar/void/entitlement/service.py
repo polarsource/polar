@@ -4,12 +4,13 @@ from uuid import UUID
 
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import VoidEntitlement, VoidEvent, VoidMeter
+from polar.models import VoidEntitlement, VoidEvent
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.repository import MeterRepository
+from polar.void.meter.versions import meters_in_version
 from polar.void.organization.service import organization as organization_service
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
@@ -103,13 +104,10 @@ class EntitlementService:
         known_features = {e.slug for e in await self.list(session, organization_id)}
         if any(slug not in known_features for slug in assignment.features or []):
             raise EntitlementAssignmentInvalid("Unknown feature entitlement")
-        known_meters: dict[str, VoidMeter] = {}
-        for meter in await MeterRepository.from_session(session).list(organization_id):
-            if meter.branch_id is None and (
-                meter.slug not in known_meters
-                or meter.generation_id > known_meters[meter.slug].generation_id
-            ):
-                known_meters[meter.slug] = meter
+        known_meters = meters_in_version(
+            await MeterRepository.from_session(session).list(organization_id),
+            await organization_service.active_version(session, organization_id),
+        )
         for entry in assignment.meters or []:
             if entry.meter not in known_meters:
                 raise EntitlementAssignmentInvalid(f"Unknown meter {entry.meter!r}")

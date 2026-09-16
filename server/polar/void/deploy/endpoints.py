@@ -1,5 +1,6 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends
 
@@ -13,12 +14,12 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.void.auth import VoidRead, VoidWrite
-from polar.void.organization.service import selected_version
+from polar.void.organization.service import organization as organization_service
 from polar.void.tinybird import TinybirdApi, get_client
 
-from .exceptions import DeploymentConflict, InvalidDeployment
+from .exceptions import DeploymentConflict, DeploymentNotActivatable, InvalidDeployment
 from .preview import preview_prices
-from .schemas import Deploy, DeployCreate, DeployEntry
+from .schemas import Deploy, DeployCreate
 from .service import deploy as deploy_service
 
 router = APIRouter(prefix="/deploys", tags=["deploys"], include_in_schema=False)
@@ -38,12 +39,14 @@ async def preview_client(
 @router.post(
     "",
     response_model=Deploy,
-    description="Plan or apply configuration. Historical previews require dry_run "
-    "and customers:read or customers:write in addition to void:write.",
+    description="Plan or apply configuration. A new version becomes a draft "
+    "deployment; `activate` makes it the active one. Historical previews require "
+    "dry_run and customers:read or customers:write in addition to void:write.",
     status_code=201,
     operation_id="deploys:create",
     responses={
         400: {"model": InvalidDeployment.schema()},
+        403: {"model": DeploymentNotActivatable.schema()},
         409: {"model": DeploymentConflict.schema()},
     },
 )
@@ -62,14 +65,26 @@ async def create(
             auth_subject,
             body,
             plan,
-            await selected_version(session, auth_subject.subject.id, None),
+            await organization_service.active_version(session, auth_subject.subject.id),
         )
     return plan
+
+
+@router.get("", response_model=list[Deploy], operation_id="deploys:list")
+async def list_deploys(
+    auth_subject: VoidRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Sequence[Deploy]:
+    return [
+        deploy_service.to_schema(deployment)
+        for deployment in await deploy_service.list(session, auth_subject.subject.id)
+    ]
 
 
 @router.get(
     "/latest",
     response_model=Deploy,
+    description="The deployment of one version, or the active deployment.",
     operation_id="deploys:latest",
     responses={404: {"model": ResourceNotFound.schema()}},
 )
@@ -78,18 +93,46 @@ async def latest(
     version_id: str | None = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Deploy:
-    deployment = await deploy_service.latest(
-        session,
-        auth_subject.subject.id,
-        await selected_version(session, auth_subject.subject.id, version_id),
+    deployment = await deploy_service.for_version(
+        session, auth_subject.subject.id, version_id
     )
     if deployment is None:
-        raise ResourceNotFound("No deployment yet")
-    return Deploy(
-        version_id=deployment.version_id,
-        id=deployment.id,
-        checksum=deployment.checksum,
-        applied=True,
-        entries=[DeployEntry.model_validate(entry) for entry in deployment.entries],
-        created_at=deployment.created_at,
+        raise ResourceNotFound(
+            "No active deployment" if version_id is None else "Unknown version"
+        )
+    return deploy_service.to_schema(deployment)
+
+
+@router.get(
+    "/{id}",
+    response_model=Deploy,
+    operation_id="deploys:get",
+    responses={404: {"model": ResourceNotFound.schema()}},
+)
+async def get(
+    id: UUID,
+    auth_subject: VoidRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Deploy:
+    return deploy_service.to_schema(
+        await deploy_service.get(session, auth_subject.subject.id, id)
     )
+
+
+@router.post(
+    "/{id}/activate",
+    response_model=Deploy,
+    description="Make a deployment the organization's production configuration. "
+    "The previously active deployment is archived.",
+    operation_id="deploys:activate",
+    responses={
+        403: {"model": DeploymentNotActivatable.schema()},
+        404: {"model": ResourceNotFound.schema()},
+    },
+)
+async def activate(
+    id: UUID,
+    auth_subject: VoidWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Deploy:
+    return await deploy_service.activate(session, auth_subject.subject.id, id)

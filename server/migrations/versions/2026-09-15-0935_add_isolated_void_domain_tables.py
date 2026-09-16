@@ -83,7 +83,8 @@ def upgrade() -> None:
     op.create_table(
         "void_deployments",
         sa.Column("checksum", sa.String(), nullable=False),
-        sa.Column("version_id", sa.String(), nullable=True),
+        sa.Column("version_id", sa.String(), nullable=False),
+        sa.Column("status", sa.String(), nullable=False),
         sa.Column("entries", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -122,10 +123,23 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_index(
+        op.f("ix_void_deployments_status"),
+        "void_deployments",
+        ["status"],
+        unique=False,
+    )
+    op.create_index(
         op.f("ix_void_deployments_version_id"),
         "void_deployments",
         ["version_id"],
         unique=False,
+    )
+    op.create_index(
+        "ix_void_deployments_one_active_per_organization",
+        "void_deployments",
+        ["organization_id"],
+        unique=True,
+        postgresql_where=sa.text("status = 'active'"),
     )
     op.create_table(
         "void_entitlements",
@@ -168,41 +182,9 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_table(
-        "void_organization_settings",
-        sa.Column("organization_id", sa.Uuid(), nullable=False),
-        sa.Column("default_version_id", sa.String(), nullable=True),
-        sa.Column("id", sa.Uuid(), nullable=False),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
-        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["organization_id"],
-            ["organizations.id"],
-            name=op.f("void_organization_settings_organization_id_fkey"),
-        ),
-        sa.PrimaryKeyConstraint("id", name=op.f("void_organization_settings_pkey")),
-        sa.UniqueConstraint(
-            "organization_id",
-            name=op.f("void_organization_settings_organization_id_key"),
-        ),
-    )
-    op.create_index(
-        op.f("ix_void_organization_settings_created_at"),
-        "void_organization_settings",
-        ["created_at"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_void_organization_settings_deleted_at"),
-        "void_organization_settings",
-        ["deleted_at"],
-        unique=False,
-    )
-    op.create_table(
         "void_products",
         sa.Column("slug", sa.String(), nullable=False),
-        sa.Column("version_id", sa.String(), nullable=True),
-        sa.Column("generation_id", sa.Integer(), nullable=False),
+        sa.Column("version_id", sa.String(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("price_type", sa.String(), nullable=False),
@@ -215,7 +197,6 @@ def upgrade() -> None:
             "meter_terms", postgresql.JSONB(astext_type=sa.Text()), nullable=False
         ),
         sa.Column("entitlement_ids", postgresql.ARRAY(sa.Uuid()), nullable=False),
-        sa.Column("archived_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -234,11 +215,7 @@ def upgrade() -> None:
             "organization_id",
             "slug",
             "version_id",
-            "generation_id",
-            name=op.f(
-                "void_products_organization_id_slug_version_id_generation_id_key"
-            ),
-            postgresql_nulls_not_distinct=True,
+            name=op.f("void_products_organization_id_slug_version_id_key"),
         ),
     )
     op.create_index(
@@ -257,6 +234,12 @@ def upgrade() -> None:
         op.f("ix_void_products_organization_id"),
         "void_products",
         ["organization_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_void_products_version_id"),
+        "void_products",
+        ["version_id"],
         unique=False,
     )
     op.create_table(
@@ -326,9 +309,7 @@ def upgrade() -> None:
         "void_meters",
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("slug", sa.String(), nullable=False),
-        sa.Column("version_id", sa.String(), nullable=True),
-        sa.Column("generation_id", sa.Integer(), nullable=False),
-        sa.Column("branch_id", sa.Uuid(), nullable=True),
+        sa.Column("version_id", sa.String(), nullable=False),
         sa.Column("usage_reducer_id", sa.Uuid(), nullable=False),
         sa.Column("credit_reducer_id", sa.Uuid(), nullable=False),
         sa.Column("unit_amount", sa.Numeric(precision=17, scale=12), nullable=False),
@@ -358,12 +339,7 @@ def upgrade() -> None:
             "organization_id",
             "slug",
             "version_id",
-            "generation_id",
-            "branch_id",
-            name=op.f(
-                "void_meters_organization_id_slug_version_id_generation_id_branch_id_key"
-            ),
-            postgresql_nulls_not_distinct=True,
+            name=op.f("void_meters_organization_id_slug_version_id_key"),
         ),
     )
     op.create_index(
@@ -389,6 +365,9 @@ def upgrade() -> None:
         "void_meters",
         ["usage_reducer_id"],
         unique=False,
+    )
+    op.create_index(
+        op.f("ix_void_meters_version_id"), "void_meters", ["version_id"], unique=False
     )
     op.create_table(
         "void_reducer_buckets",
@@ -654,6 +633,7 @@ def downgrade() -> None:
         op.f("ix_void_reducer_buckets_created_at"), table_name="void_reducer_buckets"
     )
     op.drop_table("void_reducer_buckets")
+    op.drop_index(op.f("ix_void_meters_version_id"), table_name="void_meters")
     op.drop_index(op.f("ix_void_meters_usage_reducer_id"), table_name="void_meters")
     op.drop_index(op.f("ix_void_meters_organization_id"), table_name="void_meters")
     op.drop_index(op.f("ix_void_meters_deleted_at"), table_name="void_meters")
@@ -673,19 +653,11 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_void_reducers_deleted_at"), table_name="void_reducers")
     op.drop_index(op.f("ix_void_reducers_created_at"), table_name="void_reducers")
     op.drop_table("void_reducers")
+    op.drop_index(op.f("ix_void_products_version_id"), table_name="void_products")
     op.drop_index(op.f("ix_void_products_organization_id"), table_name="void_products")
     op.drop_index(op.f("ix_void_products_deleted_at"), table_name="void_products")
     op.drop_index(op.f("ix_void_products_created_at"), table_name="void_products")
     op.drop_table("void_products")
-    op.drop_index(
-        op.f("ix_void_organization_settings_deleted_at"),
-        table_name="void_organization_settings",
-    )
-    op.drop_index(
-        op.f("ix_void_organization_settings_created_at"),
-        table_name="void_organization_settings",
-    )
-    op.drop_table("void_organization_settings")
     op.drop_index(
         op.f("ix_void_entitlements_organization_id"), table_name="void_entitlements"
     )
@@ -696,7 +668,13 @@ def downgrade() -> None:
         op.f("ix_void_entitlements_created_at"), table_name="void_entitlements"
     )
     op.drop_table("void_entitlements")
+    op.drop_index(
+        "ix_void_deployments_one_active_per_organization",
+        table_name="void_deployments",
+        postgresql_where=sa.text("status = 'active'"),
+    )
     op.drop_index(op.f("ix_void_deployments_version_id"), table_name="void_deployments")
+    op.drop_index(op.f("ix_void_deployments_status"), table_name="void_deployments")
     op.drop_index(
         op.f("ix_void_deployments_organization_id"), table_name="void_deployments"
     )

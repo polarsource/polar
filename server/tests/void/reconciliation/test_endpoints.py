@@ -1,6 +1,5 @@
 from datetime import timedelta
 from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -15,10 +14,10 @@ from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import entitlement as entitlement_service
 from polar.void.meter.schemas import MeterCreate
 from polar.void.meter.service import meter as meter_service
-from polar.void.organization.service import organization as organization_service
 from polar.void.product.schemas import ProductCreate
 from polar.void.product.service import product as product_service
 from tests.fixtures.database import SaveFixture
+from tests.void.conftest import VERSION
 from tests.void.test_endpoints import TOKEN, create_token
 
 from .conftest import AT, START, Graph
@@ -77,7 +76,7 @@ class TestCustomerState:
             for holder in compact["meters"][0]["holders"]
         )
 
-    async def test_uses_selected_version_and_latest_mainline_generation(
+    async def test_uses_the_active_version_unless_one_is_requested(
         self,
         state_client: AsyncClient,
         graph: Graph,
@@ -86,37 +85,27 @@ class TestCustomerState:
         mocker: MockerFixture,
     ) -> None:
         mocker.patch("polar.void.customer.state.utc_now", return_value=AT)
-        definition = MeterCreate.model_validate(graph.meter)
-        chosen = await meter_service.create(
-            session,
-            organization.id,
-            definition.model_copy(update={"version_id": "a" * 64}),
-        )
-        await meter_service.create(
-            session,
-            organization.id,
-            definition.model_copy(
-                update={"version_id": "a" * 64, "branch_id": uuid4()}
-            ),
-        )
-        await meter_service.create(
+        definition = MeterCreate.model_validate(graph.meter, from_attributes=True)
+        draft = await meter_service.create(
             session,
             organization.id,
             definition.model_copy(update={"version_id": "b" * 64}),
         )
-        await organization_service.set_default_version(
-            session, organization.id, "a" * 64
-        )
         response = await state_client.get("/v1/void/customers/root/state")
-        assert response.status_code == 200, response.text
-        assert [m["meter"]["id"] for m in response.json()["meters"]] == [str(chosen.id)]
-        response = await state_client.get(
-            "/v1/void/customers/root/state", params={"version_id": ""}
-        )
         assert response.status_code == 200, response.text
         assert [m["meter"]["id"] for m in response.json()["meters"]] == [
             str(graph.meter.id)
         ]
+        response = await state_client.get(
+            "/v1/void/customers/root/state", params={"version_id": "b" * 64}
+        )
+        assert response.status_code == 200, response.text
+        assert [m["meter"]["id"] for m in response.json()["meters"]] == [str(draft.id)]
+        response = await state_client.get(
+            "/v1/void/customers/root/state", params={"version_id": "0" * 64}
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["meters"] == []
 
     async def test_next_change_tracks_future_subscriptions_and_excludes_deleted(
         self,
@@ -133,6 +122,7 @@ class TestCustomerState:
             organization.id,
             ProductCreate.model_validate(
                 {
+                    "version_id": VERSION,
                     "slug": "future",
                     "name": "Future",
                     "price": {"type": "one_time", "amount": "10", "currency": "usd"},
@@ -177,6 +167,7 @@ class TestIdentitySnapshot:
             organization.id,
             ProductCreate.model_validate(
                 {
+                    "version_id": VERSION,
                     "slug": "pro",
                     "name": "Pro",
                     "price": {"type": "one_time", "amount": "10", "currency": "usd"},

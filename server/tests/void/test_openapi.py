@@ -32,6 +32,8 @@ class TestGetVoidOpenAPI:
             "/v1/void/subscriptions/{id}/cycles",
             "/v1/void/subscriptions",
             "/v1/void/deploys/latest",
+            "/v1/void/deploys/{id}",
+            "/v1/void/deploys/{id}/activate",
             "/v1/void/products",
             "/v1/void/identities/{external_id}/entitlements",
             "/v1/void/meters",
@@ -57,7 +59,9 @@ class TestGetVoidOpenAPI:
             "name",
             "slug",
             "created_at",
-            "default_version_id",
+            "active_deployment_id",
+            "active_version_id",
+            "can_activate",
         }
         assert "webhooks" not in schema
         assert set(schema["components"]["securitySchemes"]) == {"oat"}

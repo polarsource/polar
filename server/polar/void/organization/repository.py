@@ -1,13 +1,14 @@
 from uuid import UUID
 
-from sqlalchemy import exists, or_, select
+from sqlalchemy import exists, select
 
 from polar.kit.repository import RepositoryBase
-from polar.models import Organization, VoidMeter, VoidOrganizationSettings, VoidProduct
+from polar.models import Organization, VoidDeployment
+from polar.models.void_deployment import VoidDeploymentStatus
 
 
-class OrganizationRepository(RepositoryBase[VoidOrganizationSettings]):
-    model = VoidOrganizationSettings
+class OrganizationRepository(RepositoryBase[Organization]):
+    model = Organization
 
     async def enabled_ids(self) -> set[UUID]:
         return set(
@@ -44,34 +45,11 @@ class OrganizationRepository(RepositoryBase[VoidOrganizationSettings]):
             .with_for_update(key_share=True)
         )
 
-    async def get_settings(
-        self, organization_id: UUID
-    ) -> VoidOrganizationSettings | None:
-        return await self.get_one_or_none(
-            select(VoidOrganizationSettings).where(
-                VoidOrganizationSettings.organization_id == organization_id,
-                VoidOrganizationSettings.deleted_at.is_(None),
-            )
-        )
-
-    async def has_version(self, organization_id: UUID, version_id: str) -> bool:
-        return bool(
-            await self.session.scalar(
-                select(
-                    or_(
-                        exists().where(
-                            VoidProduct.organization_id == organization_id,
-                            VoidProduct.version_id == version_id,
-                            VoidProduct.deleted_at.is_(None),
-                            VoidProduct.archived_at.is_(None),
-                        ),
-                        exists().where(
-                            VoidMeter.organization_id == organization_id,
-                            VoidMeter.version_id == version_id,
-                            VoidMeter.deleted_at.is_(None),
-                            VoidMeter.branch_id.is_(None),
-                        ),
-                    )
-                )
+    async def active_deployment(self, organization_id: UUID) -> VoidDeployment | None:
+        return await self.session.scalar(
+            select(VoidDeployment).where(
+                VoidDeployment.organization_id == organization_id,
+                VoidDeployment.status == VoidDeploymentStatus.active,
+                VoidDeployment.deleted_at.is_(None),
             )
         )

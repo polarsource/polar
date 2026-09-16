@@ -39,8 +39,7 @@ def _meter(slug: str) -> Meter:
         id=uuid.uuid4(),
         name=slug,
         slug=slug,
-        generation_id=1,
-        branch_id=None,
+        version_id="a" * 64,
         usage_reducer_id=uuid.uuid4(),
         credit_reducer_id=uuid.uuid4(),
         unit_amount=Decimal("0.01"),
@@ -55,12 +54,11 @@ def _product(
     price_type: str = "recurring",
     meters: list[Meter] | None = None,
     entitlements: list[Entitlement] | None = None,
-    archived: bool = False,
 ) -> Product:
     product = Product(
         id=uuid.uuid4(),
         slug="pro",
-        generation_id=3,
+        version_id="a" * 64,
         name="Pro",
         description=None,
         price_type=price_type,
@@ -71,7 +69,6 @@ def _product(
         meter_ids=[m.id for m in meters or []],
         entitlement_ids=[e.id for e in entitlements or []],
         meter_terms={},
-        archived_at=NOW if archived else None,
         organization_id=ORG,
         created_at=NOW,
     )
@@ -139,7 +136,7 @@ def test_lifecycle_events_fan_out_one_meter_event_per_pinned_meter() -> None:
     assert {
         e.metadata["meter_id"]: e.metadata["meter_version_id"]
         for e in by_name["subscription.created"]
-    } == {str(tokens.id): "candidate", str(calls.id): None}
+    } == {str(tokens.id): "candidate", str(calls.id): "a" * 64}
     assert {e.metadata["meter_id"] for e in by_name["subscription.created"]} == {
         str(tokens.id),
         str(calls.id),

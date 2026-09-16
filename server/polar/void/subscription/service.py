@@ -120,7 +120,6 @@ def _product_metadata(subscription: Subscription) -> dict[str, object]:
         "subscription_id": str(subscription.id),
         "product_id": str(product.id),
         "product_slug": product.slug,
-        "product_generation_id": product.generation_id,
         "product_version_id": product.version_id,
     }
 
@@ -311,10 +310,15 @@ class SubscriptionService:
         product = await product_service.get(
             session, organization_id, create_schema.product_id
         )
-        if product.archived_at is not None:
+        active_version_id = await organization_service.active_version(
+            session, organization_id
+        )
+        if active_version_id is None:
+            raise SubscriptionInvalid("No active deployment to sell from")
+        if product.version_id != active_version_id:
             raise SubscriptionInvalid(
-                f"Product {product.slug!r} generation {product.generation_id} "
-                "is archived; subscribe to the current generation"
+                f"Product {product.slug!r} belongs to version {product.version_id}, "
+                "not the active deployment"
             )
         identity = await identity_service.get(
             session, organization_id, create_schema.external_identity_id

@@ -43,7 +43,7 @@ class MeterTerms(BaseModel):
 
 
 class ProductCreate(BaseModel):
-    version_id: str | None = Field(None, pattern=r"^[0-9a-f]{64}$")
+    version_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     slug: str = Field(min_length=1, pattern=SLUG_PATTERN)
     name: str = Field(min_length=1)
     description: str | None = None
@@ -82,17 +82,15 @@ class MeterTermsRead(Schema):
 
 
 class Product(Schema):
-    version_id: str | None
+    version_id: str
     id: uuid.UUID
     slug: str
-    generation_id: int
     name: str
     description: str | None
     price: ProductPriceRead
     meters: list[Meter]
     meter_terms: dict[str, MeterTermsRead]
     entitlements: list[Entitlement]
-    archived_at: datetime | None
     created_at: datetime
 
 
@@ -117,7 +115,6 @@ def to_schema(product: ProductModel) -> Product:
         id=product.id,
         slug=product.slug,
         version_id=product.version_id,
-        generation_id=product.generation_id,
         name=product.name,
         description=product.description,
         price=price_of(product),
@@ -130,6 +127,5 @@ def to_schema(product: ProductModel) -> Product:
             Entitlement.model_validate(e, from_attributes=True)
             for e in product.entitlements
         ],
-        archived_at=product.archived_at,
         created_at=product.created_at,
     )

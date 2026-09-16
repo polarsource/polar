@@ -5,6 +5,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from polar.models.void_deployment import VoidDeploymentStatus
 from polar.void.entitlement.schemas import SLUG_PATTERN as KEY_PATTERN
 from polar.void.product.schemas import MeterTerms, ProductPrice
 from polar.void.reducer.schemas import ReducerCreate
@@ -79,6 +80,11 @@ class DeployCreate(BaseModel):
     dry_run: bool = Field(
         False, description="Compute the plan against current state; write nothing."
     )
+    activate: bool = Field(
+        False,
+        description="Activate the deployment once applied. Requires an organization "
+        "that has passed review.",
+    )
     reducers: list[DeployReducer] = []
     meters: list[DeployMeter] = []
     entitlements: list[DeployEntitlement] = []
@@ -93,6 +99,8 @@ class DeployCreate(BaseModel):
             raise ValueError("Identity entitlements use a system-managed reducer")
         if self.preview is not None and not self.dry_run:
             raise ValueError("price preview requires dry_run")
+        if self.activate and self.dry_run:
+            raise ValueError("a dry run cannot activate")
         return self
 
 
@@ -134,9 +142,10 @@ class DeployEntry(BaseModel):
 
 
 class Deploy(BaseModel):
-    version_id: str | None
+    version_id: str = Field(description="SHA-256 of the normalized configuration.")
     id: uuid.UUID | None = Field(description="Unset on a dry run.")
     checksum: str
     applied: bool
+    status: VoidDeploymentStatus | None = Field(description="Unset on a dry run.")
     entries: list[DeployEntry]
     created_at: datetime

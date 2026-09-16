@@ -24,6 +24,8 @@ from polar.void.subscription import service as subscription_module
 from polar.void.subscription.schemas import SubscriptionCreate
 from polar.void.subscription.service import SubscriptionConflict, SubscriptionInvalid
 from polar.void.subscription.service import subscription as subscription_service
+from tests.fixtures.database import SaveFixture
+from tests.void.conftest import VERSION, activate_version
 
 JAN = datetime(2026, 1, 1, tzinfo=UTC)
 NOW = datetime(2026, 1, 20, tzinfo=UTC)
@@ -31,7 +33,10 @@ FEB = datetime(2026, 2, 1, tzinfo=UTC)
 
 
 @pytest_asyncio.fixture
-async def product(session: AsyncSession, organization: Organization) -> VoidProduct:
+async def product(
+    session: AsyncSession, organization: Organization, save_fixture: SaveFixture
+) -> VoidProduct:
+    await activate_version(save_fixture, organization)
     root, _ = await identity_service.ensure(
         session, organization, IdentityCreate(external_id="root")
     )
@@ -48,6 +53,7 @@ async def product(session: AsyncSession, organization: Organization) -> VoidProd
         organization.id,
         ProductCreate.model_validate(
             {
+                "version_id": VERSION,
                 "slug": "pro",
                 "name": "Pro",
                 "price": {
@@ -130,6 +136,24 @@ class TestLifecycle:
                 session,
                 organization.id,
                 create.model_copy(update={"external_identity_id": "child"}),
+            )
+        draft = await product_service.create(
+            session,
+            organization.id,
+            ProductCreate.model_validate(
+                {
+                    "version_id": "b" * 64,
+                    "slug": "pro",
+                    "name": "Pro",
+                    "price": {"type": "one_time", "amount": "1", "currency": "usd"},
+                }
+            ),
+        )
+        with pytest.raises(SubscriptionInvalid, match="not the active deployment"):
+            await subscription_service.create(
+                session,
+                organization.id,
+                create.model_copy(update={"product_id": draft.id}),
             )
         with pytest.raises(ResourceNotFound):
             await subscription_service.get(session, organization_second.id, item.id)

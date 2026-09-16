@@ -43,7 +43,6 @@ def test_compare_uses_baseline_subscriptions_and_candidate_prices(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="tokens",
-        generation_id=1,
         version_id="b" * 64,
         usage_reducer_id=scenario.usage_id,
         credit_reducer_id=scenario.credit_id,
@@ -107,6 +106,7 @@ def test_compare_uses_baseline_subscriptions_and_candidate_prices(
 def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
     scenario: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    scenario.current.version_id = "a" * 64
     for reducer in scenario.reducers:
         reducer.aggregation.type = "dict"  # No scalar metrics needed here.
     result = asyncio.run(
@@ -114,7 +114,7 @@ def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
             AsyncMock(),
             Mock(spec=TinybirdApi),
             scenario.auth_subject,
-            query(baseline="", candidate=""),
+            query(baseline="a" * 64, candidate="a" * 64),
         )
     )
     assert result.meters[0].price_preview is not None
@@ -124,7 +124,6 @@ def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="other",
-        generation_id=1,
         version_id="b" * 64,
         usage_reducer_id=scenario.usage_id,
         credit_reducer_id=scenario.credit_id,
@@ -137,7 +136,7 @@ def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
             AsyncMock(),
             Mock(spec=TinybirdApi),
             scenario.auth_subject,
-            query(baseline=""),
+            query(baseline="a" * 64),
         )
     )
     assert all(entry.price_preview is None and entry.reason for entry in result.meters)
@@ -161,11 +160,14 @@ def test_unknown_or_other_organization_version_is_rejected_before_history(
 def test_comparison_dates_are_validated() -> None:
     with pytest.raises(ValidationError, match="start must be before end"):
         query(start="2026-02-01")
+    with pytest.raises(ValidationError):
+        query(baseline="")
     with pytest.raises(ValidationError, match="today or earlier"):
         query(end=date.max)
 
 
 def test_candidate_with_deleted_reducer_is_rejected(scenario: SimpleNamespace) -> None:
+    scenario.current.version_id = "a" * 64
     scenario.reducers.pop()
     with pytest.raises(ResourceNotFound, match="deleted reducer"):
         asyncio.run(
@@ -173,7 +175,7 @@ def test_candidate_with_deleted_reducer_is_rejected(scenario: SimpleNamespace) -
                 AsyncMock(),
                 Mock(spec=TinybirdApi),
                 scenario.auth_subject,
-                query(baseline="", candidate=""),
+                query(baseline="a" * 64, candidate="a" * 64),
             )
         )
     scenario.read_buckets.assert_not_called()

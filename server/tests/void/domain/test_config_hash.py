@@ -23,6 +23,7 @@ def test_version_is_a_hash_of_config_not_a_user_supplied_name() -> None:
     with pytest.raises(ValidationError):
         config(version_id="candidate")
     assert config(checksum="different-request").version_id == version
+    assert config(activate=True).version_id == version
     assert (
         config(
             dry_run=True, preview={"start": "2026-01-01", "end": "2026-02-01"}

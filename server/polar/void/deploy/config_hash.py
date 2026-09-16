@@ -21,7 +21,9 @@ def _normalize(value: Any) -> Any:
 
 
 def configuration_hash(config: BaseModel) -> str:
-    payload = _normalize(config.model_dump(exclude={"checksum", "dry_run", "preview"}))
+    payload = _normalize(
+        config.model_dump(exclude={"checksum", "dry_run", "preview", "activate"})
+    )
     for key in ("reducers", "meters", "products", "entitlements"):
         payload[key].sort(key=lambda item: item["slug"])
     for product in payload["products"]:

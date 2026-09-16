@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
@@ -15,11 +16,12 @@ from polar.void.entitlement.service import entitlement as entitlement_service
 from polar.void.meter.schemas import MeterCreate
 from polar.void.meter.service import meter as meter_service
 from polar.void.product.schemas import ProductCreate, to_schema
-from polar.void.product.service import ProductInvalid, latest_products, same_definition
+from polar.void.product.service import ProductInvalid, products_in_version
 from polar.void.product.service import product as product_service
 from polar.void.reducer.exceptions import InvalidReducer
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
+from tests.void.conftest import VERSION
 
 
 @pytest_asyncio.fixture
@@ -50,6 +52,7 @@ async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
         session,
         organization.id,
         MeterCreate(
+            version_id=VERSION,
             slug="requests",
             name="Requests",
             usage_reducer_id=usage.id,
@@ -62,6 +65,7 @@ async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
 def product_definition(meter: VoidMeter, **changes: object) -> ProductCreate:
     return ProductCreate.model_validate(
         {
+            "version_id": VERSION,
             "slug": "pro",
             "name": "Pro",
             "price": {
@@ -79,42 +83,32 @@ def product_definition(meter: VoidMeter, **changes: object) -> ProductCreate:
 
 @pytest.mark.asyncio
 class TestMeterDefinitions:
-    async def test_generations_are_scoped_by_version_and_branch(
+    async def test_slug_is_unique_within_a_version(
         self,
         session: AsyncSession,
         organization: Organization,
         meter: VoidMeter,
     ) -> None:
         original = MeterCreate.model_validate(meter, from_attributes=True)
-        second = await meter_service.create(
+        other = await meter_service.create(
             session,
             organization.id,
-            original.model_copy(update={"unit_amount": Decimal("0.02")}),
+            original.model_copy(
+                update={"version_id": "b" * 64, "unit_amount": Decimal("0.02")}
+            ),
         )
-        version = await meter_service.create(
-            session,
-            organization.id,
-            original.model_copy(update={"version_id": "a" * 64}),
-        )
-        branch = await meter_service.create(
-            session, organization.id, original.model_copy(update={"branch_id": uuid4()})
-        )
-        assert [
-            meter.generation_id,
-            second.generation_id,
-            version.generation_id,
-            branch.generation_id,
-        ] == [1, 2, 1, 1]
         assert meter.unit_amount == Decimal("0.01")
-        second.deleted_at = utc_now()
+        assert other.unit_amount == Decimal("0.02")
+        with pytest.raises(IntegrityError):
+            async with session.begin_nested():
+                await meter_service.create(session, organization.id, original)
+        other.deleted_at = utc_now()
         await session.flush()
-        third = await meter_service.create(session, organization.id, original)
-        assert third.generation_id == 3
-        assert second.id not in {
+        assert other.id not in {
             m.id for m in await meter_service.list(session, organization.id)
         }
         with pytest.raises(ResourceNotFound):
-            await meter_service.get(session, organization.id, second.id)
+            await meter_service.get(session, organization.id, other.id)
 
     async def test_reducers_must_be_active_same_organization(
         self,
@@ -233,7 +227,7 @@ class TestEntitlementDefinitions:
 
 @pytest.mark.asyncio
 class TestProductDefinitions:
-    async def test_new_generation_keeps_previous_terms_and_only_archives_its_version(
+    async def test_each_version_keeps_its_own_terms(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -244,43 +238,33 @@ class TestProductDefinitions:
         )
         definition = product_definition(meter, entitlement_ids=[entitlement.id])
         first = await product_service.create(session, organization.id, definition)
-        assert same_definition(definition, first)
-        version = await product_service.create(
+        second = await product_service.create(
             session,
             organization.id,
-            definition.model_copy(update={"version_id": "b" * 64}),
+            product_definition(
+                meter,
+                version_id="b" * 64,
+                entitlement_ids=[entitlement.id],
+                name="New pro",
+                meter_terms={"requests": {"included": 200}},
+            ),
         )
-        second_definition = product_definition(
-            meter,
-            entitlement_ids=[entitlement.id],
-            name="New pro",
-            meter_terms={"requests": {"included": 200}},
-        )
-        second = await product_service.create(
-            session, organization.id, second_definition
-        )
-        assert (first.generation_id, version.generation_id, second.generation_id) == (
-            1,
-            1,
-            2,
-        )
-        assert first.archived_at is not None
-        assert version.archived_at is second.archived_at is None
         assert first.meter_terms["requests"]["included"] == 100
         assert second.meter_terms["requests"]["included"] == 200
+        with pytest.raises(IntegrityError):
+            async with session.begin_nested():
+                await product_service.create(session, organization.id, definition)
         rows = await product_service.list(session, organization.id)
-        assert latest_products(rows)["pro"].id == second.id
-        assert latest_products(rows, "b" * 64)["pro"].id == version.id
+        assert products_in_version(rows, VERSION)["pro"].id == first.id
+        assert products_in_version(rows, "b" * 64)["pro"].id == second.id
+        assert products_in_version(rows, None) == {}
         session.expunge_all()
         loaded = await product_service.get(session, organization.id, first.id)
         payload = to_schema(loaded)
+        assert payload.version_id == VERSION
         assert payload.meters[0].id == meter.id
         assert payload.entitlements[0].id == entitlement.id
         assert payload.price.amount == Decimal(10)
-        active = await product_service.list(
-            session, organization.id, include_archived=False
-        )
-        assert {p.id for p in active} == {version.id, second.id}
 
     @pytest.mark.parametrize("resource", ["meter", "entitlement"])
     async def test_rejects_foreign_and_deleted_array_references(
@@ -357,6 +341,7 @@ class TestMonetaryPrecision:
     def test_meter_amount_must_fit_storage(self, amount: str) -> None:
         with pytest.raises(ValidationError):
             MeterCreate(
+                version_id=VERSION,
                 slug="requests",
                 name="Requests",
                 usage_reducer_id=uuid4(),
@@ -369,6 +354,7 @@ class TestMonetaryPrecision:
         with pytest.raises(ValidationError):
             ProductCreate.model_validate(
                 {
+                    "version_id": VERSION,
                     "slug": "pro",
                     "name": "Pro",
                     "price": {"type": "one_time", "amount": amount, "currency": "usd"},

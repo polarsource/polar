@@ -54,11 +54,7 @@ def build_meter_cycle_event(
         timestamp=cycle.period_end,
         metadata={
             "meter_id": str(meter.id),
-            "meter_generation_id": meter.generation_id,
             "meter_version_id": meter.version_id,
-            "meter_branch_id": (
-                str(meter.branch_id) if meter.branch_id is not None else None
-            ),
             # Pinned so a later reprice cannot rewrite what this period cost.
             "unit_amount": str(meter.unit_amount),
             "currency": meter.currency,
@@ -101,23 +97,15 @@ class MeterService:
             session, organization_id, create_schema.credit_reducer_id
         )
         validate_reducers(usage, credit)
-        repository = MeterRepository.from_session(session)
-        generation = await repository.next_generation(
-            organization_id,
-            create_schema.slug,
-            create_schema.version_id,
-            create_schema.branch_id,
-        )
         meter = VoidMeter(
             **create_schema.model_dump(
                 exclude={"usage_reducer_id", "credit_reducer_id"}
             ),
             usage_reducer=usage,
             credit_reducer=credit,
-            generation_id=generation,
             organization=organization,
         )
-        await repository.create(meter, flush=True)
+        await MeterRepository.from_session(session).create(meter, flush=True)
         return meter
 
     async def balance(

@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
-from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
@@ -20,7 +19,6 @@ from polar.models import (
     VoidDeployment,
     VoidEntitlement,
     VoidMeter,
-    VoidOrganizationSettings,
     VoidProduct,
     VoidReducer,
     VoidReducerBucket,
@@ -64,21 +62,20 @@ async def void_identity(
     return identity
 
 
+VERSION = "a" * 64
+
+
 def create_meter(
     organization: Organization,
     reducer: VoidReducer,
     *,
-    generation: int = 1,
-    version: str | None = None,
-    branch: UUID | None = None,
+    version: str = VERSION,
 ) -> VoidMeter:
     return VoidMeter(
         organization=organization,
         name="Requests",
         slug="requests",
         version_id=version,
-        generation_id=generation,
-        branch_id=branch,
         usage_reducer=reducer,
         credit_reducer=reducer,
         unit_amount=Decimal("0.123456789012"),
@@ -87,17 +84,13 @@ def create_meter(
 
 
 def create_product(
-    organization: Organization,
-    *,
-    generation: int = 1,
-    version: str | None = None,
+    organization: Organization, *, version: str = VERSION
 ) -> VoidProduct:
     return VoidProduct(
         organization=organization,
         name="Pro",
         slug="pro",
         version_id=version,
-        generation_id=generation,
         price_type="recurring",
         interval="month",
         amount=Decimal("1234567890123.123456"),
@@ -146,55 +139,57 @@ class TestOrganizationKeys:
             async with session.begin_nested():
                 await save_fixture(create_resource(organization))
 
-    async def test_one_settings_record_per_polar_organization(
+    async def test_one_active_deployment_per_organization(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        organization_second: Organization,
     ) -> None:
-        settings = VoidOrganizationSettings(
-            organization=organization, default_version_id="preview"
-        )
-        await save_fixture(settings)
-        await session.refresh(settings)
-        assert settings.default_version_id == "preview"
+        def deployment(
+            owner: Organization, status: str, version: str
+        ) -> VoidDeployment:
+            return VoidDeployment(
+                organization=owner,
+                checksum="checksum",
+                version_id=version,
+                status=status,
+                entries=[],
+            )
+
+        await save_fixture(deployment(organization, "active", "a" * 64))
+        await save_fixture(deployment(organization, "archived", "b" * 64))
+        await save_fixture(deployment(organization, "draft", "c" * 64))
+        await save_fixture(deployment(organization_second, "active", "a" * 64))
         with pytest.raises(IntegrityError):
             async with session.begin_nested():
-                await save_fixture(VoidOrganizationSettings(organization=organization))
+                await save_fixture(deployment(organization, "active", "d" * 64))
 
 
 @pytest.mark.asyncio
-class TestGenerationKeys:
-    async def test_meter_default_version_and_branch_are_unique(
+class TestVersionKeys:
+    async def test_meter_slug_is_unique_within_a_version(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        organization_second: Organization,
         void_reducer: VoidReducer,
     ) -> None:
-        for meter in [
-            create_meter(organization, void_reducer),
-            create_meter(organization, void_reducer, generation=2),
-            create_meter(organization, void_reducer, version="preview"),
-            create_meter(organization, void_reducer, branch=uuid4()),
-        ]:
-            await save_fixture(meter)
+        await save_fixture(create_meter(organization, void_reducer))
+        await save_fixture(create_meter(organization, void_reducer, version="b" * 64))
         with pytest.raises(IntegrityError):
             async with session.begin_nested():
                 await save_fixture(create_meter(organization, void_reducer))
 
-    async def test_product_default_version_is_unique(
+    async def test_product_slug_is_unique_within_a_version(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        for product in [
-            create_product(organization),
-            create_product(organization, generation=2),
-            create_product(organization, version="preview"),
-        ]:
-            await save_fixture(product)
+        await save_fixture(create_product(organization))
+        await save_fixture(create_product(organization, version="b" * 64))
         with pytest.raises(IntegrityError):
             async with session.begin_nested():
                 await save_fixture(create_product(organization))
@@ -434,6 +429,8 @@ class TestPersistence:
         deployment = VoidDeployment(
             organization=organization,
             checksum="config-checksum",
+            version_id=VERSION,
+            status="draft",
             entries=[{"resource": "product", "id": str(void_product.id)}],
         )
         await save_fixture(deployment)

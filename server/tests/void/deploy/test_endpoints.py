@@ -2,9 +2,11 @@ from unittest.mock import Mock
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import update
 
 from polar.auth.scope import Scope
 from polar.models import Organization
+from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.void.deploy import endpoints
 from polar.void.tinybird import TinybirdApi
@@ -41,6 +43,7 @@ class TestDeployEndpoints:
         response = await void_client.post(PATH, headers=HEADERS, json=CONFIG)
         assert response.status_code == 201
         deployed = response.json()
+        assert deployed["status"] == "draft"
         latest = await void_client.get(
             f"{PATH}/latest",
             headers=HEADERS,
@@ -51,6 +54,50 @@ class TestDeployEndpoints:
         assert (
             await void_client.get(f"{PATH}/latest", headers=HEADERS)
         ).status_code == 404
+        activated = await void_client.post(
+            f"{PATH}/{deployed['id']}/activate", headers=HEADERS
+        )
+        assert activated.status_code == 200
+        assert activated.json()["status"] == "active"
+        active = await void_client.get(f"{PATH}/latest", headers=HEADERS)
+        assert active.status_code == 200
+        assert active.json()["id"] == deployed["id"]
+        listed = await void_client.get(PATH, headers=HEADERS)
+        assert [d["id"] for d in listed.json()] == [deployed["id"]]
+        single = await void_client.get(f"{PATH}/{deployed['id']}", headers=HEADERS)
+        assert single.json() == active.json()
+        organization_response = await void_client.get(
+            "/v1/void/organizations/current", headers=HEADERS
+        )
+        assert organization_response.json()["active_deployment_id"] == deployed["id"]
+        assert (
+            organization_response.json()["active_version_id"] == deployed["version_id"]
+        )
+
+    async def test_activate_requires_write_scope_and_reviewed_organization(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_token(save_fixture, organization, scopes={Scope.void_write})
+        deployed = (await void_client.post(PATH, headers=HEADERS, json=CONFIG)).json()
+        # The client expunges the organization after each request; update by row.
+        await session.execute(
+            update(Organization)
+            .where(Organization.id == organization.id)
+            .values(capabilities={**STATUS_CAPABILITIES[OrganizationStatus.CREATED]})
+        )
+        response = await void_client.post(
+            f"{PATH}/{deployed['id']}/activate", headers=HEADERS
+        )
+        assert response.status_code == 403
+        current = await void_client.get(
+            "/v1/void/organizations/current", headers=HEADERS
+        )
+        assert current.json()["can_activate"] is False
+        assert current.json()["active_deployment_id"] is None
 
     async def test_read_scope_cannot_plan_or_apply(
         self,
@@ -68,6 +115,11 @@ class TestDeployEndpoints:
         assert (
             await void_client.get(f"{PATH}/latest", headers=HEADERS)
         ).status_code == 404
+        assert (
+            await void_client.post(
+                f"{PATH}/{organization.id}/activate", headers=HEADERS
+            )
+        ).status_code == 403
 
     async def test_preview_plans_and_leaves_database_empty(
         self,
@@ -94,7 +146,7 @@ class TestDeployEndpoints:
         )
         assert response.status_code == 201
         assert not response.json()["applied"]
-        assert await counts(session, organization) == [0] * 6
+        assert await counts(session, organization) == [0] * 5
 
     async def test_preview_requires_customer_read_scope(
         self,

@@ -22,6 +22,7 @@ from .customer_meter import CustomerMeter
 from .customer_seat import CustomerSeat, SeatStatus
 from .customer_session import CustomerSession
 from .customer_session_code import CustomerSessionCode
+from .discord_guild_connection import DiscordGuildConnection
 from .discount import Discount
 from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
@@ -152,6 +153,7 @@ __all__ = [
     "CustomerSeat",
     "CustomerSession",
     "CustomerSessionCode",
+    "DiscordGuildConnection",
     "Discount",
     "DiscountProduct",
     "DiscountRedemption",

@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "0 12 * * *"
   workflow_dispatch:
+    inputs:
+      date:
+        description: Export date to upload (YYYY-MM-DD), defaults to today
+        required: false
 
 permissions:
   id-token: write
@@ -25,21 +29,23 @@ jobs:
           RENDER_DATABASE_ID: ${{ secrets.RENDER_DATABASE_ID }}
         run: |
           mkdir -p backups
-          TODAY=$(date -u +%Y-%m-%d)
+          BACKUP_DATE="${{ inputs.date }}"
+          [[ -n "$BACKUP_DATE" ]] || BACKUP_DATE=$(date -u +%Y-%m-%d)
+          echo "BACKUP_DATE=$BACKUP_DATE" >> "$GITHUB_ENV"
 
           DOWNLOAD_URL=$(curl -fsS "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            | jq -r --arg today "$TODAY" '[.[] | select(.createdAt | startswith($today))][0].url // empty')
+            | jq -r --arg d "$BACKUP_DATE" '[.[] | select(.createdAt | startswith($d))][0].url // empty')
 
           if [[ -z "$DOWNLOAD_URL" ]]; then
-            echo "Error: No export for $TODAY found" >&2
+            echo "Error: No export for $BACKUP_DATE found" >&2
             exit 1
           fi
 
           echo "Downloading database backup..."
           for attempt in $(seq 1 5); do
-            curl -fsS -C - -o "backups/${TODAY//-}_backup.tar.gz" "$DOWNLOAD_URL" && break
+            curl -fsS -C - -o "backups/${BACKUP_DATE//-/}_backup.tar.gz" "$DOWNLOAD_URL" && break
             echo "Download attempt $attempt failed, resuming in 30 seconds..." >&2
             sleep 30
             [[ "$attempt" -eq 5 ]] && exit 1
@@ -56,7 +62,7 @@ jobs:
           if [ "$BACKUP_COUNT" -gt 0 ]; then
             echo "Uploading $BACKUP_COUNT backup file(s) to S3..."
 
-            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/$(date +%Y%m%d)/" --checksum-algorithm SHA256 --no-progress; then
+            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/${BACKUP_DATE//-/}/" --checksum-algorithm SHA256 --no-progress; then
               echo "Error: Failed to upload backups to S3" >&2
               exit 1
             fi

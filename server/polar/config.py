@@ -1,4 +1,5 @@
 import functools
+import json
 import os
 import tempfile
 from datetime import timedelta
@@ -16,6 +17,26 @@ from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
+
+DEVELOPMENT_JWKS = json.dumps(
+    {
+        "keys": [
+            {
+                "kty": "RSA",
+                "kid": "polar_dev",
+                "use": "sig",
+                "n": "ru8ULeHoalP1LBFUiYo_055VtVqQgZCAGKxoiQNW8YdgBja1oclh0XOAPgG_AoITQOETDMlIxXV2ZBVzJ8DXMiZuyjTkCN5RSfXb3orgT7GOiLfm3GLLx_ft_3c3Lu942FMYQHV_cLh6iCIzsE6B2-RHth56LpXBc_ncwvqpXTq_misoISXqW9IH2MCL9A0WylWZQUwPJWb86dXUHc7-GCqNBTkFp0c8jyGFV3GCFuVucIWBjLx2_ceUfFn3c-F7vRyzSUzDlW22KMB7ylblN3oDkeJ1DB44fgqWGJBDyMU2LBZ95TZQeRcCUKlwpTCUORRF1fT4XzPkfCCxJ4epIQ",
+                "e": "AQAB",
+                "d": "BOk0T_zFaWVq_sOLyS1cO694aNYeiWyfk_xpwN2a-BPcrRVQcGF2wV-0jB5rbiwYU0bI90ptTxHMSDoBQ26apqSakUr-fds-kqIi0TK6jQeHNgJc_6Hhu6mTq7Yn5_A-xxU_cIvROekL6Od2O68F3pZK3GuASETZq0z_7BSyYtTCqGiDZF8sx0d5seCtd3C6fbGca_cFo-NP8v3hb6bnry8pdLWOxSwEI38WHJCMyznt51IhN1D1q78UZBeZRnWFq60Nt7XIKMpVN_07bYwvMYlkoCIL-0n5UNFVS_RegXzxHv-ymgz-hL8bfDvW2vDwLywZm_wwXl7LTeojyLLKuQ",
+                "p": "3V29c8SlaiIJezymNrr9AYfThcgxYALlhCLgRzmPydPEtG99DP1zNfccWwJXZihlkDM1II4xMiabkFM0fZ8srFSrtH6mTLQIuVjVj-Lg-HUq9m33jKln0Jp80jy9odhQ_JIcylA3bCxlaFPF1WGL7nb62PhAawujT5snVLoOewU",
+                "q": "yk2csW6gqxyBPffQ3SY0en9GtyoOPUgsemGj7gg22uzIRS5HjtArLci2TXfdgkGPXU_Wq4NO88LSe1YFfc_FjxK4pUNDnxUuEjf1BVoBkVWgQ93D-md-90gWS3us0HqzLAsT2KzqOCtZ-o1SHr0S_mB_TvA9R8sFBR1wgmm6qG0",
+                "dp": "fPBUZku9xLozOcAQW-GLvNppcx97ZqIb4klA5lJBqnsAkYo_PR6rcPDoqyEWLQ1tzUZpnNdEQvbxZDLh9GjrcNRVGQlGWRJfviS6XHyD1xdiSTXluxk-A8m923b23KrXgsYAw9skfMRN8-UcSoPE07GJgP4UdZZa9Sovt61PUPU",
+                "dq": "uD0ol_q9Pjhuh6X6RH13y5vAJi2Z3DuvriDgL3axpn2AAmkcaDazLDYfuLuSMv9L9lowkfC65YqnMAXuaF7hd-Q_3to8alPaqmLltWL8DITjuQrtYU4CNmgjTckrYI5uQI0yHOGVSWRJxMIRaMce1iXBq31lAc4mGzttbIeno50",
+                "qi": "FRYsFSORwYOWN4mhQPegFjuuU5zba_LPfaKWX9o1gw3_ZlVr6pelgBhAbXD-SaU5PlkN3zceo-4h7relPRu_rgg5mvUkeqKCuRpzKNPWxJY62F6B8DDZeKLKD4fMrBPbr3Dx9i8zkyxPvaED3bHdIadOJnWcSaV63SWGrv7_6HE",
+            }
+        ]
+    }
+)
 
 
 class Environment(StrEnum):
@@ -100,8 +121,8 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
     SECRET: str = "super secret jwt secret"
-    # A path to the key set, or the document itself.
-    LOCAL_JWKS: str = "./.jwks.json"
+    # The key set the LocalSigner signs with: a document, or a path to one.
+    LOCAL_JWKS: str = DEVELOPMENT_JWKS
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 

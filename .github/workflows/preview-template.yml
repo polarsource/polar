@@ -58,7 +58,6 @@ jobs:
         run: |
           set -euo pipefail
           uv run task emails
-          uv run python -m polar.kit.jwk polar_preview > .jwks.json
 
       - name: Migrate template database
         working-directory: ./server

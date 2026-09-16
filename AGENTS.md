@@ -88,11 +88,11 @@ pnpm install && pnpm dev
 **Fresh worktrees** (`.claude/worktrees/`) don't carry `.env` or built artifacts. Before running
 tests in a new worktree, from the repo root:
 ```bash
-./dev/setup-environment       # generates server/.env, server/.jwks.json, clients/apps/web/.env.local
+./dev/setup-environment       # generates server/.env and clients/apps/web/.env.local
 uv run --directory server task emails   # builds server/emails/bin/react-email-pkg
 ```
 Without the email renderer, pytest fails at config load with an
-`EMAIL_RENDERER_BINARY_PATH` error. `server/.jwks.json` is only needed by tests that sign.
+`EMAIL_RENDERER_BINARY_PATH` error.
 
 One artifact actually blocks config import: *any existing file* at
 `EMAIL_RENDERER_BINARY_PATH` — the validator only checks that the path exists. When you need to
@@ -252,8 +252,7 @@ exist and the daemon may run as root on `overlayfs`; check `docker info` rather 
 
 **Backend config artifacts.** Config import fails without the email renderer binary
 (`server/emails/bin/react-email-pkg`, built by `dev up` / `uv run task emails`) → pydantic
-`EMAIL_RENDERER_BINARY_PATH` error. `server/.jwks.json` (from `./dev/setup-environment` /
-`dev up`) is only needed by tests that sign. `server/.env` is **not** among them for tests:
+`EMAIL_RENDERER_BINARY_PATH` error. `server/.env` is **not** among them for tests:
 under `POLAR_ENV=testing` (which `tests/conftest.py` forces) `polar/config.py` loads the
 committed `server/.env.testing`. `server/.env` is still required before `docker compose up -d`,
 which interpolates it. `dev status` reports "Worker unknown (check manually)" by design —

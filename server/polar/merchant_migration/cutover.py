@@ -45,6 +45,7 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
+    discount_started_at_for,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
 from .importer import (
@@ -145,6 +146,7 @@ class CutoverOutcome:
 class ImportedDiscount:
     discount: Discount | None = None
     skip: str | None = None
+    started_at: datetime | None = None
 
 
 def _moved(message: str | None = None) -> CutoverOutcome:
@@ -399,11 +401,7 @@ class SubscriptionCutover:
 
         subscription = await create_imported_subscription(
             self.session,
-            replace(
-                staged,
-                discount_started_at=source.discount_started_at
-                or staged.discount_started_at,
-            ),
+            replace(staged, discount_started_at=imported.started_at),
             product,
             price,
             customer,
@@ -574,10 +572,10 @@ class SubscriptionCutover:
         discount = await self.discount_repository.get_by_id(record.target_id)
         if discount is None:
             return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
-        started_at = source.discount_started_at or staged.discount_started_at
+        started_at = discount_started_at_for(source, kept)
         if discount.duration != DiscountDuration.forever and started_at is None:
             return ImportedDiscount(skip=_DISCOUNT_MISSING_START)
-        return ImportedDiscount(discount=discount)
+        return ImportedDiscount(discount=discount, started_at=started_at)
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
         renewal = source.current_period_end

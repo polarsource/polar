@@ -43,7 +43,6 @@ from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import PaginatedSourceAdapter, StripeAdapter
-from .adapters.stripe import StripeMissingScope
 from .canonical import (
     CanonicalPaymentMethod,
     CanonicalProduct,
@@ -523,11 +522,7 @@ class MerchantMigrationService:
             organization = await self._get_organization(session, migration)
             adapter = await self._build_adapter(migration)
             page = await adapter.extract_page(cursor)
-        except (
-            StripeMissingScope,
-            stripe_lib.StripeError,
-            MerchantMigrationError,
-        ) as e:
+        except (stripe_lib.StripeError, MerchantMigrationError) as e:
             repository = MerchantMigrationRepository.from_session(session)
             await repository.refresh_for_update(migration)
             current_operation = migration.operation
@@ -537,12 +532,11 @@ class MerchantMigrationService:
                 or current_operation.cursor != cursor
             ):
                 return
-            if isinstance(e, StripeMissingScope):
-                message = MissingStripeScopes([e.label]).message
-            elif isinstance(e, MerchantMigrationError):
-                message = e.message
-            else:
-                message = SourceVerificationUnavailable().message
+            message = (
+                e.message
+                if isinstance(e, MerchantMigrationError)
+                else SourceVerificationUnavailable().message
+            )
             await self._fail_operation(session, migration, message)
             return
 

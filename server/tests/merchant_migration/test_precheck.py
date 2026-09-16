@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -131,6 +131,7 @@ def build_subscription(
     has_discount: bool = False,
     discount_source_ids: list[str] | None = None,
     discount_started_at: datetime | None = None,
+    discount_starts: dict[str, datetime] | None = None,
     currency: str | None = "usd",
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
@@ -149,6 +150,7 @@ def build_subscription(
         has_discount=has_discount,
         discount_source_ids=discount_source_ids or [],
         discount_started_at=discount_started_at,
+        discount_starts=discount_starts or {},
         currency=currency,
     )
 
@@ -573,6 +575,64 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].discount_name == "Keep"
         assert items[0].discount_code == "KEEP"
+
+    def test_discount_classifies_as_importable(self) -> None:
+        records: list[CanonicalRecord] = [
+            canonical_discount(),
+        ]
+
+        items = classify_records(records, PrecheckEntity.discounts, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].title == "Launch"
+        assert items[0].subtitle == "LAUNCH"
+
+    def test_product_restricted_discount_skipped_when_products_are_not_importable(
+        self,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(pricing_scheme=CanonicalPricingScheme.tiered),
+                ],
+            ),
+            canonical_discount(product_source_ids=["prod_1"]),
+        ]
+
+        items = classify_records(records, PrecheckEntity.discounts, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "discount_products_not_importable"
+
+    def test_kept_repeating_coupon_without_its_own_start_is_skipped(self) -> None:
+        first_start = datetime(2023, 11, 14, 22, 13, 20, tzinfo=UTC)
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(source_id="coupon_bad", name="Bad", basis_points=0),
+            canonical_discount(
+                source_id="coupon_ok",
+                name="Keep",
+                code="KEEP",
+                duration=CanonicalDiscountDuration.repeating,
+                duration_in_months=3,
+            ),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_bad", "coupon_ok"],
+                discount_started_at=first_start,
+                discount_starts={"coupon_bad": first_start},
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_discount_missing_start"
 
     def test_subscription_repeating_discount_without_start_skipped(self) -> None:
         records: list[CanonicalRecord] = [

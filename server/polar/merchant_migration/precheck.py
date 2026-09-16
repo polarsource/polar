@@ -43,6 +43,7 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
     canonical_price_key,
+    discount_started_at_for,
     polar_discount_amounts,
     subscription_price_key,
 )
@@ -1363,7 +1364,11 @@ def _subscription_discount_skip(
     kept = kept_discount_source_id(
         subscription, _importable_discount_source_ids(discount_plans)
     )
-    discount = discounts_by_source.get(kept) if kept else None
+    if kept is None:
+        return Reason(
+            "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+        )
+    discount = discounts_by_source.get(kept)
     if discount is None:
         return Reason(
             "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
@@ -1377,7 +1382,7 @@ def _subscription_discount_skip(
             )
     if (
         discount.duration != CanonicalDiscountDuration.forever
-        and subscription.discount_started_at is None
+        and discount_started_at_for(subscription, kept) is None
     ):
         return Reason(
             "subscription_discount_missing_start", _SUBSCRIPTION_DISCOUNT_START_REASON

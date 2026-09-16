@@ -10,7 +10,9 @@ See ADR-0010:
 ``handbook/engineering/decisions/0010-jwks-signing-keys-in-kms.mdx``.
 """
 
+import base64
 import functools
+import json
 from typing import Any, Protocol
 
 import boto3
@@ -126,3 +128,19 @@ def get_signer() -> Signer:
             )
         return _kms_signer(key_id)
     return _local_signer(settings.CURRENT_JWK_KID)
+
+
+def _b64url(value: bytes) -> bytes:
+    return base64.urlsafe_b64encode(value).rstrip(b"=")
+
+
+def sign_jws(claims: dict[str, Any], signer: Signer) -> str:
+    """Assembles a compact JWS and signs it."""
+    header = {"typ": "JWT", "alg": signer.algorithm, "kid": signer.kid}
+    signing_input = b".".join(
+        (
+            _b64url(json.dumps(header, separators=(",", ":")).encode()),
+            _b64url(json.dumps(claims, separators=(",", ":")).encode()),
+        )
+    )
+    return b".".join((signing_input, _b64url(signer.sign(signing_input)))).decode()

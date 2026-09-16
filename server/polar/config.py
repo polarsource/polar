@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, Field, model_validator
+from pydantic import AfterValidator, DirectoryPath, model_validator
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,7 +16,6 @@ from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
-from polar.kit.jwk import JWKSFile
 
 
 class Environment(StrEnum):
@@ -101,7 +100,8 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
     SECRET: str = "super secret jwt secret"
-    JWKS: JWKSFile = Field(default="./.jwks.json")
+    # A path to the key set, or the document itself.
+    JWKS: str = "./.jwks.json"
     CURRENT_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 

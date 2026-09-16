@@ -13,7 +13,9 @@ See ADR-0010:
 import functools
 from typing import Any, Protocol
 
+import boto3
 from authlib.jose import JsonWebKey, KeySet
+from botocore.config import Config
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
@@ -40,8 +42,6 @@ class Signer(Protocol):
 
 
 class KMSSigner:
-    """Signs through KMS, which never releases the private key."""
-
     def __init__(self, key_id: str) -> None:
         self.algorithm = ALGORITHM
         # The key id alone: the ARN would carry the account id into a public
@@ -52,9 +52,6 @@ class KMSSigner:
 
     @functools.cached_property
     def _client(self) -> Any:
-        import boto3
-        from botocore.config import Config
-
         # Bound the blocking call: signing runs on the event loop, so a slow or
         # throttled KMS must fail fast rather than stall it.
         return boto3.client(
@@ -119,9 +116,8 @@ def _local_signer(kid: str) -> LocalSigner:
 
 
 def get_signer() -> Signer:
-    """Reads the current key on every call, so moving it applies without a
-    restart. Each signer is cached per key, so the KMS client and the fetched
-    public key are built once."""
+    """Do not cache this: a rotation changes which key is current, and must apply
+    without a restart. The signers are cached instead, one per key."""
     if settings.is_production() or settings.is_sandbox():
         key_id = settings.AWS_JWKS_KMS_KEY_ID
         if key_id is None:

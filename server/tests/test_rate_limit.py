@@ -366,8 +366,6 @@ class TestRefundsElevatedAndGetFallThrough:
         assert rule.zone == "api"
 
     def test_get_uses_api_zone(self, rules: dict[str, Sequence[Rule]]) -> None:
-        rule = _select_rule(
-            rules, "/v1/refunds/", RateLimitGroup.default, method="GET"
-        )
+        rule = _select_rule(rules, "/v1/refunds/", RateLimitGroup.default, method="GET")
         assert rule is not None
         assert rule.zone == "api"

@@ -65,7 +65,16 @@ class PricePreviewWindow(BaseModel):
         return self
 
 
-class DeployCreate(BaseModel):
+class DeployConfiguration(BaseModel):
+    """The deployable definitions alone, as stored on a deployment."""
+
+    reducers: list[DeployReducer] = []
+    meters: list[DeployMeter] = []
+    entitlements: list[DeployEntitlement] = []
+    products: list[DeployProduct] = []
+
+
+class DeployCreate(DeployConfiguration):
     model_config = ConfigDict(extra="forbid")
 
     @property
@@ -85,10 +94,6 @@ class DeployCreate(BaseModel):
         description="Activate the deployment once applied. Requires an organization "
         "that has passed review.",
     )
-    reducers: list[DeployReducer] = []
-    meters: list[DeployMeter] = []
-    entitlements: list[DeployEntitlement] = []
-    products: list[DeployProduct] = []
     preview: PricePreviewWindow | None = Field(
         None, description="Compare changed usage prices without applying them."
     )

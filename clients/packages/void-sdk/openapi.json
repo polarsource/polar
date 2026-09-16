@@ -1767,6 +1767,69 @@
         "x-speakeasy-name-override": "get"
       }
     },
+    "/v1/void/deploys/{id}/configuration": {
+      "get": {
+        "tags": ["void", "private", "deploys"],
+        "summary": "Configuration",
+        "description": "The configuration a deployment was created from, as the CLI sent it.\n\n**Scopes**: `void:read` `void:write`",
+        "operationId": "deploys:configuration",
+        "security": [
+          {
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeployConfiguration"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-speakeasy-group": "deploys",
+        "x-speakeasy-name-override": "configuration"
+      }
+    },
     "/v1/void/deploys/{id}/activate": {
       "post": {
         "tags": ["void", "private", "deploys"],
@@ -3631,6 +3694,45 @@
         ],
         "title": "Deploy"
       },
+      "DeployConfiguration": {
+        "properties": {
+          "reducers": {
+            "items": {
+              "$ref": "#/components/schemas/DeployReducer-Output"
+            },
+            "type": "array",
+            "title": "Reducers",
+            "default": []
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/DeployMeter-Output"
+            },
+            "type": "array",
+            "title": "Meters",
+            "default": []
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntitlement"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "default": []
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/DeployProduct-Output"
+            },
+            "type": "array",
+            "title": "Products",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "DeployConfiguration",
+        "description": "The deployable definitions alone, as stored on a deployment."
+      },
       "DeployCreate": {
         "properties": {
           "checksum": {
@@ -3842,6 +3944,50 @@
         "required": ["slug", "reducer", "unit_amount"],
         "title": "DeployMeter"
       },
+      "DeployMeter-Output": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "reducer": {
+            "type": "string",
+            "title": "Reducer",
+            "description": "Slug of a scalar reducer in this deploy."
+          },
+          "credit_reducer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Reducer",
+            "description": "Slug of a sum reducer in this deploy supplying credits. When omitted, a credit.granted reducer is created automatically."
+          },
+          "unit_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)",
+            "title": "Unit Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "usd"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "reducer", "unit_amount"],
+        "title": "DeployMeter"
+      },
       "DeployProduct": {
         "properties": {
           "slug": {
@@ -3881,6 +4027,76 @@
               "mapping": {
                 "one_time": "#/components/schemas/OneTimePrice",
                 "recurring": "#/components/schemas/RecurringPrice"
+              }
+            }
+          },
+          "meters": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/components/schemas/DeployProductMeter"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Meters",
+            "description": "Slugs of meters in this deploy."
+          },
+          "entitlements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "description": "Slugs of entitlements in this deploy."
+          }
+        },
+        "type": "object",
+        "required": ["slug", "name", "price"],
+        "title": "DeployProduct"
+      },
+      "DeployProduct-Output": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "price": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RecurringPrice-Output"
+              },
+              {
+                "$ref": "#/components/schemas/OneTimePrice-Output"
+              }
+            ],
+            "title": "Price",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "one_time": "#/components/schemas/OneTimePrice-Output",
+                "recurring": "#/components/schemas/RecurringPrice-Output"
               }
             }
           },
@@ -3962,6 +4178,72 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Filter-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CountAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/PropertyAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/RecordAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/DerivedAggregation"
+              }
+            ],
+            "title": "Aggregation",
+            "discriminator": {
+              "propertyName": "func",
+              "mapping": {
+                "count": "#/components/schemas/CountAggregation",
+                "derive": "#/components/schemas/DerivedAggregation",
+                "first": "#/components/schemas/RecordAggregation",
+                "last": "#/components/schemas/RecordAggregation",
+                "max": "#/components/schemas/PropertyAggregation",
+                "min": "#/components/schemas/PropertyAggregation",
+                "sum": "#/components/schemas/PropertyAggregation"
+              }
+            }
+          },
+          "map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Map"
+          }
+        },
+        "type": "object",
+        "required": ["slug", "aggregation"],
+        "title": "DeployReducer"
+      },
+      "DeployReducer-Output": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "filter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Filter-Output"
               },
               {
                 "type": "null"
@@ -5592,6 +5874,29 @@
         "required": ["type", "amount", "currency"],
         "title": "OneTimePrice"
       },
+      "OneTimePrice-Output": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "one_time",
+            "title": "Type"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "amount", "currency"],
+        "title": "OneTimePrice"
+      },
       "OneTimePriceRead": {
         "properties": {
           "type": {
@@ -5970,6 +6275,41 @@
                 "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)"
               }
             ],
+            "title": "Amount",
+            "description": "Fixed amount per interval."
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": ["type", "interval", "amount", "currency"],
+        "title": "RecurringPrice"
+      },
+      "RecurringPrice-Output": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "recurring",
+            "title": "Type"
+          },
+          "interval": {
+            "type": "string",
+            "enum": ["day", "week", "month", "year"],
+            "title": "Interval"
+          },
+          "interval_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Interval Count",
+            "default": 1
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)",
             "title": "Amount",
             "description": "Fixed amount per interval."
           },

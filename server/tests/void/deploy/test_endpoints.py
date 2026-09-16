@@ -74,6 +74,31 @@ class TestDeployEndpoints:
             organization_response.json()["active_version_id"] == deployed["version_id"]
         )
 
+    async def test_configuration_is_the_stored_deploy_body(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_token(save_fixture, organization, scopes={Scope.void_write})
+        deployed = (await void_client.post(PATH, headers=HEADERS, json=CONFIG)).json()
+        response = await void_client.get(
+            f"{PATH}/{deployed['id']}/configuration", headers=HEADERS
+        )
+        assert response.status_code == 200
+        configuration = response.json()
+        assert set(configuration) == {"reducers", "meters", "entitlements", "products"}
+        assert [m["slug"] for m in configuration["meters"]] == ["tokens"]
+        assert configuration["products"][0]["meters"] == [
+            {"slug": "tokens", "included": 100, "limit": "hard", "rollover_cap": 0}
+        ]
+        assert (
+            await void_client.get(
+                f"{PATH}/{deployed['id']}/configuration",
+                headers={"Authorization": "Bearer wrong"},
+            )
+        ).status_code == 401
+
     async def test_activate_requires_write_scope_and_reviewed_organization(
         self,
         void_client: AsyncClient,

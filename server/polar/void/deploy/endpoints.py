@@ -19,7 +19,7 @@ from polar.void.tinybird import TinybirdApi, get_client
 
 from .exceptions import DeploymentConflict, DeploymentNotActivatable, InvalidDeployment
 from .preview import preview_prices
-from .schemas import Deploy, DeployCreate
+from .schemas import Deploy, DeployConfiguration, DeployCreate
 from .service import deploy as deploy_service
 
 router = APIRouter(prefix="/deploys", tags=["deploys"], include_in_schema=False)
@@ -117,6 +117,21 @@ async def get(
     return deploy_service.to_schema(
         await deploy_service.get(session, auth.organization.id, id)
     )
+
+
+@router.get(
+    "/{id}/configuration",
+    response_model=DeployConfiguration,
+    description="The configuration a deployment was created from, as the CLI sent it.",
+    operation_id="deploys:configuration",
+    responses={404: {"model": ResourceNotFound.schema()}},
+)
+async def configuration(
+    id: UUID,
+    auth: VoidRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> DeployConfiguration:
+    return await deploy_service.configuration(session, auth.organization.id, id)
 
 
 @router.post(

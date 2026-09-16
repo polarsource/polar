@@ -43,6 +43,7 @@ from .repository import DeployRepository
 from .schemas import (
     Action,
     Deploy,
+    DeployConfiguration,
     DeployCreate,
     DeployEntry,
     DeployMeter,
@@ -705,6 +706,16 @@ class DeployService:
         if deployment is None:
             raise ResourceNotFound()
         return deployment
+
+    async def configuration(
+        self, session: AsyncReadSession, organization_id: uuid.UUID, id: uuid.UUID
+    ) -> DeployConfiguration:
+        deployment = await self.get(session, organization_id, id)
+        if deployment.configuration is None:
+            raise ResourceNotFound(
+                "This deployment was created before configurations were stored"
+            )
+        return DeployConfiguration.model_validate(deployment.configuration)
 
     async def for_version(
         self,

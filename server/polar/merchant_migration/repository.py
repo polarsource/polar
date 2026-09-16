@@ -41,6 +41,7 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import (
+    CanonicalPrice,
     CanonicalProduct,
     CanonicalRecord,
     canonical_price_key,
@@ -134,6 +135,14 @@ class MerchantMigrationRepository(
         return await self.get_one_or_none(
             self.get_ops_statement().where(MerchantMigration.id == id)
         )
+
+
+def _merged_prices(
+    current: CanonicalProduct, incoming: CanonicalProduct
+) -> list[CanonicalPrice]:
+    prices = {canonical_price_key(price): price for price in current.prices}
+    prices.update({canonical_price_key(price): price for price in incoming.prices})
+    return list(prices.values())
 
 
 class MerchantMigrationRecordRepository(
@@ -647,8 +656,8 @@ class MerchantMigrationRecordRepository(
         merge_product_prices: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
-        re-run refreshes a still-pending row; imported/skipped/failed rows are
-        left as-is so a prior run's results aren't re-imported."""
+        re-run refreshes a still-pending row. Settled rows keep their status;
+        newly discovered product prices are merged into the settled snapshot."""
         existing = await self.get_by_source(
             organization_id=organization.id,
             type=record.type,
@@ -664,17 +673,7 @@ class MerchantMigrationRecordRepository(
                 ):
                     current = deserialize(existing.type, existing.canonical)
                     if isinstance(current, CanonicalProduct):
-                        prices = {
-                            canonical_price_key(price): price
-                            for price in current.prices
-                        }
-                        prices.update(
-                            {
-                                canonical_price_key(price): price
-                                for price in record.prices
-                            }
-                        )
-                        record = replace(record, prices=list(prices.values()))
+                        record = replace(record, prices=_merged_prices(current, record))
                         canonical = serialize(record)
                 return await self.update(
                     existing,
@@ -684,6 +683,16 @@ class MerchantMigrationRecordRepository(
                     },
                     flush=True,
                 )
+            if merge_product_prices and isinstance(record, CanonicalProduct):
+                current = deserialize(existing.type, existing.canonical)
+                if isinstance(current, CanonicalProduct):
+                    merged = replace(current, prices=_merged_prices(current, record))
+                    if merged != current:
+                        return await self.update(
+                            existing,
+                            update_dict={"canonical": serialize(merged)},
+                            flush=True,
+                        )
             return existing
         return await self.create(
             MerchantMigrationRecord(

@@ -130,7 +130,7 @@ _PAUSED_COLLECTION_NOTE = (
 def _live_source_status_note(status: CanonicalSubscriptionStatus) -> str:
     return (
         f"This {_humanize_subscription_status(status).lower()} "
-        "subscription is still billed on the source and will import."
+        "subscription remains on the source and will import."
     )
 
 

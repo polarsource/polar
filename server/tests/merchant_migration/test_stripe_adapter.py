@@ -285,11 +285,13 @@ def _stripe_price(
     currency_options: dict[str, Any] | None = None,
     product_id: str = "prod_1",
     product_active: bool = True,
+    price_active: bool = True,
     product_name: str = "Pro",
 ) -> stripe_lib.Price:
     price: dict[str, Any] = {
         "id": id,
         "object": "price",
+        "active": price_active,
         "currency": currency,
         "unit_amount": unit_amount,
         "billing_scheme": "per_unit",
@@ -523,14 +525,19 @@ class TestExtractPages:
         assert len(page.records) == 1
         assert page.next_cursor is None
 
+    @pytest.mark.parametrize(
+        ("price_active", "product_active"),
+        [(False, True), (True, False)],
+    )
     async def test_subscription_on_archived_price_stages_the_product(
-        self, mocker: MockerFixture
+        self, mocker: MockerFixture, price_active: bool, product_active: bool
     ) -> None:
         adapter, client = _adapter(mocker)
         price = _stripe_price(
             id="price_archived",
             product_id="prod_archived",
-            product_active=False,
+            product_active=product_active,
+            price_active=price_active,
             product_name="Legacy",
         )
         subscription = _stripe_subscription(

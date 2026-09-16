@@ -157,29 +157,39 @@ All 40 migrated operations are included in the private OpenAPI export.
 
 ## Configuration deployment
 
-Three concepts:
+The repository is the source of truth. Code pushes a configuration, Polar
+records it as a version, exactly one version serves traffic, and scenarios are
+scratch space on the side.
 
 - **Configuration**: the deploy body, a declaration of reducers, meters,
   entitlements and products. Credentials select the organization.
 - **Version**: the SHA-256 hash of the normalized configuration. It excludes the
   SDK checksum, dry-run flag, preview window and activate flag; definition order
-  and equivalent decimal spellings do not change it. Every meter and product row
-  carries the version that declared it, so a product, its subscriptions and its
-  meters can be checked against one hash.
-- **Deployment**: one row per version, in chronological order, with a status of
-  `draft`, `active` or `archived`. At most one deployment per organization is
-  active; it is production. Activating another deployment archives the current
-  one. Activation requires an organization that may accept payments, which is
-  Polar's review outcome. Each deployment stores the normalized configuration
-  it was pushed with.
-- **Scenario**: a named, mutable patch pinned to one deployed version, edited in
-  the dashboard. Its configuration is the base deployment's stored configuration
-  with the patch applied, and its hash is the version it would become. A scenario
-  has no meter or product rows and never serves traffic. `POST
-  /scenarios/{id}/promote` deploys the resolved configuration as an ordinary
-  draft; `POST /scenarios/{id}/preview` reprices the base version's usage under
-  it. Scenarios stay pinned to their base when a newer version activates, and
-  persist until deleted.
+  and equivalent decimal spellings do not change it. Same configuration, same
+  version, anywhere. Every meter and product row carries the version that
+  declared it, so a subscription always knows which configuration it was sold
+  under. The dashboard labels versions v1, v2… by creation order.
+- **Deployment**: one row per version per organization, holding the normalized
+  configuration and a status of `draft`, `active` or `archived`. Deploying is
+  idempotent: pushing an existing version returns its deployment. Activation is
+  the only state change; it archives the current active deployment and requires
+  an organization that may accept payments. Deployments are what serve traffic.
+- **Scenario**: a named, mutable patch (product price, name, description,
+  meter terms, meter unit amounts, keyed by slug) pinned to one deployment. It
+  is a pricing sandbox for the dashboard's Simulate view, not part of the
+  version history: it has no meter or product rows, never serves traffic, does
+  not follow the active version and is not listed with deployments. On read the
+  patch is applied to the base configuration, giving the resolved configuration
+  and the version it would become. Simulation assumptions stay in the browser.
+
+A scenario leaves the sandbox two ways. `POST /scenarios/{id}/promote` runs the
+ordinary deploy on the resolved configuration and records the resulting draft.
+The dashboard's "Copy configuration" hands back the resolved configuration to
+commit to the repository, so the next real push produces the same version. A
+scenario stays pinned to its base: promoting one based on v2 after v3 activated
+yields a configuration without v3's changes, which is why the base version is
+shown. `POST /scenarios/{id}/preview` reprices the base version's usage under
+the patch. Scenarios persist until deleted.
 
 `POST /deploys` reconciles reducers, meters, entitlements and products together.
 Both planning and applying require `void:write`. `dry_run: true` validates and

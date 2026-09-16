@@ -1,5 +1,5 @@
 export const MigrationCoexistence = () => (
-  <figure
+  <section
     className="migration-coexistence"
     aria-label="Merchant app sits above Stripe and Polar during migration"
   >
@@ -37,10 +37,10 @@ export const MigrationCoexistence = () => (
       </div>
     </div>
 
-    <figcaption className="migration-coexistence__caption">
+    <p className="migration-coexistence__caption">
       Each subscription has one system responsible for its next renewal. New
       checkouts go to Polar; Stripe keeps renewing what it already owns until you
       switch them.
-    </figcaption>
-  </figure>
+    </p>
+  </section>
 )

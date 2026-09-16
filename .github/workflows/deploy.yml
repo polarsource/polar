@@ -402,6 +402,9 @@ jobs:
     # against an image that was never built. Guarding on !failure() blocks that path.
     if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
+    permissions:
+      contents: write
+      id-token: write
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
@@ -426,6 +429,9 @@ jobs:
     needs: [changes, build]
     if: always() && !failure() && !cancelled() && needs.changes.outputs.test-enabled == 'true' && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
+    permissions:
+      contents: write
+      id-token: write
     with:
       environment: test
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
@@ -446,6 +452,9 @@ jobs:
     needs: [changes, build, deploy-sandbox]
     if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-production == 'true' || needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
+    permissions:
+      contents: write
+      id-token: write
     with:
       environment: production
       render-api-service-id: "srv-ci4r87h8g3ne0dmvvl60"

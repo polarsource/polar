@@ -6,7 +6,10 @@ session-scoped autouse fixtures from the main test suite to prevent
 connection attempts.
 """
 
+import logging
 import os
+from functools import partial
+from io import StringIO
 
 # Set up test environment before any polar imports
 os.environ["POLAR_ENV"] = "testing"
@@ -16,11 +19,65 @@ from typing import Any
 
 import logfire
 import pytest
+import sentry_sdk
+import structlog
+from logfire.integrations.structlog import LogfireProcessor
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pytest_mock import MockerFixture
 
 from polar.logfire import configure_logfire
+from polar.logging import Development, Logger, Production
+
+type LoggingPipeline = tuple[
+    Logger, logging.Logger, StringIO, InMemorySpanExporter | None
+]
+
+
+@pytest.fixture(autouse=True)
+def isolated_sentry_scope() -> Iterator[None]:
+    with sentry_sdk.isolation_scope() as scope:
+        scope.clear()
+        sentry_sdk.get_current_scope().clear()
+        yield
+
+
+@pytest.fixture(
+    params=[(Development, False), (Production, False), (Production, True)],
+    ids=["console", "json", "json-with-logfire"],
+)
+def logging_pipeline(
+    request: pytest.FixtureRequest,
+    mocker: MockerFixture,
+    configured_logfire: tuple[logfire.Logfire, InMemorySpanExporter],
+) -> Iterator[LoggingPipeline]:
+    configuration, forward_to_logfire = request.param
+    instance, exporter = configured_logfire
+    mocker.patch(
+        "polar.logging.LogfireProcessor",
+        partial(LogfireProcessor, logfire_instance=instance),
+    )
+    dict_config = mocker.patch("polar.logging.logging.config.dictConfig")
+    configuration.configure_stdlib(logfire=forward_to_logfire)
+    formatter_config: dict[str, Any] = dict_config.call_args.args[0]["formatters"][
+        "polar"
+    ]
+    formatter_type = formatter_config.pop("()")
+    stream = StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(formatter_type(**formatter_config))
+    stdlib_logger = logging.getLogger("polar.pii_validation")
+    mocker.patch.object(stdlib_logger, "handlers", [handler])
+    mocker.patch.object(stdlib_logger, "level", logging.DEBUG)
+    mocker.patch.object(stdlib_logger, "disabled", False)
+    mocker.patch.object(stdlib_logger, "propagate", False)
+    logger = structlog.wrap_logger(
+        stdlib_logger,
+        processors=configuration.get_processors(logfire=forward_to_logfire),
+        wrapper_class=structlog.stdlib.BoundLogger,
+    )
+    yield logger, stdlib_logger, stream, exporter if forward_to_logfire else None
+    handler.close()
 
 
 @pytest.fixture

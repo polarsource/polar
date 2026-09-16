@@ -1,60 +1,6 @@
-import logging
-from collections.abc import Iterator
-from functools import partial
-from io import StringIO
-from typing import Any
-
-import logfire
-import pytest
-import structlog
-from logfire.integrations.structlog import LogfireProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from pytest_mock import MockerFixture
-
-from polar.logging import Development, Logger, Production
 from polar.observability.pii import REDACTED
 
-type LoggingPipeline = tuple[
-    Logger, logging.Logger, StringIO, InMemorySpanExporter | None
-]
-
-
-@pytest.fixture(
-    params=[(Development, False), (Production, False), (Production, True)],
-    ids=["console", "json", "json-with-logfire"],
-)
-def logging_pipeline(
-    request: pytest.FixtureRequest,
-    mocker: MockerFixture,
-    configured_logfire: tuple[logfire.Logfire, InMemorySpanExporter],
-) -> Iterator[LoggingPipeline]:
-    configuration, forward_to_logfire = request.param
-    instance, exporter = configured_logfire
-    mocker.patch(
-        "polar.logging.LogfireProcessor",
-        partial(LogfireProcessor, logfire_instance=instance),
-    )
-    dict_config = mocker.patch("polar.logging.logging.config.dictConfig")
-    configuration.configure_stdlib(logfire=forward_to_logfire)
-    formatter_config: dict[str, Any] = dict_config.call_args.args[0]["formatters"][
-        "polar"
-    ]
-    formatter_type = formatter_config.pop("()")
-    stream = StringIO()
-    handler = logging.StreamHandler(stream)
-    handler.setFormatter(formatter_type(**formatter_config))
-    stdlib_logger = logging.getLogger("pii-test")
-    mocker.patch.object(stdlib_logger, "handlers", [handler])
-    mocker.patch.object(stdlib_logger, "level", logging.DEBUG)
-    mocker.patch.object(stdlib_logger, "disabled", False)
-    mocker.patch.object(stdlib_logger, "propagate", False)
-    logger = structlog.wrap_logger(
-        stdlib_logger,
-        processors=configuration.get_processors(logfire=forward_to_logfire),
-        wrapper_class=structlog.stdlib.BoundLogger,
-    )
-    yield logger, stdlib_logger, stream, exporter if forward_to_logfire else None
-    handler.close()
+from .conftest import LoggingPipeline
 
 
 class TestLoggingOutput:

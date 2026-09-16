@@ -11,8 +11,8 @@ import { eventOf } from './ir'
 export interface SourceOptions {
   /** Module the helpers are imported from; defaults to `@void/sdk/config`. */
   readonly from?: string
-  /** The deployed version the IR came from, named in the header. */
-  readonly version?: string
+  /** Where the IR came from, named in the header: a version or a scenario. */
+  readonly source?: string
 }
 
 const HELPERS = [
@@ -412,7 +412,7 @@ export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
   }
 
   const header = [
-    `// Pulled from Polar Void${options.version ? ` version ${options.version}` : ''}.`,
+    `// Pulled from Polar Void${options.source ? `: ${options.source}` : ''}.`,
     '// Best effort: meter names, plugins, signals and event storage are not part',
     '// of the deployed configuration. Review any TODO before deploying.',
   ]

@@ -49,6 +49,7 @@ beforeEach(async () => {
         version_id: 'a'.repeat(64),
         checksum: 'test',
         applied: true,
+        has_configuration: true,
         status: 'draft',
         id: 'd1',
         entries: [],

@@ -32,6 +32,7 @@ it('organization operations use the configured client without resolver requests'
         id: 'deployment_1',
         checksum: 'compiled-checksum',
         applied: true,
+        has_configuration: true,
         status: 'draft',
         entries: [],
         created_at: '2026-09-06T00:00:00Z',

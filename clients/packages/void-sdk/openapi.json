@@ -3077,6 +3077,52 @@
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "cycles"
       }
+    },
+    "/v1/void/scenarios": {
+      "get": {
+        "tags": ["void", "private", "scenarios"],
+        "summary": "List Scenarios",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "scenarios:list",
+        "security": [
+          {
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Scenario"
+                  },
+                  "title": "Response Scenarios:List"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "list_scenarios"
+      }
     }
   },
   "components": {
@@ -3669,6 +3715,11 @@
             ],
             "description": "Unset on a dry run."
           },
+          "has_configuration": {
+            "type": "boolean",
+            "title": "Has Configuration",
+            "description": "Whether the configuration is stored, so the version can be used as a scenario base. False for deployments created before configurations were kept."
+          },
           "entries": {
             "items": {
               "$ref": "#/components/schemas/DeployEntry"
@@ -3689,6 +3740,7 @@
           "checksum",
           "applied",
           "status",
+          "has_configuration",
           "entries",
           "created_at"
         ],
@@ -3784,6 +3836,75 @@
             "type": "array",
             "title": "Products",
             "default": []
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricePreviewWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Compare changed usage prices without applying them."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["checksum"],
+        "title": "DeployCreate"
+      },
+      "DeployCreate-Output": {
+        "properties": {
+          "reducers": {
+            "items": {
+              "$ref": "#/components/schemas/DeployReducer-Output"
+            },
+            "type": "array",
+            "title": "Reducers",
+            "default": []
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/DeployMeter-Output"
+            },
+            "type": "array",
+            "title": "Meters",
+            "default": []
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntitlement"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "default": []
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/DeployProduct-Output"
+            },
+            "type": "array",
+            "title": "Products",
+            "default": []
+          },
+          "checksum": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Checksum",
+            "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Compute the plan against current state; write nothing.",
+            "default": false
+          },
+          "activate": {
+            "type": "boolean",
+            "title": "Activate",
+            "description": "Activate the deployment once applied. Requires an organization that has passed review.",
+            "default": false
           },
           "preview": {
             "anyOf": [
@@ -5595,6 +5716,25 @@
         ],
         "title": "MeterHolderState"
       },
+      "MeterPatch-Output": {
+        "properties": {
+          "unit_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MeterPatch"
+      },
       "MeterPricePreview": {
         "properties": {
           "window": {
@@ -5675,6 +5815,37 @@
           "excluded_customers"
         ],
         "title": "MeterPricePreview"
+      },
+      "MeterTerms": {
+        "properties": {
+          "included": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Included",
+            "default": 0
+          },
+          "limit": {
+            "type": "string",
+            "enum": ["hard", "soft", "unlimited"],
+            "title": "Limit",
+            "default": "hard"
+          },
+          "rollover_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollover Cap",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "MeterTerms"
       },
       "MeterTermsRead": {
         "properties": {
@@ -6118,6 +6289,70 @@
           "created_at"
         ],
         "title": "Product"
+      },
+      "ProductPatch-Output": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RecurringPrice-Output"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OneTimePrice-Output"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "one_time": "#/components/schemas/OneTimePrice-Output",
+                    "recurring": "#/components/schemas/RecurringPrice-Output"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "meters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterTerms"
+            },
+            "type": "object",
+            "title": "Meters",
+            "description": "Replacement terms by meter slug; the meter must already be billed by the product in the base version."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProductPatch",
+        "description": "Overrides for one product of the base version; unset fields keep the base."
       },
       "ProductSubscription": {
         "properties": {
@@ -6667,6 +6902,126 @@
         "type": "object",
         "required": ["error", "detail"],
         "title": "ResourceNotFound"
+      },
+      "Scenario": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "base_version_id": {
+            "type": "string",
+            "title": "Base Version Id"
+          },
+          "base_deployment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Base Deployment Id"
+          },
+          "patch": {
+            "$ref": "#/components/schemas/ScenarioPatch-Output"
+          },
+          "version_id": {
+            "type": "string",
+            "title": "Version Id",
+            "description": "SHA-256 of the resolved configuration: the version this scenario would become when promoted."
+          },
+          "deployment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployment Id",
+            "description": "The deployment that already has this resolved version, if any."
+          },
+          "promoted_deployment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promoted Deployment Id"
+          },
+          "base_configuration": {
+            "$ref": "#/components/schemas/DeployCreate-Output",
+            "description": "The configuration of the base version."
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/DeployCreate-Output",
+            "description": "The base configuration with the patch applied."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": ["2026-01-01T00:00:00.000000Z"]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": ["2026-01-01T00:00:00.000000Z"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "base_version_id",
+          "base_deployment_id",
+          "patch",
+          "version_id",
+          "deployment_id",
+          "promoted_deployment_id",
+          "base_configuration",
+          "configuration",
+          "created_at",
+          "modified_at"
+        ],
+        "title": "Scenario"
+      },
+      "ScenarioPatch-Output": {
+        "properties": {
+          "products": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductPatch-Output"
+            },
+            "type": "object",
+            "title": "Products"
+          },
+          "meters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterPatch-Output"
+            },
+            "type": "object",
+            "title": "Meters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScenarioPatch",
+        "description": "A configuration-level diff against the base version, keyed by slug."
       },
       "SlugTaken": {
         "properties": {

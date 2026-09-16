@@ -35,7 +35,7 @@ const roundTrip = async (name: string, config: Config) => {
   const ir = compile(config)
   const file = join(dir, `${name}.ts`)
   const from = join(import.meta.dirname, '../src/config/index')
-  await writeFile(file, toSource(ir, { from, version: 'v' }))
+  await writeFile(file, toSource(ir, { from, source: 'v' }))
   const module = (await import(pathToFileURL(file).href)) as {
     config: Config
   }

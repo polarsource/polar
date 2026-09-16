@@ -404,6 +404,7 @@ it('deployment forwards the configured credit reducer to the server', async () =
         id: null,
         checksum: 'test',
         applied: false,
+        has_configuration: false,
         status: null,
         entries: [],
         created_at: 't',

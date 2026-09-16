@@ -95,6 +95,7 @@ const plan = apiWith((method, path, body) => {
     id: null,
     checksum: 'c',
     applied: false,
+    has_configuration: false,
     status: null,
     created_at: 't',
     entries: [
@@ -176,6 +177,7 @@ layer(
       id: 'deployment-1',
       checksum: body.checksum,
       applied: true,
+      has_configuration: true,
       status: 'draft',
       created_at: 't',
       entries: [
@@ -211,6 +213,7 @@ layer(
       id: 'deployment-2',
       checksum: 'c',
       applied: true,
+      has_configuration: true,
       status: 'active',
       created_at: 't',
       entries: [],
@@ -301,6 +304,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
           id: null,
           checksum: checksum(ir),
           applied: false,
+          has_configuration: false,
           status: null,
           created_at: '2026-09-06T00:00:00Z',
           entries: [],
@@ -376,6 +380,7 @@ it.each([{ flags: [] }, { flags: ['--no-preview'] }])(
           id: null,
           checksum: 'c',
           applied: false,
+          has_configuration: false,
           status: null,
           created_at: 't',
           entries: [],
@@ -442,6 +447,7 @@ layer(
       checksum: 'c',
       version_id: 'f'.repeat(64),
       applied: true,
+      has_configuration: true,
       status: 'draft',
       created_at: 't',
       entries: [],
@@ -491,6 +497,7 @@ layer(
       checksum: 'c',
       version_id: 'f'.repeat(64),
       applied: true,
+      has_configuration: true,
       status: 'draft',
       created_at: 't',
       entries: [],
@@ -540,6 +547,7 @@ it('deploy sends complete product, entitlement and meter terms', async () => {
           checksum: checksum(compiled),
           version_id: 'f'.repeat(64),
           applied: true,
+          has_configuration: true,
           status: 'draft',
           created_at: '2026-09-06T00:00:00Z',
           entries: [],
@@ -663,6 +671,49 @@ describe('pull', () => {
       })),
     }),
   )
+  const deploy = (
+    id: string,
+    status: string,
+    created_at: string,
+    has_configuration = true,
+  ) => ({
+    version_id: id.repeat(64),
+    id: `d-${id}`,
+    checksum: 'c',
+    applied: true,
+    status,
+    has_configuration,
+    created_at,
+    entries: [],
+  })
+  // v1 archived, v2 active, v3 a draft without a stored configuration, v4 a draft.
+  const deploys = [
+    deploy('a', 'archived', '2026-01-01T00:00:00Z'),
+    deploy('b', 'active', '2026-02-01T00:00:00Z'),
+    deploy('c', 'draft', '2026-03-01T00:00:00Z', false),
+    deploy('d', 'draft', '2026-04-01T00:00:00Z'),
+  ]
+  const scenario = {
+    id: 's1',
+    name: 'Cheaper Pro',
+    base_version_id: 'b'.repeat(64),
+    base_deployment_id: 'd-b',
+    patch: { products: {}, meters: {} },
+    version_id: 'e'.repeat(64),
+    deployment_id: null,
+    promoted_deployment_id: null,
+    base_configuration: { checksum: 'c', ...stored },
+    configuration: {
+      checksum: 'c',
+      ...stored,
+      meters: stored.meters.map((m: { unit_amount: string }) => ({
+        ...m,
+        unit_amount: '0.004',
+      })),
+    },
+    created_at: '2026-05-01T00:00:00Z',
+    modified_at: null,
+  }
   const serve = () => {
     const requests: Request[] = []
     const fetch = vi
@@ -674,36 +725,27 @@ describe('pull', () => {
         if (path === '/v1/void/organizations/current')
           return Response.json({
             active_version_id: 'b'.repeat(64),
-            active_deployment_id: 'd1',
+            active_deployment_id: 'd-b',
             can_activate: true,
             id: 'org1',
             name: 'Test',
             slug: 'test',
             created_at: '2026-01-01T00:00:00Z',
           })
-        if (path === '/v1/void/deploys/latest')
-          return Response.json({
-            version_id: 'b'.repeat(64),
-            id: 'd1',
-            checksum: 'c',
-            applied: true,
-            status: 'active',
-            has_configuration: true,
-            created_at: 't',
-            entries: [],
-          })
-        if (path === '/v1/void/deploys/d1/configuration')
-          return Response.json(stored)
+        if (path === '/v1/void/deploys' && request.method === 'GET')
+          return Response.json(deploys)
+        if (path === '/v1/void/scenarios') return Response.json([scenario])
+        const configuration = path.match(
+          /^\/v1\/void\/deploys\/(d-.)\/configuration$/,
+        )
+        if (configuration) return Response.json(stored)
         return Response.json(
           {
-            version_id: 'b'.repeat(64),
+            ...deploy('b', 'active', 't'),
             id: null,
-            checksum: 'c',
             applied: false,
-            status: null,
             has_configuration: false,
-            created_at: 't',
-            entries: [],
+            status: null,
           },
           { status: 201 },
         )
@@ -711,73 +753,111 @@ describe('pull', () => {
     return { requests, fetch }
   }
   const auth = ['--api-url', 'http://void', '--token', 'test']
+  const noLoad = async () => ({})
 
-  it('writes the deployed IR as void.json, which plans as it is', async () => {
+  const withDir = async (
+    body: (dir: string, log: ReturnType<typeof vi.spyOn>) => Promise<void>,
+  ) => {
     const dir = await mkdtemp(join(tmpdir(), 'void-pull-'))
-    const out = join(dir, 'void.json')
-    const { requests, fetch } = serve()
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    try {
-      await run(['pull', '--out', out, ...auth], async () => ({}))
-      assert.deepEqual(JSON.parse(await readFile(out, 'utf8')), deploymentIr)
-      await expect(
-        run(['pull', '--out', out, ...auth], async () => ({})),
-      ).rejects.toThrow('already exists')
-      await run(['pull', '--out', out, '--force', ...auth], async () => ({}))
-      assert.match(log.mock.calls.flat().join('\n'), /version b{64}/)
-
-      requests.length = 0
-      await run(
-        ['plan', '--no-preview', '--config', out, ...auth],
-        async () => ({}),
-      )
-      const deploy = requests.find((r) => r.method === 'POST')!
-      assert.deepEqual(await deploy.json(), {
-        checksum: checksum(deploymentIr),
-        dry_run: true,
-        activate: false,
-        reducers: deploymentIr.reducers,
-        meters: deploymentIr.meters,
-        entitlements: deploymentIr.entitlements,
-        products: deploymentIr.products,
-      })
-    } finally {
-      fetch.mockRestore()
-      log.mockRestore()
-      await rm(dir, { recursive: true, force: true })
-    }
-  })
-
-  it('writes TypeScript with --ts and confirms it compiles back to the same version', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'void-pull-'))
-    const out = join(dir, 'void.ts')
     const { fetch } = serve()
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    // The generated file imports the published package; point it at the sources.
-    const load = async (url: string) => {
-      const file = fileURLToPath(url)
-      const resolved = file.replace(/\.ts$/, '.resolved.ts')
-      await writeFile(
-        resolved,
-        (await readFile(file, 'utf8')).replace(
-          "'@void/sdk/config'",
-          JSON.stringify(join(import.meta.dirname, '../src/config/index')),
-        ),
-      )
-      return import(pathToFileURL(resolved).href) as Promise<
-        Record<string, unknown>
-      >
-    }
     try {
-      await run(['pull', '--ts', '--out', out, ...auth], load)
-      const source = await readFile(out, 'utf8')
-      assert.match(source, /^\/\/ Pulled from Polar Void version b{64}\./)
-      assert.match(source, /export const config = defineConfig/)
-      assert.notMatch(log.mock.calls.flat().join('\n'), /warning/)
+      await body(dir, log)
     } finally {
       fetch.mockRestore()
       log.mockRestore()
       await rm(dir, { recursive: true, force: true })
     }
-  })
+  }
+  const logged = (log: ReturnType<typeof vi.spyOn>) =>
+    log.mock.calls.flat().join('\n')
+
+  it('writes the active deployment as void.json, which plans as it is', () =>
+    withDir(async (dir, log) => {
+      const out = join(dir, 'void.json')
+      await run(['pull', '--out', out, ...auth], noLoad)
+      assert.deepEqual(JSON.parse(await readFile(out, 'utf8')), deploymentIr)
+      assert.match(logged(log), /source v2 b{64} \(active\)/)
+      await expect(
+        run(['pull', '--out', out, ...auth], noLoad),
+      ).rejects.toThrow('already exists')
+      await run(['pull', '--out', out, '--force', ...auth], noLoad)
+
+      const { requests, fetch } = serve()
+      try {
+        await run(['plan', '--no-preview', '--config', out, ...auth], noLoad)
+        const posted = requests.find((r) => r.method === 'POST')!
+        assert.deepEqual(await posted.json(), {
+          checksum: checksum(deploymentIr),
+          dry_run: true,
+          activate: false,
+          reducers: deploymentIr.reducers,
+          meters: deploymentIr.meters,
+          entitlements: deploymentIr.entitlements,
+          products: deploymentIr.products,
+        })
+      } finally {
+        fetch.mockRestore()
+      }
+    }))
+
+  it('pulls drafts, labelled versions and scenarios into files named after them', () =>
+    withDir(async (dir, log) => {
+      const cwd = vi.spyOn(process, 'cwd').mockReturnValue(dir)
+      try {
+        await run(['pull', '--draft', ...auth], noLoad)
+        assert.match(logged(log), /source v4 d{64} \(draft\)/)
+        assert.deepEqual(
+          JSON.parse(await readFile(join(dir, 'void.v4.json'), 'utf8')),
+          deploymentIr,
+        )
+        await run(['pull', '--version', 'v1', ...auth], noLoad)
+        assert.match(logged(log), /source v1 a{64} \(archived\)/)
+        await run(['pull', '--scenario', 'cheaper pro', ...auth], noLoad)
+        const pulled = JSON.parse(
+          await readFile(join(dir, 'void.cheaper-pro.json'), 'utf8'),
+        )
+        assert.equal(pulled.meters[0].unit_amount, 0.004)
+        assert.match(logged(log), /source scenario Cheaper Pro on v2 b{64}/)
+        await expect(
+          run(['pull', '--version', 'v3', ...auth], noLoad),
+        ).rejects.toThrow('no pullable deployment for version v3')
+        await expect(
+          run(['pull', '--scenario', 'nope', ...auth], noLoad),
+        ).rejects.toThrow('no scenario named nope')
+        await expect(run(['pull', '-i', ...auth], noLoad)).rejects.toThrow(
+          'no terminal',
+        )
+      } finally {
+        cwd.mockRestore()
+      }
+    }))
+
+  it('writes TypeScript with --ts and confirms it compiles back to the same version', () =>
+    withDir(async (dir, log) => {
+      const out = join(dir, 'void.ts')
+      // The generated file imports the published package; point it at the sources.
+      const load = async (url: string) => {
+        const file = fileURLToPath(url)
+        const resolved = file.replace(/\.ts$/, '.resolved.ts')
+        await writeFile(
+          resolved,
+          (await readFile(file, 'utf8')).replace(
+            "'@void/sdk/config'",
+            JSON.stringify(join(import.meta.dirname, '../src/config/index')),
+          ),
+        )
+        return import(pathToFileURL(resolved).href) as Promise<
+          Record<string, unknown>
+        >
+      }
+      await run(['pull', '--ts', '--out', out, ...auth], load)
+      const source = await readFile(out, 'utf8')
+      assert.match(
+        source,
+        /^\/\/ Pulled from Polar Void: v2 b{64} \(active\)\./,
+      )
+      assert.match(source, /export const config = defineConfig/)
+      assert.notMatch(logged(log), /warning/)
+    }))
 })

@@ -251,19 +251,31 @@ current.active_version_id // the hash every product, subscription and meter carr
 Runtime lookups follow the active version. `versionId` on `defineConfig` pins a
 deployed draft instead, for testing before activation.
 
-### Pull the deployed configuration
+### Pull a deployed configuration
 
 `void pull` writes the active deployment's configuration to `void.json`: the
 compiled form the CLI sends, with `version: 4`. `void plan` and `void deploy`
 accept that file through `--config`, or find it when no `void.ts` exists, and
 send it as it is, so a pulled configuration always plans as unchanged.
-`--version` pulls another deployed version, `--force` overwrites the output.
+
+Other sources are pulled by flag, and land in a file named after them so they
+never replace a `void.json` that mirrors production: `void.v8.json` for a
+version, `void.cheaper-pro.json` for a scenario. `--out` overrides the name,
+`--force` overwrites an existing file.
 
 ```sh
-void pull
-void pull --version <hash> --out pricing.json
-void plan --config void.json
+void pull                          # the active deployment, to void.json
+void pull --draft                  # the newest draft
+void pull --version v7             # a version, by dashboard label or hash
+void pull --scenario "Cheaper Pro" # a scenario's resolved configuration, by name or id
+void pull -i                       # choose in the terminal
+void plan --config void.v8.json
 ```
+
+`-i` lists pullable deployments (active, then drafts, then archived) and every
+scenario with the version it is based on. It needs a terminal; scripts use the
+flags. The scenario page in the dashboard copies the matching `void pull`
+command.
 
 `void pull --ts` writes best-effort TypeScript over the define API instead,
 in one canonical form per definition, then loads it back and warns when it

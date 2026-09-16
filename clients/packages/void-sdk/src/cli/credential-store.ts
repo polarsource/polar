@@ -17,6 +17,8 @@ const SavedLogin = Schema.Struct({
     name: Schema.String,
     slug: Schema.String,
   }),
+  refreshToken: Schema.optionalKey(Schema.String),
+  expiresAt: Schema.optionalKey(Schema.Number),
 })
 const Profile = Schema.Struct({ name: Schema.String, ...SavedLogin.fields })
 const Store = Schema.Struct({

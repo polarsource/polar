@@ -13,6 +13,10 @@ from polar.config import Environment, settings
 from polar.kit.utils import utc_now
 from polar.models import Account, Organization
 from polar.models.organization import OrganizationStatus
+from polar.oauth2.service.oauth2_client import (
+    oauth2_client as oauth2_client_service,
+)
+from polar.oauth2.void_cli_client import CLIENT_IDS, REDIRECT_URI, ensure_client
 from polar.organization_access_token.service import (
     organization_access_token as organization_access_token_service,
 )
@@ -94,6 +98,25 @@ class TestDevelopmentSeed:
         assert token.organization.account_id == ACCOUNT_ID
         assert token.organization.status == OrganizationStatus.ACTIVE
         assert token.organization.is_void_enabled
+
+    async def test_seed_token_upserts_void_cli_oauth_client(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        await seed_token(session)
+        client = await oauth2_client_service.get_by_client_id(
+            session, CLIENT_IDS["local"]
+        )
+        assert client is not None
+        assert client.first_party is False
+        assert client.client_name == "Void CLI"
+        assert REDIRECT_URI in client.redirect_uris
+        assert client.token_endpoint_auth_method == "none"
+        assert client.default_sub_type.value == "organization"
+        assert "void:write" in client.client_metadata["scope"]
+        again, created = await ensure_client(session)
+        assert again.id == client.id
+        assert created is False
 
     @pytest.mark.parametrize("change", ["slug", "status", "capabilities", "deleted"])
     async def test_preserves_incompatible_existing_organization(

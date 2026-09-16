@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, it, vi } from 'vitest'
 import { defineConfig } from '../src/config/config'
 import { run } from '../src/cli/index'
@@ -99,6 +99,14 @@ it('login validates and saves private credentials; plan and deploy revalidate an
     requests.every(
       (request) => request.headers.get('Polar-Version') === '2026-04',
     ),
+  )
+  assert.equal(requests[0]!.headers.get('Polar-Organization-ID'), null)
+  assert.ok(
+    requests
+      .slice(1)
+      .every(
+        (request) => request.headers.get('Polar-Organization-ID') === first.id,
+      ),
   )
   assert.equal(requests[0]!.headers.get('x-void-config'), null)
   assert.equal((await requests[2]!.json()).dry_run, true)
@@ -426,4 +434,113 @@ it('logout removes only the selected profile without silently switching organiza
   await run(['switch', 'first@void'], load)
   await run(['logout', '--all'], load)
   await assert.rejects(readFile(file), { code: 'ENOENT' })
+})
+
+it('login remaps a leftover local API port to Polar default', async () => {
+  await mkdir(dirname(file), { recursive: true })
+  await writeFile(
+    file,
+    JSON.stringify({
+      activeProfile: 'default',
+      profiles: [
+        {
+          name: 'default',
+          apiUrl: 'http://127.0.0.1:8001',
+          token: 'first-secret',
+          organization: { id: first.id, name: first.name, slug: first.slug },
+        },
+      ],
+    }),
+  )
+  await run(['login', '--token', 'first-secret'], load)
+  const saved = JSON.parse(await readFile(file, 'utf8'))
+  assert.equal(saved.profiles.at(-1)?.apiUrl, 'http://127.0.0.1:8000')
+  assert.ok(
+    requests.some(
+      (request) => new URL(request.url).origin === 'http://127.0.0.1:8000',
+    ),
+  )
+})
+
+it('sandbox and production flags select Polar servers and conflict with each other and --api-url', async () => {
+  await assert.rejects(
+    run(
+      ['login', '--sandbox', '--production', '--token', 'first-secret'],
+      load,
+    ),
+    /either --sandbox or --production/,
+  )
+  await assert.rejects(
+    run(
+      [
+        'login',
+        '--sandbox',
+        '--api-url',
+        'http://void',
+        '--token',
+        'first-secret',
+      ],
+      load,
+    ),
+    /cannot be combined/,
+  )
+  await run(['login', '--sandbox', '--token', 'first-secret'], load)
+  const saved = JSON.parse(await readFile(file, 'utf8'))
+  assert.equal(saved.profiles[0].apiUrl, 'https://sandbox-api.polar.sh')
+})
+
+it('noninteractive login without a token does not open the browser', async () => {
+  Object.defineProperty(process.stdin, 'isTTY', {
+    configurable: true,
+    value: false,
+  })
+  await assert.rejects(
+    run(['login', '--api-url', 'http://void'], load),
+    /terminal to open the browser/,
+  )
+  assert.equal(requests.length, 0)
+})
+
+it('an expiring OAuth profile refreshes before the next request', async () => {
+  await login()
+  const saved = JSON.parse(await readFile(file, 'utf8'))
+  saved.profiles[0].token = 'expired-secret'
+  saved.profiles[0].refreshToken = 'refresh-secret'
+  saved.profiles[0].expiresAt = Date.now() - 1
+  await writeFile(file, JSON.stringify(saved))
+  vi.stubEnv('VOID_OAUTH_CLIENT_ID', 'polar_ci_test')
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, init) => {
+    const request = new Request(input, init)
+    requests.push(request)
+    if (new URL(request.url).pathname === '/v1/oauth2/token') {
+      const body = await request.text()
+      assert.ok(body.includes('refresh-secret'))
+      return Response.json({
+        access_token: 'first-secret',
+        refresh_token: 'rotated',
+        expires_in: 3600,
+      })
+    }
+    const token = request.headers.get('authorization')
+    if (token !== 'Bearer first-secret') {
+      return Response.json(
+        { error: 'Unauthorized', detail: 'Invalid token' },
+        { status: 401 },
+      )
+    }
+    return Response.json(first)
+  })
+  requests.length = 0
+  await run(['whoami'], load)
+  const tokenCall = requests.find(
+    (request) => new URL(request.url).pathname === '/v1/oauth2/token',
+  )
+  assert.ok(tokenCall)
+  assert.equal(
+    requests.at(-1)?.headers.get('authorization'),
+    'Bearer first-secret',
+  )
+  const updated = JSON.parse(await readFile(file, 'utf8'))
+  assert.equal(updated.profiles[0].token, 'first-secret')
+  assert.equal(updated.profiles[0].refreshToken, 'rotated')
 })

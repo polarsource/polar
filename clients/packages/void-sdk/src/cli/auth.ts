@@ -1,10 +1,10 @@
 import { Config, Console, Effect, Option, Redacted } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { Api } from '../api/index'
-import { apiLayer } from '../api/layers'
 import { readStore } from './credential-store'
 import {
   activateProfile,
+  apiFrom,
   type Credentials,
   CredentialsError,
   normalizeApiUrl,
@@ -13,6 +13,12 @@ import {
   saveLogin,
 } from './credentials'
 import { describeTarget } from './format'
+import {
+  browserLogin,
+  canonicalLoopbackApiUrl,
+  resolveOAuthTarget,
+  WELL_KNOWN_API,
+} from './oauth'
 import { styleEnabled } from './style'
 
 const profileFlag = Flag.string('profile').pipe(
@@ -26,12 +32,23 @@ export const authFlags = {
     Flag.optional,
   ),
   token: Flag.redacted('token').pipe(
-    Flag.withDescription('Organization token'),
+    Flag.withDescription(
+      'Organization access token; skips the browser. Also VOID_TOKEN',
+    ),
     Flag.withFallbackConfig(Config.redacted('VOID_TOKEN')),
     Flag.optional,
   ),
   profile: profileFlag,
 }
+
+const sandboxFlag = Flag.boolean('sandbox').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Use sandbox-api.polar.sh'),
+)
+const productionFlag = Flag.boolean('production').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Use api.polar.sh'),
+)
 
 export const showTarget = Effect.fn('cli.showTarget')(function* (
   credentials: Credentials,
@@ -60,59 +77,118 @@ export const showTarget = Effect.fn('cli.showTarget')(function* (
 })
 
 const validate = (credentials: Credentials) =>
-  showTarget(credentials).pipe(
-    Effect.provide(
-      apiLayer({
-        apiUrl: credentials.apiUrl,
-        token: Redacted.value(credentials.token),
-      }),
-    ),
-  )
+  showTarget(credentials).pipe(Effect.provide(apiFrom(credentials)))
+
+const chooseApiUrl = Effect.fn('cli.chooseApiUrl')(function* (
+  apiUrl: string | undefined,
+  sandbox: boolean,
+  production: boolean,
+  profile?: string,
+) {
+  if (sandbox && production)
+    return yield* new CredentialsError({
+      message: 'Pass either --sandbox or --production, not both.',
+    })
+  if ((sandbox || production) && apiUrl !== undefined)
+    return yield* new CredentialsError({
+      message:
+        '--sandbox and --production cannot be combined with --api-url or VOID_API_URL.',
+    })
+  if (sandbox) return yield* normalizeApiUrl(WELL_KNOWN_API.sandbox)
+  if (production) return yield* normalizeApiUrl(WELL_KNOWN_API.production)
+  if (apiUrl !== undefined)
+    return yield* normalizeApiUrl(canonicalLoopbackApiUrl(apiUrl))
+  const store = yield* readStore()
+  const saved = store.profiles.find(
+    (entry) => entry.name === (profile ?? store.activeProfile),
+  )?.apiUrl
+  if (saved !== undefined)
+    return yield* normalizeApiUrl(canonicalLoopbackApiUrl(saved))
+  if (!process.stdin.isTTY)
+    return yield* new CredentialsError({
+      message:
+        'Login needs --api-url, --sandbox, --production, or VOID_API_URL when not running in a terminal.',
+    })
+  const environment = yield* Prompt.select({
+    message: 'Which Polar environment?',
+    choices: [
+      {
+        title: 'Local',
+        value: 'http://127.0.0.1:8000',
+        description: '127.0.0.1:8000',
+      },
+      {
+        title: 'Sandbox',
+        value: WELL_KNOWN_API.sandbox,
+        description: 'sandbox.polar.sh',
+      },
+      {
+        title: 'Production',
+        value: WELL_KNOWN_API.production,
+        description: 'polar.sh',
+      },
+    ],
+  })
+  return yield* normalizeApiUrl(environment)
+})
 
 export const login = Command.make(
   'login',
-  authFlags,
-  ({ apiUrl, token, profile }) =>
+  {
+    ...authFlags,
+    sandbox: sandboxFlag,
+    production: productionFlag,
+    webUrl: Flag.string('web-url').pipe(
+      Flag.withDescription('Dashboard URL for browser login'),
+      Flag.withFallbackConfig(Config.string('VOID_WEB_URL')),
+      Flag.optional,
+    ),
+  },
+  ({ apiUrl, token, profile, sandbox, production, webUrl }) =>
     Effect.gen(function* () {
       const name = Option.getOrUndefined(profile)
-      let url = Option.getOrUndefined(apiUrl)
-      if (url === undefined) {
-        const store = yield* readStore()
-        url = store.profiles.find(
-          (entry) => entry.name === (name ?? store.activeProfile),
-        )?.apiUrl
-      }
-      if (url === undefined) {
+      const target = yield* chooseApiUrl(
+        Option.getOrUndefined(apiUrl),
+        sandbox,
+        production,
+        name,
+      )
+      const accessToken = Option.getOrUndefined(token)
+      let credentials: Credentials
+      if (accessToken !== undefined) {
+        if (Redacted.value(accessToken).trim() === '')
+          return yield* new CredentialsError({
+            message: 'An organization access token is required.',
+          })
+        credentials = { apiUrl: target, token: accessToken }
+      } else {
         if (!process.stdin.isTTY)
           return yield* new CredentialsError({
             message:
-              'Login needs --api-url or VOID_API_URL when not running in a terminal.',
+              'Login needs a terminal to open the browser, or pass --token / VOID_TOKEN.',
           })
-        url = yield* Prompt.text({ message: 'Polar server URL' })
+        const oauth = yield* resolveOAuthTarget(
+          target,
+          Option.getOrUndefined(webUrl),
+        )
+        const session = yield* browserLogin(oauth)
+        credentials = {
+          apiUrl: target,
+          token: session.accessToken,
+          ...(session.refreshToken
+            ? { refreshToken: session.refreshToken }
+            : {}),
+          expiresAt: session.expiresAt,
+        }
       }
-      const target = yield* normalizeApiUrl(url)
-      let accessToken = Option.getOrUndefined(token)
-      if (accessToken === undefined) {
-        if (!process.stdin.isTTY)
-          return yield* new CredentialsError({
-            message:
-              'Login needs --token or VOID_TOKEN when not running in a terminal.',
-          })
-        accessToken = yield* Prompt.password({
-          message: 'Organization access token',
-        })
-      }
-      if (Redacted.value(accessToken).trim() === '')
-        return yield* new CredentialsError({
-          message: 'An organization access token is required.',
-        })
-      const credentials = { apiUrl: target, token: accessToken }
       const organization = yield* validate(credentials)
       const savedName = yield* saveLogin(credentials, organization, name)
       yield* Console.log(`Logged in. Active profile: ${savedName}`)
     }),
 ).pipe(
-  Command.withDescription('Validate an organization token and save a profile'),
+  Command.withDescription(
+    'Sign in with the browser and save an organization profile',
+  ),
 )
 
 export const whoami = Command.make(

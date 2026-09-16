@@ -1,11 +1,13 @@
 import { Effect, Redacted } from 'effect'
 import type { VoidOrganization } from '../api/generated'
+import { apiLayer } from '../api/layers'
 import {
   CredentialsError,
   readStore,
   removeStore,
   writeStore,
 } from './credential-store'
+import { refreshSession, resolveClientId } from './oauth'
 export { CredentialsError, credentialsPath } from './credential-store'
 
 export interface Credentials {
@@ -13,6 +15,8 @@ export interface Credentials {
   readonly token: Redacted.Redacted<string>
   readonly organizationId?: string
   readonly profile?: string
+  readonly refreshToken?: Redacted.Redacted<string>
+  readonly expiresAt?: number
 }
 
 export const normalizeApiUrl = (value: string) =>
@@ -54,6 +58,10 @@ export const readLogin = Effect.fn('cli.readLogin')(function* (
     token: Redacted.make(saved.token),
     organizationId: saved.organization.id,
     profile: saved.name,
+    ...(saved.refreshToken
+      ? { refreshToken: Redacted.make(saved.refreshToken) }
+      : {}),
+    ...(saved.expiresAt !== undefined ? { expiresAt: saved.expiresAt } : {}),
   }
 })
 
@@ -91,6 +99,12 @@ export const saveLogin = Effect.fn('cli.saveLogin')(function* (
           name: organization.name,
           slug: organization.slug,
         },
+        ...(credentials.refreshToken
+          ? { refreshToken: Redacted.value(credentials.refreshToken) }
+          : {}),
+        ...(credentials.expiresAt !== undefined
+          ? { expiresAt: credentials.expiresAt }
+          : {}),
       },
     ],
   })
@@ -107,6 +121,34 @@ export const activateProfile = Effect.fn('cli.activateProfile')(function* (
     })
   yield* writeStore({ ...store, activeProfile: name })
 })
+
+export const updateProfileTokens = Effect.fn('cli.updateProfileTokens')(
+  function* (name: string, credentials: Credentials) {
+    const store = yield* readStore()
+    const existing = store.profiles.find((entry) => entry.name === name)
+    if (!existing)
+      return yield* new CredentialsError({
+        message: `No saved profile "${name}".`,
+      })
+    yield* writeStore({
+      ...store,
+      profiles: store.profiles.map((entry) =>
+        entry.name === name
+          ? {
+              ...entry,
+              token: Redacted.value(credentials.token),
+              ...(credentials.refreshToken
+                ? { refreshToken: Redacted.value(credentials.refreshToken) }
+                : {}),
+              ...(credentials.expiresAt !== undefined
+                ? { expiresAt: credentials.expiresAt }
+                : {}),
+            }
+          : entry,
+      ),
+    })
+  },
+)
 
 export const removeLogin = Effect.fn('cli.removeLogin')(function* (
   profile?: string,
@@ -129,6 +171,13 @@ export const removeLogin = Effect.fn('cli.removeLogin')(function* (
     profiles,
   })
 })
+
+export const apiFrom = (credentials: Credentials) =>
+  apiLayer({
+    apiUrl: credentials.apiUrl,
+    token: Redacted.value(credentials.token),
+    organizationId: credentials.organizationId,
+  })
 
 export const resolveCredentials = Effect.fn('cli.resolveCredentials')(
   function* (
@@ -164,12 +213,43 @@ export const resolveCredentials = Effect.fn('cli.resolveCredentials')(
       return yield* new CredentialsError({
         message: 'No token for this server. Run void login or set VOID_TOKEN.',
       })
-    return {
+    let credentials: Credentials = {
       apiUrl: target,
       token: selectedToken,
       ...(token === undefined && saved
-        ? { profile: saved.profile, organizationId: saved.organizationId }
+        ? {
+            profile: saved.profile,
+            organizationId: saved.organizationId,
+            refreshToken: saved.refreshToken,
+            expiresAt: saved.expiresAt,
+          }
         : {}),
     }
+    if (
+      token === undefined &&
+      credentials.refreshToken &&
+      credentials.expiresAt !== undefined &&
+      credentials.expiresAt <= Date.now() + 30_000
+    ) {
+      const clientId = resolveClientId(credentials.apiUrl)
+      if (clientId === undefined)
+        return yield* new CredentialsError({
+          message: 'Session cannot be refreshed. Run void login again.',
+        })
+      const session = yield* refreshSession(credentials.apiUrl, clientId, {
+        accessToken: credentials.token,
+        refreshToken: credentials.refreshToken,
+        expiresAt: credentials.expiresAt,
+        scopes: [],
+      })
+      credentials = {
+        ...credentials,
+        token: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresAt: session.expiresAt,
+      }
+      if (saved?.profile) yield* updateProfileTokens(saved.profile, credentials)
+    }
+    return credentials
   },
 )

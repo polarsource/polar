@@ -190,3 +190,38 @@ it('reports the active deployment through the organization route', async () => {
     await client.dispose()
   }
 })
+
+it('sends Polar-Organization-ID only when an organization id is configured', async () => {
+  const headers: Array<string | null> = []
+  const fetch: typeof globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init)
+    headers.push(request.headers.get('Polar-Organization-ID'))
+    return Response.json({
+      id: 'org1',
+      name: 'Test',
+      slug: 'test',
+      created_at: '2026-09-06T00:00:00Z',
+      active_deployment_id: null,
+      active_version_id: null,
+      can_activate: false,
+    })
+  }
+  const omitted = createVoid(config, {
+    apiUrl: 'http://void',
+    token: 't',
+    fetch,
+  })
+  const named = createVoid(config, {
+    apiUrl: 'http://void',
+    token: 't',
+    organizationId: 'org1',
+    fetch,
+  })
+  try {
+    await omitted.api.organizations.current()
+    await named.api.organizations.current()
+    assert.deepEqual(headers, [null, 'org1'])
+  } finally {
+    await Promise.all([omitted.dispose(), named.dispose()])
+  }
+})

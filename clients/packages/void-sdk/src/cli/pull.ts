@@ -1,15 +1,14 @@
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Console, Effect, FileSystem, Option, Redacted } from 'effect'
+import { Console, Effect, FileSystem, Option } from 'effect'
 import { Command, Flag, Prompt } from 'effect/unstable/cli'
 import { Api, type Deploy, type Scenario } from '../api/index'
-import { apiLayer } from '../api/layers'
 import { toSource } from '../config/codegen'
 import { checksum, compile } from '../config/compile'
 import { normalizeIr } from '../config/ir'
 import { authFlags, showTarget } from './auth'
 import { ConfigError, isConfig, type Loader } from './config'
-import { resolveCredentials } from './credentials'
+import { apiFrom, resolveCredentials } from './credentials'
 import { soft, styleEnabled } from './style'
 
 export interface PullOptions {
@@ -287,14 +286,7 @@ export const pullCommand = (load: Loader) =>
             ts,
             force,
           })
-        }).pipe(
-          Effect.provide(
-            apiLayer({
-              apiUrl: credentials.apiUrl,
-              token: Redacted.value(credentials.token),
-            }),
-          ),
-        )
+        }).pipe(Effect.provide(apiFrom(credentials)))
       }),
   ).pipe(
     Command.withDescription(

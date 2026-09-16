@@ -1,5 +1,6 @@
-"""Void authentication: an organization token acts as its organization; a user
-names the organization with the ``Polar-Organization-ID`` header."""
+"""Void authentication: an organization token acts as its organization. A user
+token names the organization with the ``Polar-Organization-ID`` header, except
+when it is already scoped to exactly one organization."""
 
 from typing import Annotated
 from uuid import UUID
@@ -31,8 +32,9 @@ OrganizationHeader = Annotated[
     Header(
         alias=ORGANIZATION_HEADER,
         description=(
-            "The organization to act on. Required for user credentials; "
-            "organization tokens always act on their own organization."
+            "The organization to act on. Required for user credentials that "
+            "are not already scoped to a single organization. Organization "
+            "tokens always act on their own organization."
         ),
     ),
 ]
@@ -51,23 +53,26 @@ async def resolve(
             raise ResourceNotFound()
         organization = auth_subject.subject
     elif is_user(auth_subject):
-        if organization_id is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "missing",
-                        "loc": ("header", ORGANIZATION_HEADER),
-                        "msg": (
-                            f"The {ORGANIZATION_HEADER} header is required "
-                            "with user credentials."
-                        ),
-                        "input": None,
-                    }
-                ]
-            )
-        accessible = await get_accessible_organization(
-            session, auth_subject, organization_id
-        )
+        selected = organization_id
+        if selected is None:
+            scoped = auth_subject.organization_ids
+            if scoped is None or len(scoped) != 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("header", ORGANIZATION_HEADER),
+                            "msg": (
+                                f"The {ORGANIZATION_HEADER} header is required "
+                                "with user credentials that can access more than "
+                                "one organization."
+                            ),
+                            "input": None,
+                        }
+                    ]
+                )
+            selected = next(iter(scoped))
+        accessible = await get_accessible_organization(session, auth_subject, selected)
         if accessible is None:
             raise ResourceNotFound()
         if permission is not None:

@@ -125,6 +125,7 @@ from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
+from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.void.development.service import development as void_development_service
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
@@ -2379,6 +2380,7 @@ async def _simple_seed_is_complete(session: AsyncSession) -> bool:
 
 async def seed_void_organization(session: AsyncSession) -> bool:
     organization, created = await void_development_service.seed(session)
+    await ensure_void_cli_client(session)
     user, _ = await user_service.get_by_email_or_create(
         session=session, email="void@polar.sh"
     )

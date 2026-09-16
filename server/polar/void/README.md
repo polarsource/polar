@@ -25,11 +25,15 @@ frontend fixtures; switch to live data from the version dropdown.
 CLI against the local API, from `clients/`:
 
 ```sh
-source ../server/.env.void
-pnpm --filter @void/sdk void login
+pnpm --filter @void/sdk void login --api-url http://127.0.0.1:8000
+# Or source ../server/.env.void and run void login (uses VOID_TOKEN).
 pnpm --filter @void/sdk void plan --config /absolute/path/to/void.ts
 pnpm --filter @void/sdk void deploy --config /absolute/path/to/void.ts [--activate]
 ```
+
+Browser login needs the Void CLI OAuth client in the local database. `dev seed`
+and `task void_seed` upsert it; the API also creates it on development startup.
+To register it by itself: `uv run python -m polar.oauth2.void_cli_client`.
 
 `uv run task void_dev smoke` runs the whole stack in isolation and the SDK
 acceptance scenario; `void_dev run` keeps that stack up. See `--help` for ports.
@@ -99,11 +103,13 @@ unless the organization has `feature_settings.void_enabled`.
 
 **Auth.** An organization access token with `void:read` or `void:write` acts on
 its own organization. A user credential with the same scopes names the
-organization in the `Polar-Organization-ID` header; writes need the
+organization in the `Polar-Organization-ID` header, except when the token is
+already scoped to exactly one organization. Writes need the
 `products:manage` permission. Customer reads and binds additionally need
 `customers:read` / `customers:write`. Endpoints receive an `AuthzContext` from
 `VoidRead` / `VoidWrite` in `polar.void.auth`. Mint a local token with
-`uv run python -m scripts.generate_void_token <org> --customers`.
+`uv run python -m scripts.generate_void_token <org> --customers`, or run
+`void login --api-url http://127.0.0.1:8000` to sign in as a dashboard user.
 
 ## Operations
 

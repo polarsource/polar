@@ -10,6 +10,7 @@ from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.kit.versioning import VERSION_HEADER, APIVersion
 from polar.models import (
+    OAuth2Client,
     OAuth2Token,
     Organization,
     OrganizationAccessToken,
@@ -17,6 +18,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
 from polar.oauth2.sub_type import SubType
@@ -302,6 +304,62 @@ def user_headers(organization: Organization | None) -> dict[str, str]:
     return headers
 
 
+async def create_user_oauth_token(
+    save_fixture: SaveFixture,
+    user: User,
+    organization: Organization,
+    *extra: Organization,
+    token: str = "void_oauth",
+) -> str:
+    client = OAuth2Client(
+        client_id="polar_ci_test",
+        client_secret="polar_cs_test",
+        registration_access_token="polar_crt_test",
+        user=user,
+        first_party=False,
+    )
+    client.set_client_metadata(
+        {
+            "client_name": "Void CLI Test",
+            "redirect_uris": ["http://127.0.0.1:3334/oauth/callback"],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "scope": Scope.void_read.value,
+            "default_sub_type": "organization",
+        }
+    )
+    await save_fixture(client)
+    access_token = f"{ACCESS_TOKEN_PREFIX[SubType.user]}{token}"
+    oauth_token = OAuth2Token(
+        client_id="polar_ci_test",
+        token_type="bearer",
+        access_token=get_token_hash(access_token, secret=settings.SECRET),
+        scope=Scope.void_read.value,
+        issued_at=int(time.time()),
+        expires_in=3600,
+        user_id=user.id,
+        sub_type=SubType.user,
+    )
+    await save_fixture(oauth_token)
+    for target in (organization, *extra):
+        await save_fixture(
+            OAuth2TokenOrganization(
+                oauth2_token_id=oauth_token.id, organization_id=target.id
+            )
+        )
+    return access_token
+
+
+def oauth_headers(
+    token: str, organization: Organization | None = None
+) -> dict[str, str]:
+    headers = {"Authorization": f"Bearer {token}"}
+    if organization is not None:
+        headers[ORGANIZATION_HEADER] = str(organization.id)
+    return headers
+
+
 @pytest.mark.asyncio
 class TestUserCredentials:
     @pytest.mark.parametrize("scope", [Scope.void_read, Scope.void_write])
@@ -334,6 +392,76 @@ class TestUserCredentials:
 
         assert response.status_code == 422
         assert response.json()["detail"][0]["loc"] == ["header", ORGANIZATION_HEADER]
+
+    async def test_single_org_oauth_token_does_not_need_header(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        token = await create_user_oauth_token(save_fixture, user, organization)
+
+        response = await void_client.get(
+            PATH, headers={"Authorization": f"Bearer {token}"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(organization.id)
+
+    async def test_single_org_oauth_token_accepts_matching_header(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        token = await create_user_oauth_token(save_fixture, user, organization)
+
+        response = await void_client.get(
+            PATH, headers=oauth_headers(token, organization)
+        )
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(organization.id)
+
+    async def test_multi_org_oauth_token_requires_header(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        organization_second.feature_settings = {
+            **organization_second.feature_settings,
+            "void_enabled": True,
+        }
+        await save_fixture(organization_second)
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.admin,
+            )
+        )
+        token = await create_user_oauth_token(
+            save_fixture, user, organization, organization_second
+        )
+
+        missing = await void_client.get(
+            PATH, headers={"Authorization": f"Bearer {token}"}
+        )
+        selected = await void_client.get(
+            PATH, headers=oauth_headers(token, organization_second)
+        )
+
+        assert missing.status_code == 422
+        assert selected.status_code == 200
+        assert selected.json()["id"] == str(organization_second.id)
 
     async def test_non_member_organization_is_not_found(
         self,

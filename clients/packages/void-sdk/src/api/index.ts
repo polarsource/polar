@@ -20,6 +20,7 @@ export class VoidConfig extends Context.Service<
   {
     readonly apiUrl: string
     readonly token: Redacted.Redacted<string>
+    readonly organizationId?: string
     readonly checksum?: string
     readonly eventStorage?: readonly EventStorage[]
     readonly eventRetention?: number
@@ -167,6 +168,7 @@ export const ApiLive = Layer.effect(Api)(
     const {
       apiUrl,
       token,
+      organizationId,
       checksum,
       eventStorage,
       eventRetention,
@@ -181,8 +183,14 @@ export const ApiLive = Layer.effect(Api)(
         request.pipe(
           HttpClientRequest.bearerToken(token),
           HttpClientRequest.setHeader('Polar-Version', '2026-04'),
+          organizationId === undefined
+            ? (value) => value
+            : HttpClientRequest.setHeader(
+                'Polar-Organization-ID',
+                organizationId,
+              ),
           checksum === undefined
-            ? (request) => request
+            ? (value) => value
             : HttpClientRequest.setHeader('x-void-config', checksum),
         ),
       ),

@@ -1,18 +1,10 @@
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { NodeServices } from '@effect/platform-node'
-import {
-  ConfigProvider,
-  Console,
-  Effect,
-  FileSystem,
-  Option,
-  Redacted,
-} from 'effect'
+import { ConfigProvider, Console, Effect, FileSystem, Option } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { Api } from '../api/index'
-import { apiLayer } from '../api/layers'
 import { checksum, compile, type Ir } from '../config/compile'
 import type { Config } from '../config/config'
 import { parseIr } from '../config/ir'
@@ -23,7 +15,7 @@ import { describePlan, describeSummary } from './format'
 import { PreviewError, previewWindow } from './preview'
 import { soft, styleEnabled } from './style'
 
-import { resolveCredentials } from './credentials'
+import { apiFrom, resolveCredentials } from './credentials'
 import {
   authFlags,
   login,
@@ -244,14 +236,7 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
         yield* Effect.gen(function* () {
           yield* showTarget(credentials)
           yield* reconcile(name, config, preview, activate === true)
-        }).pipe(
-          Effect.provide(
-            apiLayer({
-              apiUrl: credentials.apiUrl,
-              token: Redacted.value(credentials.token),
-            }),
-          ),
-        )
+        }).pipe(Effect.provide(apiFrom(credentials)))
       }),
   ).pipe(Command.withDescription(description))
 
@@ -271,14 +256,7 @@ const activate = Command.make(
       yield* Effect.gen(function* () {
         yield* showTarget(credentials)
         yield* activateDeployment(id)
-      }).pipe(
-        Effect.provide(
-          apiLayer({
-            apiUrl: credentials.apiUrl,
-            token: Redacted.value(credentials.token),
-          }),
-        ),
-      )
+      }).pipe(Effect.provide(apiFrom(credentials)))
     }),
 ).pipe(
   Command.withDescription(

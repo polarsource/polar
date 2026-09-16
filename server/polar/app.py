@@ -49,6 +49,7 @@ from polar.middlewares import (
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
+from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.observability.http_middleware import HttpMetricsMiddleware
 from polar.observability.memory_profile import (
     start_memory_profiler,
@@ -154,6 +155,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     instrument_sqlalchemy(instrument_engines)
 
     redis = create_redis("app")
+
+    if settings.is_development():
+        async with async_sessionmaker() as session:
+            await ensure_void_cli_client(session)
+            await session.commit()
 
     try:
         ip_geolocation_client = ip_geolocation.get_client()

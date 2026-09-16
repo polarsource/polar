@@ -8,9 +8,10 @@ It keeps the `@void/sdk` imports and the `void` command.
 
 Polar serves the backend runtime under `/v1/void`, including subscriptions,
 entitlement assignments, balances, identity snapshots, customer reconciliation,
-and historical price comparisons. The SDK sends a Polar organization access token,
-`Polar-Version: 2026-04`, and `x-void-config` with requests. Set `apiUrl` to the server
-origin, without `/v1/void`.
+and historical price comparisons. The SDK sends a Polar organization access token or a user token,
+`Polar-Version: 2026-04`, and `x-void-config` with requests. User tokens that
+are not already scoped to one organization also send `Polar-Organization-ID`.
+Set `apiUrl` to the server origin, without `/v1/void`.
 
 The checked-in contract contains all 40 migrated operations. Organization access
 comes from the Polar token; the old Void organization creation and listing APIs
@@ -40,7 +41,9 @@ source ../server/.env.void
 pnpm --filter @void/sdk void login
 ```
 
-Rerun setup and source the file again to refresh the 24-hour token.
+Rerun setup and source the file again to refresh the 24-hour token, or skip
+the env file and run `void login --api-url http://127.0.0.1:8000` to sign in
+with the browser.
 Use the [isolated smoke-test runner](../../../server/polar/void/README.md#standalone-development-and-smoke-test)
 to keep this organization empty.
 
@@ -74,16 +77,19 @@ uv run python -m scripts.generate_void_token <organization-uuid-or-slug>
 
 The helper creates a token that expires after 24 hours and is limited to local
 development and testing. Login requires an organization access token with either
-`void:read` or `void:write`. The API also accepts user credentials that name the
-organization with the `Polar-Organization-ID` header; the CLI does not use that
-path yet. The organization must also have its `void_enabled` feature flag set; enabling
+`void:read` or `void:write`, or a user OAuth token with those scopes. The API
+accepts user credentials that name the organization with the
+`Polar-Organization-ID` header; a token already scoped to one organization does
+not need the header. `void login` uses that path after browser sign-in. The
+organization must also have its `void_enabled` feature flag set; enabling
 the route alone grants no access.
 
 From `clients/`, run:
 
 ```sh
 pnpm --filter @void/sdk void login --api-url http://127.0.0.1:8000
-# Paste the token into the masked prompt.
+# Sign in on the dashboard, then pick an organization.
+# Or pass --token / VOID_TOKEN for CI.
 pnpm --filter @void/sdk void logout
 ```
 
@@ -180,8 +186,9 @@ Config contains no Void organization ID, API token, or server URL. The same conf
 ### CLI login and deployment
 
 ```sh
+void login --sandbox
+void login --production
 void login --profile development --api-url http://localhost:8000
-# Paste an existing organization access token into the masked prompt.
 void profiles
 void whoami
 void switch development
@@ -190,9 +197,25 @@ void deploy --profile development
 void logout --profile development
 ```
 
-`void login` stays in the terminal. It validates the token with `GET /v1/void/organizations/current`, displays the organization and server, and saves a named profile. It does not create an account or issue a token. Without `--profile`, the name defaults to `<organization-slug>@<server-host>`. Logging in activates the profile. An existing profile can receive a replacement token for the same organization and server; a different target requires a different name.
+`void login` opens the Polar dashboard in the browser. Sign in if needed, pick
+an organization, and return to the terminal. It validates the resulting token
+with `GET /v1/void/organizations/current`, displays the organization and server,
+and saves a named profile. Without `--profile`, the name defaults to
+`<organization-slug>@<server-host>`. Logging in activates the profile. An
+existing profile can receive a replacement token for the same organization and
+server; a different target requires a different name.
 
-Supply `--token` or `VOID_TOKEN` for noninteractive login. Otherwise, login uses a masked token prompt. The server URL comes from `--api-url`, `VOID_API_URL`, the named or active saved profile, or an interactive prompt. For local Polar development, use the token helper above.
+`--sandbox` and `--production` select Polar's hosted APIs. `--api-url` (or
+`VOID_API_URL`) is for a custom server such as local Polar. `--web-url` /
+`VOID_WEB_URL` and `VOID_OAUTH_CLIENT_ID` are only needed for a server that is
+not Polar production, sandbox, or loopback.
+
+Supply `--token` or `VOID_TOKEN` for noninteractive login (CI, or a minted
+organization access token). Without a token, login needs a terminal so it can
+open the browser. The server URL comes from `--sandbox`, `--production`,
+`--api-url`, `VOID_API_URL`, the named or active saved profile, or an
+interactive sandbox/production choice. For local Polar development, use
+`--api-url http://127.0.0.1:8000` or the token helper above.
 
 `void profiles` lists saved organizations and marks the active profile. `void switch <profile>` validates its token before changing the active profile; without a name, it offers an interactive selection. `void whoami` verifies and displays the current organization, UUID, server, and saved profile when applicable. It needs no config file.
 

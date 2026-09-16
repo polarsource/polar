@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.postgres import AsyncSession, create_async_engine
 from polar.void.development.service import (
     ORGANIZATION_SLUG,
@@ -35,6 +36,7 @@ def api_origin(value: str) -> str:
 
 async def seed_token(session: AsyncSession) -> tuple[UUID, str, bool]:
     organization, created = await development_service.seed(session)
+    await ensure_void_cli_client(session)
     token = await generate_void_token(session, str(organization.id), customers=True)
     return organization.id, token, created
 

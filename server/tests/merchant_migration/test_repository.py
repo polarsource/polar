@@ -246,19 +246,25 @@ class TestUpsert:
             created_at=datetime(2026, 2, 1, tzinfo=UTC),
         )
         repository = MerchantMigrationRecordRepository.from_session(session)
-        customer = CanonicalCustomer(
-            source_id="cus_1", email="a@example.com", name="A", country="US"
-        )
-        record = await repository.upsert(newer, organization, customer)
-        await repository.update(
-            record,
-            update_dict={"status": MerchantMigrationRecordStatus.imported},
-        )
+        customers = [
+            CanonicalCustomer(
+                source_id="cus_1", email="a@example.com", name="A", country="US"
+            ),
+            CanonicalCustomer(
+                source_id="cus_2", email="b@example.com", name="B", country="US"
+            ),
+        ]
+        for customer in customers:
+            record = await repository.upsert(newer, organization, customer)
+            await repository.update(
+                record,
+                update_dict={"status": MerchantMigrationRecordStatus.imported},
+            )
 
-        reused = await repository.upsert(older, organization, customer)
-
-        assert reused.merchant_migration_id == newer.id
-        assert reused.status == MerchantMigrationRecordStatus.imported
+        for customer in customers:
+            reused = await repository.upsert(older, organization, customer)
+            assert reused.merchant_migration_id == newer.id
+            assert reused.status == MerchantMigrationRecordStatus.imported
 
     async def test_replaces_prices_when_repointing_a_pending_product(
         self,

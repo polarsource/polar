@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import replace
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -143,6 +144,7 @@ class MerchantMigrationRecordRepository(
     RepositoryBase[MerchantMigrationRecord],
 ):
     model = MerchantMigrationRecord
+    _migration_created_at_cache: dict[UUID, datetime] | None = None
 
     async def has_moved_subscription(self, subscription_id: UUID) -> bool:
         statement = select(
@@ -713,17 +715,20 @@ class MerchantMigrationRecordRepository(
                     },
                     flush=True,
                 )
-            if (
-                existing.merchant_migration_id != merchant_migration.id
-                and await self._is_from_older_migration(
-                    existing.merchant_migration_id, merchant_migration
+            if existing.merchant_migration_id != merchant_migration.id:
+                created_at_by_id = await self._migration_created_at(organization.id)
+                existing_created_at = created_at_by_id.get(
+                    existing.merchant_migration_id
                 )
-            ):
-                return await self.update(
-                    existing,
-                    update_dict={"merchant_migration_id": merchant_migration.id},
-                    flush=True,
-                )
+                if (
+                    existing_created_at is not None
+                    and existing_created_at < merchant_migration.created_at
+                ):
+                    return await self.update(
+                        existing,
+                        update_dict={"merchant_migration_id": merchant_migration.id},
+                        flush=True,
+                    )
             return existing
         return await self.create(
             MerchantMigrationRecord(
@@ -736,12 +741,15 @@ class MerchantMigrationRecordRepository(
             flush=True,
         )
 
-    async def _is_from_older_migration(
-        self, migration_id: UUID, current: MerchantMigration
-    ) -> bool:
-        created_at = await self.session.scalar(
-            select(MerchantMigration.created_at).where(
-                MerchantMigration.id == migration_id
+    async def _migration_created_at(
+        self, organization_id: UUID
+    ) -> dict[UUID, datetime]:
+        if self._migration_created_at_cache is not None:
+            return self._migration_created_at_cache
+        result = await self.session.execute(
+            select(MerchantMigration.id, MerchantMigration.created_at).where(
+                MerchantMigration.organization_id == organization_id
             )
         )
-        return created_at is not None and created_at < current.created_at
+        self._migration_created_at_cache = dict(result.all())
+        return self._migration_created_at_cache

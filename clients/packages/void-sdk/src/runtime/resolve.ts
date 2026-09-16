@@ -11,7 +11,8 @@ import { VoidError } from '../errors'
 /**
  * Maps config keys to server IDs and caches successful listings for one minute.
  * Failed listings are retried on the next lookup. Reducers use their slug;
- * products and meters select the newest generation within the requested version.
+ * products and meters belong to a configuration version, the organization's
+ * active one unless a version is requested.
  */
 export class Resolver extends Context.Service<
   Resolver,
@@ -19,56 +20,25 @@ export class Resolver extends Context.Service<
     readonly reducerBySlug: (slug: string) => Effect.Effect<Reducer, ApiError>
     readonly meterBySlug: (
       slug: string,
-      versionId?: string | null,
+      versionId?: string,
     ) => Effect.Effect<Meter, ApiError>
     readonly productBySlug: (
       slug: string,
-      versionId?: string | null,
+      versionId?: string,
     ) => Effect.Effect<Product, ApiError>
     /** Forget cached listings, for example after a deploy. */
     readonly reset: Effect.Effect<void>
   }
 >()('void/Resolver') {}
 
-const latestMeter = (
-  meters: ReadonlyArray<Meter>,
+const inVersion = <T extends { slug: string; version_id: string }>(
+  rows: ReadonlyArray<T>,
   slug: string,
-  versionId?: string | null,
+  versionId: string | null,
 ) =>
-  meters
-    .filter(
-      (meter) =>
-        meter.slug === slug &&
-        meter.branch_id == null &&
-        (meter.version_id ?? null) === versionId,
-    )
-    .reduce<Meter | undefined>(
-      (best, meter) =>
-        best === undefined || meter.generation_id > best.generation_id
-          ? meter
-          : best,
-      undefined,
-    )
-
-const latestProduct = (
-  products: ReadonlyArray<Product>,
-  slug: string,
-  versionId?: string | null,
-) =>
-  products
-    .filter(
-      (product) =>
-        product.slug === slug &&
-        product.archived_at == null &&
-        (product.version_id ?? null) === versionId,
-    )
-    .reduce<Product | undefined>(
-      (best, product) =>
-        best === undefined || product.generation_id > best.generation_id
-          ? product
-          : best,
-      undefined,
-    )
+  versionId === null
+    ? undefined
+    : rows.find((row) => row.slug === slug && row.version_id === versionId)
 
 const notDeployed = (kind: string, key: string) =>
   new VoidError({
@@ -106,22 +76,20 @@ export const ResolverLive = Layer.effect(Resolver)(
         Effect.gen(function* () {
           const selected =
             versionId === undefined
-              ? ((yield* api.organizationsCurrent(undefined))
-                  .default_version_id ?? null)
+              ? (yield* api.organizationsCurrent(undefined)).active_version_id
               : versionId
           const all = yield* Cache.get(meters, undefined)
-          const found = latestMeter(all, slug, selected)
+          const found = inVersion(all, slug, selected)
           return found ? found : yield* Effect.fail(notDeployed('meter', slug))
         }),
       productBySlug: (slug, versionId) =>
         Effect.gen(function* () {
           const selected =
             versionId === undefined
-              ? ((yield* api.organizationsCurrent(undefined))
-                  .default_version_id ?? null)
+              ? (yield* api.organizationsCurrent(undefined)).active_version_id
               : versionId
           const all = yield* Cache.get(products, undefined)
-          const found = latestProduct(all, slug, selected)
+          const found = inVersion(all, slug, selected)
           return found
             ? found
             : yield* Effect.fail(notDeployed('product', slug))

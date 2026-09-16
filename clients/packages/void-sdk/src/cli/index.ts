@@ -115,6 +115,7 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
   command: 'plan' | 'deploy',
   config: Config,
   preview?: PricePreviewWindow,
+  activate = false,
 ) {
   const api = yield* Api
   const ir = compile(config)
@@ -123,6 +124,7 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
     payload: {
       checksum: sum,
       dry_run: command === 'plan',
+      activate: command === 'deploy' && activate,
       reducers: ir.reducers,
       meters: ir.meters,
       entitlements: ir.entitlements,
@@ -131,9 +133,9 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
     },
   })
   const styled = styleEnabled()
-  yield* Console.log(
-    `${soft('version', styled)} ${deploy.version_id ?? 'unavailable'}`,
-  )
+  yield* Console.log(`${soft('version', styled)} ${deploy.version_id}`)
+  if (deploy.status)
+    yield* Console.log(`${soft('status', styled)} ${deploy.status}`)
   const plan = describePlan(deploy.entries, styled, pluginOrigins(config))
   if (plan) yield* Console.log(`\n${plan}`)
   yield* Console.log('')
@@ -144,6 +146,17 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
       styled,
     ),
   )
+})
+
+export const activateDeployment = Effect.fn('cli.activate')(function* (
+  id: string,
+) {
+  const api = yield* Api
+  const deploy = yield* api.deploysActivate(id, undefined)
+  const styled = styleEnabled()
+  yield* Console.log(`${soft('version', styled)} ${deploy.version_id}`)
+  yield* Console.log(`${soft('status', styled)} ${deploy.status}`)
+  yield* Console.log(`activated deployment ${deploy.id}`)
 })
 
 const flags = {
@@ -159,6 +172,15 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
     name,
     {
       ...flags,
+      ...(name === 'deploy'
+        ? {
+            activate: Flag.boolean('activate').pipe(
+              Flag.withDescription(
+                'Make the deployment active once applied; requires a reviewed organization',
+              ),
+            ),
+          }
+        : {}),
       ...(name === 'plan'
         ? {
             from: Flag.string('from').pipe(
@@ -189,6 +211,7 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
       to,
       preview: requestedPreview,
       noPreview,
+      activate,
     }) =>
       Effect.gen(function* () {
         const start =
@@ -213,7 +236,7 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
         )
         yield* Effect.gen(function* () {
           yield* showTarget(credentials)
-          yield* reconcile(name, config, preview)
+          yield* reconcile(name, config, preview, activate === true)
         }).pipe(
           Effect.provide(
             apiLayer({
@@ -224,6 +247,37 @@ const command = (name: 'plan' | 'deploy', description: string, load: Loader) =>
         )
       }),
   ).pipe(Command.withDescription(description))
+
+const activate = Command.make(
+  'activate',
+  {
+    id: Flag.string('id').pipe(Flag.withDescription('Deployment id')),
+    ...authFlags,
+  },
+  ({ id, apiUrl, token, profile }) =>
+    Effect.gen(function* () {
+      const credentials = yield* resolveCredentials(
+        Option.getOrUndefined(apiUrl),
+        Option.getOrUndefined(token),
+        Option.getOrUndefined(profile),
+      )
+      yield* Effect.gen(function* () {
+        yield* showTarget(credentials)
+        yield* activateDeployment(id)
+      }).pipe(
+        Effect.provide(
+          apiLayer({
+            apiUrl: credentials.apiUrl,
+            token: Redacted.value(credentials.token),
+          }),
+        ),
+      )
+    }),
+).pipe(
+  Command.withDescription(
+    'Make a deployment the active configuration; the previous one is archived',
+  ),
+)
 
 const cli = (load: Loader) =>
   Command.make('void').pipe(
@@ -237,9 +291,10 @@ const cli = (load: Loader) =>
       command('plan', 'Show config changes; writes nothing', load),
       command(
         'deploy',
-        'Apply the config to reducers, meters, entitlements and products',
+        'Apply the config as a draft deployment; --activate makes it live',
         load,
       ),
+      activate,
     ]),
   )
 

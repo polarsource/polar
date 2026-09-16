@@ -93,12 +93,10 @@ const serve = () => {
     map: null,
   })
   const meter = (id: string, usage_reducer_id: string, created_at: string) => ({
-    version_id: null,
+    version_id: 'a'.repeat(64),
     id,
     name: 'tokens',
     slug: 'tokens',
-    generation_id: 1,
-    branch_id: null,
     usage_reducer_id,
     credit_reducer_id: 'r-credits',
     unit_amount: '0.5',
@@ -158,7 +156,9 @@ const serve = () => {
         name: 'Org',
         slug: 'org',
         created_at: 't',
-        default_version_id: null,
+        active_version_id: 'a'.repeat(64),
+        active_deployment_id: 'deployment',
+        can_activate: true,
       })
     if (path === '/reducers' && method === 'GET')
       return json([
@@ -400,10 +400,11 @@ it('deployment forwards the configured credit reducer to the server', async () =
     fetch: async (_, init) => {
       body = await new Response(init?.body).json()
       return Response.json({
-        version_id: null,
+        version_id: 'a'.repeat(64),
         id: null,
         checksum: 'test',
         applied: false,
+        status: null,
         entries: [],
         created_at: 't',
       })

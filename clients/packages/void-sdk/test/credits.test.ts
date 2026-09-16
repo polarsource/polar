@@ -86,12 +86,10 @@ const serve = (initial: number) => {
     if (path === '/meters')
       return json([
         {
-          version_id: null,
+          version_id: 'a'.repeat(64),
           id: 'm-pool',
           name: 'credits',
           slug: 'credits',
-          generation_id: 1,
-          branch_id: null,
           usage_reducer_id: 'r-spent',
           credit_reducer_id: 'r-granted',
           unit_amount: '0',
@@ -160,7 +158,9 @@ const serve = (initial: number) => {
         name: 'Org',
         slug: 'org',
         created_at: 'a',
-        default_version_id: null,
+        active_version_id: 'a'.repeat(64),
+        active_deployment_id: 'deployment',
+        can_activate: true,
       })
     return json({ error: 'ResourceNotFound', detail: path }, 404)
   }

@@ -15,12 +15,10 @@ const reducer: Reducer = {
   map: null,
 }
 const meter: Meter = {
-  version_id: null,
-  branch_id: null,
+  version_id: 'a'.repeat(64),
   id: 'm1',
   name: 'Token usage',
   slug: 'tokens',
-  generation_id: 1,
   usage_reducer_id: 'r1',
   credit_reducer_id: 'credits',
   unit_amount: '1',
@@ -31,20 +29,19 @@ let reducerCalls = 0
 let meterCalls = 0
 let meters: ReadonlyArray<Meter> = [meter]
 const product: Product = {
-  version_id: null,
+  version_id: 'a'.repeat(64),
   meter_terms: {},
   id: 'p1',
   slug: 'pro',
-  generation_id: 2,
   name: 'Pro',
   description: null,
   price: { type: 'one_time', amount: '49', currency: 'usd' },
   meters: [],
   entitlements: [],
-  archived_at: null,
   created_at: 't',
 }
-let defaultVersionId: string | null = null
+const ACTIVE = 'a'.repeat(64)
+let activeVersionId: string | null = ACTIVE
 const api = Layer.mock(Api, {
   organizationsCurrent: () =>
     Effect.sync(() => ({
@@ -52,7 +49,9 @@ const api = Layer.mock(Api, {
       name: 'Org',
       slug: 'org',
       created_at: 't',
-      default_version_id: defaultVersionId,
+      active_deployment_id: activeVersionId === null ? null : 'deployment',
+      active_version_id: activeVersionId,
+      can_activate: true,
     })),
   productsList: () =>
     Effect.succeed([
@@ -61,14 +60,6 @@ const api = Layer.mock(Api, {
         ...product,
         id: 'candidate',
         version_id: 'candidate',
-        generation_id: 99,
-      },
-      {
-        ...product,
-        id: 'archived',
-        version_id: 'candidate',
-        generation_id: 100,
-        archived_at: 't',
       },
     ]),
   reducersList: () =>
@@ -129,20 +120,16 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
         assert.equal(meterCalls, 2)
 
         meters = [
-          meter,
-          { ...meter, id: 'm2', name: 'Renamed tokens', generation_id: 2 },
+          { ...meter, id: 'm2', name: 'Renamed tokens' },
           {
             ...meter,
             id: 'other',
             slug: 'other',
             name: 'tokens',
-            generation_id: 99,
           },
-          { ...meter, id: 'branch', generation_id: 3, branch_id: 'preview' },
           {
             ...meter,
             id: 'version',
-            generation_id: 99,
             version_id: 'candidate',
           },
         ]
@@ -162,12 +149,12 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
         yield* resolver.meterBySlug('tokens')
         assert.equal(reducerCalls, 4)
         assert.equal(meterCalls, 4)
-        defaultVersionId = 'candidate'
+        activeVersionId = 'candidate'
         assert.equal((yield* resolver.productBySlug('pro')).id, 'candidate')
         assert.equal((yield* resolver.meterBySlug('tokens')).id, 'version')
-        assert.equal((yield* resolver.productBySlug('pro', null)).id, 'p1')
-        assert.equal((yield* resolver.meterBySlug('tokens', null)).id, 'm2')
-        defaultVersionId = 'missing'
+        assert.equal((yield* resolver.productBySlug('pro', ACTIVE)).id, 'p1')
+        assert.equal((yield* resolver.meterBySlug('tokens', ACTIVE)).id, 'm2')
+        activeVersionId = 'missing'
         assert.equal(
           (yield* Effect.flip(resolver.productBySlug('pro')))._tag,
           'VoidError',
@@ -176,8 +163,13 @@ layer(ResolverLive.pipe(Layer.provide(api)))((it) => {
           (yield* resolver.productBySlug('pro', 'candidate')).id,
           'candidate',
         )
-        defaultVersionId = null
-        assert.equal((yield* resolver.productBySlug('pro')).id, 'p1')
+        // Nothing active: nothing resolves unless a version is named.
+        activeVersionId = null
+        assert.equal(
+          (yield* Effect.flip(resolver.productBySlug('pro')))._tag,
+          'VoidError',
+        )
+        assert.equal((yield* resolver.productBySlug('pro', ACTIVE)).id, 'p1')
       }),
   )
 })

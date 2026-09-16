@@ -105,7 +105,7 @@ async function definitions() {
   const [reducers, meters, products, entitlements] = await Promise.all([
     client.api.reducers.list(),
     client.api.meters.list(),
-    client.api.products.list({ include_archived: true }),
+    client.api.products.list({}),
     client.api.entitlements.list(),
   ])
   return { reducers, meters, products, entitlements }
@@ -130,14 +130,23 @@ try {
     (item) => item.slug === config.schema.units.key,
   )
   assert(meter?.version_id, 'Deployment must produce a meter version')
-  await client.api.organizations.updateCurrent({
-    default_version_id: meter.version_id,
+  const draft = await client.api.deploys.latest({
+    version_id: meter.version_id,
   })
+  assert.equal(draft.status, 'draft')
+  assert.equal(
+    (await client.api.organizations.current()).active_version_id,
+    null,
+  )
+  await cli(`activate --id ${draft.id}`)
   await client.refresh()
   const firstDeploy = await client.api.deploys.latest()
-  await cli('deploy')
+  assert.equal(firstDeploy.id, draft.id)
+  assert.equal(firstDeploy.status, 'active')
+  await cli('deploy --activate')
   const secondDeploy = await client.api.deploys.latest()
-  assert.notEqual(firstDeploy.id, secondDeploy.id)
+  // An identical configuration is the same deployment, not a new one.
+  assert.equal(firstDeploy.id, secondDeploy.id)
   assert.equal(firstDeploy.version_id, secondDeploy.version_id)
   assert.equal(secondDeploy.checksum, sum)
   assert.deepEqual(await definitions(), deployed)

@@ -21,8 +21,8 @@ export type MetersOf<M extends SchemaModule> = Extract<M[keyof M], MeterDef>
 
 /** Deployable definitions; credentials select the organization outside config. */
 export interface ConfigInput<M extends SchemaModule> {
-  /** Lookup override using a published config hash. Omitted follows the organization default; null selects unversioned records. Does not affect publishing. */
-  readonly versionId?: string | null
+  /** Lookup override using a deployed config hash, for example a draft under test. Omitted follows the organization's active deployment. Does not affect publishing. */
+  readonly versionId?: string
   readonly schema: M
   /**
    * Local ledgers that must persist every event before API ingestion, so this
@@ -41,7 +41,7 @@ export interface ConfigInput<M extends SchemaModule> {
 }
 
 export interface Config<M extends SchemaModule = SchemaModule> {
-  readonly versionId?: string | null
+  readonly versionId?: string
   readonly kind: 'config'
   readonly schema: M
   readonly events: readonly EventDef[]
@@ -115,7 +115,7 @@ export const defineConfig = <M extends SchemaModule>({
 }: ConfigInput<M>): Config<M> => {
   if (!(Number.isFinite(eventRetention) && eventRetention > 0))
     throw new Error('eventRetention must be a positive number of milliseconds')
-  if (versionId != null && versionId.length === 0)
+  if (versionId !== undefined && versionId.length === 0)
     throw new Error('versionId must not be empty')
   if (
     signalRefreshInterval !== undefined &&

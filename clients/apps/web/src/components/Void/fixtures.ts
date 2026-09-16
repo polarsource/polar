@@ -62,7 +62,7 @@ export interface VoidDefinition {
   id: string
   name: string
   version: string
-  status: 'Active' | 'Draft' | 'Superseded'
+  status: 'Active' | 'Draft' | 'Archived'
 }
 
 export const DEFINITIONS: VoidDefinition[] = [
@@ -74,5 +74,5 @@ export const DEFINITIONS: VoidDefinition[] = [
     version: 'v13',
     status: 'Draft',
   },
-  { id: 'legacy', name: 'legacy', version: 'v9', status: 'Superseded' },
+  { id: 'legacy', name: 'legacy', version: 'v9', status: 'Archived' },
 ]

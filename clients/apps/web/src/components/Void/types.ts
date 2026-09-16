@@ -58,7 +58,7 @@ export interface VoidDeployment {
   version: string
   hash: string
   time: string
-  status: 'Active' | 'Superseded'
+  status: 'Active' | 'Draft' | 'Archived'
 }
 
 export interface VoidEvent {

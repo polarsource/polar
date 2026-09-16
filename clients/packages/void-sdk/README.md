@@ -223,24 +223,31 @@ Applications supply their own runtime token. The SDK does not read a developer's
 
 ## Configuration deployment
 
-`void plan` compares reducers, meters, entitlements and products without writing.
-`void deploy` applies the complete configuration atomically and reports its content
-hash as `version`. Repeating the same deployment reuses existing definitions.
-Orphaned definitions are reported and retained.
+`void plan` compares reducers, meters, entitlements and products against the
+organization's active deployment without writing. `void deploy` applies the
+complete configuration atomically as a draft deployment and reports its content
+hash as `version` and its `status`. Pushing an identical configuration returns
+the existing deployment. Orphaned definitions are reported and retained.
 
-Deploying a version does not select it as the organization's default. Select a
-deployed version explicitly through the SDK:
+A deployment serves production only once it is active. Activate on deploy, or
+later by id; the previously active deployment is archived. Activation requires an
+organization that has passed Polar's review.
 
-```ts
-// Use the version hash printed by `void deploy`.
-await client.api.organizations.updateCurrent({
-  default_version_id: deployedVersion,
-})
-const deployment = await client.api.deploys.latest()
+```sh
+void deploy --activate
+void activate --id <deployment-id>
 ```
 
-The default is stored in Void organization settings. It does not alter native
-Polar product or subscription configuration.
+The same through the SDK:
+
+```ts
+const deployment = await client.api.deploys.activate(deploymentId)
+const current = await client.api.organizations.current()
+current.active_version_id // the hash every product, subscription and meter carries
+```
+
+Runtime lookups follow the active version. `versionId` on `defineConfig` pins a
+deployed draft instead, for testing before activation.
 
 ### Historical price previews
 
@@ -599,7 +606,7 @@ The builder example has been migrated from `customer().track()` to identity scop
 
 `actor.customer()` reads the database customer associated with the identity's root. A reducer exported as `customer` remains accessible through `actor.reducers.customer.latest()`, but represents event-derived state, not the customer entity.
 
-The first argument to `meter('tokens', ...)` is its stable slug. Deployment and SDK resolution match this slug across generations, independently of the display name. Compiled meter entries now use `slug` instead of `name`; run `void deploy` against the updated server. Existing meters whose name and slug match retain their identity.
+The first argument to `meter('tokens', ...)` is its stable slug. Deployment and SDK resolution match this slug within a configuration version, independently of the display name. Compiled meter entries now use `slug` instead of `name`; run `void deploy` against the updated server. Existing meters whose name and slug match retain their identity.
 
 Run `pnpm --filter @void/sdk generate` from Polar's `clients/` directory to regenerate the schemas, HTTP client, and grouped Promise API in `src/api/generated.ts` from the checked-in private API contract, `openapi.json`. Resource groups and methods come from its `resource:action` operation IDs; input types come directly from the generated HTTP client. No endpoint registry is maintained in the SDK.
 

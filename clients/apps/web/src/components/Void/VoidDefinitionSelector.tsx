@@ -20,7 +20,7 @@ import { DEFINITIONS, VoidDefinition } from './fixtures'
 const STATUS_COLOR: Record<
   VoidDefinition['status'],
   'green' | 'blue' | 'gray'
-> = { Active: 'green', Draft: 'blue', Superseded: 'gray' }
+> = { Active: 'green', Draft: 'blue', Archived: 'gray' }
 
 export const VoidDefinitionSelector = () => {
   const [selected, setSelected] = useState<VoidDefinition>(DEFINITIONS[0])

@@ -20,7 +20,7 @@ import { NewScenario } from './store'
 const STATUS_COLOR: Record<
   VoidDefinition['status'],
   'green' | 'blue' | 'gray'
-> = { Active: 'green', Draft: 'blue', Superseded: 'gray' }
+> = { Active: 'green', Draft: 'blue', Archived: 'gray' }
 
 interface ScenarioModalProps {
   isShown: boolean

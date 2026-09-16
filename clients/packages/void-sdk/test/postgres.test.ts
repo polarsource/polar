@@ -136,7 +136,9 @@ describe.skipIf(!pool)('postgres', () => {
           const path = new URL(request.url).pathname
           if (path === '/v1/void/organizations/current')
             return Response.json({
-              default_version_id: null,
+              active_version_id: 'a'.repeat(64),
+              active_deployment_id: 'deployment',
+              can_activate: true,
               id: 'org_pg',
               name: 'Demo',
               slug: 'demo',

@@ -28,10 +28,11 @@ it('organization operations use the configured client without resolver requests'
         })
       }
       return Response.json({
-        version_id: null,
+        version_id: 'a'.repeat(64),
         id: 'deployment_1',
         checksum: 'compiled-checksum',
         applied: true,
+        status: 'draft',
         entries: [],
         created_at: '2026-09-06T00:00:00Z',
       })
@@ -153,7 +154,7 @@ it('the same config can be used by clients with independent organization credent
   }
 })
 
-it('selects a deployed default version through the organization settings route', async () => {
+it('reports the active deployment through the organization route', async () => {
   const version = 'f'.repeat(64)
   const requests: Request[] = []
   const client = createVoid(config, {
@@ -167,34 +168,23 @@ it('selects a deployed default version through the organization settings route',
         name: 'Test',
         slug: 'test',
         created_at: '2026-09-06T00:00:00Z',
-        default_version_id: request.method === 'PATCH' ? version : null,
+        active_deployment_id: 'deployment-1',
+        active_version_id: version,
+        can_activate: true,
       })
     },
   })
   try {
-    assert.equal(
-      (await client.api.organizations.current()).default_version_id,
-      null,
-    )
-    assert.equal(
-      (
-        await client.api.organizations.updateCurrent({
-          default_version_id: version,
-        })
-      ).default_version_id,
-      version,
-    )
+    const current = await client.api.organizations.current()
+    assert.equal(current.active_version_id, version)
+    assert.equal(current.active_deployment_id, 'deployment-1')
     assert.deepEqual(
       requests.map((request) => [
         request.method,
         new URL(request.url).pathname,
       ]),
-      [
-        ['GET', '/v1/void/organizations/current'],
-        ['PATCH', '/v1/void/organizations/current'],
-      ],
+      [['GET', '/v1/void/organizations/current']],
     )
-    assert.deepEqual(await requests[1]!.json(), { default_version_id: version })
   } finally {
     await client.dispose()
   }

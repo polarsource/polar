@@ -144,12 +144,10 @@ const serve = (remaining: Record<string, number>) => {
     if (path === '/meters')
       return json(
         ir.meters.map((m) => ({
-          version_id: null,
+          version_id: 'a'.repeat(64),
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
-          generation_id: 1,
-          branch_id: null,
           usage_reducer_id: `r-${m.slug}`,
           credit_reducer_id: `r-${m.slug}-credits`,
           unit_amount: String(m.unit_amount),
@@ -189,7 +187,9 @@ const serve = (remaining: Record<string, number>) => {
         name: 'Org',
         slug: 'org',
         created_at: 'a',
-        default_version_id: null,
+        active_version_id: 'a'.repeat(64),
+        active_deployment_id: 'deployment',
+        can_activate: true,
       })
     return json({ error: 'ResourceNotFound', detail: path }, 404)
   }
@@ -844,12 +844,10 @@ it('capture: false leaves only the wrapped model recording', async () => {
     if (path === '/meters')
       return json(
         quietIr.meters.map((m) => ({
-          version_id: null,
+          version_id: 'a'.repeat(64),
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
-          generation_id: 1,
-          branch_id: null,
           usage_reducer_id: `r-${m.slug}`,
           credit_reducer_id: `r-${m.slug}-credits`,
           unit_amount: String(m.unit_amount),
@@ -859,7 +857,9 @@ it('capture: false leaves only the wrapped model recording', async () => {
       )
     if (path === '/organizations/current')
       return json({
-        default_version_id: null,
+        active_version_id: 'a'.repeat(64),
+        active_deployment_id: 'deployment',
+        can_activate: true,
         id: 'org',
         name: 'Org',
         slug: 'org',
@@ -925,12 +925,10 @@ const serveFor = (
     if (path === '/meters')
       return json(
         own.meters.map((m) => ({
-          version_id: null,
+          version_id: 'a'.repeat(64),
           id: `m-${m.slug}`,
           name: m.slug,
           slug: m.slug,
-          generation_id: 1,
-          branch_id: null,
           usage_reducer_id: `r-${m.reducer}`,
           credit_reducer_id: m.credit_reducer
             ? `r-${m.credit_reducer}`
@@ -970,7 +968,9 @@ const serveFor = (
     }
     if (path === '/organizations/current')
       return json({
-        default_version_id: null,
+        active_version_id: 'a'.repeat(64),
+        active_deployment_id: 'deployment',
+        can_activate: true,
         id: 'org',
         name: 'Org',
         slug: 'org',

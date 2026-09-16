@@ -20,7 +20,12 @@ import {
   included,
   signal,
 } from '../src/config/index'
-import { loadConfig, reconcile, run } from '../src/cli/index'
+import {
+  activateDeployment,
+  loadConfig,
+  reconcile,
+  run,
+} from '../src/cli/index'
 import { config as deploymentConfig } from './fixtures/deployment'
 
 const aiCall = event<{ tokens: number; status: string }>('ai_call')
@@ -82,10 +87,11 @@ const posted: Array<[string, string, unknown]> = []
 const plan = apiWith((method, path, body) => {
   posted.push([method, path, body])
   return {
-    version_id: null,
+    version_id: 'a'.repeat(64),
     id: null,
     checksum: 'c',
     applied: false,
+    status: null,
     created_at: 't',
     entries: [
       {
@@ -162,10 +168,11 @@ layer(
     assert.equal(body.dry_run, false)
     assert.equal(body.checksum, checksum(ir))
     return {
-      version_id: null,
+      version_id: 'a'.repeat(64),
       id: 'deployment-1',
       checksum: body.checksum,
       applied: true,
+      status: 'draft',
       created_at: 't',
       entries: [
         {
@@ -188,6 +195,31 @@ layer(
         const lines = (yield* TestConsole.logLines).join('\n')
         assert.match(lines, /applied 1 as deployment deployment-1/)
       }),
+  )
+})
+
+layer(
+  apiWith((method, path) => {
+    assert.equal(method, 'POST')
+    assert.equal(path, '/v1/void/deploys/deployment-2/activate')
+    return {
+      version_id: 'b'.repeat(64),
+      id: 'deployment-2',
+      checksum: 'c',
+      applied: true,
+      status: 'active',
+      created_at: 't',
+      entries: [],
+    }
+  }),
+)((it) => {
+  it.effect('activate makes a deployment active by id', () =>
+    Effect.gen(function* () {
+      yield* activateDeployment('deployment-2')
+      const lines = (yield* TestConsole.logLines).join('\n')
+      assert.match(lines, /status active/)
+      assert.match(lines, /activated deployment deployment-2/)
+    }),
   )
 })
 
@@ -249,7 +281,9 @@ it('plan and deploy use supplied credentials with the same organization-free con
       const request = new Request(input, init)
       if (new URL(request.url).pathname === '/v1/void/organizations/current') {
         return Response.json({
-          default_version_id: null,
+          active_version_id: 'a'.repeat(64),
+          active_deployment_id: 'deployment',
+          can_activate: true,
           id: 'org1',
           name: 'Test',
           slug: 'test',
@@ -259,10 +293,11 @@ it('plan and deploy use supplied credentials with the same organization-free con
       requests.push(request)
       return Response.json(
         {
-          version_id: null,
+          version_id: 'a'.repeat(64),
           id: null,
           checksum: checksum(ir),
           applied: false,
+          status: null,
           created_at: '2026-09-06T00:00:00Z',
           entries: [],
         },
@@ -298,6 +333,7 @@ it('plan and deploy use supplied credentials with the same organization-free con
       assert.deepEqual(await request.json(), {
         checksum: checksum(ir),
         dry_run: command === 'plan',
+        activate: false,
         reducers: ir.reducers,
         meters: ir.meters,
         entitlements: ir.entitlements,
@@ -322,7 +358,9 @@ it.each([{ flags: [] }, { flags: ['--no-preview'] }])(
         const request = new Request(input, init)
         if (new URL(request.url).pathname === '/v1/void/organizations/current')
           return Response.json({
-            default_version_id: null,
+            active_version_id: 'a'.repeat(64),
+            active_deployment_id: 'deployment',
+            can_activate: true,
             id: 'org1',
             name: 'Test',
             slug: 'test',
@@ -330,10 +368,11 @@ it.each([{ flags: [] }, { flags: ['--no-preview'] }])(
           })
         bodies.push(await request.json())
         return Response.json({
-          version_id: null,
+          version_id: 'a'.repeat(64),
           id: null,
           checksum: 'c',
           applied: false,
+          status: null,
           created_at: 't',
           entries: [],
         })
@@ -399,6 +438,7 @@ layer(
       checksum: 'c',
       version_id: 'f'.repeat(64),
       applied: true,
+      status: 'draft',
       created_at: 't',
       entries: [],
     }
@@ -447,6 +487,7 @@ layer(
       checksum: 'c',
       version_id: 'f'.repeat(64),
       applied: true,
+      status: 'draft',
       created_at: 't',
       entries: [],
     }
@@ -484,7 +525,9 @@ it('deploy sends complete product, entitlement and meter terms', async () => {
           name: 'Test',
           slug: 'test',
           created_at: '2026-09-06T00:00:00Z',
-          default_version_id: null,
+          active_version_id: 'a'.repeat(64),
+          active_deployment_id: 'deployment',
+          can_activate: true,
         })
       bodies.push(await request.json())
       return Response.json(
@@ -493,6 +536,7 @@ it('deploy sends complete product, entitlement and meter terms', async () => {
           checksum: checksum(compiled),
           version_id: 'f'.repeat(64),
           applied: true,
+          status: 'draft',
           created_at: '2026-09-06T00:00:00Z',
           entries: [],
         },
@@ -515,6 +559,7 @@ it('deploy sends complete product, entitlement and meter terms', async () => {
     assert.deepEqual(bodies, [
       {
         checksum: checksum(compiled),
+        activate: false,
         dry_run: false,
         reducers: compiled.reducers,
         meters: compiled.meters,
@@ -553,7 +598,9 @@ it.each([
             name: 'Test',
             slug: 'test',
             created_at: '2026-09-06T00:00:00Z',
-            default_version_id: null,
+            active_version_id: 'a'.repeat(64),
+            active_deployment_id: 'deployment',
+            can_activate: true,
           })
         bodies.push(await request.json())
         return Response.json(

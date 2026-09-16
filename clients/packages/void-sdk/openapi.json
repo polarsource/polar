@@ -45,62 +45,6 @@
         "x-polar-allowed-subjects": ["Organization"],
         "x-speakeasy-group": "void",
         "x-speakeasy-name-override": "current"
-      },
-      "patch": {
-        "tags": ["void", "private"],
-        "summary": "Update Current",
-        "description": "**Scopes**: `void:write`",
-        "operationId": "organizations:updateCurrent",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OrganizationUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VoidOrganization"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InvalidDefaultVersion"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "oat": ["void:write"]
-          }
-        ],
-        "x-polar-allowed-subjects": ["Organization"],
-        "x-speakeasy-group": "void",
-        "x-speakeasy-name-override": "update_current"
       }
     },
     "/v1/void/identities": {
@@ -1504,10 +1448,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Subscription history version; empty means unversioned.",
+              "minLength": 1,
+              "description": "Version supplying the subscription history.",
               "title": "Baseline"
             },
-            "description": "Subscription history version; empty means unversioned."
+            "description": "Version supplying the subscription history."
           },
           {
             "name": "candidate",
@@ -1515,10 +1460,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Pricing version; empty means unversioned.",
+              "minLength": 1,
+              "description": "Version supplying the prices.",
               "title": "Candidate"
             },
-            "description": "Pricing version; empty means unversioned."
+            "description": "Version supplying the prices."
           },
           {
             "name": "start",
@@ -1579,10 +1525,43 @@
       }
     },
     "/v1/void/deploys": {
+      "get": {
+        "tags": ["void", "private", "deploys"],
+        "summary": "List Deploys",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "deploys:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Deploy"
+                  },
+                  "type": "array",
+                  "title": "Response Deploys:List"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
+          }
+        ],
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "deploys",
+        "x-speakeasy-name-override": "list_deploys"
+      },
       "post": {
         "tags": ["void", "private", "deploys"],
         "summary": "Create",
-        "description": "Plan or apply configuration. Historical previews require dry_run and customers:read or customers:write in addition to void:write.\n\n**Scopes**: `void:write`",
+        "description": "Plan or apply configuration. A new version becomes a draft deployment; `activate` makes it the active one. Historical previews require dry_run and customers:read or customers:write in addition to void:write.\n\n**Scopes**: `void:write`",
         "operationId": "deploys:create",
         "requestBody": {
           "content": {
@@ -1611,6 +1590,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidDeployment"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentNotActivatable"
                 }
               }
             }
@@ -1650,7 +1639,7 @@
       "get": {
         "tags": ["void", "private", "deploys"],
         "summary": "Latest",
-        "description": "**Scopes**: `void:read` `void:write`",
+        "description": "The deployment of one version, or the active deployment.\n\n**Scopes**: `void:read` `void:write`",
         "operationId": "deploys:latest",
         "security": [
           {
@@ -1713,6 +1702,139 @@
         "x-polar-allowed-subjects": ["Organization"],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "latest"
+      }
+    },
+    "/v1/void/deploys/{id}": {
+      "get": {
+        "tags": ["void", "private", "deploys"],
+        "summary": "Get",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "deploys:get",
+        "security": [
+          {
+            "oat": ["void:read"]
+          },
+          {
+            "oat": ["void:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "deploys",
+        "x-speakeasy-name-override": "get"
+      }
+    },
+    "/v1/void/deploys/{id}/activate": {
+      "post": {
+        "tags": ["void", "private", "deploys"],
+        "summary": "Activate",
+        "description": "Make a deployment the organization's production configuration. The previously active deployment is archived.\n\n**Scopes**: `void:write`",
+        "operationId": "deploys:activate",
+        "security": [
+          {
+            "oat": ["void:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentNotActivatable"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": ["Organization"],
+        "x-speakeasy-group": "deploys",
+        "x-speakeasy-name-override": "activate"
       }
     },
     "/v1/void/entitlements": {
@@ -1912,72 +2034,6 @@
         "x-polar-allowed-subjects": ["Organization"],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "list_meters"
-      },
-      "post": {
-        "tags": ["void", "private", "meters"],
-        "summary": "Create Meter",
-        "description": "**Scopes**: `void:write`",
-        "operationId": "meters:create",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MeterCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Meter"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResourceNotFound"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InvalidReducer"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "oat": ["void:write"]
-          }
-        ],
-        "x-polar-allowed-subjects": ["Organization"],
-        "x-speakeasy-group": "meters",
-        "x-speakeasy-name-override": "create_meter"
       }
     },
     "/v1/void/meters/{id}": {
@@ -2250,13 +2306,19 @@
         ],
         "parameters": [
           {
-            "name": "include_archived",
+            "name": "version_id",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Include Archived"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version Id"
             }
           }
         ],
@@ -2289,72 +2351,6 @@
         "x-polar-allowed-subjects": ["Organization"],
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "list_products"
-      },
-      "post": {
-        "tags": ["void", "private", "products"],
-        "summary": "Create Product",
-        "description": "**Scopes**: `void:write`",
-        "operationId": "products:create",
-        "security": [
-          {
-            "oat": ["void:write"]
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Product"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResourceNotFound"
-                }
-              }
-            },
-            "description": "Not Found"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProductInvalid"
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-polar-allowed-subjects": ["Organization"],
-        "x-speakeasy-group": "products",
-        "x-speakeasy-name-override": "create_product"
       }
     },
     "/v1/void/products/{id}": {
@@ -3574,15 +3570,9 @@
       "Deploy": {
         "properties": {
           "version_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version Id"
+            "type": "string",
+            "title": "Version Id",
+            "description": "SHA-256 of the normalized configuration."
           },
           "id": {
             "anyOf": [
@@ -3605,6 +3595,17 @@
             "type": "boolean",
             "title": "Applied"
           },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VoidDeploymentStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unset on a dry run."
+          },
           "entries": {
             "items": {
               "$ref": "#/components/schemas/DeployEntry"
@@ -3624,6 +3625,7 @@
           "id",
           "checksum",
           "applied",
+          "status",
           "entries",
           "created_at"
         ],
@@ -3641,6 +3643,12 @@
             "type": "boolean",
             "title": "Dry Run",
             "description": "Compute the plan against current state; write nothing.",
+            "default": false
+          },
+          "activate": {
+            "type": "boolean",
+            "title": "Activate",
+            "description": "Activate the deployment once applied. Requires an organization that has passed review.",
             "default": false
           },
           "reducers": {
@@ -4024,6 +4032,23 @@
         "type": "object",
         "required": ["error", "detail"],
         "title": "DeploymentConflict"
+      },
+      "DeploymentNotActivatable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "DeploymentNotActivatable",
+            "title": "Error",
+            "examples": ["DeploymentNotActivatable"]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": ["error", "detail"],
+        "title": "DeploymentNotActivatable"
       },
       "DerivedAggregation": {
         "properties": {
@@ -4823,23 +4848,6 @@
         "required": ["error", "detail"],
         "title": "InvalidAttribution"
       },
-      "InvalidDefaultVersion": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "InvalidDefaultVersion",
-            "title": "Error",
-            "examples": ["InvalidDefaultVersion"]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": ["error", "detail"],
-        "title": "InvalidDefaultVersion"
-      },
       "InvalidDeployment": {
         "properties": {
           "error": {
@@ -4995,14 +5003,7 @@
             "title": "Id"
           },
           "version_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Version Id"
           },
           "name": {
@@ -5012,18 +5013,6 @@
           "slug": {
             "type": "string",
             "title": "Slug"
-          },
-          "branch_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Branch Id"
           },
           "usage_reducer_id": {
             "type": "string",
@@ -5044,10 +5033,6 @@
             "type": "string",
             "title": "Currency"
           },
-          "generation_id": {
-            "type": "integer",
-            "title": "Generation Id"
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -5061,93 +5046,13 @@
           "version_id",
           "name",
           "slug",
-          "branch_id",
           "usage_reducer_id",
           "credit_reducer_id",
           "unit_amount",
           "currency",
-          "generation_id",
           "created_at"
         ],
         "title": "Meter"
-      },
-      "MeterCreate": {
-        "properties": {
-          "version_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version Id"
-          },
-          "name": {
-            "type": "string",
-            "minLength": 3,
-            "title": "Name"
-          },
-          "slug": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-z0-9][a-z0-9_-]*$",
-            "title": "Slug"
-          },
-          "branch_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Branch Id"
-          },
-          "usage_reducer_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Usage Reducer Id"
-          },
-          "credit_reducer_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Credit Reducer Id"
-          },
-          "unit_amount": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
-              }
-            ],
-            "title": "Unit Amount"
-          },
-          "currency": {
-            "type": "string",
-            "maxLength": 3,
-            "minLength": 3,
-            "title": "Currency",
-            "default": "usd"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "slug",
-          "usage_reducer_id",
-          "credit_reducer_id",
-          "unit_amount"
-        ],
-        "title": "MeterCreate"
       },
       "MeterCycle": {
         "properties": {
@@ -5489,37 +5394,6 @@
         ],
         "title": "MeterPricePreview"
       },
-      "MeterTerms": {
-        "properties": {
-          "included": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Included",
-            "default": 0
-          },
-          "limit": {
-            "type": "string",
-            "enum": ["hard", "soft", "unlimited"],
-            "title": "Limit",
-            "default": "hard"
-          },
-          "rollover_cap": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rollover Cap",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "MeterTerms"
-      },
       "MeterTermsRead": {
         "properties": {
           "included": {
@@ -5550,25 +5424,11 @@
       "MetricComparison": {
         "properties": {
           "baseline": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Baseline"
           },
           "candidate": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Candidate"
           },
           "window": {
@@ -5753,26 +5613,6 @@
         "required": ["type", "amount", "currency"],
         "title": "OneTimePriceRead"
       },
-      "OrganizationUpdate": {
-        "properties": {
-          "default_version_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Version Id",
-            "description": "Default configuration version. Null selects the unnamed version."
-          }
-        },
-        "type": "object",
-        "required": ["default_version_id"],
-        "title": "OrganizationUpdate"
-      },
       "Pagination": {
         "properties": {
           "total_count": {
@@ -5886,14 +5726,7 @@
       "Product": {
         "properties": {
           "version_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Version Id"
           },
           "id": {
@@ -5904,10 +5737,6 @@
           "slug": {
             "type": "string",
             "title": "Slug"
-          },
-          "generation_id": {
-            "type": "integer",
-            "title": "Generation Id"
           },
           "name": {
             "type": "string",
@@ -5963,19 +5792,6 @@
             "type": "array",
             "title": "Entitlements"
           },
-          "archived_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Archived At"
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -5988,117 +5804,15 @@
           "version_id",
           "id",
           "slug",
-          "generation_id",
           "name",
           "description",
           "price",
           "meters",
           "meter_terms",
           "entitlements",
-          "archived_at",
           "created_at"
         ],
         "title": "Product"
-      },
-      "ProductCreate": {
-        "properties": {
-          "version_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version Id"
-          },
-          "slug": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-z0-9][a-z0-9_-]*$",
-            "title": "Slug"
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "price": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/RecurringPrice"
-              },
-              {
-                "$ref": "#/components/schemas/OneTimePrice"
-              }
-            ],
-            "title": "Price",
-            "discriminator": {
-              "propertyName": "type",
-              "mapping": {
-                "one_time": "#/components/schemas/OneTimePrice",
-                "recurring": "#/components/schemas/RecurringPrice"
-              }
-            }
-          },
-          "meter_ids": {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "title": "Meter Ids",
-            "description": "Meters billed at each boundary. Recurring products only."
-          },
-          "meter_terms": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/MeterTerms"
-            },
-            "type": "object",
-            "title": "Meter Terms"
-          },
-          "entitlement_ids": {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "title": "Entitlement Ids"
-          }
-        },
-        "type": "object",
-        "required": ["slug", "name", "price"],
-        "title": "ProductCreate"
-      },
-      "ProductInvalid": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "ProductInvalid",
-            "title": "Error",
-            "examples": ["ProductInvalid"]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": ["error", "detail"],
-        "title": "ProductInvalid"
       },
       "ProductSubscription": {
         "properties": {
@@ -6691,7 +6405,7 @@
             "type": "string",
             "format": "uuid",
             "title": "Product Id",
-            "description": "The product generation to sell; the newest one, normally."
+            "description": "A product of the active deployment's version."
           },
           "external_identity_id": {
             "type": "string",
@@ -6977,6 +6691,11 @@
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
+      "VoidDeploymentStatus": {
+        "type": "string",
+        "enum": ["draft", "active", "archived"],
+        "title": "VoidDeploymentStatus"
+      },
       "VoidOrganization": {
         "properties": {
           "id": {
@@ -7002,7 +6721,20 @@
             "description": "The organization creation timestamp.",
             "examples": ["2026-01-01T00:00:00.000000Z"]
           },
-          "default_version_id": {
+          "active_deployment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Deployment Id",
+            "description": "The active deployment, if one has been activated."
+          },
+          "active_version_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -7011,12 +6743,25 @@
                 "type": "null"
               }
             ],
-            "title": "Default Version Id",
-            "description": "The default Void configuration version."
+            "title": "Active Version Id",
+            "description": "The configuration version of the active deployment."
+          },
+          "can_activate": {
+            "type": "boolean",
+            "title": "Can Activate",
+            "description": "Whether the organization has passed review and may activate a deployment."
           }
         },
         "type": "object",
-        "required": ["id", "name", "slug", "created_at", "default_version_id"],
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "created_at",
+          "active_deployment_id",
+          "active_version_id",
+          "can_activate"
+        ],
         "title": "VoidOrganization"
       },
       "VoidSubscriptionStatus": {

@@ -59,7 +59,7 @@ deployment checksum, create a billing version, or require `void deploy`.
 
 Signals currently require a root customer. Child usage contributes to the root's
 balance through the existing reconciliation rules. Meter selection follows the
-client's configured version, or the organization's default when omitted.
+client's configured version, or the organization's active deployment when omitted.
 
 ## Evaluation
 

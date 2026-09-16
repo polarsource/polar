@@ -80,13 +80,11 @@ function fixture(): Wire.CustomerState {
         credit_last_processed_event: null,
 
         meter: {
-          version_id: null,
-          branch_id: null,
+          version_id: 'a'.repeat(64),
           currency: 'usd',
           id: 'meter',
           slug: 'credits',
           name: 'Credits',
-          generation_id: 1,
           usage_reducer_id: 'spent',
           credit_reducer_id: 'purchased',
           unit_amount: '0',
@@ -155,7 +153,6 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
   let reads = 0
   const config = defineConfig({
     schema,
-    versionId: null,
     eventStorage: db ? [{ type: 'sqlite', connection: db }] : [],
     ...(signalRefreshInterval !== undefined && { signalRefreshInterval }),
   })
@@ -167,7 +164,9 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
       const path = new URL(request.url).pathname
       if (path === '/v1/void/organizations/current')
         return Response.json({
-          default_version_id: null,
+          active_version_id: 'a'.repeat(64),
+          active_deployment_id: 'deployment',
+          can_activate: true,
           id: 'org',
           name: 'Org',
           slug: 'org',

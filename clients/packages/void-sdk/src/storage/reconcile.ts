@@ -67,16 +67,15 @@ export function reconcile(
   now: Date,
   mode: 'check' | 'balance' = 'check',
 ): LocalCheck | BalanceResult {
-  const deployed = snapshot.meters
-    .filter(
-      (m) =>
-        m.meter.slug === ref.key &&
-        m.meter.branch_id == null &&
-        (m.meter.version_id ?? null) === (config.versionId ?? null),
-    )
-    .sort((a, b) => b.meter.generation_id - a.meter.generation_id)[0]
+  const deployed = snapshot.meters.find(
+    (m) =>
+      m.meter.slug === ref.key &&
+      (config.versionId === undefined ||
+        m.meter.version_id === config.versionId),
+  )
   if (!deployed)
     return fail(`meter ${ref.key} is not deployed; run \`void deploy\``)
+  const deployedMeter = deployed.meter
   const ir = compile(config)
   const usage =
     snapshot.reducers.find((r) => r.id === deployed.meter.usage_reducer_id) ??
@@ -220,7 +219,7 @@ export function reconcile(
       if (
         event.organization_id !== snapshot.organization_id ||
         event.external_identity_id !== holder.external_identity_id ||
-        event.metadata.meter_id !== deployed.meter.id ||
+        event.metadata.meter_id !== deployedMeter.id ||
         !event.name.startsWith('subscription.') ||
         remoteIds.has(event.external_id) ||
         Date.parse(event.timestamp) > now.getTime()
@@ -633,15 +632,16 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
     const api = yield* Api
     const versionId =
       config.versionId === undefined
-        ? ((yield* api.organizationsCurrent(undefined)).default_version_id ??
-          null)
+        ? (yield* api.organizationsCurrent(undefined)).active_version_id
         : config.versionId
+    if (versionId === null)
+      return fail('no active deployment; run `void deploy --activate`')
     const effectiveConfig = { ...config, versionId }
     const identity = yield* api.identitiesGet(id, undefined)
     const root = identity.chain.at(-1) ?? id
     let snapshot = yield* api.customersState(root, {
       params: {
-        version_id: versionId ?? '',
+        version_id: versionId,
         ...(keepTail && {
           since: new Date(
             Math.floor(Date.now() / 300000) * 300000 - 300000,
@@ -650,10 +650,7 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
       },
     })
     const deployed = snapshot.meters.find(
-      (m) =>
-        m.meter.slug === ref.key &&
-        m.meter.branch_id == null &&
-        (m.meter.version_id ?? null) === versionId,
+      (m) => m.meter.slug === ref.key && m.meter.version_id === versionId,
     )
     if (!deployed)
       return fail(`meter ${ref.key} is missing from customer state`)
@@ -671,7 +668,7 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
       )
       snapshot = yield* api.customersState(root, {
         params: {
-          version_id: versionId ?? '',
+          version_id: versionId,
           since: new Date(Math.max(0, earliest - 300000)).toISOString(),
         },
       })

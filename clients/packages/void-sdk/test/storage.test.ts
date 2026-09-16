@@ -60,7 +60,9 @@ const setup = (
         requests.push(path)
         if (path === '/v1/void/organizations/current')
           return Response.json({
-            default_version_id: null,
+            active_version_id: 'a'.repeat(64),
+            active_deployment_id: 'deployment',
+            can_activate: true,
             id: options.organizationId ?? 'org_1',
             name: 'Demo',
             slug: 'demo',

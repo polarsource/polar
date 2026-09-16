@@ -14,6 +14,7 @@ from polar.merchant_migration.canonical import (
     CanonicalPaymentMethodType,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
 
@@ -282,6 +283,9 @@ def _stripe_price(
     currency: str = "usd",
     unit_amount: int | None = 1000,
     currency_options: dict[str, Any] | None = None,
+    product_id: str = "prod_1",
+    product_active: bool = True,
+    product_name: str = "Pro",
 ) -> stripe_lib.Price:
     price: dict[str, Any] = {
         "id": id,
@@ -295,10 +299,10 @@ def _stripe_price(
             "usage_type": "licensed",
         },
         "product": {
-            "id": "prod_1",
+            "id": product_id,
             "object": "product",
-            "active": True,
-            "name": "Pro",
+            "active": product_active,
+            "name": product_name,
         },
     }
     if currency_options is not None:
@@ -436,6 +440,16 @@ class TestExtractProducts:
             "starting_after": None,
         }
 
+    async def test_inactive_catalog_product_is_not_extracted(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(mocker, client, _stripe_price(product_active=False))
+
+        products = await _extracted_products(adapter)
+
+        assert products == []
+
 
 @pytest.mark.asyncio
 class TestExtractPages:
@@ -508,6 +522,49 @@ class TestExtractPages:
 
         assert len(page.records) == 1
         assert page.next_cursor is None
+
+    async def test_subscription_on_archived_price_stages_the_product(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        price = _stripe_price(
+            id="price_archived",
+            product_id="prod_archived",
+            product_active=False,
+            product_name="Legacy",
+        )
+        subscription = _stripe_subscription(
+            items=[
+                {
+                    "price": price,
+                    "quantity": 1,
+                    "current_period_start": 1_700_000_000,
+                    "current_period_end": 1_702_000_000,
+                }
+            ]
+        )
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        products = [
+            record for record in page.records if isinstance(record, CanonicalProduct)
+        ]
+        subscriptions = [
+            record
+            for record in page.records
+            if isinstance(record, CanonicalSubscription)
+        ]
+        assert len(products) == 1
+        assert products[0].product_source_id == "prod_archived"
+        assert products[0].name == "Legacy"
+        assert products[0].prices[0].source_id == "price_archived"
+        assert len(subscriptions) == 1
+        assert subscriptions[0].price_source_id == "price_archived"
+        _, kwargs = client.v1.subscriptions.list_async.call_args
+        assert "data.items.data.price.product" in kwargs["params"]["expand"]
 
 
 @pytest.mark.asyncio

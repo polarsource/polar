@@ -77,8 +77,6 @@ SUBSCRIPTION_DROP_CODES = {
     "multiple_line_items",
     "unsupported_quantity",
     "send_invoice_collection",
-    "subscription_not_importable",
-    "subscription_paused_collection",
     "subscription_has_discount",
 }
 # Reasons the merchant has to act on. Every other code is informational: the
@@ -108,7 +106,7 @@ _MISSING_EMAIL_REASON = (
 )
 _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
     "This subscription's price wasn't in the catalog Polar read from Stripe. "
-    "That usually means the price or its product is archived. It stays on the source."
+    "That usually means the product was deleted. It stays on the source."
 )
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
@@ -124,6 +122,16 @@ _PAYMENT_REENTRY_REASON = (
     "The payment method can't be copied. Ask the customer to re-enter their "
     "billing details."
 )
+_PAUSED_COLLECTION_NOTE = (
+    "Subscription has paused collection on the source; Polar still imports it."
+)
+
+
+def _live_source_status_note(status: CanonicalSubscriptionStatus) -> str:
+    return (
+        f"This {_humanize_subscription_status(status).lower()} "
+        "subscription is still billed on the source and will import."
+    )
 
 
 def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
@@ -539,21 +547,14 @@ class PrecheckEngine:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
                 code="subscription_not_importable",
-                message=(
-                    f"This {_humanize_subscription_status(subscription.status).lower()} "
-                    "subscription can't be imported yet; it stays with the "
-                    "current provider."
-                ),
+                message=_live_source_status_note(subscription.status),
                 source_id=source_id,
             )
         if subscription.paused_collection:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
                 code="subscription_paused_collection",
-                message=(
-                    "Subscription has paused collection; it won't be imported and "
-                    "stays on the current provider."
-                ),
+                message=_PAUSED_COLLECTION_NOTE,
                 source_id=source_id,
             )
         if subscription.trialing:
@@ -884,6 +885,15 @@ def _subscription_items(
             else None,
             Reason("subscription_trialing", _TRIALING_REASON)
             if subscription.trialing
+            else None,
+            Reason(
+                "subscription_not_importable",
+                _live_source_status_note(subscription.status),
+            )
+            if subscription.status in NON_IMPORTABLE_STATUSES
+            else None,
+            Reason("subscription_paused_collection", _PAUSED_COLLECTION_NOTE)
+            if subscription.paused_collection
             else None,
         )
         customer = customer_by_source.get(subscription.customer_source_id)

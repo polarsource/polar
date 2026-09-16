@@ -41,11 +41,15 @@ SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
 # that as the customer having churned and strand the subscription unbilled.
 CANCELLATION_COMMENT_PREFIX = "Migrated to Polar"
 
-# Expansions the cutover needs on a single subscription read.
+# Expansions the cutover needs on a single subscription read. Product and
+# currency_options also let extract stage a live sub's price even when Stripe
+# no longer lists that price as active.
 _SUBSCRIPTION_EXPAND = [
     "default_payment_method",
     "customer.invoice_settings.default_payment_method",
     "customer.default_source",
+    "items.data.price.product",
+    "items.data.price.currency_options",
 ]
 
 
@@ -189,7 +193,7 @@ class StripeAdapter:
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
         prices = await self._client.v1.prices.list_async(params=params)
-        records = self._map_product_page(prices.data)
+        records = self._map_product_page(prices.data, require_active=True)
         return ExtractionPage(
             records,
             self._next_cursor(
@@ -201,32 +205,51 @@ class StripeAdapter:
         )
 
     def _map_product_page(
-        self, prices: Sequence[stripe_lib.Price]
+        self, prices: Sequence[stripe_lib.Price], *, require_active: bool
     ) -> list[CanonicalProduct]:
         grouped: dict[str, CanonicalProduct] = {}
         for price in prices:
-            product = price.product
-            # A deleted product deserializes as a Product with no `active`/`name`;
-            # `not active` skips deleted and archived alike.
-            if not isinstance(product, stripe_lib.Product) or not product.get("active"):
-                continue
-            recurring = price.recurring
-            interval = recurring.interval if recurring else None
-            interval_count = recurring.interval_count if recurring else 1
-            key = f"{product.id}:{interval}:{interval_count}"
-            canonical = grouped.get(key)
-            if canonical is None:
-                canonical = CanonicalProduct(
-                    source_id=key,
-                    product_source_id=product.id,
-                    name=product.name or "",
-                    recurring_interval=interval,
-                    recurring_interval_count=interval_count,
-                    prices=[],
-                )
-                grouped[key] = canonical
-            canonical.prices.extend(self._map_prices(price))
+            product = self._map_product_from_price(price, require_active=require_active)
+            if product is not None:
+                self._accumulate_product(grouped, product)
         return list(grouped.values())
+
+    def _map_product_from_price(
+        self, price: stripe_lib.Price, *, require_active: bool
+    ) -> CanonicalProduct | None:
+        product = price.product
+        # A deleted product deserializes as a Product with no `name`, or with
+        # `deleted`. Catalog extract still skips archived (`active=false`);
+        # subscription extract keeps archived so a live sub can import.
+        if not isinstance(product, stripe_lib.Product) or product.get("deleted"):
+            return None
+        if require_active and not product.get("active"):
+            return None
+        recurring = price.recurring
+        interval = recurring.interval if recurring else None
+        interval_count = recurring.interval_count if recurring else 1
+        return CanonicalProduct(
+            source_id=f"{product.id}:{interval}:{interval_count}",
+            product_source_id=product.id,
+            name=product.name or "",
+            recurring_interval=interval,
+            recurring_interval_count=interval_count,
+            prices=self._map_prices(price),
+        )
+
+    def _accumulate_product(
+        self, grouped: dict[str, CanonicalProduct], product: CanonicalProduct
+    ) -> None:
+        existing = grouped.get(product.source_id)
+        if existing is None:
+            grouped[product.source_id] = product
+            return
+        seen = {(price.source_id, price.currency) for price in existing.prices}
+        for price in product.prices:
+            key = (price.source_id, price.currency)
+            if key not in seen:
+                existing.prices.append(price)
+                seen.add(key)
 
     async def _extract_customer_page(
         self, cursor: StripeExtractionCursor
@@ -256,14 +279,19 @@ class StripeAdapter:
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
         subscriptions = await self._client.v1.subscriptions.list_async(params=params)
-        records = [
-            self._map_subscription(subscription)
-            for subscription in subscriptions.data
-            if subscription.status not in SKIPPED_SUBSCRIPTION_STATUSES
-            and subscription["items"]["data"]
-        ]
+        records: list[CanonicalRecord] = []
+        products: dict[str, CanonicalProduct] = {}
+        for subscription in subscriptions.data:
+            if subscription.status in SKIPPED_SUBSCRIPTION_STATUSES:
+                continue
+            if not subscription["items"]["data"]:
+                continue
+            records.append(self._map_subscription(subscription))
+            product = self._map_product_from_subscription(subscription)
+            if product is not None:
+                self._accumulate_product(products, product)
         return ExtractionPage(
-            records,
+            [*products.values(), *records],
             self._next_cursor(
                 StripeExtractionPhase.subscriptions,
                 None,
@@ -350,6 +378,14 @@ class StripeAdapter:
         if recurring is not None and recurring.usage_type == "metered":
             return CanonicalPricingScheme.metered
         return CanonicalPricingScheme.fixed
+
+    def _map_product_from_subscription(
+        self, subscription: stripe_lib.Subscription
+    ) -> CanonicalProduct | None:
+        price = subscription["items"]["data"][0]["price"]
+        if not isinstance(price, stripe_lib.Price):
+            return None
+        return self._map_product_from_price(price, require_active=False)
 
     def _map_subscription(
         self, subscription: stripe_lib.Subscription

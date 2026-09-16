@@ -233,6 +233,23 @@ class TestRun:
         assert subscription.user_metadata["provider"] == "stripe"
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
 
+    async def test_moves_a_past_due_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source(status=CanonicalSubscriptionStatus.past_due)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,
         mocker: MockerFixture,
@@ -812,11 +829,6 @@ class TestSkips:
                 {"status": CanonicalSubscriptionStatus.canceled},
                 "cancelled on the source",
                 id="canceled-after-the-import",
-            ),
-            pytest.param(
-                {"status": CanonicalSubscriptionStatus.past_due},
-                None,
-                id="payment-failing",
             ),
             pytest.param(
                 {"cancel_at_period_end": True},

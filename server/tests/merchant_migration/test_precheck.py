@@ -775,7 +775,7 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "customer_missing_email"
 
-    def test_subscription_status_drop(self) -> None:
+    def test_subscription_status_does_not_drop_past_due(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
@@ -792,8 +792,23 @@ class TestClassifyRecords:
         by_id = {item.source_id: item for item in items}
         assert by_id["sub_1"].status == PrecheckRecordStatus.importable
         assert by_id["sub_1"].title == "a@example.com"
-        assert by_id["sub_2"].status == PrecheckRecordStatus.skipped
+        assert by_id["sub_2"].status == PrecheckRecordStatus.importable
         assert by_id["sub_2"].reason_code == "subscription_not_importable"
+        assert by_id["sub_2"].reason_level == PrecheckReasonLevel.info
+
+    def test_paused_collection_does_not_drop_subscription(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1", paused_collection=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code == "subscription_paused_collection"
 
 
 class TestSummarizeRecords:
@@ -957,8 +972,28 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_product_not_importable"
         assert items[0].reason is not None
-        assert "archived" in items[0].reason
+        assert "deleted" in items[0].reason
         assert items[0].product_name is None
+
+    def test_subscription_on_archived_price_imports_when_product_is_staged(
+        self,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_archived",
+                prices=[build_price(source_id="price_archived")],
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(
+                build_subscription(source_id="sub_1"),
+                price_source_id="price_archived",
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].product_name == "Pro"
 
     def test_subscription_uses_currency_option_on_shared_price_id(self) -> None:
         records: list[CanonicalRecord] = [

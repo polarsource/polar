@@ -1,21 +1,40 @@
-Design documents are detailed technical specifications that outline the architecture, implementation approach, and key decisions for significant features or system changes. They serve as a communication tool for gathering feedback and ensuring alignment before implementation begins.
+---
+title: "Design documents"
+description: "When to write a design document, and when we review security."
+---
 
-## Purpose
+A design document explains a feature, the architecture, and the security decisions before we build it. We review design documents
+in a pull request. After we ship the feature, the related design document become obsolete. Cross feature decisions should be recorded on
+[ADR](/engineering/decisions/index).
 
-Design documents help us:
-- Think through complex problems systematically
-- Gather feedback from stakeholders early in the process
-- Document key architectural decisions for future reference
-- Ensure alignment across engineering teams
-- Reduce implementation risks by identifying edge cases upfront
-- Consider security implications of the change
+## When to write one
 
-## Security considerations
+Write a design document **before** the code pull request if any of this is true:
 
-Every design document includes a **Security considerations** section covering data flows, trust boundaries and data being stored.
+- Polar will store or process a set of new data (personal data, money information, or secrets).
+- Considerable changes on authentication or authorization.
+- We add a new architectural change (new database, workers, etc.)
 
-A design document (with this section) is required for changes that impact the data that Polar exposes or that change public APIs.
+**Do not** write a new design document for:
+- New API endpoints that expose the same data and uses the same auth rules as other ones. A pull request is enough.
+- Bug fixes
+- UI changes
 
-## GitHub Integration
+## When we review security
 
-All design documents are version-controlled in this repository. Use GitHub's commenting and review features available in Pull Requests to provide feedback on proposed designs. This ensures all discussions are captured and can be referenced later.
+We run security reviews when a changes touches any of the thing mentioned above, we are not expected to run them on a fixed schedule.
+
+The **Security considerations** section in the design document is that review.
+
+| Step | What you do |
+|------|-------------|
+| **Plan** | Create a pull request with the design document. Fill in **Security considerations**. |
+| **Build** | Create the code pull requests. Link the design document. |
+| **Approve** | Cubic or an AI agent can approve low-risk changes. A person who did not write the change approves the rest. |
+
+## How to add a design document
+
+1. Copy [`template.mdx`](/engineering/design-documents/template). Name the file with dashes, like `my-feature.mdx`.
+2. Fill the template.
+3. Add the page to the `Design Documents` group in `handbook/docs.json`.
+4. Open a pull request. Leave comments on that pull request.

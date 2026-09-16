@@ -1,32 +1,59 @@
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowUpRight, Check } from 'lucide-react'
+import { ArrowUpRight, Check, CircleAlert } from 'lucide-react'
+import {
+  expectedStripeKeyMode,
+  REQUIRED_PERMISSIONS,
+  stripeCreateKeyUrl,
+  stripeKeyPlaceholder,
+  type StripePermission,
+} from './stripeKey'
 
-// Stripe's restricted-key form. Permissions can't be pre-filled via URL, so keep
-// REQUIRED_PERMISSIONS in sync with StripeAdapter.verify_scopes on the server.
-const STRIPE_CREATE_KEY_URL = 'https://dashboard.stripe.com/apikeys/create'
+const NO_MISSING: string[] = []
 
-const REQUIRED_PERMISSIONS: { resource: string; access: 'Read' | 'Write' }[] = [
-  { resource: 'Customers', access: 'Read' },
-  { resource: 'Products', access: 'Read' },
-  { resource: 'Prices', access: 'Read' },
-  { resource: 'Subscriptions', access: 'Write' },
-  { resource: 'Payment methods', access: 'Read' },
-  { resource: 'All accounts', access: 'Read' },
-]
+function PermissionRow({
+  resource,
+  access,
+  missing,
+}: StripePermission & { missing: boolean }) {
+  const Icon = missing ? CircleAlert : Check
+  return (
+    <Box as="li" display="flex" alignItems="center" justifyContent="between">
+      <Box alignItems="center" columnGap="s">
+        <Text as="span" color={missing ? 'danger' : 'default'}>
+          <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
+        </Text>
+        <Text variant="caption" color={missing ? 'danger' : 'default'}>
+          {resource}
+        </Text>
+      </Box>
+      <Text variant="caption" color={missing ? 'danger' : 'muted'}>
+        {access}
+      </Text>
+    </Box>
+  )
+}
 
-export function ConnectGuide() {
+export function ConnectGuide({
+  missingResources = NO_MISSING,
+}: {
+  missingResources?: string[]
+}) {
+  const mode = expectedStripeKeyMode()
+  const missing = new Set(missingResources)
+  const hasMissing = missing.size > 0
+
   return (
     <Box flexDirection="column" rowGap="xl">
       <Box flexDirection="column" rowGap="m">
         <Text variant="label">1. Create a restricted key in Stripe</Text>
         <Text variant="caption" color="muted">
-          Name it e.g. &ldquo;Polar migration&rdquo;. Its mode must match this
-          environment &mdash; a live key in production, a test key in sandbox.
+          Name it e.g. &ldquo;Polar migration&rdquo;. This environment needs a{' '}
+          {mode}-mode key ({stripeKeyPlaceholder(mode)}).
         </Text>
         <Button variant="secondary" fullWidth asChild>
           <a
-            href={STRIPE_CREATE_KEY_URL}
+            href={stripeCreateKeyUrl(mode)}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -40,6 +67,11 @@ export function ConnectGuide() {
 
       <Box flexDirection="column" rowGap="m">
         <Text variant="label">2. Grant exactly these permissions</Text>
+        {hasMissing ? (
+          <Text variant="caption" color="danger">
+            Grant the highlighted permissions and paste a new key.
+          </Text>
+        ) : null}
         <Box
           as="ul"
           flexDirection="column"
@@ -48,22 +80,12 @@ export function ConnectGuide() {
           borderRadius="m"
           backgroundColor="background-secondary"
         >
-          {REQUIRED_PERMISSIONS.map(({ resource, access }) => (
-            <Box
-              as="li"
-              key={resource}
-              display="flex"
-              alignItems="center"
-              justifyContent="between"
-            >
-              <Box alignItems="center" columnGap="s">
-                <Check size={14} strokeWidth={2.5} aria-hidden="true" />
-                <Text variant="caption">{resource}</Text>
-              </Box>
-              <Text variant="caption" color="muted">
-                {access}
-              </Text>
-            </Box>
+          {REQUIRED_PERMISSIONS.map((permission) => (
+            <PermissionRow
+              key={permission.resource}
+              {...permission}
+              missing={missing.has(permission.resource)}
+            />
           ))}
         </Box>
         <Text variant="caption" color="muted">

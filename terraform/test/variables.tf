@@ -106,12 +106,6 @@ variable "backend_sentry_dsn" {
 }
 
 
-variable "backend_jwks" {
-  description = "Backend JWKS content for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "lambda_worker_tailscale_token" {
   description = "Tailscale auth token for test Lambda workers"
   type        = string

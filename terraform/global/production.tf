@@ -269,18 +269,6 @@ resource "tfe_variable" "backend_plain_chat_secret_production" {
   }
 }
 
-resource "tfe_variable" "backend_jwks_production" {
-  key             = "backend_jwks_production"
-  category        = "terraform"
-  description     = "Backend JWKS content for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "s3_files_download_salt_production" {
   key             = "s3_files_download_salt_production"
   category        = "terraform"

@@ -156,9 +156,6 @@ locals {
       value     = "notifications.test.polar.sh"
       sensitive = false
     }
-    POLAR_JWKS = {
-      value = var.backend_jwks
-    }
     POLAR_CURRENT_JWK_KID = {
       value = var.backend_current_jwk_kid
     }

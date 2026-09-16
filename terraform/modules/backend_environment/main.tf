@@ -223,7 +223,6 @@ locals {
     backend = merge(
       local.backend_environment_variables,
       local.backend_secrets,
-      { POLAR_JWKS = var.backend_config.jwks_path },
     )
     backend_production = var.environment == "production" ? merge(local.backend_production_environment_variables, local.backend_production_secrets) : null
     aws_s3             = merge(local.aws_s3_environment_variables, local.aws_s3_secrets)

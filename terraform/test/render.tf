@@ -171,7 +171,6 @@ module "test" {
   }
 
   environment_groups = module.backend_environment[0].environment_groups
-  backend_jwks       = local.backend_secrets.jwks
   email_from_domain  = local.backend_config.email_from_domain
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]

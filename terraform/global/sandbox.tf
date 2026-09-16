@@ -209,18 +209,6 @@ resource "tfe_variable" "backend_sentry_dsn_sandbox" {
   }
 }
 
-resource "tfe_variable" "backend_jwks_sandbox" {
-  key             = "backend_jwks_sandbox"
-  category        = "terraform"
-  description     = "Backend JWKS content for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "lambda_worker_tailscale_token_sandbox" {
   key             = "lambda_worker_tailscale_token"
   category        = "terraform"

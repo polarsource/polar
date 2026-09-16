@@ -112,12 +112,6 @@ variable "backend_sentry_dsn_sandbox" {
   sensitive   = true
 }
 
-variable "backend_jwks_sandbox" {
-  description = "Backend JWKS content for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "lambda_worker_tailscale_token" {
   description = "Tailscale auth token for sandbox Lambda workers"
   type        = string

@@ -109,7 +109,6 @@ variable "environment_groups" {
       POLAR_ENV                                  = string
       POLAR_FRONTEND_BASE_URL                    = string
       POLAR_CHECKOUT_BASE_URL                    = string
-      POLAR_JWKS                                 = string
       POLAR_LOG_LEVEL                            = string
       POLAR_TESTING                              = string
       POLAR_AUTH_COOKIE_DOMAIN                   = string
@@ -235,12 +234,6 @@ variable "environment_groups" {
     })
   })
   sensitive = true
-}
-
-variable "backend_jwks" {
-  description = "Backend JWKS written to Render secret files and cron-job temporary files."
-  type        = string
-  sensitive   = true
 }
 
 variable "email_from_domain" {

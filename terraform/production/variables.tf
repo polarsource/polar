@@ -145,12 +145,6 @@ variable "backend_plain_chat_secret_production" {
   sensitive   = true
 }
 
-variable "backend_jwks_production" {
-  description = "Backend JWKS content for production"
-  type        = string
-  sensitive   = true
-}
-
 # AWS S3 - Production
 variable "s3_files_download_salt_production" {
   description = "S3 Files Download Salt for production"

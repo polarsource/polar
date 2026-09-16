@@ -43,7 +43,6 @@ variable "backend_config" {
     email_from_domain                                = string
     frontend_base_url                                = string
     checkout_base_url                                = string
-    jwks_path                                        = string
     log_level                                        = string
     testing                                          = string
     auth_cookie_domain                               = string
@@ -77,7 +76,6 @@ variable "backend_secrets" {
     plain_request_signing_secret   = optional(string, "")
     plain_token                    = optional(string, "")
     plain_chat_secret              = optional(string, "")
-    jwks                           = string
     app_review_email               = optional(string, "")
     app_review_otp_code            = optional(string, "")
     chargeback_stop_webhook_secret = optional(string, "")

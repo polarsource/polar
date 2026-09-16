@@ -197,18 +197,6 @@ resource "tfe_variable" "backend_sentry_dsn_test" {
   }
 }
 
-resource "tfe_variable" "backend_jwks_test" {
-  key             = "backend_jwks"
-  category        = "terraform"
-  description     = "Backend JWKS content for test"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "lambda_worker_tailscale_token_test" {
   key             = "lambda_worker_tailscale_token"
   category        = "terraform"

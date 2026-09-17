@@ -3,8 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, or_, select, update
-from sqlalchemy.orm import contains_eager
+from sqlalchemy import Select, select, update
 
 from polar.auth.models import AuthSubject
 from polar.email.schemas import (
@@ -13,13 +12,13 @@ from polar.email.schemas import (
 )
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
-from polar.kit.crypto import get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
-from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import PersonalAccessToken, User
 from polar.postgres import AsyncSession
+
+from .repository import PersonalAccessTokenRepository
 
 log: Logger = structlog.get_logger()
 
@@ -50,27 +49,8 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> PersonalAccessToken | None:
-        token_hash = get_token_hash(token)
-        statement = (
-            select(PersonalAccessToken)
-            .join(PersonalAccessToken.user)
-            .where(
-                PersonalAccessToken.token == token_hash,
-                ~PersonalAccessToken.is_deleted,
-                User.can_authenticate,
-            )
-            .options(contains_eager(PersonalAccessToken.user))
-        )
-        if not expired:
-            statement = statement.where(
-                or_(
-                    PersonalAccessToken.expires_at.is_(None),
-                    PersonalAccessToken.expires_at > utc_now(),
-                )
-            )
-
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        repository = PersonalAccessTokenRepository.from_session(session)
+        return await repository.get_by_token(token, expired=expired)
 
     async def delete(
         self, session: AsyncSession, personal_access_token: PersonalAccessToken

@@ -53,7 +53,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             with contextlib.ExitStack() as stack:
                 try:
                     envelope = parse_envelope(record["body"])
-                    if envelope.actor not in settings.LOGFIRE_IGNORED_ACTORS:
+                    if envelope.actor in settings.LOGFIRE_IGNORED_ACTORS:
+                        stack.enter_context(logfire.suppress_instrumentation())
+                    else:
                         stack.enter_context(
                             logfire.span(
                                 "SQS {actor}",

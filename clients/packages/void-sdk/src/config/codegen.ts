@@ -16,6 +16,7 @@ export interface SourceOptions {
 }
 
 const HELPERS = [
+  'activities',
   'count',
   'defineConfig',
   'derive',
@@ -408,6 +409,24 @@ export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
       'product',
       product.slug,
       `${e.use('product')}(${str(product.slug)}, {\n  ${fields.join(',\n  ')},\n})`,
+    )
+  }
+  for (const activity of ir.activities ?? []) {
+    const fields = [
+      `source: ${names.of('event', activity.event)}`,
+      ...(activity.group_by !== 'call_id'
+        ? [`span: ${str(activity.group_by)}`]
+        : []),
+      ...(activity.run_by !== undefined ? [`run: ${str(activity.run_by)}`] : []),
+      ...(activity.taxonomy !== 'polar.agent/v1'
+        ? [`taxonomy: ${str(activity.taxonomy)}`]
+        : []),
+      ...(activity.slug !== 'agent' ? [`slug: ${str(activity.slug)}`] : []),
+    ]
+    define(
+      'activity',
+      activity.slug,
+      `${e.use('activities')}({\n  ${fields.join(',\n  ')},\n})`,
     )
   }
 

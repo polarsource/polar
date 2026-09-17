@@ -1,5 +1,6 @@
 import type {
   Ir,
+  IrActivity,
   IrEntitlement,
   IrMeter,
   IrPrice,
@@ -47,6 +48,13 @@ export interface IrInput {
     }
     readonly meters?: ReadonlyArray<string | Partial<IrProductMeter>>
     readonly entitlements?: ReadonlyArray<string>
+  }>
+  readonly activities?: ReadonlyArray<{
+    readonly slug: string
+    readonly event: string
+    readonly group_by?: string
+    readonly run_by?: string | null
+    readonly taxonomy?: string
   }>
 }
 
@@ -116,6 +124,7 @@ export const normalizeIr = (input: IrInput): Ir => {
         const name = eventOf(r)
         return name === undefined ? [] : [name]
       }),
+      ...(input.activities ?? []).map((a) => a.event),
     ]),
   ]
     .sort((a, b) => a.localeCompare(b))
@@ -150,6 +159,22 @@ export const normalizeIr = (input: IrInput): Ir => {
         }),
       )
       .sort(bySlug),
+    ...(input.activities?.length
+      ? {
+          activities: input.activities
+            .map(
+              (a) =>
+                withoutNulls({
+                  slug: a.slug,
+                  event: a.event,
+                  group_by: a.group_by ?? 'call_id',
+                  run_by: a.run_by ?? undefined,
+                  taxonomy: a.taxonomy ?? 'polar.agent/v1',
+                }) as IrActivity,
+            )
+            .sort(bySlug),
+        }
+      : {}),
   }
 }
 
@@ -162,7 +187,13 @@ export const parseIr = (value: unknown): Ir => {
     throw new Error(
       `a void.json must declare "version": 4, got ${JSON.stringify(input.version)}`,
     )
-  for (const key of ['reducers', 'meters', 'entitlements', 'products']) {
+  for (const key of [
+    'reducers',
+    'meters',
+    'entitlements',
+    'products',
+    'activities',
+  ]) {
     const list = (input as Record<string, unknown>)[key]
     if (list !== undefined && !Array.isArray(list))
       throw new Error(`a void.json's ${key} must be an array`)

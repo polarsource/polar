@@ -18,10 +18,10 @@ export type VoidOrganization = { readonly "id": string, readonly "name": string,
 export const VoidOrganization = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "name": Schema.String.annotate({ "title": "Name", "description": "The organization name." }), "slug": Schema.String.annotate({ "title": "Slug", "description": "The organization slug." }), "created_at": Schema.String.annotate({ "title": "Created At", "description": "The organization creation timestamp.", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "active_deployment_id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Active Deployment Id", "description": "The active deployment, if one has been activated." }), "active_version_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Active Version Id", "description": "The configuration version of the active deployment." }), "can_activate": Schema.Boolean.annotate({ "title": "Can Activate", "description": "Whether the organization has passed review and may activate a deployment." }) }).annotate({ "title": "VoidOrganization", "identifier": "VoidOrganization" })
 export type ResourceNotFound = { readonly "error": "ResourceNotFound", readonly "detail": string }
 export const ResourceNotFound = Schema.Struct({ "error": Schema.Literal("ResourceNotFound").annotate({ "title": "Error", "examples": ["ResourceNotFound"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "ResourceNotFound", "identifier": "ResourceNotFound" })
-export type Identity = { readonly "id": string, readonly "external_id": string, readonly "parent_external_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json }, readonly "created_at": string }
-export const Identity = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Identity", "identifier": "Identity" })
 export type ValidationError = { readonly "loc": ReadonlyArray<string | number>, readonly "msg": string, readonly "type": string, readonly "input"?: Schema.Json, readonly "ctx"?: {  } }
 export const ValidationError = Schema.Struct({ "loc": Schema.Array(Schema.Union([Schema.String, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))])).annotate({ "title": "Location" }), "msg": Schema.String.annotate({ "title": "Message" }), "type": Schema.String.annotate({ "title": "Error Type" }), "input": Schema.optionalKey(Schema.Json.annotate({ "expected": "JSON value", "title": "Input" })), "ctx": Schema.optionalKey(Schema.Struct({  }).annotate({ "title": "Context" })) }).annotate({ "title": "ValidationError", "identifier": "ValidationError" })
+export type Identity = { readonly "id": string, readonly "external_id": string, readonly "parent_external_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json }, readonly "created_at": string }
+export const Identity = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Identity", "identifier": "Identity" })
 export type IdentityCreate = { readonly "external_id": string, readonly "parent_external_id"?: string | null, readonly "metadata"?: { readonly [x: string]: Schema.Json } }
 export const IdentityCreate = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), "parent_external_id": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), Schema.Null]).annotate({ "title": "Parent External Id", "description": "Parent for a new identity. Existing identities keep their parent." })), "metadata": Schema.optionalKey(Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" })) }).annotate({ "title": "IdentityCreate", "identifier": "IdentityCreate" })
 export type DeletedIdentityConflict = { readonly "error": "DeletedIdentityConflict", readonly "detail": string }
@@ -84,6 +84,14 @@ export type InvalidAttribution = { readonly "error": "InvalidAttribution", reado
 export const InvalidAttribution = Schema.Struct({ "error": Schema.Literal("InvalidAttribution").annotate({ "title": "Error", "examples": ["InvalidAttribution"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "InvalidAttribution", "identifier": "InvalidAttribution" })
 export type ReservedEventName = { readonly "error": "ReservedEventName", readonly "detail": string }
 export const ReservedEventName = Schema.Struct({ "error": Schema.Literal("ReservedEventName").annotate({ "title": "Error", "examples": ["ReservedEventName"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "ReservedEventName", "identifier": "ReservedEventName" })
+export type ActivityWindow = { readonly "start"?: string | null, readonly "end"?: string | null }
+export const ActivityWindow = Schema.Struct({ "start": Schema.optionalKey(Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Start" })), "end": Schema.optionalKey(Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "End" })) }).annotate({ "title": "ActivityWindow", "identifier": "ActivityWindow" })
+export type ActivityTotals = { readonly "cost": number, readonly "labeled_cost": number, readonly "unlabeled_cost": number, readonly "pending_cost": number }
+export const ActivityTotals = Schema.Struct({ "cost": Schema.Number.annotate({ "title": "Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "labeled_cost": Schema.Number.annotate({ "title": "Labeled Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "unlabeled_cost": Schema.Number.annotate({ "title": "Unlabeled Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "pending_cost": Schema.Number.annotate({ "title": "Pending Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })) }).annotate({ "title": "ActivityTotals", "identifier": "ActivityTotals" })
+export type ActivityShare = { readonly "slug": string, readonly "cost": number, readonly "share": number, readonly "spans": number, readonly "waste_cost": number }
+export const ActivityShare = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }), "cost": Schema.Number.annotate({ "title": "Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "share": Schema.Number.annotate({ "title": "Share" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "spans": Schema.Number.annotate({ "title": "Spans" }).check(Schema.isInt().annotate({ "expected": "an integer" })), "waste_cost": Schema.Number.annotate({ "title": "Waste Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })) }).annotate({ "title": "ActivityShare", "identifier": "ActivityShare" })
+export type ActivitySpan = { readonly "span_key": string, readonly "activity": string, readonly "activity_confidence": number | null, readonly "waste": number | null, readonly "cost": number | null, readonly "input_tokens": number, readonly "output_tokens": number, readonly "event_count": number, readonly "event_name": string, readonly "external_identity_id": string | null, readonly "run_key": string | null, readonly "first_event_at": string, readonly "last_event_at": string, readonly "classified_at": string | null, readonly "event_ids"?: ReadonlyArray<string> }
+export const ActivitySpan = Schema.Struct({ "span_key": Schema.String.annotate({ "title": "Span Key" }), "activity": Schema.String.annotate({ "title": "Activity" }), "activity_confidence": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Activity Confidence" }), "waste": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Waste" }), "cost": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Cost" }), "input_tokens": Schema.Number.annotate({ "title": "Input Tokens" }).check(Schema.isInt().annotate({ "expected": "an integer" })), "output_tokens": Schema.Number.annotate({ "title": "Output Tokens" }).check(Schema.isInt().annotate({ "expected": "an integer" })), "event_count": Schema.Number.annotate({ "title": "Event Count" }).check(Schema.isInt().annotate({ "expected": "an integer" })), "event_name": Schema.String.annotate({ "title": "Event Name" }), "external_identity_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "External Identity Id" }), "run_key": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Run Key" }), "first_event_at": Schema.String.annotate({ "title": "First Event At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "last_event_at": Schema.String.annotate({ "title": "Last Event At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "classified_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Classified At" }), "event_ids": Schema.optionalKey(Schema.Array(Schema.String).annotate({ "title": "Event Ids" })) }).annotate({ "title": "ActivitySpan", "identifier": "ActivitySpan" })
 export type InvalidReducer = { readonly "error": "InvalidReducer", readonly "detail": string }
 export const InvalidReducer = Schema.Struct({ "error": Schema.Literal("InvalidReducer").annotate({ "title": "Error", "examples": ["InvalidReducer"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "InvalidReducer", "identifier": "InvalidReducer" })
 export type SlugTaken = { readonly "error": "SlugTaken", readonly "detail": string }
@@ -104,16 +112,18 @@ export type PricePreviewCustomer = { readonly "external_id": string, readonly "n
 export const PricePreviewCustomer = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }), "name": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Name" }), "billable_units": Schema.String.annotate({ "title": "Billable Units" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "current_amount": Schema.String.annotate({ "title": "Current Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "proposed_amount": Schema.String.annotate({ "title": "Proposed Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "difference": Schema.String.annotate({ "title": "Difference" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })) }).annotate({ "title": "PricePreviewCustomer", "identifier": "PricePreviewCustomer" })
 export type VoidDeploymentStatus = "draft" | "active" | "archived"
 export const VoidDeploymentStatus = Schema.Literals(["draft", "active", "archived"]).annotate({ "title": "VoidDeploymentStatus", "identifier": "VoidDeploymentStatus" })
-export type DeployMeter = { readonly "slug": string, readonly "reducer": string, readonly "credit_reducer"?: string | null, readonly "unit_amount": number | string, readonly "currency"?: string }
-export const DeployMeter = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "reducer": Schema.String.annotate({ "title": "Reducer", "description": "Slug of a scalar reducer in this deploy." }), "credit_reducer": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), Schema.Null]).annotate({ "title": "Credit Reducer", "description": "Slug of a sum reducer in this deploy supplying credits. When omitted, a credit.granted reducer is created automatically." })), "unit_amount": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)" }))]).annotate({ "title": "Unit Amount" }), "currency": Schema.optionalKey(Schema.String.annotate({ "title": "Currency", "default": "usd" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" }))) }).annotate({ "title": "DeployMeter", "identifier": "DeployMeter" })
+export type DeployMeter_Input = { readonly "slug": string, readonly "reducer": string, readonly "credit_reducer"?: string | null, readonly "unit_amount": number | string, readonly "currency"?: string }
+export const DeployMeter_Input = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "reducer": Schema.String.annotate({ "title": "Reducer", "description": "Slug of a scalar reducer in this deploy." }), "credit_reducer": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), Schema.Null]).annotate({ "title": "Credit Reducer", "description": "Slug of a sum reducer in this deploy supplying credits. When omitted, a credit.granted reducer is created automatically." })), "unit_amount": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)" }))]).annotate({ "title": "Unit Amount" }), "currency": Schema.optionalKey(Schema.String.annotate({ "title": "Currency", "default": "usd" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" }))) }).annotate({ "title": "DeployMeter", "identifier": "DeployMeter-Input" })
 export type DeployEntitlement = { readonly "slug": string, readonly "name"?: string | null, readonly "description"?: string | null }
 export const DeployEntitlement = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "name": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Name" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })) }).annotate({ "title": "DeployEntitlement", "identifier": "DeployEntitlement" })
-export type RecurringPrice = { readonly "type": "recurring", readonly "interval": "day" | "week" | "month" | "year", readonly "interval_count"?: number, readonly "amount": number | string, readonly "currency": string }
-export const RecurringPrice = Schema.Struct({ "type": Schema.Literal("recurring").annotate({ "title": "Type" }), "interval": Schema.Literals(["day", "week", "month", "year"]).annotate({ "title": "Interval" }), "interval_count": Schema.optionalKey(Schema.Number.annotate({ "title": "Interval Count", "default": 1 }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))), "amount": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)" }))]).annotate({ "title": "Amount", "description": "Fixed amount per interval." }), "currency": Schema.String.annotate({ "title": "Currency" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" })) }).annotate({ "title": "RecurringPrice", "identifier": "RecurringPrice" })
-export type OneTimePrice = { readonly "type": "one_time", readonly "amount": number | string, readonly "currency": string }
-export const OneTimePrice = Schema.Struct({ "type": Schema.Literal("one_time").annotate({ "title": "Type" }), "amount": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)" }))]).annotate({ "title": "Amount" }), "currency": Schema.String.annotate({ "title": "Currency" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" })) }).annotate({ "title": "OneTimePrice", "identifier": "OneTimePrice" })
+export type RecurringPrice_Input = { readonly "type": "recurring", readonly "interval": "day" | "week" | "month" | "year", readonly "interval_count"?: number, readonly "amount": number | string, readonly "currency": string }
+export const RecurringPrice_Input = Schema.Struct({ "type": Schema.Literal("recurring").annotate({ "title": "Type" }), "interval": Schema.Literals(["day", "week", "month", "year"]).annotate({ "title": "Interval" }), "interval_count": Schema.optionalKey(Schema.Number.annotate({ "title": "Interval Count", "default": 1 }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))), "amount": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)" }))]).annotate({ "title": "Amount", "description": "Fixed amount per interval." }), "currency": Schema.String.annotate({ "title": "Currency" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" })) }).annotate({ "title": "RecurringPrice", "identifier": "RecurringPrice-Input" })
+export type OneTimePrice_Input = { readonly "type": "one_time", readonly "amount": number | string, readonly "currency": string }
+export const OneTimePrice_Input = Schema.Struct({ "type": Schema.Literal("one_time").annotate({ "title": "Type" }), "amount": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)" }))]).annotate({ "title": "Amount" }), "currency": Schema.String.annotate({ "title": "Currency" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" })) }).annotate({ "title": "OneTimePrice", "identifier": "OneTimePrice-Input" })
 export type DeployProductMeter = { readonly "included"?: number, readonly "limit"?: "hard" | "soft" | "unlimited", readonly "rollover_cap"?: number | null, readonly "slug": string }
 export const DeployProductMeter = Schema.Struct({ "included": Schema.optionalKey(Schema.Number.annotate({ "title": "Included", "default": 0 }).check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))), "limit": Schema.optionalKey(Schema.Literals(["hard", "soft", "unlimited"]).annotate({ "title": "Limit", "default": "hard" })), "rollover_cap": Schema.optionalKey(Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.Null]).annotate({ "title": "Rollover Cap", "default": 0 })), "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })) }).annotate({ "title": "DeployProductMeter", "identifier": "DeployProductMeter" })
+export type DeployActivity = { readonly "slug": string, readonly "event": string, readonly "group_by"?: string, readonly "run_by"?: string | null, readonly "taxonomy"?: string }
+export const DeployActivity = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "event": Schema.String.annotate({ "title": "Event" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(255).annotate({ "expected": "a value with a length of at most 255" })), "group_by": Schema.optionalKey(Schema.String.annotate({ "title": "Group By", "default": "call_id" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(128).annotate({ "expected": "a value with a length of at most 128" }))), "run_by": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(128).annotate({ "expected": "a value with a length of at most 128" })), Schema.Null]).annotate({ "title": "Run By" })), "taxonomy": Schema.optionalKey(Schema.String.annotate({ "title": "Taxonomy", "default": "polar.agent/v1" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(64).annotate({ "expected": "a value with a length of at most 64" }))) }).annotate({ "title": "DeployActivity", "identifier": "DeployActivity" })
 export type InvalidDeployment = { readonly "error": "InvalidDeployment", readonly "detail": string }
 export const InvalidDeployment = Schema.Struct({ "error": Schema.Literal("InvalidDeployment").annotate({ "title": "Error", "examples": ["InvalidDeployment"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "InvalidDeployment", "identifier": "InvalidDeployment" })
 export type DeploymentNotActivatable = { readonly "error": "DeploymentNotActivatable", readonly "detail": string }
@@ -126,6 +136,16 @@ export type RecurringPrice_Output = { readonly "type": "recurring", readonly "in
 export const RecurringPrice_Output = Schema.Struct({ "type": Schema.Literal("recurring").annotate({ "title": "Type" }), "interval": Schema.Literals(["day", "week", "month", "year"]).annotate({ "title": "Interval" }), "interval_count": Schema.optionalKey(Schema.Number.annotate({ "title": "Interval Count", "default": 1 }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))), "amount": Schema.String.annotate({ "title": "Amount", "description": "Fixed amount per interval." }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)" })), "currency": Schema.String.annotate({ "title": "Currency" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" })) }).annotate({ "title": "RecurringPrice", "identifier": "RecurringPrice-Output" })
 export type OneTimePrice_Output = { readonly "type": "one_time", readonly "amount": string, readonly "currency": string }
 export const OneTimePrice_Output = Schema.Struct({ "type": Schema.Literal("one_time").annotate({ "title": "Type" }), "amount": Schema.String.annotate({ "title": "Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,13}|(?=[\\d.]{1,20}0*$)\\d{0,13}\\.\\d{0,6}0*$)" })), "currency": Schema.String.annotate({ "title": "Currency" }).check(Schema.isMinLength(3).annotate({ "expected": "a value with a length of at least 3" })).check(Schema.isMaxLength(3).annotate({ "expected": "a value with a length of at most 3" })) }).annotate({ "title": "OneTimePrice", "identifier": "OneTimePrice-Output" })
+export type MeterTerms = { readonly "included"?: number, readonly "limit"?: "hard" | "soft" | "unlimited", readonly "rollover_cap"?: number | null }
+export const MeterTerms = Schema.Struct({ "included": Schema.optionalKey(Schema.Number.annotate({ "title": "Included", "default": 0 }).check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))), "limit": Schema.optionalKey(Schema.Literals(["hard", "soft", "unlimited"]).annotate({ "title": "Limit", "default": "hard" })), "rollover_cap": Schema.optionalKey(Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.Null]).annotate({ "title": "Rollover Cap", "default": 0 })) }).annotate({ "title": "MeterTerms", "identifier": "MeterTerms" })
+export type MeterPatch_Output = { readonly "unit_amount"?: string | null }
+export const MeterPatch_Output = Schema.Struct({ "unit_amount": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)" })), Schema.Null]).annotate({ "title": "Unit Amount" })) }).annotate({ "title": "MeterPatch", "identifier": "MeterPatch-Output" })
+export type MeterPatch_Input = { readonly "unit_amount"?: number | string | null }
+export const MeterPatch_Input = Schema.Struct({ "unit_amount": Schema.optionalKey(Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)" })), Schema.Null]).annotate({ "title": "Unit Amount" })) }).annotate({ "title": "MeterPatch", "identifier": "MeterPatch-Input" })
+export type ScenarioBaseUnavailable = { readonly "error": "ScenarioBaseUnavailable", readonly "detail": string }
+export const ScenarioBaseUnavailable = Schema.Struct({ "error": Schema.Literal("ScenarioBaseUnavailable").annotate({ "title": "Error", "examples": ["ScenarioBaseUnavailable"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "ScenarioBaseUnavailable", "identifier": "ScenarioBaseUnavailable" })
+export type InvalidScenario = { readonly "error": "InvalidScenario", readonly "detail": string }
+export const InvalidScenario = Schema.Struct({ "error": Schema.Literal("InvalidScenario").annotate({ "title": "Error", "examples": ["InvalidScenario"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "InvalidScenario", "identifier": "InvalidScenario" })
 export type Entitlement = { readonly "id": string, readonly "slug": string, readonly "name": string, readonly "description": string | null, readonly "created_at": string }
 export const Entitlement = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "slug": Schema.String.annotate({ "title": "Slug" }), "name": Schema.String.annotate({ "title": "Name" }), "description": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Entitlement", "identifier": "Entitlement" })
 export type EntitlementCreate = { readonly "slug": string, readonly "name"?: string | null, readonly "description"?: string | null }
@@ -152,14 +172,10 @@ export type SubscriptionCancel = { readonly "at_period_end"?: boolean }
 export const SubscriptionCancel = Schema.Struct({ "at_period_end": Schema.optionalKey(Schema.Boolean.annotate({ "title": "At Period End", "description": "Keep access until the next boundary. False ends it now.", "default": true })) }).annotate({ "title": "SubscriptionCancel", "identifier": "SubscriptionCancel" })
 export type SubscriptionCycleMeter = { readonly "meter_id": string, readonly "slug": string, readonly "usage": number, readonly "unit_amount": string, readonly "amount": string }
 export const SubscriptionCycleMeter = Schema.Struct({ "meter_id": Schema.String.annotate({ "title": "Meter Id", "format": "uuid" }), "slug": Schema.String.annotate({ "title": "Slug" }), "usage": Schema.Number.annotate({ "title": "Usage" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "unit_amount": Schema.String.annotate({ "title": "Unit Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "amount": Schema.String.annotate({ "title": "Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })) }).annotate({ "title": "SubscriptionCycleMeter", "identifier": "SubscriptionCycleMeter" })
-export type MeterTerms = { readonly "included"?: number, readonly "limit"?: "hard" | "soft" | "unlimited", readonly "rollover_cap"?: number | null }
-export const MeterTerms = Schema.Struct({ "included": Schema.optionalKey(Schema.Number.annotate({ "title": "Included", "default": 0 }).check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))), "limit": Schema.optionalKey(Schema.Literals(["hard", "soft", "unlimited"]).annotate({ "title": "Limit", "default": "hard" })), "rollover_cap": Schema.optionalKey(Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })).check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })), Schema.Null]).annotate({ "title": "Rollover Cap", "default": 0 })) }).annotate({ "title": "MeterTerms", "identifier": "MeterTerms" })
-export type MeterPatch_Output = { readonly "unit_amount"?: string | null }
-export const MeterPatch_Output = Schema.Struct({ "unit_amount": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)" })), Schema.Null]).annotate({ "title": "Unit Amount" })) }).annotate({ "title": "MeterPatch", "identifier": "MeterPatch-Output" })
-export type IdentityDetail = { readonly "id": string, readonly "external_id": string, readonly "parent_external_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json }, readonly "created_at": string, readonly "chain": ReadonlyArray<string>, readonly "children": ReadonlyArray<Identity> }
-export const IdentityDetail = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "chain": Schema.Array(Schema.String).annotate({ "title": "Chain", "description": "External IDs from this identity to its root." }), "children": Schema.Array(Identity).annotate({ "title": "Children" }) }).annotate({ "title": "IdentityDetail", "identifier": "IdentityDetail" })
 export type HTTPValidationError = { readonly "detail"?: ReadonlyArray<ValidationError> }
 export const HTTPValidationError = Schema.Struct({ "detail": Schema.optionalKey(Schema.Array(ValidationError).annotate({ "title": "Detail" })) }).annotate({ "title": "HTTPValidationError", "identifier": "HTTPValidationError" })
+export type IdentityDetail = { readonly "id": string, readonly "external_id": string, readonly "parent_external_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json }, readonly "created_at": string, readonly "chain": ReadonlyArray<string>, readonly "children": ReadonlyArray<Identity> }
+export const IdentityDetail = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "description": "The ID of the object.", "format": "uuid4" }), "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "chain": Schema.Array(Schema.String).annotate({ "title": "Chain", "description": "External IDs from this identity to its root." }), "children": Schema.Array(Identity).annotate({ "title": "Children" }) }).annotate({ "title": "IdentityDetail", "identifier": "IdentityDetail" })
 export type SubscriptionRead = { readonly "id": string, readonly "at": string, readonly "anchor": string, readonly "meter_interval": TimeInterval, readonly "meter_interval_count": number, readonly "rollover_cap": number | null, readonly "included": number, readonly "limit": "hard" | "soft" | "unlimited", readonly "ended": boolean }
 export const SubscriptionRead = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id" }), "at": Schema.String.annotate({ "title": "At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "anchor": Schema.String.annotate({ "title": "Anchor", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "meter_interval": TimeInterval, "meter_interval_count": Schema.Number.annotate({ "title": "Meter Interval Count" }).check(Schema.isInt().annotate({ "expected": "an integer" })), "rollover_cap": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Rollover Cap" }), "included": Schema.Number.annotate({ "title": "Included" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "limit": Schema.Literals(["hard", "soft", "unlimited"]).annotate({ "title": "Limit" }), "ended": Schema.Boolean.annotate({ "title": "Ended" }) }).annotate({ "title": "SubscriptionRead", "identifier": "SubscriptionRead" })
 export type EntitlementAssignmentRead = { readonly "features": ReadonlyArray<string> | null, readonly "meters": ReadonlyArray<MeterEntitlementRead> | null }
@@ -174,28 +190,34 @@ export type Reducer = { readonly "id": string, readonly "created_at": string, re
 export const Reducer = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "slug": Schema.String.annotate({ "title": "Slug" }), "filter": Schema.Union([Filter_Output, Schema.Null]), "aggregation": Schema.Union([CountAggregation, PropertyAggregation, RecordAggregation, DerivedAggregation], { mode: "oneOf" }).annotate({ "title": "Aggregation" }), "map": Schema.Union([Schema.Record(Schema.String, JsonValue), Schema.Null]).annotate({ "title": "Map" }), "type": Schema.Literals(["scalar", "dict"]).annotate({ "title": "Type", "readOnly": true }) }).annotate({ "title": "Reducer", "identifier": "Reducer" })
 export type ReducerCreate = { readonly "slug": string, readonly "filter"?: Filter_Input | null, readonly "aggregation": CountAggregation | PropertyAggregation | RecordAggregation | DerivedAggregation, readonly "map"?: { readonly [x: string]: JsonValue } | null }
 export const ReducerCreate = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "filter": Schema.optionalKey(Schema.Union([Filter_Input, Schema.Null])), "aggregation": Schema.Union([CountAggregation, PropertyAggregation, RecordAggregation, DerivedAggregation], { mode: "oneOf" }).annotate({ "title": "Aggregation" }), "map": Schema.optionalKey(Schema.Union([Schema.Record(Schema.String, JsonValue), Schema.Null]).annotate({ "title": "Map" })) }).annotate({ "title": "ReducerCreate", "identifier": "ReducerCreate" })
-export type DeployReducer = { readonly "slug": string, readonly "filter"?: Filter_Input | null, readonly "aggregation": CountAggregation | PropertyAggregation | RecordAggregation | DerivedAggregation, readonly "map"?: { readonly [x: string]: JsonValue } | null }
-export const DeployReducer = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "filter": Schema.optionalKey(Schema.Union([Filter_Input, Schema.Null])), "aggregation": Schema.Union([CountAggregation, PropertyAggregation, RecordAggregation, DerivedAggregation], { mode: "oneOf" }).annotate({ "title": "Aggregation" }), "map": Schema.optionalKey(Schema.Union([Schema.Record(Schema.String, JsonValue), Schema.Null]).annotate({ "title": "Map" })) }).annotate({ "title": "DeployReducer", "identifier": "DeployReducer" })
+export type DeployReducer_Input = { readonly "slug": string, readonly "filter"?: Filter_Input | null, readonly "aggregation": CountAggregation | PropertyAggregation | RecordAggregation | DerivedAggregation, readonly "map"?: { readonly [x: string]: JsonValue } | null }
+export const DeployReducer_Input = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "filter": Schema.optionalKey(Schema.Union([Filter_Input, Schema.Null])), "aggregation": Schema.Union([CountAggregation, PropertyAggregation, RecordAggregation, DerivedAggregation], { mode: "oneOf" }).annotate({ "title": "Aggregation" }), "map": Schema.optionalKey(Schema.Union([Schema.Record(Schema.String, JsonValue), Schema.Null]).annotate({ "title": "Map" })) }).annotate({ "title": "DeployReducer", "identifier": "DeployReducer-Input" })
 export type DeployReducer_Output = { readonly "slug": string, readonly "filter"?: Filter_Output | null, readonly "aggregation": CountAggregation | PropertyAggregation | RecordAggregation | DerivedAggregation, readonly "map"?: { readonly [x: string]: JsonValue } | null }
 export const DeployReducer_Output = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "filter": Schema.optionalKey(Schema.Union([Filter_Output, Schema.Null])), "aggregation": Schema.Union([CountAggregation, PropertyAggregation, RecordAggregation, DerivedAggregation], { mode: "oneOf" }).annotate({ "title": "Aggregation" }), "map": Schema.optionalKey(Schema.Union([Schema.Record(Schema.String, JsonValue), Schema.Null]).annotate({ "title": "Map" })) }).annotate({ "title": "DeployReducer", "identifier": "DeployReducer-Output" })
 export type ReducerState = { readonly "reducer_id": string, readonly "external_identity_id": string | null, readonly "bucket_start": string, readonly "value": number | null, readonly "last_processed_event": ProcessedEvent | null }
 export const ReducerState = Schema.Struct({ "reducer_id": Schema.String.annotate({ "title": "Reducer Id", "format": "uuid" }), "external_identity_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "External Identity Id" }), "bucket_start": Schema.String.annotate({ "title": "Bucket Start", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "value": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Value" }), "last_processed_event": Schema.Union([ProcessedEvent, Schema.Null]) }).annotate({ "title": "ReducerState", "identifier": "ReducerState" })
 export type Event = { readonly "id": string, readonly "timestamp": string, readonly "name": string, readonly "source": EventSource, readonly "external_id": string, readonly "external_identity_id": string | null, readonly "external_root_id": string | null, readonly "metadata": { readonly [x: string]: Schema.Json } }
 export const Event = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "timestamp": Schema.String.annotate({ "title": "Timestamp", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "name": Schema.String.annotate({ "title": "Name" }), "source": EventSource, "external_id": Schema.String.annotate({ "title": "External Id" }), "external_identity_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "External Identity Id" }), "external_root_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "External Root Id", "description": "The actor's root, stamped when the event was accepted." }), "metadata": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })).annotate({ "title": "Metadata" }) }).annotate({ "title": "Event", "identifier": "Event" })
+export type ActivityRun = { readonly "run_key": string, readonly "cost": number, readonly "by_activity": ReadonlyArray<ActivityShare>, readonly "spans": number }
+export const ActivityRun = Schema.Struct({ "run_key": Schema.String.annotate({ "title": "Run Key" }), "cost": Schema.Number.annotate({ "title": "Cost" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "by_activity": Schema.Array(ActivityShare).annotate({ "title": "By Activity" }), "spans": Schema.Number.annotate({ "title": "Spans" }).check(Schema.isInt().annotate({ "expected": "an integer" })) }).annotate({ "title": "ActivityRun", "identifier": "ActivityRun" })
 export type MetricSeries = { readonly "external_identity_id": string | null, readonly "external_root_id": string | null, readonly "periods": ReadonlyArray<MetricPeriod>, readonly "total": number | null }
 export const MetricSeries = Schema.Struct({ "external_identity_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "External Identity Id" }), "external_root_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "External Root Id" }), "periods": Schema.Array(MetricPeriod).annotate({ "title": "Periods" }), "total": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Total" }) }).annotate({ "title": "MetricSeries", "identifier": "MetricSeries" })
+export type ScenarioPreview = { readonly "window": PricePreviewWindow }
+export const ScenarioPreview = Schema.Struct({ "window": PricePreviewWindow }).annotate({ "title": "ScenarioPreview", "identifier": "ScenarioPreview" })
 export type MeterPricePreview = { readonly "window": PricePreviewWindow, readonly "currency": string, readonly "current_unit_amount": string, readonly "proposed_unit_amount": string, readonly "customers": ReadonlyArray<PricePreviewCustomer>, readonly "billable_units": string, readonly "current_amount": string, readonly "proposed_amount": string, readonly "difference": string, readonly "unavailable": string | null, readonly "excluded_customers": ReadonlyArray<string> }
 export const MeterPricePreview = Schema.Struct({ "window": PricePreviewWindow, "currency": Schema.String.annotate({ "title": "Currency" }), "current_unit_amount": Schema.String.annotate({ "title": "Current Unit Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "proposed_unit_amount": Schema.String.annotate({ "title": "Proposed Unit Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "customers": Schema.Array(PricePreviewCustomer).annotate({ "title": "Customers" }), "billable_units": Schema.String.annotate({ "title": "Billable Units" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "current_amount": Schema.String.annotate({ "title": "Current Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "proposed_amount": Schema.String.annotate({ "title": "Proposed Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "difference": Schema.String.annotate({ "title": "Difference" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "unavailable": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Unavailable" }), "excluded_customers": Schema.Array(Schema.String).annotate({ "title": "Excluded Customers" }) }).annotate({ "title": "MeterPricePreview", "identifier": "MeterPricePreview" })
-export type DeployProduct = { readonly "slug": string, readonly "name": string, readonly "description"?: string | null, readonly "price": RecurringPrice | OneTimePrice, readonly "meters"?: ReadonlyArray<string | DeployProductMeter>, readonly "entitlements"?: ReadonlyArray<string> }
-export const DeployProduct = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "name": Schema.String.annotate({ "title": "Name" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })), "price": Schema.Union([RecurringPrice, OneTimePrice], { mode: "oneOf" }).annotate({ "title": "Price" }), "meters": Schema.optionalKey(Schema.Array(Schema.Union([Schema.String, DeployProductMeter])).annotate({ "title": "Meters", "description": "Slugs of meters in this deploy." })), "entitlements": Schema.optionalKey(Schema.Array(Schema.String).annotate({ "title": "Entitlements", "description": "Slugs of entitlements in this deploy." })) }).annotate({ "title": "DeployProduct", "identifier": "DeployProduct" })
+export type DeployProduct_Input = { readonly "slug": string, readonly "name": string, readonly "description"?: string | null, readonly "price": RecurringPrice_Input | OneTimePrice_Input, readonly "meters"?: ReadonlyArray<string | DeployProductMeter>, readonly "entitlements"?: ReadonlyArray<string> }
+export const DeployProduct_Input = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "name": Schema.String.annotate({ "title": "Name" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })), "price": Schema.Union([RecurringPrice_Input, OneTimePrice_Input], { mode: "oneOf" }).annotate({ "title": "Price" }), "meters": Schema.optionalKey(Schema.Array(Schema.Union([Schema.String, DeployProductMeter])).annotate({ "title": "Meters", "description": "Slugs of meters in this deploy." })), "entitlements": Schema.optionalKey(Schema.Array(Schema.String).annotate({ "title": "Entitlements", "description": "Slugs of entitlements in this deploy." })) }).annotate({ "title": "DeployProduct", "identifier": "DeployProduct-Input" })
 export type DeployProduct_Output = { readonly "slug": string, readonly "name": string, readonly "description"?: string | null, readonly "price": RecurringPrice_Output | OneTimePrice_Output, readonly "meters"?: ReadonlyArray<string | DeployProductMeter>, readonly "entitlements"?: ReadonlyArray<string> }
 export const DeployProduct_Output = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isPattern(new RegExp("^[a-z0-9][a-z0-9_-]*$")).annotate({ "expected": "a string matching the RegExp ^[a-z0-9][a-z0-9_-]*$" })), "name": Schema.String.annotate({ "title": "Name" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })), "price": Schema.Union([RecurringPrice_Output, OneTimePrice_Output], { mode: "oneOf" }).annotate({ "title": "Price" }), "meters": Schema.optionalKey(Schema.Array(Schema.Union([Schema.String, DeployProductMeter])).annotate({ "title": "Meters", "description": "Slugs of meters in this deploy." })), "entitlements": Schema.optionalKey(Schema.Array(Schema.String).annotate({ "title": "Entitlements", "description": "Slugs of entitlements in this deploy." })) }).annotate({ "title": "DeployProduct", "identifier": "DeployProduct-Output" })
+export type ProductPatch_Output = { readonly "name"?: string | null, readonly "description"?: string | null, readonly "price"?: RecurringPrice_Output | OneTimePrice_Output | null, readonly "meters"?: { readonly [x: string]: MeterTerms } }
+export const ProductPatch_Output = Schema.Struct({ "name": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), Schema.Null]).annotate({ "title": "Name" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })), "price": Schema.optionalKey(Schema.Union([Schema.Union([RecurringPrice_Output, OneTimePrice_Output], { mode: "oneOf" }), Schema.Null]).annotate({ "title": "Price" })), "meters": Schema.optionalKey(Schema.Record(Schema.String, MeterTerms).annotate({ "title": "Meters", "description": "Replacement terms by meter slug; the meter must already be billed by the product in the base version." })) }).annotate({ "title": "ProductPatch", "description": "Overrides for one product of the base version; unset fields keep the base.", "identifier": "ProductPatch-Output" })
+export type ProductPatch_Input = { readonly "name"?: string | null, readonly "description"?: string | null, readonly "price"?: RecurringPrice_Input | OneTimePrice_Input | null, readonly "meters"?: { readonly [x: string]: MeterTerms } }
+export const ProductPatch_Input = Schema.Struct({ "name": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), Schema.Null]).annotate({ "title": "Name" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })), "price": Schema.optionalKey(Schema.Union([Schema.Union([RecurringPrice_Input, OneTimePrice_Input], { mode: "oneOf" }), Schema.Null]).annotate({ "title": "Price" })), "meters": Schema.optionalKey(Schema.Record(Schema.String, MeterTerms).annotate({ "title": "Meters", "description": "Replacement terms by meter slug; the meter must already be billed by the product in the base version." })) }).annotate({ "title": "ProductPatch", "description": "Overrides for one product of the base version; unset fields keep the base.", "identifier": "ProductPatch-Input" })
 export type Product = { readonly "version_id": string, readonly "id": string, readonly "slug": string, readonly "name": string, readonly "description": string | null, readonly "price": RecurringPriceRead | OneTimePriceRead, readonly "meters": ReadonlyArray<Meter>, readonly "meter_terms": { readonly [x: string]: MeterTermsRead }, readonly "entitlements": ReadonlyArray<Entitlement>, readonly "created_at": string }
 export const Product = Schema.Struct({ "version_id": Schema.String.annotate({ "title": "Version Id" }), "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "slug": Schema.String.annotate({ "title": "Slug" }), "name": Schema.String.annotate({ "title": "Name" }), "description": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" }), "price": Schema.Union([RecurringPriceRead, OneTimePriceRead], { mode: "oneOf" }).annotate({ "title": "Price" }), "meters": Schema.Array(Meter).annotate({ "title": "Meters" }), "meter_terms": Schema.Record(Schema.String, MeterTermsRead).annotate({ "title": "Meter Terms" }), "entitlements": Schema.Array(Entitlement).annotate({ "title": "Entitlements" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Product", "identifier": "Product" })
 export type SubscriptionCycle = { readonly "period_start": string, readonly "period_end": string, readonly "currency": string, readonly "fixed_amount": string, readonly "meters": ReadonlyArray<SubscriptionCycleMeter>, readonly "total": string }
 export const SubscriptionCycle = Schema.Struct({ "period_start": Schema.String.annotate({ "title": "Period Start", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "period_end": Schema.String.annotate({ "title": "Period End", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "currency": Schema.String.annotate({ "title": "Currency" }), "fixed_amount": Schema.String.annotate({ "title": "Fixed Amount" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })), "meters": Schema.Array(SubscriptionCycleMeter).annotate({ "title": "Meters" }), "total": Schema.String.annotate({ "title": "Total" }).check(Schema.isPattern(new RegExp("^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$")).annotate({ "expected": "a string matching the RegExp ^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$" })) }).annotate({ "title": "SubscriptionCycle", "description": "One closed period, priced at read time from the stored meter cycles.", "identifier": "SubscriptionCycle" })
-export type ProductPatch_Output = { readonly "name"?: string | null, readonly "description"?: string | null, readonly "price"?: RecurringPrice_Output | OneTimePrice_Output | null, readonly "meters"?: { readonly [x: string]: MeterTerms } }
-export const ProductPatch_Output = Schema.Struct({ "name": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), Schema.Null]).annotate({ "title": "Name" })), "description": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" })), "price": Schema.optionalKey(Schema.Union([Schema.Union([RecurringPrice_Output, OneTimePrice_Output], { mode: "oneOf" }), Schema.Null]).annotate({ "title": "Price" })), "meters": Schema.optionalKey(Schema.Record(Schema.String, MeterTerms).annotate({ "title": "Meters", "description": "Replacement terms by meter slug; the meter must already be billed by the product in the base version." })) }).annotate({ "title": "ProductPatch", "description": "Overrides for one product of the base version; unset fields keep the base.", "identifier": "ProductPatch-Output" })
 export type Balance = { readonly "at": string | null, readonly "subscription": SubscriptionRead | null, readonly "boundary": string | null, readonly "boundaries": ReadonlyArray<string>, readonly "cycles": { readonly [x: string]: MeterCycle }, readonly "credits": number, readonly "usage": number, readonly "meter_id": string, readonly "external_identity_id": string, readonly "remaining": number | null, readonly "overage": number, readonly "limited_by": string | null, readonly "limit": "hard" | "soft" | "unlimited" | null, readonly "reason": "ok" | "no_holder" | "exhausted" | "access_denied" | "missing_period", readonly "period_start": string | null, readonly "period_end": string | null }
 export const Balance = Schema.Struct({ "at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "At" }), "subscription": Schema.Union([SubscriptionRead, Schema.Null]), "boundary": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Boundary" }), "boundaries": Schema.Array(Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" })).annotate({ "title": "Boundaries" }), "cycles": Schema.Record(Schema.String, MeterCycle).annotate({ "title": "Cycles" }).check(Schema.isPropertyNames(Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" })).annotate({ "expected": "an object with property names matching the schema" })), "credits": Schema.Number.annotate({ "title": "Credits" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "usage": Schema.Number.annotate({ "title": "Usage" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "meter_id": Schema.String.annotate({ "title": "Meter Id", "format": "uuid" }), "external_identity_id": Schema.String.annotate({ "title": "External Identity Id" }), "remaining": Schema.Union([Schema.Number.check(Schema.isFinite().annotate({ "expected": "a finite number" })), Schema.Null]).annotate({ "title": "Remaining" }), "overage": Schema.Number.annotate({ "title": "Overage" }).check(Schema.isFinite().annotate({ "expected": "a finite number" })), "limited_by": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Limited By" }), "limit": Schema.Union([Schema.Literals(["hard", "soft", "unlimited"]), Schema.Null]).annotate({ "title": "Limit" }), "reason": Schema.Literals(["ok", "no_holder", "exhausted", "access_denied", "missing_period"]).annotate({ "title": "Reason" }), "period_start": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Period Start" }), "period_end": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Period End" }) }).annotate({ "title": "Balance", "identifier": "Balance" })
 export type LedgerState = { readonly "at": string | null, readonly "subscription": SubscriptionRead | null, readonly "boundary": string | null, readonly "boundaries": ReadonlyArray<string>, readonly "cycles": { readonly [x: string]: MeterCycle }, readonly "credits": number, readonly "usage": number, readonly "remaining": number, readonly "overage": number }
@@ -206,20 +228,24 @@ export type StateIdentity = { readonly "external_id": string, readonly "parent_e
 export const StateIdentity = Schema.Struct({ "external_id": Schema.String.annotate({ "title": "External Id" }), "parent_external_id": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent External Id" }), "entitlements": EntitlementAssignmentRead }).annotate({ "title": "StateIdentity", "identifier": "StateIdentity" })
 export type EventsList = { readonly "items": ReadonlyArray<Event>, readonly "pagination": Pagination }
 export const EventsList = Schema.Struct({ "items": Schema.Array(Event).annotate({ "title": "Items" }), "pagination": Pagination }).annotate({ "title": "EventsList", "identifier": "EventsList" })
+export type ActivityReport = { readonly "taxonomy": string, readonly "window": ActivityWindow, readonly "totals": ActivityTotals, readonly "by_activity": ReadonlyArray<ActivityShare>, readonly "runs": ReadonlyArray<ActivityRun> }
+export const ActivityReport = Schema.Struct({ "taxonomy": Schema.String.annotate({ "title": "Taxonomy" }), "window": ActivityWindow, "totals": ActivityTotals, "by_activity": Schema.Array(ActivityShare).annotate({ "title": "By Activity" }), "runs": Schema.Array(ActivityRun).annotate({ "title": "Runs" }) }).annotate({ "title": "ActivityReport", "identifier": "ActivityReport" })
 export type Metrics = { readonly "reducer_id": string, readonly "interval": TimeInterval, readonly "series": ReadonlyArray<MetricSeries> }
 export const Metrics = Schema.Struct({ "reducer_id": Schema.String.annotate({ "title": "Reducer Id", "format": "uuid" }), "interval": TimeInterval, "series": Schema.Array(MetricSeries).annotate({ "title": "Series" }) }).annotate({ "title": "Metrics", "identifier": "Metrics" })
-export type DeployEntry = { readonly "kind": "reducer" | "meter" | "entitlement" | "product", readonly "key": string, readonly "action": "create" | "replace" | "update" | "unchanged" | "orphan", readonly "reason": string | null, readonly "id": string | null, readonly "price_preview": MeterPricePreview | null }
-export const DeployEntry = Schema.Struct({ "kind": Schema.Literals(["reducer", "meter", "entitlement", "product"]).annotate({ "title": "Kind" }), "key": Schema.String.annotate({ "title": "Key" }), "action": Schema.Literals(["create", "replace", "update", "unchanged", "orphan"]).annotate({ "title": "Action" }), "reason": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Reason" }), "id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Id", "description": "The server id after apply. Unset on a dry run create." }), "price_preview": Schema.Union([MeterPricePreview, Schema.Null]) }).annotate({ "title": "DeployEntry", "identifier": "DeployEntry" })
-export type DeployCreate = { readonly "checksum": string, readonly "dry_run"?: boolean, readonly "activate"?: boolean, readonly "reducers"?: ReadonlyArray<DeployReducer>, readonly "meters"?: ReadonlyArray<DeployMeter>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct>, readonly "preview"?: PricePreviewWindow | null }
-export const DeployCreate = Schema.Struct({ "checksum": Schema.String.annotate({ "title": "Checksum", "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request." }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Compute the plan against current state; write nothing.", "default": false })), "activate": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Activate", "description": "Activate the deployment once applied. Requires an organization that has passed review.", "default": false })), "reducers": Schema.optionalKey(Schema.Array(DeployReducer).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct).annotate({ "title": "Products", "default": [] })), "preview": Schema.optionalKey(Schema.Union([PricePreviewWindow, Schema.Null]).annotate({ "description": "Compare changed usage prices without applying them." })) }).annotate({ "title": "DeployCreate", "identifier": "DeployCreate" })
-export type DeployConfiguration = { readonly "reducers"?: ReadonlyArray<DeployReducer_Output>, readonly "meters"?: ReadonlyArray<DeployMeter_Output>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Output> }
-export const DeployConfiguration = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Output).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Output).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Output).annotate({ "title": "Products", "default": [] })) }).annotate({ "title": "DeployConfiguration", "description": "The deployable definitions alone, as stored on a deployment.", "identifier": "DeployConfiguration" })
-export type DeployCreate_Output = { readonly "reducers"?: ReadonlyArray<DeployReducer_Output>, readonly "meters"?: ReadonlyArray<DeployMeter_Output>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Output>, readonly "checksum": string, readonly "dry_run"?: boolean, readonly "activate"?: boolean, readonly "preview"?: PricePreviewWindow | null }
-export const DeployCreate_Output = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Output).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Output).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Output).annotate({ "title": "Products", "default": [] })), "checksum": Schema.String.annotate({ "title": "Checksum", "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request." }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Compute the plan against current state; write nothing.", "default": false })), "activate": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Activate", "description": "Activate the deployment once applied. Requires an organization that has passed review.", "default": false })), "preview": Schema.optionalKey(Schema.Union([PricePreviewWindow, Schema.Null]).annotate({ "description": "Compare changed usage prices without applying them." })) }).annotate({ "title": "DeployCreate", "identifier": "DeployCreate-Output" })
-export type ProductSubscription = { readonly "id": string, readonly "product": Product, readonly "external_identity_id": string, readonly "status": VoidSubscriptionStatus, readonly "started_at": string, readonly "canceled_at": string | null, readonly "ends_at": string | null, readonly "current_period_start": string | null, readonly "current_period_end": string | null, readonly "created_at": string }
-export const ProductSubscription = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "product": Product, "external_identity_id": Schema.String.annotate({ "title": "External Identity Id" }), "status": VoidSubscriptionStatus, "started_at": Schema.String.annotate({ "title": "Started At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "canceled_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Canceled At" }), "ends_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Ends At", "description": "When access stops. Unset while running without a cancel." }), "current_period_start": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Current Period Start", "description": "Unset for one-time products and ended subscriptions." }), "current_period_end": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Current Period End" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "ProductSubscription", "identifier": "ProductSubscription" })
+export type DeployEntry = { readonly "kind": "reducer" | "meter" | "entitlement" | "product" | "activity", readonly "key": string, readonly "action": "create" | "replace" | "update" | "unchanged" | "orphan", readonly "reason": string | null, readonly "id": string | null, readonly "price_preview": MeterPricePreview | null }
+export const DeployEntry = Schema.Struct({ "kind": Schema.Literals(["reducer", "meter", "entitlement", "product", "activity"]).annotate({ "title": "Kind" }), "key": Schema.String.annotate({ "title": "Key" }), "action": Schema.Literals(["create", "replace", "update", "unchanged", "orphan"]).annotate({ "title": "Action" }), "reason": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Reason" }), "id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Id", "description": "The server id after apply. Unset on a dry run create." }), "price_preview": Schema.Union([MeterPricePreview, Schema.Null]) }).annotate({ "title": "DeployEntry", "identifier": "DeployEntry" })
+export type DeployCreate_Input = { readonly "reducers"?: ReadonlyArray<DeployReducer_Input>, readonly "meters"?: ReadonlyArray<DeployMeter_Input>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Input>, readonly "activities"?: ReadonlyArray<DeployActivity>, readonly "checksum": string, readonly "dry_run"?: boolean, readonly "activate"?: boolean, readonly "preview"?: PricePreviewWindow | null }
+export const DeployCreate_Input = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Input).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Input).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Input).annotate({ "title": "Products", "default": [] })), "activities": Schema.optionalKey(Schema.Array(DeployActivity).annotate({ "title": "Activities", "default": [] })), "checksum": Schema.String.annotate({ "title": "Checksum", "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request." }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Compute the plan against current state; write nothing.", "default": false })), "activate": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Activate", "description": "Activate the deployment once applied. Requires an organization that has passed review.", "default": false })), "preview": Schema.optionalKey(Schema.Union([PricePreviewWindow, Schema.Null]).annotate({ "description": "Compare changed usage prices without applying them." })) }).annotate({ "title": "DeployCreate", "identifier": "DeployCreate-Input" })
+export type DeployConfiguration = { readonly "reducers"?: ReadonlyArray<DeployReducer_Output>, readonly "meters"?: ReadonlyArray<DeployMeter_Output>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Output>, readonly "activities"?: ReadonlyArray<DeployActivity> }
+export const DeployConfiguration = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Output).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Output).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Output).annotate({ "title": "Products", "default": [] })), "activities": Schema.optionalKey(Schema.Array(DeployActivity).annotate({ "title": "Activities", "default": [] })) }).annotate({ "title": "DeployConfiguration", "description": "The deployable definitions alone, as stored on a deployment.", "identifier": "DeployConfiguration" })
+export type DeployCreate_Output = { readonly "reducers"?: ReadonlyArray<DeployReducer_Output>, readonly "meters"?: ReadonlyArray<DeployMeter_Output>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Output>, readonly "activities"?: ReadonlyArray<DeployActivity>, readonly "checksum": string, readonly "dry_run"?: boolean, readonly "activate"?: boolean, readonly "preview"?: PricePreviewWindow | null }
+export const DeployCreate_Output = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Output).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Output).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Output).annotate({ "title": "Products", "default": [] })), "activities": Schema.optionalKey(Schema.Array(DeployActivity).annotate({ "title": "Activities", "default": [] })), "checksum": Schema.String.annotate({ "title": "Checksum", "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request." }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Compute the plan against current state; write nothing.", "default": false })), "activate": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Activate", "description": "Activate the deployment once applied. Requires an organization that has passed review.", "default": false })), "preview": Schema.optionalKey(Schema.Union([PricePreviewWindow, Schema.Null]).annotate({ "description": "Compare changed usage prices without applying them." })) }).annotate({ "title": "DeployCreate", "identifier": "DeployCreate-Output" })
 export type ScenarioPatch_Output = { readonly "products"?: { readonly [x: string]: ProductPatch_Output }, readonly "meters"?: { readonly [x: string]: MeterPatch_Output } }
 export const ScenarioPatch_Output = Schema.Struct({ "products": Schema.optionalKey(Schema.Record(Schema.String, ProductPatch_Output).annotate({ "title": "Products" })), "meters": Schema.optionalKey(Schema.Record(Schema.String, MeterPatch_Output).annotate({ "title": "Meters" })) }).annotate({ "title": "ScenarioPatch", "description": "A configuration-level diff against the base version, keyed by slug.", "identifier": "ScenarioPatch-Output" })
+export type ScenarioPatch_Input = { readonly "products"?: { readonly [x: string]: ProductPatch_Input }, readonly "meters"?: { readonly [x: string]: MeterPatch_Input } }
+export const ScenarioPatch_Input = Schema.Struct({ "products": Schema.optionalKey(Schema.Record(Schema.String, ProductPatch_Input).annotate({ "title": "Products" })), "meters": Schema.optionalKey(Schema.Record(Schema.String, MeterPatch_Input).annotate({ "title": "Meters" })) }).annotate({ "title": "ScenarioPatch", "description": "A configuration-level diff against the base version, keyed by slug.", "identifier": "ScenarioPatch-Input" })
+export type ProductSubscription = { readonly "id": string, readonly "product": Product, readonly "external_identity_id": string, readonly "status": VoidSubscriptionStatus, readonly "started_at": string, readonly "canceled_at": string | null, readonly "ends_at": string | null, readonly "current_period_start": string | null, readonly "current_period_end": string | null, readonly "created_at": string }
+export const ProductSubscription = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "product": Product, "external_identity_id": Schema.String.annotate({ "title": "External Identity Id" }), "status": VoidSubscriptionStatus, "started_at": Schema.String.annotate({ "title": "Started At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "canceled_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Canceled At" }), "ends_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Ends At", "description": "When access stops. Unset while running without a cancel." }), "current_period_start": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Current Period Start", "description": "Unset for one-time products and ended subscriptions." }), "current_period_end": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Current Period End" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "ProductSubscription", "identifier": "ProductSubscription" })
 export type IdentitySnapshot = { readonly "at": string, readonly "identity": Identity, readonly "root": Identity, readonly "customer": Customer | null, readonly "meters": { readonly [x: string]: Balance }, readonly "entitlements": ReadonlyArray<string> }
 export const IdentitySnapshot = Schema.Struct({ "at": Schema.String.annotate({ "title": "At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "identity": Identity, "root": Identity, "customer": Schema.Union([Customer, Schema.Null]), "meters": Schema.Record(Schema.String, Balance).annotate({ "title": "Meters", "description": "Current mainline meter balances, keyed by meter slug." }), "entitlements": Schema.Array(Schema.String).annotate({ "title": "Entitlements", "description": "Entitlement slugs held through this identity's chain." }) }).annotate({ "title": "IdentitySnapshot", "identifier": "IdentitySnapshot" })
 export type MeterHolderState = { readonly "external_identity_id": string, readonly "balance": LedgerState, readonly "base": LedgerState, readonly "credit_base": number | null, readonly "usage_base": number | null, readonly "is_holder": boolean, readonly "events": ReadonlyArray<MeterEvent>, readonly "entitlement": MeterEntitlementState | null, readonly "entitlement_usage_base": number }
@@ -230,6 +256,10 @@ export type Deploy = { readonly "version_id": string, readonly "id": string | nu
 export const Deploy = Schema.Struct({ "version_id": Schema.String.annotate({ "title": "Version Id", "description": "SHA-256 of the normalized configuration." }), "id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Id", "description": "Unset on a dry run." }), "checksum": Schema.String.annotate({ "title": "Checksum" }), "applied": Schema.Boolean.annotate({ "title": "Applied" }), "status": Schema.Union([VoidDeploymentStatus, Schema.Null]).annotate({ "description": "Unset on a dry run." }), "has_configuration": Schema.Boolean.annotate({ "title": "Has Configuration", "description": "Whether the configuration is stored, so the version can be used as a scenario base. False for deployments created before configurations were kept." }), "entries": Schema.Array(DeployEntry).annotate({ "title": "Entries" }), "created_at": Schema.String.annotate({ "title": "Created At", "format": "date-time" }) }).annotate({ "title": "Deploy", "identifier": "Deploy" })
 export type Scenario = { readonly "id": string, readonly "name": string, readonly "base_version_id": string, readonly "base_deployment_id": string, readonly "patch": ScenarioPatch_Output, readonly "version_id": string, readonly "deployment_id": string | null, readonly "promoted_deployment_id": string | null, readonly "base_configuration": DeployCreate_Output, readonly "configuration": DeployCreate_Output, readonly "created_at": string, readonly "modified_at": string | null }
 export const Scenario = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "name": Schema.String.annotate({ "title": "Name" }), "base_version_id": Schema.String.annotate({ "title": "Base Version Id" }), "base_deployment_id": Schema.String.annotate({ "title": "Base Deployment Id", "format": "uuid" }), "patch": ScenarioPatch_Output, "version_id": Schema.String.annotate({ "title": "Version Id", "description": "SHA-256 of the resolved configuration: the version this scenario would become when promoted." }), "deployment_id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Deployment Id", "description": "The deployment that already has this resolved version, if any." }), "promoted_deployment_id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Promoted Deployment Id" }), "base_configuration": Schema.suspend((): Schema.Codec<DeployCreate_Output> => DeployCreate_Output).annotate({ "description": "The configuration of the base version." }), "configuration": Schema.suspend((): Schema.Codec<DeployCreate_Output> => DeployCreate_Output).annotate({ "description": "The base configuration with the patch applied." }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "modified_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Modified At" }) }).annotate({ "title": "Scenario", "identifier": "Scenario" })
+export type ScenarioCreate = { readonly "name": string, readonly "base_version_id": string, readonly "patch"?: ScenarioPatch_Input }
+export const ScenarioCreate = Schema.Struct({ "name": Schema.String.annotate({ "title": "Name" }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(120).annotate({ "expected": "a value with a length of at most 120" })), "base_version_id": Schema.String.annotate({ "title": "Base Version Id", "description": "The deployed version this scenario starts from. A scenario stays pinned to it; it never follows the active version." }).check(Schema.isPattern(new RegExp("^[0-9a-f]{64}$")).annotate({ "expected": "a string matching the RegExp ^[0-9a-f]{64}$" })), "patch": Schema.optionalKey(ScenarioPatch_Input) }).annotate({ "title": "ScenarioCreate", "identifier": "ScenarioCreate" })
+export type ScenarioUpdate = { readonly "name"?: string | null, readonly "patch"?: ScenarioPatch_Input | null }
+export const ScenarioUpdate = Schema.Struct({ "name": Schema.optionalKey(Schema.Union([Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(Schema.isMaxLength(120).annotate({ "expected": "a value with a length of at most 120" })), Schema.Null]).annotate({ "title": "Name" })), "patch": Schema.optionalKey(Schema.Union([ScenarioPatch_Input, Schema.Null]).annotate({ "description": "Replaces the whole patch when given." })) }).annotate({ "title": "ScenarioUpdate", "identifier": "ScenarioUpdate" })
 export type CustomerMeterState = { readonly "meter": Meter, readonly "usage_last_processed_event": LastProcessedEvent | null, readonly "credit_last_processed_event": LastProcessedEvent | null, readonly "holders": ReadonlyArray<MeterHolderState> }
 export const CustomerMeterState = Schema.Struct({ "meter": Meter, "usage_last_processed_event": Schema.Union([LastProcessedEvent, Schema.Null]), "credit_last_processed_event": Schema.Union([LastProcessedEvent, Schema.Null]), "holders": Schema.Array(MeterHolderState).annotate({ "title": "Holders" }) }).annotate({ "title": "CustomerMeterState", "identifier": "CustomerMeterState" })
 export type MetricComparison = { readonly "baseline": string, readonly "candidate": string, readonly "window": PricePreviewWindow, readonly "customer_count": number, readonly "shared_metrics": ReadonlyArray<ComparisonMetric>, readonly "meters": ReadonlyArray<DeployEntry> }
@@ -244,6 +274,8 @@ export type OrganizationsCurrent200 = VoidOrganization
 export const OrganizationsCurrent200 = VoidOrganization
 export type OrganizationsCurrent404 = ResourceNotFound
 export const OrganizationsCurrent404 = ResourceNotFound
+export type OrganizationsCurrent422 = HTTPValidationError
+export const OrganizationsCurrent422 = HTTPValidationError
 export type IdentitiesListParams = { readonly "parent"?: string | null, readonly "root"?: boolean }
 export const IdentitiesListParams = Schema.Struct({ "parent": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Parent", "description": "Only children of this identity" })), "root": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Root", "description": "Only identities with no parent", "default": false })) })
 export type IdentitiesList200 = ReadonlyArray<Identity>
@@ -304,6 +336,8 @@ export type IdentitiesAssignEntitlements422 = HTTPValidationError
 export const IdentitiesAssignEntitlements422 = HTTPValidationError
 export type CustomersList200 = ReadonlyArray<Customer>
 export const CustomersList200 = Schema.Array(Customer).annotate({ "title": "Response Customers:List" })
+export type CustomersList422 = HTTPValidationError
+export const CustomersList422 = HTTPValidationError
 export type CustomersCreateRequestJson = CustomerCreate
 export const CustomersCreateRequestJson = CustomerCreate
 export type CustomersCreate201 = Customer
@@ -344,8 +378,22 @@ export type EventsIngest403 = ReservedEventName
 export const EventsIngest403 = ReservedEventName
 export type EventsIngest422 = HTTPValidationError
 export const EventsIngest422 = HTTPValidationError
+export type ActivitiesListParams = { readonly "identity"?: string | null, readonly "start"?: string | null, readonly "end"?: string | null, readonly "group"?: "run" | "span" }
+export const ActivitiesListParams = Schema.Struct({ "identity": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Identity" })), "start": Schema.optionalKey(Schema.Union([Schema.String.annotate({ "format": "date-time" }), Schema.Null]).annotate({ "title": "Start" })), "end": Schema.optionalKey(Schema.Union([Schema.String.annotate({ "format": "date-time" }), Schema.Null]).annotate({ "title": "End" })), "group": Schema.optionalKey(Schema.Literals(["run", "span"]).annotate({ "title": "Group", "default": "run" })) })
+export type ActivitiesList200 = ActivityReport
+export const ActivitiesList200 = ActivityReport
+export type ActivitiesList422 = HTTPValidationError
+export const ActivitiesList422 = HTTPValidationError
+export type ActivitiesSpan200 = ActivitySpan
+export const ActivitiesSpan200 = ActivitySpan
+export type ActivitiesSpan404 = ResourceNotFound
+export const ActivitiesSpan404 = ResourceNotFound
+export type ActivitiesSpan422 = HTTPValidationError
+export const ActivitiesSpan422 = HTTPValidationError
 export type ReducersList200 = ReadonlyArray<Reducer>
 export const ReducersList200 = Schema.Array(Reducer).annotate({ "title": "Response Reducers:List" })
+export type ReducersList422 = HTTPValidationError
+export const ReducersList422 = HTTPValidationError
 export type ReducersCreateRequestJson = ReducerCreate
 export const ReducersCreateRequestJson = ReducerCreate
 export type ReducersCreate201 = Reducer
@@ -394,8 +442,10 @@ export type MetricsCompare422 = HTTPValidationError
 export const MetricsCompare422 = HTTPValidationError
 export type DeploysList200 = ReadonlyArray<Deploy>
 export const DeploysList200 = Schema.Array(Deploy).annotate({ "title": "Response Deploys:List" })
-export type DeploysCreateRequestJson = DeployCreate
-export const DeploysCreateRequestJson = DeployCreate
+export type DeploysList422 = HTTPValidationError
+export const DeploysList422 = HTTPValidationError
+export type DeploysCreateRequestJson = DeployCreate_Input
+export const DeploysCreateRequestJson = DeployCreate_Input
 export type DeploysCreate201 = Deploy
 export const DeploysCreate201 = Deploy
 export type DeploysCreate400 = InvalidDeployment
@@ -434,8 +484,64 @@ export type DeploysActivate404 = ResourceNotFound
 export const DeploysActivate404 = ResourceNotFound
 export type DeploysActivate422 = HTTPValidationError
 export const DeploysActivate422 = HTTPValidationError
+export type ScenariosList200 = ReadonlyArray<Scenario>
+export const ScenariosList200 = Schema.Array(Scenario).annotate({ "title": "Response Scenarios:List" })
+export type ScenariosList422 = HTTPValidationError
+export const ScenariosList422 = HTTPValidationError
+export type ScenariosCreateRequestJson = ScenarioCreate
+export const ScenariosCreateRequestJson = ScenarioCreate
+export type ScenariosCreate201 = Scenario
+export const ScenariosCreate201 = Scenario
+export type ScenariosCreate400 = ScenarioBaseUnavailable
+export const ScenariosCreate400 = ScenarioBaseUnavailable
+export type ScenariosCreate404 = ResourceNotFound
+export const ScenariosCreate404 = ResourceNotFound
+export type ScenariosCreate422 = HTTPValidationError
+export const ScenariosCreate422 = HTTPValidationError
+export type ScenariosGet200 = Scenario
+export const ScenariosGet200 = Scenario
+export type ScenariosGet404 = ResourceNotFound
+export const ScenariosGet404 = ResourceNotFound
+export type ScenariosGet422 = HTTPValidationError
+export const ScenariosGet422 = HTTPValidationError
+export type ScenariosDelete404 = ResourceNotFound
+export const ScenariosDelete404 = ResourceNotFound
+export type ScenariosDelete422 = HTTPValidationError
+export const ScenariosDelete422 = HTTPValidationError
+export type ScenariosUpdateRequestJson = ScenarioUpdate
+export const ScenariosUpdateRequestJson = ScenarioUpdate
+export type ScenariosUpdate200 = Scenario
+export const ScenariosUpdate200 = Scenario
+export type ScenariosUpdate400 = InvalidScenario
+export const ScenariosUpdate400 = InvalidScenario
+export type ScenariosUpdate404 = ResourceNotFound
+export const ScenariosUpdate404 = ResourceNotFound
+export type ScenariosUpdate422 = HTTPValidationError
+export const ScenariosUpdate422 = HTTPValidationError
+export type ScenariosPromote201 = Deploy
+export const ScenariosPromote201 = Deploy
+export type ScenariosPromote400 = InvalidDeployment
+export const ScenariosPromote400 = InvalidDeployment
+export type ScenariosPromote404 = ResourceNotFound
+export const ScenariosPromote404 = ResourceNotFound
+export type ScenariosPromote409 = DeploymentConflict
+export const ScenariosPromote409 = DeploymentConflict
+export type ScenariosPromote422 = HTTPValidationError
+export const ScenariosPromote422 = HTTPValidationError
+export type ScenariosPreviewRequestJson = ScenarioPreview
+export const ScenariosPreviewRequestJson = ScenarioPreview
+export type ScenariosPreview200 = Deploy
+export const ScenariosPreview200 = Deploy
+export type ScenariosPreview400 = InvalidScenario
+export const ScenariosPreview400 = InvalidScenario
+export type ScenariosPreview404 = ResourceNotFound
+export const ScenariosPreview404 = ResourceNotFound
+export type ScenariosPreview422 = HTTPValidationError
+export const ScenariosPreview422 = HTTPValidationError
 export type EntitlementsList200 = ReadonlyArray<Entitlement>
 export const EntitlementsList200 = Schema.Array(Entitlement).annotate({ "title": "Response Entitlements:List" })
+export type EntitlementsList422 = HTTPValidationError
+export const EntitlementsList422 = HTTPValidationError
 export type EntitlementsCreateRequestJson = EntitlementCreate
 export const EntitlementsCreateRequestJson = EntitlementCreate
 export type EntitlementsCreate201 = Entitlement
@@ -454,6 +560,8 @@ export type EntitlementsGet422 = HTTPValidationError
 export const EntitlementsGet422 = HTTPValidationError
 export type MetersList200 = ReadonlyArray<Meter>
 export const MetersList200 = Schema.Array(Meter).annotate({ "title": "Response Meters:List" })
+export type MetersList422 = HTTPValidationError
+export const MetersList422 = HTTPValidationError
 export type MetersGet200 = Meter
 export const MetersGet200 = Meter
 export type MetersGet404 = ResourceNotFound
@@ -570,10 +678,6 @@ export type SubscriptionsCycles409 = SubscriptionConflict
 export const SubscriptionsCycles409 = SubscriptionConflict
 export type SubscriptionsCycles422 = HTTPValidationError
 export const SubscriptionsCycles422 = HTTPValidationError
-export type ScenariosList200 = ReadonlyArray<Scenario>
-export const ScenariosList200 = Schema.Array(Scenario).annotate({ "title": "Response Scenarios:List" })
-export type ScenariosList422 = HTTPValidationError
-export const ScenariosList422 = HTTPValidationError
 
 export interface OperationConfig {
   /**
@@ -650,6 +754,7 @@ export const make = (
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(OrganizationsCurrent200),
       "404": decodeError("OrganizationsCurrent404", OrganizationsCurrent404),
+      "422": decodeError("OrganizationsCurrent422", OrganizationsCurrent422),
       orElse: unexpectedStatus
     }))
   ),
@@ -715,6 +820,7 @@ export const make = (
     "customersList": (options) => HttpClientRequest.get(`/v1/void/customers`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(CustomersList200),
+      "422": decodeError("CustomersList422", CustomersList422),
       orElse: unexpectedStatus
     }))
   ),
@@ -763,9 +869,26 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
+    "activitiesList": (options) => HttpClientRequest.get(`/v1/void/activities`).pipe(
+    HttpClientRequest.setUrlParams({ "identity": options?.params?.["identity"] as any, "start": options?.params?.["start"] as any, "end": options?.params?.["end"] as any, "group": options?.params?.["group"] as any }),
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ActivitiesList200),
+      "422": decodeError("ActivitiesList422", ActivitiesList422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "activitiesSpan": (spanKey, options) => HttpClientRequest.get(`/v1/void/activities/spans/${spanKey}`).pipe(
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ActivitiesSpan200),
+      "404": decodeError("ActivitiesSpan404", ActivitiesSpan404),
+      "422": decodeError("ActivitiesSpan422", ActivitiesSpan422),
+      orElse: unexpectedStatus
+    }))
+  ),
     "reducersList": (options) => HttpClientRequest.get(`/v1/void/reducers`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(ReducersList200),
+      "422": decodeError("ReducersList422", ReducersList422),
       orElse: unexpectedStatus
     }))
   ),
@@ -820,6 +943,7 @@ export const make = (
     "deploysList": (options) => HttpClientRequest.get(`/v1/void/deploys`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(DeploysList200),
+      "422": decodeError("DeploysList422", DeploysList422),
       orElse: unexpectedStatus
     }))
   ),
@@ -868,9 +992,73 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
+    "scenariosList": (options) => HttpClientRequest.get(`/v1/void/scenarios`).pipe(
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ScenariosList200),
+      "422": decodeError("ScenariosList422", ScenariosList422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "scenariosCreate": (options) => HttpClientRequest.post(`/v1/void/scenarios`).pipe(
+    HttpClientRequest.bodyJsonUnsafe(options.payload),
+    withResponse(options.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ScenariosCreate201),
+      "400": decodeError("ScenariosCreate400", ScenariosCreate400),
+      "404": decodeError("ScenariosCreate404", ScenariosCreate404),
+      "422": decodeError("ScenariosCreate422", ScenariosCreate422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "scenariosGet": (id, options) => HttpClientRequest.get(`/v1/void/scenarios/${id}`).pipe(
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ScenariosGet200),
+      "404": decodeError("ScenariosGet404", ScenariosGet404),
+      "422": decodeError("ScenariosGet422", ScenariosGet422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "scenariosDelete": (id, options) => HttpClientRequest.delete(`/v1/void/scenarios/${id}`).pipe(
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "404": decodeError("ScenariosDelete404", ScenariosDelete404),
+      "422": decodeError("ScenariosDelete422", ScenariosDelete422),
+      "204": () => Effect.void,
+      orElse: unexpectedStatus
+    }))
+  ),
+    "scenariosUpdate": (id, options) => HttpClientRequest.patch(`/v1/void/scenarios/${id}`).pipe(
+    HttpClientRequest.bodyJsonUnsafe(options.payload),
+    withResponse(options.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ScenariosUpdate200),
+      "400": decodeError("ScenariosUpdate400", ScenariosUpdate400),
+      "404": decodeError("ScenariosUpdate404", ScenariosUpdate404),
+      "422": decodeError("ScenariosUpdate422", ScenariosUpdate422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "scenariosPromote": (id, options) => HttpClientRequest.post(`/v1/void/scenarios/${id}/promote`).pipe(
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ScenariosPromote201),
+      "400": decodeError("ScenariosPromote400", ScenariosPromote400),
+      "404": decodeError("ScenariosPromote404", ScenariosPromote404),
+      "409": decodeError("ScenariosPromote409", ScenariosPromote409),
+      "422": decodeError("ScenariosPromote422", ScenariosPromote422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "scenariosPreview": (id, options) => HttpClientRequest.post(`/v1/void/scenarios/${id}/preview`).pipe(
+    HttpClientRequest.bodyJsonUnsafe(options.payload),
+    withResponse(options.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(ScenariosPreview200),
+      "400": decodeError("ScenariosPreview400", ScenariosPreview400),
+      "404": decodeError("ScenariosPreview404", ScenariosPreview404),
+      "422": decodeError("ScenariosPreview422", ScenariosPreview422),
+      orElse: unexpectedStatus
+    }))
+  ),
     "entitlementsList": (options) => HttpClientRequest.get(`/v1/void/entitlements`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EntitlementsList200),
+      "422": decodeError("EntitlementsList422", EntitlementsList422),
       orElse: unexpectedStatus
     }))
   ),
@@ -895,6 +1083,7 @@ export const make = (
     "metersList": (options) => HttpClientRequest.get(`/v1/void/meters`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(MetersList200),
+      "422": decodeError("MetersList422", MetersList422),
       orElse: unexpectedStatus
     }))
   ),
@@ -1015,13 +1204,6 @@ export const make = (
       "422": decodeError("SubscriptionsCycles422", SubscriptionsCycles422),
       orElse: unexpectedStatus
     }))
-  ),
-    "scenariosList": (options) => HttpClientRequest.get(`/v1/void/scenarios`).pipe(
-    withResponse(options?.config)(HttpClientResponse.matchStatus({
-      "2xx": decodeSuccess(ScenariosList200),
-      "422": decodeError("ScenariosList422", ScenariosList422),
-      orElse: unexpectedStatus
-    }))
   )
   }
 }
@@ -1031,7 +1213,7 @@ export interface VoidApi {
   /**
 * **Scopes**: `void:read` `void:write`
 */
-readonly "organizationsCurrent": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof OrganizationsCurrent200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"OrganizationsCurrent404", typeof OrganizationsCurrent404.Type>>
+readonly "organizationsCurrent": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof OrganizationsCurrent200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"OrganizationsCurrent404", typeof OrganizationsCurrent404.Type> | VoidApiError<"OrganizationsCurrent422", typeof OrganizationsCurrent422.Type>>
   /**
 * **Scopes**: `void:read` `void:write`
 */
@@ -1059,7 +1241,7 @@ readonly "identitiesAssignEntitlements": <Config extends OperationConfig>(extern
   /**
 * **Scopes**: `customers:read` `customers:write`
 */
-readonly "customersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof CustomersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError>
+readonly "customersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof CustomersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"CustomersList422", typeof CustomersList422.Type>>
   /**
 * **Scopes**: `customers:write`
 */
@@ -1083,7 +1265,15 @@ readonly "eventsIngest": <Config extends OperationConfig>(options: { readonly pa
   /**
 * **Scopes**: `void:read` `void:write`
 */
-readonly "reducersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ReducersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError>
+readonly "activitiesList": <Config extends OperationConfig>(options: { readonly params?: typeof ActivitiesListParams.Encoded | undefined; readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ActivitiesList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ActivitiesList422", typeof ActivitiesList422.Type>>
+  /**
+* **Scopes**: `void:read` `void:write`
+*/
+readonly "activitiesSpan": <Config extends OperationConfig>(spanKey: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ActivitiesSpan200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ActivitiesSpan404", typeof ActivitiesSpan404.Type> | VoidApiError<"ActivitiesSpan422", typeof ActivitiesSpan422.Type>>
+  /**
+* **Scopes**: `void:read` `void:write`
+*/
+readonly "reducersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ReducersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ReducersList422", typeof ReducersList422.Type>>
   /**
 * **Scopes**: `void:write`
 */
@@ -1107,7 +1297,7 @@ readonly "metricsCompare": <Config extends OperationConfig>(options: { readonly 
   /**
 * **Scopes**: `void:read` `void:write`
 */
-readonly "deploysList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof DeploysList200.Type, Config>, HttpClientError.HttpClientError | SchemaError>
+readonly "deploysList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof DeploysList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"DeploysList422", typeof DeploysList422.Type>>
   /**
 * Plan or apply configuration. A new version becomes a draft deployment; `activate` makes it the active one. Historical previews require dry_run and customers:read or customers:write in addition to void:write.
 *
@@ -1139,7 +1329,41 @@ readonly "deploysActivate": <Config extends OperationConfig>(id: string, options
   /**
 * **Scopes**: `void:read` `void:write`
 */
-readonly "entitlementsList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof EntitlementsList200.Type, Config>, HttpClientError.HttpClientError | SchemaError>
+readonly "scenariosList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ScenariosList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosList422", typeof ScenariosList422.Type>>
+  /**
+* Start a pricing scenario from a deployed version. A scenario is a sandbox: it stays pinned to that version, is not part of the lineage and never serves traffic.
+*
+* **Scopes**: `void:write`
+*/
+readonly "scenariosCreate": <Config extends OperationConfig>(options: { readonly payload: typeof ScenariosCreateRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof ScenariosCreate201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosCreate400", typeof ScenariosCreate400.Type> | VoidApiError<"ScenariosCreate404", typeof ScenariosCreate404.Type> | VoidApiError<"ScenariosCreate422", typeof ScenariosCreate422.Type>>
+  /**
+* **Scopes**: `void:read` `void:write`
+*/
+readonly "scenariosGet": <Config extends OperationConfig>(id: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ScenariosGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosGet404", typeof ScenariosGet404.Type> | VoidApiError<"ScenariosGet422", typeof ScenariosGet422.Type>>
+  /**
+* **Scopes**: `void:write`
+*/
+readonly "scenariosDelete": <Config extends OperationConfig>(id: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<void, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosDelete404", typeof ScenariosDelete404.Type> | VoidApiError<"ScenariosDelete422", typeof ScenariosDelete422.Type>>
+  /**
+* **Scopes**: `void:write`
+*/
+readonly "scenariosUpdate": <Config extends OperationConfig>(id: string, options: { readonly payload: typeof ScenariosUpdateRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof ScenariosUpdate200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosUpdate400", typeof ScenariosUpdate400.Type> | VoidApiError<"ScenariosUpdate404", typeof ScenariosUpdate404.Type> | VoidApiError<"ScenariosUpdate422", typeof ScenariosUpdate422.Type>>
+  /**
+* Deploy the scenario's resolved configuration as a draft deployment. Activation is a separate step on the deployment.
+*
+* **Scopes**: `void:write`
+*/
+readonly "scenariosPromote": <Config extends OperationConfig>(id: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ScenariosPromote201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosPromote400", typeof ScenariosPromote400.Type> | VoidApiError<"ScenariosPromote404", typeof ScenariosPromote404.Type> | VoidApiError<"ScenariosPromote409", typeof ScenariosPromote409.Type> | VoidApiError<"ScenariosPromote422", typeof ScenariosPromote422.Type>>
+  /**
+* Plan the scenario against current state and reprice the base version's usage over the window. Requires customers:read in addition to void:write. Writes nothing.
+*
+* **Scopes**: `void:write`
+*/
+readonly "scenariosPreview": <Config extends OperationConfig>(id: string, options: { readonly payload: typeof ScenariosPreviewRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof ScenariosPreview200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosPreview400", typeof ScenariosPreview400.Type> | VoidApiError<"ScenariosPreview404", typeof ScenariosPreview404.Type> | VoidApiError<"ScenariosPreview422", typeof ScenariosPreview422.Type>>
+  /**
+* **Scopes**: `void:read` `void:write`
+*/
+readonly "entitlementsList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof EntitlementsList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"EntitlementsList422", typeof EntitlementsList422.Type>>
   /**
 * **Scopes**: `void:write`
 */
@@ -1151,7 +1375,7 @@ readonly "entitlementsGet": <Config extends OperationConfig>(id: string, options
   /**
 * **Scopes**: `void:read` `void:write`
 */
-readonly "metersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof MetersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError>
+readonly "metersList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof MetersList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"MetersList422", typeof MetersList422.Type>>
   /**
 * **Scopes**: `void:read` `void:write`
 */
@@ -1213,10 +1437,6 @@ readonly "subscriptionsRevoke": <Config extends OperationConfig>(id: string, opt
 * **Scopes**: `void:read` `void:write`
 */
 readonly "subscriptionsCycles": <Config extends OperationConfig>(id: string, options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof SubscriptionsCycles200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"SubscriptionsCycles400", typeof SubscriptionsCycles400.Type> | VoidApiError<"SubscriptionsCycles404", typeof SubscriptionsCycles404.Type> | VoidApiError<"SubscriptionsCycles409", typeof SubscriptionsCycles409.Type> | VoidApiError<"SubscriptionsCycles422", typeof SubscriptionsCycles422.Type>>
-  /**
-* **Scopes**: `void:read` `void:write`
-*/
-readonly "scenariosList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof ScenariosList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"ScenariosList422", typeof ScenariosList422.Type>>
 }
 
 export interface VoidApiError<Tag extends string, E> {
@@ -1272,6 +1492,10 @@ export const makePromiseClient = (api: Client, run: Run) => ({
     "list": (params: NonNullable<NonNullable<Parameters<Client["eventsList"]>[0]>['params']> = {}) => run(api["eventsList"]({ params })),
     "ingest": (payload: NonNullable<Parameters<Client["eventsIngest"]>[0]>['payload']) => run(api["eventsIngest"]({ payload })),
   },
+  "activities": {
+    "list": (params: NonNullable<NonNullable<Parameters<Client["activitiesList"]>[0]>['params']> = {}) => run(api["activitiesList"]({ params })),
+    "span": (arg0: Parameters<Client["activitiesSpan"]>[0]) => run(api["activitiesSpan"](arg0, undefined)),
+  },
   "reducers": {
     "list": () => run(api["reducersList"](undefined)),
     "create": (payload: NonNullable<Parameters<Client["reducersCreate"]>[0]>['payload']) => run(api["reducersCreate"]({ payload })),
@@ -1289,6 +1513,15 @@ export const makePromiseClient = (api: Client, run: Run) => ({
     "get": (arg0: Parameters<Client["deploysGet"]>[0]) => run(api["deploysGet"](arg0, undefined)),
     "configuration": (arg0: Parameters<Client["deploysConfiguration"]>[0]) => run(api["deploysConfiguration"](arg0, undefined)),
     "activate": (arg0: Parameters<Client["deploysActivate"]>[0]) => run(api["deploysActivate"](arg0, undefined)),
+  },
+  "scenarios": {
+    "list": () => run(api["scenariosList"](undefined)),
+    "create": (payload: NonNullable<Parameters<Client["scenariosCreate"]>[0]>['payload']) => run(api["scenariosCreate"]({ payload })),
+    "get": (arg0: Parameters<Client["scenariosGet"]>[0]) => run(api["scenariosGet"](arg0, undefined)),
+    "update": (arg0: Parameters<Client["scenariosUpdate"]>[0], payload: NonNullable<Parameters<Client["scenariosUpdate"]>[1]>['payload']) => run(api["scenariosUpdate"](arg0, { payload })),
+    "delete": (arg0: Parameters<Client["scenariosDelete"]>[0]) => run(api["scenariosDelete"](arg0, undefined)),
+    "promote": (arg0: Parameters<Client["scenariosPromote"]>[0]) => run(api["scenariosPromote"](arg0, undefined)),
+    "preview": (arg0: Parameters<Client["scenariosPreview"]>[0], payload: NonNullable<Parameters<Client["scenariosPreview"]>[1]>['payload']) => run(api["scenariosPreview"](arg0, { payload })),
   },
   "entitlements": {
     "list": () => run(api["entitlementsList"](undefined)),
@@ -1313,9 +1546,6 @@ export const makePromiseClient = (api: Client, run: Run) => ({
     "cancel": (arg0: Parameters<Client["subscriptionsCancel"]>[0], payload: NonNullable<Parameters<Client["subscriptionsCancel"]>[1]>['payload']) => run(api["subscriptionsCancel"](arg0, { payload })),
     "revoke": (arg0: Parameters<Client["subscriptionsRevoke"]>[0]) => run(api["subscriptionsRevoke"](arg0, undefined)),
     "cycles": (arg0: Parameters<Client["subscriptionsCycles"]>[0]) => run(api["subscriptionsCycles"](arg0, undefined)),
-  },
-  "scenarios": {
-    "list": () => run(api["scenariosList"](undefined)),
   },
 })
 

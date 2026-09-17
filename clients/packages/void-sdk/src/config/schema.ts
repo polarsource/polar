@@ -621,6 +621,59 @@ export function signal(key: string, options: SignalOptions): SignalRef {
 }
 
 /** Every definition a plugin may contain; everything but a plugin itself. */
+export interface ActivityDef<Key extends string = string> {
+  readonly kind: 'activity'
+  readonly key: Key
+  readonly event: EventDef
+  readonly span: string
+  readonly run?: string
+  readonly taxonomy: string
+}
+
+const SLUG = /^[a-z0-9][a-z0-9_-]*$/
+
+const eventFromSource = (source: EventDef | PluginDef): EventDef => {
+  if (source.kind === 'event') return source
+  const completion = source.schema.completion
+  if (completion?.kind === 'event') return completion
+  const first = Object.values(source.schema).find(
+    (definition): definition is EventDef => definition.kind === 'event',
+  )
+  if (first === undefined)
+    throw new Error('activities: source has no event to classify')
+  return first
+}
+
+/**
+ * Classify billed spans after ingest. Labels never move money.
+ * `source: ai` uses the plugin's completion event.
+ */
+export function activities<Key extends string = 'agent'>(
+  options: {
+    source: EventDef | PluginDef
+    /** Metadata key that makes one span. Defaults to `call_id`. */
+    span?: string
+    /** Metadata key that folds spans into one job. */
+    run?: string
+    slug?: Key
+    taxonomy?: string
+  },
+): ActivityDef<Key> {
+  const key = (options.slug ?? 'agent') as Key
+  if (!SLUG.test(key)) throw new Error('activities: invalid slug')
+  const span = options.span ?? 'call_id'
+  if (span === '') throw new Error('activities: span is required')
+  if (options.run === '') throw new Error('activities: run is empty')
+  return {
+    kind: 'activity',
+    key,
+    event: eventFromSource(options.source),
+    span,
+    ...(options.run !== undefined && { run: options.run }),
+    taxonomy: options.taxonomy ?? 'polar.agent/v1',
+  }
+}
+
 export type LeafDefinition =
   | SignalRef
   | EventDef
@@ -629,6 +682,7 @@ export type LeafDefinition =
   | MeterDef
   | EntitlementDef
   | ProductDef
+  | ActivityDef
 
 export type Definition = LeafDefinition | PluginDef
 
@@ -639,6 +693,7 @@ const KINDS: ReadonlySet<string> = new Set([
   'meter',
   'entitlement',
   'product',
+  'activity',
   'plugin',
 ])
 

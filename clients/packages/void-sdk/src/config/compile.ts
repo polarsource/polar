@@ -12,6 +12,7 @@ import {
   type Metadata,
   type ProductDef,
   type AnyReducer,
+  type ActivityDef,
 } from './schema'
 
 /**
@@ -77,6 +78,13 @@ export interface IrProduct {
   /** Entitlement slugs, sorted. */
   entitlements: string[]
 }
+export interface IrActivity {
+  slug: string
+  event: string
+  group_by: string
+  run_by?: string
+  taxonomy: string
+}
 export interface Ir {
   version: 4
   events: IrEvent[]
@@ -84,6 +92,7 @@ export interface Ir {
   meters: IrMeter[]
   entitlements: IrEntitlement[]
   products: IrProduct[]
+  activities?: IrActivity[]
 }
 
 const isComparison = (value: unknown): value is Comparison =>
@@ -190,6 +199,14 @@ const byName = <T extends { name: string }>(a: T, b: T) =>
 const bySlug = <T extends { slug: string }>(a: T, b: T) =>
   a.slug.localeCompare(b.slug)
 
+const compileActivity = (activity: ActivityDef): IrActivity => ({
+  slug: activity.key,
+  event: activity.event.name,
+  group_by: activity.span,
+  ...(activity.run !== undefined && { run_by: activity.run }),
+  taxonomy: activity.taxonomy,
+})
+
 export const compile = (config: Config): Ir => ({
   version: 4,
   events: config.events.map(compileEvent).sort(byName),
@@ -205,6 +222,9 @@ export const compile = (config: Config): Ir => ({
     .sort(bySlug),
   entitlements: config.entitlements.map(compileEntitlement).sort(bySlug),
   products: config.products.map(compileProduct).sort(bySlug),
+  ...(config.activities.length
+    ? { activities: config.activities.map(compileActivity).sort(bySlug) }
+    : {}),
 })
 
 const canonical = (value: unknown): string =>

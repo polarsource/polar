@@ -1,4 +1,5 @@
 export {
+  activities,
   count,
   derive,
   entitlement,
@@ -27,6 +28,7 @@ export {
   usd,
 } from './schema'
 export type {
+  ActivityDef,
   Aggregation,
   AnyReducer,
   DerivedReducer,
@@ -87,6 +89,7 @@ export { toSource } from './codegen'
 export type { SourceOptions } from './codegen'
 export type {
   Ir,
+  IrActivity,
   IrClause,
   IrEntitlement,
   IrEvent,

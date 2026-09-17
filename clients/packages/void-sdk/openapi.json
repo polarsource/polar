@@ -8,7 +8,10 @@
   "paths": {
     "/v1/void/organizations/current": {
       "get": {
-        "tags": ["void", "private"],
+        "tags": [
+          "void",
+          "private"
+        ],
         "summary": "Current",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "organizations:current",
@@ -32,33 +35,58 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "void",
         "x-speakeasy-name-override": "current"
       }
     },
     "/v1/void/identities": {
       "get": {
-        "tags": ["void", "private", "identities"],
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
         "summary": "List Identities",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "identities:list",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -129,18 +157,27 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "list_identities"
       },
       "post": {
-        "tags": ["void", "private", "identities"],
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
         "summary": "Ensure Identity",
         "description": "**Scopes**: `void:write`",
         "operationId": "identities:ensure",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "requestBody": {
@@ -213,23 +250,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "ensure_identity"
       }
     },
     "/v1/void/identities/{external_id}": {
       "get": {
-        "tags": ["void", "private", "identities"],
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
         "summary": "Get Identity",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "identities:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -285,29 +333,48 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "get_identity"
       }
     },
     "/v1/void/identities/{external_id}/snapshot": {
       "get": {
-        "tags": ["void", "private", "identities"],
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
         "summary": "Snapshot",
         "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "identities:snapshot",
         "security": [
           {
-            "oat": ["customers:read", "void:read"]
+            "oat": [
+              "customers:read",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:read", "void:write"]
+            "oat": [
+              "customers:read",
+              "void:write"
+            ]
           },
           {
-            "oat": ["customers:write", "void:read"]
+            "oat": [
+              "customers:write",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:write", "void:write"]
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -379,23 +446,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "snapshot"
       }
     },
     "/v1/void/identities/{external_id}/entitlements": {
       "get": {
-        "tags": ["void", "private", "identities"],
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
         "summary": "Entitlements",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "identities:entitlements",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -451,18 +529,27 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "entitlements"
       },
       "put": {
-        "tags": ["void", "private", "identities"],
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
         "summary": "Assign Entitlements",
         "description": "**Scopes**: `void:write`",
         "operationId": "identities:assignEntitlements",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -546,14 +633,22 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "assign_entitlements"
       }
     },
     "/v1/void/customers": {
       "get": {
-        "tags": ["void", "private", "customers", "private"],
+        "tags": [
+          "void",
+          "private",
+          "customers",
+          "private"
+        ],
         "summary": "List Customers",
         "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "customers:list",
@@ -571,28 +666,58 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "oat": ["customers:read", "void:read"]
+            "oat": [
+              "customers:read",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:read", "void:write"]
+            "oat": [
+              "customers:read",
+              "void:write"
+            ]
           },
           {
-            "oat": ["customers:write", "void:read"]
+            "oat": [
+              "customers:write",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:write", "void:write"]
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "list_customers"
       },
       "post": {
-        "tags": ["void", "private", "customers", "private"],
+        "tags": [
+          "void",
+          "private",
+          "customers",
+          "private"
+        ],
         "summary": "Create Customer",
         "description": "**Scopes**: `customers:write`",
         "operationId": "customers:create",
@@ -650,32 +775,55 @@
         },
         "security": [
           {
-            "oat": ["customers:write", "void:write"]
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "create_customer"
       }
     },
     "/v1/void/customers/{external_id}": {
       "get": {
-        "tags": ["void", "private", "customers", "private"],
+        "tags": [
+          "void",
+          "private",
+          "customers",
+          "private"
+        ],
         "summary": "Get Customer",
         "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "customers:get",
         "security": [
           {
-            "oat": ["customers:read", "void:read"]
+            "oat": [
+              "customers:read",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:read", "void:write"]
+            "oat": [
+              "customers:read",
+              "void:write"
+            ]
           },
           {
-            "oat": ["customers:write", "void:read"]
+            "oat": [
+              "customers:write",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:write", "void:write"]
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -721,29 +869,49 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "get_customer"
       }
     },
     "/v1/void/customers/{external_id}/state": {
       "get": {
-        "tags": ["void", "private", "customers", "private"],
+        "tags": [
+          "void",
+          "private",
+          "customers",
+          "private"
+        ],
         "summary": "State",
         "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "customers:state",
         "security": [
           {
-            "oat": ["customers:read", "void:read"]
+            "oat": [
+              "customers:read",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:read", "void:write"]
+            "oat": [
+              "customers:read",
+              "void:write"
+            ]
           },
           {
-            "oat": ["customers:write", "void:read"]
+            "oat": [
+              "customers:write",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:write", "void:write"]
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -822,23 +990,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "state"
       }
     },
     "/v1/void/events": {
       "get": {
-        "tags": ["void", "private", "events"],
+        "tags": [
+          "void",
+          "private",
+          "events"
+        ],
         "summary": "List Events",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "events:list",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -931,18 +1110,27 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "events",
         "x-speakeasy-name-override": "list_events"
       },
       "post": {
-        "tags": ["void", "private", "events"],
+        "tags": [
+          "void",
+          "private",
+          "events"
+        ],
         "summary": "Ingest",
         "description": "**Scopes**: `void:write`",
         "operationId": "events:ingest",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "requestBody": {
@@ -1002,14 +1190,212 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "events",
         "x-speakeasy-name-override": "ingest"
       }
     },
+    "/v1/void/activities": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "activities"
+        ],
+        "summary": "List Activities",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "activities:list",
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Identity"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "run",
+                "span"
+              ],
+              "type": "string",
+              "default": "run",
+              "title": "Group"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "activities",
+        "x-speakeasy-name-override": "list_activities"
+      }
+    },
+    "/v1/void/activities/spans/{span_key}": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "activities"
+        ],
+        "summary": "Get Span",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "activities:span",
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "span_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Span Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivitySpan"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "activities",
+        "x-speakeasy-name-override": "get_span"
+      }
+    },
     "/v1/void/reducers": {
       "get": {
-        "tags": ["void", "private", "reducers"],
+        "tags": [
+          "void",
+          "private",
+          "reducers"
+        ],
         "summary": "List Reducers",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "reducers:list",
@@ -1027,22 +1413,43 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "reducers",
         "x-speakeasy-name-override": "list_reducers"
       },
       "post": {
-        "tags": ["void", "private", "reducers"],
+        "tags": [
+          "void",
+          "private",
+          "reducers"
+        ],
         "summary": "Create Reducer",
         "description": "**Scopes**: `void:write`",
         "operationId": "reducers:create",
@@ -1100,26 +1507,39 @@
         },
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "reducers",
         "x-speakeasy-name-override": "create_reducer"
       }
     },
     "/v1/void/reducers/{id}": {
       "get": {
-        "tags": ["void", "private", "reducers"],
+        "tags": [
+          "void",
+          "private",
+          "reducers"
+        ],
         "summary": "Get Reducer",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "reducers:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1166,23 +1586,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "reducers",
         "x-speakeasy-name-override": "get_reducer"
       }
     },
     "/v1/void/reducers/{id}/records": {
       "get": {
-        "tags": ["void", "private", "reducers"],
+        "tags": [
+          "void",
+          "private",
+          "reducers"
+        ],
         "summary": "Records",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "reducers:records",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1259,23 +1690,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "reducers",
         "x-speakeasy-name-override": "records"
       }
     },
     "/v1/void/metrics": {
       "get": {
-        "tags": ["void", "private", "metrics"],
+        "tags": [
+          "void",
+          "private",
+          "metrics"
+        ],
         "summary": "Get Metrics",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "metrics:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1416,29 +1858,48 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "metrics",
         "x-speakeasy-name-override": "get_metrics"
       }
     },
     "/v1/void/metrics/compare": {
       "get": {
-        "tags": ["void", "private", "metrics"],
+        "tags": [
+          "void",
+          "private",
+          "metrics"
+        ],
         "summary": "Compare Versions",
         "description": "**Scopes**: `customers:read` `customers:write`",
         "operationId": "metrics:compare",
         "security": [
           {
-            "oat": ["customers:read", "void:read"]
+            "oat": [
+              "customers:read",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:read", "void:write"]
+            "oat": [
+              "customers:read",
+              "void:write"
+            ]
           },
           {
-            "oat": ["customers:write", "void:read"]
+            "oat": [
+              "customers:write",
+              "void:read"
+            ]
           },
           {
-            "oat": ["customers:write", "void:write"]
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1519,14 +1980,21 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "metrics",
         "x-speakeasy-name-override": "compare_versions"
       }
     },
     "/v1/void/deploys": {
       "get": {
-        "tags": ["void", "private", "deploys"],
+        "tags": [
+          "void",
+          "private",
+          "deploys"
+        ],
         "summary": "List Deploys",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "deploys:list",
@@ -1544,22 +2012,43 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "list_deploys"
       },
       "post": {
-        "tags": ["void", "private", "deploys"],
+        "tags": [
+          "void",
+          "private",
+          "deploys"
+        ],
         "summary": "Create",
         "description": "Plan or apply configuration. A new version becomes a draft deployment; `activate` makes it the active one. Historical previews require dry_run and customers:read or customers:write in addition to void:write.\n\n**Scopes**: `void:write`",
         "operationId": "deploys:create",
@@ -1567,7 +2056,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeployCreate"
+                "$ref": "#/components/schemas/DeployCreate-Input"
               }
             }
           },
@@ -1627,26 +2116,39 @@
         },
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "create"
       }
     },
     "/v1/void/deploys/latest": {
       "get": {
-        "tags": ["void", "private", "deploys"],
+        "tags": [
+          "void",
+          "private",
+          "deploys"
+        ],
         "summary": "Latest",
         "description": "The deployment of one version, or the active deployment.\n\n**Scopes**: `void:read` `void:write`",
         "operationId": "deploys:latest",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1699,23 +2201,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "latest"
       }
     },
     "/v1/void/deploys/{id}": {
       "get": {
-        "tags": ["void", "private", "deploys"],
+        "tags": [
+          "void",
+          "private",
+          "deploys"
+        ],
         "summary": "Get",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "deploys:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1762,23 +2275,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "get"
       }
     },
     "/v1/void/deploys/{id}/configuration": {
       "get": {
-        "tags": ["void", "private", "deploys"],
+        "tags": [
+          "void",
+          "private",
+          "deploys"
+        ],
         "summary": "Configuration",
         "description": "The configuration a deployment was created from, as the CLI sent it.\n\n**Scopes**: `void:read` `void:write`",
         "operationId": "deploys:configuration",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1825,20 +2349,29 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization", "User"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "configuration"
       }
     },
     "/v1/void/deploys/{id}/activate": {
       "post": {
-        "tags": ["void", "private", "deploys"],
+        "tags": [
+          "void",
+          "private",
+          "deploys"
+        ],
         "summary": "Activate",
         "description": "Make a deployment the organization's production configuration. The previously active deployment is archived.\n\n**Scopes**: `void:write`",
         "operationId": "deploys:activate",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -1895,14 +2428,551 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "deploys",
         "x-speakeasy-name-override": "activate"
       }
     },
+    "/v1/void/scenarios": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "List Scenarios",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "scenarios:list",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Scenario"
+                  },
+                  "type": "array",
+                  "title": "Response Scenarios:List"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "list_scenarios"
+      },
+      "post": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "Create",
+        "description": "Start a pricing scenario from a deployed version. A scenario is a sandbox: it stays pinned to that version, is not part of the lineage and never serves traffic.\n\n**Scopes**: `void:write`",
+        "operationId": "scenarios:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scenario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioBaseUnavailable"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "create"
+      }
+    },
+    "/v1/void/scenarios/{id}": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "Get",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "scenarios:get",
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scenario"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "get"
+      },
+      "patch": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "Update",
+        "description": "**Scopes**: `void:write`",
+        "operationId": "scenarios:update",
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scenario"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidScenario"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "update"
+      },
+      "delete": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "Delete",
+        "description": "**Scopes**: `void:write`",
+        "operationId": "scenarios:delete",
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "delete"
+      }
+    },
+    "/v1/void/scenarios/{id}/promote": {
+      "post": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "Promote",
+        "description": "Deploy the scenario's resolved configuration as a draft deployment. Activation is a separate step on the deployment.\n\n**Scopes**: `void:write`",
+        "operationId": "scenarios:promote",
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidDeployment"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "promote"
+      }
+    },
+    "/v1/void/scenarios/{id}/preview": {
+      "post": {
+        "tags": [
+          "void",
+          "private",
+          "scenarios"
+        ],
+        "summary": "Preview",
+        "description": "Plan the scenario against current state and reprice the base version's usage over the window. Requires customers:read in addition to void:write. Writes nothing.\n\n**Scopes**: `void:write`",
+        "operationId": "scenarios:preview",
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioPreview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidScenario"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "scenarios",
+        "x-speakeasy-name-override": "preview"
+      }
+    },
     "/v1/void/entitlements": {
       "get": {
-        "tags": ["void", "private", "entitlements"],
+        "tags": [
+          "void",
+          "private",
+          "entitlements"
+        ],
         "summary": "List Entitlements",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "entitlements:list",
@@ -1920,22 +2990,43 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "entitlements",
         "x-speakeasy-name-override": "list_entitlements"
       },
       "post": {
-        "tags": ["void", "private", "entitlements"],
+        "tags": [
+          "void",
+          "private",
+          "entitlements"
+        ],
         "summary": "Create Entitlement",
         "description": "**Scopes**: `void:write`",
         "operationId": "entitlements:create",
@@ -1993,26 +3084,39 @@
         },
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "entitlements",
         "x-speakeasy-name-override": "create_entitlement"
       }
     },
     "/v1/void/entitlements/{id}": {
       "get": {
-        "tags": ["void", "private", "entitlements"],
+        "tags": [
+          "void",
+          "private",
+          "entitlements"
+        ],
         "summary": "Get Entitlement",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "entitlements:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2059,14 +3163,21 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "entitlements",
         "x-speakeasy-name-override": "get_entitlement"
       }
     },
     "/v1/void/meters": {
       "get": {
-        "tags": ["void", "private", "meters"],
+        "tags": [
+          "void",
+          "private",
+          "meters"
+        ],
         "summary": "List Meters",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "meters:list",
@@ -2084,33 +3195,58 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         },
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "list_meters"
       }
     },
     "/v1/void/meters/{id}": {
       "get": {
-        "tags": ["void", "private", "meters"],
+        "tags": [
+          "void",
+          "private",
+          "meters"
+        ],
         "summary": "Get Meter",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "meters:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2157,23 +3293,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "get_meter"
       }
     },
     "/v1/void/meters/{id}/balance": {
       "get": {
-        "tags": ["void", "private", "meters"],
+        "tags": [
+          "void",
+          "private",
+          "meters"
+        ],
         "summary": "Balance",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "meters:balance",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2256,23 +3403,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "balance"
       }
     },
     "/v1/void/meters/{id}/check": {
       "get": {
-        "tags": ["void", "private", "meters"],
+        "tags": [
+          "void",
+          "private",
+          "meters"
+        ],
         "summary": "Check",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "meters:check",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2348,23 +3506,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "check"
       }
     },
     "/v1/void/products": {
       "get": {
-        "tags": ["void", "private", "products"],
+        "tags": [
+          "void",
+          "private",
+          "products"
+        ],
         "summary": "List Products",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "products:list",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2411,23 +3580,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "list_products"
       }
     },
     "/v1/void/products/{id}": {
       "get": {
-        "tags": ["void", "private", "products"],
+        "tags": [
+          "void",
+          "private",
+          "products"
+        ],
         "summary": "Get Product",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "products:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2474,23 +3654,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "get_product"
       }
     },
     "/v1/void/subscriptions": {
       "get": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "List Subscriptions",
         "description": "Subscriptions of the organization, or of one identity. `active` keeps\nonly the ones granting access right now.\n\n**Scopes**: `void:read` `void:write`",
         "operationId": "subscriptions:list",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2577,18 +3768,27 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "list_subscriptions"
       },
       "post": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "Create",
         "description": "Subscribe an identity to a product generation, or record a one-time\npurchase. Writes the row and the events derived from it together.\n\n**Scopes**: `void:write`",
         "operationId": "subscriptions:create",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "requestBody": {
@@ -2653,20 +3853,29 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "create"
       }
     },
     "/v1/void/subscriptions/rebuild": {
       "post": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "Rebuild",
         "description": "Re-project the subscriptions table from the lifecycle events in the\nstream. `dry_run` only reports the differences: the consistency check.\n\n**Scopes**: `void:write`",
         "operationId": "subscriptions:rebuild",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2733,23 +3942,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "rebuild"
       }
     },
     "/v1/void/subscriptions/{id}": {
       "get": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "Get",
         "description": "**Scopes**: `void:read` `void:write`",
         "operationId": "subscriptions:get",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2816,20 +4036,29 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "get"
       }
     },
     "/v1/void/subscriptions/{id}/cancel": {
       "post": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "Cancel",
         "description": "**Scopes**: `void:write`",
         "operationId": "subscriptions:cancel",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2906,20 +4135,29 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "cancel"
       }
     },
     "/v1/void/subscriptions/{id}/revoke": {
       "post": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "Revoke",
         "description": "End access immediately.\n\n**Scopes**: `void:write`",
         "operationId": "subscriptions:revoke",
         "security": [
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -2986,23 +4224,34 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "revoke"
       }
     },
     "/v1/void/subscriptions/{id}/cycles": {
       "get": {
-        "tags": ["void", "private", "subscriptions"],
+        "tags": [
+          "void",
+          "private",
+          "subscriptions"
+        ],
         "summary": "Cycles",
         "description": "Closed periods with the fixed amount and each meter's usage priced.\n\n**Scopes**: `void:read` `void:write`",
         "operationId": "subscriptions:cycles",
         "security": [
           {
-            "oat": ["void:read"]
+            "oat": [
+              "void:read"
+            ]
           },
           {
-            "oat": ["void:write"]
+            "oat": [
+              "void:write"
+            ]
           }
         ],
         "parameters": [
@@ -3073,60 +4322,321 @@
             }
           }
         },
-        "x-polar-allowed-subjects": ["Organization"],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "cycles"
-      }
-    },
-    "/v1/void/scenarios": {
-      "get": {
-        "tags": ["void", "private", "scenarios"],
-        "summary": "List Scenarios",
-        "description": "**Scopes**: `void:read` `void:write`",
-        "operationId": "scenarios:list",
-        "security": [
-          {
-            "oat": ["void:read"]
-          },
-          {
-            "oat": ["void:write"]
-          }
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Scenario"
-                  },
-                  "title": "Response Scenarios:List"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-polar-allowed-subjects": ["Organization", "User"],
-        "x-speakeasy-group": "scenarios",
-        "x-speakeasy-name-override": "list_scenarios"
       }
     }
   },
   "components": {
     "schemas": {
+      "ActivityReport": {
+        "properties": {
+          "taxonomy": {
+            "type": "string",
+            "title": "Taxonomy"
+          },
+          "window": {
+            "$ref": "#/components/schemas/ActivityWindow"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ActivityTotals"
+          },
+          "by_activity": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityShare"
+            },
+            "type": "array",
+            "title": "By Activity"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityRun"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taxonomy",
+          "window",
+          "totals",
+          "by_activity",
+          "runs"
+        ],
+        "title": "ActivityReport"
+      },
+      "ActivityRun": {
+        "properties": {
+          "run_key": {
+            "type": "string",
+            "title": "Run Key"
+          },
+          "cost": {
+            "type": "number",
+            "title": "Cost"
+          },
+          "by_activity": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityShare"
+            },
+            "type": "array",
+            "title": "By Activity"
+          },
+          "spans": {
+            "type": "integer",
+            "title": "Spans"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_key",
+          "cost",
+          "by_activity",
+          "spans"
+        ],
+        "title": "ActivityRun"
+      },
+      "ActivityShare": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "cost": {
+            "type": "number",
+            "title": "Cost"
+          },
+          "share": {
+            "type": "number",
+            "title": "Share"
+          },
+          "spans": {
+            "type": "integer",
+            "title": "Spans"
+          },
+          "waste_cost": {
+            "type": "number",
+            "title": "Waste Cost"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "cost",
+          "share",
+          "spans",
+          "waste_cost"
+        ],
+        "title": "ActivityShare"
+      },
+      "ActivitySpan": {
+        "properties": {
+          "span_key": {
+            "type": "string",
+            "title": "Span Key"
+          },
+          "activity": {
+            "type": "string",
+            "title": "Activity"
+          },
+          "activity_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Confidence"
+          },
+          "waste": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waste"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "event_name": {
+            "type": "string",
+            "title": "Event Name"
+          },
+          "external_identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Identity Id"
+          },
+          "run_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Key"
+          },
+          "first_event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Event At",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "last_event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Event At",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "classified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classified At"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Event Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "span_key",
+          "activity",
+          "activity_confidence",
+          "waste",
+          "cost",
+          "input_tokens",
+          "output_tokens",
+          "event_count",
+          "event_name",
+          "external_identity_id",
+          "run_key",
+          "first_event_at",
+          "last_event_at",
+          "classified_at"
+        ],
+        "title": "ActivitySpan"
+      },
+      "ActivityTotals": {
+        "properties": {
+          "cost": {
+            "type": "number",
+            "title": "Cost"
+          },
+          "labeled_cost": {
+            "type": "number",
+            "title": "Labeled Cost"
+          },
+          "unlabeled_cost": {
+            "type": "number",
+            "title": "Unlabeled Cost"
+          },
+          "pending_cost": {
+            "type": "number",
+            "title": "Pending Cost"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cost",
+          "labeled_cost",
+          "unlabeled_cost",
+          "pending_cost"
+        ],
+        "title": "ActivityTotals"
+      },
+      "ActivityWindow": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "type": "object",
+        "title": "ActivityWindow"
+      },
       "Balance": {
         "properties": {
           "at": {
@@ -3134,7 +4644,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3157,7 +4669,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3169,7 +4683,9 @@
             "items": {
               "type": "string",
               "format": "date-time",
-              "examples": ["2026-01-01T00:00:00.000000Z"]
+              "examples": [
+                "2026-01-01T00:00:00.000000Z"
+              ]
             },
             "type": "array",
             "title": "Boundaries"
@@ -3180,7 +4696,9 @@
             },
             "propertyNames": {
               "format": "date-time",
-              "examples": ["2026-01-01T00:00:00.000000Z"]
+              "examples": [
+                "2026-01-01T00:00:00.000000Z"
+              ]
             },
             "type": "object",
             "title": "Cycles"
@@ -3232,7 +4750,11 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["hard", "soft", "unlimited"]
+                "enum": [
+                  "hard",
+                  "soft",
+                  "unlimited"
+                ]
               },
               {
                 "type": "null"
@@ -3256,7 +4778,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3269,7 +4793,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3349,7 +4875,11 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["hard", "soft", "unlimited"]
+                "enum": [
+                  "hard",
+                  "soft",
+                  "unlimited"
+                ]
               },
               {
                 "type": "null"
@@ -3366,7 +4896,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3379,7 +4911,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3417,7 +4951,11 @@
           }
         },
         "type": "object",
-        "required": ["slug", "func", "metrics"],
+        "required": [
+          "slug",
+          "func",
+          "metrics"
+        ],
         "title": "ComparisonMetric"
       },
       "CountAggregation": {
@@ -3470,11 +5008,19 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
-        "required": ["id", "external_id", "email", "name", "created_at"],
+        "required": [
+          "id",
+          "external_id",
+          "email",
+          "name",
+          "created_at"
+        ],
         "title": "Customer"
       },
       "CustomerBindingConflict": {
@@ -3483,7 +5029,9 @@
             "type": "string",
             "const": "CustomerBindingConflict",
             "title": "Error",
-            "examples": ["CustomerBindingConflict"]
+            "examples": [
+              "CustomerBindingConflict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -3491,7 +5039,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "CustomerBindingConflict"
       },
       "CustomerCreate": {
@@ -3535,7 +5086,10 @@
           }
         },
         "type": "object",
-        "required": ["external_id", "email"],
+        "required": [
+          "external_id",
+          "email"
+        ],
         "title": "CustomerCreate"
       },
       "CustomerMeterState": {
@@ -3594,20 +5148,26 @@
             "type": "string",
             "format": "date-time",
             "title": "At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "since": {
             "type": "string",
             "format": "date-time",
             "title": "Since",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "next_change_at": {
             "anyOf": [
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3665,7 +5225,9 @@
             "type": "string",
             "const": "DeletedIdentityConflict",
             "title": "Error",
-            "examples": ["DeletedIdentityConflict"]
+            "examples": [
+              "DeletedIdentityConflict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -3673,7 +5235,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "DeletedIdentityConflict"
       },
       "Deploy": {
@@ -3746,6 +5311,55 @@
         ],
         "title": "Deploy"
       },
+      "DeployActivity": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Event"
+          },
+          "group_by": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Group By",
+            "default": "call_id"
+          },
+          "run_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run By"
+          },
+          "taxonomy": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Taxonomy",
+            "default": "polar.agent/v1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "event"
+        ],
+        "title": "DeployActivity"
+      },
       "DeployConfiguration": {
         "properties": {
           "reducers": {
@@ -3779,14 +5393,62 @@
             "type": "array",
             "title": "Products",
             "default": []
+          },
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/DeployActivity"
+            },
+            "type": "array",
+            "title": "Activities",
+            "default": []
           }
         },
         "type": "object",
         "title": "DeployConfiguration",
         "description": "The deployable definitions alone, as stored on a deployment."
       },
-      "DeployCreate": {
+      "DeployCreate-Input": {
         "properties": {
+          "reducers": {
+            "items": {
+              "$ref": "#/components/schemas/DeployReducer-Input"
+            },
+            "type": "array",
+            "title": "Reducers",
+            "default": []
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/DeployMeter-Input"
+            },
+            "type": "array",
+            "title": "Meters",
+            "default": []
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntitlement"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "default": []
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/DeployProduct-Input"
+            },
+            "type": "array",
+            "title": "Products",
+            "default": []
+          },
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/DeployActivity"
+            },
+            "type": "array",
+            "title": "Activities",
+            "default": []
+          },
           "checksum": {
             "type": "string",
             "minLength": 1,
@@ -3805,38 +5467,6 @@
             "description": "Activate the deployment once applied. Requires an organization that has passed review.",
             "default": false
           },
-          "reducers": {
-            "items": {
-              "$ref": "#/components/schemas/DeployReducer"
-            },
-            "type": "array",
-            "title": "Reducers",
-            "default": []
-          },
-          "meters": {
-            "items": {
-              "$ref": "#/components/schemas/DeployMeter"
-            },
-            "type": "array",
-            "title": "Meters",
-            "default": []
-          },
-          "entitlements": {
-            "items": {
-              "$ref": "#/components/schemas/DeployEntitlement"
-            },
-            "type": "array",
-            "title": "Entitlements",
-            "default": []
-          },
-          "products": {
-            "items": {
-              "$ref": "#/components/schemas/DeployProduct"
-            },
-            "type": "array",
-            "title": "Products",
-            "default": []
-          },
           "preview": {
             "anyOf": [
               {
@@ -3851,7 +5481,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["checksum"],
+        "required": [
+          "checksum"
+        ],
         "title": "DeployCreate"
       },
       "DeployCreate-Output": {
@@ -3888,6 +5520,14 @@
             "title": "Products",
             "default": []
           },
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/DeployActivity"
+            },
+            "type": "array",
+            "title": "Activities",
+            "default": []
+          },
           "checksum": {
             "type": "string",
             "minLength": 1,
@@ -3920,7 +5560,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["checksum"],
+        "required": [
+          "checksum"
+        ],
         "title": "DeployCreate"
       },
       "DeployEntitlement": {
@@ -3955,14 +5597,22 @@
           }
         },
         "type": "object",
-        "required": ["slug"],
+        "required": [
+          "slug"
+        ],
         "title": "DeployEntitlement"
       },
       "DeployEntry": {
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["reducer", "meter", "entitlement", "product"],
+            "enum": [
+              "reducer",
+              "meter",
+              "entitlement",
+              "product",
+              "activity"
+            ],
             "title": "Kind"
           },
           "key": {
@@ -3971,7 +5621,13 @@
           },
           "action": {
             "type": "string",
-            "enum": ["create", "replace", "update", "unchanged", "orphan"],
+            "enum": [
+              "create",
+              "replace",
+              "update",
+              "unchanged",
+              "orphan"
+            ],
             "title": "Action"
           },
           "reason": {
@@ -4010,10 +5666,17 @@
           }
         },
         "type": "object",
-        "required": ["kind", "key", "action", "reason", "id", "price_preview"],
+        "required": [
+          "kind",
+          "key",
+          "action",
+          "reason",
+          "id",
+          "price_preview"
+        ],
         "title": "DeployEntry"
       },
-      "DeployMeter": {
+      "DeployMeter-Input": {
         "properties": {
           "slug": {
             "type": "string",
@@ -4062,7 +5725,11 @@
           }
         },
         "type": "object",
-        "required": ["slug", "reducer", "unit_amount"],
+        "required": [
+          "slug",
+          "reducer",
+          "unit_amount"
+        ],
         "title": "DeployMeter"
       },
       "DeployMeter-Output": {
@@ -4106,10 +5773,14 @@
           }
         },
         "type": "object",
-        "required": ["slug", "reducer", "unit_amount"],
+        "required": [
+          "slug",
+          "reducer",
+          "unit_amount"
+        ],
         "title": "DeployMeter"
       },
-      "DeployProduct": {
+      "DeployProduct-Input": {
         "properties": {
           "slug": {
             "type": "string",
@@ -4136,18 +5807,18 @@
           "price": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/RecurringPrice"
+                "$ref": "#/components/schemas/RecurringPrice-Input"
               },
               {
-                "$ref": "#/components/schemas/OneTimePrice"
+                "$ref": "#/components/schemas/OneTimePrice-Input"
               }
             ],
             "title": "Price",
             "discriminator": {
               "propertyName": "type",
               "mapping": {
-                "one_time": "#/components/schemas/OneTimePrice",
-                "recurring": "#/components/schemas/RecurringPrice"
+                "one_time": "#/components/schemas/OneTimePrice-Input",
+                "recurring": "#/components/schemas/RecurringPrice-Input"
               }
             }
           },
@@ -4176,7 +5847,11 @@
           }
         },
         "type": "object",
-        "required": ["slug", "name", "price"],
+        "required": [
+          "slug",
+          "name",
+          "price"
+        ],
         "title": "DeployProduct"
       },
       "DeployProduct-Output": {
@@ -4246,7 +5921,11 @@
           }
         },
         "type": "object",
-        "required": ["slug", "name", "price"],
+        "required": [
+          "slug",
+          "name",
+          "price"
+        ],
         "title": "DeployProduct"
       },
       "DeployProductMeter": {
@@ -4259,7 +5938,11 @@
           },
           "limit": {
             "type": "string",
-            "enum": ["hard", "soft", "unlimited"],
+            "enum": [
+              "hard",
+              "soft",
+              "unlimited"
+            ],
             "title": "Limit",
             "default": "hard"
           },
@@ -4284,10 +5967,12 @@
           }
         },
         "type": "object",
-        "required": ["slug"],
+        "required": [
+          "slug"
+        ],
         "title": "DeployProductMeter"
       },
-      "DeployReducer": {
+      "DeployReducer-Input": {
         "properties": {
           "slug": {
             "type": "string",
@@ -4350,7 +6035,10 @@
           }
         },
         "type": "object",
-        "required": ["slug", "aggregation"],
+        "required": [
+          "slug",
+          "aggregation"
+        ],
         "title": "DeployReducer"
       },
       "DeployReducer-Output": {
@@ -4416,7 +6104,10 @@
           }
         },
         "type": "object",
-        "required": ["slug", "aggregation"],
+        "required": [
+          "slug",
+          "aggregation"
+        ],
         "title": "DeployReducer"
       },
       "DeploymentConflict": {
@@ -4425,7 +6116,9 @@
             "type": "string",
             "const": "DeploymentConflict",
             "title": "Error",
-            "examples": ["DeploymentConflict"]
+            "examples": [
+              "DeploymentConflict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -4433,7 +6126,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "DeploymentConflict"
       },
       "DeploymentNotActivatable": {
@@ -4442,7 +6138,9 @@
             "type": "string",
             "const": "DeploymentNotActivatable",
             "title": "Error",
-            "examples": ["DeploymentNotActivatable"]
+            "examples": [
+              "DeploymentNotActivatable"
+            ]
           },
           "detail": {
             "type": "string",
@@ -4450,7 +6148,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "DeploymentNotActivatable"
       },
       "DerivedAggregation": {
@@ -4479,7 +6180,10 @@
           }
         },
         "type": "object",
-        "required": ["inputs", "expression"],
+        "required": [
+          "inputs",
+          "expression"
+        ],
         "title": "DerivedAggregation"
       },
       "Entitlement": {
@@ -4512,11 +6216,19 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
-        "required": ["id", "slug", "name", "description", "created_at"],
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "created_at"
+        ],
         "title": "Entitlement"
       },
       "EntitlementAssignmentConflict": {
@@ -4525,7 +6237,9 @@
             "type": "string",
             "const": "EntitlementAssignmentConflict",
             "title": "Error",
-            "examples": ["EntitlementAssignmentConflict"]
+            "examples": [
+              "EntitlementAssignmentConflict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -4533,7 +6247,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "EntitlementAssignmentConflict"
       },
       "EntitlementAssignmentInvalid": {
@@ -4542,7 +6259,9 @@
             "type": "string",
             "const": "EntitlementAssignmentInvalid",
             "title": "Error",
-            "examples": ["EntitlementAssignmentInvalid"]
+            "examples": [
+              "EntitlementAssignmentInvalid"
+            ]
           },
           "detail": {
             "type": "string",
@@ -4550,7 +6269,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "EntitlementAssignmentInvalid"
       },
       "EntitlementAssignmentRead": {
@@ -4585,7 +6307,10 @@
           }
         },
         "type": "object",
-        "required": ["features", "meters"],
+        "required": [
+          "features",
+          "meters"
+        ],
         "title": "EntitlementAssignmentRead"
       },
       "EntitlementCreate": {
@@ -4621,7 +6346,9 @@
           }
         },
         "type": "object",
-        "required": ["slug"],
+        "required": [
+          "slug"
+        ],
         "title": "EntitlementCreate"
       },
       "EntitlementGrant": {
@@ -4672,7 +6399,9 @@
             "type": "string",
             "const": "EntitlementSlugTaken",
             "title": "Error",
-            "examples": ["EntitlementSlugTaken"]
+            "examples": [
+              "EntitlementSlugTaken"
+            ]
           },
           "detail": {
             "type": "string",
@@ -4680,7 +6409,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "EntitlementSlugTaken"
       },
       "EntitlementUpdate": {
@@ -4723,7 +6455,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["external_id"],
+        "required": [
+          "external_id"
+        ],
         "title": "EntitlementUpdate"
       },
       "Event": {
@@ -4737,7 +6471,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Timestamp",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "name": {
             "type": "string",
@@ -4825,7 +6561,9 @@
             "format": "date-time",
             "title": "Timestamp",
             "description": "Event time with timezone, from 1970-01-01 inclusive to 2106-01-01 exclusive.",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "metadata": {
             "additionalProperties": true,
@@ -4834,12 +6572,18 @@
           }
         },
         "type": "object",
-        "required": ["name", "external_id"],
+        "required": [
+          "name",
+          "external_id"
+        ],
         "title": "EventCreate"
       },
       "EventSource": {
         "type": "string",
-        "enum": ["user", "system"],
+        "enum": [
+          "user",
+          "system"
+        ],
         "title": "EventSource"
       },
       "EventsIngestResponse": {
@@ -4854,7 +6598,10 @@
           }
         },
         "type": "object",
-        "required": ["saved", "ignored"],
+        "required": [
+          "saved",
+          "ignored"
+        ],
         "title": "EventsIngestResponse"
       },
       "EventsList": {
@@ -4871,7 +6618,10 @@
           }
         },
         "type": "object",
-        "required": ["items", "pagination"],
+        "required": [
+          "items",
+          "pagination"
+        ],
         "title": "EventsList"
       },
       "Filter-Input": {
@@ -4895,7 +6645,10 @@
           }
         },
         "type": "object",
-        "required": ["conjunction", "clauses"],
+        "required": [
+          "conjunction",
+          "clauses"
+        ],
         "title": "Filter"
       },
       "Filter-Output": {
@@ -4919,7 +6672,10 @@
           }
         },
         "type": "object",
-        "required": ["conjunction", "clauses"],
+        "required": [
+          "conjunction",
+          "clauses"
+        ],
         "title": "Filter"
       },
       "FilterClause": {
@@ -4950,22 +6706,41 @@
           }
         },
         "type": "object",
-        "required": ["property", "operator", "value"],
+        "required": [
+          "property",
+          "operator",
+          "value"
+        ],
         "title": "FilterClause"
       },
       "FilterConjunction": {
         "type": "string",
-        "enum": ["and", "or"],
+        "enum": [
+          "and",
+          "or"
+        ],
         "title": "FilterConjunction"
       },
       "FilterOperator": {
         "type": "string",
-        "enum": ["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"],
+        "enum": [
+          "eq",
+          "ne",
+          "gt",
+          "gte",
+          "lt",
+          "lte",
+          "like",
+          "not_like"
+        ],
         "title": "FilterOperator"
       },
       "GroupBy": {
         "type": "string",
-        "enum": ["external_identity_id", "external_root_id"],
+        "enum": [
+          "external_identity_id",
+          "external_root_id"
+        ],
         "title": "GroupBy"
       },
       "HTTPValidationError": {
@@ -5013,7 +6788,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
@@ -5055,7 +6832,9 @@
           }
         },
         "type": "object",
-        "required": ["external_id"],
+        "required": [
+          "external_id"
+        ],
         "title": "IdentityCreate"
       },
       "IdentityDetail": {
@@ -5090,7 +6869,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "chain": {
             "items": {
@@ -5130,7 +6911,9 @@
             "type": "string",
             "format": "date-time",
             "title": "At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "entitlements": {
             "items": {
@@ -5171,7 +6954,9 @@
             "type": "string",
             "const": "IdentityHierarchyConflict",
             "title": "Error",
-            "examples": ["IdentityHierarchyConflict"]
+            "examples": [
+              "IdentityHierarchyConflict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -5179,7 +6964,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "IdentityHierarchyConflict"
       },
       "IdentitySnapshot": {
@@ -5188,7 +6976,9 @@
             "type": "string",
             "format": "date-time",
             "title": "At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "identity": {
             "$ref": "#/components/schemas/Identity"
@@ -5240,7 +7030,9 @@
             "type": "string",
             "const": "InvalidAttribution",
             "title": "Error",
-            "examples": ["InvalidAttribution"]
+            "examples": [
+              "InvalidAttribution"
+            ]
           },
           "detail": {
             "type": "string",
@@ -5248,7 +7040,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "InvalidAttribution"
       },
       "InvalidDeployment": {
@@ -5257,7 +7052,9 @@
             "type": "string",
             "const": "InvalidDeployment",
             "title": "Error",
-            "examples": ["InvalidDeployment"]
+            "examples": [
+              "InvalidDeployment"
+            ]
           },
           "detail": {
             "type": "string",
@@ -5265,7 +7062,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "InvalidDeployment"
       },
       "InvalidReducer": {
@@ -5274,7 +7074,9 @@
             "type": "string",
             "const": "InvalidReducer",
             "title": "Error",
-            "examples": ["InvalidReducer"]
+            "examples": [
+              "InvalidReducer"
+            ]
           },
           "detail": {
             "type": "string",
@@ -5282,8 +7084,33 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "InvalidReducer"
+      },
+      "InvalidScenario": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "InvalidScenario",
+            "title": "Error",
+            "examples": [
+              "InvalidScenario"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "InvalidScenario"
       },
       "JsonValue": {},
       "LastProcessedEvent": {
@@ -5296,17 +7123,25 @@
             "type": "string",
             "format": "date-time",
             "title": "Timestamp",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "ingested_at": {
             "type": "string",
             "format": "date-time",
             "title": "Ingested At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
-        "required": ["external_id", "timestamp", "ingested_at"],
+        "required": [
+          "external_id",
+          "timestamp",
+          "ingested_at"
+        ],
         "title": "LastProcessedEvent"
       },
       "LedgerState": {
@@ -5316,7 +7151,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5339,7 +7176,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5351,7 +7190,9 @@
             "items": {
               "type": "string",
               "format": "date-time",
-              "examples": ["2026-01-01T00:00:00.000000Z"]
+              "examples": [
+                "2026-01-01T00:00:00.000000Z"
+              ]
             },
             "type": "array",
             "title": "Boundaries"
@@ -5362,7 +7203,9 @@
             },
             "propertyNames": {
               "format": "date-time",
-              "examples": ["2026-01-01T00:00:00.000000Z"]
+              "examples": [
+                "2026-01-01T00:00:00.000000Z"
+              ]
             },
             "type": "object",
             "title": "Cycles"
@@ -5440,7 +7283,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
@@ -5530,7 +7375,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["meter"],
+        "required": [
+          "meter"
+        ],
         "title": "MeterEntitlement",
         "description": "Access to an inherited meter, optionally capped in its usage units."
       },
@@ -5557,7 +7404,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["meter", "cap"],
+        "required": [
+          "meter",
+          "cap"
+        ],
         "title": "MeterEntitlementRead"
       },
       "MeterEntitlementState": {
@@ -5583,7 +7433,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5596,7 +7448,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5638,7 +7492,12 @@
           }
         },
         "type": "object",
-        "required": ["id", "at", "name", "data"],
+        "required": [
+          "id",
+          "at",
+          "name",
+          "data"
+        ],
         "title": "MeterEvent"
       },
       "MeterHolderState": {
@@ -5715,6 +7574,29 @@
           "entitlement_usage_base"
         ],
         "title": "MeterHolderState"
+      },
+      "MeterPatch-Input": {
+        "properties": {
+          "unit_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MeterPatch"
       },
       "MeterPatch-Output": {
         "properties": {
@@ -5826,7 +7708,11 @@
           },
           "limit": {
             "type": "string",
-            "enum": ["hard", "soft", "unlimited"],
+            "enum": [
+              "hard",
+              "soft",
+              "unlimited"
+            ],
             "title": "Limit",
             "default": "hard"
           },
@@ -5855,7 +7741,11 @@
           },
           "limit": {
             "type": "string",
-            "enum": ["hard", "soft", "unlimited"],
+            "enum": [
+              "hard",
+              "soft",
+              "unlimited"
+            ],
             "title": "Limit"
           },
           "rollover_cap": {
@@ -5871,7 +7761,11 @@
           }
         },
         "type": "object",
-        "required": ["included", "limit", "rollover_cap"],
+        "required": [
+          "included",
+          "limit",
+          "rollover_cap"
+        ],
         "title": "MeterTermsRead"
       },
       "MetricComparison": {
@@ -5937,7 +7831,10 @@
           }
         },
         "type": "object",
-        "required": ["timestamp", "value"],
+        "required": [
+          "timestamp",
+          "value"
+        ],
         "title": "MetricPeriod"
       },
       "MetricSeries": {
@@ -6011,10 +7908,14 @@
           }
         },
         "type": "object",
-        "required": ["reducer_id", "interval", "series"],
+        "required": [
+          "reducer_id",
+          "interval",
+          "series"
+        ],
         "title": "Metrics"
       },
-      "OneTimePrice": {
+      "OneTimePrice-Input": {
         "properties": {
           "type": {
             "type": "string",
@@ -6042,7 +7943,11 @@
           }
         },
         "type": "object",
-        "required": ["type", "amount", "currency"],
+        "required": [
+          "type",
+          "amount",
+          "currency"
+        ],
         "title": "OneTimePrice"
       },
       "OneTimePrice-Output": {
@@ -6065,7 +7970,11 @@
           }
         },
         "type": "object",
-        "required": ["type", "amount", "currency"],
+        "required": [
+          "type",
+          "amount",
+          "currency"
+        ],
         "title": "OneTimePrice"
       },
       "OneTimePriceRead": {
@@ -6086,7 +7995,11 @@
           }
         },
         "type": "object",
-        "required": ["type", "amount", "currency"],
+        "required": [
+          "type",
+          "amount",
+          "currency"
+        ],
         "title": "OneTimePriceRead"
       },
       "Pagination": {
@@ -6097,7 +8010,9 @@
           }
         },
         "type": "object",
-        "required": ["total_count"],
+        "required": [
+          "total_count"
+        ],
         "title": "Pagination"
       },
       "PricePreviewCustomer": {
@@ -6165,7 +8080,10 @@
           }
         },
         "type": "object",
-        "required": ["start", "end"],
+        "required": [
+          "start",
+          "end"
+        ],
         "title": "PricePreviewWindow"
       },
       "ProcessedEvent": {
@@ -6178,13 +8096,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Timestamp",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "ingested_at": {
             "type": "string",
             "format": "date-time",
             "title": "Ingested At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "event_ids": {
             "items": {
@@ -6196,7 +8118,12 @@
           }
         },
         "type": "object",
-        "required": ["external_id", "timestamp", "ingested_at", "event_ids"],
+        "required": [
+          "external_id",
+          "timestamp",
+          "ingested_at",
+          "event_ids"
+        ],
         "title": "ProcessedEvent"
       },
       "Product": {
@@ -6272,7 +8199,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
@@ -6289,6 +8218,70 @@
           "created_at"
         ],
         "title": "Product"
+      },
+      "ProductPatch-Input": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RecurringPrice-Input"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OneTimePrice-Input"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "one_time": "#/components/schemas/OneTimePrice-Input",
+                    "recurring": "#/components/schemas/RecurringPrice-Input"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "meters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterTerms"
+            },
+            "type": "object",
+            "title": "Meters",
+            "description": "Replacement terms by meter slug; the meter must already be billed by the product in the base version."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProductPatch",
+        "description": "Overrides for one product of the base version; unset fields keep the base."
       },
       "ProductPatch-Output": {
         "properties": {
@@ -6375,14 +8368,18 @@
             "type": "string",
             "format": "date-time",
             "title": "Started At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "canceled_at": {
             "anyOf": [
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -6395,7 +8392,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -6409,7 +8408,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -6423,7 +8424,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -6435,7 +8438,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           }
         },
         "type": "object",
@@ -6457,7 +8462,11 @@
         "properties": {
           "func": {
             "type": "string",
-            "enum": ["sum", "max", "min"],
+            "enum": [
+              "sum",
+              "max",
+              "min"
+            ],
             "title": "Func"
           },
           "property": {
@@ -6466,22 +8475,30 @@
           }
         },
         "type": "object",
-        "required": ["func", "property"],
+        "required": [
+          "func",
+          "property"
+        ],
         "title": "PropertyAggregation"
       },
       "RecordAggregation": {
         "properties": {
           "func": {
             "type": "string",
-            "enum": ["first", "last"],
+            "enum": [
+              "first",
+              "last"
+            ],
             "title": "Func"
           }
         },
         "type": "object",
-        "required": ["func"],
+        "required": [
+          "func"
+        ],
         "title": "RecordAggregation"
       },
-      "RecurringPrice": {
+      "RecurringPrice-Input": {
         "properties": {
           "type": {
             "type": "string",
@@ -6490,7 +8507,12 @@
           },
           "interval": {
             "type": "string",
-            "enum": ["day", "week", "month", "year"],
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ],
             "title": "Interval"
           },
           "interval_count": {
@@ -6521,7 +8543,12 @@
           }
         },
         "type": "object",
-        "required": ["type", "interval", "amount", "currency"],
+        "required": [
+          "type",
+          "interval",
+          "amount",
+          "currency"
+        ],
         "title": "RecurringPrice"
       },
       "RecurringPrice-Output": {
@@ -6533,7 +8560,12 @@
           },
           "interval": {
             "type": "string",
-            "enum": ["day", "week", "month", "year"],
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ],
             "title": "Interval"
           },
           "interval_count": {
@@ -6556,7 +8588,12 @@
           }
         },
         "type": "object",
-        "required": ["type", "interval", "amount", "currency"],
+        "required": [
+          "type",
+          "interval",
+          "amount",
+          "currency"
+        ],
         "title": "RecurringPrice"
       },
       "RecurringPriceRead": {
@@ -6568,7 +8605,12 @@
           },
           "interval": {
             "type": "string",
-            "enum": ["day", "week", "month", "year"],
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ],
             "title": "Interval"
           },
           "interval_count": {
@@ -6606,7 +8648,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "slug": {
             "type": "string",
@@ -6667,7 +8711,10 @@
           },
           "type": {
             "type": "string",
-            "enum": ["scalar", "dict"],
+            "enum": [
+              "scalar",
+              "dict"
+            ],
             "title": "Type",
             "readOnly": true
           }
@@ -6747,7 +8794,10 @@
           }
         },
         "type": "object",
-        "required": ["slug", "aggregation"],
+        "required": [
+          "slug",
+          "aggregation"
+        ],
         "title": "ReducerCreate"
       },
       "ReducerNotDict": {
@@ -6756,7 +8806,9 @@
             "type": "string",
             "const": "ReducerNotDict",
             "title": "Error",
-            "examples": ["ReducerNotDict"]
+            "examples": [
+              "ReducerNotDict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -6764,7 +8816,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "ReducerNotDict"
       },
       "ReducerNotScalar": {
@@ -6773,7 +8828,9 @@
             "type": "string",
             "const": "ReducerNotScalar",
             "title": "Error",
-            "examples": ["ReducerNotScalar"]
+            "examples": [
+              "ReducerNotScalar"
+            ]
           },
           "detail": {
             "type": "string",
@@ -6781,7 +8838,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "ReducerNotScalar"
       },
       "ReducerRecord": {
@@ -6801,7 +8861,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Timestamp",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "data": {
             "additionalProperties": true,
@@ -6810,7 +8872,11 @@
           }
         },
         "type": "object",
-        "required": ["external_identity_id", "timestamp", "data"],
+        "required": [
+          "external_identity_id",
+          "timestamp",
+          "data"
+        ],
         "title": "ReducerRecord"
       },
       "ReducerState": {
@@ -6835,7 +8901,9 @@
             "type": "string",
             "format": "date-time",
             "title": "Bucket Start",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "value": {
             "anyOf": [
@@ -6875,7 +8943,9 @@
             "type": "string",
             "const": "ReservedEventName",
             "title": "Error",
-            "examples": ["ReservedEventName"]
+            "examples": [
+              "ReservedEventName"
+            ]
           },
           "detail": {
             "type": "string",
@@ -6883,7 +8953,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "ReservedEventName"
       },
       "ResourceNotFound": {
@@ -6892,7 +8965,9 @@
             "type": "string",
             "const": "ResourceNotFound",
             "title": "Error",
-            "examples": ["ResourceNotFound"]
+            "examples": [
+              "ResourceNotFound"
+            ]
           },
           "detail": {
             "type": "string",
@@ -6900,7 +8975,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "ResourceNotFound"
       },
       "Scenario": {
@@ -6968,14 +9046,18 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "modified_at": {
             "anyOf": [
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -7001,6 +9083,76 @@
         ],
         "title": "Scenario"
       },
+      "ScenarioBaseUnavailable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ScenarioBaseUnavailable",
+            "title": "Error",
+            "examples": [
+              "ScenarioBaseUnavailable"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ScenarioBaseUnavailable"
+      },
+      "ScenarioCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "base_version_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Base Version Id",
+            "description": "The deployed version this scenario starts from. A scenario stays pinned to it; it never follows the active version."
+          },
+          "patch": {
+            "$ref": "#/components/schemas/ScenarioPatch-Input"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "base_version_id"
+        ],
+        "title": "ScenarioCreate"
+      },
+      "ScenarioPatch-Input": {
+        "properties": {
+          "products": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductPatch-Input"
+            },
+            "type": "object",
+            "title": "Products"
+          },
+          "meters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MeterPatch-Input"
+            },
+            "type": "object",
+            "title": "Meters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScenarioPatch",
+        "description": "A configuration-level diff against the base version, keyed by slug."
+      },
       "ScenarioPatch-Output": {
         "properties": {
           "products": {
@@ -7023,13 +9175,59 @@
         "title": "ScenarioPatch",
         "description": "A configuration-level diff against the base version, keyed by slug."
       },
+      "ScenarioPreview": {
+        "properties": {
+          "window": {
+            "$ref": "#/components/schemas/PricePreviewWindow"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "window"
+        ],
+        "title": "ScenarioPreview"
+      },
+      "ScenarioUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "patch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioPatch-Input"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Replaces the whole patch when given."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScenarioUpdate"
+      },
       "SlugTaken": {
         "properties": {
           "error": {
             "type": "string",
             "const": "SlugTaken",
             "title": "Error",
-            "examples": ["SlugTaken"]
+            "examples": [
+              "SlugTaken"
+            ]
           },
           "detail": {
             "type": "string",
@@ -7037,7 +9235,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "SlugTaken"
       },
       "StateIdentity": {
@@ -7062,7 +9263,11 @@
           }
         },
         "type": "object",
-        "required": ["external_id", "parent_external_id", "entitlements"],
+        "required": [
+          "external_id",
+          "parent_external_id",
+          "entitlements"
+        ],
         "title": "StateIdentity"
       },
       "SubscriptionCancel": {
@@ -7083,7 +9288,9 @@
             "type": "string",
             "const": "SubscriptionConflict",
             "title": "Error",
-            "examples": ["SubscriptionConflict"]
+            "examples": [
+              "SubscriptionConflict"
+            ]
           },
           "detail": {
             "type": "string",
@@ -7091,7 +9298,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "SubscriptionConflict"
       },
       "SubscriptionCreate": {
@@ -7113,7 +9323,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -7127,7 +9339,9 @@
               {
                 "type": "string",
                 "format": "date-time",
-                "examples": ["2026-01-01T00:00:00.000000Z"]
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
               },
               {
                 "type": "null"
@@ -7138,7 +9352,10 @@
           }
         },
         "type": "object",
-        "required": ["product_id", "external_identity_id"],
+        "required": [
+          "product_id",
+          "external_identity_id"
+        ],
         "title": "SubscriptionCreate"
       },
       "SubscriptionCycle": {
@@ -7147,13 +9364,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Period Start",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "period_end": {
             "type": "string",
             "format": "date-time",
             "title": "Period End",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "currency": {
             "type": "string",
@@ -7216,7 +9437,13 @@
           }
         },
         "type": "object",
-        "required": ["meter_id", "slug", "usage", "unit_amount", "amount"],
+        "required": [
+          "meter_id",
+          "slug",
+          "usage",
+          "unit_amount",
+          "amount"
+        ],
         "title": "SubscriptionCycleMeter"
       },
       "SubscriptionInvalid": {
@@ -7225,7 +9452,9 @@
             "type": "string",
             "const": "SubscriptionInvalid",
             "title": "Error",
-            "examples": ["SubscriptionInvalid"]
+            "examples": [
+              "SubscriptionInvalid"
+            ]
           },
           "detail": {
             "type": "string",
@@ -7233,7 +9462,10 @@
           }
         },
         "type": "object",
-        "required": ["error", "detail"],
+        "required": [
+          "error",
+          "detail"
+        ],
         "title": "SubscriptionInvalid"
       },
       "SubscriptionRead": {
@@ -7246,13 +9478,17 @@
             "type": "string",
             "format": "date-time",
             "title": "At",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "anchor": {
             "type": "string",
             "format": "date-time",
             "title": "Anchor",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "meter_interval": {
             "$ref": "#/components/schemas/TimeInterval"
@@ -7278,7 +9514,11 @@
           },
           "limit": {
             "type": "string",
-            "enum": ["hard", "soft", "unlimited"],
+            "enum": [
+              "hard",
+              "soft",
+              "unlimited"
+            ],
             "title": "Limit"
           },
           "ended": {
@@ -7347,7 +9587,13 @@
       },
       "TimeInterval": {
         "type": "string",
-        "enum": ["hour", "day", "week", "month", "year"],
+        "enum": [
+          "hour",
+          "day",
+          "week",
+          "month",
+          "year"
+        ],
         "title": "TimeInterval"
       },
       "ValidationError": {
@@ -7383,12 +9629,20 @@
           }
         },
         "type": "object",
-        "required": ["loc", "msg", "type"],
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError"
       },
       "VoidDeploymentStatus": {
         "type": "string",
-        "enum": ["draft", "active", "archived"],
+        "enum": [
+          "draft",
+          "active",
+          "archived"
+        ],
         "title": "VoidDeploymentStatus"
       },
       "VoidOrganization": {
@@ -7414,7 +9668,9 @@
             "format": "date-time",
             "title": "Created At",
             "description": "The organization creation timestamp.",
-            "examples": ["2026-01-01T00:00:00.000000Z"]
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "active_deployment_id": {
             "anyOf": [
@@ -7461,7 +9717,11 @@
       },
       "VoidSubscriptionStatus": {
         "type": "string",
-        "enum": ["active", "canceled", "revoked"],
+        "enum": [
+          "active",
+          "canceled",
+          "revoked"
+        ],
         "title": "VoidSubscriptionStatus"
       }
     },

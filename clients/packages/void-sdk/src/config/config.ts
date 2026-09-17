@@ -2,6 +2,7 @@ import type { PluginDef } from './plugin'
 import {
   isDefinition,
   type Definition,
+  type ActivityDef,
   type EntitlementDef,
   type EventDef,
   type LeafDefinition,
@@ -49,6 +50,7 @@ export interface Config<M extends SchemaModule = SchemaModule> {
   readonly meters: readonly MeterDef[]
   readonly entitlements: readonly EntitlementDef[]
   readonly products: readonly ProductDef[]
+  readonly activities: readonly ActivityDef[]
   readonly plugins: readonly PluginDef[]
   readonly signals: readonly SignalRef[]
   readonly eventStorage: readonly EventStorage[]
@@ -203,11 +205,17 @@ export const defineConfig = <M extends SchemaModule>({
     ],
     (r) => r.key,
   )
+  const activities = unique(
+    'activity',
+    definitions.filter((d): d is ActivityDef => d.kind === 'activity'),
+    (a) => a.key,
+  )
   const events = unique(
     'event',
     [
       ...definitions.filter((d): d is EventDef => d.kind === 'event'),
       ...reducers.flatMap((r) => ('inputs' in r ? [] : [r.filter.event])),
+      ...activities.map((a) => a.event),
     ],
     (e) => e.name,
   )
@@ -220,6 +228,7 @@ export const defineConfig = <M extends SchemaModule>({
     meters,
     entitlements,
     products,
+    activities,
     plugins,
     signals,
     eventStorage: eventStorage.map((input) =>

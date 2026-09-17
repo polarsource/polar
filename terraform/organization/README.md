@@ -77,17 +77,27 @@ by centralized root access and must retain its separately secured root credentia
 
 ## Staff access (IAM Identity Center)
 
-`identity_center.tf` defines three access tiers, each with a per-account permission set named
+`identity_center.tf` defines four access tiers, each with a per-account permission set named
 `Polar<Tier><Account>` (e.g. `PolarReadOnlySandbox`). Sets are assigned to Google Workspace groups
-across all accounts:
+for the accounts configured in each tier:
 
 | Group                                            | Permission set              | Access                                              |
 | ------------------------------------------------ | --------------------------- | --------------------------------------------------- |
 | `awsadmins@polar.sh`                             | `PolarAdmin<Account>`       | Unrestricted administrator                          |
 | `awsengineers@polar.sh`, `engineering@polar.sh`  | `PolarEngineering<Account>` | Power-user (no IAM/Organizations), bounded by `PolarPermissionBoundary` |
 | `awsaccess@polar.sh`                             | `PolarReadOnly<Account>`    | Read-only                                           |
+| `finance@polar.sh`, `executive@polar.sh`          | `PolarFinanceManagement`    | Read-only billing and costs in the management account |
 
 Group membership comes from Google Workspace via ssosync (`terraform/identity`), not from here.
+
+Finance uses `AWSBillingReadOnlyAccess` and matches the synced group display names `Finance` and
+`Executive`. Apply the `identity` workspace and confirm both groups have synced before planning
+and applying `organization`: assignments for missing groups are skipped. Check the deployed
+ssosync schedule; its Terraform default is empty (disabled).
+
+The management account must also have **Activate IAM Access** enabled under its billing settings.
+If disabled, the root user must enable it once. After deployment, verify that members of both
+groups can select `PolarFinanceManagement`, view bills and Cost Explorer, and download invoices.
 
 ## Permission boundary
 

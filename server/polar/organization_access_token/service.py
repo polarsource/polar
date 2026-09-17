@@ -21,7 +21,7 @@ from polar.email.schemas import (
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
@@ -109,9 +109,8 @@ class OrganizationAccessTokenService:
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> OrganizationAccessToken | None:
-        token_hash = get_token_hash(token)
         repository = OrganizationAccessTokenRepository.from_session(session)
-        return await repository.get_by_token_hash(token_hash, expired=expired)
+        return await repository.get_by_token(token, expired=expired)
 
     async def create(
         self,

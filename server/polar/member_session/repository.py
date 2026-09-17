@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.orm import contains_eager
 
+from polar.kit.crypto import get_token_hash
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -20,15 +21,15 @@ class MemberSessionRepository(
 ):
     model = MemberSession
 
-    async def get_by_token_hash(
-        self, token_hash: str, *, expired: bool = False
+    async def get_by_token(
+        self, token: str, *, expired: bool = False
     ) -> MemberSession | None:
         statement = (
             select(MemberSession)
             .join(MemberSession.member)
             .join(Member.customer)
             .where(
-                MemberSession.token == token_hash,
+                MemberSession.token == get_token_hash(token),
                 ~MemberSession.is_deleted,
                 ~Member.is_deleted,
                 Customer.can_authenticate,

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, exists, func, select, update
+from sqlalchemy import RowMapping, Select, exists, func, select, text, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -30,6 +30,49 @@ class PayoutRepository(
 ):
     model = Payout
     sorting_enum = PayoutSortProperty
+
+    async def sample_database_waits(self) -> Sequence[RowMapping]:
+        await self.session.execute(text("SET LOCAL statement_timeout = '1s'"))
+        result = await self.session.execute(
+            text("""
+                SELECT
+                    clock_timestamp() AS sampled_at,
+                    a.datname AS database_name,
+                    a.pid,
+                    a.application_name,
+                    a.query_id,
+                    a.query_start,
+                    EXTRACT(EPOCH FROM clock_timestamp() - a.query_start)
+                        AS query_age_seconds,
+                    EXTRACT(EPOCH FROM clock_timestamp() - a.xact_start)
+                        AS transaction_age_seconds,
+                    a.wait_event_type,
+                    a.wait_event,
+                    pg_blocking_pids(a.pid) AS blocking_pids,
+                    ARRAY(
+                        SELECT json_build_object(
+                            'pid', b.pid,
+                            'application_name', b.application_name,
+                            'state', b.state,
+                            'query_id', b.query_id,
+                            'query_start', b.query_start,
+                            'transaction_start', b.xact_start,
+                            'wait_event_type', b.wait_event_type,
+                            'wait_event', b.wait_event
+                        )
+                        FROM pg_stat_activity b
+                        WHERE b.pid = ANY(pg_blocking_pids(a.pid))
+                    ) AS blockers
+                FROM pg_stat_activity a
+                WHERE a.datname = current_database()
+                    AND a.pid <> pg_backend_pid()
+                    AND a.state = 'active'
+                    AND a.query_start < statement_timestamp() - interval '1 second'
+                    AND a.query ~* 'UPDATE (public[.])?transactions SET'
+                    AND a.query ILIKE '%payout_transaction_id%'
+            """)
+        )
+        return result.mappings().all()
 
     async def count_by_account(self, account: UUID) -> int:
         statement = self.get_base_statement().where(Payout.account_id == account)

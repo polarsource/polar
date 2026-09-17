@@ -1,6 +1,6 @@
 ---
 title: "Architecture Decision Records"
-description: "Short, immutable records of the significant, cross-cutting decisions behind Polar."
+description: "Short records of the significant, cross-cutting decisions behind Polar. Corrected in place; superseded when the decision changes."
 ---
 
 An **Architecture Decision Record (ADR)** captures one significant decision: what we
@@ -19,7 +19,7 @@ opposite shape:
 |---|---|---|
 | Answers | "What are we going to build?" | "Why is it this way?" |
 | Size | Pages | One page |
-| Lifespan | Goes stale after ship | Immutable; superseded, not edited |
+| Lifespan | Goes stale after ship | Corrected in place; superseded when the decision changes |
 | When | [When a design document is required](/engineering/design-documents/index) | A decision we need to remember |
 
 A design doc can make several decisions; distil each into an ADR that links back. Reach for
@@ -52,8 +52,23 @@ An ADR's **Status** is one of:
 
 - **Accepted**: the decision stands; treat it as binding. An ADR in the repo is Accepted;
   while it is still under discussion it lives in an open PR, not here.
-- **Superseded by [ADR-XXXX](...)**: replaced. We never delete or rewrite the decision; we
-  add a new ADR and point the old one at it.
+- **Superseded by [ADR-XXXX](...)**: replaced. We add a new ADR and point the old one at it.
+
+### Editing an Accepted ADR
+
+Fix an Accepted ADR in place when the text was wrong or incomplete — not when we changed our
+mind:
+
+- a factual error, or a detail that has gone stale
+- a clarification, a worked example, or evidence from a case that tested the rule
+- an alternative we rejected and had not written down
+
+Supersede it instead when we actually changed the decision. The test: was the old text a
+faithful record of something we no longer believe (supersede), or a poor record of what we
+meant all along (edit)?
+
+Git history keeps every version either way. When an edit touches the **Decision** section, say
+what changed in the PR description.
 
 ## Writing a new ADR
 

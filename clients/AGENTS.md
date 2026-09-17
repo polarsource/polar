@@ -28,8 +28,8 @@ Notes that save time:
 - Unit tests need neither a running backend nor `.env.local`; `apps/web/vitest.config.ts`
   injects the `NEXT_PUBLIC_*` values itself. Only `test:e2e` (Playwright) needs a live stack.
 - `pnpm generate` shells into the server's Python env to run `scripts.generate_openapi`, so it
-  needs the two import-blocking backend artifacts — `server/.jwks.json` and the email-renderer
-  binary. You rarely need it: the generated `packages/client/src/v1.ts` is committed.
+  needs the import-blocking backend artifact — the email-renderer binary. You rarely need it:
+  the generated `packages/client/src/v1.ts` is committed.
 
 ## Post-Feature Checklist
 

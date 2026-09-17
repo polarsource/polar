@@ -3,6 +3,9 @@ from typing import Any, Literal
 
 import jwt
 
+from polar.kit.signer import ALGORITHM as ASYMMETRIC_ALGORITHM
+from polar.kit.signer import get_published_signers
+
 from .utils import utc_now
 
 DEFAULT_EXPIRATION = 60 * 15  # 15 minutes
@@ -20,11 +23,7 @@ def create_expiration_dt(seconds: int) -> datetime:
 
 
 TYPE = Literal[
-    "github_oauth",
     "discord_oauth",
-    "google_oauth",
-    "apple_oauth",
-    "auth",
     "github_repository_benefit_oauth",
     "customer_oauth",
     "slack_integration_oauth",
@@ -51,8 +50,19 @@ def encode(
     return jwt.encode(to_encode, secret, algorithm=ALGORITHM)
 
 
+def _verification_key(token: str, secret: str) -> tuple[Any, str]:
+    kid = jwt.get_unverified_header(token).get("kid")
+    if kid is None:
+        return secret, ALGORITHM
+    for signer in get_published_signers():
+        if signer.kid == kid:
+            return jwt.PyJWK(signer.public_jwk()).key, ASYMMETRIC_ALGORITHM
+    raise DecodeError(f"No published key with id {kid}")
+
+
 def decode_unsafe(*, token: str, secret: str) -> dict[str, Any]:
-    return jwt.decode(token, secret, algorithms=[ALGORITHM])
+    key, algorithm = _verification_key(token, secret)
+    return jwt.decode(token, key, algorithms=[algorithm])
 
 
 def decode(

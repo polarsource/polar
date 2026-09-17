@@ -81,9 +81,6 @@ def do_run_migrations(connection):
         target_metadata=target_metadata,
         compare_type=True,
         include_object=include_object,
-        # Temporary, for the eight column additions: one transaction would hold
-        # all eight locks and deadlock against live traffic.
-        transaction_per_migration=True,
     )
 
     with context.begin_transaction():

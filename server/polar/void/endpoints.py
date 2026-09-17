@@ -5,6 +5,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
+from .activity.endpoints import router as activity_router
 from .auth import VoidRead
 from .customer.endpoints import router as customer_router
 from .deploy.endpoints import router as deploy_router
@@ -43,6 +44,7 @@ router.include_router(identity_router)
 router.include_router(customer_router)
 
 router.include_router(event_router)
+router.include_router(activity_router)
 router.include_router(reducer_router)
 router.include_router(metric_router)
 

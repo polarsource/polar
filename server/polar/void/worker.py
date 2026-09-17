@@ -21,6 +21,8 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.logging import configure
 from polar.postgres import create_async_engine
+from polar.void.activity.activities import ActivityActivities
+from polar.void.activity.workflows import ClassifySpanWorkflow
 from polar.void.event.service import event as event_service
 from polar.void.event.workflows import EventDispatchWorkflow
 from polar.void.meter.activities import MeterActivities
@@ -86,6 +88,7 @@ def create_worker(
     reducers = ReducerActivities(sessionmaker, tinybird, client)
     events = EventActivities(sessionmaker, tinybird, client)
     meters = MeterActivities(sessionmaker, tinybird)
+    activities = ActivityActivities(sessionmaker)
     return Worker(
         client,
         task_queue=TASK_QUEUE,
@@ -100,6 +103,7 @@ def create_worker(
             DerivedDispatchWorkflow,
             EventDispatchWorkflow,
             MeterCycleWorkflow,
+            ClassifySpanWorkflow,
         ],
         activities=[
             reducers.list_reducers,
@@ -107,6 +111,7 @@ def create_worker(
             reducers.dispatch_derived,
             events.dispatch_events,
             meters.cycle_meters,
+            activities.classify_span,
         ],
         max_concurrent_activities=settings.DATABASE_POOL_SIZE,
     )

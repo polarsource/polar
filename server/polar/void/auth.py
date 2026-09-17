@@ -31,6 +31,7 @@ OrganizationHeader = Annotated[
     UUID | None,
     Header(
         alias=ORGANIZATION_HEADER,
+        include_in_schema=False,
         description=(
             "The organization to act on. Required for user credentials that "
             "are not already scoped to a single organization. Organization "

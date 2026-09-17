@@ -26,15 +26,26 @@ def _normalize(value: Any) -> Any:
 REQUEST_FIELDS = {"checksum", "dry_run", "preview", "activate"}
 
 
+def _without_empty_activities(payload: dict[str, Any]) -> dict[str, Any]:
+    if not payload.get("activities"):
+        payload.pop("activities", None)
+    return payload
+
+
 def configuration_payload(config: BaseModel) -> dict[str, Any]:
     """The configuration alone, as stored on a deployment for scenarios to start from."""
-    return config.model_dump(mode="json", exclude=REQUEST_FIELDS)
+    return _without_empty_activities(
+        config.model_dump(mode="json", exclude=REQUEST_FIELDS)
+    )
 
 
 def configuration_hash(config: BaseModel) -> str:
-    payload = _normalize(config.model_dump(exclude=REQUEST_FIELDS))
-    for key in ("reducers", "meters", "products", "entitlements"):
-        payload[key].sort(key=lambda item: item["slug"])
+    payload = _without_empty_activities(
+        _normalize(config.model_dump(exclude=REQUEST_FIELDS))
+    )
+    for key in ("reducers", "meters", "products", "entitlements", "activities"):
+        if key in payload:
+            payload[key].sort(key=lambda item: item["slug"])
     for product in payload["products"]:
         # A product meter is a slug, or a slug with terms; order both by slug.
         product["meters"].sort(

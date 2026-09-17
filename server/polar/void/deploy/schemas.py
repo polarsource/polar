@@ -6,6 +6,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from polar.models.void_deployment import VoidDeploymentStatus
+from polar.void.activity.schemas import DeployActivity
 from polar.void.entitlement.schemas import SLUG_PATTERN as KEY_PATTERN
 from polar.void.product.schemas import MeterTerms, ProductPrice
 from polar.void.reducer.schemas import ReducerCreate
@@ -72,6 +73,7 @@ class DeployConfiguration(BaseModel):
     meters: list[DeployMeter] = []
     entitlements: list[DeployEntitlement] = []
     products: list[DeployProduct] = []
+    activities: list[DeployActivity] = []
 
 
 class DeployCreate(DeployConfiguration):
@@ -136,7 +138,7 @@ class MeterPricePreview(BaseModel):
 
 
 class DeployEntry(BaseModel):
-    kind: Literal["reducer", "meter", "entitlement", "product"]
+    kind: Literal["reducer", "meter", "entitlement", "product", "activity"]
     key: str
     action: Action
     reason: str | None

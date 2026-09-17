@@ -123,6 +123,7 @@ from .user_notification import UserNotification
 from .user_organization import UserOrganization
 from .user_session import UserSession
 from .user_session_organization import UserSessionOrganization
+from .void_activity import VoidActivity, VoidActivitySpan
 from .void_billing_identity import VoidBillingIdentity
 from .void_deployment import VoidDeployment
 from .void_entitlement import VoidEntitlement
@@ -263,6 +264,8 @@ __all__ = [
     "UserOrganization",
     "UserSession",
     "UserSessionOrganization",
+    "VoidActivity",
+    "VoidActivitySpan",
     "VoidBillingIdentity",
     "VoidDeployment",
     "VoidEntitlement",

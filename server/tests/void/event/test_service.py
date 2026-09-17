@@ -153,6 +153,10 @@ class TestDelivery:
             "polar.void.event.service.reducer_service.touch_buckets",
             new_callable=AsyncMock,
         )
+        mocker.patch(
+            "polar.void.event.service.activity_service.touch_events",
+            new_callable=AsyncMock,
+        )
         if failure == "tinybird":
             tinybird.ingest_batch.side_effect = RuntimeError("unavailable")
         else:
@@ -210,6 +214,10 @@ class TestDelivery:
         temporal = MagicMock(spec=Client)
         mocker.patch(
             "polar.void.event.service.reducer_service.touch_buckets",
+            new_callable=AsyncMock,
+        )
+        mocker.patch(
+            "polar.void.event.service.activity_service.touch_events",
             new_callable=AsyncMock,
         )
         assert (

@@ -11,6 +11,7 @@ from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
+    VoidActivity,
     VoidDeployment,
     VoidEntitlement,
     VoidEvent,
@@ -79,6 +80,7 @@ async def counts(session: AsyncSession, organization: Organization) -> list[int]
             VoidEntitlement,
             VoidProduct,
             VoidDeployment,
+            VoidActivity,
         )
     ]
 
@@ -101,7 +103,7 @@ class TestDeploy:
         assert all(
             entry.action == "create" and entry.id is None for entry in plan.entries
         )
-        assert await counts(session, organization) == [0] * 5
+        assert await counts(session, organization) == [0] * 6
         first = await deploy_service.deploy(session, organization.id, config)
         assert first.applied
         assert first.id is not None
@@ -113,7 +115,7 @@ class TestDeploy:
             "entitlement",
             "product",
         }
-        assert await counts(session, organization) == [2, 1, 1, 1, 1]
+        assert await counts(session, organization) == [2, 1, 1, 1, 1, 0]
         repeated = await deploy_service.deploy(
             session,
             organization.id,
@@ -122,7 +124,7 @@ class TestDeploy:
         assert repeated.id == first.id
         assert repeated.version_id == first.version_id
         assert repeated.checksum == "source-checksum"
-        assert await counts(session, organization) == [2, 1, 1, 1, 1]
+        assert await counts(session, organization) == [2, 1, 1, 1, 1, 0]
         changed = deepcopy(CONFIG)
         changed["meters"][0]["unit_amount"] = "0.02"
         changed["entitlements"][0]["description"] = "Reports"
@@ -223,7 +225,7 @@ class TestDeploy:
             await deploy_service.deploy(
                 session, organization.id, config.model_copy(update={"activate": True})
             )
-        assert await counts(session, organization) == [0] * 5
+        assert await counts(session, organization) == [0] * 6
         draft = await deploy_service.deploy(session, organization.id, config)
         assert draft.id is not None
         with pytest.raises(DeploymentNotActivatable):
@@ -247,7 +249,7 @@ class TestDeploy:
                 session, organization.id, DeployCreate.model_validate(CONFIG)
             )
         create.assert_awaited_once()
-        assert await counts(session, organization) == [0] * 5
+        assert await counts(session, organization) == [0] * 6
 
     async def test_orphans_are_reported_against_the_active_version(
         self, session: AsyncSession, organization: Organization
@@ -361,7 +363,7 @@ class TestDeploy:
             await deploy_service.deploy(
                 session, organization.id, DeployCreate.model_validate(body)
             )
-        assert await counts(session, organization) == [0] * 5
+        assert await counts(session, organization) == [0] * 6
 
     async def test_preview_plans_without_writing(
         self, session: AsyncSession, organization: Organization, mocker: MockerFixture
@@ -380,7 +382,7 @@ class TestDeploy:
         plan = await deploy_service.deploy(session, organization.id, config)
         assert not plan.applied
         lock.assert_awaited_once()
-        assert await counts(session, organization) == [0] * 5
+        assert await counts(session, organization) == [0] * 6
 
     async def test_derived_order_and_event_backfill(
         self,
@@ -447,7 +449,7 @@ class TestDeploy:
             await deploy_service.deploy(
                 session, organization.id, DeployCreate.model_validate(renamed)
             )
-        assert await counts(session, organization) == [2, 1, 1, 1, 1]
+        assert await counts(session, organization) == [2, 1, 1, 1, 1, 0]
 
     @pytest.mark.parametrize("kind", ["reducer", "automatic_credit", "entitlement"])
     @pytest.mark.parametrize("dry_run", [True, False])
@@ -491,3 +493,31 @@ class TestDeploy:
         assert plan.id == deployed.id
         assert plan.applied
         assert plan.status == VoidDeploymentStatus.draft
+
+    async def test_activities_version_like_meters(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        body = deepcopy(CONFIG)
+        body["activities"] = [
+            {
+                "slug": "agent",
+                "event": "llm.completion",
+                "group_by": "call_id",
+                "run_by": "run_id",
+            }
+        ]
+        first = await deploy_service.deploy(
+            session,
+            organization.id,
+            DeployCreate.model_validate({**body, "activate": True}),
+        )
+        assert entry(first, "activity", "agent").action == "create"
+        assert await counts(session, organization) == [2, 1, 1, 1, 1, 1]
+        changed = deepcopy(body)
+        changed["activities"][0]["group_by"] = "external_id"
+        second = await deploy_service.deploy(
+            session, organization.id, DeployCreate.model_validate(changed)
+        )
+        assert second.version_id != first.version_id
+        assert entry(second, "activity", "agent").action == "replace"
+        assert await counts(session, organization) == [2, 2, 1, 2, 2, 2]

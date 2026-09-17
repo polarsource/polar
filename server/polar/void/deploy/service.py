@@ -11,6 +11,10 @@ from polar.models import VoidProduct as Product
 from polar.models import VoidReducer as Reducer
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.void.activity.schemas import ActivityCreate
+from polar.void.activity.service import activity as activity_service
+from polar.void.activity.service import same_definition
+from polar.void.activity.versions import activities_in_version
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import classify as entitlement_action
 from polar.void.entitlement.service import entitlement as entitlement_service
@@ -215,7 +219,7 @@ class DeployService:
 
     @staticmethod
     def _validate(config: DeployCreate, current_reducers: dict[str, Reducer]) -> None:
-        for kind in ("reducers", "meters", "entitlements", "products"):
+        for kind in ("reducers", "meters", "entitlements", "products", "activities"):
             definitions = getattr(config, kind)
             if len({definition.slug for definition in definitions}) != len(definitions):
                 raise InvalidDeployment(
@@ -509,6 +513,13 @@ class DeployService:
             apply,
             baseline_version_id,
         )
+        entries += await self._deploy_activities(
+            session,
+            organization_id,
+            create_schema,
+            apply,
+            baseline_version_id,
+        )
 
         if not apply:
             return Deploy(
@@ -644,6 +655,70 @@ class DeployService:
                     id=current_product.id,
                 )
             )
+        return entries
+
+    async def _deploy_activities(
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        create_schema: DeployCreate,
+        apply: bool,
+        baseline_version_id: str | None,
+    ) -> list[DeployEntry]:
+        """Activity definitions belong to their version like meters."""
+        entries: list[DeployEntry] = []
+        all_activities = await activity_service.list(session, organization_id)
+        current_activities = activities_in_version(all_activities, baseline_version_id)
+        existing_activities = activities_in_version(
+            all_activities, create_schema.version_id
+        )
+        for wanted in create_schema.activities:
+            current = current_activities.get(wanted.slug)
+            existing = existing_activities.get(wanted.slug)
+            activity_id = existing.id if existing is not None else None
+            if existing is None and apply:
+                created = await activity_service.create(
+                    session,
+                    organization_id,
+                    ActivityCreate(
+                        version_id=create_schema.version_id,
+                        slug=wanted.slug,
+                        event_name=wanted.event,
+                        group_by=wanted.group_by,
+                        run_by=wanted.run_by,
+                        taxonomy=wanted.taxonomy,
+                    ),
+                )
+                activity_id = created.id
+            if current is None:
+                action: Action = "create"
+            elif same_definition(wanted, current):
+                action = "unchanged"
+            else:
+                action = "replace"
+            entries.append(
+                DeployEntry(
+                    reason=None,
+                    price_preview=None,
+                    kind="activity",
+                    key=wanted.slug,
+                    action=action,
+                    id=activity_id,
+                )
+            )
+        wanted_slugs = {item.slug for item in create_schema.activities}
+        for slug, current in current_activities.items():
+            if slug not in wanted_slugs:
+                entries.append(
+                    DeployEntry(
+                        reason=None,
+                        price_preview=None,
+                        kind="activity",
+                        key=slug,
+                        action="orphan",
+                        id=current.id,
+                    )
+                )
         return entries
 
     @staticmethod

@@ -23,7 +23,7 @@ async def activate_version(
 ) -> VoidDeployment:
     """An active deployment row for a version whose rows tests create directly."""
     deployment = VoidDeployment(
-        organization=organization,
+        organization_id=organization.id,
         checksum="test",
         version_id=version_id,
         status="active",

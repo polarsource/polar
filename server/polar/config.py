@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     VOID_TINYBIRD_API_TOKEN: str | None = None
     VOID_TINYBIRD_WORKSPACE: str | None = None
     VOID_REDUCER_PROCESSING_DELAY_SECONDS: float = 0
+    TYPESAFE_API_KEY: str | None = None
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20

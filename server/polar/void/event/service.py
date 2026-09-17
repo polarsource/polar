@@ -11,6 +11,7 @@ from polar.exceptions import PolarError
 from polar.kit.utils import utc_now
 from polar.models import VoidEvent
 from polar.postgres import AsyncSession
+from polar.void.activity.service import activity as activity_service
 from polar.void.identity.service import identity as identity_service
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
@@ -152,6 +153,7 @@ class EventService:
             timestamps[event.organization_id].append(event.timestamp)
         for organization_id, values in timestamps.items():
             await reducer_service.touch_buckets(temporal, organization_id, values)
+        await activity_service.touch_events(session, temporal, pending)
         await repository.mark_delivered(pending, utc_now())
         return len(pending)
 

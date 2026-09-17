@@ -68,6 +68,29 @@ def test_definition_order_defaults_and_decimal_spelling_do_not_change_the_hash()
     assert first.version_id == second.version_id
 
 
+def test_empty_activities_do_not_change_the_hash() -> None:
+    baseline = config()
+    assert config(activities=[]).version_id == baseline.version_id
+    labeled = config(
+        activities=[{"slug": "agent", "event": "llm.completion", "group_by": "call_id"}]
+    )
+    assert labeled.version_id != baseline.version_id
+    assert (
+        config(
+            activities=[
+                {
+                    "slug": "agent",
+                    "event": "llm.completion",
+                    "group_by": "call_id",
+                    "run_by": None,
+                    "taxonomy": "polar.agent/v1",
+                }
+            ]
+        ).version_id
+        == labeled.version_id
+    )
+
+
 def test_product_meter_terms_hash_by_slug_regardless_of_order() -> None:
     product = {
         "slug": "pro",

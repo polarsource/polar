@@ -6,6 +6,8 @@ locals {
     "awsengineers@polar.sh",
     "engineering@polar.sh",
     "awsaccess@polar.sh",
+    "finance@polar.sh",
+    "executive@polar.sh",
   ]
 }
 

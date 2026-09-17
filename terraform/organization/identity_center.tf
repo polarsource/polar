@@ -18,9 +18,20 @@ locals {
     awsengineers = { display_name = "AWS Engineers" }
     engineering  = { display_name = "Engineering" }
     awsaccess    = { display_name = "AWS Read Only Access" }
+    finance      = { display_name = "Finance" }
+    executive    = { display_name = "Executive" }
   }
 
   access_tiers = {
+    finance = {
+      base_name          = "PolarFinance"
+      description        = "Read-only billing and cost information."
+      managed_policy_arn = "arn:aws:iam::aws:policy/AWSBillingReadOnlyAccess"
+      extra_policy_arns  = []
+      boundary           = false
+      groups             = ["finance", "executive"]
+      accounts           = ["management"]
+    }
     admin = {
       base_name          = "PolarAdmin"
       description        = "Unrestricted administrator access."

@@ -4,7 +4,7 @@ import { StaticImage } from '@/components/Image/StaticImage'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useRef, useState } from 'react'
 
-const FRAME_COUNT = 59
+const FRAME_COUNT = 66
 const FLIP_INTERVAL_MS = 350
 const LOOKAHEAD = 4
 

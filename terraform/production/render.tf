@@ -373,11 +373,6 @@ resource "cloudflare_dns_record" "backoffice" {
   ttl     = 300
 }
 
-moved {
-  from = cloudflare_dns_record.worker
-  to   = cloudflare_dns_record.worker["worker"]
-}
-
 resource "cloudflare_dns_record" "worker" {
   for_each = module.production.worker_urls
 

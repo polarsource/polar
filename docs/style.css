@@ -77,7 +77,6 @@
   stroke-width: 1;
 }
 
-/* Decorative data-flow dots — ambient only, not interactive. */
 .migration-coexistence__dot {
   fill: var(--migration-dot);
 }

@@ -226,9 +226,11 @@ for payments it processes.
     | Prices | Read |
     | Subscriptions | Write |
     | Payment methods | Read |
+    | All accounts | Read |
 
     Set everything else to **None**. Subscription write access allows Polar to
-    stop billing on Stripe during the switch.
+    stop billing on Stripe during the switch. All accounts read access lets
+    Polar identify the Stripe account and reject unsupported Connect platforms.
   </Accordion>
 
   <Accordion title="Subscriptions that need attention">
@@ -499,6 +501,8 @@ safe logging, and an API reconciliation fallback.
 At migration cutover, expect:
 
 - `subscription.updated` when the imported subscription activates
+- `subscription.migrated` with `provider` and `provider_subscription_id` to
+  match the Polar subscription to its source
 - `customer.state_changed` asynchronously after activation
 - Relevant `benefit_grant.*` events
 - `order.paid` when the first Polar renewal succeeds
@@ -523,9 +527,9 @@ During cutover:
 - Freeze conflicting writes for the selected subscription.
 - Use Polar's migration UI.
 - Never mark `billing_owner = polar` from intent alone.
-- Confirm the dashboard result, then reconcile with the public Subscriptions
-  API.
-- Match using the Polar ID or `metadata.stripe_subscription_id` when present.
+- Treat `subscription.migrated` as the cutover signal. Match its
+  `provider_subscription_id` to the source Stripe subscription, then reconcile
+  with the public Subscriptions API.
 - Compare status and current period boundaries before atomically changing
   ownership.
 - Keep skipped or failed subscriptions owned by Stripe.
@@ -537,9 +541,10 @@ After cutover:
 - Verify every Polar subscription maps to one customer and entitlement.
 - Verify paid periods, trial ends, and payment-method coverage.
 
-Polar has no public migration-completed webhook. Treat the migration dashboard
-as cutover truth and use documented public APIs and webhooks for application
-state.
+The migration dashboard is the operational view for the whole batch.
+`subscription.migrated` is the definitive application signal for each
+successfully cut-over subscription. See
+[Migration Sequences](/integrate/webhooks/events#migration-sequences).
 
 ## Phase 5: define cleanup gates
 

@@ -5,7 +5,9 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight, Gauge } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
-import { IdentityNode, walk } from './identities'
+import { formatCurrency } from '@polar-sh/currency'
+import { IdentityNode, IdentityRef, identityHref, walk } from './identities'
+import { VoidIdentity } from './types'
 
 const credits = (value: number) => `${value.toLocaleString('en-US')} credits`
 
@@ -30,26 +32,42 @@ export const VoidUsageByMember = ({
   root,
   rolled,
   base,
+  ownUsage,
 }: {
-  root: IdentityNode
+  root: IdentityNode<IdentityRef & { name: string }>
   rolled: Record<string, number>
   base: string
+  ownUsage?: Record<string, number>
 }) => {
   const total = rolled[root.identity.id] || 1
-  const rows: MemberRow[] = walk(root).map((node) => ({
-    id: node.identity.id,
-    name:
-      node.identity.id === root.identity.id
-        ? `${node.identity.name} (own)`
-        : node.identity.name,
-    href: `${base}/identities/${node.identity.id}`,
-    usage: node.identity.usage,
-    meters: Object.entries(node.identity.usageSeries).map(([name, series]) => ({
-      name,
-      units: node.identity.meters[name] ?? 0,
-      credits: series.reduce((sum, value) => sum + value, 0),
-    })),
-  }))
+  const formatUsage = ownUsage
+    ? (value: number) => formatCurrency('statistics')(value, 'usd')
+    : credits
+  const rows: MemberRow[] = walk(root).map((node) => {
+    const identity = node.identity
+    const series =
+      !ownUsage && 'usageSeries' in identity
+        ? (identity as VoidIdentity)
+        : undefined
+    return {
+      id: identity.id,
+      name:
+        identity.id === root.identity.id
+          ? `${identity.name} (own)`
+          : identity.name,
+      href: identityHref(base, identity.id),
+      usage:
+        ownUsage?.[identity.id] ??
+        ('usage' in identity ? (identity.usage as number) : 0),
+      meters: series
+        ? Object.entries(series.usageSeries).map(([name, values]) => ({
+            name,
+            units: series.meters[name] ?? 0,
+            credits: values.reduce((sum, value) => sum + value, 0),
+          }))
+        : [],
+    }
+  })
   rows.sort((a, b) => b.usage - a.usage)
 
   const [expanded, setExpanded] = useState<Set<string>>(
@@ -75,25 +93,30 @@ export const VoidUsageByMember = ({
     >
       {rows.map((row) => {
         const open = expanded.has(row.id)
+        const expandable = row.meters.length > 0
         return (
           <Box key={row.id} flexDirection="column">
             <Box alignItems="center" columnGap="m" paddingVertical="m">
-              <button
-                type="button"
-                aria-label={open ? 'Collapse' : 'Expand'}
-                aria-expanded={open}
-                onClick={() => toggle(row.id)}
-                className="dark:text-polar-500 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
-              >
-                <ChevronRight
-                  size={14}
-                  className={
-                    open
-                      ? 'rotate-90 transition-transform'
-                      : 'transition-transform'
-                  }
-                />
-              </button>
+              {expandable ? (
+                <button
+                  type="button"
+                  aria-label={open ? 'Collapse' : 'Expand'}
+                  aria-expanded={open}
+                  onClick={() => toggle(row.id)}
+                  className="dark:text-polar-500 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+                >
+                  <ChevronRight
+                    size={14}
+                    className={
+                      open
+                        ? 'rotate-90 transition-transform'
+                        : 'transition-transform'
+                    }
+                  />
+                </button>
+              ) : (
+                <Box width={24} height={24} flexShrink={0} />
+              )}
               <Avatar className="h-8 w-8" avatar_url={null} name={row.name} />
               <Box flexDirection="column" flex={1} minWidth={0} rowGap="s">
                 <Box
@@ -105,7 +128,7 @@ export const VoidUsageByMember = ({
                     <Text truncate>{row.name}</Text>
                   </Link>
                   <Text color="muted" variant="caption" wrap="nowrap">
-                    {credits(row.usage)}
+                    {formatUsage(row.usage)}
                   </Text>
                 </Box>
                 <ShareBar share={row.usage / total} />

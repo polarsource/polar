@@ -5,13 +5,19 @@ import { DataTable, DataTableColumnDef, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
-import { IdentityNode, walk } from './identities'
-import { VoidIdentity } from './types'
+import { IdentityNode, IdentityRef, identityHref, walk } from './identities'
 
 const usd = (cents: number) => formatCurrency('statistics')(cents, 'usd')
 
+interface TreeIdentity extends IdentityRef {
+  name: string
+  kind: string
+  note: string | null
+  usage?: number
+}
+
 interface TreeRow {
-  identity: VoidIdentity
+  identity: TreeIdentity
   depth: number
   own: number
   rolled: number
@@ -93,11 +99,13 @@ export const VoidIdentityTree = ({
   focusedId,
   rolled,
   base,
+  ownUsage,
 }: {
-  root: IdentityNode
+  root: IdentityNode<TreeIdentity>
   focusedId: string
   rolled: Record<string, number>
   base: string
+  ownUsage?: Record<string, number>
 }) => {
   const router = useRouter()
   const rows = useMemo<TreeRow[]>(() => {
@@ -105,11 +113,11 @@ export const VoidIdentityTree = ({
     return walk(root).map((node) => ({
       identity: node.identity,
       depth: node.depth,
-      own: node.identity.usage,
-      rolled: rolled[node.identity.id],
-      share: rolled[node.identity.id] / total,
+      own: ownUsage?.[node.identity.id] ?? node.identity.usage ?? 0,
+      rolled: rolled[node.identity.id] ?? 0,
+      share: (rolled[node.identity.id] ?? 0) / total,
     }))
-  }, [root, rolled])
+  }, [root, rolled, ownUsage])
 
   return (
     <DataTable
@@ -119,7 +127,7 @@ export const VoidIdentityTree = ({
       getRowId={(row) => row.identity.id}
       isRowActive={(row) => row.original.identity.id === focusedId}
       onRowClick={(row) =>
-        router.push(`${base}/identities/${row.original.identity.id}`)
+        router.push(identityHref(base, row.original.identity.id))
       }
     />
   )

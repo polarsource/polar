@@ -26,5 +26,6 @@ SQL >
                             {% end %}
                             ORDER BY ingested_at DESC, timestamp DESC, id
                             LIMIT {{Int32(limit, required=True)}}
+                            OFFSET {{Int32(offset, 0)}}
 
 TYPE endpoint

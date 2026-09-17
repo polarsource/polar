@@ -10,7 +10,12 @@ const usd = (cents: number) => formatCurrency('statistics')(cents, 'usd')
 const percent = (value: number) =>
   `${Math.round(value * 100).toLocaleString('en-US')}%`
 
-const columns: DataTableColumnDef<VoidActivityShare>[] = [
+const formatCost = (value: number, asCurrency: boolean) =>
+  asCurrency ? usd(value) : value.toLocaleString('en-US')
+
+const columns = (
+  asCurrency: boolean,
+): DataTableColumnDef<VoidActivityShare>[] => [
   {
     accessorKey: 'slug',
     enableSorting: false,
@@ -29,7 +34,7 @@ const columns: DataTableColumnDef<VoidActivityShare>[] = [
     accessorKey: 'cost',
     enableSorting: false,
     header: 'Cost',
-    cell: ({ getValue }) => usd(getValue() as number),
+    cell: ({ getValue }) => formatCost(getValue() as number, asCurrency),
   },
   {
     accessorKey: 'spans',
@@ -46,12 +51,20 @@ const columns: DataTableColumnDef<VoidActivityShare>[] = [
     enableSorting: false,
     header: 'Retry / waste',
     cell: ({ getValue }) => (
-      <Text color="muted">{usd(getValue() as number)}</Text>
+      <Text color="muted">
+        {formatCost(getValue() as number, asCurrency)}
+      </Text>
     ),
   },
 ]
 
-export const VoidIdentityActivities = ({ mix }: { mix: VoidActivityMix }) => (
+export const VoidIdentityActivities = ({
+  mix,
+  costAsCurrency = true,
+}: {
+  mix: VoidActivityMix
+  costAsCurrency?: boolean
+}) => (
   <Box flexDirection="column" rowGap="l">
     <Box alignItems="baseline" columnGap="m">
       <Text variant="heading-xxs" as="h3">
@@ -62,7 +75,7 @@ export const VoidIdentityActivities = ({ mix }: { mix: VoidActivityMix }) => (
       </Text>
     </Box>
     <DataTable
-      columns={columns}
+      columns={columns(costAsCurrency)}
       data={mix.by_activity}
       isLoading={false}
       getRowId={(row) => row.slug}

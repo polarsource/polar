@@ -139,9 +139,54 @@ export const voidRequest = async <T>(
   return (await response.json()) as T
 }
 
+export const voidSearch = (params: Record<string, string | undefined>) => {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, value)
+  }
+  const encoded = search.toString()
+  return encoded ? `?${encoded}` : ''
+}
+
 export const voidKeys = {
   deploys: (organizationId: string) => ['void_deploys', organizationId],
   scenarios: (organizationId: string) => ['void_scenarios', organizationId],
+  identities: (organizationId: string) => ['void_identities', organizationId],
+  identity: (organizationId: string, externalId: string) => [
+    'void_identity',
+    organizationId,
+    externalId,
+  ],
+  customers: (organizationId: string) => ['void_customers', organizationId],
+  identitySnapshot: (organizationId: string, externalId: string) => [
+    'void_identity_snapshot',
+    organizationId,
+    externalId,
+  ],
+  identitySubscriptions: (organizationId: string, externalId: string) => [
+    'void_identity_subscriptions',
+    organizationId,
+    externalId,
+  ],
+  identityEntitlements: (organizationId: string, externalId: string) => [
+    'void_identity_entitlements',
+    organizationId,
+    externalId,
+  ],
+  identityEvents: (organizationId: string, externalId: string) => [
+    'void_identity_events',
+    organizationId,
+    externalId,
+  ],
+  identityActivities: (organizationId: string, externalId: string) => [
+    'void_identity_activities',
+    organizationId,
+    externalId,
+  ],
+  identityUsage: (organizationId: string) => [
+    'void_identity_usage',
+    organizationId,
+  ],
 }
 
 export const useVoidDeploys = (

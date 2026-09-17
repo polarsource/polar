@@ -12,11 +12,12 @@ import { Box } from '@polar-sh/orbit/Box'
 import { subDays } from 'date-fns'
 import { Users } from 'lucide-react'
 import { useContext, useMemo } from 'react'
+import { useVoidDataSource } from './dataSource'
 import {
   buildTree,
   chainOf,
   describeKinds,
-  rollupUsage,
+  rollup,
   shortDate,
   walk,
 } from './identities'
@@ -29,6 +30,7 @@ import {
   TableSection,
 } from './VoidIdentityTables'
 import { VoidIdentityActivities } from './VoidIdentityActivities'
+import { VoidIdentityPageLive } from './VoidIdentityPageLive'
 import { VoidIdentityTree } from './VoidIdentityTree'
 import { VoidIdentityUsage } from './VoidIdentityUsage'
 
@@ -50,11 +52,29 @@ const spendSeries = (cadence: number[]): ParsedMetricsResponse => {
 }
 
 export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
+  const source = useVoidDataSource()
+  return source === 'live' ? (
+    <VoidIdentityPageLive identityId={identityId} />
+  ) : (
+    <VoidIdentityPageFixture identityId={identityId} />
+  )
+}
+
+const VoidIdentityPageFixture = ({ identityId }: { identityId: string }) => {
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}`
   const data = useMemo(() => getVoidData(), [])
   const tree = useMemo(() => buildTree(data.identities), [data])
-  const rolled = useMemo(() => rollupUsage(tree), [tree])
+  const rolled = useMemo(
+    () =>
+      rollup(
+        tree,
+        Object.fromEntries(
+          data.identities.map((identity) => [identity.id, identity.usage]),
+        ),
+      ),
+    [tree, data],
+  )
   const chain = useMemo(() => chainOf(tree, identityId), [tree, identityId])
 
   const focused = chain[0]
@@ -183,23 +203,21 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
           />
         ) : null}
 
-        {isRoot ? null : (
-          <TableSection
-            title="Identities"
-            caption={
-              treeSize === 1
-                ? 'Just this identity'
-                : `${treeSize} identities, rolled up figures include every identity below`
-            }
-          >
-            <VoidIdentityTree
-              root={root}
-              focusedId={focused.id}
-              rolled={rolled}
-              base={base}
-            />
-          </TableSection>
-        )}
+        <TableSection
+          title="Identities"
+          caption={
+            treeSize === 1
+              ? 'Just this identity'
+              : `${treeSize} identities, rolled up figures include every identity below`
+          }
+        >
+          <VoidIdentityTree
+            root={root}
+            focusedId={focused.id}
+            rolled={rolled}
+            base={base}
+          />
+        </TableSection>
 
         <TableSection title="Subscriptions">
           <SubscriptionsTable rows={subscriptions} />

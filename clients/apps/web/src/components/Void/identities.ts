@@ -1,22 +1,42 @@
 import { VoidIdentity } from './types'
 
-export interface IdentityNode {
-  identity: VoidIdentity
-  children: IdentityNode[]
+export interface IdentityRef {
+  id: string
+  parent_id: string | null
+}
+
+export interface IdentityNode<T extends IdentityRef = VoidIdentity> {
+  identity: T
+  children: IdentityNode<T>[]
   depth: number
 }
 
-export interface IdentityTree {
-  roots: IdentityNode[]
-  byId: Map<string, IdentityNode>
+export interface IdentityTree<T extends IdentityRef = VoidIdentity> {
+  roots: IdentityNode<T>[]
+  byId: Map<string, IdentityNode<T>>
 }
 
-export const buildTree = (identities: VoidIdentity[]): IdentityTree => {
-  const byId = new Map<string, IdentityNode>()
+export const identityPath = (externalId: string) =>
+  externalId.split('/').map(encodeURIComponent).join('/')
+
+export const identityHref = (base: string, externalId: string) =>
+  `${base}/identities/${identityPath(externalId)}`
+
+export const identityIdFromPath = (path: string) =>
+  path
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => decodeURIComponent(segment))
+    .join('/')
+
+export const buildTree = <T extends IdentityRef>(
+  identities: T[],
+): IdentityTree<T> => {
+  const byId = new Map<string, IdentityNode<T>>()
   for (const identity of identities) {
     byId.set(identity.id, { identity, children: [], depth: 0 })
   }
-  const roots: IdentityNode[] = []
+  const roots: IdentityNode<T>[] = []
   for (const node of byId.values()) {
     const parent = node.identity.parent_id
       ? byId.get(node.identity.parent_id)
@@ -24,7 +44,7 @@ export const buildTree = (identities: VoidIdentity[]): IdentityTree => {
     if (parent) parent.children.push(node)
     else roots.push(node)
   }
-  const setDepth = (node: IdentityNode, depth: number) => {
+  const setDepth = (node: IdentityNode<T>, depth: number) => {
     node.depth = depth
     for (const child of node.children) setDepth(child, depth + 1)
   }
@@ -33,8 +53,11 @@ export const buildTree = (identities: VoidIdentity[]): IdentityTree => {
 }
 
 /** Self first, root last. */
-export const chainOf = (tree: IdentityTree, id: string): VoidIdentity[] => {
-  const chain: VoidIdentity[] = []
+export const chainOf = <T extends IdentityRef>(
+  tree: IdentityTree<T>,
+  id: string,
+): T[] => {
+  const chain: T[] = []
   for (
     let node = tree.byId.get(id);
     node;
@@ -45,17 +68,18 @@ export const chainOf = (tree: IdentityTree, id: string): VoidIdentity[] => {
   return chain
 }
 
-export const walk = (node: IdentityNode): IdentityNode[] => [
-  node,
-  ...node.children.flatMap(walk),
-]
+export const walk = <T extends IdentityRef>(
+  node: IdentityNode<T>,
+): IdentityNode<T>[] => [node, ...node.children.flatMap(walk)]
 
-/** Own usage plus every descendant's, keyed by identity id. */
-export const rollupUsage = (tree: IdentityTree): Record<string, number> => {
+export const rollup = <T extends IdentityRef>(
+  tree: IdentityTree<T>,
+  own: Record<string, number>,
+): Record<string, number> => {
   const rolled: Record<string, number> = {}
-  const visit = (node: IdentityNode): number => {
+  const visit = (node: IdentityNode<T>): number => {
     const total =
-      node.identity.usage +
+      (own[node.identity.id] ?? 0) +
       node.children.reduce((sum, child) => sum + visit(child), 0)
     rolled[node.identity.id] = total
     return total
@@ -64,7 +88,7 @@ export const rollupUsage = (tree: IdentityTree): Record<string, number> => {
   return rolled
 }
 
-export const describeKinds = (identities: VoidIdentity[]): string => {
+export const describeKinds = (identities: { kind: string }[]): string => {
   const counts = new Map<string, number>()
   for (const identity of identities) {
     counts.set(identity.kind, (counts.get(identity.kind) ?? 0) + 1)

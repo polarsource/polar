@@ -19,6 +19,7 @@ async def list_events(
     auth: VoidRead,
     tinybird: TinybirdClient,
     limit: Annotated[int, Query(ge=1, le=1000)] = 25,
+    page: Annotated[int, Query(ge=1)] = 1,
     name: str | None = Query(None, description="Only events with this name"),
     external_identity_id: str | None = Query(None, description="Only this actor"),
     external_root_id: str | None = Query(None, description="Only this tree's root"),
@@ -30,6 +31,7 @@ async def list_events(
         external_identity_id,
         external_root_id,
         name,
+        page,
     )
 
 

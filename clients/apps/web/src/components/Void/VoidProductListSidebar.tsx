@@ -6,7 +6,7 @@ import ArrowUpward from '@mui/icons-material/ArrowUpward'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import FilterList from '@mui/icons-material/FilterList'
 import Search from '@mui/icons-material/Search'
-import { Avatar, Button, Input, Text } from '@polar-sh/orbit'
+import { Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
@@ -19,41 +19,36 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useVoidDataSource } from '../dataSource'
-import { buildTree, identityHref, identityIdFromPath } from '../identities'
+import { useVoidDeploys } from './api'
+import { useVoidDataSource } from './dataSource'
+import { useVoidProducts } from './productQueries'
 import {
-  composeIdentities,
-  toLiveIdentity,
-  VoidLiveIdentity,
-} from '../identityLive'
-import { useVoidCustomers, useVoidIdentities } from '../identityQueries'
-import { getVoidData } from '../mock'
+  FIXTURE_PRODUCTS,
+  formatProductPrice,
+  priceKind,
+  productHref,
+  productsOfActive,
+  VoidProduct,
+} from './products'
 
-const FILTERS = ['all', 'customer', 'human', 'agent', 'service'] as const
+const FILTERS = ['all', 'recurring', 'one_time'] as const
 type Filter = (typeof FILTERS)[number]
 
 const FILTER_LABELS: Record<Filter, string> = {
   all: 'All',
-  customer: 'Customers',
-  human: 'Humans',
-  agent: 'Agents',
-  service: 'Services',
+  recurring: 'Recurring',
+  one_time: 'One-time',
 }
 
-const LIVE_FILTERS: Filter[] = ['all', 'customer', 'agent', 'service']
+const matches = (product: VoidProduct, filter: Filter) =>
+  filter === 'all' || priceKind(product.price) === filter
 
-const matches = (identity: VoidLiveIdentity, filter: Filter) =>
-  filter === 'all' ||
-  (filter === 'customer'
-    ? identity.parent_id === null
-    : identity.kind === filter)
-
-export const VoidIdentityListSidebar = () => {
+export const VoidProductListSidebar = () => {
   const { organization } = useContext(OrganizationContext)
   const source = useVoidDataSource()
   const live = source === 'live'
-  const root = `/void/dashboard/${organization.slug}`
-  const base = `${root}/identities`
+  const base = `/void/dashboard/${organization.slug}`
+  const listBase = `${base}/definition/products`
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const withQuerystring = (href: string) => {
@@ -64,8 +59,8 @@ export const VoidIdentityListSidebar = () => {
     const qs = kept.toString()
     return qs ? `${href}?${qs}` : href
   }
-  const selectedId = pathname.startsWith(`${base}/`)
-    ? identityIdFromPath(pathname.slice(base.length + 1))
+  const selectedId = pathname.startsWith(`${listBase}/`)
+    ? pathname.slice(listBase.length + 1)
     : null
 
   const [query, setQuery] = useQueryState('query', parseAsString)
@@ -78,51 +73,50 @@ export const VoidIdentityListSidebar = () => {
     parseAsStringLiteral(['newest', 'oldest'] as const).withDefault('newest'),
   )
 
-  const liveIdentities = useVoidIdentities(organization.id, { enabled: live })
-  const liveCustomers = useVoidCustomers(organization.id, { enabled: live })
+  const liveProducts = useVoidProducts(organization.id, { enabled: live })
+  const deploys = useVoidDeploys(organization.id, { enabled: live })
 
-  const identities = useMemo(() => {
-    if (!live) return getVoidData().identities.map(toLiveIdentity)
-    if (!liveIdentities.data) return []
-    return composeIdentities(liveIdentities.data, liveCustomers.data ?? [])
-  }, [live, liveIdentities.data, liveCustomers.data])
+  const products = useMemo(() => {
+    if (!live) return FIXTURE_PRODUCTS
+    return productsOfActive(liveProducts.data ?? [], deploys.data ?? [])
+  }, [live, liveProducts.data, deploys.data])
 
-  const tree = useMemo(() => buildTree(identities), [identities])
   const needle = (query ?? '').trim().toLowerCase()
-  const filterOptions = live ? LIVE_FILTERS : FILTERS
+  const visible = useMemo(() => {
+    const selected = liveProducts.data?.find(
+      (product) => product.id === selectedId,
+    )
+    const listed =
+      selected && !products.some((product) => product.id === selected.id)
+        ? [selected, ...products]
+        : products
+    return listed
+      .filter((product) => matches(product, filter))
+      .filter(
+        (product) =>
+          !needle ||
+          `${product.name} ${product.slug}`.toLowerCase().includes(needle),
+      )
+      .toSorted((a, b) => {
+        const diff =
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        return sorting === 'newest' ? diff : -diff
+      })
+  }, [liveProducts.data, products, selectedId, filter, needle, sorting])
 
-  const visible = useMemo(
-    () =>
-      identities
-        .filter((identity) => matches(identity, filter))
-        .filter(
-          (identity) =>
-            !needle ||
-            `${identity.name} ${identity.kind}`.toLowerCase().includes(needle),
-        )
-        .sort((a, b) => {
-          const diff =
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          return sorting === 'newest' ? diff : -diff
-        }),
-    [identities, filter, needle, sorting],
-  )
-
-  const secondary = (identity: VoidLiveIdentity) => {
-    const parent = identity.parent_id
-      ? tree.byId.get(identity.parent_id)?.identity.name
-      : null
-    return parent ? `${identity.kind} · ${parent}` : identity.kind
-  }
-
-  const liveError = liveIdentities.error
-  const liveLoading = live && liveIdentities.isLoading
+  const liveError = liveProducts.error
+  const liveLoading = live && liveProducts.isLoading
 
   return (
-    <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
-      <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
-        <Link href={withQuerystring(base)}>Identities</Link>
-        <div className="flex flex-row items-center gap-4">
+    <Box flexDirection="column" height="100%">
+      <Box
+        alignItems="center"
+        justifyContent="between"
+        columnGap="xl"
+        padding="l"
+      >
+        <Link href={withQuerystring(listBase)}>Products</Link>
+        <Box alignItems="center" columnGap="s">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" className="h-6 w-6" variant="ghost">
@@ -130,7 +124,7 @@ export const VoidIdentityListSidebar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {filterOptions.map((option) => (
+              {FILTERS.map((option) => (
                 <DropdownMenuItem
                   key={option}
                   onClick={() => setFilter(option)}
@@ -160,27 +154,31 @@ export const VoidIdentityListSidebar = () => {
               <ArrowDownward fontSize="small" />
             )}
           </Button>
-        </div>
-      </div>
-      <div className="flex flex-row items-center gap-3 px-4 py-2">
-        <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-          <Search
-            fontSize="inherit"
-            className="dark:text-polar-500 text-gray-500"
-          />
-        </div>
+        </Box>
+      </Box>
+      <Box
+        alignItems="center"
+        columnGap="m"
+        paddingHorizontal="l"
+        paddingVertical="s"
+        borderTopWidth={1}
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        <Search fontSize="inherit" />
         <Input
           className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
-          placeholder="Search identities"
+          placeholder="Search products"
           value={query ?? ''}
           onChange={(event) => setQuery(event.target.value || null)}
         />
-      </div>
-      <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
+      </Box>
+      <Box flexDirection="column" flexGrow={1} overflowY="auto">
         {liveLoading ? (
           <Box padding="l">
             <Text color="muted" variant="caption">
-              Loading identities
+              Loading products
             </Text>
           </Box>
         ) : liveError ? (
@@ -191,45 +189,39 @@ export const VoidIdentityListSidebar = () => {
           </Box>
         ) : (
           <>
-            {visible.map((identity) => (
+            {visible.map((product) => (
               <Link
-                key={identity.id}
-                href={withQuerystring(identityHref(root, identity.id))}
+                key={product.id}
+                href={withQuerystring(productHref(base, product.id))}
                 className={twMerge(
                   'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-                  selectedId === identity.id && 'dark:bg-polar-800 bg-gray-100',
+                  selectedId === product.id && 'dark:bg-polar-800 bg-gray-100',
                 )}
               >
                 <Box
-                  alignItems="center"
-                  columnGap="m"
+                  flexDirection="column"
+                  minWidth={0}
                   paddingHorizontal="l"
                   paddingVertical="m"
+                  rowGap="xs"
                 >
-                  <Avatar
-                    className="h-8 w-8"
-                    avatar_url={null}
-                    name={identity.name}
-                  />
-                  <Box flexDirection="column" minWidth={0}>
-                    <Text truncate>{identity.name}</Text>
-                    <Text truncate color="muted" variant="caption">
-                      {secondary(identity)}
-                    </Text>
-                  </Box>
+                  <Text truncate>{product.name}</Text>
+                  <Text truncate color="muted" variant="caption">
+                    {formatProductPrice(product.price)}
+                  </Text>
                 </Box>
               </Link>
             ))}
             {visible.length === 0 ? (
               <Box padding="l">
                 <Text color="muted" variant="caption">
-                  {live ? 'No identities' : 'No identities match'}
+                  {live ? 'No products' : 'No products match'}
                 </Text>
               </Box>
             ) : null}
           </>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

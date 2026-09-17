@@ -1,8 +1,8 @@
 """add organization_risk_signals account_evaluation_id
 
 Revision ID: c7e2a91b4f18
-Revises: 38a9961f9d09
-Create Date: 2026-09-15 13:50:00.000000
+Revises: 1e1927f940ee
+Create Date: 2026-09-17 07:35:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c7e2a91b4f18"
-down_revision = "38a9961f9d09"
+down_revision = "1e1927f940ee"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -1,0 +1,21 @@
+handbook/docs.json
+  s_8fbbc85dcefa7d::t_3502bf537473a9 124
+handbook/engineering/oncall/introduction.mdx
+  s_8fbbc85dcefa7d::t_3502bf537473a9 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b340f33eec8aa929ec3ae91c208acef662288554",
+  "prompts": {},
+  "sessions": {
+    "s_8fbbc85dcefa7d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "140b60b9-6b5d-4853-a0a8-226c8a1a289c",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

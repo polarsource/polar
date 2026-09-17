@@ -1,0 +1,23 @@
+terraform/sandbox/render.tf
+  s_bfdede63ab1668::t_9e9c3b37c51b44 250
+terraform/test/render.tf
+  s_bfdede63ab1668::t_0d4bfd17665c5f 252
+terraform/production/render.tf
+  s_bfdede63ab1668::t_040dc548388af5 388
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b6da20104a66f1e60ee7e3b4b38902ecdd759baf",
+  "prompts": {},
+  "sessions": {
+    "s_bfdede63ab1668": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b82cea14-561f-42bd-a9f4-677c6cde6f84",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -31,13 +31,15 @@ class PayoutDoesNotExist(PayoutTaskError):
     actor_name="payout.sample_database_waits",
     cron_trigger=CronTrigger(second="*/5"),
     priority=TaskPriority.LOW,
-    max_age=5000,
+    max_age=60_000,
     max_retries=0,
 )
 async def sample_database_waits() -> None:
     # Observe the primary: replica activity cannot explain payout UPDATE waits.
     async with AsyncSessionMaker() as session:
         samples = await PayoutRepository(session).sample_database_waits()
+    if not samples:
+        log.info("payout.database_wait_no_samples")
     for sample in samples:
         log.info("payout.database_wait_sample", **sample)
 

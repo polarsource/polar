@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -17,9 +17,6 @@ def get_expires_at() -> datetime:
 class CustomerSessionCode(RecordModel):
     __tablename__ = "customer_session_codes"
 
-    code: Mapped[str | None] = mapped_column(
-        CHAR(64), unique=True, nullable=True, deferred=True
-    )
     code_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

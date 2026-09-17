@@ -536,18 +536,22 @@ class TestExtractPages:
             product_name="Legacy",
             currency_options={"eur": {"unit_amount": 900}},
         )
-        subscription = _stripe_subscription(
-            items=[
-                {
-                    "price": price,
-                    "quantity": 1,
-                    "current_period_start": 1_700_000_000,
-                    "current_period_end": 1_702_000_000,
-                }
-            ]
-        )
+        items = [
+            {
+                "price": price,
+                "quantity": 1,
+                "current_period_start": 1_700_000_000,
+                "current_period_end": 1_702_000_000,
+            }
+        ]
         client.v1.subscriptions.list_async = mocker.AsyncMock(
-            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_subscription(items=items),
+                    _stripe_subscription(id="sub_2", items=items),
+                ],
+                has_more=False,
+            )
         )
 
         page = await adapter.extract_page({"phase": "subscriptions"})
@@ -569,8 +573,8 @@ class TestExtractPages:
             ("price_archived", "usd", 1000),
             ("price_archived", "eur", 900),
         }
-        assert len(subscriptions) == 1
-        assert subscriptions[0].price_source_id == "price_archived"
+        assert len(subscriptions) == 2
+        assert {sub.price_source_id for sub in subscriptions} == {"price_archived"}
         _, kwargs = client.v1.subscriptions.list_async.call_args
         assert "data.items.data.price.product" in kwargs["params"]["expand"]
 

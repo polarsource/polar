@@ -250,7 +250,12 @@ class StripeAdapter:
         if existing is None:
             grouped[product.source_id] = product
             return
-        existing.prices.extend(product.prices)
+        seen = {(price.source_id, price.currency) for price in existing.prices}
+        for price in product.prices:
+            key = (price.source_id, price.currency)
+            if key not in seen:
+                existing.prices.append(price)
+                seen.add(key)
 
     async def _extract_customer_page(
         self, cursor: StripeExtractionCursor

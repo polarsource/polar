@@ -385,7 +385,7 @@ resource "cloudflare_dns_record" "worker" {
   name    = "${each.key}.polar.sh"
   type    = "CNAME"
   content = replace(each.value, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }
 

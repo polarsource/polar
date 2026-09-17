@@ -22,9 +22,9 @@ from sqlalchemy.orm import Session
 
 from polar.auth.models import AuthSubject
 from polar.authz.repository import select_accessible_org_ids
-from polar.config import settings
-from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.crypto import generate_token
 from polar.kit.signer import get_signer, sign_jws
+from polar.kit.token_hash import hash_token
 from polar.models import (
     OAuth2AuthorizationCode,
     OAuth2AuthorizationCodeOrganization,
@@ -124,7 +124,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         assert self.sub is not None
 
         authorization_code = OAuth2AuthorizationCode(
-            code=get_token_hash(code, secret=settings.SECRET),
+            code=hash_token(code),
             client_id=payload.client_id,
             sub_type=self.sub_type,
             scope=payload.scope,
@@ -211,7 +211,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def query_authorization_code(
         self, code: str, client: OAuth2Client
     ) -> OAuth2AuthorizationCode | None:
-        code_hash = get_token_hash(code, secret=settings.SECRET)
+        code_hash = hash_token(code)
         statement = select(OAuth2AuthorizationCode).where(
             OAuth2AuthorizationCode.code == code_hash,
             OAuth2AuthorizationCode.client_id == client.client_id,

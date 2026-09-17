@@ -9,8 +9,8 @@ from sqlalchemy import delete, select
 
 from polar.config import settings
 from polar.enums import TokenType
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.http import get_safe_return_url
+from polar.kit.token_hash import generate_token_hash, hash_token
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import User, UserSession, UserSessionOrganization
@@ -115,7 +115,7 @@ class AuthService:
     async def _get_user_session_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> UserSession | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = hash_token(token)
         statement = select(UserSession).where(UserSession.token == token_hash)
         if not expired:
             statement = statement.where(UserSession.expires_at > utc_now())
@@ -132,9 +132,7 @@ class AuthService:
         expire_in: timedelta = settings.USER_SESSION_TTL,
         organization_ids: frozenset[UUID] | None = None,
     ) -> tuple[str, UserSession]:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent=user_agent,

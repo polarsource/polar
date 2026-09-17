@@ -27,8 +27,8 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from polar.auth.scope import Scope
-from polar.config import settings
-from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.crypto import generate_token
+from polar.kit.token_hash import hash_token
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
@@ -260,7 +260,7 @@ class _QueryTokenMixin:
         token_string: str,
         token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
     ) -> OAuth2Token | None:
-        token_hash = get_token_hash(token_string, secret=settings.SECRET)
+        token_hash = hash_token(token_string)
         statement = select(OAuth2Token)
         if token_type_hint == "access_token":
             statement = statement.where(OAuth2Token.access_token == token_hash)
@@ -353,16 +353,12 @@ class AuthorizationServer(_AuthorizationServer):
     ) -> None:
         access_token = token.get("access_token", None)
         access_token_hash = (
-            get_token_hash(access_token, secret=settings.SECRET)
-            if access_token is not None
-            else None
+            hash_token(access_token) if access_token is not None else None
         )
 
         refresh_token = token.get("refresh_token", None)
         refresh_token_hash = (
-            get_token_hash(refresh_token, secret=settings.SECRET)
-            if refresh_token is not None
-            else None
+            hash_token(refresh_token) if refresh_token is not None else None
         )
 
         token_data = {

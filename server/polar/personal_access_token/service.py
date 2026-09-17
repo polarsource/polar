@@ -7,16 +7,15 @@ from sqlalchemy import Select, or_, select, update
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
 from polar.email.schemas import (
     PersonalAccessTokenLeakedEmail,
     PersonalAccessTokenLeakedProps,
 )
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
-from polar.kit.crypto import get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.kit.token_hash import hash_token
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import PersonalAccessToken, User
@@ -51,7 +50,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> PersonalAccessToken | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = hash_token(token)
         statement = (
             select(PersonalAccessToken)
             .join(PersonalAccessToken.user)

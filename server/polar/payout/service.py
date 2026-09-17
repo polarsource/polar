@@ -701,7 +701,9 @@ class PayoutService:
         else:
             account_amount = payout.account_amount
 
-        _, balance = await stripe_service.retrieve_balance(payout_account.stripe_id)
+        _, balance = await stripe_service.retrieve_balance(
+            payout_account.stripe_id, payout.account_currency
+        )
         if balance < account_amount:
             log.info(
                 "The Stripe Connect account doesn't have enough balance to make the payout yet",

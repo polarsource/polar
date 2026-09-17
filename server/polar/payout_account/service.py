@@ -211,7 +211,9 @@ class PayoutAccountService:
             if not await stripe.account_exists(payout_account.stripe_id):
                 raise PayoutAccountStripeAccountDoesNotExist(payout_account.stripe_id)
             # Verify the account has a zero balance before deletion
-            _, balance = await stripe.retrieve_balance(payout_account.stripe_id)
+            _, balance = await stripe.retrieve_balance(
+                payout_account.stripe_id, payout_account.currency
+            )
             if balance != 0:
                 raise PayoutAccountNonZeroBalance(payout_account.stripe_id)
             await stripe.delete_account(payout_account.stripe_id)

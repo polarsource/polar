@@ -9575,8 +9575,11 @@ export interface components {
      * @description Properties to create a benefit of type `discord`.
      */
     BenefitDiscordCreateProperties: {
-      /** Guild Token */
-      guild_token: string
+      /**
+       * Guild Id
+       * @description The ID of the Discord server.
+       */
+      guild_id: string
       /**
        * Role Id
        * @description The ID of the Discord role to grant.
@@ -9608,8 +9611,6 @@ export interface components {
        * @description Whether to kick the member from the Discord server on revocation.
        */
       kick_member: boolean
-      /** Guild Token */
-      readonly guild_token: string
     }
     /** BenefitDiscordPublic */
     BenefitDiscordPublic: {
@@ -40886,7 +40887,8 @@ export interface operations {
   'integrations_discord:discord_guild_lookup': {
     parameters: {
       query: {
-        guild_token: string
+        guild_id: string
+        organization_id: string
       }
       header?: never
       path?: never
@@ -40901,6 +40903,24 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
+        }
+      }
+      /** @description User lacks `products_read` permission on the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The organization has not connected this Discord server. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

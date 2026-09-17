@@ -18,7 +18,7 @@ export type CreateBenefitModalParams = {
   type?: CreatableBenefit
   description?: string
   error?: string
-  guild_token?: string
+  guild_id?: string
   slack_integration_id?: string
 }
 

@@ -10,7 +10,6 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.kit import jwt
 from polar.models import (
@@ -532,13 +531,12 @@ class TestCallback:
             save_fixture, organization, bot_token=None
         )
 
-        state = jwt.encode(
+        state = await jwt.encode(
             data={
                 "integration_id": str(integration.id),
                 "subject_id": "00000000-0000-0000-0000-000000000000",
                 "return_to": "/",
             },
-            secret=settings.SECRET,
             type="slack_integration_oauth",
         )
 
@@ -569,13 +567,12 @@ class TestCallback:
             new=complete_install,
         )
 
-        state = jwt.encode(
+        state = await jwt.encode(
             data={
                 "integration_id": str(integration.id),
                 "subject_id": str(user_organization.user_id),
                 "return_to": "/dashboard/slack?tab=oauth",
             },
-            secret=settings.SECRET,
             type="slack_integration_oauth",
         )
 

@@ -134,7 +134,7 @@ const BenefitForm = ({
         />
       ) : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
-      {type === 'discord' && <DiscordBenefitForm />}
+      {type === 'discord' && <DiscordBenefitForm organization={organization} />}
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}
@@ -197,7 +197,11 @@ const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   )
 }
 
-const DiscordBenefitForm = () => {
+const DiscordBenefitForm = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { control, watch } = useFormContext<schemas['BenefitDiscordCreate']>()
   const pathname = usePathname()
   const description = watch('description')
@@ -209,8 +213,11 @@ const DiscordBenefitForm = () => {
     searchParams.set('type', 'discord')
     searchParams.set('description', description)
     const returnTo = `${pathname}?${searchParams}`
-    return getBotDiscordAuthorizeURL({ return_to: returnTo })
-  }, [pathname, description])
+    return getBotDiscordAuthorizeURL({
+      return_to: returnTo,
+      organization_id: organization.id,
+    })
+  }, [pathname, description, organization.id])
 
   const { data: discordGuild } = useDiscordGuild(guildToken)
   const polarBotRolePosition = useMemo(() => {

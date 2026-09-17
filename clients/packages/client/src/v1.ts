@@ -40810,7 +40810,8 @@ export interface operations {
   }
   'integrations_discord:integrations.discord.bot_authorize': {
     parameters: {
-      query?: {
+      query: {
+        organization_id: string
         return_to?: string | null
       }
       header?: never
@@ -40826,6 +40827,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description User lacks `products_manage` permission on the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */

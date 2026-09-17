@@ -1,20 +1,25 @@
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 import structlog
-from fastapi import Request
+from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.oauth2 import GetAccessTokenError
 
+from polar.auth.permission import OrganizationPermission
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
+from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.exceptions import Unauthorized
+from polar.exceptions import NotPermitted, Unauthorized
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
+from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import oauth
+from .repository import DiscordGuildConnectionRepository
 from .schemas import DiscordGuild
 from .service import discord_bot as discord_bot_service
 
@@ -52,13 +57,28 @@ def get_decoded_token_state(state: str) -> dict[str, Any]:
 @router.get(
     "/bot/authorize",
     name="integrations.discord.bot_authorize",
+    responses={
+        403: {
+            "description": "User lacks `products_manage` permission on the organization.",
+            "model": NotPermitted.schema(),
+        }
+    },
 )
 async def discord_bot_authorize(
-    return_to: ReturnTo, request: Request, auth_subject: AuthorizeWebUserWrite
+    return_to: ReturnTo,
+    request: Request,
+    auth_subject: AuthorizeWebUserWrite,
+    organization_id: Annotated[OrganizationID, Query()],
+    session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    await assert_organization_permission(
+        session, auth_subject, organization_id, OrganizationPermission.products_manage
+    )
+
     state = {
         "auth_type": "bot",
         "user_id": str(auth_subject.subject.id),
+        "organization_id": str(organization_id),
         "return_to": return_to,
     }
 
@@ -77,6 +97,7 @@ async def discord_bot_callback(
     auth_subject: AuthorizeWebUserWrite,
     request: Request,
     state: str,
+    session: AsyncSession = Depends(get_db_session),
     code: str | None = None,
     code_verifier: str | None = None,
     error: str | None = None,
@@ -109,6 +130,11 @@ async def discord_bot_callback(
         raise Unauthorized()
 
     guild_id = access_token["guild"]["id"]
+
+    repository = DiscordGuildConnectionRepository.from_session(session)
+    await repository.create_if_absent(
+        UUID(decoded_state["organization_id"]), guild_id, auth_subject.subject.id
+    )
 
     # We need to set this ID on a subsequent API call (e.g. create Discord benefit).
     # To make sure a malicious user won't arbitrarily set guild IDs, we pass it as

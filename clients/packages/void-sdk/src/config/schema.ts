@@ -572,7 +572,36 @@ export function product<Key extends string, P extends ProductPrice>(
 
 export const DEFAULT_CURRENCY = 'usd'
 
-export interface SignalOptions {
+export type DurationUnit = 'minute' | 'hour' | 'day'
+
+/** A rolling window of labeled spend. Named `recent` so it does not collide with `last`. */
+export interface SignalWindow {
+  readonly kind: 'window'
+  readonly amount: number
+  readonly unit: DurationUnit
+}
+
+export type SignalOver = SignalWindow | 'run'
+
+const UNITS: ReadonlySet<string> = new Set(['minute', 'hour', 'day'])
+const WINDOW_MS: Record<DurationUnit, number> = {
+  minute: 60_000,
+  hour: 3_600_000,
+  day: 86_400_000,
+}
+const MAX_WINDOW_MS = 7 * WINDOW_MS.day
+
+export function recent(amount: number, unit: DurationUnit): SignalWindow {
+  if (!Number.isInteger(amount) || amount <= 0)
+    throw new Error('recent: amount must be a positive integer')
+  if (!UNITS.has(unit))
+    throw new Error('recent: unit must be minute, hour, or day')
+  if (amount * WINDOW_MS[unit] > MAX_WINDOW_MS)
+    throw new Error('recent: window must be at most 7 days')
+  return { kind: 'window', amount, unit }
+}
+
+export interface MeterSignalOptions {
   readonly meter: MeterDef
   /** Which balance figure the thresholds apply to. Only `remaining` today. */
   readonly field: 'remaining'
@@ -582,19 +611,49 @@ export interface SignalOptions {
   readonly exit: { readonly atLeast: number }
 }
 
-/** A local condition over a reconciled meter balance. */
-export interface SignalRef {
-  readonly kind: 'signal'
-  readonly key: string
-  readonly definition: SignalOptions
+export interface SenseSignalOptions {
+  readonly activity: ActivityDef
+  /** The Noul Polar asks Jev. Deploys with the activity; thresholds do not. */
+  readonly when: string
+  readonly over: SignalOver
+  /** Active when the stored noul rises above this. */
+  readonly enter: { readonly above: number }
+  /** Inactive again once the noul falls below this. */
+  readonly exit: { readonly below: number }
 }
 
-export function signal(key: string, options: SignalOptions): SignalRef {
-  if (!/^[a-z0-9][a-z0-9_-]{0,127}$/.test(key)) {
-    throw new Error('signal: key must be a slug of at most 128 characters')
-  }
-  if (!options)
-    throw new Error('signal: a local meter and thresholds are required')
+export type SignalOptions = MeterSignalOptions | SenseSignalOptions
+
+interface SignalBase {
+  readonly kind: 'signal'
+  readonly key: string
+}
+
+export interface MeterSignalRef extends SignalBase {
+  readonly definition: MeterSignalOptions
+}
+
+export interface SenseSignalRef extends SignalBase {
+  readonly definition: SenseSignalOptions
+}
+
+export type SignalRef = MeterSignalRef | SenseSignalRef
+
+export const isMeterSignal = (ref: SignalRef): ref is MeterSignalRef =>
+  'meter' in ref.definition
+
+export const isSenseSignal = (ref: SignalRef): ref is SenseSignalRef =>
+  'activity' in ref.definition
+
+export const isActivity = (value: unknown): value is ActivityDef =>
+  typeof value === 'object' &&
+  value !== null &&
+  'kind' in value &&
+  value.kind === 'activity'
+
+const SLUG_KEY = /^[a-z0-9][a-z0-9_-]{0,127}$/
+
+function meterSignal(key: string, options: MeterSignalOptions): MeterSignalRef {
   if (options.field !== 'remaining' || !isMeter(options.meter)) {
     throw new Error('signal: field must be the remaining balance of a meter')
   }
@@ -618,6 +677,58 @@ export function signal(key: string, options: SignalOptions): SignalRef {
       exit: { ...options.exit },
     },
   }
+}
+
+function senseSignal(key: string, options: SenseSignalOptions): SenseSignalRef {
+  if (!isActivity(options.activity)) {
+    throw new Error('signal: when requires an activities() source')
+  }
+  const when = options.when.trim()
+  if (!when || when.length > 512) {
+    throw new Error('signal: when must be 1 to 512 characters')
+  }
+  const over = options.over
+  if (over !== 'run' && (over?.kind !== 'window' || !UNITS.has(over.unit))) {
+    throw new Error("signal: over must be recent(n, unit) or 'run'")
+  }
+  if (over !== 'run' && over.amount * WINDOW_MS[over.unit] > MAX_WINDOW_MS) {
+    throw new Error('signal: window must be at most 7 days')
+  }
+  if (
+    !Number.isFinite(options.enter.above) ||
+    !Number.isFinite(options.exit.below) ||
+    options.exit.below <= 0 ||
+    options.enter.above > 1 ||
+    options.enter.above <= options.exit.below
+  ) {
+    throw new Error(
+      'signal: thresholds must be finite, with 0 < exit.below < enter.above <= 1',
+    )
+  }
+  return {
+    kind: 'signal',
+    key,
+    definition: {
+      activity: options.activity,
+      when,
+      over: over === 'run' ? 'run' : { ...over },
+      enter: { ...options.enter },
+      exit: { ...options.exit },
+    },
+  }
+}
+
+export function signal(key: string, options: MeterSignalOptions): MeterSignalRef
+export function signal(key: string, options: SenseSignalOptions): SenseSignalRef
+export function signal(key: string, options: SignalOptions): SignalRef
+export function signal(key: string, options: SignalOptions): SignalRef {
+  if (!SLUG_KEY.test(key)) {
+    throw new Error('signal: key must be a slug of at most 128 characters')
+  }
+  if (!options) throw new Error('signal: a meter or a when clause is required')
+  return 'activity' in options
+    ? senseSignal(key, options)
+    : meterSignal(key, options)
 }
 
 export interface ActivityDef<Key extends string = string> {

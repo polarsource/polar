@@ -5,6 +5,7 @@ import {
   ORG,
   activityReport,
   completions,
+  customerSenses,
   spanKey,
   spansFor,
   standings,
@@ -55,17 +56,21 @@ export interface Frame {
   readonly events: readonly LogEvent[]
   readonly tree: Tree
   readonly activities: Wire.ActivityReport
+  readonly senses: readonly Wire.CustomerSenseState[]
 }
 
 const nothing: Standing = { usage: 0, credits: 0, remaining: null }
 
 export const frame = async (): Promise<Frame> => {
-  const [memberRows, agentRows, events, activities] = await Promise.all([
-    db.select().from(members),
-    db.select().from(agents),
-    completions(),
-    activityReport(),
-  ])
+  const [memberRows, agentRows, events, activities, senses] = await Promise.all(
+    [
+      db.select().from(members),
+      db.select().from(agents),
+      completions(),
+      activityReport(),
+      customerSenses(),
+    ],
+  )
   const ids = [
     ORG,
     ...memberRows.map((row) => row.id),
@@ -105,6 +110,7 @@ export const frame = async (): Promise<Frame> => {
   return {
     tree,
     activities,
+    senses,
     events: events.map((event) => {
       const who = label.get(event.external_identity_id ?? '')
       return {

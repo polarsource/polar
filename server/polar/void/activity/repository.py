@@ -67,19 +67,30 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
         version_id: str,
         *,
         identity: str | None = None,
+        identities: Sequence[str] | None = None,
+        run_key: str | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
+        activity_id: UUID | None = None,
     ) -> Sequence[VoidActivitySpan]:
         statement = self.scoped_statement(organization_id).where(
             VoidActivitySpan.version_id == version_id
         )
-        if identity is not None:
+        if activity_id is not None:
+            statement = statement.where(VoidActivitySpan.activity_id == activity_id)
+        if identities is not None:
+            statement = statement.where(
+                VoidActivitySpan.external_identity_id.in_(list(identities))
+            )
+        elif identity is not None:
             statement = statement.where(
                 or_(
                     VoidActivitySpan.external_identity_id == identity,
                     VoidActivitySpan.external_root_id == identity,
                 )
             )
+        if run_key is not None:
+            statement = statement.where(VoidActivitySpan.run_key == run_key)
         if start is not None:
             statement = statement.where(VoidActivitySpan.last_event_at >= start)
         if end is not None:

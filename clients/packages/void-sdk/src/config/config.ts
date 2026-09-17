@@ -1,6 +1,8 @@
 import type { PluginDef } from './plugin'
 import {
   isDefinition,
+  isMeterSignal,
+  isSenseSignal,
   type Definition,
   type ActivityDef,
   type EntitlementDef,
@@ -186,7 +188,7 @@ export const defineConfig = <M extends SchemaModule>({
     [
       ...definitions.filter((d): d is MeterDef => d.kind === 'meter'),
       ...products.flatMap((p) => p.meters.map((term) => term.meter)),
-      ...signals.map((s) => s.definition.meter),
+      ...signals.filter(isMeterSignal).map((s) => s.definition.meter),
     ],
     (m) => m.key,
   )
@@ -207,7 +209,10 @@ export const defineConfig = <M extends SchemaModule>({
   )
   const activities = unique(
     'activity',
-    definitions.filter((d): d is ActivityDef => d.kind === 'activity'),
+    [
+      ...definitions.filter((d): d is ActivityDef => d.kind === 'activity'),
+      ...signals.filter(isSenseSignal).map((s) => s.definition.activity),
+    ],
     (a) => a.key,
   )
   const events = unique(

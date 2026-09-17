@@ -36,6 +36,9 @@ from polar.void.reducer.filter import (
 )
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
+from polar.void.sense.schemas import SenseCreate
+from polar.void.sense.service import sense as sense_service
+from polar.void.sense.versions import senses_in_version
 
 from .config_hash import configuration_payload
 from .exceptions import (
@@ -228,7 +231,14 @@ class DeployService:
 
     @staticmethod
     def _validate(config: DeployCreate, current_reducers: dict[str, Reducer]) -> None:
-        for kind in ("reducers", "meters", "entitlements", "products", "activities"):
+        for kind in (
+            "reducers",
+            "meters",
+            "entitlements",
+            "products",
+            "activities",
+            "senses",
+        ):
             definitions = getattr(config, kind)
             if len({definition.slug for definition in definitions}) != len(definitions):
                 raise InvalidDeployment(
@@ -311,6 +321,13 @@ class DeployService:
             if set(product.entitlements) - entitlements:
                 raise ProductInvalid(
                     f"Product {product.slug!r} grants an entitlement which is not in this deploy"
+                )
+        activities = {definition.slug for definition in config.activities}
+        for wanted in config.senses:
+            if wanted.activity not in activities:
+                raise InvalidDeployment(
+                    f"Sense {wanted.slug!r} reads activity {wanted.activity!r}, "
+                    "which is not in this deploy"
                 )
 
     async def _reconcile(
@@ -529,6 +546,13 @@ class DeployService:
             apply,
             baseline_version_id,
         )
+        entries += await self._deploy_senses(
+            session,
+            organization_id,
+            create_schema,
+            apply,
+            baseline_version_id,
+        )
 
         if not apply:
             return Deploy(
@@ -723,6 +747,77 @@ class DeployService:
                         reason=None,
                         price_preview=None,
                         kind="activity",
+                        key=slug,
+                        action="orphan",
+                        id=current.id,
+                    )
+                )
+        return entries
+
+    async def _deploy_senses(
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        create_schema: DeployCreate,
+        apply: bool,
+        baseline_version_id: str | None,
+    ) -> list[DeployEntry]:
+        entries: list[DeployEntry] = []
+        all_senses = await sense_service.list(session, organization_id)
+        current_senses = senses_in_version(all_senses, baseline_version_id)
+        existing_senses = senses_in_version(all_senses, create_schema.version_id)
+        version_activities = activities_in_version(
+            await activity_service.list(session, organization_id),
+            create_schema.version_id,
+        )
+        for wanted in create_schema.senses:
+            current = current_senses.get(wanted.slug)
+            existing = existing_senses.get(wanted.slug)
+            sense_id = existing.id if existing is not None else None
+            activity = version_activities.get(wanted.activity)
+            if existing is None and apply:
+                if activity is None:
+                    raise InvalidDeployment(
+                        f"Sense {wanted.slug!r} reads activity {wanted.activity!r}, "
+                        "which is not in this deploy"
+                    )
+                created = await sense_service.create(
+                    session,
+                    organization_id,
+                    SenseCreate(
+                        version_id=create_schema.version_id,
+                        slug=wanted.slug,
+                        activity_id=activity.id,
+                        activity_slug=wanted.activity,
+                        when=wanted.when,
+                        over=wanted.over,
+                    ),
+                )
+                sense_id = created.id
+            if current is None:
+                action: Action = "create"
+            elif sense_service.same(wanted, current):
+                action = "unchanged"
+            else:
+                action = "replace"
+            entries.append(
+                DeployEntry(
+                    reason=None,
+                    price_preview=None,
+                    kind="sense",
+                    key=wanted.slug,
+                    action=action,
+                    id=sense_id,
+                )
+            )
+        wanted_slugs = {item.slug for item in create_schema.senses}
+        for slug, current in current_senses.items():
+            if slug not in wanted_slugs:
+                entries.append(
+                    DeployEntry(
+                        reason=None,
+                        price_preview=None,
+                        kind="sense",
                         key=slug,
                         action="orphan",
                         id=current.id,

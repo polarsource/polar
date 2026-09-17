@@ -70,6 +70,7 @@ class TestCustomerState:
         assert response.status_code == 200, response.text
         compact = response.json()
         assert compact["buckets"] == []
+        assert compact["senses"] == []
         assert compact["since"] == compact["at"]
         assert all(
             holder["base"] == holder["balance"] and holder["events"] == []

@@ -30,6 +30,7 @@ import {
   TableSection,
 } from './VoidIdentityTables'
 import { VoidIdentityActivities } from './VoidIdentityActivities'
+import { VoidIdentitySenses } from './VoidIdentitySenses'
 import { VoidIdentityPageLive } from './VoidIdentityPageLive'
 import { VoidIdentityTree } from './VoidIdentityTree'
 import { VoidIdentityUsage } from './VoidIdentityUsage'
@@ -112,6 +113,7 @@ const VoidIdentityPageFixture = ({ identityId }: { identityId: string }) => {
     chainIds.has(entitlement.identity_id),
   )
   const events = data.events.filter((event) => event.identity_id === focused.id)
+  const senses = data.senses.filter((sense) => sense.identity_id === focused.id)
   const rootUsage = rolled[rootIdentity.id]
   const treeSize = walk(root).length
 
@@ -192,6 +194,8 @@ const VoidIdentityPageFixture = ({ identityId }: { identityId: string }) => {
         {data.activities[focused.id] ? (
           <VoidIdentityActivities mix={data.activities[focused.id]} />
         ) : null}
+
+        {senses.length > 0 ? <VoidIdentitySenses rows={senses} /> : null}
 
         {isRoot ? (
           <MetricChartBox

@@ -12,11 +12,13 @@ import { ApiLive, VoidConfig } from '../src/api/index'
 import {
   checksum,
   compile,
+  activities,
   count,
   defineConfig,
   event,
   meter,
   on,
+  recent,
   sum,
   product,
   recurring,
@@ -479,6 +481,63 @@ layer(
         )
         assert.match((yield* TestConsole.logLines).join('\n'), /version f{64}/)
       }),
+  )
+})
+
+layer(
+  apiWith((method, path, body) => {
+    assert.equal(method, 'POST')
+    assert.equal(path, '/v1/void/deploys')
+    const payload = body as {
+      activities?: unknown
+      senses?: ReadonlyArray<{ when: string; over: unknown }>
+    }
+    expect(payload.activities).toMatchObject([
+      { slug: 'agent', event: 'ai_call', group_by: 'call_id' },
+    ])
+    expect(payload.senses).toMatchObject([
+      {
+        slug: 'retry-storm',
+        activity: 'agent',
+        when: 'retries, not progress',
+        over: { type: 'window', amount: 1, unit: 'hour' },
+      },
+    ])
+    assert.notProperty(payload.senses?.[0], 'enter')
+    assert.notProperty(payload.senses?.[0], 'exit')
+    return {
+      id: null,
+      checksum: 'c',
+      version_id: 'f'.repeat(64),
+      applied: true,
+      has_configuration: true,
+      status: 'draft',
+      created_at: 't',
+      entries: [],
+    }
+  }),
+)((it) => {
+  it.effect('publishes senses without SDK thresholds', () =>
+    Effect.gen(function* () {
+      const completion = event('ai_call')
+      const agent = activities({ source: completion })
+      yield* reconcile(
+        'deploy',
+        defineConfig({
+          schema: {
+            completion,
+            agent,
+            storm: signal('retry-storm', {
+              activity: agent,
+              when: 'retries, not progress',
+              over: recent(1, 'hour'),
+              enter: { above: 0.7 },
+              exit: { below: 0.4 },
+            }),
+          },
+        }),
+      )
+    }),
   )
 })
 

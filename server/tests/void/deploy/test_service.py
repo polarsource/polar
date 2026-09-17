@@ -521,3 +521,36 @@ class TestDeploy:
         assert second.version_id != first.version_id
         assert entry(second, "activity", "agent").action == "replace"
         assert await counts(session, organization) == [2, 2, 1, 2, 2, 2]
+
+    async def test_senses_version_like_activities(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        body = deepcopy(CONFIG)
+        body["activities"] = [
+            {
+                "slug": "agent",
+                "event": "llm.completion",
+                "group_by": "call_id",
+            }
+        ]
+        body["senses"] = [
+            {
+                "slug": "retry-storm",
+                "activity": "agent",
+                "when": "retries, not progress",
+                "over": {"type": "window", "amount": 1, "unit": "hour"},
+            }
+        ]
+        first = await deploy_service.deploy(
+            session,
+            organization.id,
+            DeployCreate.model_validate({**body, "activate": True}),
+        )
+        assert entry(first, "sense", "retry-storm").action == "create"
+        changed = deepcopy(body)
+        changed["senses"][0]["when"] = "this run now needs a person"
+        second = await deploy_service.deploy(
+            session, organization.id, DeployCreate.model_validate(changed)
+        )
+        assert second.version_id != first.version_id
+        assert entry(second, "sense", "retry-storm").action == "replace"

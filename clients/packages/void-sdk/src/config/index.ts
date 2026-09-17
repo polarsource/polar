@@ -21,6 +21,7 @@ export {
   on,
   oneTime,
   product,
+  recent,
   recurring,
   sum,
   signal,
@@ -35,6 +36,7 @@ export type {
   BillingInterval,
   Comparison,
   Definition,
+  DurationUnit,
   EntitlementDef,
   EventDef,
   LeafDefinition,
@@ -45,6 +47,8 @@ export type {
   MappedSource,
   MappedMetadata,
   MeterDef,
+  MeterSignalOptions,
+  MeterSignalRef,
   Money,
   OneTimePrice,
   Price,
@@ -55,10 +59,15 @@ export type {
   RecurringPrice,
   ReducerDef,
   ScalarReducer,
+  SenseSignalOptions,
+  SenseSignalRef,
+  SignalOver,
   SignalRef,
   SignalOptions,
+  SignalWindow,
   UnnamedReducer,
 } from './schema'
+export { isMeterSignal, isSenseSignal } from './schema'
 export { defineConfig } from './config'
 export { tags, plugin } from './plugin'
 export type { PluginContext, PluginDef, PluginSchema, VerbsOf } from './plugin'
@@ -99,4 +108,6 @@ export type {
   IrProduct,
   IrProductMeter,
   IrReducer,
+  IrSense,
+  IrSenseOver,
 } from './compile'

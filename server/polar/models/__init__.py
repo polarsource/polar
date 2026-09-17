@@ -134,6 +134,7 @@ from .void_reducer import VoidReducer
 from .void_reducer_bucket import VoidReducerBucket
 from .void_reducer_dependency import VoidReducerDependency, VoidReducerJob
 from .void_scenario import VoidScenario
+from .void_sense import VoidSense, VoidSenseObservation
 from .void_subscription import VoidSubscription, VoidSubscriptionStatus
 from .wallet import Wallet
 from .wallet_transaction import WalletTransaction
@@ -277,6 +278,8 @@ __all__ = [
     "VoidReducerDependency",
     "VoidReducerJob",
     "VoidScenario",
+    "VoidSense",
+    "VoidSenseObservation",
     "VoidSubscription",
     "VoidSubscriptionStatus",
     "Wallet",

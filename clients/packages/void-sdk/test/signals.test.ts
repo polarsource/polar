@@ -9,9 +9,10 @@ import {
   sum,
   checksumOf,
   compile,
+  activities,
+  recent,
   type SignalState,
   type Wire,
-  type Void,
 } from '../src/index'
 
 const use = event<{ amount: number }>('use')
@@ -28,7 +29,7 @@ const budgetLow = signal('budget-low', {
   exit: { atLeast: 150 },
 })
 const schema = { use, buy, credits, budgetLow }
-const clients: Void<typeof schema>[] = []
+const clients: Array<{ dispose(): Promise<void> }> = []
 const databases: DatabaseSync[] = []
 afterEach(async () => {
   await Promise.all(clients.splice(0).map((client) => client.dispose()))
@@ -893,4 +894,124 @@ it('rejects a non-positive refresh interval', () => {
       .as('root')
       .signals.budgetLow.listen(() => undefined, { refreshInterval: 0 }),
   ).toThrow('refreshInterval')
+})
+
+const completion = event('llm.completion')
+const agent = activities({ source: completion })
+const retryStorm = signal('retry-storm', {
+  activity: agent,
+  when: 'most recent spend is retries or loops, not progress',
+  over: recent(1, 'hour'),
+  enter: { above: 0.7 },
+  exit: { below: 0.4 },
+})
+
+function senseSetup(identityId = 'root') {
+  const at = new Date().toISOString()
+  let snapshot: Wire.CustomerState = {
+    ...fixture(),
+    meters: [],
+    buckets: [],
+    senses: [
+      {
+        slug: 'retry-storm',
+        activity: 'agent',
+        when: retryStorm.definition.when,
+        over: { type: 'window', amount: 1, unit: 'hour' },
+        identity_id: identityId,
+        run_key: null,
+        noul: 0.5,
+        span_count: 3,
+        cost: 0.1,
+        evaluated_at: at,
+      },
+    ],
+  }
+  const config = defineConfig({
+    schema: { completion, agent, retryStorm },
+  })
+  const client = createVoid(config, {
+    apiUrl: 'http://void',
+    token: 'token',
+    fetch: async (input, init) => {
+      const request = new Request(input, init)
+      const path = new URL(request.url).pathname
+      if (path === '/v1/void/organizations/current')
+        return Response.json({
+          active_version_id: 'a'.repeat(64),
+          active_deployment_id: 'deployment',
+          can_activate: true,
+          id: 'org',
+          name: 'Org',
+          slug: 'org',
+          created_at: at,
+        })
+      if (path.startsWith('/v1/void/identities/')) {
+        const id = decodeURIComponent(path.slice('/v1/void/identities/'.length))
+        return Response.json({
+          entitlements: { features: null, meters: null },
+          id: 'identity',
+          external_id: id,
+          parent_external_id: id === 'root' ? null : 'root',
+          chain: id === 'root' ? ['root'] : [id, 'root'],
+          children: [],
+          created_at: at,
+          metadata: {},
+        })
+      }
+      if (path === '/v1/void/customers/root/state')
+        return Response.json(snapshot)
+      throw new Error(`Unexpected request: ${path}`)
+    },
+  })
+  clients.push(client)
+  return {
+    client,
+    noul(value: number) {
+      snapshot = {
+        ...snapshot,
+        at: new Date().toISOString(),
+        senses: snapshot.senses?.map((row) => ({ ...row, noul: value })),
+      }
+    },
+  }
+}
+
+it('latches a semantic signal from Polar noul without a meter', async () => {
+  const server = senseSetup()
+  const query = server.client.as('root').signals.retryStorm
+  expect(await query.get()).toMatchObject({
+    status: 'inactive',
+    noul: 0.5,
+    balance: null,
+    identityId: 'root',
+  })
+  server.noul(0.8)
+  expect(await query.get()).toMatchObject({
+    status: 'active',
+    noul: 0.8,
+    transition: 'entered',
+  })
+  server.noul(0.55)
+  expect(await query.get()).toMatchObject({
+    status: 'active',
+    noul: 0.55,
+  })
+  server.noul(0.3)
+  expect(await query.get()).toMatchObject({
+    status: 'inactive',
+    noul: 0.3,
+    transition: 'exited',
+  })
+})
+
+it('latches a sense on a child identity', async () => {
+  const server = senseSetup('agent')
+  expect(
+    await server.client.as('agent').signals.retryStorm.get(),
+  ).toMatchObject({
+    identityId: 'agent',
+    status: 'inactive',
+    noul: 0.5,
+  })
 })

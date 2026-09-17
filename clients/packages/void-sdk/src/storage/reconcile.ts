@@ -688,6 +688,28 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
   },
 )
 
+/** Customer state without a meter, for sense-only signal groups. */
+export const loadCustomerSnapshot = Effect.fn('Scope.loadCustomerSnapshot')(
+  function* (config: Config, id: string) {
+    const api = yield* Api
+    const versionId =
+      config.versionId === undefined
+        ? (yield* api.organizationsCurrent(undefined)).active_version_id
+        : config.versionId
+    if (versionId === null)
+      return fail('no active deployment; run `void deploy --activate`')
+    const identity = yield* api.identitiesGet(id, undefined)
+    const root = identity.chain.at(-1) ?? id
+    const snapshot = yield* api.customersState(root, {
+      params: { version_id: versionId },
+    })
+    return {
+      snapshot,
+      effectiveConfig: { ...config, versionId },
+    }
+  },
+)
+
 export const checkLocally = Effect.fn('Scope.checkLocally')(function* (
   config: Config,
   ref: MeterDef,

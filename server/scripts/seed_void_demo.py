@@ -30,6 +30,8 @@ from polar.models import (
     Customer,
     Organization,
     User,
+    VoidActivity,
+    VoidActivitySpan,
     VoidBillingIdentity,
     VoidDeployment,
     VoidEntitlement,
@@ -41,6 +43,8 @@ from polar.models import (
     VoidReducerDependency,
     VoidReducerJob,
     VoidScenario,
+    VoidSense,
+    VoidSenseObservation,
     VoidSubscription,
 )
 from polar.postgres import AsyncSession, create_async_engine
@@ -229,7 +233,7 @@ def configuration_v2() -> dict[str, Any]:
 
 
 def configuration_v3() -> dict[str, Any]:
-    """Adds sandbox minutes and reprices output tokens. The active version."""
+    """Adds sandbox minutes, reprices output tokens, and deploys agent senses."""
     config = deepcopy(configuration_v2())
     config["checksum"] = "demo:v3"
     config["reducers"].append(
@@ -250,6 +254,28 @@ def configuration_v3() -> dict[str, Any]:
                 {"slug": "sandbox_minutes", "included": 0, "limit": "soft"}
             )
             product["entitlements"].append("sandbox")
+    config["activities"] = [
+        {
+            "slug": "agent",
+            "event": "llm.completion",
+            "group_by": "call_id",
+            "run_by": "call_id",
+        }
+    ]
+    config["senses"] = [
+        {
+            "slug": "retry-storm",
+            "activity": "agent",
+            "when": "most recent spend is retries or loops, not progress",
+            "over": {"type": "window", "amount": 1, "unit": "hour"},
+        },
+        {
+            "slug": "human-in-the-loop",
+            "activity": "agent",
+            "when": "this run now needs a person",
+            "over": {"type": "run"},
+        },
+    ]
     return config
 
 
@@ -335,6 +361,10 @@ class DemoSeeder:
             VoidReducerJob,
             VoidReducerDependency,
             VoidReducerBucket,
+            VoidSenseObservation,
+            VoidSense,
+            VoidActivitySpan,
+            VoidActivity,
             VoidProduct,
             VoidMeter,
             VoidDeployment,
@@ -429,6 +459,66 @@ class DemoSeeder:
             emitters[slug] = children or [slug]
         await self.session.flush()
         return emitters
+
+    async def seed_senses(
+        self, version_id: str, emitters: dict[str, list[str]]
+    ) -> int:
+        """Latest noul per identity, as if Jev had judged the labeled mix."""
+        senses = {
+            sense.slug: sense
+            for sense in await self.session.scalars(
+                select(VoidSense).where(
+                    VoidSense.organization_id == self.organization.id,
+                    VoidSense.version_id == version_id,
+                    VoidSense.deleted_at.is_(None),
+                )
+            )
+        }
+        storm = senses.get("retry-storm")
+        hitl = senses.get("human-in-the-loop")
+        if storm is None:
+            return 0
+        count = 0
+        for root, children in emitters.items():
+            identities = [root, *[child for child in children if child != root]]
+            for identity in identities:
+                noul = round(self.random.uniform(0.16, 0.91), 2)
+                self.session.add(
+                    VoidSenseObservation(
+                        sense_id=storm.id,
+                        version_id=version_id,
+                        organization_id=self.organization.id,
+                        external_identity_id=identity,
+                        external_root_id=root,
+                        run_key="",
+                        noul=noul,
+                        state_hash=f"seed:{identity}:retry-storm",
+                        span_count=4 + self.random.randrange(8),
+                        cost=round(self.random.uniform(0.04, 0.4), 3),
+                        evaluated_at=self.now,
+                    )
+                )
+                count += 1
+                if hitl is None or identity == root:
+                    continue
+                self.session.add(
+                    VoidSenseObservation(
+                        sense_id=hitl.id,
+                        version_id=version_id,
+                        organization_id=self.organization.id,
+                        external_identity_id=identity,
+                        external_root_id=root,
+                        run_key=f"run_{identity}",
+                        noul=0.82 if identity.endswith("deploy-bot") else 0.24,
+                        state_hash=f"seed:{identity}:human-in-the-loop",
+                        span_count=2 + self.random.randrange(4),
+                        cost=round(self.random.uniform(0.02, 0.18), 3),
+                        evaluated_at=self.now,
+                    )
+                )
+                count += 1
+        await self.session.flush()
+        return count
 
     async def create_subscriptions(self, version_id: str) -> None:
         products = {
@@ -566,6 +656,7 @@ class DemoSeeder:
         )
         version_id = await self.deploy_versions()
         emitters = await self.create_identities(auth)
+        senses = await self.seed_senses(version_id, emitters)
         await self.create_subscriptions(version_id)
         events = await self.ingest_events(emitters)
         await self.create_scenarios(version_id)
@@ -575,6 +666,7 @@ class DemoSeeder:
             + sum(len(e) for slug, e in emitters.items() if e != [slug]),
             "subscriptions": sum(1 for root in ROOTS if root[1] is not None),
             "events": events,
+            "senses": senses,
             "scenarios": len(SCENARIOS),
         }
 

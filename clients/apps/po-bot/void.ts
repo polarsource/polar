@@ -1,4 +1,12 @@
-import { activities, included, product, recurring, usd } from '@void/sdk'
+import {
+  activities,
+  included,
+  product,
+  recent,
+  recurring,
+  signal,
+  usd,
+} from '@void/sdk'
 import { defineConfig } from '@void/sdk/config'
 import {
   inCredits,
@@ -15,6 +23,11 @@ export const MODELS = [
   'openai/gpt-5',
   'openai/gpt-5-mini',
 ] as const
+
+export const CHEAPER: Record<string, string> = {
+  'anthropic/claude-sonnet-5': 'anthropic/claude-haiku-4-5',
+  'openai/gpt-5': 'openai/gpt-5-mini',
+}
 
 export const ai = llm({
   key: 'po_bot',
@@ -40,9 +53,25 @@ export const team = product('po_bot_team', {
   meters: [included(ai.credits, 100_000, { limit: 'hard' })],
 })
 
-export const agent = activities({ source: ai })
+export const agent = activities({ source: ai, run: 'call_id' })
+
+export const retryStorm = signal('retry-storm', {
+  activity: agent,
+  when: 'most recent spend is retries or loops, not progress',
+  over: recent(1, 'hour'),
+  enter: { above: 0.7 },
+  exit: { below: 0.4 },
+})
+
+export const humanInTheLoop = signal('human-in-the-loop', {
+  activity: agent,
+  when: 'this run now needs a person',
+  over: 'run',
+  enter: { above: 0.75 },
+  exit: { below: 0.35 },
+})
 
 export const config = defineConfig({
-  schema: { ai, team, agent },
+  schema: { ai, team, agent, retryStorm, humanInTheLoop },
   eventStorage: [{ type: 'sqlite', connection: events }],
 })

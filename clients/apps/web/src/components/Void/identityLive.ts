@@ -46,6 +46,20 @@ export interface VoidIdentitySnapshot {
   customer: VoidCustomerRecord | null
   meters: Record<string, VoidMeterBalance>
   entitlements: string[]
+  senses?: VoidLiveSense[]
+}
+
+export interface VoidLiveSense {
+  slug: string
+  activity: string
+  when: string
+  over: { type: 'run' } | { type: 'window'; amount: number; unit: string }
+  identity_id: string
+  run_key: string | null
+  noul: number
+  span_count: number
+  cost: number | null
+  evaluated_at: string
 }
 
 export type VoidLiveSubscriptionStatus = 'active' | 'canceled' | 'revoked'

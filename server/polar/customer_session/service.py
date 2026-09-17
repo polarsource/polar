@@ -2,19 +2,16 @@ import uuid
 
 import structlog
 from pydantic import HttpUrl
-from sqlalchemy import select
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
 from polar.exceptions import PolarError, PolarRequestValidationError
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.services import ResourceServiceReader
-from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -243,26 +240,8 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> CustomerSession | None:
-        token_hash = get_token_hash(token)
-        statement = (
-            select(CustomerSession)
-            .join(CustomerSession.customer)
-            .where(
-                CustomerSession.token == token_hash,
-                ~CustomerSession.is_deleted,
-                Customer.can_authenticate,
-            )
-            .options(
-                contains_eager(CustomerSession.customer).joinedload(
-                    Customer.organization
-                )
-            )
-        )
-        if not expired:
-            statement = statement.where(CustomerSession.expires_at > utc_now())
-
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        repository = CustomerSessionRepository.from_session(session)
+        return await repository.get_by_token(token, expired=expired)
 
     async def delete_expired(self, session: AsyncSession) -> None:
         repository = CustomerSessionRepository.from_session(session)

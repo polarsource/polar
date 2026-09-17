@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { VoidError } from '@void/sdk'
-import { streamText, type UIMessage } from 'ai'
+import { stepCountIs, streamText, type UIMessage } from 'ai'
 import { db } from '@/db'
 import { agents, messages } from '@/db/schema'
+import { tools } from '@/tools'
 import { agentModel } from '@/void'
 
 const textOf = (message: UIMessage) =>
@@ -29,6 +30,8 @@ export const POST = async (request: Request) => {
   const result = streamText({
     model: agentModel(agent),
     system: agent.systemPrompt || undefined,
+    tools,
+    stopWhen: stepCountIs(8),
     messages: [
       ...history.map(({ role, content }) => ({ role, content })),
       { role: 'user', content: prompt },

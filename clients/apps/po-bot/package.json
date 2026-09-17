@@ -28,7 +28,8 @@
     "next": "^16.2.6",
     "next-themes": "catalog:",
     "react": "19.2.5",
-    "react-dom": "19.2.5"
+    "react-dom": "19.2.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

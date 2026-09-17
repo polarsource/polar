@@ -35,9 +35,9 @@ class Classifier(Protocol):
 
 class TypeSafeClassifier:
     async def classify(self, state: Mapping[str, Any]) -> Classification:
-        api_key = settings.TYPESAFE_API_KEY
+        api_key = settings.TYPESAFE_AI_KEY
         if not api_key:
-            raise TypeSafeError("TYPESAFE_API_KEY is not set")
+            raise TypeSafeError("TYPESAFE_AI_KEY is not set")
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.post(
                 TYPESAFE_URL,

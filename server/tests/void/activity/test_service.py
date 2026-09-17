@@ -1,9 +1,15 @@
 import json
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID
 
 import pytest
+from pytest_mock import MockerFixture
+from sqlalchemy import select
+from temporalio.client import Client
 
-from polar.models import Organization, VoidActivity
+from polar.config import settings
+from polar.models import Organization, VoidActivity, VoidEvent
 from polar.postgres import AsyncSession
 from polar.void.activity.schemas import ActivityCreate
 from polar.void.activity.service import (
@@ -269,3 +275,65 @@ def test_span_key_reads_stringified_metadata() -> None:
     assert event_metadata(payload)["call_id"] == "call_9"
     assert span_key_of(payload, "call_id") == "call_9"
     assert span_key_of({"external_id": "only", "metadata": "{}"}, "call_id") == "only"
+
+
+async def _events(session: AsyncSession, organization_id: UUID) -> list[VoidEvent]:
+    return list(
+        (
+            await session.execute(
+                select(VoidEvent).where(VoidEvent.organization_id == organization_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+@pytest.mark.asyncio
+async def test_touch_events_seeds_pending_and_starts_workflow(
+    session: AsyncSession,
+    organization: Organization,
+    save_fixture: SaveFixture,
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch.object(settings, "TYPESAFE_AI_KEY", "test-key")
+    created = await definition(session, organization, save_fixture)
+    await event_service.ingest(
+        session, organization.id, [completion("e1")], EventSource.user
+    )
+    temporal = MagicMock(spec=Client)
+    temporal.start_workflow = AsyncMock()
+    await activity_service.touch_events(
+        session, temporal, await _events(session, organization.id)
+    )
+    await session.flush()
+    pending = await activity_service.get_span(session, organization.id, "call_1")
+    assert pending is not None
+    assert pending.activity == PENDING
+    assert pending.cost == pytest.approx(0.02)
+    temporal.start_workflow.assert_awaited_once()
+    assert temporal.start_workflow.call_args.kwargs["id"] == (
+        f"polar-void-activity-span-{organization.id}-{created.id}-call_1"
+    )
+
+
+@pytest.mark.asyncio
+async def test_touch_events_skips_without_typesafe_key(
+    session: AsyncSession,
+    organization: Organization,
+    save_fixture: SaveFixture,
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch.object(settings, "TYPESAFE_AI_KEY", None)
+    await definition(session, organization, save_fixture)
+    await event_service.ingest(
+        session, organization.id, [completion("e1")], EventSource.user
+    )
+    temporal = MagicMock(spec=Client)
+    temporal.start_workflow = AsyncMock()
+    await activity_service.touch_events(
+        session, temporal, await _events(session, organization.id)
+    )
+    await session.flush()
+    assert await activity_service.get_span(session, organization.id, "call_1") is None
+    temporal.start_workflow.assert_not_awaited()

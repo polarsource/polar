@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from temporalio import workflow
 
-DEBOUNCE = timedelta(seconds=30)
+DEBOUNCE = timedelta(seconds=1)
 ACTIVITY_TIMEOUT = timedelta(minutes=2)
 
 

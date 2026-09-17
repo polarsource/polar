@@ -42,7 +42,7 @@ The organization's `void_enabled` feature flag must be set; see
 Then, from this directory:
 
 ```bash
-cp .env.example .env.local   # fill in VOID_TOKEN and AI_GATEWAY_API_KEY
+cp .env.template .env.local   # fill in VOID_TOKEN and AI_GATEWAY_API_KEY
 pnpm bootstrap               # void deploy --activate, create the app database, subscribe the org
 pnpm dev                     # http://localhost:3004
 ```
@@ -59,7 +59,8 @@ the identities and events already on the server stay.
 | `src/live.ts`                  | One frame of the organization: the identity tree with every node's standing, and the latest completions.                                              |
 | `src/db/schema.ts`             | The app's own tables: members, agents, messages.                                                                                                      |
 | `src/actions.ts`               | Creating a member or agent: insert the row, then one call into `src/void.ts`.                                                                         |
-| `src/app/api/chat/route.ts`    | Plain `streamText` on the agent's metered model.                                                                                                      |
+| `src/tools.ts`                 | Shared tools every agent can call: web, files, a code sandbox, email. Implementations are mocked.                                                      |
+| `src/app/api/chat/route.ts`    | `streamText` on the agent's metered model, with the shared tools.                                                                                      |
 | `src/app/api/live/route.ts`    | Server-sent events: a fresh frame every two seconds.                                                                                                  |
 | `src/components/Workspace.tsx` | The member page's frame: sidebar, chat, event panel, and the tree along the bottom. The panel and tree are dragged to size.                           |
 | `src/components/Hierarchy.tsx` | The tree along the bottom. A completion climbs from its agent to the member to the org as the credits fold into each.                                 |

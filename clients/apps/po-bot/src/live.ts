@@ -1,7 +1,15 @@
 import type { Wire } from '@void/sdk'
 import { db } from './db'
 import { agents, members } from './db/schema'
-import { ORG, completions, standings, type Standing } from './void'
+import {
+  ORG,
+  activityReport,
+  completions,
+  spanKey,
+  spansFor,
+  standings,
+  type Standing,
+} from './void'
 
 /**
  * One frame of the organization's live state: the identity tree with every
@@ -38,26 +46,30 @@ export interface LogEvent {
   readonly event: Wire.Event
   readonly agent: string
   readonly member: string
+  /** Jev's label for this span, once the worker has classified it. */
+  readonly span: Wire.ActivitySpan | null
 }
 export interface Frame {
   readonly events: readonly LogEvent[]
   readonly tree: Tree
+  readonly activities: Wire.ActivityReport
 }
 
 const nothing: Standing = { usage: 0, credits: 0, remaining: null }
 
 export const frame = async (): Promise<Frame> => {
-  const [memberRows, agentRows, events] = await Promise.all([
+  const [memberRows, agentRows, events, activities] = await Promise.all([
     db.select().from(members),
     db.select().from(agents),
     completions(),
+    activityReport(),
   ])
   const ids = [
     ORG,
     ...memberRows.map((row) => row.id),
     ...agentRows.map((row) => row.id),
   ]
-  const at = await standings(ids)
+  const [at, spans] = await Promise.all([standings(ids), spansFor(events)])
   const standing = (id: string) => at.get(id) ?? nothing
 
   const tree: Tree = {
@@ -90,12 +102,14 @@ export const frame = async (): Promise<Frame> => {
   )
   return {
     tree,
+    activities,
     events: events.map((event) => {
       const who = label.get(event.external_identity_id ?? '')
       return {
         event,
         agent: who?.agent ?? 'unknown agent',
         member: who?.member ?? '',
+        span: spans.get(spanKey(event)) ?? null,
       }
     }),
   }

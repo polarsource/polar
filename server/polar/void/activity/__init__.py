@@ -1,3 +1,2 @@
-from .service import activity
-
-__all__ = ["activity"]
+# Keep empty. Importing service here pulls polar.config into Temporal's
+# workflow sandbox and ClassifySpanWorkflow fails to validate.

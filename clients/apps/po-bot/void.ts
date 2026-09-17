@@ -1,4 +1,4 @@
-import { included, product, recurring, usd } from '@void/sdk'
+import { activities, included, product, recurring, usd } from '@void/sdk'
 import { defineConfig } from '@void/sdk/config'
 import {
   inCredits,
@@ -40,7 +40,9 @@ export const team = product('po_bot_team', {
   meters: [included(ai.credits, 100_000, { limit: 'hard' })],
 })
 
+export const agent = activities({ source: ai })
+
 export const config = defineConfig({
-  schema: { ai, team },
+  schema: { ai, team, agent },
   eventStorage: [{ type: 'sqlite', connection: events }],
 })

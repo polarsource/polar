@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, Field, model_validator
+from pydantic import AfterValidator, AliasChoices, DirectoryPath, Field, model_validator
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -73,7 +73,18 @@ class Settings(BaseSettings):
     VOID_TINYBIRD_API_TOKEN: str | None = None
     VOID_TINYBIRD_WORKSPACE: str | None = None
     VOID_REDUCER_PROCESSING_DELAY_SECONDS: float = 0
-    TYPESAFE_API_KEY: str | None = None
+    TYPESAFE_AI_KEY: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "TYPESAFE_AI_KEY",
+            "POLAR_TYPESAFE_AI_KEY",
+            "POLAR_TYPESAFE_API_KEY",
+        ),
+    )
+
+    @property
+    def VOID_ACTIVITY_ENABLED(self) -> bool:
+        return bool(self.TYPESAFE_AI_KEY)
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20

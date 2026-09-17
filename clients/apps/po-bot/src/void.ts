@@ -47,3 +47,57 @@ export const completions = async (): Promise<readonly Wire.Event[]> => {
   })
   return items
 }
+
+const EMPTY_ACTIVITIES: Wire.ActivityReport = {
+  taxonomy: 'polar.agent/v1',
+  window: {},
+  totals: { cost: 0, labeled_cost: 0, unlabeled_cost: 0, pending_cost: 0 },
+  by_activity: [],
+  runs: [],
+}
+
+const withTimeout = <T>(promise: Promise<T>, ms: number) =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), ms),
+    ),
+  ])
+
+export const activityReport = async (): Promise<Wire.ActivityReport> => {
+  try {
+    return await withTimeout(void_.api.activities.list(), 3_000)
+  } catch {
+    return EMPTY_ACTIVITIES
+  }
+}
+
+/** Same key the worker uses: `metadata.call_id`, else the event's `external_id`. */
+export const spanKey = (event: Wire.Event) => {
+  const callId = event.metadata.call_id
+  return typeof callId === 'string' && callId !== ''
+    ? callId
+    : event.external_id
+}
+
+const classified = new Map<string, Wire.ActivitySpan>()
+
+const loadSpan = async (key: string) => {
+  const cached = classified.get(key)
+  if (cached && cached.activity !== 'pending') return cached
+  try {
+    const span = await void_.api.activities.span(key)
+    classified.set(key, span)
+    return span
+  } catch {
+    return cached ?? null
+  }
+}
+
+export const spansFor = async (events: readonly Wire.Event[]) => {
+  const keys = [...new Set(events.map(spanKey))]
+  const loaded = await Promise.all(
+    keys.map(async (key) => [key, await loadSpan(key)] as const),
+  )
+  return new Map(loaded)
+}

@@ -10,6 +10,7 @@ from uuid import UUID
 
 from temporalio.client import Client
 
+from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import (
     VoidActivity,
@@ -320,10 +321,12 @@ class ActivityService:
 
     async def touch_events(
         self,
-        session: AsyncReadSession,
+        session: AsyncSession,
         temporal: Client,
         events: Sequence[VoidEvent],
     ) -> None:
+        if not settings.VOID_ACTIVITY_ENABLED:
+            return
         by_org: dict[UUID, list[VoidEvent]] = defaultdict(list)
         for event in events:
             by_org[event.organization_id].append(event)
@@ -340,6 +343,7 @@ class ActivityService:
                 continue
             by_name = {definition.event_name: definition for definition in definitions}
             seen: set[tuple[UUID, str]] = set()
+            repository = ActivitySpanRepository.from_session(session)
             for event in org_events:
                 name = event.payload.get("name")
                 if not isinstance(name, str):
@@ -352,6 +356,9 @@ class ActivityService:
                 if pair in seen:
                     continue
                 seen.add(pair)
+                await self._seed_pending(
+                    session, repository, definition, organization_id, key, event
+                )
                 await temporal.start_workflow(
                     ClassifySpanWorkflow.run,
                     ClassifySpanInput(str(organization_id), str(definition.id), key),
@@ -359,6 +366,43 @@ class ActivityService:
                     task_queue=TASK_QUEUE,
                     start_signal="touch",
                 )
+
+    async def _seed_pending(
+        self,
+        session: AsyncSession,
+        repository: ActivitySpanRepository,
+        definition: VoidActivity,
+        organization_id: UUID,
+        span_key: str,
+        event: VoidEvent,
+    ) -> None:
+        current = await repository.get_span(
+            organization_id, definition.version_id, span_key
+        )
+        if current is not None:
+            return
+        meta = event_metadata(event.payload)
+        cost = meta.get("cost")
+        session.add(
+            VoidActivitySpan(
+                activity_id=definition.id,
+                version_id=definition.version_id,
+                taxonomy=definition.taxonomy,
+                span_key=span_key,
+                event_name=definition.event_name,
+                organization_id=organization_id,
+                external_identity_id=event.payload.get("external_identity_id"),
+                external_root_id=event.payload.get("external_root_id"),
+                first_event_at=event.timestamp,
+                last_event_at=event.timestamp,
+                state_hash="",
+                activity=PENDING,
+                cost=cost if isinstance(cost, int | float) else None,
+                input_tokens=int(meta.get("input_tokens") or 0),
+                output_tokens=int(meta.get("output_tokens") or 0),
+                event_count=1,
+            )
+        )
 
     async def classify_span(
         self,

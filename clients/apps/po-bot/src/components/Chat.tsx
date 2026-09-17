@@ -4,7 +4,12 @@ import type { Agent } from '@/db/schema'
 import { useChat } from '@ai-sdk/react'
 import { Avatar, Button, Text, TextArea } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { DefaultChatTransport, type UIMessage } from 'ai'
+import {
+  DefaultChatTransport,
+  getToolName,
+  isToolUIPart,
+  type UIMessage,
+} from 'ai'
 import { ArrowUp } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -13,6 +18,27 @@ const text = (message: UIMessage) =>
     .filter((part) => part.type === 'text')
     .map((part) => part.text)
     .join('')
+
+const Part = ({ part }: { part: UIMessage['parts'][number] }) => {
+  if (part.type === 'text') {
+    if (!part.text) return null
+    return <Text style={{ whiteSpace: 'pre-wrap' }}>{part.text}</Text>
+  }
+  if (!isToolUIPart(part)) return null
+  const waiting =
+    part.state !== 'output-available' && part.state !== 'output-error'
+  return (
+    <Text variant="caption" color="muted" monospace>
+      {getToolName(part)}
+      {waiting ? ' …' : part.state === 'output-error' ? ' failed' : ''}
+    </Text>
+  )
+}
+
+const hasParts = (message: UIMessage) =>
+  message.parts.some(
+    (part) => (part.type === 'text' && part.text) || isToolUIPart(part),
+  )
 
 /** Plain AI SDK chat. The route only needs the newest message; it keeps the thread. */
 export const Chat = ({
@@ -111,6 +137,8 @@ export const Chat = ({
               as="li"
               key={message.id}
               display="flex"
+              flexDirection="column"
+              rowGap="xs"
               marginRight="4xl"
               alignSelf="start"
               borderRadius="l"
@@ -120,13 +148,11 @@ export const Chat = ({
               paddingHorizontal="l"
               paddingVertical="s"
             >
-              <Text style={{ whiteSpace: 'pre-wrap' }}>
-                {text(message) || (
-                  <Text as="span" color="muted">
-                    …
-                  </Text>
-                )}
-              </Text>
+              {hasParts(message) ? (
+                message.parts.map((part, i) => <Part key={i} part={part} />)
+              ) : (
+                <Text color="muted">…</Text>
+              )}
             </Box>
           ),
         )}

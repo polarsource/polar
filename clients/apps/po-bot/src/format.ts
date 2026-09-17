@@ -4,6 +4,9 @@ export const n = (value: unknown) =>
 export const usd = (value: unknown) =>
   typeof value === 'number' ? `$${value.toFixed(5)}` : 'n/a'
 
+export const pct = (value: unknown) =>
+  typeof value === 'number' ? `${Math.round(value * 100)}%` : '–'
+
 export const time = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-US', { hour12: false })
 

@@ -6,11 +6,11 @@ import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
 from reauth.amr import AuthenticationMethodReference
-from reauth.crypto import generate_token_hash_pair
 
 from polar.auth.authentication_session import TOKEN_PREFIX
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.utils import utc_now
 from polar.models import AuthenticationSession, User
 from polar.postgres import AsyncSession
@@ -36,9 +36,7 @@ async def cookie_client(
 async def create_completable_authentication_session(
     save_fixture: SaveFixture, user: User
 ) -> str:
-    token, token_hash = generate_token_hash_pair(
-        secret=settings.SECRET, prefix=TOKEN_PREFIX
-    )
+    token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
     authentication_session = AuthenticationSession(
         token_hash=token_hash,
         expires_at=int(utc_now().timestamp()) + 900,

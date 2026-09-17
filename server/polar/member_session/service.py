@@ -1,6 +1,5 @@
 from pydantic import HttpUrl
 
-from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.models import Member, MemberSession
@@ -17,9 +16,7 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
         member: Member,
         return_url: HttpUrl | None = None,
     ) -> tuple[str, MemberSession]:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=MEMBER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=MEMBER_SESSION_TOKEN_PREFIX)
         member_session = MemberSession(
             token=token_hash,
             member=member,
@@ -33,7 +30,7 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> MemberSession | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         repository = MemberSessionRepository.from_session(session)
         return await repository.get_by_token_hash(token_hash, expired=expired)
 

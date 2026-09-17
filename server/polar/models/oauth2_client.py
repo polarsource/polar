@@ -5,7 +5,6 @@ from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.encryption import EncryptedString, EncryptedStringType
@@ -72,7 +71,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     def hash_secret(value: str | None) -> str | None:
         if value is None:
             return None
-        return get_token_hash(value, secret=settings.SECRET)
+        return get_token_hash(value)
 
     @classmethod
     async def encrypt_client_secret(

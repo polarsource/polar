@@ -869,8 +869,7 @@ class TestOAuth2Consent:
         authorization_code = (
             sync_session.execute(
                 select(OAuth2AuthorizationCode).where(
-                    OAuth2AuthorizationCode.code
-                    == get_token_hash(code, secret=settings.SECRET)
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
                 )
             )
             .unique()
@@ -916,8 +915,7 @@ class TestOAuth2Consent:
         authorization_code = (
             sync_session.execute(
                 select(OAuth2AuthorizationCode).where(
-                    OAuth2AuthorizationCode.code
-                    == get_token_hash(code, secret=settings.SECRET)
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
                 )
             )
             .unique()
@@ -964,8 +962,7 @@ class TestOAuth2Consent:
         authorization_code = (
             sync_session.execute(
                 select(OAuth2AuthorizationCode).where(
-                    OAuth2AuthorizationCode.code
-                    == get_token_hash(code, secret=settings.SECRET)
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
                 )
             )
             .unique()
@@ -1013,8 +1010,7 @@ class TestOAuth2Consent:
         authorization_code = (
             sync_session.execute(
                 select(OAuth2AuthorizationCode).where(
-                    OAuth2AuthorizationCode.code
-                    == get_token_hash(code, secret=settings.SECRET)
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
                 )
             )
             .unique()
@@ -1206,8 +1202,7 @@ class TestOAuth2Consent:
         authorization_code = (
             sync_session.execute(
                 select(OAuth2AuthorizationCode).where(
-                    OAuth2AuthorizationCode.code
-                    == get_token_hash(code, secret=settings.SECRET)
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
                 )
             )
             .unique()
@@ -1288,8 +1283,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -1523,8 +1517,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -1609,8 +1602,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -1795,9 +1787,7 @@ class TestOAuth2Token:
         user: User,
         oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -1826,9 +1816,7 @@ class TestOAuth2Token:
         organization: Organization,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -1858,9 +1846,7 @@ class TestOAuth2Token:
         user: User,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -1896,9 +1882,7 @@ class TestOAuth2Token:
         user_organization: UserOrganization,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -1929,8 +1913,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -1955,9 +1938,7 @@ class TestOAuth2Token:
                 role=OrganizationRole.member,
             )
         )
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -1985,8 +1966,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -2003,9 +1983,7 @@ class TestOAuth2Token:
         organization: Organization,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2034,8 +2012,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -2053,9 +2030,7 @@ class TestOAuth2Token:
         user: User,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2080,8 +2055,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -2105,9 +2079,7 @@ class TestOAuth2Token:
                 role=OrganizationRole.admin,
             )
         )
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2135,8 +2107,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -2161,9 +2132,7 @@ class TestOAuth2Token:
                 role=OrganizationRole.owner,
             )
         )
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2196,9 +2165,7 @@ class TestOAuth2Token:
         user_organization: UserOrganization,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2229,8 +2196,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -2255,9 +2221,7 @@ class TestOAuth2Token:
                 user=user, organization=organization, role=OrganizationRole.member
             )
         )
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2298,9 +2262,7 @@ class TestOAuth2Token:
                 user=user, organization=organization, role=OrganizationRole.member
             )
         )
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",
@@ -2329,8 +2291,7 @@ class TestOAuth2Token:
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(
-                    OAuth2Token.access_token
-                    == get_token_hash(access_token, secret=settings.SECRET)
+                    OAuth2Token.access_token == get_token_hash(access_token)
                 )
             )
             .unique()
@@ -2356,9 +2317,7 @@ class TestOAuth2Token:
                 role=OrganizationRole.owner,
             )
         )
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
             user_agent="tests",

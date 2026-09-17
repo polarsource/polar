@@ -241,7 +241,7 @@ class CustomerSessionService:
     async def authenticate(
         self, session: AsyncSession, code: str
     ) -> tuple[str, CustomerSession | MemberSession]:
-        code_hash = get_token_hash(code, secret=settings.SECRET)
+        code_hash = get_token_hash(code)
 
         code_repository = CustomerSessionCodeRepository.from_session(session)
         try:
@@ -294,7 +294,7 @@ class CustomerSessionService:
             secrets.choice(string.ascii_uppercase + string.digits)
             for _ in range(settings.CUSTOMER_SESSION_CODE_LENGTH)
         )
-        code_hash = get_token_hash(code, secret=settings.SECRET)
+        code_hash = get_token_hash(code)
         return code, code_hash
 
 

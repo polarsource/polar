@@ -9,7 +9,6 @@ from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
-from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
 from polar.exceptions import PolarError, PolarRequestValidationError
@@ -229,7 +228,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         return_url: HttpUrl | None = None,
     ) -> tuple[str, CustomerSession]:
         token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=CUSTOMER_SESSION_TOKEN_PREFIX
+            prefix=CUSTOMER_SESSION_TOKEN_PREFIX
         )
         customer_session = CustomerSession(
             token=token_hash,
@@ -244,7 +243,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> CustomerSession | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         statement = (
             select(CustomerSession)
             .join(CustomerSession.customer)

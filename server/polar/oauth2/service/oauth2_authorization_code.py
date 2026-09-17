@@ -1,7 +1,6 @@
 import structlog
 from sqlalchemy import select
 
-from polar.config import settings
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
@@ -23,8 +22,7 @@ class OAuth2AuthorizationCodeService(ResourceServiceReader[OAuth2AuthorizationCo
         url: str | None = None,
     ) -> bool:
         statement = select(OAuth2AuthorizationCode).where(
-            OAuth2AuthorizationCode.code
-            == get_token_hash(token, secret=settings.SECRET)
+            OAuth2AuthorizationCode.code == get_token_hash(token)
         )
 
         result = await session.execute(statement)

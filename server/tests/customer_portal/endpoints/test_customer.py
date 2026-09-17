@@ -5,7 +5,6 @@ import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.config import settings
 from polar.customer_email_update.service import TOKEN_PREFIX
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
@@ -368,9 +367,7 @@ async def _create_verification(
     customer: Customer,
     email: str = "new@example.com",
 ) -> tuple[CustomerEmailVerification, str]:
-    token, token_hash = generate_token_hash_pair(
-        secret=settings.SECRET, prefix=TOKEN_PREFIX
-    )
+    token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
     record = CustomerEmailVerification(
         email=email,
         token_hash=token_hash,

@@ -14,7 +14,6 @@ from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.authz.repository import select_accessible_org_ids
-from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.models import User, UserSession
@@ -81,7 +80,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         if scope:
             self.server.validate_requested_scope(scope)
 
-        token = get_token_hash(token, secret=settings.SECRET)
+        token = get_token_hash(token)
         statement = select(UserSession).where(
             UserSession.token == token, UserSession.expires_at > utc_now()
         )

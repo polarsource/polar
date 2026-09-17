@@ -7,7 +7,6 @@ from sqlalchemy import Select, or_, select, update
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
 from polar.email.schemas import (
     PersonalAccessTokenLeakedEmail,
     PersonalAccessTokenLeakedProps,
@@ -51,7 +50,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> PersonalAccessToken | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         statement = (
             select(PersonalAccessToken)
             .join(PersonalAccessToken.user)

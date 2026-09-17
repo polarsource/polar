@@ -6,7 +6,6 @@ import structlog
 from authlib.oauth2.rfc6749.grants import RefreshTokenGrant as _RefreshTokenGrant
 from sqlalchemy import select
 
-from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.models import OAuth2Token, User, UserOrganization
 
@@ -25,7 +24,7 @@ class RefreshTokenGrant(_RefreshTokenGrant):
     TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post", "none"]
 
     def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
-        refresh_token_hash = get_token_hash(refresh_token, secret=settings.SECRET)
+        refresh_token_hash = get_token_hash(refresh_token)
         statement = select(OAuth2Token).where(
             OAuth2Token.refresh_token == refresh_token_hash
         )

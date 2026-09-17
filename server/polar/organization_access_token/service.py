@@ -14,7 +14,6 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
-from polar.config import settings
 from polar.email.schemas import (
     OrganizationAccessTokenLeakedEmail,
     OrganizationAccessTokenLeakedProps,
@@ -110,7 +109,7 @@ class OrganizationAccessTokenService:
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> OrganizationAccessToken | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         repository = OrganizationAccessTokenRepository.from_session(session)
         return await repository.get_by_token_hash(token_hash, expired=expired)
 
@@ -130,9 +129,7 @@ class OrganizationAccessTokenService:
             OrganizationPermission.organization_manage,
         )
         self._validate_scopes_within_caller(auth_subject, create_schema.scopes)
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
         organization_access_token = OrganizationAccessToken(
             **create_schema.model_dump(
                 exclude={"scopes", "expires_in", "organization_id"}

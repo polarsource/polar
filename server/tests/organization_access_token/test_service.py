@@ -6,7 +6,6 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.email.schemas import OrganizationAccessTokenLeakedEmail
 from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
@@ -61,7 +60,7 @@ class TestRevokeLeaked:
         user_organization: UserOrganization,
         enqueue_email_mock: MagicMock,
     ) -> None:
-        token_hash = get_token_hash("polar_pat_123", secret=settings.SECRET)
+        token_hash = get_token_hash("polar_pat_123")
         organization_access_token = OrganizationAccessToken(
             comment="Test",
             token=token_hash,

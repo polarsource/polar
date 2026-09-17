@@ -5,7 +5,6 @@ from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
 from polar.email.schemas import EmailUpdateEmail, EmailUpdateProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError
@@ -55,9 +54,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
                 ]
             )
 
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
         email_update_record = EmailVerification(
             email=email, token_hash=token_hash, user=user
         )
@@ -95,7 +92,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         )
 
     async def verify(self, session: AsyncSession, token: str, user: User) -> User:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         email_update_record = await self._get_email_update_record_by_token_hash(
             session, token_hash
         )

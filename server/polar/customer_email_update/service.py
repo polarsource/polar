@@ -75,9 +75,7 @@ class CustomerEmailUpdateService:
         # Delete any existing pending verification for this customer
         await repository.delete_by_customer_id(customer.id)
 
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=TOKEN_PREFIX
-        )
+        token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
         record = CustomerEmailVerification(
             email=new_email,
             token_hash=token_hash,
@@ -115,7 +113,7 @@ class CustomerEmailUpdateService:
         )
 
     async def check_token(self, session: AsyncReadSession, token: str) -> bool:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         repository = CustomerEmailVerificationRepository.from_session(session)
         record = await repository.get_valid_by_token_hash(token_hash)
         return record is not None
@@ -125,7 +123,7 @@ class CustomerEmailUpdateService:
         session: AsyncSession,
         token: str,
     ) -> Customer:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token)
         repository = CustomerEmailVerificationRepository.from_session(session)
         record = await repository.get_valid_by_token_hash(token_hash)
 

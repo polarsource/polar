@@ -78,7 +78,7 @@ async def start_impersonation(
 
     admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
     if admin_token:
-        token_hash = get_token_hash(admin_token, secret=settings.SECRET)
+        token_hash = get_token_hash(admin_token)
         if token_hash != admin_session.token:
             admin_token = None
     if not admin_token:

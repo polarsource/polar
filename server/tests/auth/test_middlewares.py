@@ -36,7 +36,7 @@ async def _create_oauth2_token(
     token = OAuth2Token(
         client_id="polar_ci_test",
         token_type="bearer",
-        access_token=get_token_hash(access_token, secret=settings.SECRET),
+        access_token=get_token_hash(access_token),
         scope="",
         issued_at=int(time.time()),
         expires_in=3600,

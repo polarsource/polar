@@ -6,7 +6,6 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.config import settings
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
@@ -27,7 +26,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
     async def get_by_access_token(
         self, session: AsyncSession, access_token: str
     ) -> OAuth2Token | None:
-        access_token_hash = get_token_hash(access_token, secret=settings.SECRET)
+        access_token_hash = get_token_hash(access_token)
         statement = (
             select(OAuth2Token)
             .where(OAuth2Token.access_token == access_token_hash)
@@ -83,13 +82,11 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
         if token_type == TokenType.access_token:
             statement = statement.where(
-                OAuth2Token.access_token
-                == get_token_hash(token, secret=settings.SECRET)
+                OAuth2Token.access_token == get_token_hash(token)
             )
         elif token_type == TokenType.refresh_token:
             statement = statement.where(
-                OAuth2Token.refresh_token
-                == get_token_hash(token, secret=settings.SECRET)
+                OAuth2Token.refresh_token == get_token_hash(token)
             )
         else:
             raise ValueError(f"Unsupported token type: {token_type}")

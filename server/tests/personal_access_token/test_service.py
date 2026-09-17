@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.config import settings
 from polar.email.schemas import PersonalAccessTokenLeakedEmail
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
@@ -48,7 +47,7 @@ class TestRevokeLeaked:
         mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
     ) -> None:
-        token_hash = get_token_hash("polar_pat_123", secret=settings.SECRET)
+        token_hash = get_token_hash("polar_pat_123")
         personal_access_token = PersonalAccessToken(
             comment="Test",
             token=token_hash,

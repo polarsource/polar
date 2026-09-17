@@ -219,7 +219,7 @@ const DiscordBenefitForm = ({
     })
   }, [pathname, description, organization.id])
 
-  const { data: discordGuild } = useDiscordGuild(guildToken)
+  const { data: discordGuild } = useDiscordGuild(guildToken ?? undefined)
   const polarBotRolePosition = useMemo(() => {
     if (!discordGuild) {
       return undefined
@@ -242,7 +242,7 @@ const DiscordBenefitForm = ({
             control={control}
             name="properties.guild_token"
             render={({ field }) => {
-              return <input type="hidden" defaultValue={field.value} />
+              return <input type="hidden" defaultValue={field.value ?? ''} />
             }}
           />
           <FormItem>

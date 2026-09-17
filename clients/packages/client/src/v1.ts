@@ -9575,8 +9575,16 @@ export interface components {
      * @description Properties to create a benefit of type `discord`.
      */
     BenefitDiscordCreateProperties: {
-      /** Guild Token */
-      guild_token: string
+      /**
+       * Guild Id
+       * @description The ID of the Discord server.
+       */
+      guild_id?: string | null
+      /**
+       * Guild Token
+       * @deprecated
+       */
+      guild_token?: string | null
       /**
        * Role Id
        * @description The ID of the Discord role to grant.

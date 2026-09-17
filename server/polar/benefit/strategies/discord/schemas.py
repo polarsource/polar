@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field, computed_field, field_validator
+from pydantic import Field, computed_field, field_validator, model_validator
 
 from polar.config import settings
 from polar.kit import jwt
@@ -42,7 +42,12 @@ class BenefitDiscordCreateProperties(Schema):
     Properties to create a benefit of type `discord`.
     """
 
-    guild_token: str = Field(serialization_alias="guild_id")
+    guild_id: str | None = Field(
+        default=None, description="The ID of the Discord server."
+    )
+    guild_token: str | None = Field(
+        default=None, deprecated="Use `guild_id`.", exclude=True
+    )
     role_id: str = Field(..., description="The ID of the Discord role to grant.")
     kick_member: bool = Field(
         ...,
@@ -51,7 +56,9 @@ class BenefitDiscordCreateProperties(Schema):
 
     @field_validator("guild_token")
     @classmethod
-    def validate_guild_token(cls, v: str) -> str:
+    def validate_guild_token(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
         try:
             guild_token_data = jwt.decode(
                 token=v, secret=settings.SECRET, type="discord_guild_token"
@@ -61,6 +68,14 @@ class BenefitDiscordCreateProperties(Schema):
             raise ValueError(
                 "Invalid token. Please authenticate your Discord server again."
             ) from e
+
+    @model_validator(mode="after")
+    def resolve_guild_id(self) -> Self:
+        if self.guild_id is None:
+            if self.guild_token is None:
+                raise ValueError("guild_id is required.")
+            self.guild_id = self.guild_token
+        return self
 
 
 class BenefitDiscordSubscriberProperties(Schema):

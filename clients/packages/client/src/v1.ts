@@ -9579,12 +9579,7 @@ export interface components {
        * Guild Id
        * @description The ID of the Discord server.
        */
-      guild_id?: string | null
-      /**
-       * Guild Token
-       * @deprecated
-       */
-      guild_token?: string | null
+      guild_id: string
       /**
        * Role Id
        * @description The ID of the Discord role to grant.
@@ -9616,8 +9611,6 @@ export interface components {
        * @description Whether to kick the member from the Discord server on revocation.
        */
       kick_member: boolean
-      /** Guild Token */
-      readonly guild_token: string
     }
     /** BenefitDiscordPublic */
     BenefitDiscordPublic: {

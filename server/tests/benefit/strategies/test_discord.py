@@ -6,9 +6,7 @@ from polar.auth.models import AuthSubject
 from polar.benefit.strategies import BenefitPropertiesValidationError
 from polar.benefit.strategies.discord.schemas import BenefitDiscordCreateProperties
 from polar.benefit.strategies.discord.service import BenefitDiscordService
-from polar.config import settings
 from polar.integrations.discord.schemas import DiscordGuild, DiscordGuildRole
-from polar.kit import jwt
 from polar.models import DiscordGuildConnection, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -124,42 +122,10 @@ class TestCreateProperties:
     def test_guild_id(self) -> None:
         properties = BenefitDiscordCreateProperties.model_validate(_PROPERTIES)
 
-        assert properties.model_dump(mode="json", by_alias=True) == _PROPERTIES
+        assert properties.model_dump(mode="json") == _PROPERTIES
 
-    def test_guild_token_resolves_to_guild_id(self) -> None:
-        token = jwt.encode(
-            data={"guild_id": GUILD_ID},
-            secret=settings.SECRET,
-            type="discord_guild_token",
-        )
-
-        properties = BenefitDiscordCreateProperties.model_validate(
-            {"guild_token": token, "role_id": ROLE_ID, "kick_member": False}
-        )
-
-        assert properties.model_dump(mode="json", by_alias=True) == _PROPERTIES
-
-    def test_guild_id_wins_over_guild_token(self) -> None:
-        token = jwt.encode(
-            data={"guild_id": "other"},
-            secret=settings.SECRET,
-            type="discord_guild_token",
-        )
-
-        properties = BenefitDiscordCreateProperties.model_validate(
-            {**_PROPERTIES, "guild_token": token}
-        )
-
-        assert properties.guild_id == GUILD_ID
-
-    def test_neither_guild_id_nor_guild_token(self) -> None:
+    def test_guild_id_missing(self) -> None:
         with pytest.raises(ValidationError):
             BenefitDiscordCreateProperties.model_validate(
                 {"role_id": ROLE_ID, "kick_member": False}
-            )
-
-    def test_invalid_guild_token(self) -> None:
-        with pytest.raises(ValidationError):
-            BenefitDiscordCreateProperties.model_validate(
-                {"guild_token": "nope", "role_id": ROLE_ID, "kick_member": False}
             )

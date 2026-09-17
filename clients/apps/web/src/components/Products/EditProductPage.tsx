@@ -1,3 +1,7 @@
+import {
+  entriesToMetadata,
+  metadataToEntries,
+} from '@/components/Metadata/utils'
 import { useToast } from '@/components/Toast/use-toast'
 import { useAlertIfUnsaved } from '@/hooks/editor'
 import {
@@ -15,10 +19,10 @@ import {
   ProductEditOrCreateForm,
   productPriceToFormPrice,
 } from '@/utils/product'
+import { usePushRouteWithoutCache } from '@/utils/router'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FieldErrors } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
@@ -38,7 +42,7 @@ export const EditProductPage = ({
   product,
   returnTo,
 }: EditProductPageProps) => {
-  const router = useRouter()
+  const pushRouteWithoutCache = usePushRouteWithoutCache()
   const { toast } = useToast()
   const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
@@ -78,10 +82,7 @@ export const EditProductPage = ({
             formPrice.price_currency as schemas['PresentmentCurrency'],
         }
       }),
-      metadata: Object.entries(product.metadata).map(([key, value]) => ({
-        key,
-        value,
-      })),
+      metadata: metadataToEntries(product.metadata),
     },
   })
   const { handleSubmit, setError, formState } = form
@@ -128,10 +129,7 @@ export const EditProductPage = ({
               ...productUpdateRest,
               prices: productUpdateRest.prices.map(formPriceToApiPrice),
               medias: full_medias.map((media) => media.id),
-              metadata: metadata.reduce(
-                (acc, { key, value }) => ({ ...acc, [key]: value }),
-                {},
-              ),
+              metadata: entriesToMetadata(metadata),
             },
           },
         )
@@ -161,7 +159,7 @@ export const EditProductPage = ({
           })
         }
 
-        router.push(
+        pushRouteWithoutCache(
           getStatusRedirect(
             returnTo ??
               `/dashboard/${organization.slug}/products/${product.id}`,
@@ -181,7 +179,7 @@ export const EditProductPage = ({
       updateProduct,
       product.id,
       hasBenefitsChanged,
-      router,
+      pushRouteWithoutCache,
       organization.slug,
       returnTo,
       setError,

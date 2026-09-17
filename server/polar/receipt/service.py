@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime
 
+import logfire
+
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.eventstream.service import publish as eventstream_publish
@@ -70,19 +72,21 @@ class ReceiptService:
         refunds = list(await refund_repository.get_succeeded_by_order(order.id))
 
         receipt = Receipt.from_order(order, payments, refunds)
-        pdf_bytes = await render_receipt_pdf(receipt)
+        with logfire.span("Render receipt PDF"):
+            pdf_bytes = await render_receipt_pdf(receipt)
 
         timestamp = utc_now().strftime("%Y%m%dT%H%M%SZ")
         key = f"{order.organization_id}/{order.id}/{timestamp}.pdf"
 
         s3 = S3Service(settings.S3_CUSTOMER_RECEIPTS_BUCKET_NAME)
-        await asyncio.to_thread(
-            s3.upload,
-            pdf_bytes,
-            key,
-            "application/pdf",
-            cache_control=RECEIPT_CACHE_CONTROL,
-        )
+        with logfire.span("Upload receipt PDF"):
+            await asyncio.to_thread(
+                s3.upload,
+                pdf_bytes,
+                key,
+                "application/pdf",
+                cache_control=RECEIPT_CACHE_CONTROL,
+            )
         return key
 
     async def generate_order_receipt(

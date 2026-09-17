@@ -10,14 +10,14 @@ class TestSendSeatInvitationEmail:
         self,
         mocker: MockerFixture,
         customer_seat_pending: CustomerSeat,
-        seat_enabled_organization: Organization,
+        organization: Organization,
     ) -> None:
         mock_enqueue = mocker.patch("polar.customer_seat.sender.enqueue_email_template")
 
         send_seat_invitation_email(
             customer_email="test@example.com",
             seat=customer_seat_pending,
-            organization=seat_enabled_organization,
+            organization=organization,
             product_name="Test Product",
             billing_manager_email="manager@example.com",
         )
@@ -25,7 +25,7 @@ class TestSendSeatInvitationEmail:
         mock_enqueue.assert_called_once()
         email = mock_enqueue.call_args[0][0]
         assert isinstance(email, SeatInvitationEmail)
-        assert email.props.organization.id == seat_enabled_organization.id
+        assert email.props.organization.id == organization.id
         assert customer_seat_pending.invitation_token is not None
         assert customer_seat_pending.invitation_token in email.props.claim_url
 
@@ -37,7 +37,7 @@ class TestSendSeatInvitationEmail:
         self,
         mocker: MockerFixture,
         customer_seat_claimed: CustomerSeat,
-        seat_enabled_organization: Organization,
+        organization: Organization,
     ) -> None:
         customer_seat_claimed.invitation_token = None
 
@@ -47,7 +47,7 @@ class TestSendSeatInvitationEmail:
         send_seat_invitation_email(
             customer_email="test@example.com",
             seat=customer_seat_claimed,
-            organization=seat_enabled_organization,
+            organization=organization,
             product_name="Test Product",
             billing_manager_email="manager@example.com",
         )
@@ -59,18 +59,18 @@ class TestSendSeatInvitationEmail:
         self,
         mocker: MockerFixture,
         customer_seat_pending: CustomerSeat,
-        seat_enabled_organization: Organization,
+        organization: Organization,
     ) -> None:
         mock_enqueue = mocker.patch("polar.customer_seat.sender.enqueue_email_template")
 
         send_seat_invitation_email(
             customer_email="test@example.com",
             seat=customer_seat_pending,
-            organization=seat_enabled_organization,
+            organization=organization,
             product_name="Test Product",
             billing_manager_email="manager@example.com",
         )
 
         email = mock_enqueue.call_args[0][0]
         assert isinstance(email, SeatInvitationEmail)
-        assert email.props.organization.id == seat_enabled_organization.id
+        assert email.props.organization.id == organization.id

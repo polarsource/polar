@@ -44,12 +44,6 @@ variable "pydantic_ai_gateway_api_key" {
 }
 
 # Backend - Production
-variable "backend_current_jwk_kid" {
-  description = "Current JWK KID for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_discord_bot_token" {
   description = "Discord Bot Token for production"
   type        = string
@@ -72,6 +66,12 @@ variable "backend_resend_api_key" {
   description = "Resend API Key for test"
   type        = string
   sensitive   = true
+}
+
+variable "resend_active_users_segment_id" {
+  description = "Resend ACTIVE_USERS segment ID; empty disables contact synchronization"
+  type        = string
+  default     = ""
 }
 
 variable "backend_resend_webhook_secret" {
@@ -100,14 +100,14 @@ variable "backend_sentry_dsn" {
 }
 
 
-variable "backend_jwks" {
-  description = "Backend JWKS content for production"
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for test Lambda workers"
   type        = string
   sensitive   = true
 }
 
-variable "lambda_worker_tailscale_token" {
-  description = "Tailscale auth token for test Lambda workers"
+variable "ec2_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:test"
   type        = string
   sensitive   = true
 }
@@ -449,4 +449,38 @@ variable "redis_private_link_host" {
 variable "grafana_cloud_aws_external_id" {
   description = "External ID for the Grafana Cloud CloudWatch scrape IAM role trust policy"
   type        = string
+}
+
+variable "private_backoffice_enabled" {
+  description = "Provision the private backoffice replica."
+  type        = bool
+  default     = false
+}
+
+variable "private_backoffice_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret for the private backoffice replica."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_cloudflare_api_token" {
+  description = "Cloudflare DNS token for private backoffice certificates."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_tailscale_ip" {
+  description = "Stable TailVIP IPv4 address of the pre-created Tailscale Service."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = var.private_backoffice_tailscale_ip == "" ? true : (
+      can(cidrnetmask("${var.private_backoffice_tailscale_ip}/32")) &&
+      try(cidrhost("${var.private_backoffice_tailscale_ip}/10", 0) == "100.64.0.0", false)
+    )
+    error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
+  }
 }

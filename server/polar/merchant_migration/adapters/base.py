@@ -1,7 +1,14 @@
-from collections.abc import AsyncIterator
-from typing import Protocol
+from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass
+from typing import Any, Protocol
 
 from ..canonical import CanonicalAccount, CanonicalRecord, CanonicalSubscription
+
+
+@dataclass(frozen=True)
+class ExtractionPage:
+    records: Sequence[CanonicalRecord]
+    next_cursor: dict[str, Any] | None
 
 
 class SourceAdapter(Protocol):
@@ -35,3 +42,9 @@ class SourceAdapter(Protocol):
         having churned (see ``CanonicalSubscription.stopped_for_migration``).
         """
         ...
+
+
+class PaginatedSourceAdapter(SourceAdapter, Protocol):
+    async def extract_page(
+        self, cursor: dict[str, Any] | None = None
+    ) -> ExtractionPage: ...

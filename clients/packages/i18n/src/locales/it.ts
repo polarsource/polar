@@ -263,6 +263,7 @@ export default {
       description:
         "Hai già utilizzato una prova gratuita per questo prodotto, quindi ti verrà addebitato oggi. Continua qui sotto per completare l'acquisto.",
     },
+    orderSummary: 'Riepilogo ordine',
   },
   intervals: {
     short: {

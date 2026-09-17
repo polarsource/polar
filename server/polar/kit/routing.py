@@ -105,7 +105,9 @@ class SpeakeasyGroupAPIRoute(APIRoute):
 
     def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
         super().__init__(path, endpoint, **kwargs)
-        non_generic_tags = [str(tag) for tag in self.tags if tag not in APITag]
+        non_generic_tags = [
+            str(tag) for tag in self.tags if not isinstance(tag, APITag)
+        ]
         if len(non_generic_tags) > 0:
             openapi_extra = self.openapi_extra or {}
             self.openapi_extra = {
@@ -187,7 +189,9 @@ class PaginationAPIRoute(APIRoute):
 
 
 def generate_unique_id_function(route: APIRoute) -> str:
-    parts = [str(tag) for tag in route.tags if tag not in APITag] + [route.name]
+    parts = [str(tag) for tag in route.tags if not isinstance(tag, APITag)] + [
+        route.name
+    ]
     return ":".join(parts)
 
 

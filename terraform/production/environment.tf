@@ -1,7 +1,7 @@
 locals {
   backend_config = {
     base_url                             = "https://api.polar.sh"
-    backoffice_host                      = "backoffice.polar.sh"
+    backoffice_host                      = local.private_backoffice_hostname
     checkout_link_host                   = "buy.polar.sh"
     user_session_cookie_domain           = "polar.sh"
     authentication_session_cookie_domain = "polar.sh"
@@ -12,7 +12,6 @@ locals {
     email_from_domain                    = "notifications.polar.sh"
     frontend_base_url                    = "https://polar.sh"
     checkout_base_url                    = "https://buy.polar.sh/{client_secret}"
-    jwks_path                            = "/etc/secrets/jwks.json"
     log_level                            = "INFO"
     testing                              = "0"
     auth_cookie_domain                   = "polar.sh"
@@ -66,7 +65,6 @@ locals {
 
   backend_secrets = {
     stripe_publishable_key         = var.stripe_publishable_key_production
-    current_jwk_kid                = var.backend_current_jwk_kid_production
     discord_bot_token              = var.backend_discord_bot_token_production
     discord_client_id              = var.backend_discord_client_id_production
     discord_client_secret          = var.backend_discord_client_secret_production
@@ -74,6 +72,7 @@ locals {
     discord_webhook_url            = var.backend_discord_webhook_url_production
     posthog_project_api_key        = var.backend_posthog_project_api_key_production
     resend_api_key                 = var.backend_resend_api_key_production
+    resend_active_users_segment_id = var.resend_active_users_segment_id
     resend_webhook_secret          = var.backend_resend_webhook_secret
     firecrawl_api_key              = var.firecrawl_api_key
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_production
@@ -82,7 +81,6 @@ locals {
     plain_request_signing_secret   = var.backend_plain_request_signing_secret_production
     plain_token                    = var.backend_plain_token_production
     plain_chat_secret              = var.backend_plain_chat_secret_production
-    jwks                           = var.backend_jwks_production
     app_review_email               = var.backend_app_review_email
     app_review_otp_code            = var.backend_app_review_otp_code
     chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production
@@ -111,8 +109,6 @@ locals {
   }
 
   aws_s3_secrets = {
-    access_key_id         = var.aws_access_key_id_production
-    secret_access_key     = var.aws_secret_access_key_production
     files_download_salt   = var.s3_files_download_salt_production
     files_download_secret = var.s3_files_download_secret_production
   }
@@ -189,8 +185,10 @@ module "backend_environment" {
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets
   aws_kms_config = {
-    key_id   = module.secrets_kms.key_arn
-    role_arn = module.secrets_kms.role_arn
+    key_id                 = module.secrets_kms.key_arn
+    jwks_key_id            = module.jwks_signing_key.current_key_arn
+    jwks_published_key_ids = module.jwks_signing_key.published_key_arns
+    role_arn               = module.secrets_kms.role_arn
   }
   worker_sqs_config = {
     enabled      = "true"

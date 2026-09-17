@@ -1,0 +1,68 @@
+name: "Backoffice not publicly reachable"
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.host }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - backoffice.polar.sh
+          - backoffice.sandbox.polar.sh
+    steps:
+      - name: Check ${{ matrix.host }} is not publicly reachable
+        env:
+          HOST: ${{ matrix.host }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import socket
+
+          host = os.environ["HOST"]
+          reachable = []
+
+          for port in (443, 80):
+              try:
+                  with socket.create_connection((host, port), timeout=10):
+                      reachable.append(f"{host}:{port}")
+              except OSError as error:
+                  print(f"{host}:{port} is unreachable ({error})")
+
+          if reachable:
+              reason = f"{', '.join(reachable)} accepted a TCP connection from a GitHub runner."
+              print(f"::error::{reason}")
+              with open(os.environ["GITHUB_ENV"], "a") as github_env:
+                  github_env.write(f"FAILURE_REASON={reason}\n")
+              raise SystemExit(1)
+          PY
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "${{ matrix.host }} may be reachable from the public internet",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *${{ matrix.host }} may be reachable from the public internet*\n${{ env.FAILURE_REASON || 'The reachability check failed before it could reach a verdict.' }}\nThe backoffice should only be accessible via Tailscale, so this is worth a look.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                  }
+                }
+              ]
+            }

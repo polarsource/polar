@@ -3,13 +3,11 @@
 import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { SwitchPanel } from '../switch/SwitchPanel'
 import { OpsUpdate } from './OpsUpdate'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
 import { StartCopyStep } from './StartCopyStep'
 
-const SWITCH_STEP_KEY = 'cutover'
 const START_COPY_STEP_KEY = 'start_copy'
 
 interface Props {
@@ -70,10 +68,7 @@ export function PanTransferStepBody({
 
       <OpsUpdate step={step} />
 
-      {step.key === SWITCH_STEP_KEY ? (
-        <SwitchPanel migrationId={migrationId} />
-      ) : (
-        submittable &&
+      {submittable &&
         (fieldsUnknown || !copy.action ? (
           <Text variant="caption" color="muted">
             This step needs a newer version of this page. Please refresh.
@@ -84,8 +79,7 @@ export function PanTransferStepBody({
             migrationId={migrationId}
             stepKey={step.key}
           />
-        ))
-      )}
+        ))}
     </Box>
   )
 }

@@ -14,7 +14,6 @@ const SERVERS: Record<Environment, string> = {
 
 export interface PolarOptions
   extends Omit<ClientOptions, "baseUrl" | "version"> {
-  version?: string;
   environment?: Environment;
   baseUrl?: string;
 }
@@ -27,7 +26,7 @@ export function createPolarCore(options: PolarOptions) {
       options.environment ?? "production",
       options.baseUrl,
     ),
-    version: options.version ?? "{{ api.version }}",
+    version: "{{ api.version }}",
   });
 }
 

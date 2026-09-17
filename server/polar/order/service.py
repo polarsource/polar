@@ -26,7 +26,8 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
-from polar.email.schemas import EmailAdapter
+from polar.email.billing_migration import previous_billing_provider_for_notice
+from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.enums import (
     PaymentMode,
@@ -100,15 +101,18 @@ from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
+    UnitPrice,
     is_custom_price,
     is_fixed_price,
     is_static_price,
+    is_unit_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,
     PriceSet,
 )
 from polar.product.repository import ProductRepository
+from polar.product.unit_price import validate_unit_limits
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
@@ -712,16 +716,19 @@ class OrderService:
         prices: Iterable[ProductPrice],
         *,
         amount: int | None,
+        units: int | None,
         label: str | None,
     ) -> Sequence[OrderItem]:
         """
         Build line items for an off-session draft order over a product's
-        fixed/free static prices.
+        fixed/free/unit-based static prices.
 
         `amount`, when provided, overrides the charge (the merchant sets a custom
-        price for this order); otherwise the price's own amount is used — the
-        configured amount for fixed prices, 0 for free prices. `label` overrides
-        the line item's description, defaulting to the product name.
+        price for this order); it excludes `units`, so it only ever applies to
+        fixed and free prices. Otherwise the price's own amount is used — the
+        configured amount for fixed prices, the tiered amount for `units` units
+        for unit-based prices, 0 for free prices. `label` overrides the line
+        item's description, defaulting to the product name and its unit count.
         """
         items: list[OrderItem] = []
         for price in prices:
@@ -730,7 +737,11 @@ class OrderService:
             if amount is not None:
                 items.append(
                     OrderItem(
-                        label=label if label is not None else price.product.name,
+                        label=label
+                        if label is not None
+                        else OrderItem.format_price_label(
+                            price.product, price, seats=None, units=units
+                        ),
                         amount=amount,
                         tax_amount=0,
                         net_amount=amount,
@@ -739,7 +750,7 @@ class OrderService:
                     )
                 )
             else:
-                items.append(OrderItem.from_price(price, 0, label=label))
+                items.append(OrderItem.from_price(price, 0, units=units, label=label))
         return items
 
     def _validate_purchase_amount(self, payload: OrderCreate, currency: str) -> None:
@@ -784,6 +795,51 @@ class OrderService:
                 ]
             )
 
+    def _validate_computed_unit_amount(
+        self, amount: int, currency: str, price: UnitPrice, units: int
+    ) -> None:
+        """
+        A tiered amount must clear the same processor bounds as one the
+        merchant sets.
+        """
+        if amount == 0:
+            return
+        noun = price.get_unit_noun(units)
+        currency_minimum = get_minimum_currency_amount(currency)
+        if amount < currency_minimum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": (
+                            f"Charging {units} {noun} amounts to "
+                            f"{format_currency(amount, currency)}, below the "
+                            f"{format_currency(currency_minimum, currency)} "
+                            "minimum."
+                        ),
+                        "input": units,
+                    }
+                ]
+            )
+        currency_maximum = get_maximum_currency_amount(currency)
+        if amount > currency_maximum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": (
+                            f"Charging {units} {noun} amounts to "
+                            f"{format_currency(amount, currency)}, above the "
+                            f"{format_currency(currency_maximum, currency)} "
+                            "maximum."
+                        ),
+                        "input": units,
+                    }
+                ]
+            )
+
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
@@ -809,6 +865,10 @@ class OrderService:
                     units=checkout.units,
                 )
             )
+            if subscription is not None:
+                for item in items:
+                    item.start_timestamp = subscription.current_period_start
+                    item.end_timestamp = subscription.current_period_end
 
         discount_amount = checkout.discount_amount
 
@@ -955,25 +1015,12 @@ class OrderService:
                     }
                 ]
             )
-        if product.has_unit_based_price:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": (
-                            "Unit-based products are not supported by the "
-                            "off-session charge API."
-                        ),
-                        "input": payload.product_id,
-                    }
-                ]
-            )
 
-        # Off-session charges only support fixed-price and free products — the
-        # amount is predetermined by the product, or set by the merchant via
-        # `amount`, never chosen by the customer. Pay-what-you-want (custom)
-        # prices are rejected.
+        # Off-session charges only support fixed-price, free and unit-based
+        # products — the amount is predetermined by the product, computed from
+        # the units the merchant declares, or set by the merchant via `amount`,
+        # never chosen by the customer. Pay-what-you-want (custom) prices are
+        # rejected.
         static_prices = [price for price in product.prices if is_static_price(price)]
         if not static_prices:
             raise PolarRequestValidationError(
@@ -986,13 +1033,19 @@ class OrderService:
                     }
                 ]
             )
-        if any(not is_fixed_price(price) for price in static_prices):
+        if any(
+            not (is_fixed_price(price) or is_unit_price(price))
+            for price in static_prices
+        ):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Off-session charges only support fixed-price products.",
+                        "msg": (
+                            "Off-session charges only support fixed-price and "
+                            "unit-based products."
+                        ),
                         "input": payload.product_id,
                     }
                 ]
@@ -1044,11 +1097,41 @@ class OrderService:
                 ]
             ) from e
 
+        # The unit price comes from the currency-scoped set: tiers and bounds
+        # are configured per currency, so the quantity is validated against the
+        # price actually being charged.
+        unit_price = currency_prices.get_unit_price()
+        if unit_price is not None:
+            if payload.units is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "units"),
+                            "msg": "Units are required for unit-based pricing.",
+                            "input": None,
+                        }
+                    ]
+                )
+            validate_unit_limits(unit_price, payload.units)
+        elif payload.units is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "units"),
+                        "msg": "Units can only be set for unit-based pricing.",
+                        "input": payload.units,
+                    }
+                ]
+            )
+
         self._validate_purchase_amount(payload, currency)
         items = list(
             self._build_draft_order_items(
                 currency_prices,
                 amount=payload.amount,
+                units=payload.units,
                 label=payload.description,
             )
         )
@@ -1063,6 +1146,11 @@ class OrderService:
         )
 
         subtotal_amount = sum(item.amount for item in items)
+        if payload.amount is None and unit_price is not None:
+            assert payload.units is not None
+            self._validate_computed_unit_amount(
+                subtotal_amount, currency, unit_price, payload.units
+            )
         discount_amount = 0
 
         order_id = uuid.uuid4()
@@ -1138,6 +1226,7 @@ class OrderService:
                 custom_field_data=custom_field_data,
                 items=items,
                 seats=None,
+                units=payload.units,
             ),
             flush=True,
         )
@@ -1228,6 +1317,9 @@ class OrderService:
                 session, charge, organization, None, None, order
             )
             order = await self.handle_payment(session, order, payment)
+
+        if order.paid:
+            enqueue_job("order.admin_notification", order.id)
 
         return order
 
@@ -2505,6 +2597,12 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
+        previous_billing_provider: str | None = None
+        if subscription is not None and template_name != "order_confirmation":
+            previous_billing_provider = await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate(template_name)
+            )
+
         for recipient_email in recipients:
             token = await customer_service.create_session_token_for_recipient(
                 session, customer, recipient_email
@@ -2531,17 +2629,20 @@ class OrderService:
                 query_string = urlencode(params)
                 url_path = url_path_template.format(organization=organization.slug)
                 url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+            props: dict[str, Any] = {
+                "email": recipient_email,
+                "organization": organization,
+                "product": product,
+                "order": order,
+                "subscription": subscription,
+                "url": url,
+            }
+            if subscription is not None and template_name != "order_confirmation":
+                props["previous_billing_provider"] = previous_billing_provider
             email = EmailAdapter.validate_python(
                 {
                     "template": template_name,
-                    "props": {
-                        "email": recipient_email,
-                        "organization": organization,
-                        "product": product,
-                        "order": order,
-                        "subscription": subscription,
-                        "url": url,
-                    },
+                    "props": props,
                 }
             )
 

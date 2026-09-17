@@ -43,7 +43,6 @@ variable "backend_config" {
     email_from_domain                                = string
     frontend_base_url                                = string
     checkout_base_url                                = string
-    jwks_path                                        = string
     log_level                                        = string
     testing                                          = string
     auth_cookie_domain                               = string
@@ -61,7 +60,6 @@ variable "backend_config" {
 variable "backend_secrets" {
   type = object({
     stripe_publishable_key         = string
-    current_jwk_kid                = string
     discord_bot_token              = string
     discord_client_id              = string
     discord_client_secret          = string
@@ -69,6 +67,7 @@ variable "backend_secrets" {
     discord_webhook_url            = optional(string, "")
     posthog_project_api_key        = optional(string, "")
     resend_api_key                 = string
+    resend_active_users_segment_id = optional(string, "")
     resend_webhook_secret          = optional(string, "")
     logo_dev_publishable_key       = optional(string, "")
     secret                         = string
@@ -76,7 +75,6 @@ variable "backend_secrets" {
     plain_request_signing_secret   = optional(string, "")
     plain_token                    = optional(string, "")
     plain_chat_secret              = optional(string, "")
-    jwks                           = string
     app_review_email               = optional(string, "")
     app_review_otp_code            = optional(string, "")
     chargeback_stop_webhook_secret = optional(string, "")
@@ -102,8 +100,8 @@ variable "aws_s3_config" {
 
 variable "aws_s3_secrets" {
   type = object({
-    access_key_id         = string
-    secret_access_key     = string
+    access_key_id         = optional(string)
+    secret_access_key     = optional(string)
     files_download_salt   = string
     files_download_secret = string
   })
@@ -112,18 +110,18 @@ variable "aws_s3_secrets" {
 
 variable "aws_kms_config" {
   type = object({
-    key_id   = string
-    role_arn = string
+    key_id                 = string
+    jwks_key_id            = string
+    jwks_published_key_ids = list(string)
+    role_arn               = string
   })
 }
 
 variable "worker_sqs_config" {
   type = object({
-    enabled               = string
-    actors                = string
-    queue_prefix          = string
-    aws_access_key_id     = optional(string)
-    aws_secret_access_key = optional(string)
+    enabled      = string
+    actors       = string
+    queue_prefix = string
   })
   default   = null
   sensitive = true

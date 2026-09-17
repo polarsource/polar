@@ -16,7 +16,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
 from polar.config import settings
-from polar.email.schemas import OrderConfirmationEmail
+from polar.email.schemas import OrderConfirmationEmail, SubscriptionCycledEmail
 from polar.enums import (
     InvoiceNumbering,
     PaymentMode,
@@ -65,6 +65,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
@@ -97,6 +98,7 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_seat_price, is_static_price
 from polar.product.price_set import PriceSet
+from polar.product.tiers import Tiers, TierType
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
     CalculationExpiredError,
@@ -139,6 +141,10 @@ from tests.fixtures.random_objects import (
     create_wallet_billing,
     create_wallet_transaction,
     set_product_benefits,
+)
+from tests.merchant_migration._helpers import (
+    build_connected_migration,
+    stage_subscription_record,
 )
 from tests.transaction.conftest import create_transaction
 
@@ -967,6 +973,8 @@ class TestCreateFromCheckoutSubscription:
         assert order.customer == checkout.customer
         assert order.product == product
         assert len(order.items) == len(product.prices)
+        assert order.items[0].start_timestamp == subscription.current_period_start
+        assert order.items[0].end_timestamp == subscription.current_period_end
 
     async def test_metered(
         self,
@@ -2858,6 +2866,8 @@ class TestCreateTrialOrder:
         assert order.product == product
         assert order.subscription == subscription
         assert len(order.items) == 1
+        assert order.items[0].start_timestamp == subscription.trial_start
+        assert order.items[0].end_timestamp == subscription.trial_end
 
 
 @pytest.mark.asyncio
@@ -3158,6 +3168,46 @@ class TestSendConfirmationEmail:
         assert [benefit.description for benefit in email.props.product.benefits] == [
             "Public benefit"
         ]
+
+    async def test_cycle_mentions_stripe_migration(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            subscription,
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionCycledEmail)
+        assert email.props.previous_billing_provider == "Stripe"
 
 
 @pytest.mark.asyncio
@@ -6981,6 +7031,145 @@ class TestCreateDraftOrder:
                 session, off_session_organization, payload
             )
 
+    async def test_unit_based_product_requires_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            amount=5000,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_units_on_non_unit_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            units=3,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_unit_based_product_priced_from_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            price_per_unit=2900,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=3,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.units == 3
+        assert order.subtotal_amount == 8700
+        assert order.items[0].amount == 8700
+        assert order.items[0].label == "Product (3 units)"
+
+    async def test_units_below_minimum_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            minimum_units=5,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=4,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_units_above_maximum_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            tiers=Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": 100, "unit_amount": "2900"}],
+                }
+            ),
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=101,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_computed_unit_amount_below_currency_minimum_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_unit_based(
+            save_fixture,
+            organization=off_session_organization,
+            price_per_unit=1,
+            recurring_interval=None,
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            units=1,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
 
 @pytest.mark.asyncio
 class TestFinalizeOrder:
@@ -7361,6 +7550,93 @@ class TestFinalizeOrder:
                 call("order.confirmation_email", order.id)
             )
             == 1
+        )
+
+    async def test_off_session_charge_notifies_merchant_once_settled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        payment_intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_finalize_success",
+                "status": "succeeded",
+                "latest_charge": {"object": "charge", "id": "ch_finalize_success"},
+            },
+            None,
+        )
+        stripe_service_mock.create_payment_intent.return_value = payment_intent
+
+        payment = await create_payment(
+            save_fixture,
+            off_session_organization,
+            processor_id="ch_finalize_success",
+        )
+        mocker.patch(
+            "polar.order.service.payment_service.upsert_from_stripe_charge",
+            new=AsyncMock(return_value=payment),
+        )
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        assert (
+            enqueue_job_mock.call_args_list.count(
+                call("order.admin_notification", order.id)
+            )
+            == 1
+        )
+
+    async def test_off_session_charge_skips_no_merchant_notification_when_charge_fails(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
+            message="Your card was declined.",
+            param="card",
+            code="card_declined",
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        assert (
+            call("order.admin_notification", order.id)
+            not in enqueue_job_mock.call_args_list
         )
 
 

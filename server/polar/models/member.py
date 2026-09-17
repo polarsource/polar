@@ -44,6 +44,15 @@ class Member(RecordModel):
             unique=True,
             postgresql_where=text("deleted_at IS NULL AND role = 'owner'"),
         ),
+        # Lookup by organization + case-insensitive email (customer portal email
+        # disambiguation). Non-unique: the same email can belong to multiple
+        # customers within an organization.
+        Index(
+            "ix_members_organization_id_lower_email_active",
+            "organization_id",
+            func.lower(Column("email")),
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
     )
 
     customer_id: Mapped[UUID] = mapped_column(

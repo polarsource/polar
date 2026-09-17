@@ -19,6 +19,16 @@ module "secrets_kms" {
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
+module "jwks_signing_key" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/jwks_signing_key"
+
+  environment        = "test"
+  role_name          = module.secrets_kms[0].role_name
+  generations        = ["2026-09"]
+  current_generation = "2026-09"
+}
+
 module "redis" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/aws_redis"
@@ -32,6 +42,16 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   count                        = local.test_enabled ? 1 : 0
   security_group_id            = module.redis[0].security_group_id
   referenced_security_group_id = aws_security_group.lambda[0].id
+  from_port                    = module.redis[0].port
+  to_port                      = module.redis[0].port
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_tailscale" {
+  count = local.test_enabled ? 1 : 0
+
+  security_group_id            = module.redis[0].security_group_id
+  referenced_security_group_id = module.ec2_tailscale[0].security_group_id
   from_port                    = module.redis[0].port
   to_port                      = module.redis[0].port
   ip_protocol                  = "tcp"
@@ -72,16 +92,12 @@ locals {
     module.backend_environment[0].environment_variables,
     module.backend_environment[0].secret_environment_variables,
     {
-      POLAR_JWKS              = "/tmp/jwks.json"
       POLAR_POSTGRES_DATABASE = local.db_name
       POLAR_POSTGRES_HOST     = module.pgbouncer_aws[0].host
       POLAR_POSTGRES_PORT     = module.pgbouncer_aws[0].port
       POLAR_POSTGRES_USER     = local.db_user
       POLAR_POSTGRES_SSL      = "false"
-      POLAR_REDIS_HOST        = module.redis[0].host
-      POLAR_REDIS_PORT        = tostring(module.redis[0].port)
-      POLAR_REDIS_DB          = "1"
-      POLAR_JWKS_CONTENT      = var.backend_jwks
+      POLAR_REDIS_URL         = "rediss://${module.redis[0].host}:${tostring(module.redis[0].port)}/1"
       POLAR_POSTGRES_PWD      = local.db_password
       TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
     },

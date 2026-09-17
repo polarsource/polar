@@ -530,6 +530,28 @@ class Organization(RateLimitGroupMixin, RecordModel):
             text("status_updated_at ASC NULLS FIRST"),
             postgresql_where=text("deleted_at IS NULL"),
         ),
+        # Trigram GIN indexes back the backoffice search's leading-wildcard
+        # `ILIKE '%q%'` on name/slug/email, which no btree index can serve.
+        Index(
+            "ix_organizations_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+        # `slug` is CITEXT, so `slug ILIKE ...` resolves to citext's operator,
+        # which `gin_trgm_ops` (a `text` opclass) doesn't serve. Index the
+        # `slug::text` expression; searches must cast the column the same way.
+        Index(
+            "ix_organizations_slug_trgm",
+            text("(slug::text) gin_trgm_ops"),
+            postgresql_using="gin",
+        ),
+        Index(
+            "ix_organizations_email_trgm",
+            "email",
+            postgresql_using="gin",
+            postgresql_ops={"email": "gin_trgm_ops"},
+        ),
     )
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
@@ -723,6 +745,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def is_merchant_migration_enabled(self) -> bool:
         return self.feature_settings.get("merchant_migration_enabled", False)
+
+    @property
+    def is_frame_ancestors_enforced(self) -> bool:
+        return self.feature_settings.get("frame_ancestors_enforced", False)
 
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

@@ -11,6 +11,10 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.integrations.plain.service import TenantOperationError
 from polar.integrations.polar.client import PolarSelfClient
+from polar.integrations.polar.exceptions import (
+    PolarSelfInvoiceNotReady,
+    PolarSelfOrderNotEligible,
+)
 from polar.integrations.polar.tasks import (
     add_member,
     create_customer,
@@ -20,6 +24,7 @@ from polar.integrations.polar.tasks import (
     track_organization_review_usage,
     update_customer_slug,
     update_member,
+    webhook_order_created,
 )
 
 
@@ -515,3 +520,78 @@ class TestTrackOrganizationReviewUsage:
             cost_usd=Decimal("0.0123"),
             usage_id="usage-123",
         )
+
+
+@pytest.fixture
+def webhook_order_created_context(mocker: MockerFixture) -> None:
+    session_ctx = AsyncMock()
+    session_ctx.__aenter__.return_value = MagicMock()
+    mocker.patch(
+        "polar.integrations.polar.tasks.AsyncSessionMaker",
+        return_value=session_ctx,
+    )
+
+    event_mock = MagicMock()
+    event_mock.data = {"id": "ord_1"}
+    handle_cm = AsyncMock()
+    handle_cm.__aenter__.return_value = event_mock
+    mocker.patch(
+        "polar.integrations.polar.tasks.external_event_service.handle",
+        return_value=handle_cm,
+    )
+
+    mocker.patch(
+        "polar.integrations.polar.tasks.deserialize",
+        return_value=MagicMock(name="payload"),
+    )
+
+
+@pytest.mark.asyncio
+class TestWebhookOrderCreated:
+    async def test_retries_on_invoice_not_ready(
+        self,
+        webhook_order_created_context: None,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=True)
+        service_mock = mocker.patch("polar.integrations.polar.tasks.polar_self")
+        service_mock.handle_order_created_event = AsyncMock(
+            side_effect=PolarSelfInvoiceNotReady("ord_1")
+        )
+
+        with pytest.raises(Retry):
+            await webhook_order_created(uuid.uuid4())
+
+    async def test_order_not_eligible_is_terminal_no_retry(
+        self,
+        webhook_order_created_context: None,
+        mocker: MockerFixture,
+    ) -> None:
+        # A draft/void order is permanently ineligible: the actor must drop the
+        # message instead of raising Retry, so the Retries middleware cannot
+        # burn up to 20 attempts on an order that will never become eligible.
+        can_retry_mock = mocker.patch(
+            "polar.integrations.polar.tasks.can_retry", return_value=True
+        )
+        service_mock = mocker.patch("polar.integrations.polar.tasks.polar_self")
+        service_mock.handle_order_created_event = AsyncMock(
+            side_effect=PolarSelfOrderNotEligible("ord_1")
+        )
+
+        await webhook_order_created(uuid.uuid4())
+
+        can_retry_mock.assert_not_called()
+
+    async def test_invoice_not_ready_raises_when_retries_exhausted(
+        self,
+        webhook_order_created_context: None,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)
+        service_mock = mocker.patch("polar.integrations.polar.tasks.polar_self")
+        service_mock.handle_order_created_event = AsyncMock(
+            side_effect=PolarSelfInvoiceNotReady("ord_1")
+        )
+
+        with pytest.raises(PolarSelfInvoiceNotReady):
+            await webhook_order_created(uuid.uuid4())

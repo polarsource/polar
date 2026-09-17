@@ -1,3 +1,4 @@
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
@@ -23,7 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { XIcon } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -134,7 +134,7 @@ const BenefitForm = ({
         />
       ) : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
-      {type === 'discord' && <DiscordBenefitForm />}
+      {type === 'discord' && <DiscordBenefitForm organization={organization} />}
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}
@@ -149,7 +149,6 @@ const BenefitForm = ({
       {type === 'meter_credit' && (
         <MeterCreditBenefitForm organization={organization} />
       )}
-      {type === 'feature_flag' && <FeatureFlagBenefitForm />}
       {type === 'slack_shared_channel' && (
         <SlackSharedChannelBenefitForm
           organization={organization}
@@ -157,6 +156,7 @@ const BenefitForm = ({
           benefitId={benefitId}
         />
       )}
+      <MetadataForm label="Metadata" />
     </>
   )
 }
@@ -197,81 +197,15 @@ const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   )
 }
 
-const FeatureFlagBenefitForm = () => {
-  const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
-
-  return (
-    <FormField
-      control={control}
-      name="metadata"
-      defaultValue={{}}
-      render={({ field }) => {
-        const entries = Object.entries(field.value || {})
-        return (
-          <FormItem>
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Metadata</FormLabel>
-            </div>
-            <div className="flex flex-col gap-2">
-              {entries.map(([key, value], index) => (
-                <div key={index} className="flex flex-row gap-2">
-                  <Input
-                    placeholder="Key (e.g. role)"
-                    value={key}
-                    onChange={(e) => {
-                      const newEntries = [...entries]
-                      newEntries[index] = [e.target.value, value]
-                      field.onChange(Object.fromEntries(newEntries))
-                    }}
-                  />
-                  <Input
-                    placeholder="Value (e.g. premium)"
-                    value={value.toString()}
-                    onChange={(e) => {
-                      const newEntries = [...entries]
-                      newEntries[index] = [key, e.target.value]
-                      field.onChange(Object.fromEntries(newEntries))
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      const newEntries = entries.filter((_, i) => i !== index)
-                      field.onChange(Object.fromEntries(newEntries))
-                    }}
-                  >
-                    <XIcon className="-mx-1 h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  field.onChange({
-                    ...(field.value || {}),
-                    '': '',
-                  })
-                }}
-              >
-                Add Metadata
-              </Button>
-            </div>
-            <FormMessage />
-          </FormItem>
-        )
-      }}
-    />
-  )
-}
-
-const DiscordBenefitForm = () => {
+const DiscordBenefitForm = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { control, watch } = useFormContext<schemas['BenefitDiscordCreate']>()
   const pathname = usePathname()
   const description = watch('description')
-  const guildToken = watch('properties.guild_token')
+  const guildId = watch('properties.guild_id')
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
@@ -279,10 +213,16 @@ const DiscordBenefitForm = () => {
     searchParams.set('type', 'discord')
     searchParams.set('description', description)
     const returnTo = `${pathname}?${searchParams}`
-    return getBotDiscordAuthorizeURL({ return_to: returnTo })
-  }, [pathname, description])
+    return getBotDiscordAuthorizeURL({
+      return_to: returnTo,
+      organization_id: organization.id,
+    })
+  }, [pathname, description, organization.id])
 
-  const { data: discordGuild } = useDiscordGuild(guildToken)
+  const { data: discordGuild } = useDiscordGuild(
+    organization.id,
+    guildId ?? undefined,
+  )
   const polarBotRolePosition = useMemo(() => {
     if (!discordGuild) {
       return undefined
@@ -292,20 +232,20 @@ const DiscordBenefitForm = () => {
 
   return (
     <>
-      {!guildToken && (
+      {!guildId && (
         <Button asChild>
           <a href={authorizeURL} className="w-full text-center">
             Connect your Discord server
           </a>
         </Button>
       )}
-      {guildToken && discordGuild && (
+      {guildId && discordGuild && (
         <>
           <FormField
             control={control}
-            name="properties.guild_token"
+            name="properties.guild_id"
             render={({ field }) => {
-              return <input type="hidden" defaultValue={field.value} />
+              return <input type="hidden" defaultValue={field.value ?? ''} />
             }}
           />
           <FormItem>

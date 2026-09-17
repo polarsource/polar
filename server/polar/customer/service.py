@@ -432,8 +432,8 @@ class CustomerService:
             raise
 
         # `create_owner_member` fills `created.owner` in-memory when it resolves a
-        # member; if none was created (member model feature disabled), mark the
-        # relationship as loaded-and-empty here.
+        # member; if none was created, mark the relationship as loaded-and-empty
+        # here.
         # Without this, response serialization would emit IO mid-render
         if created.email is None and owner is None:
             created.owner = None

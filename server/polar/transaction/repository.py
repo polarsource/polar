@@ -1,7 +1,8 @@
 from collections.abc import Sequence
+from itertools import batched
 from uuid import UUID
 
-from sqlalchemy import Select, and_, func, or_, update
+from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import (
@@ -21,11 +22,14 @@ class TransactionRepository(
 ):
     model = Transaction
 
-    async def get_all_unpaid_by_account(self, account: UUID) -> Sequence[Transaction]:
+    async def set_unpaid_transactions_payout(
+        self, account: UUID, payout_transaction_id: UUID
+    ) -> None:
         statement = (
-            self.get_base_statement()
+            select(Transaction.id)
             .join(Account, Account.id == Transaction.account_id)
             .where(
+                ~Transaction.is_deleted,
                 Transaction.account_id == account,
                 Transaction.payout_transaction_id.is_(None),
                 or_(
@@ -46,13 +50,19 @@ class TransactionRepository(
                     Transaction.type == TransactionType.payout_reversal,
                 ),
             )
-            .options(
-                selectinload(Transaction.balance_reversal_transaction),
-                selectinload(Transaction.balance_reversal_transactions),
-                selectinload(Transaction.payment_transaction),
-            )
+            .order_by(Transaction.created_at, Transaction.id)
+            # No key changes: allow concurrent foreign-key references.
+            .with_for_update(of=Transaction, key_share=True)
         )
-        return await self.get_all(statement)
+        transaction_ids = (await self.session.scalars(statement)).all()
+        for batch in batched(transaction_ids, 500):
+            update_statement = (
+                update(Transaction)
+                .where(Transaction.id.in_(batch))
+                .values(payout_transaction_id=payout_transaction_id)
+                .execution_options(synchronize_session=False)
+            )
+            await self.session.execute(update_statement)
 
     async def get_all_paid_transactions_by_payout(
         self, payout_transaction_id: UUID

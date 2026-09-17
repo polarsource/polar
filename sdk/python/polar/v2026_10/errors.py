@@ -95,7 +95,13 @@ from polar.v2026_10.outputs import (
     SubscriptionLocked as SubscriptionLockedModel,
 )
 from polar.v2026_10.outputs import (
+    SubscriptionNotScheduledToCancel as SubscriptionNotScheduledToCancelModel,
+)
+from polar.v2026_10.outputs import (
     Unauthorized as UnauthorizedModel,
+)
+from polar.v2026_10.outputs import (
+    UpdateSubscriptionPlanNotAllowed as UpdateSubscriptionPlanNotAllowedModel,
 )
 from polar.v2026_10.outputs import (
     UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
@@ -195,6 +201,19 @@ class SubscriptionsUpdate403Error(PolarClientError):
         self,
         status_code: int,
         error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsUpdate409Error(PolarClientError):
+    error_type = SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+    error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)
@@ -695,12 +714,14 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
     error_type = (
         AlreadyCanceledSubscriptionModel
         | PauseResumeNotAllowedModel
+        | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
     )
     error: (
         AlreadyCanceledSubscriptionModel
         | PauseResumeNotAllowedModel
+        | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
     )
@@ -710,6 +731,7 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         status_code: int,
         error: AlreadyCanceledSubscriptionModel
         | PauseResumeNotAllowedModel
+        | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel,
     ) -> None:
@@ -717,11 +739,15 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         super().__init__(status_code, error)
 
 
-class PaymentMethodRequired(PolarClientError):
-    error_type = PaymentMethodRequiredModel
-    error: PaymentMethodRequiredModel
+class CustomerPortalSubscriptionsUpdate409Error(PolarClientError):
+    error_type = PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+    error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
 
-    def __init__(self, status_code: int, error: PaymentMethodRequiredModel) -> None:
+    def __init__(
+        self,
+        status_code: int,
+        error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 

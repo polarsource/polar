@@ -8,7 +8,7 @@ from polar.auth.sso.factor import (
     SSOPrivateKeyJWTFactor,
     build_sso_factor,
 )
-from polar.config import settings
+from polar.kit.signer import get_signer
 from polar.models import OrganizationSSOConnection
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
@@ -78,8 +78,7 @@ class TestBuildSSOFactor:
         assert factor.connection_id == connection.id
         assert factor.organization_slug == "acme"
         assert factor.client_id == "client-id"
-        assert factor._kid == settings.CURRENT_JWK_KID
-        assert factor._signing_jwks[settings.CURRENT_JWK_KID] is not None
+        assert factor._signer is get_signer()
 
     async def test_issuer_trailing_slash_is_stripped(
         self, session: AsyncSession

@@ -23,6 +23,10 @@ resource "tfe_variable" "google_client_id_production" {
   description     = "Google Client ID for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "google_client_secret_production" {
@@ -31,6 +35,10 @@ resource "tfe_variable" "google_client_secret_production" {
   description     = "Google Client Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "google_service_account_json_production" {
@@ -39,6 +47,10 @@ resource "tfe_variable" "google_service_account_json_production" {
   description     = "Google service account JSON key for fetching the organization review AUP for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "openai_api_key_production" {
@@ -47,6 +59,10 @@ resource "tfe_variable" "openai_api_key_production" {
   description     = "OpenAI API Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
@@ -55,14 +71,10 @@ resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
   description     = "Pydantic AI Gateway API Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
-}
 
-resource "tfe_variable" "backend_current_jwk_kid_production" {
-  key             = "backend_current_jwk_kid_production"
-  category        = "terraform"
-  description     = "Current JWK KID for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_discord_bot_token_production" {
@@ -71,6 +83,10 @@ resource "tfe_variable" "backend_discord_bot_token_production" {
   description     = "Discord Bot Token for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_discord_client_id_production" {
@@ -79,6 +95,10 @@ resource "tfe_variable" "backend_discord_client_id_production" {
   description     = "Discord Client ID for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_discord_client_secret_production" {
@@ -87,6 +107,10 @@ resource "tfe_variable" "backend_discord_client_secret_production" {
   description     = "Discord Client Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_discord_proxy_url_production" {
@@ -95,6 +119,10 @@ resource "tfe_variable" "backend_discord_proxy_url_production" {
   description     = "Discord Proxy URL for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_discord_webhook_url_production" {
@@ -103,6 +131,10 @@ resource "tfe_variable" "backend_discord_webhook_url_production" {
   description     = "Discord Webhook URL for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_posthog_project_api_key_production" {
@@ -111,6 +143,10 @@ resource "tfe_variable" "backend_posthog_project_api_key_production" {
   description     = "PostHog Project API Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_resend_api_key_production" {
@@ -119,6 +155,22 @@ resource "tfe_variable" "backend_resend_api_key_production" {
   description     = "Resend API Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "resend_active_users_segment_id_production" {
+  key             = "resend_active_users_segment_id"
+  category        = "terraform"
+  description     = "Resend ACTIVE_USERS segment ID for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_resend_webhook_secret_production" {
@@ -127,6 +179,10 @@ resource "tfe_variable" "backend_resend_webhook_secret_production" {
   description     = "Resend Webhook Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_logo_dev_publishable_key_production" {
@@ -135,6 +191,10 @@ resource "tfe_variable" "backend_logo_dev_publishable_key_production" {
   description     = "Logo.dev Publishable Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_secret_production" {
@@ -143,6 +203,10 @@ resource "tfe_variable" "backend_secret_production" {
   description     = "Backend Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_sentry_dsn_production" {
@@ -151,6 +215,10 @@ resource "tfe_variable" "backend_sentry_dsn_production" {
   description     = "Sentry DSN for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_plain_request_signing_secret_production" {
@@ -159,6 +227,10 @@ resource "tfe_variable" "backend_plain_request_signing_secret_production" {
   description     = "Plain Request Signing Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_plain_token_production" {
@@ -167,6 +239,10 @@ resource "tfe_variable" "backend_plain_token_production" {
   description     = "Plain Token for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_plain_chat_secret_production" {
@@ -175,30 +251,10 @@ resource "tfe_variable" "backend_plain_chat_secret_production" {
   description     = "Plain Chat Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
-}
 
-resource "tfe_variable" "backend_jwks_production" {
-  key             = "backend_jwks_production"
-  category        = "terraform"
-  description     = "Backend JWKS content for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-}
-
-resource "tfe_variable" "aws_access_key_id_production" {
-  key             = "aws_access_key_id_production"
-  category        = "terraform"
-  description     = "AWS Access Key ID for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-}
-
-resource "tfe_variable" "aws_secret_access_key_production" {
-  key             = "aws_secret_access_key_production"
-  category        = "terraform"
-  description     = "AWS Secret Access Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "s3_files_download_salt_production" {
@@ -207,6 +263,10 @@ resource "tfe_variable" "s3_files_download_salt_production" {
   description     = "S3 Files Download Salt for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "s3_files_download_secret_production" {
@@ -215,6 +275,10 @@ resource "tfe_variable" "s3_files_download_secret_production" {
   description     = "S3 Files Download Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_client_id_production" {
@@ -223,6 +287,10 @@ resource "tfe_variable" "github_client_id_production" {
   description     = "GitHub Client ID for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_client_secret_production" {
@@ -231,6 +299,10 @@ resource "tfe_variable" "github_client_secret_production" {
   description     = "GitHub Client Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_repository_benefits_app_identifier_production" {
@@ -239,6 +311,10 @@ resource "tfe_variable" "github_repository_benefits_app_identifier_production" {
   description     = "GitHub Repository Benefits App Identifier for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_repository_benefits_app_namespace_production" {
@@ -247,6 +323,10 @@ resource "tfe_variable" "github_repository_benefits_app_namespace_production" {
   description     = "GitHub Repository Benefits App Namespace for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_repository_benefits_app_private_key_production" {
@@ -255,6 +335,10 @@ resource "tfe_variable" "github_repository_benefits_app_private_key_production" 
   description     = "GitHub Repository Benefits App Private Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_repository_benefits_client_id_production" {
@@ -263,6 +347,10 @@ resource "tfe_variable" "github_repository_benefits_client_id_production" {
   description     = "GitHub Repository Benefits Client ID for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "github_repository_benefits_client_secret_production" {
@@ -271,6 +359,10 @@ resource "tfe_variable" "github_repository_benefits_client_secret_production" {
   description     = "GitHub Repository Benefits Client Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "stripe_connect_webhook_secret_production" {
@@ -279,6 +371,10 @@ resource "tfe_variable" "stripe_connect_webhook_secret_production" {
   description     = "Stripe Connect Webhook Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "stripe_secret_key_production" {
@@ -287,6 +383,10 @@ resource "tfe_variable" "stripe_secret_key_production" {
   description     = "Stripe Secret Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "stripe_publishable_key_production" {
@@ -295,6 +395,10 @@ resource "tfe_variable" "stripe_publishable_key_production" {
   description     = "Stripe Publishable Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "stripe_webhook_secret_production" {
@@ -303,6 +407,10 @@ resource "tfe_variable" "stripe_webhook_secret_production" {
   description     = "Stripe Webhook Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "stripe_account_risk_webhook_secret_production" {
@@ -311,6 +419,10 @@ resource "tfe_variable" "stripe_account_risk_webhook_secret_production" {
   description     = "Stripe Account Risk Webhook Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 
@@ -321,6 +433,10 @@ resource "tfe_variable" "backend_app_review_email" {
   description     = "App review email for app store review login bypass"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backend_app_review_otp_code" {
@@ -329,6 +445,10 @@ resource "tfe_variable" "backend_app_review_otp_code" {
   description     = "App review OTP code for app store review login bypass"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "numeral_api_key_production" {
@@ -337,6 +457,10 @@ resource "tfe_variable" "numeral_api_key_production" {
   description     = "Numeral API Key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_api_token_production" {
@@ -345,6 +469,10 @@ resource "tfe_variable" "tinybird_api_token_production" {
   description     = "Tinybird API Token for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_workspace_production" {
@@ -364,6 +492,10 @@ resource "tfe_variable" "tinybird_clickhouse_username_production" {
   description     = "Tinybird ClickHouse Username for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_clickhouse_token_production" {
@@ -372,6 +504,10 @@ resource "tfe_variable" "tinybird_clickhouse_token_production" {
   description     = "Tinybird ClickHouse Token for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_read_token_production" {
@@ -380,6 +516,10 @@ resource "tfe_variable" "tinybird_read_token_production" {
   description     = "Tinybird Read Token for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "polar_access_token_production" {
@@ -388,6 +528,10 @@ resource "tfe_variable" "polar_access_token_production" {
   description     = "Polar API access token"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "polar_webhook_secret_production" {
@@ -396,6 +540,10 @@ resource "tfe_variable" "polar_webhook_secret_production" {
   description     = "Polar webhook secret"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "polar_organization_id_production" {
@@ -450,6 +598,10 @@ resource "tfe_variable" "tailscale_authkey_production" {
   description     = "Tailscale auth key for the subnet router"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tailscale_advertise_routes_production" {
@@ -458,6 +610,10 @@ resource "tfe_variable" "tailscale_advertise_routes_production" {
   description     = "IP routes that should go via Tailscale for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "lambda_worker_tailscale_token_production" {
@@ -466,6 +622,10 @@ resource "tfe_variable" "lambda_worker_tailscale_token_production" {
   description     = "Tailscale auth token for production Lambda workers"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "plain_default_tier_external_id_production" {
@@ -474,6 +634,10 @@ resource "tfe_variable" "plain_default_tier_external_id_production" {
   description     = "Default Plain tier external ID used as a fallback for the polar-self support benefit for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "firecrawl_api_key_production" {
@@ -482,6 +646,10 @@ resource "tfe_variable" "firecrawl_api_key_production" {
   description     = "Firecrawl Cloud API key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 # Vercel frontend
@@ -491,6 +659,10 @@ resource "tfe_variable" "vercel_stripe_publishable_key_production" {
   description     = "Stripe publishable key for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_pydantic_ai_gateway_api_key_production" {
@@ -499,6 +671,10 @@ resource "tfe_variable" "vercel_pydantic_ai_gateway_api_key_production" {
   description     = "Pydantic AI Gateway API key for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_gram_api_key_production" {
@@ -507,6 +683,10 @@ resource "tfe_variable" "vercel_gram_api_key_production" {
   description     = "Gram API key for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_mintlify_assistant_api_key_production" {
@@ -515,6 +695,10 @@ resource "tfe_variable" "vercel_mintlify_assistant_api_key_production" {
   description     = "Mintlify assistant API key for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_attio_api_key_production" {
@@ -523,6 +707,10 @@ resource "tfe_variable" "vercel_attio_api_key_production" {
   description     = "Attio API key for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_attio_startup_list_id_production" {
@@ -531,6 +719,10 @@ resource "tfe_variable" "vercel_attio_startup_list_id_production" {
   description     = "Attio startup list ID for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_mcp_oauth2_client_id_production" {
@@ -539,6 +731,10 @@ resource "tfe_variable" "vercel_mcp_oauth2_client_id_production" {
   description     = "MCP OAuth2 client ID for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_mcp_oauth2_client_secret_production" {
@@ -547,6 +743,10 @@ resource "tfe_variable" "vercel_mcp_oauth2_client_secret_production" {
   description     = "MCP OAuth2 client secret for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_sentry_auth_token_production" {
@@ -555,6 +755,10 @@ resource "tfe_variable" "vercel_sentry_auth_token_production" {
   description     = "Sentry auth token for the Vercel production frontend build"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_polar_preview_access_token_production" {
@@ -563,6 +767,10 @@ resource "tfe_variable" "vercel_polar_preview_access_token_production" {
   description     = "Polar preview access token for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_next_public_sentry_dsn_production" {
@@ -571,6 +779,10 @@ resource "tfe_variable" "vercel_next_public_sentry_dsn_production" {
   description     = "Sentry DSN for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_next_public_posthog_token_production" {
@@ -579,6 +791,10 @@ resource "tfe_variable" "vercel_next_public_posthog_token_production" {
   description     = "PostHog token for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_next_public_apple_domain_association_production" {
@@ -587,6 +803,10 @@ resource "tfe_variable" "vercel_next_public_apple_domain_association_production"
   description     = "Apple Pay domain association for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_production" {
@@ -595,6 +815,10 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
   description     = "Stripe payment method configuration ID for the Vercel production frontend"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "worker_sqs_actors_production" {
@@ -616,6 +840,10 @@ resource "tfe_variable" "stripe_app_client_id_production" {
   description     = "Stripe App OAuth client ID for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "stripe_app_client_link_id_production" {
@@ -624,6 +852,10 @@ resource "tfe_variable" "stripe_app_client_link_id_production" {
   description     = "Stripe App OAuth client link ID for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "turnstile_secret_production" {
@@ -632,6 +864,10 @@ resource "tfe_variable" "turnstile_secret_production" {
   description     = "Cloudflare Turnstile secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "grafana_cloud_aws_external_id_production" {
@@ -648,6 +884,10 @@ resource "tfe_variable" "grafana_cloud_prometheus_query_key_production" {
   description     = "Grafana Cloud Prometheus Query API Key (read-only)"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "slo_report_slack_bot_token_production" {
@@ -656,6 +896,10 @@ resource "tfe_variable" "slo_report_slack_bot_token_production" {
   description     = "Slack Bot Token for SLO weekly reports"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "slo_report_slack_channel_production" {
@@ -676,4 +920,90 @@ resource "tfe_variable" "merchant_migration_destination_stripe_account_id_produc
   description     = "Stripe account ID merchants copy or import saved cards into for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "private_backoffice_enabled_production" {
+  key             = "private_backoffice_enabled"
+  category        = "terraform"
+  description     = "Enable the private backoffice replica for production"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_oauth_client_secret_production" {
+  key             = "private_backoffice_tailscale_oauth_client_secret"
+  category        = "terraform"
+  description     = "Tailscale OAuth client secret for the private backoffice replica in production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "private_backoffice_cloudflare_api_token_production" {
+  key             = "private_backoffice_cloudflare_api_token"
+  category        = "terraform"
+  description     = "Cloudflare DNS token for private backoffice certificates in production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "private_backoffice_tailscale_ip_production" {
+  key             = "private_backoffice_tailscale_ip"
+  category        = "terraform"
+  description     = "Stable Tailscale Service IPv4 address for the private backoffice replica in production"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "ec2_tailscale_oauth_client_secret_production" {
+  key             = "ec2_tailscale_oauth_client_secret"
+  category        = "terraform"
+  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "render_api_key_production" {
+  key             = "render_api_key"
+  category        = "terraform"
+  description     = "Render API key"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backup_alert_slack_bot_token_production" {
+  key             = "backup_alert_slack_bot_token"
+  category        = "terraform"
+  description     = "Slack bot token for database backup copy failure alerts"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

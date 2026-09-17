@@ -1,11 +1,7 @@
-from types import SimpleNamespace
-from unittest.mock import MagicMock
-
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
-from polar.integrations.stripe.service import StripeService
 from polar.models import Account, Transaction, User
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
@@ -15,13 +11,6 @@ from polar.transaction.service.balance import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payment_transaction
-
-
-@pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.transaction.service.balance.stripe_service", new=mock)
-    return mock
 
 
 @pytest.mark.asyncio
@@ -81,17 +70,9 @@ class TestCreateBalanceFromCharge:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
-        stripe_service_mock: MagicMock,
         account: Account,
     ) -> None:
         payment_transaction = await create_payment_transaction(save_fixture)
-
-        stripe_service_mock.get_charge.return_value = SimpleNamespace(
-            id="STRIPE_DESTINATION_CHARGE_ID",
-            balance_transaction=SimpleNamespace(
-                amount=900, currency="eur", exchange_rate=0.9
-            ),
-        )
 
         (
             incoming,
@@ -101,46 +82,6 @@ class TestCreateBalanceFromCharge:
             source_account=None,
             destination_account=account,
             charge_id="STRIPE_CHARGE_ID",
-            amount=1000,
-        )
-
-        assert incoming.payment_transaction
-        assert incoming.payment_transaction.id == payment_transaction.id
-
-        assert outgoing.payment_transaction
-        assert outgoing.payment_transaction.id == payment_transaction.id
-
-
-@pytest.mark.asyncio
-class TestCreateBalanceFromPaymentIntent:
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-        stripe_service_mock: MagicMock,
-        account: Account,
-    ) -> None:
-        payment_transaction = await create_payment_transaction(save_fixture)
-
-        stripe_service_mock.get_charge.return_value = SimpleNamespace(
-            id="STRIPE_DESTINATION_CHARGE_ID",
-            balance_transaction=SimpleNamespace(
-                amount=900, currency="eur", exchange_rate=0.9
-            ),
-        )
-        stripe_service_mock.retrieve_intent.return_value = SimpleNamespace(
-            id="STRIPE_PAYMENT_INTENT_ID", latest_charge="STRIPE_CHARGE_ID"
-        )
-
-        (
-            incoming,
-            outgoing,
-        ) = await balance_transaction_service.create_balance_from_payment_intent(
-            session,
-            source_account=None,
-            destination_account=account,
-            payment_intent_id="STRIPE_PAYMENT_INTENT_ID",
             amount=1000,
         )
 

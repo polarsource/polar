@@ -12,6 +12,7 @@ import stdnum.exceptions
 import stdnum.il.idnr
 import stdnum.in_.gstin
 import stdnum.mk.edb
+import stdnum.nz.ird
 import stdnum.tr.vkn
 import stdnum.tw.ubn
 import stdnum.uy.rut
@@ -426,6 +427,17 @@ class MKVATValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+# NZ GST numbers are IRD numbers. stdnum registers the module under the "vat"
+# alias only, so the generic StdNumValidator lookup on ("nz", "gst") finds nothing.
+class NZGSTValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.nz.ird.compact(number)
+        try:
+            return stdnum.nz.ird.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 class GEVATValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
@@ -481,6 +493,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return ILVATValidator()
         case TaxIDFormat.mk_vat:
             return MKVATValidator()
+        case TaxIDFormat.nz_gst:
+            return NZGSTValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
         case TaxIDFormat.tw_vat:

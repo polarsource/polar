@@ -650,7 +650,7 @@ class LicenseKeyService:
     ) -> Select[tuple[LicenseKey]]:
         repository = LicenseKeyRepository.from_session(session)
         return repository.get_customer_statement(auth_subject).options(
-            joinedload(LicenseKey.customer)
+            joinedload(LicenseKey.customer), joinedload(LicenseKey.member)
         )
 
 

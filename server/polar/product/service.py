@@ -65,7 +65,6 @@ from .schemas import (
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceMeteredTiersCreate,
-    ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
     ProductUpdate,
 )
@@ -329,11 +328,20 @@ class ProductService:
 
         # Prevent non-legacy products from changing their recurring interval
         if (
-            update_schema.recurring_interval is not None
+            (
+                update_schema.recurring_interval is not None
+                or update_schema.recurring_interval_count is not None
+            )
             and (
-                update_schema.recurring_interval != product.recurring_interval
-                or update_schema.recurring_interval_count
-                != product.recurring_interval_count
+                (
+                    update_schema.recurring_interval is not None
+                    and update_schema.recurring_interval != product.recurring_interval
+                )
+                or (
+                    update_schema.recurring_interval_count is not None
+                    and update_schema.recurring_interval_count
+                    != product.recurring_interval_count
+                )
             )
             and not all(is_legacy_price(price) for price in product.prices)
         ):
@@ -630,20 +638,6 @@ class ProductService:
                     price = model_class(
                         product=product, source=source, **price_schema.model_dump()
                     )
-                if isinstance(
-                    price_schema, ProductPriceSeatBasedCreate
-                ) and not organization.feature_settings.get(
-                    "seat_based_pricing_enabled", False
-                ):
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": (*error_prefix, index),
-                            "msg": "Seat-based pricing is not enabled for this organization.",
-                            "input": price_schema,
-                        }
-                    )
-                    continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

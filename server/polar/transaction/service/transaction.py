@@ -11,7 +11,6 @@ from sqlalchemy.orm import joinedload, subqueryload
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
-from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.models import (
@@ -101,54 +100,6 @@ class TransactionService(BaseTransactionService):
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
-
-    async def lookup(
-        self,
-        session: AsyncReadSession,
-        id: uuid.UUID,
-        auth_subject: AuthSubject[User],
-    ) -> Transaction:
-        statement = (
-            self._get_readable_transactions_statement(auth_subject)
-            .options(
-                # Incurred transactions
-                subqueryload(Transaction.account_incurred_transactions),
-                # Pledge
-                subqueryload(Transaction.pledge),
-                # IssueReward
-                subqueryload(Transaction.issue_reward),
-                # Order
-                subqueryload(Transaction.order).options(
-                    joinedload(Order.product).options(joinedload(Product.organization)),
-                ),
-                # Paid transactions (joining on itself)
-                subqueryload(Transaction.paid_transactions).subqueryload(
-                    Transaction.pledge
-                ),
-                subqueryload(Transaction.paid_transactions).subqueryload(
-                    Transaction.issue_reward
-                ),
-                subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.order)
-                .options(
-                    joinedload(Order.product),
-                ),
-                subqueryload(Transaction.paid_transactions).subqueryload(
-                    Transaction.account_incurred_transactions
-                ),
-                subqueryload(Transaction.paid_transactions).subqueryload(
-                    Transaction.order
-                ),
-                subqueryload(Transaction.paid_transactions),
-            )
-            .where(Transaction.id == id)
-        )
-        result = await session.execute(statement)
-        transaction = result.scalar_one_or_none()
-        if transaction is None:
-            raise ResourceNotFound()
-
-        return transaction
 
     async def get_summary(
         self, session: AsyncReadSession, account: Account

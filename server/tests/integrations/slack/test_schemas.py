@@ -47,8 +47,11 @@ class TestSlackIntegrationCredentialsUpdate:
             )
 
 
+@pytest.mark.asyncio
 class TestSlackIntegration:
-    def test_computes_secret_suffixes_without_serializing_raw_secrets(self) -> None:
+    async def test_computes_secret_suffixes_without_serializing_raw_secrets(
+        self,
+    ) -> None:
         slack_app = SlackApp(
             id=uuid4(),
             created_at=datetime.now(UTC),
@@ -57,8 +60,6 @@ class TestSlackIntegration:
             display_name="Test",
             slack_app_id="A0TESTAPPID",
             client_id="100.200",
-            client_secret="cs-test-secret",
-            signing_secret="ss-test-secret",
             team_id=None,
             team_name=None,
             bot_user_id=None,
@@ -67,8 +68,14 @@ class TestSlackIntegration:
             installed_at=None,
             revoked_at=None,
         )
+        slack_app.client_secret_encrypted = await SlackApp.encrypt_client_secret(
+            slack_app.id, "cs-test-secret"
+        )
+        slack_app.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
+            slack_app.id, "ss-test-secret"
+        )
 
-        integration = SlackIntegration.model_validate(slack_app)
+        integration = await SlackIntegration.from_slack_app(slack_app)
 
         assert integration.client_id_last_4 == ".200"
         assert integration.client_secret_last_4 == "cret"
@@ -78,7 +85,7 @@ class TestSlackIntegration:
         assert "client_secret" not in dumped
         assert "signing_secret" not in dumped
 
-    def test_normalizes_missing_display_fields(self) -> None:
+    async def test_normalizes_missing_display_fields(self) -> None:
         slack_app = SlackApp(
             id=uuid4(),
             created_at=datetime.now(UTC),
@@ -87,8 +94,6 @@ class TestSlackIntegration:
             display_name="Test",
             slack_app_id=None,
             client_id=None,
-            client_secret=None,
-            signing_secret=None,
             team_id=None,
             team_name=None,
             bot_user_id=None,
@@ -98,7 +103,7 @@ class TestSlackIntegration:
             revoked_at=None,
         )
 
-        integration = SlackIntegration.model_validate(slack_app)
+        integration = await SlackIntegration.from_slack_app(slack_app)
 
         assert integration.slack_app_id == ""
         assert integration.client_id == ""

@@ -5,6 +5,7 @@ import typing
 import typing_extensions
 
 from polar.v2026_04.literals import (
+    ApiVersion,
     BenefitVisibility,
     CountryAlpha2Input,
     CustomerCancellationReason,
@@ -2471,13 +2472,16 @@ You can store up to **50 key-value pairs**."""
     """The ID of the customer the order is for. Must belong to the order's organization."""
 
     product_id: str
-    """The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price and free products are supported."""
+    """The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."""
 
     currency: typing.NotRequired[str | None]
     """The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."""
 
     amount: typing.NotRequired[int | None]
-    """A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum."""
+    """A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."""
+
+    units: typing.NotRequired[int | None]
+    """The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."""
 
     description: typing.NotRequired[str | None]
     """A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."""
@@ -2655,9 +2659,6 @@ class OrganizationFeatureSettingsUpdate(typing.TypedDict):
 
     Other feature settings are managed by Polar staff: they're ignored if
     provided and keep their current value."""
-
-    seat_based_pricing_enabled: typing.NotRequired[bool]
-    """If this organization has seat-based pricing enabled"""
 
     member_model_enabled: typing.NotRequired[bool]
     """If this organization has the Member model enabled"""
@@ -3729,7 +3730,9 @@ class SubscriptionUpdateBillingPeriod(typing.TypedDict):
     current_billing_period_end: str
     """Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
 
-It is not possible to update the current billing period on a canceled subscription."""
+If the subscription is set to cancel at the end of the period, it'll end on this new date instead.
+
+It is not possible to update the current billing period on a subscription that's already revoked or not active."""
 
 
 class SubscriptionUpdateClear(typing.TypedDict):
@@ -3806,6 +3809,9 @@ class WebhookEndpointCreate(typing.TypedDict):
     name: typing.NotRequired[str | None]
     """An optional name for the webhook endpoint to help organize and identify it."""
 
+    api_version: typing.NotRequired[ApiVersion]
+    """The API version that'll be used in event payloads."""
+
     format: WebhookFormat
 
     events: list[WebhookEventType]
@@ -3820,6 +3826,11 @@ class WebhookEndpointUpdate(typing.TypedDict):
 
     name: typing.NotRequired[str | None]
     """An optional name for the webhook endpoint to help organize and identify it."""
+
+    api_version: typing.NotRequired[
+        typing.Literal["2026-04", "2026-10"] | None
+    ]
+    """The API version that'll be used in event payloads."""
 
     format: typing.NotRequired[WebhookFormat | None]
 

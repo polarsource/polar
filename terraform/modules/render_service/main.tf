@@ -25,12 +25,6 @@ resource "render_env_group" "backend" {
   environment_id = var.render_environment_id
   name           = "backend-${var.environment}"
   env_vars       = { for name, value in var.environment_groups.backend : name => { value = value } if value != null }
-
-  secret_files = {
-    "jwks.json" = {
-      content = var.backend_jwks
-    }
-  }
 }
 
 resource "render_env_group" "backend_production" {
@@ -157,9 +151,7 @@ resource "render_env_group" "redis" {
   environment_id = var.render_environment_id
   name           = "redis-${var.environment}"
   env_vars = {
-    POLAR_REDIS_HOST = { value = var.redis_config.host }
-    POLAR_REDIS_PORT = { value = var.redis_config.port }
-    POLAR_REDIS_DB   = { value = var.api_service_config.redis_db }
+    POLAR_REDIS_URL = { value = "rediss://${var.redis_config.host}:${var.redis_config.port}/${var.api_service_config.redis_db}?ssl_check_hostname=false" }
   }
 }
 
@@ -225,6 +217,7 @@ resource "render_web_service" "api" {
     SERVICE_NAME             = { value = "api${local.env_suffix}" }
     WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
     FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
+    POLAR_BACKOFFICE_ENABLED = { value = "false" }
     POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
     POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
     POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }
@@ -266,9 +259,7 @@ resource "render_web_service" "worker" {
       POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
     },
     (each.value.redis_host != null && each.value.redis_port != null && each.value.redis_db != null) ? {
-      POLAR_REDIS_HOST = { value = each.value.redis_host }
-      POLAR_REDIS_PORT = { value = each.value.redis_port }
-      POLAR_REDIS_DB   = { value = each.value.redis_db }
+      POLAR_REDIS_URL = { value = "redis://${each.value.redis_host}:${each.value.redis_port}/${each.value.redis_db}" }
     } : {}
   )
 }
@@ -293,14 +284,9 @@ resource "render_cron_job" "cron" {
     }
   }
 
-  # Cron jobs don't support Render secret_files, so we pass JWKS as an env var
-  # and write it to a temp file in the start command. POLAR_JWKS is set here
-  # to override the env group value (/etc/secrets/jwks.json) which doesn't exist.
   env_vars = {
     SERVICE_NAME             = { value = each.key }
     POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
-    POLAR_JWKS               = { value = "/tmp/jwks.json" }
-    POLAR_JWKS_CONTENT       = { value = var.backend_jwks }
   }
 }
 
@@ -308,7 +294,7 @@ locals {
   env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
   cron_job_ids    = [for c in render_cron_job.cron : c.id]
-  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids)
+  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids, render_private_service.backoffice[*].id)
 }
 
 # Env group links
@@ -382,7 +368,7 @@ resource "render_env_group_link" "pydantic_ai_gateway" {
 
 resource "render_env_group_link" "apple" {
   env_group_id = render_env_group.apple.id
-  service_ids  = [render_web_service.api.id]
+  service_ids  = concat([render_web_service.api.id], render_private_service.backoffice[*].id)
 }
 
 resource "render_env_group_link" "prometheus" {
@@ -412,7 +398,7 @@ resource "render_env_group_link" "polar_self" {
 resource "render_env_group_link" "memory_profile" {
   count        = var.memory_profile_config != null ? 1 : 0
   env_group_id = render_env_group.memory_profile[0].id
-  service_ids  = concat([render_web_service.api.id], local.worker_ids)
+  service_ids  = concat([render_web_service.api.id], local.worker_ids, render_private_service.backoffice[*].id)
 }
 
 resource "cloudflare_dns_record" "resend_dkim" {

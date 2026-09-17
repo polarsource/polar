@@ -4,7 +4,6 @@ from .authorization_code import (
     AuthorizationCodeGrant,
     CodeChallenge,
     OpenIDCode,
-    OpenIDToken,
     ValidateSubAndPrompt,
 )
 from .refresh_token import RefreshTokenGrant
@@ -20,7 +19,6 @@ def register_grants(server: "AuthorizationServer") -> None:
         [
             CodeChallenge(),
             OpenIDCode(server.session, require_nonce=False),
-            OpenIDToken(),
             ValidateSubAndPrompt(server.session),
         ],
     )

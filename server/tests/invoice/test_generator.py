@@ -533,3 +533,25 @@ def test_generator_renders_amounts_in_primary_font_after_cjk(
 )
 def test_escape_markdown(text: str, expected: str) -> None:
     assert escape_markdown(text) == expected
+
+
+class TestFontLoading:
+    def test_latin_invoice_does_not_load_cjk_fonts(
+        self, invoice: Invoice, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        font_files = InvoiceGenerator.font_files.copy()
+        for script in InvoiceGenerator.cjk_scripts:
+            font_files[InvoiceGenerator.cjk_font_name_for_script(script)] = font_files[
+                InvoiceGenerator.font_name
+            ]
+        monkeypatch.setattr(InvoiceGenerator, "font_files", font_files)
+
+        generator = InvoiceGenerator(invoice)
+        generator.generate()
+        pdf = generator.output()
+
+        assert pdf.startswith(b"%PDF")
+        assert not any(
+            generator.cjk_font_name_for_script(script) in generator.loaded_font_families
+            for script in generator.cjk_scripts
+        )

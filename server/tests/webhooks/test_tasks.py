@@ -50,6 +50,9 @@ class TestWebhookEventSend:
         await session.refresh(event)
         assert event.succeeded is None
 
+    async def test_missing_event_skips_send(self, session: AsyncSession) -> None:
+        await _webhook_event_send(session, webhook_event_id=uuid.uuid4())
+
 
 @pytest.mark.asyncio
 class TestOnEventFailed:

@@ -6,14 +6,16 @@ import { currentPosition, MIGRATION_STEPS } from './steps'
 
 // One derived control: every segment carries the same 2px top track, and the
 // filled length of that track is the only dimension encoding progress. Position
-// and one consistent marker shape carry state; the accent is spent on the
-// current step alone (its marker and its label).
+// and one consistent marker shape carry state; the current step uses primary
+// (monochrome) color for its marker and label.
 export function MigrationStepper({
   migration,
+  panCurrentStepKey,
 }: {
   migration: schemas['MerchantMigration']
+  panCurrentStepKey?: string | null
 }) {
-  const position = currentPosition(migration)
+  const position = currentPosition(migration, panCurrentStepKey)
   // A completed migration has every step behind it.
   const current =
     position.kind === 'completed' ? MIGRATION_STEPS.length : position.index

@@ -15,6 +15,7 @@ resource "render_registry_credential" "ghcr" {
 # =============================================================================
 
 locals {
+  private_backoffice_hostname = "backoffice.polar.sh"
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = render_postgres.db.id
@@ -147,16 +148,21 @@ import {
 module "production" {
   source = "../modules/render_service"
 
-  environment            = "production"
+  environment = "production"
+  private_backoffice = var.private_backoffice_enabled ? {
+    hostname             = local.private_backoffice_hostname
+    oauth_client_secret  = var.private_backoffice_tailscale_oauth_client_secret
+    cloudflare_api_token = var.private_backoffice_cloudflare_api_token
+  } : null
   render_environment_id  = render_project.polar.environments["Production"].id
   registry_credential_id = render_registry_credential.ghcr.id
 
   api_service_config = {
     postgres_database      = "polar_cpit_p9lf"
     postgres_read_database = "polar_cpit_p9lf"
-    allowed_hosts          = "[\"polar.sh\", \"backoffice.polar.sh\"]"
+    allowed_hosts          = jsonencode(["polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
-    custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    custom_domains         = [{ name = "api.polar.sh" }, { name = "buy.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
@@ -182,13 +188,14 @@ module "production" {
   resend_domain = {
     zone_id         = "22bcd1b07ec25452aab472486bc8df94"
     dkim_public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCqT9xW1l4M3o9tgdDcKBrQ3s+WFLwrVkGppzoq1GP36o+TPHFVXMJvMRa+RSokTXRAlxu2hR00WHj7vKVJUhDaqbtZDm0wUhgYleuiXB6pxa13g+/dMyrI9L/bM1BLDa3TOJBwxbB7JTNAyyJ6Q+FcHsGA1b/5B+HPQE+TCpDZUwIDAQAB"
-    spf_policy      = "\"v=spf1 include:amazonses.com -all\""
+    spf_policy      = "\"v=spf1 include:amazonses.com ~all\""
   }
 
   workers = {
     "scheduler" = {
       start_command      = "uv run python -m polar.worker.scheduler"
       plan               = "standard"
+      custom_domains     = [{ name = "scheduler.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
     "worker" = {
@@ -198,23 +205,28 @@ module "production" {
     }
     "worker-medium-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
+      custom_domains     = [{ name = "worker-medium-priority.polar.sh" }]
       dramatiq_prom_port = "10001"
     }
     "worker-high-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority"
+      custom_domains     = [{ name = "worker-high-priority.polar.sh" }]
       dramatiq_prom_port = "10001"
     }
     "worker-webhook" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
+      custom_domains     = [{ name = "worker-webhook.polar.sh" }]
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
     worker-tinybird = {
       start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
+      custom_domains     = [{ name = "worker-tinybird.polar.sh" }]
       dramatiq_prom_port = "10002"
     }
     worker-drain = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8"
+      custom_domains     = [{ name = "worker-drain.polar.sh" }]
       dramatiq_prom_port = "10004"
       redis_host         = render_redis.redis.id
       redis_port         = "6379"
@@ -223,12 +235,12 @@ module "production" {
     worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
+      custom_domains     = [{ name = "worker-invoices-receipts.polar.sh" }]
       dramatiq_prom_port = "10003"
     }
   }
 
   environment_groups = module.backend_environment.environment_groups
-  backend_jwks       = local.backend_secrets.jwks
   email_from_domain  = local.backend_config.email_from_domain
 
   memory_profile_config = {
@@ -336,15 +348,6 @@ resource "cloudflare_dns_record" "api" {
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "api_alt" {
-  zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "api-alt.polar.sh"
-  type    = "CNAME"
-  content = replace(module.production.api_service_url, "https://", "")
-  proxied = false
-  ttl     = 1
-}
-
 resource "cloudflare_dns_record" "buy" {
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
   name    = "buy.polar.sh"
@@ -354,20 +357,33 @@ resource "cloudflare_dns_record" "buy" {
   ttl     = 1
 }
 
+moved {
+  from = cloudflare_dns_record.backoffice
+  to   = cloudflare_dns_record.backoffice[0]
+}
+
 resource "cloudflare_dns_record" "backoffice" {
+  count = var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "backoffice.polar.sh"
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_dns_record" "worker" {
+  for_each = module.production.worker_urls
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
   type    = "CNAME"
-  content = replace(module.production.api_service_url, "https://", "")
+  content = replace(each.value, "https://", "")
   proxied = true
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "worker" {
-  zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "worker.polar.sh"
-  type    = "CNAME"
-  content = replace(module.production.worker_urls["worker"], "https://", "")
-  proxied = false
-  ttl     = 1
+output "private_backoffice_service_id" {
+  value = module.production.private_backoffice_service_id
 }

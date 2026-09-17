@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 import dramatiq
 import structlog
 from dramatiq.asyncio import get_event_loop_thread
+from sqlalchemy import Connection, event
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
@@ -51,7 +52,10 @@ async def dispose_sqlalchemy_engine() -> None:
 
 
 def setup_sqlalchemy(
-    pool_name: str | None = None, *, pool_pre_ping: bool = False
+    pool_name: str | None = None,
+    *,
+    pool_pre_ping: bool = False,
+    idle_in_transaction_session_timeout_seconds: int | None = None,
 ) -> None:
     global \
         _sqlalchemy_engine, \
@@ -76,6 +80,17 @@ def setup_sqlalchemy(
         instrument_engines.append(_sqlalchemy_read_engine.sync_engine)
     else:
         _sqlalchemy_async_read_sessionmaker = _sqlalchemy_async_sessionmaker
+
+    if idle_in_transaction_session_timeout_seconds is not None:
+
+        def set_idle_transaction_timeout(connection: Connection) -> None:
+            connection.exec_driver_sql(
+                "SET LOCAL idle_in_transaction_session_timeout = "
+                f"'{idle_in_transaction_session_timeout_seconds}s'"
+            )
+
+        for engine in instrument_engines:
+            event.listen(engine, "begin", set_idle_transaction_timeout)
 
     instrument_sqlalchemy(instrument_engines)
     log.info("Created database engine", pool_name=pool_name)

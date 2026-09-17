@@ -1,38 +1,8 @@
 """
-Script to migrate organizations to the members model.
-
-Given optional filters, this script:
-1. Queries organizations ordered by next_review_threshold (ascending)
-2. Filters to those that don't already have member_model_enabled
-3. Enables member_model_enabled on each organization
-4. Runs the backfill steps directly for each organization
+Scripts supporting the member model migration.
 
 Usage:
-    Dry run (default):
-        uv run python -m scripts.migrate_organizations_members
-
-    Actually perform the migration:
-        uv run python -m scripts.migrate_organizations_members --no-dry-run
-
-    Migrate only organizations below a specific threshold:
-        uv run python -m scripts.migrate_organizations_members --max-threshold 1000
-
-    Migrate a single organization by slug:
-        uv run python -m scripts.migrate_organizations_members --slug my-org --no-dry-run
-
-    Limit how many organizations to migrate:
-        uv run python -m scripts.migrate_organizations_members --limit 10 --no-dry-run
-
-    Repair previously migrated orgs (re-run backfill for orgs with flag already enabled):
-        uv run python -m scripts.migrate_organizations_members repair --no-dry-run
-        uv run python -m scripts.migrate_organizations_members repair --slug my-org --no-dry-run
-
-    Repair in batches of 1000:
-        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 0
-        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 1000
-        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 2000
-
-    Prepare seat-based orgs for member model (Phase 0B, non-destructive):
+    Prepare orgs for the member model (Phase 0B, non-destructive):
         uv run python -m scripts.migrate_organizations_members prepare
         uv run python -m scripts.migrate_organizations_members prepare --slug my-org --no-dry-run
         uv run python -m scripts.migrate_organizations_members prepare --limit 10 --no-dry-run
@@ -41,39 +11,62 @@ Usage:
         uv run python -m scripts.migrate_organizations_members restore-oneoff-grants
         uv run python -m scripts.migrate_organizations_members restore-oneoff-grants --verbose
         uv run python -m scripts.migrate_organizations_members restore-oneoff-grants --restore
+
+    Backfill member_id on license keys and downloadables:
+        uv run python -m scripts.migrate_organizations_members backfill-benefit-records --no-dry-run
+
+    Report which orgs are left and how complete their Phase 1 is:
+        uv run python -m scripts.migrate_organizations_members audit
+        uv run python -m scripts.migrate_organizations_members audit --bucket active-integration
+        uv run python -m scripts.migrate_organizations_members audit --gaps-only
 """
 
 import asyncio
 import logging.config
 import uuid
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+from enum import StrEnum
 from functools import wraps
 from typing import Any, cast
 
 import structlog
 import typer
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.sql.expression import CTE
 
-from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Organization
+from polar.kit.db.postgres import AsyncReadSession, create_async_sessionmaker
+from polar.models import (
+    Customer,
+    CustomerSeat,
+    Member,
+    Order,
+    Organization,
+    Product,
+    ProductPrice,
+    Subscription,
+)
 from polar.models.benefit_grant import BenefitGrant
+from polar.models.customer_seat import SeatStatus
+from polar.models.member import MemberRole
+from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.product_price import ProductPriceAmountType
+from polar.models.subscription import SubscriptionStatus
 from polar.organization.member_backfill import (
     downloadable_member_backfill_statement,
     license_key_member_backfill_statement,
 )
 from polar.organization.repository import OrganizationRepository
 from polar.organization.tasks import (
-    _backfill_benefit_grants,
     _backfill_owner_members,
-    _backfill_seats,
-    _cleanup_orphaned_seat_customers,
     _prepare_benefit_grants,
     _prepare_seats,
 )
 from polar.postgres import AsyncSession, create_async_engine
-from scripts.helper import run_batched_update
+from scripts.helper import read_engine, run_batched_update
 
 cli = typer.Typer()
 
@@ -101,354 +94,6 @@ def typer_async(f):  # type: ignore
 
 @cli.command()
 @typer_async
-async def migrate_organizations(
-    dry_run: bool = typer.Option(
-        True, help="If True, only show what would be done without making changes"
-    ),
-    max_threshold: int | None = typer.Option(
-        None, help="Only migrate organizations with next_review_threshold <= this value"
-    ),
-    min_threshold: int | None = typer.Option(
-        None,
-        help="Only migrate organizations with next_review_threshold >= this value",
-    ),
-    slug: str | None = typer.Option(None, help="Migrate a single organization by slug"),
-    limit: int | None = typer.Option(
-        None, help="Maximum number of organizations to migrate"
-    ),
-) -> None:
-    """Migrate organizations to the members model, ordered by next_review_threshold."""
-    engine = create_async_engine("script")
-    sessionmaker = create_async_sessionmaker(engine)
-
-    async with sessionmaker() as session:
-        # Build query for eligible organizations
-        # Exclude orgs already migrated or with seat-based pricing at the DB level
-        statement = (
-            select(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.status != OrganizationStatus.BLOCKED,
-                or_(
-                    Organization.feature_settings["member_model_enabled"].is_(None),
-                    ~Organization.feature_settings["member_model_enabled"].as_boolean(),
-                ),
-                or_(
-                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
-                        None
-                    ),
-                    ~Organization.feature_settings[
-                        "seat_based_pricing_enabled"
-                    ].as_boolean(),
-                ),
-            )
-            .order_by(Organization.next_review_threshold.asc())
-        )
-
-        if slug is not None:
-            statement = statement.where(Organization.slug == slug)
-
-        if max_threshold is not None:
-            statement = statement.where(
-                Organization.next_review_threshold <= max_threshold
-            )
-
-        if min_threshold is not None:
-            statement = statement.where(
-                Organization.next_review_threshold >= min_threshold
-            )
-
-        if limit is not None:
-            statement = statement.limit(limit)
-
-        result = await session.execute(statement)
-        organizations = list(result.scalars().all())
-
-    if not organizations:
-        typer.echo("No eligible organizations found.")
-        return
-
-    typer.echo(f"Found {len(organizations)} organization(s) to migrate")
-    typer.echo()
-
-    # Display organizations to migrate
-    typer.echo("Organizations to migrate (ordered by next_review_threshold):")
-    typer.echo(f"{'Slug':<40} {'Threshold':>10} {'ID'}")
-    typer.echo("-" * 90)
-    for org in organizations:
-        typer.echo(f"{org.slug:<40} {org.next_review_threshold:>10} {org.id}")
-    typer.echo()
-
-    if dry_run:
-        typer.echo("DRY RUN - No changes will be made.")
-        typer.echo(
-            f"Would migrate {len(organizations)} organization(s) and run backfill."
-        )
-        return
-
-    # Perform migration
-    typer.echo(f"Migrating {len(organizations)} organization(s)...")
-    typer.echo()
-
-    migrated_count = 0
-    failed_count = 0
-
-    for org in organizations:
-        try:
-            # Step 1: Enable member_model_enabled
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                organization.feature_settings = {
-                    **organization.feature_settings,
-                    "member_model_enabled": True,
-                }
-                session.add(organization)
-                await session.commit()
-
-            # Step 2: Run backfill steps directly
-            # Each step runs in its own session/transaction so that
-            # partial progress is preserved on failure (steps are idempotent)
-
-            # Step A: Create owner members for all customers without one
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                owner_members_created = await _backfill_owner_members(
-                    session, organization
-                )
-                await session.commit()
-
-            # Step B: Migrate active seats
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                seats_migrated, orphaned_customer_ids = await _backfill_seats(
-                    session, organization
-                )
-                await session.commit()
-
-            # Step C: Link benefit grants to correct members
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                grants_linked = await _backfill_benefit_grants(session, organization)
-                await session.commit()
-
-            # Step D: Soft-delete orphaned seat-holder customers
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                customers_deleted = await _cleanup_orphaned_seat_customers(
-                    session, organization, orphaned_customer_ids
-                )
-                await session.commit()
-
-            migrated_count += 1
-            typer.echo(
-                f"  [{migrated_count}/{len(organizations)}] "
-                f"{org.slug} (threshold={org.next_review_threshold}) "
-                f"owners={owner_members_created} seats={seats_migrated} "
-                f"grants={grants_linked} deleted={customers_deleted}"
-            )
-
-        except Exception as e:
-            failed_count += 1
-            typer.echo(
-                f"  FAILED: {org.slug} - {e}",
-                err=True,
-            )
-
-    typer.echo()
-    typer.echo("Migration complete:")
-    typer.echo(f"  - Migrated: {migrated_count}")
-    typer.echo(f"  - Failed: {failed_count}")
-
-
-@cli.command()
-@typer_async
-async def repair(
-    dry_run: bool = typer.Option(
-        True, help="If True, only show what would be done without making changes"
-    ),
-    slug: str | None = typer.Option(None, help="Repair a single organization by slug"),
-    limit: int | None = typer.Option(
-        None, help="Maximum number of organizations to repair"
-    ),
-    offset: int = typer.Option(
-        0, help="Number of organizations to skip (for batch pagination)"
-    ),
-) -> None:
-    """Re-run backfill for orgs that already have member_model_enabled.
-
-    This is safe to run on all enabled orgs — every backfill step is idempotent
-    and skips customers/seats/grants that already have members.
-    """
-    engine = create_async_engine("script")
-    sessionmaker = create_async_sessionmaker(engine)
-
-    async with sessionmaker() as session:
-        statement = (
-            select(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings["member_model_enabled"].as_boolean(),
-                or_(
-                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
-                        None
-                    ),
-                    ~Organization.feature_settings[
-                        "seat_based_pricing_enabled"
-                    ].as_boolean(),
-                ),
-            )
-            .order_by(
-                Organization.next_review_threshold.asc(),
-                Organization.id.asc(),
-            )
-        )
-
-        if slug is not None:
-            statement = statement.where(Organization.slug == slug)
-
-        if offset > 0:
-            statement = statement.offset(offset)
-
-        if limit is not None:
-            statement = statement.limit(limit)
-
-        result = await session.execute(statement)
-        organizations = list(result.scalars().all())
-
-        # Get total count (without limit/offset) for progress display
-        count_statement = (
-            select(func.count())
-            .select_from(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings["member_model_enabled"].as_boolean(),
-                or_(
-                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
-                        None
-                    ),
-                    ~Organization.feature_settings[
-                        "seat_based_pricing_enabled"
-                    ].as_boolean(),
-                ),
-            )
-        )
-        total_count = await session.scalar(count_statement)
-
-    if not organizations:
-        typer.echo("No eligible organizations found.")
-        return
-
-    typer.echo(
-        f"Found {len(organizations)} organization(s) to repair"
-        f" (offset={offset}, total={total_count})"
-    )
-    typer.echo()
-
-    if dry_run:
-        typer.echo("DRY RUN - No changes will be made.")
-        typer.echo(f"Would repair {len(organizations)} organization(s).")
-        return
-
-    typer.echo(f"Repairing {len(organizations)} organization(s)...")
-    typer.echo()
-
-    repaired_count = 0
-    failed_count = 0
-    skipped_count = 0
-
-    for org in organizations:
-        try:
-            # Step A: Create owner members for all customers without one
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                owner_members_created = await _backfill_owner_members(
-                    session, organization
-                )
-                await session.commit()
-
-            # Step B: Migrate active seats
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                seats_migrated, orphaned_customer_ids = await _backfill_seats(
-                    session, organization
-                )
-                await session.commit()
-
-            # Step C: Link benefit grants to correct members
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                grants_linked = await _backfill_benefit_grants(session, organization)
-                await session.commit()
-
-            # Step D: Soft-delete orphaned seat-holder customers
-            async with sessionmaker() as session:
-                organization = await OrganizationRepository.from_session(
-                    session
-                ).get_by_id(org.id)
-                assert organization is not None
-                customers_deleted = await _cleanup_orphaned_seat_customers(
-                    session, organization, orphaned_customer_ids
-                )
-                await session.commit()
-
-            if (
-                owner_members_created == 0
-                and seats_migrated == 0
-                and grants_linked == 0
-                and customers_deleted == 0
-            ):
-                skipped_count += 1
-            else:
-                repaired_count += 1
-                typer.echo(
-                    f"  [{repaired_count}] "
-                    f"{org.slug} (threshold={org.next_review_threshold}) "
-                    f"owners={owner_members_created} seats={seats_migrated} "
-                    f"grants={grants_linked} deleted={customers_deleted}"
-                )
-
-        except Exception as e:
-            failed_count += 1
-            typer.echo(
-                f"  FAILED: {org.slug} - {e}",
-                err=True,
-            )
-
-    typer.echo()
-    typer.echo("Repair complete:")
-    typer.echo(f"  - Repaired: {repaired_count}")
-    typer.echo(f"  - Already OK: {skipped_count}")
-    typer.echo(f"  - Failed: {failed_count}")
-
-
-@cli.command()
-@typer_async
 async def prepare(
     dry_run: bool = typer.Option(
         True, help="If True, only show what would be done without making changes"
@@ -458,12 +103,12 @@ async def prepare(
         None, help="Maximum number of organizations to prepare"
     ),
 ) -> None:
-    """Prepare seat-based orgs for member model migration (Phase 0B).
+    """Prepare orgs for the member model migration (Phase 0B).
 
     Non-destructive: populates member_id/email on seats and grants without
     changing customer_id, deleting customers, or flipping any flags.
 
-    Targets orgs with seat_based_pricing_enabled=True and member_model_enabled=False.
+    Targets orgs with member_model_enabled=False.
     """
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
@@ -474,9 +119,6 @@ async def prepare(
             .where(
                 Organization.deleted_at.is_(None),
                 Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings[
-                    "seat_based_pricing_enabled"
-                ].as_boolean(),
                 or_(
                     Organization.feature_settings["member_model_enabled"].is_(None),
                     ~Organization.feature_settings["member_model_enabled"].as_boolean(),
@@ -913,6 +555,348 @@ async def backfill_benefit_records(
 
     typer.echo()
     typer.echo("Backfill complete.")
+
+
+class Bucket(StrEnum):
+    no_seat_product = "no-seat-product"
+    no_sales = "no-sales"
+    no_active_sale = "no-active-sale"
+    seats_unclaimed = "seats-unclaimed"
+    active_integration = "active-integration"
+
+
+_BUCKET_LABELS: dict[Bucket, str] = {
+    Bucket.no_seat_product: "No seat product configured",
+    Bucket.no_sales: "Seat product, no sales",
+    Bucket.no_active_sale: "Historical sale, none active",
+    Bucket.seats_unclaimed: "Selling seats, none claimed",
+    Bucket.active_integration: "Active seat integration",
+}
+
+
+@dataclass(frozen=True)
+class OrganizationAudit:
+    slug: str
+    seat_products: int
+    seat_subscriptions: int
+    active_seat_subscriptions: int
+    seat_orders: int
+    claimed_seats: int
+    seats_missing_member: int
+    grants_missing_member: int
+    customers_missing_owner: int
+
+    @property
+    def bucket(self) -> Bucket:
+        if self.seat_products == 0:
+            return Bucket.no_seat_product
+        if self.seat_subscriptions == 0 and self.seat_orders == 0:
+            return Bucket.no_sales
+        # One-off seat orders are perpetual, so they never go inactive.
+        if self.active_seat_subscriptions == 0 and self.seat_orders == 0:
+            return Bucket.no_active_sale
+        if self.claimed_seats == 0:
+            return Bucket.seats_unclaimed
+        return Bucket.active_integration
+
+    @property
+    def gaps(self) -> int:
+        return (
+            self.seats_missing_member
+            + self.grants_missing_member
+            + self.customers_missing_owner
+        )
+
+
+def _chunked(
+    organization_ids: Sequence[uuid.UUID], size: int
+) -> Iterator[Sequence[uuid.UUID]]:
+    for start in range(0, len(organization_ids), size):
+        yield organization_ids[start : start + size]
+
+
+def _seat_products_cte(organization_ids: Sequence[uuid.UUID]) -> CTE:
+    """Products that ever carried a seat price.
+
+    Archived prices count: editing a product's prices archives the old rows,
+    and the subscriptions running on them keep their seats.
+    """
+    return (
+        select(Product.id.label("product_id"), Product.organization_id)
+        .join(ProductPrice, ProductPrice.product_id == Product.id)
+        .where(
+            Product.organization_id.in_(organization_ids),
+            Product.deleted_at.is_(None),
+            ProductPrice.deleted_at.is_(None),
+            ProductPrice.amount_type == ProductPriceAmountType.seat_based,
+        )
+        .distinct()
+        .cte("seat_products")
+    )
+
+
+async def _count_seat_products(
+    session: AsyncReadSession, seat_products: CTE
+) -> dict[uuid.UUID, int]:
+    result = await session.execute(
+        select(seat_products.c.organization_id, func.count()).group_by(
+            seat_products.c.organization_id
+        )
+    )
+    return {organization_id: count for organization_id, count in result}
+
+
+async def _count_seat_subscriptions(
+    session: AsyncReadSession, seat_products: CTE
+) -> dict[uuid.UUID, tuple[int, int]]:
+    result = await session.execute(
+        select(
+            seat_products.c.organization_id,
+            func.count(Subscription.id),
+            func.count(Subscription.id).filter(
+                Subscription.status.in_(SubscriptionStatus.active_statuses())
+            ),
+        )
+        .select_from(seat_products)
+        .join(Subscription, Subscription.product_id == seat_products.c.product_id)
+        .where(
+            Subscription.deleted_at.is_(None),
+            Subscription.status.not_in(SubscriptionStatus.incomplete_statuses()),
+        )
+        .group_by(seat_products.c.organization_id)
+    )
+    return {
+        organization_id: (total, active) for organization_id, total, active in result
+    }
+
+
+async def _count_seat_orders(
+    session: AsyncReadSession, seat_products: CTE
+) -> dict[uuid.UUID, int]:
+    result = await session.execute(
+        select(seat_products.c.organization_id, func.count(Order.id))
+        .select_from(seat_products)
+        .join(Order, Order.product_id == seat_products.c.product_id)
+        .where(
+            Order.deleted_at.is_(None),
+            Order.subscription_id.is_(None),
+            Order.status.in_(OrderStatus.paid_statuses()),
+        )
+        .group_by(seat_products.c.organization_id)
+    )
+    return {organization_id: count for organization_id, count in result}
+
+
+async def _count_seats(
+    session: AsyncReadSession, seat_products: CTE
+) -> dict[uuid.UUID, tuple[int, int]]:
+    """Claimed seats and seats still missing a member, per organization."""
+    subscription_seats = (
+        select(
+            CustomerSeat.status.label("status"),
+            CustomerSeat.member_id.label("member_id"),
+            seat_products.c.organization_id.label("organization_id"),
+        )
+        .select_from(CustomerSeat)
+        .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .join(seat_products, seat_products.c.product_id == Subscription.product_id)
+    )
+    order_seats = (
+        select(
+            CustomerSeat.status,
+            CustomerSeat.member_id,
+            seat_products.c.organization_id,
+        )
+        .select_from(CustomerSeat)
+        .join(Order, CustomerSeat.order_id == Order.id)
+        .join(seat_products, seat_products.c.product_id == Order.product_id)
+    )
+    seats = subscription_seats.union_all(order_seats).subquery("seats")
+
+    result = await session.execute(
+        select(
+            seats.c.organization_id,
+            func.count().filter(seats.c.status == SeatStatus.claimed),
+            func.count().filter(
+                and_(
+                    seats.c.member_id.is_(None),
+                    seats.c.status != SeatStatus.revoked,
+                )
+            ),
+        ).group_by(seats.c.organization_id)
+    )
+    return {
+        organization_id: (claimed, missing_member)
+        for organization_id, claimed, missing_member in result
+    }
+
+
+async def _count_grants_missing_member(
+    session: AsyncReadSession,
+    organization_ids: Sequence[uuid.UUID],
+    chunk_size: int,
+) -> dict[uuid.UUID, int]:
+    counts: dict[uuid.UUID, int] = {}
+    for chunk in _chunked(organization_ids, chunk_size):
+        result = await session.execute(
+            select(Customer.organization_id, func.count(BenefitGrant.id))
+            .select_from(BenefitGrant)
+            .join(Customer, BenefitGrant.customer_id == Customer.id)
+            .where(
+                Customer.organization_id.in_(chunk),
+                BenefitGrant.member_id.is_(None),
+                ~BenefitGrant.is_deleted,
+            )
+            .group_by(Customer.organization_id)
+        )
+        counts.update({organization_id: count for organization_id, count in result})
+    return counts
+
+
+async def _count_customers_missing_owner(
+    session: AsyncReadSession,
+    organization_ids: Sequence[uuid.UUID],
+    chunk_size: int,
+) -> dict[uuid.UUID, int]:
+    owner_member = (
+        select(Member.id)
+        .where(
+            Member.customer_id == Customer.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        .exists()
+    )
+    counts: dict[uuid.UUID, int] = {}
+    for chunk in _chunked(organization_ids, chunk_size):
+        result = await session.execute(
+            select(Customer.organization_id, func.count(Customer.id))
+            .where(
+                Customer.organization_id.in_(chunk),
+                Customer.deleted_at.is_(None),
+                ~owner_member,
+            )
+            .group_by(Customer.organization_id)
+        )
+        counts.update({organization_id: count for organization_id, count in result})
+    return counts
+
+
+@cli.command()
+@typer_async
+async def audit(
+    bucket: Bucket | None = typer.Option(None, help="Only show this bucket"),
+    gaps_only: bool = typer.Option(
+        False, help="Only show organizations with an incomplete Phase 1"
+    ),
+    slug: str | None = typer.Option(None, help="Audit a single organization by slug"),
+    chunk_size: int = typer.Option(
+        20, min=1, help="Organizations per query for the customer-wide counts"
+    ),
+    command_timeout: float = typer.Option(
+        120.0, help="Seconds a single query may run before the server kills it"
+    ),
+) -> None:
+    """Report the organizations left on the legacy model and their Phase 1 state.
+
+    Buckets them by how much seat traffic they actually have, and counts what
+    Phase 1 has not filled in: seats and grants without a member, customers
+    without an owner member.
+
+    The grant and owner-member counts scan every customer of every organization
+    still on the legacy model, so they run in chunks. Lower --chunk-size if a
+    query still times out.
+    """
+    engine = read_engine(command_timeout)
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        statement = (
+            select(Organization.id, Organization.slug)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
+                or_(
+                    Organization.feature_settings["member_model_enabled"].is_(None),
+                    ~Organization.feature_settings["member_model_enabled"].as_boolean(),
+                ),
+            )
+            .order_by(Organization.slug.asc())
+        )
+        if slug is not None:
+            statement = statement.where(Organization.slug == slug)
+
+        organizations = list(await session.execute(statement))
+        if not organizations:
+            typer.echo("No organizations left on the legacy model.")
+            return
+
+        organization_ids = [organization_id for organization_id, _ in organizations]
+        seat_products = _seat_products_cte(organization_ids)
+
+        seat_product_counts = await _count_seat_products(session, seat_products)
+        subscription_counts = await _count_seat_subscriptions(session, seat_products)
+        order_counts = await _count_seat_orders(session, seat_products)
+        seat_counts = await _count_seats(session, seat_products)
+        grant_gaps = await _count_grants_missing_member(
+            session, organization_ids, chunk_size
+        )
+        owner_gaps = await _count_customers_missing_owner(
+            session, organization_ids, chunk_size
+        )
+
+    audits = [
+        OrganizationAudit(
+            slug=organization_slug,
+            seat_products=seat_product_counts.get(organization_id, 0),
+            seat_subscriptions=subscription_counts.get(organization_id, (0, 0))[0],
+            active_seat_subscriptions=subscription_counts.get(organization_id, (0, 0))[
+                1
+            ],
+            seat_orders=order_counts.get(organization_id, 0),
+            claimed_seats=seat_counts.get(organization_id, (0, 0))[0],
+            seats_missing_member=seat_counts.get(organization_id, (0, 0))[1],
+            grants_missing_member=grant_gaps.get(organization_id, 0),
+            customers_missing_owner=owner_gaps.get(organization_id, 0),
+        )
+        for organization_id, organization_slug in organizations
+    ]
+
+    typer.echo(f"Organizations on the legacy model: {len(audits)}")
+    typer.echo()
+
+    typer.echo(f"{'Bucket':<32} {'Orgs':>6} {'Incomplete':>11}")
+    typer.echo("-" * 51)
+    for value in Bucket:
+        in_bucket = [a for a in audits if a.bucket is value]
+        incomplete = sum(1 for a in in_bucket if a.gaps > 0)
+        typer.echo(f"{_BUCKET_LABELS[value]:<32} {len(in_bucket):>6} {incomplete:>11}")
+    typer.echo()
+
+    listed = audits
+    if bucket is not None:
+        listed = [a for a in listed if a.bucket is bucket]
+    if gaps_only:
+        listed = [a for a in listed if a.gaps > 0]
+
+    if not listed:
+        typer.echo("No organization matches the filters.")
+        return
+
+    listed.sort(key=lambda a: (a.bucket, a.slug))
+
+    typer.echo(f"{'Slug':<40} {'Bucket':<20} {'Seats':>6} {'Grants':>7} {'Owners':>7}")
+    typer.echo("-" * 84)
+    for organization_audit in listed:
+        typer.echo(
+            f"{organization_audit.slug:<40} "
+            f"{organization_audit.bucket.value:<20} "
+            f"{organization_audit.seats_missing_member:>6} "
+            f"{organization_audit.grants_missing_member:>7} "
+            f"{organization_audit.customers_missing_owner:>7}"
+        )
+    typer.echo()
+    typer.echo("Columns count what Phase 1 has not filled in, so 0 everywhere is done.")
 
 
 if __name__ == "__main__":

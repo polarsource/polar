@@ -213,9 +213,7 @@ class SearchService:
                 Customer.name.label("customer_name"),
                 Customer.email.label("customer_email"),
                 Product.name.label("product_name"),
-                (
-                    Order.subtotal_amount - Order.discount_amount + Order.tax_amount
-                ).label("amount"),
+                Order.total_amount.label("amount"),
                 Order.currency.label("currency"),
                 literal(None).cast(String).label("status"),
             )

@@ -22,6 +22,7 @@ from polar.models.organization_sso_connection import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
+from polar.organization_review.schemas import ReviewContext
 from polar.payout_account.service import PayoutAccountServiceError
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -319,82 +320,6 @@ class TestUpdateOrganization:
         assert any("previous_annual_revenue" in str(error) for error in error_detail)
 
     @pytest.mark.auth
-    async def test_enable_seat_based_pricing_with_member_model(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": True,
-            "seat_based_pricing_enabled": False,
-        }
-        await save_fixture(organization)
-
-        response = await client.patch(
-            f"/v1/organizations/{organization.id}",
-            json={
-                "feature_settings": {
-                    "seat_based_pricing_enabled": True,
-                },
-            },
-        )
-
-        assert response.status_code == 200
-        assert response.json()["feature_settings"]["seat_based_pricing_enabled"] is True
-
-    @pytest.mark.auth
-    async def test_enable_seat_based_pricing_without_member_model(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": False,
-            "seat_based_pricing_enabled": False,
-        }
-        await save_fixture(organization)
-
-        response = await client.patch(
-            f"/v1/organizations/{organization.id}",
-            json={
-                "feature_settings": {
-                    "seat_based_pricing_enabled": True,
-                },
-            },
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.auth
-    async def test_disable_seat_based_pricing_when_enabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": True,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
-        response = await client.patch(
-            f"/v1/organizations/{organization.id}",
-            json={
-                "feature_settings": {
-                    "seat_based_pricing_enabled": False,
-                },
-            },
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.auth
     async def test_non_updatable_feature_flags_ignored(
         self,
         client: AsyncClient,
@@ -511,6 +436,84 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
     @pytest.mark.auth
+    async def test_update_customer_portal_settings_merge_preserves_omitted_keys(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A PATCH omitting the NotRequired `update_units`, `pause` and
+        # `customer` keys must preserve them, while the keys it does send
+        # override. The follow-up GET reads from the database, so it covers
+        # persistence too.
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings.get("subscription", {}),
+                "update_units": True,
+                "pause": True,
+            },
+            "customer": {"allow_email_change": True},
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": False},
+                    "subscription": {
+                        "update_seats": False,
+                        "update_plan": True,
+                    },
+                },
+            },
+        )
+        assert response.status_code == 200
+
+        response = await client.get(f"/v1/organizations/{organization.id}")
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["usage"]["show"] is False
+        sub = settings["subscription"]
+        assert sub["update_seats"] is False
+        assert sub["update_plan"] is True
+        assert sub["update_units"] is True
+        assert sub["pause"] is True
+        assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
+    async def test_update_customer_portal_settings_empty_customer_preserves_stored_value(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Every nested group is merged, not just `subscription`.
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "customer": {"allow_email_change": True},
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": True},
+                    "subscription": {"update_seats": True, "update_plan": True},
+                    "customer": {},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(
         self,
         client: AsyncClient,
@@ -602,7 +605,11 @@ class TestUpdateOrganization:
 
         assert response.status_code == 200
         assert response.json()["details_submitted_at"] is not None
-        enqueue_job_mock.assert_called_once()
+        enqueue_job_mock.assert_any_call(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            context=ReviewContext.SUBMISSION,
+        )
 
     @pytest.mark.auth
     async def test_submit_for_review_not_existing(self, client: AsyncClient) -> None:

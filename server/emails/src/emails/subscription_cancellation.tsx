@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -14,6 +15,7 @@ export function SubscriptionCancellation({
   product,
   subscription,
   url,
+  previous_billing_provider,
 }: schemas['SubscriptionCancellationProps']) {
   const endDate = new Date(subscription.ends_at!).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -33,6 +35,12 @@ export function SubscriptionCancellation({
         </Text>{' '}
         has been canceled. You still have full access until {endDate}.
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Text>If you change your mind, you can renew anytime before then.</Text>
       <Button href={url}>Renew subscription</Button>
       <FooterCustomer organization={organization} email={email} />
@@ -47,6 +55,7 @@ SubscriptionCancellation.PreviewProps = {
   subscription: {
     ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   },
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

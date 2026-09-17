@@ -6,7 +6,8 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
@@ -18,6 +19,7 @@ from polar.models import (
 )
 from polar.models.customer_seat import SeatStatus
 from polar.models.order import OrderStatus
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -548,6 +550,107 @@ class TestSubscriptionProductUpdate:
         updated_subscription = response.json()
         assert updated_subscription["product"]["id"] == str(product_second.id)
 
+    @pytest.mark.auth
+    async def test_seat_to_seat_below_target_minimum_returns_422_on_product_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        new_seat_price = ProductPriceSeatUnit(
+            price_currency=PresentmentCurrency.usd,
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 5, "max_seats": None, "price_per_seat": 2000},
+                ],
+            },
+            product=new_seat_product,
+        )
+        await save_fixture(new_seat_price)
+        new_seat_product.prices.append(new_seat_price)
+        await save_fixture(new_seat_product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=old_seat_product, customer=customer, seats=3
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"product_id": str(new_seat_product.id)},
+        )
+
+        assert response.status_code == 422
+        error = response.json()
+        assert error["detail"][0]["loc"] == ["body", "product_id"]
+        assert "below the minimum of 5 seats" in error["detail"][0]["msg"]
+        assert error["detail"][0]["input"] == str(new_seat_product.id)
+
+    @pytest.mark.auth
+    async def test_seat_to_seat_above_target_maximum_returns_422_on_product_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        new_seat_price = ProductPriceSeatUnit(
+            price_currency=PresentmentCurrency.usd,
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+                ],
+            },
+            product=new_seat_product,
+        )
+        await save_fixture(new_seat_price)
+        new_seat_product.prices.append(new_seat_price)
+        await save_fixture(new_seat_product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=old_seat_product, customer=customer, seats=50
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "product_id": str(new_seat_product.id),
+                "proration_behavior": SubscriptionProrationBehavior.next_period.value,
+            },
+        )
+
+        assert response.status_code == 422
+        error = response.json()
+        assert error["detail"][0]["loc"] == ["body", "product_id"]
+        assert "above the maximum of 10 seats" in error["detail"][0]["msg"]
+        assert error["detail"][0]["input"] == str(new_seat_product.id)
+
 
 @pytest.mark.asyncio
 class TestSubscriptionUpdateMetadata:
@@ -855,6 +958,38 @@ class TestSubscriptionUpdateUncancel:
         assert updated_subscription["ended_at"] is None
         assert updated_subscription["customer_cancellation_reason"] is None
         assert updated_subscription["customer_cancellation_comment"] is None
+
+    @pytest.mark.auth
+    async def test_uncancel_not_scheduled(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is False
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "cancel_at_period_end": False,
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json() == {
+            "error": "SubscriptionNotScheduledToCancel",
+            "detail": (
+                "This subscription is not scheduled to be canceled, "
+                "so it cannot be uncanceled."
+            ),
+        }
 
 
 @pytest.mark.asyncio
@@ -1365,7 +1500,7 @@ class TestSubscriptionUpdateBillingPeriod:
         assert response.status_code == 403
 
     @pytest.mark.auth
-    async def test_cannot_extend_scheduled_cancellation(
+    async def test_extend_scheduled_cancellation(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -1387,7 +1522,14 @@ class TestSubscriptionUpdateBillingPeriod:
             json={"current_billing_period_end": new_period_end.isoformat()},
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert (
+            datetime.fromisoformat(updated_subscription["current_period_end"])
+            == new_period_end
+        )
+        assert datetime.fromisoformat(updated_subscription["ends_at"]) == new_period_end
+        assert updated_subscription["cancel_at_period_end"] is True
 
     @pytest.mark.auth
     async def test_inactive_subscription_past_due(

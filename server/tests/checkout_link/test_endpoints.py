@@ -12,6 +12,7 @@ from polar.kit.visibility import Visibility
 from polar.models import (
     Checkout,
     CheckoutLink,
+    Discount,
     Organization,
     Product,
     User,
@@ -417,3 +418,37 @@ class TestRedirect:
             "reference_id": "test_reference_id",
             "utm_campaign": "test_campaign",
         }
+
+    async def test_discount_code_disallowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        product: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/success",
+        )
+        checkout_link.allow_discount_codes = False
+        await save_fixture(checkout_link)
+
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"discount_code": discount_fixed_once.code},
+        )
+
+        assert response.status_code == 307
+        assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
+
+        checkout_repository = CheckoutRepository.from_session(session)
+        checkouts = await checkout_repository.get_all(
+            checkout_repository.get_base_statement().order_by(
+                Checkout.created_at.desc()
+            )
+        )
+        checkout = checkouts[0]
+        assert checkout.allow_discount_codes is False
+        assert checkout.discount is None

@@ -33,14 +33,35 @@ An off-session charge is a two-step flow: you create a **draft order**, then **f
 
 `POST /v1/orders/` creates an order in `draft` status with no invoice number — nothing is charged yet. You reference an existing customer and a one-time product, and optionally override the amount and description:
 
-| Field             | Required | Description                                                                                                            |
-| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `customer_id`     | Yes      | The customer to charge. Must belong to the organization.                                                               |
-| `product_id`      | Yes      | A one-time product to charge for. Only fixed-price and free products are supported.                                    |
-| `amount`          | No       | A custom amount in the smallest currency unit (e.g. `2500` for $25.00). Overrides the product's price; defaults to it. |
-| `currency`        | No       | ISO 4217, lowercase (e.g. `usd`). Defaults to the organization's currency.                                             |
-| `description`     | No       | The line-item text shown on the invoice and receipt. Defaults to the product name.                                     |
-| `organization_id` | No       | Required unless you authenticate with an organization token.                                                           |
+<ParamField body="customer_id" type="string" required>
+  The customer to charge. Must belong to the organization.
+</ParamField>
+
+<ParamField body="product_id" type="string" required>
+  A one-time product to charge for. Only fixed-price, free and unit-based products are supported.
+</ParamField>
+
+<ParamField body="units" type="integer">
+  The number of units to charge for. Required for unit-based products, rejected for any other pricing. 
+
+  The quantity shows on the invoice line, e.g. `Acme Credits (500 credits)`, unless `description` replaces the text.
+</ParamField>
+
+<ParamField body="amount" type="integer">
+  A custom amount in the smallest currency unit (e.g. `2500` for $25.00). Overrides the product's price; defaults to it. Can't be combined with `units`.
+</ParamField>
+
+<ParamField body="currency" type="string">
+  ISO 4217, lowercase (e.g. `usd`). Defaults to the organization's currency.
+</ParamField>
+
+<ParamField body="description" type="string">
+  The line-item text shown on the invoice and receipt. Defaults to the product name.
+</ParamField>
+
+<ParamField body="organization_id" type="string">
+  Required unless you authenticate with an organization token.
+</ParamField>
 
 The customer must have a complete billing address (so Polar can calculate tax) and at least one saved payment method.
 

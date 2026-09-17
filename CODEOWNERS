@@ -28,6 +28,7 @@ clients/packages/orbit/** @emilwidlund @sebastianekstrom
 
 # Docs
 /docs/ @pieterbeulque
+/docs/openapi/**
 
 # ADR
 handbook/engineering/decisions/** @frankie567

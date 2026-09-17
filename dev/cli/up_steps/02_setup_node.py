@@ -7,9 +7,10 @@ from pathlib import Path
 from shared import (
     ROOT_DIR,
     Context,
-    check_command_exists,
     console,
+    ensure_pnpm,
     get_command_version,
+    print_output_tail,
     run_command,
     step_spinner,
     step_status,
@@ -34,8 +35,13 @@ def _nvm_script() -> Path:
 def _run_with_nvm(nvm_cmd: str, capture: bool = True) -> "subprocess.CompletedProcess | None":
     """Run a command inside a bash shell with nvm sourced."""
 
-    cmd = f'source "{_nvm_script()}" && {nvm_cmd}'
-    return run_command(["bash", "-c", cmd], cwd=ROOT_DIR, capture=capture)
+    cmd = f'source "{_nvm_script()}" --no-use && {nvm_cmd}'
+    return run_command(
+        ["bash", "-c", cmd],
+        cwd=ROOT_DIR,
+        capture=capture,
+        env={"NVM_DIR": str(_nvm_script().parent)},
+    )
 
 
 def install_nvm() -> bool:
@@ -44,9 +50,10 @@ def install_nvm() -> bool:
         ["bash", "-c", "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash"],
         capture=True,
     )
-    if result and result.returncode != 0 and result.stderr:
-        console.print(f"  [dim]{result.stderr[:500]}[/dim]")
-    return result is not None and result.returncode == 0
+    if result is None or result.returncode != 0:
+        print_output_tail(result)
+        return False
+    return is_nvm_installed()
 
 
 def run_nvm_install_node() -> bool:
@@ -55,9 +62,10 @@ def run_nvm_install_node() -> bool:
         return False
 
     result = _run_with_nvm(f"nvm install {REQUIRED_NODE_MAJOR}")
-    if result and result.returncode != 0 and result.stderr:
-        console.print(f"  [dim]{result.stderr[:500]}[/dim]")
-    return result is not None and result.returncode == 0
+    if result is None or result.returncode != 0:
+        print_output_tail(result)
+        return False
+    return True
 
 
 def activate_nvm_node() -> bool:
@@ -77,17 +85,6 @@ def activate_nvm_node() -> bool:
                 os.environ["PATH"] = f"{bin_dir}:{current_path}"
             return True
     return False
-
-
-def install_pnpm() -> bool:
-    """Install pnpm using corepack or npm."""
-    result = run_command(["corepack", "enable"], capture=True)
-    if result and result.returncode == 0:
-        result = run_command(["corepack", "prepare", "pnpm@latest", "--activate"], capture=True)
-        if result and result.returncode == 0:
-            return True
-    result = run_command(["npm", "install", "-g", "pnpm"], capture=True)
-    return result is not None and result.returncode == 0
 
 
 def run(ctx: Context) -> bool:
@@ -112,7 +109,7 @@ def run(ctx: Context) -> bool:
 
     if current_node_major == REQUIRED_NODE_MAJOR:
         step_status(True, "Node version", f"v{current_node_major} (matches required)")
-        return True
+        return ensure_pnpm()
 
     # Wrong or missing Node version
     if current_node_major:
@@ -136,7 +133,10 @@ def run(ctx: Context) -> bool:
             step_status(True, f"Node {REQUIRED_NODE_MAJOR}", "installed via nvm")
         else:
             step_status(False, f"Node {REQUIRED_NODE_MAJOR}", "installation failed")
-            console.print(f"  [dim]Try manually: nvm install {REQUIRED_NODE_MAJOR}[/dim]")
+            console.print(
+                f"  [dim]Try manually: source ~/.nvm/nvm.sh && nvm install {REQUIRED_NODE_MAJOR},"
+                " then run dev up again[/dim]"
+            )
             return False
 
     # Activate nvm Node
@@ -148,14 +148,4 @@ def run(ctx: Context) -> bool:
         console.print("Then run [bold]dev up[/bold] again.")
         return False
 
-    # Re-check pnpm now that we have Node
-    if not check_command_exists("pnpm"):
-        console.print("  [yellow]Installing pnpm...[/yellow]")
-        if install_pnpm():
-            version = get_command_version("pnpm")
-            step_status(True, "pnpm", f"installed ({version})" if version else "installed")
-        else:
-            step_status(False, "pnpm", "installation failed")
-            return False
-
-    return True
+    return ensure_pnpm()

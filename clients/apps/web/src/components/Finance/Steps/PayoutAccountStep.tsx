@@ -34,7 +34,7 @@ export default function PayoutAccountStep({
   organization,
 }: PayoutAccountStepProps) {
   const returnPath = payoutOnboardingReturnPath(organization.slug)
-  const { payoutAccount, openPrimary, modals } = usePayoutAccountSetup(
+  const { payoutAccount, openCreate, modals } = usePayoutAccountSetup(
     organization,
     returnPath,
   )
@@ -43,7 +43,7 @@ export default function PayoutAccountStep({
 
   const handleStartAccountSetup = useCallback(async () => {
     if (!payoutAccount) {
-      openPrimary()
+      openCreate()
       return
     }
     const link = await unwrap(
@@ -60,7 +60,7 @@ export default function PayoutAccountStep({
       }),
     )
     window.location.href = link.url
-  }, [payoutAccount, organization.slug, openPrimary])
+  }, [payoutAccount, organization.slug, openCreate])
 
   const handleOpenStripeDashboard = useCallback(async () => {
     if (!payoutAccount) return

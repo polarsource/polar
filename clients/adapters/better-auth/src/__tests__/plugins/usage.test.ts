@@ -132,14 +132,14 @@ describe('usage plugin', () => {
       await handler(ctx)
 
       expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
-        externalCustomerId: 'user-123',
+        external_customer_id: 'user-123',
       })
 
       expect(
         mockClient.customerPortal.customerMeters.list,
       ).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
         { page: 1, limit: 10 },
+        { accessToken: 'session-token-123' },
       )
 
       expect(ctx.json).toHaveBeenCalledWith(mockMeters)
@@ -169,8 +169,8 @@ describe('usage plugin', () => {
       expect(
         mockClient.customerPortal.customerMeters.list,
       ).toHaveBeenCalledWith(
-        { customerSession: 'session-token-123' },
         { page: undefined, limit: undefined },
+        { accessToken: 'session-token-123' },
       )
     })
 
@@ -271,7 +271,7 @@ describe('usage plugin', () => {
               method: 'GET',
               responseTime: 150,
             },
-            externalCustomerId: 'user-123',
+            external_customer_id: 'user-123',
           },
         ],
       })
@@ -311,7 +311,7 @@ describe('usage plugin', () => {
               size: 1024,
               processed: true,
             },
-            externalCustomerId: 'user-123',
+            external_customer_id: 'user-123',
           },
         ],
       })
@@ -347,7 +347,7 @@ describe('usage plugin', () => {
               numberValue: 42,
               booleanValue: false,
             },
-            externalCustomerId: 'user-123',
+            external_customer_id: 'user-123',
           },
         ],
       })
@@ -365,6 +365,45 @@ describe('usage plugin', () => {
       }
 
       await expect(handler(ctx)).rejects.toThrow('User not found')
+    })
+
+    it('rejects an anonymous user before calling Polar', async () => {
+      const ctx = {
+        context: {
+          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
+        },
+        body: {
+          event: 'api_call',
+          metadata: { path: '/api/users' },
+        },
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Anonymous users cannot ingest usage events',
+      })
+      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
+      expect(mockClient.events.ingest).not.toHaveBeenCalled()
+    })
+
+    it('rejects an anonymous organization request before resolving the principal', async () => {
+      const ctx = {
+        context: {
+          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
+        },
+        body: {
+          organizationId: 'organization-123',
+          event: 'api_call',
+          metadata: {},
+        },
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Anonymous users cannot ingest usage events',
+      })
+      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
+      expect(mockClient.events.ingest).not.toHaveBeenCalled()
     })
 
     it('should handle ingestion API failure', async () => {
@@ -445,8 +484,8 @@ describe('usage plugin', () => {
         authorization: 'member',
       })
       expect(mockClient.customerSessions.create).toHaveBeenCalledWith({
-        externalCustomerId: 'organization-123',
-        externalMemberId: 'user-123',
+        external_customer_id: 'organization-123',
+        external_member_id: 'user-123',
       })
     })
 
@@ -472,8 +511,8 @@ describe('usage plugin', () => {
               externalCustomerId: 'metadata-value',
               externalMemberId: 'metadata-member',
             },
-            externalCustomerId: 'organization-123',
-            externalMemberId: 'user-123',
+            external_customer_id: 'organization-123',
+            external_member_id: 'user-123',
           },
         ],
       })

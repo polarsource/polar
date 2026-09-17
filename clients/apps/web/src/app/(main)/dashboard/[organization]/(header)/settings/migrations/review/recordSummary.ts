@@ -14,11 +14,16 @@ const empty = (entity: CountEntity): EntityCount => ({
   importable: 0,
   skipped: 0,
   imported: 0,
+  ready: 0,
+  action_required: 0,
   selectable: 0,
 })
 
-export const useRecordSummary = (id: string) => {
-  const query = useMerchantMigrationRecordSummary(id)
+export const useRecordSummary = (
+  id: string,
+  refetchInterval?: number | false,
+) => {
+  const query = useMerchantMigrationRecordSummary(id, refetchInterval)
 
   const derived = useMemo(() => {
     const counts = Object.fromEntries(
@@ -37,7 +42,7 @@ export const useRecordSummary = (id: string) => {
         customers: counts.customers.imported,
       },
       selectableTotal: counts.subscriptions.selectable,
-      attentionCount: query.data?.action_required ?? 0,
+      attentionCount: counts.subscriptions.action_required,
     }
   }, [query.data])
 

@@ -16,6 +16,7 @@ from polar.webhook.sorting import WebhookSortProperty
 
 from ..components import button, confirmation_dialog, datatable, description_list, input
 from ..layout import layout
+from ..search import organization_ilike
 from ..toast import add_toast
 
 router = BackofficeRouter()
@@ -49,8 +50,7 @@ async def list(
             statement = statement.where(
                 or_(
                     WebhookEndpoint.url.ilike(f"%{query}%"),
-                    Organization.slug.ilike(f"%{query}%"),
-                    Organization.name.ilike(f"%{query}%"),
+                    organization_ilike(f"%{query}%"),
                 )
             )
 

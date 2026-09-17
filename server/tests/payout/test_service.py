@@ -1048,6 +1048,46 @@ class TestTransferStripe:
 
 @pytest.mark.asyncio
 class TestCancel:
+    @pytest.mark.parametrize(
+        "attempt_status",
+        [
+            PayoutAttemptStatus.pending,
+            PayoutAttemptStatus.in_transit,
+            PayoutAttemptStatus.succeeded,
+        ],
+    )
+    async def test_non_failed_attempt_blocks_cancellation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+        payout_transaction_service_mock: MagicMock,
+        attempt_status: PayoutAttemptStatus,
+    ) -> None:
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            attempts=[attempt_status, PayoutAttemptStatus.failed],
+        )
+        payout.status = PayoutStatus.pending
+        await save_fixture(payout)
+
+        with pytest.raises(PayoutNotCancelable) as exc:
+            await payout_service.cancel(session, payout)
+
+        assert exc.value.status_code == 409
+        assert payout.status == PayoutStatus.pending
+        assert not payout.is_cancelable
+        payout_transaction_service_mock.reverse.assert_not_called()
+        stripe_service_mock.reverse_transfer.assert_not_called()
+
     async def test_not_cancelable(
         self,
         save_fixture: SaveFixture,
@@ -1069,6 +1109,7 @@ class TestCancel:
         with pytest.raises(PayoutNotCancelable):
             await payout_service.cancel(session, payout)
 
+    @pytest.mark.parametrize("attempts", [[], [PayoutAttemptStatus.failed]])
     async def test_valid(
         self,
         save_fixture: SaveFixture,
@@ -1077,6 +1118,7 @@ class TestCancel:
         user: User,
         stripe_service_mock: MagicMock,
         payout_transaction_service_mock: MagicMock,
+        attempts: list[PayoutAttemptStatus],
     ) -> None:
         account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
@@ -1087,7 +1129,7 @@ class TestCancel:
             account=account,
             payout_account=payout_account,
             status=PayoutStatus.pending,
-            attempts=[],
+            attempts=attempts,
         )
         payout_transaction = Transaction(
             type=TransactionType.payout,

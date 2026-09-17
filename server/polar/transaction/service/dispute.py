@@ -1,7 +1,6 @@
 import math
 
 import structlog
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -289,42 +288,6 @@ class DisputeTransactionService(BaseTransactionService):
                 raise
 
         return dispute_transaction, dispute_reversal_transaction
-
-    async def create_reversal_balances_for_payment(
-        self, session: AsyncSession, *, payment_transaction: Transaction
-    ) -> list[tuple[Transaction, Transaction]]:
-        """
-        Create reversal balances for a disputed payment transaction.
-
-        Mostly useful when releasing held balances: if a payment transaction has
-        been disputed before the Account creation, we need to create the reversal
-        balances so the dispute is correctly accounted for.
-        """
-        statement = select(Transaction).where(
-            Transaction.type == TransactionType.dispute,
-            Transaction.charge_id == payment_transaction.charge_id,
-        )
-        result = await session.execute(statement)
-        disputes = result.scalars().all()
-
-        reversal_balances: list[tuple[Transaction, Transaction]] = []
-        for dispute in disputes:
-            # Skip if there is a dispute reversal: the operations are neutral
-            dispute_reversal = await self.get_by(
-                session,
-                type=TransactionType.dispute_reversal,
-                dispute_id=dispute.dispute_id,
-            )
-            if dispute_reversal is not None:
-                continue
-
-            reversal_balances += await self._create_reversal_balances(
-                session,
-                payment_transaction=payment_transaction,
-                dispute_amount=-dispute.amount,
-            )
-
-        return reversal_balances
 
     async def _create_reversal_balances(
         self,

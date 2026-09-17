@@ -17,6 +17,7 @@ from polar.v2026_04.errors import (
     ResourceNotFound,
     SubscriptionLocked,
     SubscriptionsUpdate403Error,
+    SubscriptionsUpdate409Error,
 )
 from polar.v2026_04.inputs import (
     MetadataQuery,
@@ -550,7 +551,7 @@ class SubscriptionsSync(SyncServiceBase):
             PaymentFailed: Payment required to apply the subscription update.
             SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
             ResourceNotFound: Subscription not found.
-            SubscriptionLocked: Subscription is pending an update.
+            SubscriptionsUpdate409Error: Subscription is pending an update, or is not scheduled to be canceled.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -572,7 +573,7 @@ class SubscriptionsSync(SyncServiceBase):
             402: PaymentFailed,
             403: SubscriptionsUpdate403Error,
             404: ResourceNotFound,
-            409: SubscriptionLocked,
+            409: SubscriptionsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Subscription, method_errors)
@@ -1085,7 +1086,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             PaymentFailed: Payment required to apply the subscription update.
             SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
             ResourceNotFound: Subscription not found.
-            SubscriptionLocked: Subscription is pending an update.
+            SubscriptionsUpdate409Error: Subscription is pending an update, or is not scheduled to be canceled.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -1107,7 +1108,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             402: PaymentFailed,
             403: SubscriptionsUpdate403Error,
             404: ResourceNotFound,
-            409: SubscriptionLocked,
+            409: SubscriptionsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Subscription, method_errors)

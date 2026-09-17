@@ -10,6 +10,7 @@ from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.models import AuthSubject, Subject
 from polar.checkout.ip_geolocation import _get_client_dependency
+from polar.kit.versioning import VERSION_HEADER, APIVersion
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.redis import Redis, get_redis
 
@@ -57,7 +58,10 @@ async def app(
 
 @pytest_asyncio.fixture
 async def client(
-    app: FastAPI, session: AsyncSession, request: pytest.FixtureRequest
+    app: FastAPI,
+    session: AsyncSession,
+    request: pytest.FixtureRequest,
+    api_version: APIVersion | None,
 ) -> AsyncGenerator[httpx.AsyncClient]:
     # Check if test wants to keep session state (opt-out)
     keep_state = request.node.get_closest_marker("keep_session_state") is not None
@@ -68,5 +72,23 @@ async def client(
         auto_expunge=auto_expunge,
         transport=httpx.ASGITransport(app=app),
         base_url="http://test",
+        headers={VERSION_HEADER: str(api_version)} if api_version is not None else {},
     ) as client:
         yield client
+
+
+@pytest.fixture
+def api_version(request: pytest.FixtureRequest) -> APIVersion | None:
+    return getattr(request, "param", None)
+
+
+@pytest.hookimpl(specname="pytest_generate_tests")
+def pytest_generate_tests_api_version(metafunc: pytest.Metafunc) -> None:
+    if "api_version" not in metafunc.fixturenames:
+        return
+    marker = metafunc.definition.get_closest_marker("api_version")
+    if marker is None:
+        return
+    if not marker.args or any(not isinstance(arg, APIVersion) for arg in marker.args):
+        raise ValueError("api_version marker requires one or more APIVersion arguments")
+    metafunc.parametrize("api_version", marker.args, indirect=True, ids=str)

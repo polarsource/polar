@@ -90,6 +90,72 @@ describe('checkout plugin', () => {
       handler = endpoints.checkout.handler
     })
 
+    it.each([
+      { discount_code: 'SAVE+20%', redirect: true },
+      {
+        discount_code: 'SAVE20',
+        redirect: false,
+        embed_origin: 'https://example.com',
+      },
+      { discount_code: 'SAVE20', discount_id: 'disc_123' },
+      { discount_code: '' },
+    ])('handles discount prefill for %j', async (discountParams) => {
+      const mockCheckout = createMockCheckout()
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(mockCheckout)
+      const ctx = {
+        ...mockContext,
+        body: CheckoutParams.parse({
+          products: ['prod-123'],
+          ...discountParams,
+        }),
+        json: vi.fn(),
+      }
+
+      await handler(ctx)
+
+      expect(mockClient.checkouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          discount_id: ctx.body.discount_id,
+          embed_origin: ctx.body.embed_origin,
+        }),
+      )
+      if (ctx.body.discount_code && !ctx.body.discount_id) {
+        expect(
+          mockClient.checkouts.clientUpdate,
+        ).toHaveBeenCalledExactlyOnceWith(mockCheckout.client_secret, {
+          discount_code: ctx.body.discount_code,
+        })
+      } else {
+        expect(mockClient.checkouts.clientUpdate).not.toHaveBeenCalled()
+      }
+      expect(ctx.json).toHaveBeenCalledWith({
+        url: `${mockCheckout.url}?theme=dark`,
+        redirect: ctx.body.redirect ?? true,
+      })
+    })
+
+    it('does not return a checkout URL when applying a discount code fails', async () => {
+      vi.mocked(getSessionFromCtx).mockResolvedValue(null)
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(
+        createMockCheckout(),
+      )
+      vi.mocked(mockClient.checkouts.clientUpdate).mockRejectedValueOnce(
+        new Error('Invalid discount code'),
+      )
+      const ctx = {
+        ...mockContext,
+        body: { products: ['prod-123'], discount_code: 'INVALID' },
+        context: { logger: { error: vi.fn() } },
+        json: vi.fn(),
+      }
+
+      await expect(handler(ctx)).rejects.toMatchObject({
+        code: 'INTERNAL_SERVER_ERROR',
+      })
+      expect(ctx.json).not.toHaveBeenCalled()
+    })
+
     it('should create checkout with product IDs', async () => {
       const mockCheckout = createMockCheckout()
       vi.mocked(getSessionFromCtx).mockResolvedValue({
@@ -109,11 +175,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123', 'prod-456'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
 
@@ -141,7 +207,7 @@ describe('checkout plugin', () => {
       vi.mocked(mockClient.customers.getExternal).mockResolvedValue(
         createMockCustomer({
           type: 'team',
-          externalId: 'organization-123',
+          external_id: 'organization-123',
         }),
       )
 
@@ -150,7 +216,7 @@ describe('checkout plugin', () => {
         context: mockContext,
         body: {
           products: ['prod-123'],
-          organizationId: 'organization-123',
+          organization_id: 'organization-123',
           metadata: { source: 'app' },
         },
         json: vi.fn(),
@@ -167,7 +233,7 @@ describe('checkout plugin', () => {
       })
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'organization-123',
+          external_customer_id: 'organization-123',
           metadata: { source: 'app' },
         }),
       )
@@ -202,7 +268,7 @@ describe('checkout plugin', () => {
       vi.mocked(mockClient.customers.getExternal).mockResolvedValue(
         createMockCustomer({
           type: 'team',
-          externalId: 'organization-123',
+          external_id: 'organization-123',
         }),
       )
       vi.mocked(mockClient.checkouts.create).mockResolvedValue(
@@ -214,7 +280,7 @@ describe('checkout plugin', () => {
         context: mockContext,
         body: {
           products: ['prod-123'],
-          organizationId: 'organization-123',
+          organization_id: 'organization-123',
         },
         json: vi.fn(),
       })
@@ -246,7 +312,7 @@ describe('checkout plugin', () => {
           context: mockContext,
           body: {
             products: ['prod-123'],
-            organizationId: 'organization-123',
+            organization_id: 'organization-123',
           },
         }),
       ).rejects.toThrow('Organization billing access requires a billing role')
@@ -267,7 +333,7 @@ describe('checkout plugin', () => {
           context: mockContext,
           body: {
             products: ['prod-123'],
-            organizationId: 'organization-123',
+            organization_id: 'organization-123',
           },
         }),
       ).rejects.toThrow(
@@ -279,16 +345,16 @@ describe('checkout plugin', () => {
       expect(mockClient.checkouts.create).not.toHaveBeenCalled()
     })
 
-    it('parses organizationId as an explicit checkout field', () => {
+    it('parses organization_id as an explicit checkout field', () => {
       const parsed = CheckoutParams.parse({
         products: ['prod-123'],
-        organizationId: 'organization-123',
+        organization_id: 'organization-123',
       })
 
-      expect(parsed.organizationId).toBe('organization-123')
+      expect(parsed.organization_id).toBe('organization-123')
     })
 
-    it('forwards seat-based pricing parameters', async () => {
+    it('parses and forwards snake_case checkout parameters', async () => {
       const mockCheckout = createMockCheckout()
       vi.mocked(getSessionFromCtx).mockResolvedValue({
         user: { id: 'user-123' },
@@ -297,12 +363,22 @@ describe('checkout plugin', () => {
 
       const ctx = {
         ...mockContext,
-        body: {
+        body: CheckoutParams.parse({
           products: ['prod-123'],
           seats: 10,
-          minSeats: 5,
-          maxSeats: 25,
-        },
+          min_seats: 5,
+          max_seats: 25,
+          allow_discount_codes: false,
+          discount_id: 'discount-123',
+          custom_field_data: { company: 'Acme' },
+          success_url: '/checkout/success',
+          return_url: '/pricing',
+          embed_origin: 'https://example.com',
+          allow_trial: true,
+          trial_interval: 'month',
+          trial_interval_count: 2,
+        }),
+        request: { url: 'https://example.com/api/auth/checkout' },
         json: vi.fn(),
       }
 
@@ -311,8 +387,17 @@ describe('checkout plugin', () => {
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
           seats: 10,
-          minSeats: 5,
-          maxSeats: 25,
+          min_seats: 5,
+          max_seats: 25,
+          allow_discount_codes: false,
+          discount_id: 'discount-123',
+          custom_field_data: { company: 'Acme' },
+          success_url: 'https://example.com/checkout/success',
+          return_url: 'https://example.com/pricing',
+          embed_origin: 'https://example.com',
+          allow_trial: true,
+          trial_interval: 'month',
+          trial_interval_count: 2,
         }),
       )
     })
@@ -336,11 +421,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -364,11 +449,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -403,11 +488,11 @@ describe('checkout plugin', () => {
       expect(asyncProducts).toHaveBeenCalled()
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['async-prod-123'],
-          successUrl: undefined,
+          success_url: undefined,
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -436,9 +521,9 @@ describe('checkout plugin', () => {
         ...mockContext,
         body: {
           products: ['prod-123'],
-          referenceId: 'ref-123',
+          reference_id: 'ref-123',
           metadata: { key: 'value' },
-          customFieldData: { field: 'data' },
+          custom_field_data: { field: 'data' },
         },
         json: vi
           .fn()
@@ -449,11 +534,39 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: 'user-123',
+          external_customer_id: 'user-123',
           products: ['prod-123'],
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
           metadata: { referenceId: 'ref-123', key: 'value' },
-          customFieldData: { field: 'data' },
+          custom_field_data: { field: 'data' },
+        }),
+      )
+    })
+
+    it('explicit reference_id wins over a colliding metadata.referenceId (regression)', async () => {
+      const mockCheckout = createMockCheckout()
+      vi.mocked(getSessionFromCtx).mockResolvedValue({
+        user: { id: 'user-123' },
+      })
+      vi.mocked(mockClient.checkouts.create).mockResolvedValue(mockCheckout)
+
+      const ctx = {
+        ...mockContext,
+        body: {
+          products: ['prod-123'],
+          reference_id: 'explicit-id',
+          metadata: { referenceId: 'metadata-override', other: 'x' },
+        },
+        json: vi
+          .fn()
+          .mockReturnValue({ url: mockCheckout.url, redirect: true }),
+      }
+
+      await handler(ctx)
+
+      expect(mockClient.checkouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { referenceId: 'explicit-id', other: 'x' },
         }),
       )
     })
@@ -479,11 +592,11 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          externalCustomerId: undefined,
+          external_customer_id: undefined,
           products: ['prod-123'],
-          successUrl: undefined,
+          success_url: undefined,
           metadata: undefined,
-          customFieldData: undefined,
+          custom_field_data: undefined,
         }),
       )
     })
@@ -548,7 +661,7 @@ describe('checkout plugin', () => {
 
       expect(mockClient.checkouts.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
         }),
       )
     })

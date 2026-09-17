@@ -25,8 +25,9 @@ data "tfe_outputs" "production" {
 }
 
 locals {
-  environment_id = data.tfe_outputs.production.values.test_environment_id
-  test_enabled   = true
+  private_backoffice_hostname = "backoffice.test.polar.sh"
+  environment_id              = data.tfe_outputs.production.values.test_environment_id
+  test_enabled                = true
 }
 
 # =============================================================================
@@ -114,7 +115,12 @@ module "test" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/render_service"
 
-  environment            = "test"
+  environment = "test"
+  private_backoffice = var.private_backoffice_enabled ? {
+    hostname             = local.private_backoffice_hostname
+    oauth_client_secret  = var.private_backoffice_tailscale_oauth_client_secret
+    cloudflare_api_token = var.private_backoffice_cloudflare_api_token
+  } : null
   render_environment_id  = local.environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
@@ -145,7 +151,7 @@ module "test" {
   }
 
   api_service_config = {
-    allowed_hosts          = "[\"test.polar.sh\"]"
+    allowed_hosts          = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
@@ -160,12 +166,12 @@ module "test" {
   workers = {
     worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
+      custom_domains     = [{ name = "worker-test.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
   }
 
   environment_groups = module.backend_environment[0].environment_groups
-  backend_jwks       = local.backend_secrets.jwks
   email_from_domain  = local.backend_config.email_from_domain
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
@@ -234,4 +240,30 @@ resource "cloudflare_dns_record" "test_api" {
   content = replace(module.test[0].api_service_url, "https://", "")
   proxied = true
   ttl     = 1
+}
+
+resource "cloudflare_dns_record" "worker" {
+  for_each = merge(module.test[*].worker_urls...)
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
+  type    = "CNAME"
+  content = replace(each.value, "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "private_backoffice" {
+  count = local.test_enabled && var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
+}
+
+output "private_backoffice_service_id" {
+  value = one(module.test[*].private_backoffice_service_id)
 }

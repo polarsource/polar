@@ -1,15 +1,20 @@
 """Check and install required tools."""
 
 import platform
+import re
 import time
+from pathlib import Path
 
 from shared import (
     Context,
+    check_clt_can_link,
     check_command_exists,
     console,
     get_command_version,
     is_docker_running,
+    print_clt_repair_hint,
     run_command,
+    step_failed,
     step_spinner,
     step_status,
 )
@@ -87,6 +92,40 @@ def install_xcode_clt() -> bool:
     return False
 
 
+_CLT_ON_DEMAND_FLAG = Path("/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress")
+_CLT_LABEL = re.compile(r"\*\s*Label:\s*(Command Line Tools for Xcode[ \d.]*-([\d.]+))\s*$", re.MULTILINE)
+
+
+def find_clt_update_label() -> str | None:
+    """Ask softwareupdate for the newest Command Line Tools package.
+
+    The flag file makes softwareupdate list Command Line Tools packages, the
+    same trick Homebrew's installer uses to install them without the GUI.
+    """
+    try:
+        _CLT_ON_DEMAND_FLAG.touch()
+        result = run_command(["softwareupdate", "--list"], capture=True, timeout=300)
+    finally:
+        _CLT_ON_DEMAND_FLAG.unlink(missing_ok=True)
+    if result is None or result.returncode != 0:
+        return None
+    matches = _CLT_LABEL.findall(result.stdout + result.stderr)
+    if not matches:
+        return None
+    return max(matches, key=lambda match: tuple(int(n) for n in match[1].split(".")))[0]
+
+
+def update_xcode_clt() -> bool:
+    """Install the latest Command Line Tools through softwareupdate."""
+    with step_spinner("Looking for a Command Line Tools update..."):
+        label = find_clt_update_label()
+    if label is None:
+        return False
+    console.print(f"  [dim]Installing '{label}' (this can take a while and may ask for your password)[/dim]")
+    result = run_command(["sudo", "softwareupdate", "--install", label], capture=False, timeout=3600)
+    return result is not None and result.returncode == 0 and check_clt_can_link()
+
+
 def run(ctx: Context) -> bool:
     """Check and install prerequisites: Docker, uv, pnpm, Node.js."""
     prereqs_ok = True
@@ -95,7 +134,16 @@ def run(ctx: Context) -> bool:
     # Xcode Command Line Tools (macOS) - required for git, compilers, etc.
     if system == "Darwin":
         if is_xcode_clt_installed():
-            step_status(True, "Xcode CLT", "installed")
+            if check_clt_can_link():
+                step_status(True, "Xcode CLT", "installed")
+            else:
+                console.print("  [yellow]Xcode Command Line Tools are installed but can't build native code, updating...[/yellow]")
+                if update_xcode_clt():
+                    step_status(True, "Xcode CLT", "updated")
+                else:
+                    step_status(False, "Xcode CLT", "update failed")
+                    print_clt_repair_hint()
+                    prereqs_ok = False
         else:
             console.print("  [yellow]Xcode Command Line Tools not found, installing...[/yellow]")
             if install_xcode_clt():
@@ -181,9 +229,12 @@ def run(ctx: Context) -> bool:
                 run_command(["uv", "tool", "update-shell"], capture=True)
                 step_status(True, "Tinybird CLI", "installed (restart your shell to pick up PATH changes)")
         else:
-            step_status(False, "Tinybird CLI", "installation failed")
-            if result:
-                console.print(f"[dim]{result.stderr}[/dim]")
+            step_failed(
+                "Tinybird CLI",
+                "installation failed",
+                result,
+                hints=("Install it manually: [bold]curl -sSL https://tinybird.co/install.sh | bash[/bold]",),
+            )
             prereqs_ok = False
 
     return prereqs_ok

@@ -441,6 +441,8 @@ class TestCreateOrderItemsFromPending:
             order_item = order_items[0]
             assert meter.name in order_item.label
             assert order_item.amount == 50_00
+            assert order_item.start_timestamp == entries[1].start_timestamp
+            assert order_item.end_timestamp == entries[2].end_timestamp
 
             order = await create_order(
                 save_fixture,
@@ -840,6 +842,8 @@ class TestCreateOrderItemsFromPending:
             order_item = order_items[0]
             assert order_item.amount == 50_00
             assert order_item.proration is True
+            assert order_item.start_timestamp == entry.start_timestamp
+            assert order_item.end_timestamp == entry.end_timestamp
 
             # Seat-change prorations charge a delta, not the full seat amount.
             # The label shows the seat transition (old → new), read from the
@@ -1036,6 +1040,11 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
+        entries[1].start_timestamp -= timedelta(days=2)
+        entries[2].start_timestamp -= timedelta(days=1)
+        await save_fixture(entries[1])
+        await save_fixture(entries[2])
+
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
         ) as order_items:
@@ -1044,10 +1053,14 @@ class TestCreateOrderItemsFromPending:
             order_item_1 = order_items[0]
             assert product.name in order_item_1.label
             assert order_item_1.proration is False
+            assert order_item_1.start_timestamp == entries[1].start_timestamp
+            assert order_item_1.end_timestamp == entries[1].end_timestamp
 
             order_item_2 = order_items[1]
             assert product.name in order_item_2.label
             assert order_item_2.proration is True
+            assert order_item_2.start_timestamp == entries[2].start_timestamp
+            assert order_item_2.end_timestamp == entries[2].end_timestamp
 
             # Fixed-only product: no seats qualifier should appear.
             assert "seat" not in order_item_1.label

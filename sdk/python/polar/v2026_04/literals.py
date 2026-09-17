@@ -3,6 +3,8 @@ import typing
 AggregationFunction: typing.TypeAlias = typing.Literal[
     "count", "sum", "max", "min", "avg", "unique"
 ]
+ApiVersion: typing.TypeAlias = typing.Literal["2026-04", "2026-10"]
+"""The API version that'll be used in event payloads."""
 BenefitGrantSortProperty: typing.TypeAlias = typing.Literal[
     "created_at",
     "-created_at",

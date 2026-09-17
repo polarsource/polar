@@ -1,7 +1,11 @@
+import asyncio
 from datetime import datetime, timedelta
 from typing import Any, Literal
 
 import jwt
+
+from polar.kit.signer import ALGORITHM as ASYMMETRIC_ALGORITHM
+from polar.kit.signer import get_published_signers, get_signer, sign_jws
 
 from .utils import utc_now
 
@@ -20,49 +24,51 @@ def create_expiration_dt(seconds: int) -> datetime:
 
 
 TYPE = Literal[
-    "github_oauth",
     "discord_oauth",
-    "google_oauth",
-    "apple_oauth",
-    "discord_guild_token",
-    "auth",
     "github_repository_benefit_oauth",
     "customer_oauth",
     "slack_integration_oauth",
 ]
 
 
-def encode(
+async def encode(
     *,
     data: dict[str, Any],
-    secret: str,
     expires_at: datetime | None = None,
     expires_in: int | None = DEFAULT_EXPIRATION,
     type: TYPE,
 ) -> str:
-    if type:
-        data["type"] = type
-
-    to_encode = data.copy()
     if not expires_at:
-        expires_in = expires_in or DEFAULT_EXPIRATION
-        expires_at = create_expiration_dt(seconds=expires_in)
+        expires_at = create_expiration_dt(seconds=expires_in or DEFAULT_EXPIRATION)
 
-    to_encode["exp"] = expires_at
-    return jwt.encode(to_encode, secret, algorithm=ALGORITHM)
+    claims = {**data, "type": type, "exp": int(expires_at.timestamp())}
+    # Signing is a blocking KMS call in production.
+    return await asyncio.to_thread(sign_jws, claims, get_signer())
+
+
+def _verification_key(token: str, secret: str) -> tuple[Any, str]:
+    kid = jwt.get_unverified_header(token).get("kid")
+    if kid is None:
+        return secret, ALGORITHM
+    for signer in get_published_signers():
+        if signer.kid == kid:
+            return jwt.PyJWK(signer.public_jwk()).key, ASYMMETRIC_ALGORITHM
+    raise DecodeError(f"No published key with id {kid}")
 
 
 def decode_unsafe(*, token: str, secret: str) -> dict[str, Any]:
-    return jwt.decode(token, secret, algorithms=[ALGORITHM])
+    key, algorithm = _verification_key(token, secret)
+    return jwt.decode(token, key, algorithms=[algorithm])
 
 
-def decode(
+async def decode(
     *,
     token: str,
     secret: str,
     type: TYPE,
 ) -> dict[str, Any]:
-    res = decode_unsafe(token=token, secret=secret)
+    # Resolving the key is a blocking KMS call the first time a process sees it.
+    res = await asyncio.to_thread(decode_unsafe, token=token, secret=secret)
 
     token_type = res.get("type", "")
     if token_type != type:

@@ -208,22 +208,6 @@ class ReviewAdapter:
 # Dataset helpers
 # ---------------------------------------------------------------------------
 
-OPTIMIZATION_OBJECTIVE = """\
-Optimize the compliance review system prompt for a Merchant of Record platform. \
-The prompt instructs an LLM to review organizations applying to sell digital products.
-
-The dataset contains cases where the AI incorrectly APPROVED organizations that \
-human reviewers later DENIED. These are the most dangerous errors — they let \
-risky organizations onto the platform.
-
-Goal: modify the prompt so the AI correctly DENIES these organizations while \
-still being fair to legitimate businesses (template sellers, AI SaaS, content \
-creation tools, digital education).
-
-The Feedback field in reflective data includes human reviewer reasoning — use \
-it to understand patterns the current prompt misses.\
-"""
-
 
 def _cases_to_gepa_format(cases: list[Any]) -> list[dict[str, Any]]:
     """Convert pydantic-evals Cases to the dict format GEPA expects."""

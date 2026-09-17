@@ -1,10 +1,8 @@
 import argparse
 import pathlib
 import sys
-from typing import Annotated, Any
 
 from authlib.jose import JsonWebKey, KeySet
-from pydantic import PlainValidator
 
 
 def generate_jwks(kid: str, size: int = 2048) -> str:
@@ -21,8 +19,9 @@ TIP_MESSAGE = (
 )
 
 
-def _validate_jwks(value: Any) -> KeySet:
-    raw = str(value).strip()
+def load_jwks(value: str) -> KeySet:
+    """Read a key set from a path, or from the document itself."""
+    raw = value.strip()
     # The setting may carry the JWKS document itself instead of a path, for
     # hosts where keys come from an environment variable (e.g. Vercel).
     if raw.startswith("{"):
@@ -49,8 +48,6 @@ def _validate_jwks(value: Any) -> KeySet:
             f"The provided JWKS file {value} is not a valid JWKS file.\n{TIP_MESSAGE}"
         ) from e
 
-
-JWKSFile = Annotated[KeySet, PlainValidator(_validate_jwks)]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate JWKS")

@@ -11,4 +11,8 @@ resource "tfe_variable" "cloudflare_api_token" {
   description     = "Cloudflare API token for handling domain configuration"
   sensitive       = true
   variable_set_id = tfe_variable_set.credentials.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

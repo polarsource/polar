@@ -49,6 +49,7 @@ resource "render_redis" "redis_sandbox" {
 # =============================================================================
 
 locals {
+  private_backoffice_hostname = "backoffice.sandbox.polar.sh"
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = data.render_postgres.db.id
@@ -100,7 +101,12 @@ import {
 module "sandbox" {
   source = "../modules/render_service"
 
-  environment            = "sandbox"
+  environment = "sandbox"
+  private_backoffice = var.private_backoffice_enabled ? {
+    hostname             = local.private_backoffice_hostname
+    oauth_client_secret  = var.private_backoffice_tailscale_oauth_client_secret
+    cloudflare_api_token = var.private_backoffice_cloudflare_api_token
+  } : null
   render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
@@ -127,11 +133,11 @@ module "sandbox" {
   resend_domain = {
     zone_id         = "22bcd1b07ec25452aab472486bc8df94"
     dkim_public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCx8TPulpiuGKqifNLwJchDkpDbZK0R25boNFoztUf8nNT+4h3jzZL6pE3sJ2oSbqOZ4Jfr+4R7E9uXsmSQf5WJcXJOLjVhd8HJOQIdjn9WtJGxzplXs5f1iWFBBsTK7jOkDPVnWOovYBDa2fRypKGdHsSvi0kDZ5sV89/y/1QZlQIDAQAB"
-    spf_policy      = "\"v=spf1 include:amazonses.com -all\""
+    spf_policy      = "\"v=spf1 include:amazonses.com ~all\""
   }
 
   api_service_config = {
-    allowed_hosts          = "[\"sandbox.polar.sh\"]"
+    allowed_hosts          = jsonencode(["sandbox.polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
@@ -146,18 +152,19 @@ module "sandbox" {
   workers = {
     worker-sandbox = {
       start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start"
+      custom_domains     = [{ name = "worker-sandbox.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
     worker-sandbox-drain = {
-      start_command = "uv run dramatiq polar.worker.run -p 2 -t 8"
-      redis_host    = render_redis.redis_sandbox.id
-      redis_port    = "6379"
-      redis_db      = "1"
+      start_command  = "uv run dramatiq polar.worker.run -p 2 -t 8"
+      custom_domains = [{ name = "worker-sandbox-drain.polar.sh" }]
+      redis_host     = render_redis.redis_sandbox.id
+      redis_port     = "6379"
+      redis_db       = "1"
     }
   }
 
   environment_groups = module.backend_environment.environment_groups
-  backend_jwks       = local.backend_secrets.jwks
   email_from_domain  = local.backend_config.email_from_domain
 
   memory_profile_config = {
@@ -231,4 +238,30 @@ resource "cloudflare_dns_record" "api" {
   content = replace(module.sandbox.api_service_url, "https://", "")
   proxied = true
   ttl     = 1
+}
+
+resource "cloudflare_dns_record" "worker" {
+  for_each = module.sandbox.worker_urls
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
+  type    = "CNAME"
+  content = replace(each.value, "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "private_backoffice" {
+  count = var.private_backoffice_enabled && var.private_backoffice_tailscale_ip != "" ? 1 : 0
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.private_backoffice_hostname
+  type    = "A"
+  content = var.private_backoffice_tailscale_ip
+  proxied = false
+  ttl     = 300
+}
+
+output "private_backoffice_service_id" {
+  value = module.sandbox.private_backoffice_service_id
 }

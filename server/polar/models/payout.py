@@ -118,6 +118,12 @@ class Payout(RecordModel):
     """Payout attempts associated with this payout."""
 
     @property
+    def is_cancelable(self) -> bool:
+        return self.status.is_cancelable() and all(
+            attempt.status == PayoutAttemptStatus.failed for attempt in self.attempts
+        )
+
+    @property
     def transaction(self) -> "Transaction":
         return next(
             transaction

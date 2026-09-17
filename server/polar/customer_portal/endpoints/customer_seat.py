@@ -35,7 +35,7 @@ router = APIRouter(prefix="/seats", tags=["seats", APITag.public])
     response_model=SeatsList,
     responses={
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Subscription or order not found"},
     },
 )
@@ -110,7 +110,7 @@ async def list_seats(
     responses={
         400: {"description": "No available seats or customer already has a seat"},
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Subscription, order, or customer not found"},
     },
 )
@@ -142,7 +142,7 @@ async def assign_seat(
     response_model=CustomerSeatSchema,
     responses={
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
 )
@@ -167,7 +167,7 @@ async def revoke_seat(
     responses={
         400: {"description": "Seat is not pending or already claimed"},
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
 )

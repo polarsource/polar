@@ -90,6 +90,7 @@ class AuthorizeUser(Schema):
 class AuthorizeOrganization(Schema):
     id: UUID4
     slug: str
+    name: str
     avatar_url: str | None
 
 

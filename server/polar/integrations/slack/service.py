@@ -118,8 +118,6 @@ class SlackAppService:
                 display_name=update.display_name,
                 slack_app_id=update.slack_app_id,
                 client_id=update.client_id,
-                client_secret=client_secret,
-                signing_secret=signing_secret,
             )
             integration.id = SlackApp.generate_id()
             integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
@@ -133,11 +131,9 @@ class SlackAppService:
         update_dict: dict[str, Any] = {
             "display_name": update.display_name,
             "client_id": update.client_id,
-            "client_secret": client_secret,
             "client_secret_encrypted": await SlackApp.encrypt_client_secret(
                 existing.id, client_secret
             ),
-            "signing_secret": signing_secret,
             "signing_secret_encrypted": await SlackApp.encrypt_signing_secret(
                 existing.id, signing_secret
             ),
@@ -152,7 +148,6 @@ class SlackAppService:
                     "team_id": None,
                     "team_name": None,
                     "bot_user_id": None,
-                    "bot_token": None,
                     "bot_token_encrypted": None,
                     "authed_user_id": None,
                     "scopes": None,
@@ -162,7 +157,7 @@ class SlackAppService:
             )
         return await repository.update(existing, update_dict=update_dict)
 
-    def build_authorize_url(
+    async def build_authorize_url(
         self,
         integration: SlackApp,
         *,
@@ -170,13 +165,12 @@ class SlackAppService:
         redirect_uri: str,
         return_to: str,
     ) -> str:
-        state = jwt.encode(
+        state = await jwt.encode(
             data={
                 "integration_id": str(integration.id),
                 "subject_id": str(subject_id),
                 "return_to": return_to,
             },
-            secret=settings.SECRET,
             type=OAUTH_STATE_JWT_TYPE,
         )
         params = {
@@ -187,9 +181,9 @@ class SlackAppService:
         }
         return f"https://slack.com/oauth/v2/authorize?{urlencode(params)}"
 
-    def decode_state(self, state: str) -> dict[str, Any]:
+    async def decode_state(self, state: str) -> dict[str, Any]:
         try:
-            return jwt.decode(
+            return await jwt.decode(
                 token=state,
                 secret=settings.SECRET,
                 type=OAUTH_STATE_JWT_TYPE,
@@ -284,7 +278,6 @@ class SlackAppService:
                 "team_id": team.get("id"),
                 "team_name": team.get("name"),
                 "bot_user_id": result.get("bot_user_id"),
-                "bot_token": bot_token,
                 "bot_token_encrypted": await SlackApp.encrypt_bot_token(
                     integration.id, bot_token
                 ),
@@ -317,7 +310,6 @@ class SlackAppService:
             await repository.update(
                 integration,
                 update_dict={
-                    "bot_token": None,
                     "bot_token_encrypted": None,
                     "revoked_at": utc_now(),
                 },

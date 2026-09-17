@@ -112,6 +112,7 @@ from polar.product.price_set import (
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
+from polar.product.unit_price import validate_unit_limits
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import TaxCode
@@ -528,11 +529,11 @@ class CheckoutService:
                     if min_units is not None
                     else unit_price.get_minimum_purchasable_units()
                 )
-            self._validate_unit_limits(
+            validate_unit_limits(
                 unit_price,
                 checkout_create.units,
-                checkout_min_units=min_units,
-                checkout_max_units=max_units,
+                min_units=min_units,
+                max_units=max_units,
             )
         elif checkout_create.units is not None:
             raise PolarRequestValidationError(
@@ -941,7 +942,11 @@ class CheckoutService:
                 checkout.customer_name = customer_name
 
             discount_code = query_prefill.get("discount_code")
-            if discount_code is not None and isinstance(discount_code, str):
+            if (
+                discount_code is not None
+                and isinstance(discount_code, str)
+                and checkout_link.allow_discount_codes
+            ):
                 try:
                     discount = await self._get_validated_discount(
                         session,
@@ -1335,6 +1340,7 @@ class CheckoutService:
                     else:
                         checkout.payment_processor_metadata = {
                             **checkout.payment_processor_metadata,
+                            "intent_id": intent.id,
                             "intent_client_secret": intent.client_secret,
                             "intent_status": intent.status,
                         }
@@ -1583,12 +1589,7 @@ class CheckoutService:
     async def handle_failure(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Checkout:
-        # Checkout is in an unrecoverable status: do nothing
-        if checkout.status in {
-            CheckoutStatus.expired,
-            CheckoutStatus.succeeded,
-            CheckoutStatus.failed,
-        }:
+        if checkout.status != CheckoutStatus.confirmed:
             return checkout
 
         # Put back checkout in open state so the customer can try another payment method
@@ -2249,11 +2250,11 @@ class CheckoutService:
 
         # Handle unit updates for unit-based pricing
         if unit_price is not None and checkout_update.units is not None:
-            self._validate_unit_limits(
+            validate_unit_limits(
                 unit_price,
                 checkout_update.units,
-                checkout_min_units=checkout.min_units,
-                checkout_max_units=checkout.max_units,
+                min_units=checkout.min_units,
+                max_units=checkout.max_units,
             )
             checkout.units = checkout_update.units
             checkout.amount = calculate_upfront_amount(
@@ -2482,12 +2483,31 @@ class CheckoutService:
                 checkout_max_seats=checkout.max_seats,
             )
             checkout.seats = seats
+        previous_units = checkout.units
         checkout.units = None
         unit_price = price_set.get_unit_price()
         units: int | None = None
         if unit_price is not None:
-            units = checkout_update.units or unit_price.get_minimum_purchasable_units()
-            self._validate_unit_limits(unit_price, units)
+            is_unit_count_locked = (
+                checkout.min_units is not None or checkout.max_units is not None
+            )
+            if checkout_update.units is not None:
+                units = checkout_update.units
+            elif previous_units is not None and not is_unit_count_locked:
+                # Preserve the existing unit count across a product switch,
+                # clamped to the new product's own bounds.
+                units = max(previous_units, unit_price.get_minimum_purchasable_units())
+                maximum_units = unit_price.get_maximum_units()
+                if maximum_units is not None:
+                    units = min(units, maximum_units)
+            else:
+                units = previous_units or unit_price.get_minimum_purchasable_units()
+            validate_unit_limits(
+                unit_price,
+                units,
+                min_units=checkout.min_units,
+                max_units=checkout.max_units,
+            )
             checkout.units = units
         checkout.amount = calculate_upfront_amount(
             price_set.get_static_prices(), custom_amount=None, seats=seats, units=units
@@ -2789,57 +2809,6 @@ class CheckoutService:
                         "msg": f"max_seats must be at most {tier_maximum}.",
                         "input": max_seats,
                         "ctx": {"le": tier_maximum},
-                    }
-                ]
-            )
-
-    def _validate_unit_limits(
-        self,
-        price: UnitPrice | None,
-        units: int,
-        loc: tuple[str, ...] = ("body", "units"),
-        *,
-        checkout_min_units: int | None = None,
-        checkout_max_units: int | None = None,
-    ) -> None:
-        """Validate that a unit count is within the min/max bounds for a unit-based price."""
-        if price is None:
-            return
-
-        minimum_units = price.get_minimum_purchasable_units()
-        maximum_units = price.get_maximum_units()
-
-        # Narrow the effective range with checkout-level constraints
-        if checkout_min_units is not None:
-            minimum_units = max(minimum_units, checkout_min_units)
-        if checkout_max_units is not None:
-            if maximum_units is not None:
-                maximum_units = min(maximum_units, checkout_max_units)
-            else:
-                maximum_units = checkout_max_units
-
-        if units < minimum_units:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "greater_than_equal",
-                        "loc": loc,
-                        "msg": f"Minimum {minimum_units} units required.",
-                        "input": units,
-                        "ctx": {"ge": minimum_units},
-                    }
-                ]
-            )
-
-        if maximum_units is not None and units > maximum_units:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "less_than_equal",
-                        "loc": loc,
-                        "msg": f"Maximum {maximum_units} units allowed.",
-                        "input": units,
-                        "ctx": {"le": maximum_units},
                     }
                 ]
             )

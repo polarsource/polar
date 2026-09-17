@@ -5,6 +5,15 @@ import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+const ACTIVE_OPERATION_STATUSES = new Set(['pending', 'running'])
+
+export const isActiveMigrationOperation = (
+  operation?: schemas['MerchantMigrationOperation'] | null,
+) =>
+  operation != null &&
+  !operation.stalled &&
+  ACTIVE_OPERATION_STATUSES.has(operation.status)
+
 export const useMerchantMigrations = (organizationId: string) =>
   useQuery({
     queryKey: ['merchantMigrations', { organizationId }],
@@ -29,6 +38,8 @@ export const useMerchantMigration = (id: string) =>
       ),
     retry: defaultRetry,
     enabled: !!id,
+    refetchInterval: (query) =>
+      isActiveMigrationOperation(query.state.data?.operation) ? 2000 : false,
   })
 
 export const useCreateMerchantMigration = (organizationId: string) =>
@@ -46,7 +57,7 @@ export const useCreateMerchantMigration = (organizationId: string) =>
   })
 
 // The listing and its counts live behind separate keys but are one unit.
-const invalidateMigrationRecords = (id: string) => {
+export const invalidateMigrationRecords = (id: string) => {
   const client = getQueryClient()
   client.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
   client.invalidateQueries({ queryKey: ['merchantMigrationRecords', { id }] })
@@ -63,8 +74,8 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
           params: { path: { id } },
         }),
       ),
-    onSuccess: () => {
-      invalidateMigrationRecords(id)
+    onSuccess: (migration) => {
+      getQueryClient().setQueryData(['merchantMigration', { id }], migration)
     },
   })
 
@@ -192,7 +203,9 @@ export const useMigrationRecords = (
     status?: schemas['PrecheckRecordStatus']
     reasonLevel?: schemas['PrecheckReasonLevel']
     importStatus?: schemas['MerchantMigrationRecordStatus']
+    excludeImportStatus?: schemas['MerchantMigrationRecordStatus']
     cutoverStatus?: schemas['MerchantMigrationCutoverStatus']
+    dependenciesImported?: boolean
     page: number
     limit: number
   },
@@ -214,8 +227,14 @@ export const useMigrationRecords = (
               ...(params.importStatus
                 ? { import_status: params.importStatus }
                 : {}),
+              ...(params.excludeImportStatus
+                ? { exclude_import_status: params.excludeImportStatus }
+                : {}),
               ...(params.cutoverStatus
                 ? { cutover_status: params.cutoverStatus }
+                : {}),
+              ...(params.dependenciesImported !== undefined
+                ? { dependencies_imported: params.dependenciesImported }
                 : {}),
               page: params.page,
               limit: params.limit,
@@ -265,7 +284,10 @@ export const useStartMigrationSwitch = (id: string) =>
     },
   })
 
-export const useMerchantMigrationRecordSummary = (id: string) =>
+export const useMerchantMigrationRecordSummary = (
+  id: string,
+  refetchInterval?: number | false,
+) =>
   useQuery({
     queryKey: ['merchantMigrationRecordSummary', { id }],
     queryFn: () =>
@@ -276,4 +298,5 @@ export const useMerchantMigrationRecordSummary = (id: string) =>
       ),
     retry: defaultRetry,
     enabled: !!id,
+    refetchInterval: refetchInterval ?? false,
   })

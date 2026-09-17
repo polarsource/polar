@@ -1,0 +1,62 @@
+---
+title: "ADR-0012: Minimize data in AI API calls"
+description: "AI API requests send only the data the feature needs. Do not send personal data, money data, or secrets just in case."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Cross-cutting
+
+**Date**: 2026-09-16
+</Info>
+
+## Context
+
+Polar calls AI providers (OpenAI, Anthropic, and others) from several product
+features: organization reviews, Compass, onboarding, and similar. It is easy to
+put a full org, customer, or payment object in the prompt so the model has more
+context. Those providers then process that data. Extra fields that the prompt
+never uses (for example a date of birth) still leave Polar.
+
+## Decision
+
+**Send only the fields the feature needs.** Build the prompt from a short, named
+list of fields. Do not pass a whole model, snapshot, or database row.
+
+Do **not** send:
+
+- Secrets, tokens, API keys, passwords
+- Identity documents, tax IDs, full street addresses
+- Fields the prompt does not mention or use
+- Buyer (end-customer) personal data, unless the merchant is asking about that
+  person in that turn (Compass)
+
+You **may** send:
+
+- IDs, slugs, public website text
+- Aggregates (counts, totals, rates) that do not name a person
+- The minimum merchant fields the feature cannot work without (for example a
+  legal name when a review compares names)
+
+## Consequences
+
+- New AI call sites start from a field list, not from `json.dumps(object)`.
+- Reviewers (Cubic, `/polar-code-review`, humans) flag extra personal or money
+  fields in prompts. Cite this ADR.
+- Some existing calls send more than they need. Fix those when you touch them.
+  Do not add new fields while the extra ones are still there.
+- The model may be a bit less informed. That is the trade-off.
+
+## Alternatives considered
+
+- **Rely on the provider DPA and skip data minimization.** The contract does not
+  stop us sending data we do not need. DPAs are a different control.
+- **Never send personal data to an AI API.** Reviews and Compass cannot work
+  with zero identity context. Minimum needed data is the line.
+
+## References
+
+- Gateway: `settings.get_pydantic_gateway_model()` in `polar/config.py`
+- Review prompts: `server/polar/organization_review/analyzer.py`
+- Compass tools: `server/polar/compass/assistant/`

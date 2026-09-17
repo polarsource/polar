@@ -93,6 +93,17 @@ unknown, or removed version returns `404 Not Found`.
   explicitly, either directly or by using a versioned SDK import.
 </Warning>
 
+### Monitoring version usage
+
+Logfire HTTP request spans carry an `api_version` attribute with the resolved
+version, including Current when the request omits `Polar-Version`.
+
+The `polar_http_request_total` counter and
+`polar_http_request_duration_seconds` histogram carry the same `api_version`
+label. The **Request Rate by API Version** panel in the **Polar API** Grafana
+dashboard shows usage with the selected environment, method, and endpoint filters.
+Existing metric exclusions still apply; rejected versions are not counted.
+
 ### OpenAPI schemas and SDKs
 
 An OpenAPI schema is generated for every supported version and exposed at

@@ -13,7 +13,6 @@ from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
-    Customer,
     CustomerSeat,
     Member,
     Organization,
@@ -23,6 +22,7 @@ from polar.models import (
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -275,32 +275,12 @@ class TestList:
 
 @pytest.mark.asyncio
 class TestCreateOwnerMember:
-    async def test_feature_flag_disabled(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        """Test that member is not created when feature flag is disabled."""
-        organization.feature_settings = {"member_model_enabled": False}
-
-        member = await member_service.create_owner_member(
-            session, customer, organization
-        )
-
-        # Should return None when feature flag is disabled
-        assert member is None
-
-    async def test_feature_flag_enabled_creates_member(
+    async def test_creates_owner_member(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test that owner member is created when feature flag is enabled."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -605,6 +585,75 @@ class TestCreate:
                 email="member@example.com",
             )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_concurrent_duplicate_returns_existing_without_pending_rollback(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Regression: a concurrent insert that trips the partial unique index
+        during flush must not leave the session in an aborted state. The savepoint
+        rollback lets the re-query return the existing member instead of raising
+        PendingRollbackError."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # The member a concurrent request already committed.
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+            name="Existing",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        # Force the code past the initial lookup (as if the row didn't exist yet at
+        # check time) so the real flush hits the unique index and would poison the
+        # session without the savepoint rollback.
+        original_get = MemberRepository.get_by_customer_and_email
+        call_count = 0
+
+        async def mock_get(
+            self: Any, customer: Any, email: Any = None
+        ) -> Member | None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return None
+            return await original_get(self, customer, email=email)
+
+        mocker.patch.object(MemberRepository, "get_by_customer_and_email", mock_get)
+
+        member = await member_service.create(
+            session,
+            auth_subject,
+            customer_id=customer.id,
+            email="race@example.com",
+            name="New Member",
+            role=MemberRole.member,
+        )
+
+        assert member.id == existing.id
+        assert call_count == 2  # initial lookup + re-query after rollback
+
+        # The session recovered from the failed flush and is still usable.
+        await session.flush()
+
 
 @pytest.mark.asyncio
 class TestUpdate:
@@ -847,6 +896,154 @@ class TestUpdate:
         await session.refresh(member)
         assert owner.role == MemberRole.billing_manager
         assert member.role == MemberRole.owner
+
+    @pytest.mark.auth
+    async def test_update_ownership_transfer_admin_emits_webhook_for_demoted_owner(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Ownership transfer sends ``member.updated`` for the demoted former owner too.
+
+        Regression: ``update`` previously sent a single ``member.updated`` for the
+        promoted member, so subscribers mirroring member roles desynced from the
+        DB for the demoted owner (owner -> billing_manager). The demoted owner's
+        event must fire before the promoted member's so a single-owner-enforcing
+        consumer never briefly observes two owners.
+        """
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        await member_service.update(
+            session, member, role=MemberRole.owner, allow_ownership_transfer=True
+        )
+
+        member_updated_members = [
+            call.args[3]
+            for call in webhook_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.member_updated
+        ]
+        assert [m.id for m in member_updated_members] == [owner.id, member.id]
+        assert webhook_send_mock.call_count == 2
+
+    @pytest.mark.auth
+    async def test_update_ownership_transfer_customer_portal_emits_webhook_for_demoted_owner(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """The customer-portal transfer path (``current_owner = caller_member``)
+        also notifies subscribers about the demoted former owner."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        await member_service.update(
+            session, member, role=MemberRole.owner, caller_member=owner
+        )
+
+        member_updated_members = [
+            call.args[3]
+            for call in webhook_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.member_updated
+        ]
+        assert [m.id for m in member_updated_members] == [owner.id, member.id]
+        assert webhook_send_mock.call_count == 2
+
+    @pytest.mark.auth
+    async def test_update_role_change_emits_single_webhook(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A non-transfer role change still emits exactly one ``member.updated``
+        for the changed member (no regression from the transfer fix)."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        updated = await member_service.update(
+            session, member, role=MemberRole.billing_manager
+        )
+
+        assert webhook_send_mock.call_count == 1
+        call = webhook_send_mock.call_args
+        assert call.args[2] == WebhookEventType.member_updated
+        assert call.args[3].id == updated.id
+
+    @pytest.mark.auth
+    async def test_update_no_changes_emits_no_webhook(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """An update with no effective changes short-circuits and sends no webhook."""
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        await member_service.update(session, member)
+
+        webhook_send_mock.assert_not_called()
 
     @pytest.mark.auth
     async def test_update_no_changes(

@@ -4,6 +4,7 @@ import boto3
 from botocore.config import Config
 
 from polar.config import settings
+from polar.kit.aws import get_credentials
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client
@@ -14,11 +15,12 @@ def get_client(
     signature_version: str = settings.AWS_SIGNATURE_VERSION,
     endpoint_url: str | None = settings.S3_ENDPOINT_URL,
 ) -> "S3Client":
+    access_key_id, secret_access_key = get_credentials()
     return boto3.client(
         "s3",
         endpoint_url=endpoint_url,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key,
         config=Config(
             region_name=settings.AWS_REGION,
             signature_version=signature_version,

@@ -7,6 +7,7 @@ from shared import (
     Context,
     check_env_file_exists,
     run_command,
+    step_failed,
     step_status,
 )
 
@@ -32,5 +33,12 @@ def run(ctx: Context) -> bool:
         step_status(True, "Environment files", "generated")
         return True
     else:
-        step_status(False, "Environment files", "generation failed")
+        step_failed(
+            "Environment files",
+            "generation failed",
+            hints=(
+                "The error above comes from dev/setup-environment; run [bold]./dev/setup-environment[/bold] directly to retry",
+                "Without server/.env the Docker containers can't start, so this must succeed before continuing",
+            ),
+        )
         return False

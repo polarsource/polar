@@ -40,7 +40,7 @@ class TestListSeats:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.get(
             "/v1/customer-seats",
@@ -60,7 +60,7 @@ class TestListSeats:
     async def test_list_seats_subscription_not_found(
         self,
         client: AsyncClient,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         fake_id = uuid.uuid4()
         response = await client.get(
@@ -70,26 +70,6 @@ class TestListSeats:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth(SEAT_AUTH)
-    async def test_list_seats_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        user_organization: UserOrganization,
-    ) -> None:
-        subscription.started_at = datetime.now(UTC)
-        await save_fixture(subscription)
-        subscription.product.organization.feature_settings = {}
-        await save_fixture(subscription.product.organization)
-
-        response = await client.get(
-            "/v1/customer-seats",
-            params={"subscription_id": str(subscription.id)},
-        )
-
-        assert response.status_code == 403
-
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.customer_seats_read}),
     )
@@ -98,7 +78,7 @@ class TestListSeats:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.get(
             "/v1/customer-seats",
@@ -129,7 +109,7 @@ class TestAssignSeat:
         client: AsyncClient,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         await create_customer(
             save_fixture,
@@ -158,7 +138,7 @@ class TestAssignSeat:
         client: AsyncClient,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         await create_customer(
             save_fixture,
@@ -184,7 +164,7 @@ class TestAssignSeat:
         client: AsyncClient,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         await create_customer(
             save_fixture,
@@ -211,7 +191,7 @@ class TestAssignSeat:
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/customer-seats",
@@ -226,7 +206,7 @@ class TestAssignSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer: Customer,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/customer-seats",
@@ -245,7 +225,7 @@ class TestAssignSeat:
         client: AsyncClient,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_with_seats.seats = 0
         await save_fixture(subscription_with_seats)
@@ -267,7 +247,7 @@ class TestAssignSeat:
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
         customer: Customer,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/customer-seats",
@@ -283,7 +263,7 @@ class TestAssignSeat:
     async def test_assign_seat_subscription_not_found(
         self,
         client: AsyncClient,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         fake_id = uuid.uuid4()
         response = await client.post(
@@ -297,34 +277,11 @@ class TestAssignSeat:
         assert response.status_code == 404
 
     @pytest.mark.auth(SEAT_AUTH)
-    async def test_assign_seat_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        user_organization: UserOrganization,
-    ) -> None:
-        subscription.started_at = datetime.now(UTC)
-        await save_fixture(subscription)
-        subscription.product.organization.feature_settings = {}
-        await save_fixture(subscription.product.organization)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "subscription_id": str(subscription.id),
-                "email": "test@example.com",
-            },
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_customer_not_found_email(
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         """Test that assigning a seat with a new email creates a customer automatically."""
         response = await client.post(
@@ -344,7 +301,7 @@ class TestAssignSeat:
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/customer-seats",
@@ -377,7 +334,7 @@ class TestAssignSeat:
         client: AsyncClient,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         await create_customer(
             save_fixture,
@@ -505,23 +462,6 @@ class TestGetClaimInfo:
 
         assert response.status_code == 404
 
-    async def test_get_claim_info_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        customer_seat_pending: CustomerSeat,
-    ) -> None:
-        assert customer_seat_pending.subscription is not None
-        customer_seat_pending.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_pending.subscription.product.organization)
-
-        assert customer_seat_pending.invitation_token is not None
-        response = await client.get(
-            f"/v1/customer-seats/claim/{customer_seat_pending.invitation_token}"
-        )
-
-        assert response.status_code == 403
-
 
 @pytest.mark.asyncio
 class TestClaimSeat:
@@ -604,24 +544,6 @@ class TestClaimSeat:
 
         assert response.status_code == 400
 
-    async def test_claim_seat_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        customer_seat_pending: CustomerSeat,
-    ) -> None:
-        assert customer_seat_pending.subscription is not None
-        customer_seat_pending.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_pending.subscription.product.organization)
-
-        assert customer_seat_pending.invitation_token is not None
-        response = await client.post(
-            "/v1/customer-seats/claim",
-            json={"invitation_token": customer_seat_pending.invitation_token},
-        )
-
-        assert response.status_code == 403
-
 
 @pytest.mark.asyncio
 class TestRevokeSeat:
@@ -631,7 +553,7 @@ class TestRevokeSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.delete(
             f"/v1/customer-seats/{customer_seat_claimed.id}",
@@ -649,7 +571,7 @@ class TestRevokeSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.delete(
             f"/v1/customer-seats/{customer_seat_pending.id}",
@@ -664,7 +586,7 @@ class TestRevokeSeat:
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         fake_id = uuid.uuid4()
         response = await client.delete(
@@ -680,7 +602,7 @@ class TestRevokeSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         other_subscription = await create_subscription_with_seats(
             save_fixture,
@@ -702,7 +624,7 @@ class TestRevokeSeat:
         self,
         client: AsyncClient,
         customer_seat_claimed: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         # This test is no longer relevant since we don't pass subscription_id
         # Testing with just the seat_id instead
@@ -712,25 +634,6 @@ class TestRevokeSeat:
         )
 
         assert response.status_code == 404
-
-    @pytest.mark.auth(SEAT_AUTH)
-    async def test_revoke_seat_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-        customer_seat_claimed: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        # Disable the feature
-        subscription_with_seats.product.organization.feature_settings = {}
-        await save_fixture(subscription_with_seats.product.organization)
-
-        response = await client.delete(
-            f"/v1/customer-seats/{customer_seat_claimed.id}",
-        )
-
-        assert response.status_code == 403
 
     async def test_revoke_seat_unauthorized(
         self,
@@ -753,7 +656,7 @@ class TestOrderBasedSeats:
         client: AsyncClient,
         order_with_seats: Order,
         customer_seat_order_pending: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.get(
             "/v1/customer-seats",
@@ -774,7 +677,7 @@ class TestOrderBasedSeats:
         self,
         client: AsyncClient,
         order_with_seats: Order,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/customer-seats",
@@ -797,7 +700,7 @@ class TestOrderBasedSeats:
         save_fixture: SaveFixture,
         order_with_seats: Order,
         customer_seat_order_pending: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
         customer: Customer,
         session: AsyncSession,
     ) -> None:
@@ -911,7 +814,7 @@ class TestMemberEntityInResponse:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         customer: Customer,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
         session: AsyncSession,
     ) -> None:
         """GET /customer-seats returns member entity when member is associated."""
@@ -955,7 +858,7 @@ class TestMemberEntityInResponse:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         """GET /customer-seats returns member=null when no member is associated."""
         response = await client.get(
@@ -978,7 +881,7 @@ class TestMemberEntityInResponse:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         customer: Customer,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
         session: AsyncSession,
     ) -> None:
         """Member external_id is included in the response."""
@@ -1017,7 +920,7 @@ class TestMemberEntityInResponse:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         customer: Customer,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         """POST /customer-seats response includes member when member_model_enabled."""
         # Enable member model
@@ -1049,7 +952,7 @@ class TestMemberEntityInResponse:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         customer: Customer,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
         session: AsyncSession,
     ) -> None:
         """customer_id is still present when member is included."""

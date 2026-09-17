@@ -2,9 +2,8 @@ import {
   type WebhooksConfig,
   handleWebhookPayload,
 } from '@polar-sh/adapter-utils'
-import { WebhookVerificationError, validateEvent } from '@polar-sh/sdk/webhooks'
-// @ts-expect-error - TODO: fix this
-import type { StartAPIMethodCallback } from '@tanstack/react-start/api'
+import { webhooks } from '@polar-sh/sdk/2026-04'
+import type { StartRouteHandler } from '../types'
 
 export {
   EntitlementStrategy,
@@ -19,8 +18,7 @@ export const Webhooks = <TPath extends string = string>({
   entitlements,
   onPayload,
   ...eventHandlers
-}: WebhooksConfig): StartAPIMethodCallback<TPath> => {
-  // @ts-expect-error - TODO: fix this
+}: WebhooksConfig): StartRouteHandler<TPath> => {
   return async ({ request }) => {
     const requestBody = await request.text()
 
@@ -30,12 +28,27 @@ export const Webhooks = <TPath extends string = string>({
       'webhook-signature': request.headers.get('webhook-signature') ?? '',
     }
 
-    let webhookPayload: ReturnType<typeof validateEvent>
+    let webhookPayload: webhooks.WebhookPayload
     try {
-      webhookPayload = validateEvent(requestBody, webhookHeaders, webhookSecret)
+      webhookPayload = await webhooks.validateEvent(
+        requestBody,
+        webhookHeaders,
+        webhookSecret,
+      )
     } catch (error) {
-      if (error instanceof WebhookVerificationError) {
+      if (error instanceof webhooks.PolarWebhookVerificationError) {
         return Response.json({ received: false }, { status: 403 })
+      }
+
+      if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+        return Response.json(
+          { received: error.eventType !== null },
+          { status: error.eventType !== null ? 200 : 400 },
+        )
+      }
+
+      if (error instanceof webhooks.PolarWebhookError) {
+        return Response.json({ received: false }, { status: 400 })
       }
 
       throw error

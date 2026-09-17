@@ -390,7 +390,7 @@ class MemberService:
         send_webhook: bool = True,
     ) -> Member | None:
         """
-        Create an owner member for a customer if feature flag is enabled.
+        Create an owner member for a customer.
 
         Args:
             session: Database session
@@ -401,21 +401,8 @@ class MemberService:
             owner_external_id: Optional override for member external_id (defaults to customer.external_id)
 
         Returns:
-            Created/existing Member if feature flag enabled, None if flag disabled
+            The created or existing owner Member.
         """
-        member_model = organization.feature_settings.get("member_model_enabled", False)
-        seat_based = organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            log.debug(
-                "member.create_owner_member.skipped",
-                reason="feature_flag_disabled",
-                customer_id=customer.id,
-                organization_id=organization.id,
-            )
-            return None
-
         repository = MemberRepository.from_session(session)
 
         raw_email = owner_email or customer.email
@@ -648,7 +635,7 @@ class MemberService:
 
         Raises:
             ResourceNotFound: If customer not found or not accessible
-            NotPermitted: If feature flag disabled or no permission to add members
+            NotPermitted: If no permission to add members
         """
         org_ids = await get_accessible_org_ids(session, auth_subject)
         customer = await self._get_readable_customer(
@@ -659,15 +646,6 @@ class MemberService:
             options=(joinedload(Customer.organization),),
         )
         customer_id = customer.id
-
-        member_model = customer.organization.feature_settings.get(
-            "member_model_enabled", False
-        )
-        seat_based = customer.organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            raise NotPermitted("Member management is not enabled for this organization")
 
         email = email.strip()
 
@@ -709,21 +687,8 @@ class MemberService:
             member.created_at = created_at
 
         try:
-            created_member = await repository.create(member, flush=True)
-            log.info(
-                "member.create.success",
-                customer_id=customer_id,
-                member_id=created_member.id,
-                organization_id=customer.organization_id,
-                role=role,
-            )
-            await webhook_service.send(
-                session,
-                customer.organization,
-                WebhookEventType.member_created,
-                created_member,
-            )
-            return created_member
+            async with session.begin_nested():
+                created_member = await repository.create(member, flush=True)
         except IntegrityError as e:
             log.warning(
                 "member.create.constraint_violation",
@@ -742,6 +707,21 @@ class MemberService:
                 )
                 return existing_member
             raise
+        else:
+            log.info(
+                "member.create.success",
+                customer_id=customer_id,
+                member_id=created_member.id,
+                organization_id=customer.organization_id,
+                role=role,
+            )
+            await webhook_service.send(
+                session,
+                customer.organization,
+                WebhookEventType.member_created,
+                created_member,
+            )
+            return created_member
 
     async def _validate_email_change(
         self,
@@ -818,6 +798,7 @@ class MemberService:
         """
         repository = MemberRepository.from_session(session)
         transferred = False
+        current_owner: Member | None = None
 
         if role is not None and member.role != role:
             members = await repository.list_by_customer(member.customer_id)
@@ -913,6 +894,18 @@ class MemberService:
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(member.organization_id)
         if organization:
+            # Ownership transfer changes two members' roles: the new owner is
+            # promoted and the previous owner is demoted to billing_manager.
+            # Emit the demoted owner's event first, mirroring transfer_ownership's
+            # own demote-then-promote ordering, so subscribers never briefly see
+            # two owners and stay in sync with the DB for the former owner.
+            if transferred and current_owner is not None:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_updated,
+                    current_owner,
+                )
             await webhook_service.send(
                 session,
                 organization,

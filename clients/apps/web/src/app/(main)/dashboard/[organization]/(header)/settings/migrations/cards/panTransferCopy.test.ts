@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cardMovementSteps,
+  isSwitchChecklistKey,
   isValidStripeMigrationId,
   STEP_COPY,
   stripeCopyStatusUrl,
@@ -62,5 +64,25 @@ describe('provider export', () => {
       name: 'provider_contact',
       required: false,
     })
+  })
+})
+
+describe('card movement steps', () => {
+  it('hides switch and retired keys from the card list', () => {
+    const steps = cardMovementSteps([
+      { key: 'verify_cards' },
+      { key: 'resolve_uncovered' },
+      { key: 'cutover' },
+      { key: 'move_subscriptions' },
+    ])
+    expect(steps.map((step) => step.key)).toEqual(['verify_cards'])
+  })
+
+  it('treats the switch checklist keys as the switch tab', () => {
+    expect(isSwitchChecklistKey('cutover')).toBe(true)
+    expect(isSwitchChecklistKey('move_subscriptions')).toBe(true)
+    expect(isSwitchChecklistKey('resolve_uncovered')).toBe(true)
+    expect(isSwitchChecklistKey('verify_cards')).toBe(false)
+    expect(isSwitchChecklistKey(null)).toBe(false)
   })
 })

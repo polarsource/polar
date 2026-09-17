@@ -35,7 +35,7 @@ router = APIRouter(
 # is grouped under `customers.members` in the SDK via its tags.
 customer_members_router = APIRouter(
     prefix="/customers",
-    tags=["customers", "members", APITag.public],
+    tags=["customers", "members", APITag.public, APITag.mcp, APITag.cli],
 )
 
 MemberNotFound = {
@@ -137,6 +137,7 @@ async def list_members(
     "/{id}/members",
     summary="List Members",
     response_model=ListResource[Member],
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Members retrieved."},
         404: CustomerNotFound,

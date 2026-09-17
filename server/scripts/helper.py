@@ -6,8 +6,11 @@ from typing import Any, cast
 import structlog
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from sqlalchemy import CursorResult, Update, bindparam
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.sql.elements import BindParameter
 
+from polar.config import settings
+from polar.kit.db import postgres as kit_postgres
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.postgres import create_async_engine
 
@@ -42,6 +45,29 @@ def configure_script_console_logging() -> None:
                 exception_formatter=structlog.dev.plain_traceback,
             ),
         ]
+    )
+
+
+def read_engine(command_timeout: float) -> AsyncEngine:
+    """The replica when there is one, and long enough to finish.
+
+    Read-only scripts often run past the 30 seconds the shared engine allows.
+    Reading here keeps a long scan off the primary.
+    """
+    dsn = (
+        settings.get_postgres_read_dsn("asyncpg")
+        if settings.is_read_replica_configured()
+        else settings.get_postgres_dsn("asyncpg")
+    )
+    return kit_postgres.create_async_engine(
+        dsn=str(dsn),
+        application_name=f"{settings.ENV.value}.script",
+        pool_logging_name="script_read",
+        pool_size=1,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        command_timeout=command_timeout,
+        connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
+        ssl="require" if settings.POSTGRES_SSL else None,
     )
 
 

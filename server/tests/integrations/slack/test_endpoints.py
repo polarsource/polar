@@ -10,7 +10,6 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.kit import jwt
 from polar.models import (
@@ -217,8 +216,9 @@ class TestListIntegrations:
             "T1",
             None,
         }
-        assert all("bot_token" not in integration for integration in integrations)
-        assert all("client_secret" not in integration for integration in integrations)
+        assert all(
+            integration["client_id_last_4"] == ".200" for integration in integrations
+        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.organizations_read}),
@@ -531,13 +531,12 @@ class TestCallback:
             save_fixture, organization, bot_token=None
         )
 
-        state = jwt.encode(
+        state = await jwt.encode(
             data={
                 "integration_id": str(integration.id),
                 "subject_id": "00000000-0000-0000-0000-000000000000",
                 "return_to": "/",
             },
-            secret=settings.SECRET,
             type="slack_integration_oauth",
         )
 
@@ -568,13 +567,12 @@ class TestCallback:
             new=complete_install,
         )
 
-        state = jwt.encode(
+        state = await jwt.encode(
             data={
                 "integration_id": str(integration.id),
                 "subject_id": str(user_organization.user_id),
                 "return_to": "/dashboard/slack?tab=oauth",
             },
-            secret=settings.SECRET,
             type="slack_integration_oauth",
         )
 
@@ -702,7 +700,7 @@ class TestEvents:
         repo = SlackAppRepository.from_session(session)
         integration = await repo.get_by_app_id("A0TESTAPPID")
         assert integration is not None
-        assert integration.bot_token is None
+        assert await integration.get_bot_token() is None
         assert integration.revoked_at is not None
 
     async def test_event_callback_verifies_when_plaintext_signing_secret_absent(

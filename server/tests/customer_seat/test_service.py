@@ -12,7 +12,6 @@ from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.service import (
     CustomerNotFound,
-    FeatureNotEnabled,
     InvalidInvitationToken,
     InvalidSeatAssignmentRequest,
     MemberEmailMismatch,
@@ -56,55 +55,18 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
-class TestCheckSeatFeatureEnabled:
-    async def test_feature_enabled(
-        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
-    ) -> None:
-        organization = await create_organization(save_fixture, account)
-        organization.feature_settings = {"seat_based_pricing_enabled": True}
-        await save_fixture(organization)
-        await seat_service.check_seat_feature_enabled(session, organization.id)
-
-    async def test_feature_disabled(
-        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
-    ) -> None:
-        organization = await create_organization(save_fixture, account)
-        organization.feature_settings = {"seat_based_pricing_enabled": False}
-        await save_fixture(organization)
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.check_seat_feature_enabled(session, organization.id)
-
-    async def test_feature_missing(
-        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
-    ) -> None:
-        organization = await create_organization(save_fixture, account)
-        organization.feature_settings = {}
-        await save_fixture(organization)
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.check_seat_feature_enabled(session, organization.id)
-
-
 class TestListSeats:
     @pytest.mark.asyncio
     async def test_list_seats_success(
         self,
         session: AsyncSession,
-        seat_enabled_organization: Organization,
+        organization: Organization,
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
     ) -> None:
         seats = await seat_service.list_seats(session, subscription_with_seats)
         assert len(seats) == 1
         assert seats[0].id == customer_seat_pending.id
-
-    @pytest.mark.asyncio
-    async def test_list_seats_feature_disabled(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        subscription.product.organization.feature_settings = {}
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.list_seats(session, subscription)
 
 
 class TestGetAvailableSeatsCount:
@@ -128,14 +90,6 @@ class TestGetAvailableSeatsCount:
             session, subscription_with_seats
         )
         assert count == 4
-
-    @pytest.mark.asyncio
-    async def test_available_seats_feature_disabled(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        subscription.product.organization.feature_settings = {}
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.get_available_seats_count(session, subscription)
 
 
 class TestAssignSeat:
@@ -307,16 +261,6 @@ class TestAssignSeat:
                 session, subscription_with_seats, customer_id=fake_customer_id
             )
         assert str(fake_customer_id) in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_feature_disabled(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        subscription.product.organization.feature_settings = {}
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.assign_seat(
-                session, subscription, email="test@example.com"
-            )
 
     @pytest.mark.asyncio
     async def test_assign_seat_creates_new_customer_with_email(
@@ -717,10 +661,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -770,10 +711,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -852,10 +790,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -899,10 +834,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -947,10 +879,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -983,10 +912,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1025,10 +951,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1070,10 +993,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1119,10 +1039,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1155,10 +1072,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1209,10 +1123,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1269,10 +1180,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1319,10 +1227,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1369,10 +1274,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1417,10 +1319,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1463,10 +1362,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1500,10 +1396,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1547,10 +1440,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1643,10 +1533,7 @@ class TestAssignSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1821,24 +1708,6 @@ class TestClaimSeat:
             await seat_service.claim_seat(session, old_token)
 
     @pytest.mark.asyncio
-    async def test_claim_seat_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer_seat_pending: CustomerSeat,
-    ) -> None:
-        assert customer_seat_pending.subscription is not None
-        customer_seat_pending.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_pending.subscription.product.organization)
-
-        assert customer_seat_pending.invitation_token is not None
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.claim_seat(
-                session,
-                customer_seat_pending.invitation_token,
-            )
-
-    @pytest.mark.asyncio
     async def test_claim_seat_clears_token(
         self,
         session: AsyncSession,
@@ -1907,10 +1776,7 @@ class TestClaimSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -1950,6 +1816,157 @@ class TestClaimSeat:
         assert len(session_token) > 0
         assert session_token.startswith("polar_mst_")
 
+    @pytest.mark.asyncio
+    async def test_claim_seat_member_model_soft_deleted_member_rejects(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Claiming a seat whose member was soft-deleted in member-model mode
+        must reject the claim rather than escalating to a purchaser-scope
+        customer session.
+
+        Regression test for a privilege-escalation bug where the fallback
+        minted a `polar_cst_` for the billing (purchaser) customer when the
+        seat's linked member was missing, granting the seat-claimer full
+        portal-write access as the purchaser.
+        """
+        from polar.member.repository import MemberRepository
+
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        seat = await seat_service.assign_seat(
+            session,
+            subscription,
+            email="seat@example.com",
+            external_member_id="ext-member-claim",
+        )
+        await session.flush()
+        assert seat.member_id is not None
+        invitation_token = seat.invitation_token
+        assert invitation_token is not None
+
+        # Simulate the post-delete, pre-revoke-job DB state: the member is
+        # soft-deleted but the seat's invitation token is still valid.
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_id(seat.member_id)
+        assert member is not None
+        await member_repository.soft_delete(member)
+        await session.flush()
+
+        with (
+            patch(
+                "polar.customer_seat.service.customer_session_service.create_customer_session"
+            ) as mock_create_customer_session,
+            patch(
+                "polar.customer_seat.service.member_session_service.create_member_session"
+            ) as mock_create_member_session,
+        ):
+            with pytest.raises(InvalidInvitationToken):
+                await seat_service.claim_seat(session, invitation_token)
+
+            # No session of either kind must be minted for the rejected claim;
+            # in particular, no purchaser-scope customer session may leak.
+            mock_create_customer_session.assert_not_called()
+            mock_create_member_session.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_claim_seat_legacy_model_soft_deleted_member_issues_self_session(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """In legacy mode (no member_model_enabled), `session_customer` is the
+        seat-holder's own customer, so falling back to a customer session is a
+        self-session, not an escalation. Deleting the linked member before
+        the claim must therefore still issue the seat-holder's own
+        `polar_cst_` token, never the billing (purchaser) customer's.
+        """
+        from polar.customer_session.service import (
+            customer_session as customer_session_service,
+        )
+        from polar.member.repository import MemberRepository
+
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"seat_based_pricing_enabled": True},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        # Legacy assignment by email: creates the seat-holder's own customer
+        # and a member under the billing customer.
+        seat = await seat_service.assign_seat(
+            session,
+            subscription,
+            email="seat-holder@example.com",
+        )
+        await session.flush()
+        assert seat.customer_id is not None
+        assert seat.member_id is not None
+        invitation_token = seat.invitation_token
+        assert invitation_token is not None
+
+        seat_holder_customer_id = seat.customer_id
+        assert seat_holder_customer_id != billing_customer.id
+
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_id(seat.member_id)
+        assert member is not None
+        await member_repository.soft_delete(member)
+        await session.flush()
+
+        claimed_seat, session_token = await seat_service.claim_seat(
+            session, invitation_token
+        )
+
+        assert claimed_seat.status == SeatStatus.claimed
+        assert session_token.startswith("polar_cst_")
+
+        customer_session = await customer_session_service.get_by_token(
+            session, session_token
+        )
+        assert customer_session is not None
+        # Self-session for the seat-holder's own customer — NOT the purchaser.
+        assert customer_session.customer_id == seat_holder_customer_id
+        assert customer_session.customer_id != billing_customer.id
+
 
 class TestRevokeSeat:
     @pytest.mark.asyncio
@@ -1972,20 +1989,6 @@ class TestRevokeSeat:
 
         assert seat.status == SeatStatus.revoked
         assert seat.revoked_at is not None
-
-    @pytest.mark.asyncio
-    async def test_revoke_seat_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer_seat_claimed: CustomerSeat,
-    ) -> None:
-        assert customer_seat_claimed.subscription is not None
-        customer_seat_claimed.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_claimed.subscription.product.organization)
-
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.revoke_seat(session, customer_seat_claimed)
 
     @pytest.mark.asyncio
     async def test_revoke_seat_sends_webhook(
@@ -2032,10 +2035,7 @@ class TestRevokeSeat:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -2087,11 +2087,9 @@ class TestGetSeat:
         self,
         session: AsyncSession,
         customer_seat_claimed: CustomerSeat,
-        seat_enabled_organization: Organization,
+        organization: Organization,
     ) -> None:
-        auth_subject = AuthSubject(
-            subject=seat_enabled_organization, scopes=set(), session=None
-        )
+        auth_subject = AuthSubject(subject=organization, scopes=set(), session=None)
 
         seat = await seat_service.get_seat(
             session, auth_subject, customer_seat_claimed.id
@@ -2106,7 +2104,7 @@ class TestGetSeat:
         session: AsyncSession,
         customer_seat_claimed: CustomerSeat,
         user: User,
-        user_organization_seat_enabled: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
 
@@ -2144,12 +2142,9 @@ class TestGetSeat:
         )
         auth_subject = AuthSubject(subject=different_org, scopes=set(), session=None)
 
-        # Create a seat with seat-enabled organization
         seat_enabled_org = await create_organization(
             save_fixture, await create_account(save_fixture, user)
         )
-        seat_enabled_org.feature_settings = {"seat_based_pricing_enabled": True}
-        await save_fixture(seat_enabled_org)
 
         seat_product = await create_product(
             save_fixture,
@@ -2179,24 +2174,6 @@ class TestGetSeat:
         seat = await seat_service.get_seat(session, auth_subject, uuid.uuid4())
 
         assert seat is None
-
-    @pytest.mark.asyncio
-    async def test_get_seat_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer_seat_claimed: CustomerSeat,
-        seat_enabled_organization: Organization,
-    ) -> None:
-        seat_enabled_organization.feature_settings = {}
-        await save_fixture(seat_enabled_organization)
-
-        auth_subject = AuthSubject(
-            subject=seat_enabled_organization, scopes=set(), session=None
-        )
-
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.get_seat(session, auth_subject, customer_seat_claimed.id)
 
 
 class TestResendInvitation:
@@ -2309,35 +2286,6 @@ class TestResendInvitation:
             await seat_service.resend_invitation(session, seat)
 
     @pytest.mark.asyncio
-    async def test_resend_invitation_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-        customer: Customer,
-    ) -> None:
-        """Test that resending invitation fails when feature is disabled."""
-        # Create a pending seat
-        seat = await create_customer_seat(
-            save_fixture,
-            subscription=subscription_with_seats,
-            customer=customer,
-            status=SeatStatus.pending,
-        )
-        await session.refresh(seat, ["subscription", "customer"])
-        assert seat.subscription is not None
-        await session.refresh(seat.subscription, ["product"])
-        assert seat.subscription is not None
-        await session.refresh(seat.subscription.product, ["organization"])
-
-        # Disable feature
-        subscription_with_seats.product.organization.feature_settings = {}
-        await save_fixture(subscription_with_seats.product.organization)
-
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.resend_invitation(session, seat)
-
-    @pytest.mark.asyncio
     async def test_resend_invitation_revoked_seat(
         self,
         session: AsyncSession,
@@ -2373,10 +2321,7 @@ class TestResendInvitation:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -2743,9 +2688,7 @@ class TestRevokeAllSeatsForSubscription:
         """Seats are revoked even when the organization is blocked.
 
         This happens when a wound-down organization's subscriptions are
-        auto-cancelled: the organization is blocked, and the feature check must
-        still be able to read it, otherwise it raises FeatureNotEnabled and
-        breaks the cancellation.
+        auto-cancelled.
         """
         customer = await create_customer(
             save_fixture,
@@ -2807,10 +2750,7 @@ class TestAssignSeatToDeletedMember:
         organization = await create_organization(
             save_fixture,
             account,
-            feature_settings={
-                "seat_based_pricing_enabled": True,
-                "member_model_enabled": True,
-            },
+            feature_settings={"member_model_enabled": True},
         )
         product = await create_product(
             save_fixture,
@@ -2878,12 +2818,6 @@ class TestUpdateProductBenefitsGrants:
     ) -> None:
         """When product benefits are updated, claimed seat members
         on subscriptions should get benefit grant jobs enqueued."""
-
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
 
         product = await create_product(
             save_fixture,
@@ -2958,12 +2892,6 @@ class TestUpdateProductBenefitsGrants:
         on orders should get benefit grant jobs enqueued."""
         from polar.models.order import OrderStatus
 
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -3011,12 +2939,6 @@ class TestUpdateProductBenefitsGrants:
         organization: Organization,
     ) -> None:
         """When there are no claimed seats, no jobs should be enqueued."""
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -3062,7 +2984,6 @@ class TestUpdateProductBenefitsGrants:
         """Benefit grants for seats with member_id should include the member_id."""
         organization.feature_settings = {
             **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
         }
         await save_fixture(organization)
@@ -3187,11 +3108,6 @@ class TestAssignSeatConcurrency:
             user = await create_user(save_fixture)
             account = await create_account(save_fixture, user)
             organization = await create_organization(save_fixture, account)
-            organization.feature_settings = {
-                **organization.feature_settings,
-                "seat_based_pricing_enabled": True,
-            }
-            await save_fixture(organization)
             product = await create_product(
                 save_fixture,
                 organization=organization,

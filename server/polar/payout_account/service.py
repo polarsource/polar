@@ -3,6 +3,7 @@ from collections.abc import Sequence
 
 import stripe as stripe_lib
 import structlog
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
@@ -15,6 +16,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.payout.repository import PayoutRepository
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import PayoutAccountRepository
 from .schemas import PayoutAccountCreate, PayoutAccountLink
@@ -98,7 +100,9 @@ class PayoutAccountService:
         auth_subject: AuthSubject[User],
     ) -> Sequence[PayoutAccount]:
         repository = PayoutAccountRepository.from_session(session)
-        statement = repository.get_statement_by_user(auth_subject.subject)
+        statement = repository.get_statement_by_user(auth_subject.subject).options(
+            selectinload(PayoutAccount.organizations)
+        )
         return await repository.get_all(statement)
 
     async def get(
@@ -124,6 +128,11 @@ class PayoutAccountService:
             session, auth_subject, payout_account_create
         )
 
+        current = None
+        if organization.payout_account_id is not None:
+            repository = PayoutAccountRepository.from_session(session)
+            current = await repository.get_by_id(organization.payout_account_id)
+
         payout_account = await self._create_stripe_account(
             session,
             auth_subject.subject,
@@ -131,9 +140,19 @@ class PayoutAccountService:
             organization.name,
         )
 
-        organization_repository = OrganizationRepository.from_session(session)
-        organization.payout_account = payout_account
-        await organization_repository.update(organization)
+        # Don't make it active while a ready account is still paying them out.
+        if current is None or not current.is_payout_ready:
+            organization_repository = OrganizationRepository.from_session(session)
+            organization.payout_account = payout_account
+            await organization_repository.update(organization)
+
+        # Stripe reads the website off the account during onboarding, so the new one
+        # needs it even when the organization stayed on its old account.
+        enqueue_job(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+            payout_account_id=payout_account.id,
+        )
 
         return payout_account
 

@@ -1,4 +1,9 @@
-import revalidate from '@/app/actions'
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
+import {
+  WithMetadataEntries,
+  entriesToMetadata,
+  metadataToEntries,
+} from '@/components/Metadata/utils'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateCustomer } from '@/hooks/queries'
@@ -18,12 +23,10 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
 import { toast } from '../Toast/use-toast'
-import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerUpdateForm = Omit<schemas['CustomerUpdate'], 'metadata'> & {
-  metadata: { key: string; value: string | number | boolean }[]
-}
+type CustomerUpdateForm = WithMetadataEntries<schemas['CustomerUpdate']>
 
 export const EditCustomerModal = ({
   customer,
@@ -35,6 +38,7 @@ export const EditCustomerModal = ({
     | schemas['SubscriptionCustomer']
   onClose: () => void
 }) => {
+  const router = useRouter()
   const canManageCustomers = useHasPermission(
     customer.organization_id,
     'customers:manage',
@@ -45,10 +49,7 @@ export const EditCustomerModal = ({
       name: customer.name || '',
       email: customer.email ?? '',
       external_id: customer.external_id || '',
-      metadata: Object.entries(customer.metadata).map(([key, value]) => ({
-        key,
-        value,
-      })),
+      metadata: metadataToEntries(customer.metadata),
     },
   })
 
@@ -60,10 +61,7 @@ export const EditCustomerModal = ({
   const handleUpdateCustomer = (customerUpdate: CustomerUpdateForm) => {
     const data = {
       ...customerUpdate,
-      metadata: customerUpdate.metadata?.reduce(
-        (acc, { key, value }) => ({ ...acc, [key]: value }),
-        {},
-      ),
+      metadata: entriesToMetadata(customerUpdate.metadata),
     }
 
     updateCustomer.mutateAsync(data).then(({ error }) => {
@@ -84,7 +82,7 @@ export const EditCustomerModal = ({
         title: 'Customer Updated',
         description: `Customer ${customer.email ?? customer.name ?? 'customer'} updated successfully`,
       })
-      revalidate(`customer:${customer.id}`)
+      router.refresh()
       onClose()
     })
   }
@@ -170,11 +168,7 @@ export const EditCustomerModal = ({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="metadata"
-                render={() => <CustomerMetadataForm />}
-              />
+              <MetadataForm label="Metadata" />
             </div>
             <Button
               type="submit"

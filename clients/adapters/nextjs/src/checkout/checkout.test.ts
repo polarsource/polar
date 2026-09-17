@@ -2,17 +2,18 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCheckoutCreate = vi.fn()
+const mockCheckoutUpdate = vi.fn()
 
-vi.mock('@polar-sh/sdk', () => ({
-  Polar: vi.fn(function () {
-    return {
-      checkouts: {
-        create: mockCheckoutCreate,
-      },
-    }
-  }),
+vi.mock('@polar-sh/sdk/2026-04', () => ({
+  createPolarCore: vi.fn(() => ({})),
 }))
 
+vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
+  createCheckouts: vi.fn(() => mockCheckoutCreate),
+  clientUpdateCheckouts: () => mockCheckoutUpdate,
+}))
+
+import { createPolarCore } from '@polar-sh/sdk/2026-04'
 import { Checkout } from './checkout'
 
 describe('Checkout', () => {
@@ -24,11 +25,15 @@ describe('Checkout', () => {
     it('should create checkout function', () => {
       const checkout = Checkout({
         accessToken: 'test-token',
-        server: 'sandbox',
+        environment: 'sandbox',
       })
 
       expect(checkout).toBeDefined()
       expect(typeof checkout).toBe('function')
+      expect(createPolarCore).toHaveBeenCalledWith({
+        accessToken: 'test-token',
+        environment: 'sandbox',
+      })
     })
 
     it('should handle default includeCheckoutId', () => {
@@ -41,6 +46,58 @@ describe('Checkout', () => {
   })
 
   describe('request handling', () => {
+    it.each([
+      ['discount_code=SAVE%2B20%25', 'SAVE+20%', undefined],
+      ['discount_code=SAVE20&discount_id=disc_123', undefined, 'disc_123'],
+      ['discount_code=', undefined, undefined],
+    ])('handles discount prefill for %s', async (query, code, discountId) => {
+      mockCheckoutCreate.mockResolvedValue({
+        url: 'https://polar.sh/checkout/123',
+        client_secret: 'checkout_secret',
+      })
+      const checkout = Checkout({ accessToken: 'test-token', theme: 'dark' })
+      const response = await checkout(
+        new NextRequest(
+          `https://example.com/checkout?products=prod_123&${query}`,
+        ),
+      )
+
+      expect(mockCheckoutCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ discount_id: discountId }),
+      )
+      if (code) {
+        expect(mockCheckoutUpdate).toHaveBeenCalledExactlyOnceWith(
+          'checkout_secret',
+          { discount_code: code },
+        )
+      } else {
+        expect(mockCheckoutUpdate).not.toHaveBeenCalled()
+      }
+      expect(response.headers.get('location')).toBe(
+        'https://polar.sh/checkout/123?theme=dark',
+      )
+    })
+
+    it('does not redirect when applying a discount code fails', async () => {
+      mockCheckoutCreate.mockResolvedValue({
+        url: 'https://polar.sh/checkout/123',
+        client_secret: 'checkout_secret',
+      })
+      mockCheckoutUpdate.mockRejectedValueOnce(
+        new Error('Invalid discount code'),
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const response = await Checkout({ accessToken: 'test-token' })(
+        new NextRequest(
+          'https://example.com/checkout?products=prod_123&discount_code=INVALID',
+        ),
+      )
+
+      expect(response.ok).toBe(false)
+      expect(response.headers.get('location')).toBeNull()
+      consoleSpy.mockRestore()
+    })
+
     it('should return 400 when no products provided', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })
       const request = new NextRequest('https://example.com/checkout')
@@ -66,20 +123,20 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith({
         products: ['prod_123'],
-        successUrl: undefined,
-        customerId: undefined,
-        externalCustomerId: undefined,
-        customerEmail: undefined,
-        customerName: undefined,
-        customerBillingAddress: undefined,
-        customerTaxId: undefined,
-        customerIpAddress: undefined,
-        customerMetadata: undefined,
-        allowDiscountCodes: undefined,
-        discountId: undefined,
+        success_url: undefined,
+        customer_id: undefined,
+        external_customer_id: undefined,
+        customer_email: undefined,
+        customer_name: undefined,
+        customer_billing_address: undefined,
+        customer_tax_id: undefined,
+        customer_ip_address: undefined,
+        customer_metadata: undefined,
+        allow_discount_codes: undefined,
+        discount_id: undefined,
         metadata: undefined,
         seats: undefined,
-        returnUrl: undefined,
+        return_url: undefined,
       })
       expect(response.status).toBe(307)
     })
@@ -103,7 +160,7 @@ describe('Checkout', () => {
       )
     })
 
-    it('should include successUrl with checkoutId when configured', async () => {
+    it('should include successUrl with checkout_id when configured', async () => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
       })
@@ -121,12 +178,12 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'https://example.com/success?checkoutId={CHECKOUT_ID}',
+          success_url: 'https://example.com/success?checkout_id={CHECKOUT_ID}',
         }),
       )
     })
 
-    it('should include successUrl without checkoutId when disabled', async () => {
+    it('should include successUrl without checkout_id when disabled', async () => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
       })
@@ -144,7 +201,7 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'https://example.com/success',
+          success_url: 'https://example.com/success',
         }),
       )
     })
@@ -184,16 +241,16 @@ describe('Checkout', () => {
 
       const requestUrl = new URL('https://example.com/checkout')
       requestUrl.searchParams.set('products', 'prod_123')
-      requestUrl.searchParams.set('customerId', 'cust_123')
-      requestUrl.searchParams.set('customerExternalId', 'ext_123')
-      requestUrl.searchParams.set('customerEmail', 'test@example.com')
-      requestUrl.searchParams.set('customerName', 'John Doe')
-      requestUrl.searchParams.set('customerBillingAddress', billingAddress)
-      requestUrl.searchParams.set('customerTaxId', 'TAX123')
-      requestUrl.searchParams.set('customerIpAddress', '192.168.1.1')
-      requestUrl.searchParams.set('customerMetadata', customerMetadata)
-      requestUrl.searchParams.set('allowDiscountCodes', 'true')
-      requestUrl.searchParams.set('discountId', 'disc_123')
+      requestUrl.searchParams.set('customer_id', 'cust_123')
+      requestUrl.searchParams.set('external_customer_id', 'ext_123')
+      requestUrl.searchParams.set('customer_email', 'test@example.com')
+      requestUrl.searchParams.set('customer_name', 'John Doe')
+      requestUrl.searchParams.set('customer_billing_address', billingAddress)
+      requestUrl.searchParams.set('customer_tax_id', 'TAX123')
+      requestUrl.searchParams.set('customer_ip_address', '192.168.1.1')
+      requestUrl.searchParams.set('customer_metadata', customerMetadata)
+      requestUrl.searchParams.set('allow_discount_codes', 'true')
+      requestUrl.searchParams.set('discount_id', 'disc_123')
       requestUrl.searchParams.set('metadata', metadata)
 
       const request = new NextRequest(requestUrl.toString())
@@ -202,38 +259,38 @@ describe('Checkout', () => {
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith({
         products: ['prod_123'],
-        successUrl: undefined,
-        customerId: 'cust_123',
-        externalCustomerId: 'ext_123',
-        customerEmail: 'test@example.com',
-        customerName: 'John Doe',
-        customerBillingAddress: { street: '123 Main St', city: 'NYC' },
-        customerTaxId: 'TAX123',
-        customerIpAddress: '192.168.1.1',
-        customerMetadata: { plan: 'premium' },
-        allowDiscountCodes: true,
-        discountId: 'disc_123',
+        success_url: undefined,
+        customer_id: 'cust_123',
+        external_customer_id: 'ext_123',
+        customer_email: 'test@example.com',
+        customer_name: 'John Doe',
+        customer_billing_address: { street: '123 Main St', city: 'NYC' },
+        customer_tax_id: 'TAX123',
+        customer_ip_address: '192.168.1.1',
+        customer_metadata: { plan: 'premium' },
+        allow_discount_codes: true,
+        discount_id: 'disc_123',
         metadata: { source: 'website' },
         seats: undefined,
-        returnUrl: undefined,
+        return_url: undefined,
       })
     })
 
-    it('should handle allowDiscountCodes as false', async () => {
+    it('should handle allow_discount_codes as false', async () => {
       mockCheckoutCreate.mockResolvedValue({
         url: 'https://polar.sh/checkout/123',
       })
 
       const checkout = Checkout({ accessToken: 'test-token' })
       const request = new NextRequest(
-        'https://example.com/checkout?products=prod_123&allowDiscountCodes=false',
+        'https://example.com/checkout?products=prod_123&allow_discount_codes=false',
       )
 
       await checkout(request)
 
       expect(mockCheckoutCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          allowDiscountCodes: false,
+          allow_discount_codes: false,
         }),
       )
     })

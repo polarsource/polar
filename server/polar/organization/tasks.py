@@ -412,8 +412,9 @@ async def _backfill_seats(
 
     # Find non-revoked seats for this organization's products.
     # We need to join through subscription/order → product to filter by organization.
-    # joinedload requires unique() which is incompatible with streaming,
-    # so we use LIMIT/OFFSET batch pagination instead.
+    # joinedload requires unique() which is incompatible with streaming, so we batch
+    # by keyset on CustomerSeat.id: the loop flushes member_id, the column the
+    # statement filters on, so offset-based paging would skip unprocessed rows.
     sub_seats_stmt = (
         select(CustomerSeat)
         .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
@@ -451,15 +452,18 @@ async def _backfill_seats(
     billing_customer_ids_with_seats: set[uuid.UUID] = set()
 
     for base_stmt in [sub_seats_stmt, order_seats_stmt]:
-        offset = 0
+        last_id: uuid.UUID | None = None
         while True:
-            batch_stmt = base_stmt.limit(_BACKFILL_BATCH_SIZE).offset(offset)
+            batch_stmt = base_stmt
+            if last_id is not None:
+                batch_stmt = batch_stmt.where(CustomerSeat.id > last_id)
+            batch_stmt = batch_stmt.limit(_BACKFILL_BATCH_SIZE)
             result = await session.execute(batch_stmt)
             seats = list(result.scalars().unique().all())
             if not seats:
                 break
             seats_found += len(seats)
-            offset += _BACKFILL_BATCH_SIZE
+            last_id = seats[-1].id
 
             for seat in seats:
                 if seat.subscription_id is not None and seat.subscription is not None:
@@ -900,8 +904,8 @@ async def prepare_members(organization_id: uuid.UUID) -> None:
     Non-destructive version of backfill_members.
 
     Populates member_id/email on seats and grants without changing customer_id,
-    deleting customers, or flipping any flags. Safe to run on seat-based orgs
-    that haven't enabled member_model_enabled yet.
+    deleting customers, or flipping any flags. Safe to run on orgs that haven't
+    enabled member_model_enabled yet.
 
     Three steps:
     A. Create owner members for all customers without one
@@ -913,14 +917,6 @@ async def prepare_members(organization_id: uuid.UUID) -> None:
         organization = await repository.get_by_id(organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
-
-        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
-            log.warning(
-                "organization.prepare_members.skipped",
-                reason="seat_based_pricing_not_enabled",
-                organization_id=str(organization_id),
-            )
-            return
 
     log.info(
         "organization.prepare_members.start",
@@ -1022,15 +1018,18 @@ async def _prepare_seats(
     count = 0
 
     for base_stmt in [sub_seats_stmt, order_seats_stmt]:
-        offset = 0
+        last_id: uuid.UUID | None = None
         while True:
-            batch_stmt = base_stmt.limit(_PREPARE_BATCH_SIZE).offset(offset)
+            batch_stmt = base_stmt
+            if last_id is not None:
+                batch_stmt = batch_stmt.where(CustomerSeat.id > last_id)
+            batch_stmt = batch_stmt.limit(_PREPARE_BATCH_SIZE)
             result = await session.execute(batch_stmt)
             seats = list(result.scalars().unique().all())
             if not seats:
                 break
             seats_found += len(seats)
-            offset += _PREPARE_BATCH_SIZE
+            last_id = seats[-1].id
 
             for seat in seats:
                 if seat.subscription_id is not None and seat.subscription is not None:
@@ -1222,3 +1221,18 @@ async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         await organization_service.evaluate_website_risk(session, organization)
+
+
+@actor(actor_name="organization.sync_payout_account_website", priority=TaskPriority.LOW)
+async def sync_payout_account_website(
+    organization_id: uuid.UUID, payout_account_id: uuid.UUID | None = None
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        await organization_service.sync_payout_account_website(
+            session, organization, payout_account_id
+        )

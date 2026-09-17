@@ -6,7 +6,7 @@ export default defineEventHandler((event) => {
   const checkoutHandler = Checkout({
     accessToken: polarAccessToken,
     successUrl: polarCheckoutSuccessUrl,
-    server: polarServer as 'sandbox' | 'production',
+    environment: polarServer as 'sandbox' | 'production',
   })
 
   return checkoutHandler(event)

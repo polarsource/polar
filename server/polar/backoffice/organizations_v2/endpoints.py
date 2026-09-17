@@ -20,7 +20,7 @@ from fastapi import Depends, HTTPException, Query, Request
 from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, case, false, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
@@ -31,6 +31,7 @@ from polar.account_credit.service import account_credit_service
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.enums import PayoutAccountType
+from polar.exceptions import PolarRequestValidationError
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import (
@@ -68,13 +69,14 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.models.transaction import TransactionType
-from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import (
     SNOOZE_MAX_DAYS,
     SNOOZE_MIN_DAYS,
+    ActivationGate,
+    BackofficeActivationResult,
     OrganizationError,
 )
 from polar.organization.service import organization as organization_service
@@ -116,6 +118,7 @@ from ..components import button, input, modal
 from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
+from ..search import organization_ilike
 from ..support_cases.queries import cases_statement, open_case_organization_ids
 from ..support_cases.urls import append_return_to, case_detail_url
 from ..toast import add_toast
@@ -138,6 +141,7 @@ from .orders_import import orders_import_sse
 from .priority import Signals
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import (
+    MIN_SEARCH_LENGTH,
     DeletedFilter,
     OrganizationListView,
     apply_deleted_filter,
@@ -495,6 +499,35 @@ async def _build_review_signals(
     return signals
 
 
+_STATUS_FILTERS: dict[str, OrganizationStatus] = {
+    "active": OrganizationStatus.ACTIVE,
+    "denied": OrganizationStatus.DENIED,
+    "created": OrganizationStatus.CREATED,
+    "offboarding": OrganizationStatus.OFFBOARDING,
+    "offboarded": OrganizationStatus.OFFBOARDED,
+    "review": OrganizationStatus.REVIEW,
+    "snoozed": OrganizationStatus.SNOOZED,
+    "blocked": OrganizationStatus.BLOCKED,
+}
+
+
+def _parse_status_filter(status: str | None) -> OrganizationStatus | None:
+    return _STATUS_FILTERS.get(status) if status else None
+
+
+def _normalize_search(q: str | None) -> str | None:
+    return (q.strip() or None) if q else None
+
+
+def _search_match(term: str) -> ColumnElement[bool]:
+    return or_(organization_ilike(term), Organization.email.ilike(term))
+
+
+def _search_rank(q: str) -> ColumnElement[int]:
+    """Rank an `%q%` trigram match: exact first, then prefix, then substring."""
+    return case((_search_match(q), 0), (_search_match(f"{q}%"), 1), else_=2)
+
+
 def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
     is_desc = direction == "desc"
     if sort == "name":
@@ -574,6 +607,7 @@ async def list_organizations(
     list_view = OrganizationListView(session)
 
     # Convert empty strings to None and parse numbers
+    q = _normalize_search(q)
     country = country if country else None
     risk_level = risk_level if risk_level else None
     has_appeal = has_appeal if has_appeal else None
@@ -581,24 +615,7 @@ async def list_organizations(
     # When searching, include deleted so matches surface.
     deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
 
-    # Parse status filter
-    status_filter: OrganizationStatus | None = None
-    if status == "active":
-        status_filter = OrganizationStatus.ACTIVE
-    elif status == "denied":
-        status_filter = OrganizationStatus.DENIED
-    elif status == "created":
-        status_filter = OrganizationStatus.CREATED
-    elif status == "offboarding":
-        status_filter = OrganizationStatus.OFFBOARDING
-    elif status == "offboarded":
-        status_filter = OrganizationStatus.OFFBOARDED
-    elif status == "review":
-        status_filter = OrganizationStatus.REVIEW
-    elif status == "snoozed":
-        status_filter = OrganizationStatus.SNOOZED
-    elif status == "blocked":
-        status_filter = OrganizationStatus.BLOCKED
+    status_filter = _parse_status_filter(status)
 
     # "Open cases" is a separate dimension (not an org status).
     selected_open_cases = status == "open_cases"
@@ -634,18 +651,21 @@ async def list_organizations(
             )
         )
 
+    search_too_short = False
+    search_rank: ColumnElement[int] | None = None
     if q:
         try:
             stmt = stmt.where(Organization.id == uuid.UUID(q))
         except ValueError:
-            search_term = f"%{q}%"
-            stmt = stmt.where(
-                or_(
-                    Organization.name.ilike(search_term),
-                    Organization.slug.ilike(search_term),
-                    Organization.email.ilike(search_term),
-                )
-            )
+            if len(q) < MIN_SEARCH_LENGTH:
+                # pg_trgm can't extract a trigram from a shorter pattern, so
+                # the search would fall back to a seq scan of the whole table
+                # (the search box fires on every keystroke).
+                search_too_short = True
+                stmt = stmt.where(false())
+            else:
+                stmt = stmt.where(_search_match(f"%{q}%"))
+                search_rank = _search_rank(q)
 
     # Country filter
     if country:
@@ -717,6 +737,12 @@ async def list_organizations(
     if direction is None:
         direction = "desc" if priority_sort else "asc"
 
+    # A `%term%` match hits anywhere in the name, slug or email, so an exact
+    # or prefix match can land pages deep. Rank it up front, unless the
+    # operator picked a column to sort by.
+    if search_rank is not None and sort == "priority":
+        stmt = stmt.order_by(search_rank)
+
     signals_by_org: dict[uuid.UUID, Signals] = {}
     organizations: list[Organization]
 
@@ -771,10 +797,10 @@ async def list_organizations(
             open_case_org_ids=open_case_org_ids,
             awaiting_reply_org_ids=awaiting_reply_org_ids,
             selected_open_cases=selected_open_cases,
+            search_too_short=search_too_short,
         ):
             pass
     else:
-        status_counts = await list_view.get_status_counts(deleted_filter)
         countries = await list_view.get_distinct_countries()
         open_cases_count = (
             await session.scalar(
@@ -793,7 +819,7 @@ async def list_organizations(
                 request,
                 organizations,
                 status_filter,
-                status_counts,
+                None,
                 page,
                 has_more,
                 sort,
@@ -811,8 +837,43 @@ async def list_organizations(
                 awaiting_reply_org_ids=awaiting_reply_org_ids,
                 selected_open_cases=selected_open_cases,
                 open_cases_count=open_cases_count,
+                search_too_short=search_too_short,
+                lazy_counts_url=str(
+                    request.url_for("organizations:status_counts").include_query_params(
+                        **{k: v for k, v in request.query_params.items() if v}
+                    )
+                ),
             ):
                 pass
+
+
+@router.get("/status-counts", name="organizations:status_counts")
+async def status_counts(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+    status: str | None = Query(None),
+    q: str | None = Query(None),
+    deleted: DeletedFilter | None = Query(None),
+) -> None:
+    list_view = OrganizationListView(session)
+    # Same normalization as the list: `lazy_counts_url` forwards the raw query
+    # params, so a whitespace-only `q` must not flip the deleted filter here
+    # while the list treats it as no search at all.
+    q = _normalize_search(q)
+    deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
+    open_cases_count = (
+        await session.scalar(
+            select(func.count()).select_from(open_case_organization_ids().subquery())
+        )
+        or 0
+    )
+    list_view.render_status_tabs(
+        request,
+        _parse_status_filter(status),
+        await list_view.get_status_counts(deleted_filter),
+        status == "open_cases",
+        open_cases_count,
+    )
 
 
 @router.get("/{organization_id}", name="organizations:detail")
@@ -928,148 +989,9 @@ async def get_organization_detail(
         has_risk_signals=has_risk_signals,
     )
 
-    # Fetch analytics data for overview section
-    setup_data = None
-    payment_stats = None
-    orders_count = 0
-    unrefunded_orders_count = 0
     parsed_agent_report = None
     agent_reviewed_at = None
     if section == "overview":
-        setup_analytics = OrganizationSetupAnalyticsService(session)
-        payment_analytics = PaymentAnalyticsService(session)
-
-        # Get setup metrics
-        checkout_links_count = await setup_analytics.get_checkout_links_count(
-            organization_id
-        )
-        webhooks_count = await setup_analytics.get_webhooks_count(organization_id)
-        api_keys_count = await setup_analytics.get_organization_tokens_count(
-            organization_id
-        )
-        products_count = await setup_analytics.get_products_count(organization_id)
-        benefits_count = await setup_analytics.get_benefits_count(organization_id)
-        enabled_benefits_count = await setup_analytics.get_enabled_benefits_count(
-            organization_id
-        )
-
-        user_verified_result = await session.execute(
-            select(User.identity_verification_status)
-            .join(UserOrganization, User.id == UserOrganization.user_id)
-            .where(UserOrganization.organization_id == organization_id)
-            .limit(1)
-        )
-        user_verified_row = user_verified_result.first()
-        user_verified = (
-            user_verified_row[0] == IdentityVerificationStatus.verified
-            if user_verified_row
-            else False
-        )
-
-        payouts_enabled = await setup_analytics.check_payout_account_enabled(
-            organization
-        )
-        payment_ready = organization.can_accept_payments
-
-        setup_score = OrganizationSetupAnalyticsService.calculate_setup_score(
-            checkout_links_count,
-            webhooks_count,
-            api_keys_count,
-            products_count,
-            benefits_count,
-            user_verified,
-            payouts_enabled,
-        )
-
-        # Calculate total transfer sum (balance transactions)
-        total_transfer_sum = await transaction_service.get_transactions_sum(
-            session, organization.account_id, type=TransactionType.balance
-        )
-
-        setup_data = {
-            "setup_score": setup_score,
-            "checkout_links_count": checkout_links_count,
-            "webhooks_count": webhooks_count,
-            "api_keys_count": api_keys_count,
-            "products_count": products_count,
-            "benefits_count": benefits_count,
-            "enabled_benefits_count": enabled_benefits_count,
-            "user_verified": user_verified,
-            "payouts_enabled": payouts_enabled,
-            "payment_ready": payment_ready,
-            "next_review_threshold": organization.next_review_threshold,
-            "total_transfer_sum": total_transfer_sum,
-        }
-
-        # Get payment metrics
-        (
-            payment_count,
-            total_amount,
-        ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
-        account_balance = await transaction_service.get_transactions_sum(
-            session, organization.account_id
-        )
-        refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
-            organization_id
-        )
-        failed_count = await payment_analytics.get_failed_payments_count(
-            organization_id
-        )
-        risk_scores = await payment_analytics.get_risk_scores(organization_id)
-        (
-            dispute_count,
-            dispute_amount,
-            chargeback_count,
-            chargeback_amount,
-        ) = await payment_analytics.get_dispute_stats(organization_id)
-
-        total_attempts = payment_count + failed_count
-        auth_rate = (
-            (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
-        )
-        refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
-        dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
-        chargeback_rate = (
-            (chargeback_count / payment_count * 100) if payment_count > 0 else 0
-        )
-
-        p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
-
-        (
-            held_payout_count,
-            held_payout_amount,
-        ) = await PayoutRepository.from_session(session).get_held_stats_by_account(
-            organization.account_id
-        )
-
-        payment_stats = {
-            "payment_count": payment_count,
-            "total_amount": total_amount,
-            "total_net_amount": total_transfer_sum,
-            "account_balance": account_balance,
-            "refunds_count": refunds_count,
-            "refunds_amount": refunds_amount,
-            "refund_rate": refund_rate,
-            "auth_rate": auth_rate,
-            "failed_count": failed_count,
-            "dispute_count": dispute_count,
-            "dispute_amount": dispute_amount,
-            "dispute_rate": dispute_rate,
-            "chargeback_count": chargeback_count,
-            "chargeback_amount": chargeback_amount,
-            "chargeback_rate": chargeback_rate,
-            "p50_risk": p50_risk,
-            "p90_risk": p90_risk,
-            "risk_scores_count": len(risk_scores),
-            "next_review_threshold": organization.next_review_threshold,
-            "held_payout_count": held_payout_count,
-            "held_payout_amount": held_payout_amount,
-        }
-
-        orders_count, unrefunded_orders_count = await count_test_sales(
-            session, organization_id
-        )
-
         parsed_agent_report = agent_review.parsed_report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
@@ -1087,16 +1009,12 @@ async def get_organization_detail(
             if section == "overview":
                 overview = OverviewSection(
                     organization,
-                    orders_count=orders_count,
-                    unrefunded_orders_count=unrefunded_orders_count,
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
                     has_open_appeal_case=appeal_case is not None and appeal_case_open,
                     risk_signals=risk_signals,
                 )
-                with overview.render(
-                    request, setup_data=setup_data, payment_stats=payment_stats
-                ):
+                with overview.render(request):
                     pass
             elif section == "team":
                 team_section = TeamSection(organization)
@@ -1175,6 +1093,163 @@ async def get_organization_detail(
             else:
                 with tag.div():
                     text(f"Unknown section: {section}")
+
+
+async def _get_overview_card_organization(
+    session: AsyncSession, organization_id: UUID4
+) -> Organization:
+    statement = (
+        select(Organization)
+        .options(joinedload(Organization.payout_account))
+        .where(Organization.id == organization_id)
+    )
+    result = await session.execute(statement)
+    organization = result.scalars().unique().one_or_none()
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return organization
+
+
+async def _get_shared_organizations(
+    session: AsyncSession, organization: Organization
+) -> Sequence[Organization]:
+    """The other organizations pointing at the same payout account."""
+    if organization.payout_account_id is None:
+        return []
+
+    repository = OrganizationRepository.from_session(session)
+    linked = await repository.get_all_by_payout_account(organization.payout_account_id)
+    return [other for other in linked if other.id != organization.id]
+
+
+async def _build_setup_data(
+    session: AsyncSession, organization: Organization
+) -> dict[str, int | bool]:
+    setup_analytics = OrganizationSetupAnalyticsService(session)
+    return {
+        "checkout_links_count": await setup_analytics.get_checkout_links_count(
+            organization.id
+        ),
+        "webhooks_count": await setup_analytics.get_webhooks_count(organization.id),
+        "api_keys_count": await setup_analytics.get_organization_tokens_count(
+            organization.id
+        ),
+        "products_count": await setup_analytics.get_products_count(organization.id),
+        "benefits_count": await setup_analytics.get_benefits_count(organization.id),
+        "enabled_benefits_count": await setup_analytics.get_enabled_benefits_count(
+            organization.id
+        ),
+        "payment_ready": organization.can_accept_payments,
+    }
+
+
+async def _build_payment_stats(
+    session: AsyncSession, organization: Organization
+) -> dict[str, int | float]:
+    payment_analytics = PaymentAnalyticsService(session)
+
+    total_transfer_sum = await transaction_service.get_transactions_sum(
+        session, organization.account_id, type=TransactionType.balance
+    )
+    (
+        payment_count,
+        total_amount,
+    ) = await payment_analytics.get_succeeded_payments_stats(organization.id)
+    account_balance = await transaction_service.get_transactions_sum(
+        session, organization.account_id
+    )
+    refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
+        organization.id
+    )
+    failed_count = await payment_analytics.get_failed_payments_count(organization.id)
+    risk_scores = await payment_analytics.get_risk_scores(organization.id)
+    (
+        dispute_count,
+        dispute_amount,
+        chargeback_count,
+        chargeback_amount,
+    ) = await payment_analytics.get_dispute_stats(organization.id)
+
+    total_attempts = payment_count + failed_count
+    auth_rate = (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
+    refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
+    dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
+    chargeback_rate = (
+        (chargeback_count / payment_count * 100) if payment_count > 0 else 0
+    )
+
+    p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
+
+    (
+        held_payout_count,
+        held_payout_amount,
+    ) = await PayoutRepository.from_session(session).get_held_stats_by_account(
+        organization.account_id
+    )
+
+    return {
+        "payment_count": payment_count,
+        "total_amount": total_amount,
+        "total_net_amount": total_transfer_sum,
+        "account_balance": account_balance,
+        "refunds_count": refunds_count,
+        "refunds_amount": refunds_amount,
+        "refund_rate": refund_rate,
+        "auth_rate": auth_rate,
+        "failed_count": failed_count,
+        "dispute_count": dispute_count,
+        "dispute_amount": dispute_amount,
+        "dispute_rate": dispute_rate,
+        "chargeback_count": chargeback_count,
+        "chargeback_amount": chargeback_amount,
+        "chargeback_rate": chargeback_rate,
+        "p50_risk": p50_risk,
+        "p90_risk": p90_risk,
+        "risk_scores_count": len(risk_scores),
+        "next_review_threshold": organization.next_review_threshold,
+        "held_payout_count": held_payout_count,
+        "held_payout_amount": held_payout_amount,
+    }
+
+
+@router.get(
+    "/{organization_id}/overview/payment-metrics",
+    name="organizations:overview_payment_metrics",
+)
+async def overview_payment_metrics(
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Lazily loaded payment metrics card of the overview section."""
+    organization = await _get_overview_card_organization(session, organization_id)
+    payment_stats = await _build_payment_stats(session, organization)
+    with OverviewSection(organization).payment_card(payment_stats):
+        pass
+
+
+@router.get(
+    "/{organization_id}/overview/setup-checklist",
+    name="organizations:overview_setup_checklist",
+)
+async def overview_setup_checklist(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Lazily loaded setup and checklist card of the overview section."""
+    organization = await _get_overview_card_organization(session, organization_id)
+    setup_data = await _build_setup_data(session, organization)
+    orders_count, unrefunded_orders_count = await count_test_sales(
+        session, organization_id
+    )
+    overview = OverviewSection(
+        organization,
+        orders_count=orders_count,
+        unrefunded_orders_count=unrefunded_orders_count,
+        shared_organizations=await _get_shared_organizations(session, organization),
+    )
+    with overview.setup_checklist_card(request, setup_data):
+        pass
 
 
 def _get_review_report(
@@ -2487,6 +2562,145 @@ async def under_review_dialog(
                 ):
                     with button(variant="warning", type="submit"):
                         text("Set Under Review")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/activate-dialog",
+    name="organizations:activate_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def activate_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Submit a CREATED org for review and/or run maybe_activate."""
+    repository = OrganizationRepository.from_session(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    detail_url = str(
+        request.url_for("organizations:detail", organization_id=organization_id)
+    )
+    readiness = await organization_service.get_activation_readiness(
+        session, organization
+    )
+    error_message: str | None = None
+    is_created = organization.status == OrganizationStatus.CREATED
+    can_submit_review = is_created and organization.details_submitted_at is None
+    can_activate = is_created and readiness.is_ready
+
+    if request.method == "POST":
+        try:
+            result = await organization_service.backoffice_submit_and_maybe_activate(
+                session, organization
+            )
+        except OrganizationError as e:
+            error_message = e.message
+        except PolarRequestValidationError as e:
+            error_message = "; ".join(error["msg"] for error in e.errors())
+        else:
+            match result:
+                case BackofficeActivationResult.activated:
+                    await add_toast(request, "Organization activated.", "success")
+                case BackofficeActivationResult.submitted_for_review:
+                    await add_toast(
+                        request,
+                        "Submitted for review. The organization will activate "
+                        "automatically if the review passes and onboarding is "
+                        "complete.",
+                        "success",
+                    )
+                case BackofficeActivationResult.still_incomplete:
+                    missing = ", ".join(
+                        item.label.lower() for item in readiness.missing
+                    )
+                    await add_toast(
+                        request,
+                        f"Could not activate yet. Still missing: {missing}.",
+                        "warning",
+                    )
+            return HXRedirectResponse(request, detail_url, 303)
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+    with modal("Activate Organization", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            with tag.div(
+                classes="bg-success/10 border border-success/20 p-4 rounded-lg"
+                if readiness.is_ready
+                else "bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-1"):
+                    text(
+                        "Ready to activate"
+                        if readiness.is_ready
+                        else "Not fully ready to activate"
+                    )
+                with tag.p(classes="text-sm"):
+                    text(
+                        "All onboarding and review gates have passed. Activate "
+                        "uses the same path as automatic activation."
+                        if readiness.is_ready
+                        else "Complete the missing steps below. Submitting for "
+                        "review queues the review agent; the organization "
+                        "activates automatically if the review passes and "
+                        "payout and identity checks are ready."
+                    )
+
+            with tag.ul(classes="space-y-2"):
+                for requirement in readiness.requirements:
+                    with tag.li(classes="flex items-start gap-2 text-sm"):
+                        icon_color = (
+                            "text-success" if requirement.ready else "text-error"
+                        )
+                        with tag.span(classes=f"{icon_color} font-semibold"):
+                            text("✓" if requirement.ready else "✗")
+                        with tag.div():
+                            with tag.p(classes="font-medium"):
+                                text(requirement.label)
+                            if requirement.missing:
+                                with tag.p(classes="text-base-content/70"):
+                                    text(requirement.missing)
+                            if (
+                                not requirement.ready
+                                and requirement.gate is ActivationGate.payout_account
+                            ):
+                                with tag.a(
+                                    href=f"{detail_url}?section=account",
+                                    classes="link link-primary text-sm",
+                                ):
+                                    text("Go to account")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                if can_activate or can_submit_review:
+                    with tag.form(
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:activate_dialog",
+                                organization_id=organization_id,
+                            )
+                        ),
+                    ):
+                        with button(
+                            variant="success" if can_activate else "warning",
+                            type="submit",
+                        ):
+                            text("Activate" if can_activate else "Submit for review")
 
     return None
 

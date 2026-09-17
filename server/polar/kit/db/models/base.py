@@ -110,7 +110,8 @@ class RateLimitGroupMixin:
 
 uuid_ossp = PGExtension(schema="public", signature="uuid-ossp")
 citext = PGExtension(schema="public", signature="citext")
+pg_trgm = PGExtension(schema="public", signature="pg_trgm")
 register_entities(
-    (uuid_ossp, citext),
+    (uuid_ossp, citext, pg_trgm),
     entity_types=(PGExtension, PGFunction, PGTrigger),
 )

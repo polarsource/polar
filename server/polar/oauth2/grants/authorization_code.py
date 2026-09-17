@@ -1,3 +1,4 @@
+import time
 import typing
 import uuid
 
@@ -15,6 +16,7 @@ from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
 from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
+from authlib.oidc.core.util import create_half_hash
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -22,6 +24,7 @@ from polar.auth.models import AuthSubject
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.signer import get_signer, sign_jws
 from polar.models import (
     OAuth2AuthorizationCode,
     OAuth2AuthorizationCodeOrganization,
@@ -30,7 +33,11 @@ from polar.models import (
     User,
 )
 
-from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
+from ..constants import (
+    AUTHORIZATION_CODE_PREFIX,
+    ID_TOKEN_EXPIRES_IN,
+    ISSUER,
+)
 from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
@@ -237,24 +244,36 @@ class CodeChallenge(_CodeChallenge):
     pass
 
 
-class OpenIDCode(_OpenIDCode):
+class IDTokenSigning(_OpenIDToken):
+    """The claims are a copy of authlib's; only the signing changes (ADR-0010)."""
+
+    def get_client_claims(self, client: OAuth2Client) -> dict[str, typing.Any]:
+        return {"iss": ISSUER, "exp": int(time.time()) + ID_TOKEN_EXPIRES_IN}
+
+    def encode_id_token(
+        self, token: dict[str, typing.Any], request: OAuth2Request
+    ) -> str:
+        signer = get_signer()
+        claims = self.get_compatible_claims(request)
+        if request.authorization_code:
+            claims.update(
+                self.get_authorization_code_claims(request.authorization_code)
+            )
+        if access_token := token.get("access_token"):
+            at_hash = create_half_hash(access_token, signer.algorithm)
+            if at_hash is not None:
+                claims["at_hash"] = at_hash.decode("utf-8")
+        claims.update(self.generate_user_info(request.user, token["scope"]))
+        return sign_jws(claims, signer)
+
+
+class OpenIDCode(IDTokenSigning, _OpenIDCode):
     def __init__(self, session: Session, require_nonce: bool = False):
         super().__init__(require_nonce)
         self._session = session
 
     def exists_nonce(self, nonce: str, request: StarletteOAuth2Request) -> bool:
         return _exists_nonce(self._session, nonce, request)
-
-    def get_jwt_config(self, grant: AuthorizationCodeGrant) -> dict[str, typing.Any]:
-        return JWT_CONFIG
-
-    def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
-        return generate_user_info(user, scope)
-
-
-class OpenIDToken(_OpenIDToken):
-    def get_jwt_config(self, grant: AuthorizationCodeGrant) -> dict[str, typing.Any]:
-        return JWT_CONFIG
 
     def generate_user_info(self, user: SubTypeValue, scope: str) -> UserInfo:
         return generate_user_info(user, scope)

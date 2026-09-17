@@ -1,7 +1,16 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ColumnElement, ForeignKey, Index, Integer, String, Uuid
+from sqlalchemy import (
+    Boolean,
+    ColumnElement,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Uuid,
+    text,
+)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -20,9 +29,25 @@ class WebhookEvent(RecordModel):
     __tablename__ = "webhook_events"
     __table_args__ = (
         Index(
+            "ix_webhook_events_endpoint_completed",
+            "webhook_endpoint_id",
+            text("created_at DESC"),
+            postgresql_include=["succeeded"],
+            postgresql_where="succeeded IS NOT NULL AND deleted_at IS NULL",
+        ),
+        Index(
             "ix_webhook_events_created_at_non_archived",
             "created_at",
             postgresql_where="payload IS NOT NULL",
+        ),
+        Index(
+            "ix_webhook_events_created_at_pending",
+            "created_at",
+            postgresql_include=["id"],
+            postgresql_where=(
+                "succeeded IS NULL AND deleted_at IS NULL "
+                "AND payload IS NOT NULL AND NOT skipped"
+            ),
         ),
     )
 

@@ -140,13 +140,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
   verify_cards: {
     title: 'Polar checks the cards',
     description:
-      'We check that every imported subscription has a card it can charge, and tell you which ones do not.',
-  },
-  resolve_uncovered: {
-    title: 'Handle customers without a card',
-    description:
-      'Some customers have to add a card again. Ask them to do it, or run the copy again to pick up new cards.',
-    action: 'I handled these customers',
+      'We check that every imported subscription has a card it can charge.',
   },
   cutover: {
     title: 'Switch billing to Polar',
@@ -160,4 +154,18 @@ export const STEP_COPY: Record<string, StepCopy> = {
     description:
       'We start billing the subscriptions you picked. They are charged on their next renewal date.',
   },
+}
+
+const AFTER_CARD_MOVEMENT_KEYS = new Set([
+  'resolve_uncovered',
+  'cutover',
+  'move_subscriptions',
+])
+
+export function isSwitchChecklistKey(key: string | null | undefined): boolean {
+  return key != null && AFTER_CARD_MOVEMENT_KEYS.has(key)
+}
+
+export function cardMovementSteps<T extends { key: string }>(steps: T[]): T[] {
+  return steps.filter((step) => !isSwitchChecklistKey(step.key))
 }

@@ -327,6 +327,79 @@ class TestRequestDeletion:
         assert len(recipients) == 2
         assert all(r.deleted_at is not None for r in recipients)
 
+    async def test_identity_verification_redacted_on_deletion(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """An in-flight Stripe Identity session is redacted on user deletion."""
+        user.identity_verification_id = "vs_delete_me"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        await save_fixture(user)
+
+        redact_mock = mocker.patch(
+            "polar.user.service.stripe_service.redact_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+
+        result = await user_service.request_deletion(session, user)
+
+        assert result.deleted is True
+        redact_mock.assert_awaited_once_with("vs_delete_me")
+        assert user.identity_verification_id is None
+        assert (
+            user.identity_verification_status == IdentityVerificationStatus.unverified
+        )
+
+    async def test_identity_verification_not_redacted_when_no_session(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A user without an in-flight identity session makes no Stripe call."""
+        assert user.identity_verification_id is None
+
+        redact_mock = mocker.patch(
+            "polar.user.service.stripe_service.redact_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+
+        result = await user_service.request_deletion(session, user)
+
+        assert result.deleted is True
+        redact_mock.assert_not_awaited()
+
+    async def test_identity_verification_redact_swallows_stripe_error(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """Deletion completes even if Stripe reports the session already gone."""
+        user.identity_verification_id = "vs_missing"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.redact_verification_session",
+            new_callable=mocker.AsyncMock,
+            side_effect=stripe_lib.InvalidRequestError(
+                "No such verification session: vs_missing", "id"
+            ),
+        )
+
+        result = await user_service.request_deletion(session, user)
+
+        assert result.deleted is True
+        assert user.identity_verification_id is None
+        assert (
+            user.identity_verification_status == IdentityVerificationStatus.unverified
+        )
+
 
 def _verification_session(
     id: str, status: str
@@ -537,6 +610,7 @@ class TestIdentityVerificationVerified:
         updated_user = await user_service.identity_verification_verified(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -577,6 +651,7 @@ class TestIdentityVerificationVerified:
         updated_user = await user_service.identity_verification_verified(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -617,6 +692,7 @@ class TestIdentityVerificationPending:
         updated_user = await user_service.identity_verification_pending(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -646,6 +722,7 @@ class TestIdentityVerificationPending:
         updated_user = await user_service.identity_verification_pending(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -673,6 +750,7 @@ class TestIdentityVerificationPending:
         updated_user = await user_service.identity_verification_pending(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -722,6 +800,7 @@ class TestIdentityVerificationFailed:
         updated_user = await user_service.identity_verification_failed(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -748,6 +827,7 @@ class TestIdentityVerificationFailed:
         updated_user = await user_service.identity_verification_failed(
             session, verification_session
         )
+        assert updated_user is not None
 
         assert (
             updated_user.identity_verification_status
@@ -776,3 +856,76 @@ class TestIdentityVerificationFailed:
         await user_service.identity_verification_failed(session, verification_session)
 
         assert user.identity_verification_status == IdentityVerificationStatus.pending
+
+
+@pytest.mark.asyncio
+class TestIdentityVerificationAfterDeletion:
+    async def test_verified_no_ops_via_metadata_for_deleted_user(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A verified transition arriving after deletion no-ops instead of
+        raising to dead-letter. Production sessions always carry metadata.user_id
+        (set by create_verification_session), so the metadata fallback resolves the
+        soft-deleted user and the handler short-circuits without side effects.
+        """
+        user.identity_verification_id = "vs_deleted"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.redact_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+        maybe_activate_mock = mocker.patch(
+            "polar.user.service.organization_service.maybe_activate",
+            new_callable=mocker.AsyncMock,
+        )
+
+        assert (await user_service.request_deletion(session, user)).deleted is True
+        assert user.identity_verification_id is None
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {
+                "id": "vs_deleted",
+                "status": "verified",
+                "metadata": {"user_id": str(user.id)},
+            },
+            None,
+        )
+
+        result = await user_service.identity_verification_verified(
+            session, verification_session
+        )
+
+        assert result is None
+        maybe_activate_mock.assert_not_awaited()
+
+    async def test_verified_no_ops_via_primary_lookup_for_affected_row(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A transition for a user soft-deleted before the fix shipped (id still
+        set) no-ops via the primary lookup's include_deleted branch — no metadata
+        required — instead of raising to dead-letter.
+        """
+        user.identity_verification_id = "vs_affected"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        user.deleted_at = utc_now()
+        await save_fixture(user)
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {"id": "vs_affected", "status": "verified"}, None
+        )
+
+        assert (
+            await user_service.identity_verification_verified(
+                session, verification_session
+            )
+            is None
+        )

@@ -57,7 +57,6 @@ from .exceptions import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
     PolarSelfNotConfigured,
-    PolarSelfNotPaidOrder,
     PolarSelfOrderNotFound,
     PolarSelfPaidSubscriptionAlreadyExists,
     PolarSelfPlanNotFound,
@@ -753,6 +752,11 @@ class PolarSelfService:
     async def handle_order_created_event(
         self, payload: WebhookOrderCreatedPayload
     ) -> None:
+        # polar-self emails are only meant for production customers; never send
+        # them from the sandbox environment.
+        if settings.is_sandbox():
+            return
+
         # The webhook payload reflects the order at creation time; fields like
         # ``is_invoice_generated`` flip to True later, so refetch over the API.
         client = get_client()
@@ -769,6 +773,12 @@ class PolarSelfService:
 
         # Free orders (100% discount, $0 plans) shouldn't trigger an email.
         if order.net_amount == 0:
+            return
+
+        # A voided order (e.g. subscription revoked before this deferred
+        # order.created handler ran) is cancelled: nothing to invoice and no
+        # renewal/confirmation email is owed — skip the whole flow.
+        if order.status == "void":
             return
 
         contacts = await client.list_billing_contacts(customer_id=order.customer.id)
@@ -791,10 +801,7 @@ class PolarSelfService:
             if not order.is_invoice_generated:
                 # Kick off PDF generation if the API hasn't done so yet, then
                 # retry — generation runs asynchronously on Polar's side.
-                try:
-                    await client.trigger_order_invoice_generation(order_id=order.id)
-                except PolarSelfNotPaidOrder as e:
-                    raise PolarSelfInvoiceNotReady(order.id) from e
+                await client.trigger_order_invoice_generation(order_id=order.id)
                 raise PolarSelfInvoiceNotReady(order.id)
 
             invoice_url = await client.get_order_invoice(order_id=order.id)
@@ -938,6 +945,11 @@ class PolarSelfService:
         never have a payment to fail, and a subscription with no billing
         contacts has nobody to notify.
         """
+        # polar-self emails are only meant for production customers; never send
+        # them from the sandbox environment.
+        if settings.is_sandbox():
+            return None
+
         if subscription.amount == 0:
             return None
 

@@ -506,20 +506,14 @@ describe('CheckoutPricingBreakdown', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('composes with the due-today experiment like a dated total after trial plus due today', () => {
+    it('shows a dated total after trial plus due today', () => {
       const checkout = createDiscountedCheckout({
         interval: 'month',
         discount: onceDiscount,
         trial: true,
       })
 
-      render(
-        <CheckoutPricingBreakdown
-          checkout={checkout}
-          locale="en"
-          trialDueTodayExperiment
-        />,
-      )
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
       expect(screen.getByTestId('detail-row-Due today')).toHaveTextContent('$0')
       const afterTrial = screen.getByTestId('detail-row-Total after trial')
@@ -850,28 +844,38 @@ describe('CheckoutPricingBreakdown', () => {
         trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
       })
 
-    it('shows a due-today row alongside the recurring total', () => {
-      render(
-        <CheckoutPricingBreakdown
-          checkout={trialCheckout()}
-          locale="en"
-          trialDueTodayExperiment
-        />,
-      )
-
-      expect(screen.getByTestId('detail-row-Due today')).toHaveTextContent('$0')
-      expect(screen.getByTestId('detail-row-Monthly')).toBeInTheDocument()
-    })
-
-    it('keeps only the recurring total by default', () => {
+    it('shows an emphasized due-today row and mutes the recurring total', () => {
       render(
         <CheckoutPricingBreakdown checkout={trialCheckout()} locale="en" />,
+      )
+
+      const dueTodayRow = screen.getByTestId('detail-row-Due today')
+      expect(dueTodayRow).toHaveTextContent('$0')
+      expect(dueTodayRow).toHaveClass('font-medium')
+      expect(screen.getByTestId('detail-row-Monthly')).not.toHaveClass(
+        'font-medium',
+      )
+    })
+
+    it('keeps the emphasized recurring total without a trial', () => {
+      render(
+        <CheckoutPricingBreakdown
+          checkout={createCheckout({
+            ...trialCheckout(),
+            active_trial_interval: null,
+            active_trial_interval_count: null,
+            trial_end: null,
+          })}
+          locale="en"
+        />,
       )
 
       expect(
         screen.queryByTestId('detail-row-Due today'),
       ).not.toBeInTheDocument()
-      expect(screen.getByTestId('detail-row-Monthly')).toBeInTheDocument()
+      expect(screen.getByTestId('detail-row-Monthly')).toHaveClass(
+        'font-medium',
+      )
     })
   })
 

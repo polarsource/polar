@@ -3,8 +3,8 @@
 from shared import (
     SERVER_DIR,
     Context,
-    console,
     run_command,
+    step_failed,
     step_spinner,
     step_status,
 )
@@ -59,9 +59,17 @@ def run(ctx: Context) -> bool:
         step_status(True, "Docker containers", f"started ({', '.join(services)})" if services else "started")
         return True
     else:
-        step_status(False, "Docker containers", "failed to start")
-        if result and result.stderr:
-            console.print(f"[dim]{result.stderr}[/dim]")
-        if result and result.stdout:
-            console.print(f"[dim]{result.stdout}[/dim]")
+        output = f"{result.stdout}\n{result.stderr}" if result else ""
+        if "port is already allocated" in output or "address already in use" in output:
+            hints = (
+                "Another program is using one of the ports (5432, 6379, 9000, 7181): stop it, or change the port in server/.env",
+                "Find it with [bold]lsof -i :5432[/bold] (swap in the port from the error above)",
+            )
+        else:
+            hints = (
+                "[bold]docker compose ps -a[/bold] in server/ shows which container failed",
+                "[bold]docker compose logs <service>[/bold] in server/ shows why",
+                "Is Docker Desktop running and finished starting? Check the whale icon in the menu bar",
+            )
+        step_failed("Docker containers", "failed to start", result, hints)
         return False

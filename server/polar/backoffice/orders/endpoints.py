@@ -33,6 +33,7 @@ from .. import formatters
 from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
+from ..search import organization_ilike
 from ..toast import add_toast
 from .components import order_status_badge, orders_datatable, payments_datatable
 from .forms import RefundForm
@@ -150,12 +151,7 @@ async def list(
             parsed_org_uuid = uuid.UUID(organization)
             statement = statement.where(Organization.id == parsed_org_uuid)
         except ValueError:
-            statement = statement.where(
-                or_(
-                    Organization.slug.ilike(f"%{organization}%"),
-                    Organization.name.ilike(f"%{organization}%"),
-                )
-            )
+            statement = statement.where(organization_ilike(f"%{organization}%"))
 
     if status is not None:
         statement = statement.where(Order.status == status)

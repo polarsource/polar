@@ -152,7 +152,7 @@ async def get_optional_authentication_session(
     if token is None or not token.isascii():
         return None
     try:
-        return await authentication_session_service.get_by_token(token)
+        return await authentication_session_service.validate(token)
     except InvalidSessionTokenException, ExpiredSessionException:
         return None
 

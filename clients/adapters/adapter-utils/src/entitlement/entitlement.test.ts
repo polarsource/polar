@@ -1,7 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { Benefit } from '@polar-sh/sdk/models/components/benefit'
-import type { WebhookBenefitGrantCreatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantcreatedpayload'
-import type { WebhookBenefitGrantRevokedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantrevokedpayload'
+import type { models, webhooks } from '@polar-sh/sdk/2026-04'
 import { EntitlementStrategy } from './entitlement'
 
 describe('EntitlementStrategy', () => {
@@ -17,49 +15,49 @@ describe('EntitlementStrategy', () => {
 
     const payload = {
       type: 'benefit_grant.created',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       data: {
         id: '123',
-        createdAt: new Date(),
-        modifiedAt: new Date(),
-        isGranted: true,
-        benefitId: '123',
-        customerId: '123',
-        subscriptionId: '123',
-        orderId: '123',
-        userId: '123',
-        isRevoked: false,
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        is_granted: true,
+        benefit_id: '123',
+        customer_id: '123',
+        subscription_id: '123',
+        order_id: '123',
+        user_id: '123',
+        is_revoked: false,
         properties: { test: 'test' },
         customer: {
           email: 'test@test.com',
           id: '123',
-          createdAt: new Date(),
-          modifiedAt: new Date(),
-          deletedAt: null,
+          created_at: new Date().toISOString(),
+          modified_at: new Date().toISOString(),
+          deleted_at: null,
           metadata: {},
-          emailVerified: true,
-          billingAddress: {
+          email_verified: true,
+          billing_address: {
             line1: '123',
             line2: '123',
             city: '123',
             state: '123',
-            postalCode: '123',
+            postal_code: '123',
             country: 'US',
           },
           name: 'Test',
-          taxId: ['123'],
-          organizationId: '123',
-          avatarUrl: '123',
+          tax_id: ['123'],
+          organization_id: '123',
+          avatar_url: '123',
         },
         benefit: {
           id: '123',
-          createdAt: new Date(),
-          modifiedAt: new Date(),
+          created_at: new Date().toISOString(),
+          modified_at: new Date().toISOString(),
           selectable: true,
           description: 'test',
-        } as unknown as Benefit,
+        } as unknown as models.Benefit,
       },
-    } as unknown as WebhookBenefitGrantCreatedPayload
+    } as unknown as webhooks.WebhookBenefitGrantCreatedPayload
 
     entitlement.handler('test')(payload)
 
@@ -82,17 +80,17 @@ describe('EntitlementStrategy', () => {
 
     const payload = {
       type: 'benefit_grant.revoked',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       data: {
         id: '123',
-        createdAt: new Date(),
-        modifiedAt: new Date(),
-        isGranted: false,
-        benefitId: '123',
-        customerId: '123',
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        is_granted: false,
+        benefit_id: '123',
+        customer_id: '123',
         benefit: { description: 'test' },
       },
-    } as WebhookBenefitGrantRevokedPayload
+    } as unknown as webhooks.WebhookBenefitGrantRevokedPayload
 
     entitlement.handler('test')(payload)
 

@@ -231,6 +231,11 @@ export function ProductDetailsStep() {
   }
 
   const charCount = productDescription?.length ?? 0
+  const canContinueAnyway =
+    Boolean(aup.verdict) &&
+    aup.history.length >= 2 &&
+    productDescription.trim().length >= MIN_LENGTH &&
+    !aup.isValidating
 
   const counterColor = useMemo(() => {
     if (charCount > MAX_LENGTH) return 'danger'
@@ -239,14 +244,50 @@ export function ProductDetailsStep() {
   }, [charCount])
 
   return (
-    <OnboardingShell
-      title="Product Details"
-      subtitle="Help us understand what you're building so we can tailor your experience."
-      step="product"
-    >
-      <Form {...form}>
+    <Form {...form}>
+      <OnboardingShell
+        title="Product Details"
+        subtitle="Help us understand what you're building so we can tailor your experience."
+        step="product"
+        actions={
+          <Box alignItems="center" justifyContent="end" flexWrap="wrap" gap="s">
+            <Box alignSelf="end">
+              <Button
+                type="submit"
+                form="product-details"
+                onClick={() => form.clearErrors()}
+                loading={aup.isValidating || loading === 'submitting'}
+                disabled={
+                  loading === 'submitting-anyway' ||
+                  blockedSelected.length > 0 ||
+                  sellingCategories.length === 0 ||
+                  pricingModel.length === 0 ||
+                  productDescription.trim().length < MIN_LENGTH
+                }
+              >
+                {aup.verdict ? 'Review again' : 'Launch Dashboard'}
+              </Button>
+            </Box>
+
+            {canContinueAnyway && (
+              <Box alignSelf="end">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={onContinueAnyway}
+                  disabled={loading === 'submitting'}
+                  loading={loading === 'submitting-anyway'}
+                >
+                  Continue anyway
+                </Button>
+              </Box>
+            )}
+          </Box>
+        }
+      >
         <Box
           as="form"
+          id="product-details"
           onSubmit={handleSubmit(onSubmit)}
           flexDirection="column"
           rowGap="xl"
@@ -300,6 +341,13 @@ export function ProductDetailsStep() {
               }
               description={aup.message}
             />
+          )}
+
+          {canContinueAnyway && (
+            <Text variant="caption" color="muted">
+              You can continue setting up your account, but it may require
+              manual review before you can accept payments.
+            </Text>
           )}
 
           <Box flexDirection="column" rowGap="m">
@@ -381,45 +429,6 @@ export function ProductDetailsStep() {
           </Box>
 
           <Box flexDirection="column" rowGap="s">
-            <Box alignSelf="start">
-              <Button
-                type="submit"
-                onClick={() => form.clearErrors()}
-                loading={aup.isValidating || loading === 'submitting'}
-                disabled={
-                  loading === 'submitting-anyway' ||
-                  blockedSelected.length > 0 ||
-                  sellingCategories.length === 0 ||
-                  pricingModel.length === 0 ||
-                  productDescription.trim().length < MIN_LENGTH
-                }
-              >
-                {aup.verdict ? 'Review again' : 'Launch Dashboard'}
-              </Button>
-            </Box>
-
-            {aup.verdict &&
-              aup.history.length >= 2 &&
-              productDescription.trim().length >= MIN_LENGTH &&
-              !aup.isValidating && (
-                <>
-                  <Box alignSelf="start">
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      onClick={onContinueAnyway}
-                      disabled={loading === 'submitting'}
-                      loading={loading === 'submitting-anyway'}
-                    >
-                      Continue anyway
-                    </Button>
-                  </Box>
-                  <Text variant="caption" color="muted">
-                    You can continue setting up your account, but it may require
-                    manual review before you can accept payments.
-                  </Text>
-                </>
-              )}
             {form.formState.errors.root && (
               <Alert
                 variant="danger"
@@ -430,7 +439,7 @@ export function ProductDetailsStep() {
             )}
           </Box>
         </Box>
-      </Form>
-    </OnboardingShell>
+      </OnboardingShell>
+    </Form>
   )
 }

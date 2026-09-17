@@ -1,6 +1,7 @@
 import uuid
 
 from polar.exceptions import PolarTaskError
+from polar.integrations.resend.service import resend as resend_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import UserRepository
@@ -23,3 +24,4 @@ async def user_on_after_signup(user_id: uuid.UUID) -> None:
         user = await repository.get_by_id(user_id)
         if user is None:
             raise UserDoesNotExist(user_id)
+        resend_service.enqueue_sync_user(user.id)

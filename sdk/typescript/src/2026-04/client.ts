@@ -34,7 +34,6 @@ const SERVERS: Record<Environment, string> = {
 };
 
 export interface PolarOptions extends Omit<ClientOptions, "baseUrl" | "version"> {
-  version?: string;
   environment?: Environment;
   baseUrl?: string;
 }
@@ -43,7 +42,7 @@ export function createPolarCore(options: PolarOptions) {
   return new ClientBase({
     ...options,
     baseUrl: resolveBaseUrl(SERVERS, options.environment ?? "production", options.baseUrl),
-    version: options.version ?? "2026-04",
+    version: "2026-04",
   });
 }
 

@@ -24,7 +24,6 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { UTCDate } from '@date-fns/utc'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -309,7 +308,7 @@ const CustomerMeterPage = ({
 
 export default CustomerMeterPage
 
-const CustomerMeterActivityCards = ({
+export const CustomerMeterActivityCards = ({
   meter,
   customer,
 }: {
@@ -318,12 +317,12 @@ const CustomerMeterActivityCards = ({
 }) => {
   const dates = useMemo(
     () => ({
-      currentMonthStart: startOfMonth(new UTCDate()),
-      currentMonthEnd: endOfMonth(new UTCDate()),
-      lastMonthStart: startOfMonth(subMonths(new UTCDate(), 1)),
-      lastMonthEnd: endOfMonth(subMonths(new UTCDate(), 1)),
-      allTimeStart: new UTCDate(getCustomerActivityStart(customer).getTime()),
-      allTimeEnd: new UTCDate(),
+      currentMonthStart: startOfMonth(new Date()),
+      currentMonthEnd: endOfMonth(new Date()),
+      lastMonthStart: startOfMonth(subMonths(new Date(), 1)),
+      lastMonthEnd: endOfMonth(subMonths(new Date(), 1)),
+      allTimeStart: getCustomerActivityStart(customer),
+      allTimeEnd: new Date(),
     }),
     [customer],
   )

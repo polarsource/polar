@@ -51,6 +51,7 @@ from .service import (
     AlreadyCanceledSubscription,
     InactiveSubscription,
     SubscriptionLocked,
+    SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
 )
 from .service import subscription as subscription_service
@@ -69,6 +70,7 @@ SubscriptionNotFound = {
     "/",
     response_model=ListResource[SubscriptionSchema],
     summary="List Subscriptions",
+    tags=[APITag.mcp, APITag.cli],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
@@ -227,6 +229,7 @@ async def export(
     "/{id}",
     summary="Get Subscription",
     response_model=SubscriptionSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={404: SubscriptionNotFound},
 )
 async def get(
@@ -401,6 +404,7 @@ async def create(
     "/{id}",
     summary="Update Subscription",
     response_model=SubscriptionSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Subscription updated."},
         402: {
@@ -417,8 +421,11 @@ async def create(
         },
         404: SubscriptionNotFound,
         409: {
-            "description": "Subscription is pending an update.",
-            "model": SubscriptionLocked.schema(),
+            "description": (
+                "Subscription is pending an update, or is not scheduled to be canceled."
+            ),
+            "model": SubscriptionLocked.schema()
+            | SubscriptionNotScheduledToCancel.schema(),
         },
     },
 )
@@ -460,6 +467,7 @@ async def update(
     "/{id}",
     summary="Revoke Subscription",
     response_model=SubscriptionSchema,
+    tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Subscription revoked."},
         403: {

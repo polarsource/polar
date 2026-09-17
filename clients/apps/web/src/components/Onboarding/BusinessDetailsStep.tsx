@@ -210,6 +210,7 @@ function SubmitButton({ loading }: { loading: boolean }) {
     <Box alignSelf="start">
       <Button
         type="submit"
+        form="business-details"
         loading={loading}
         disabled={name.length === 0 || slug.length === 0}
       >
@@ -264,14 +265,20 @@ export function BusinessDetailsStep() {
   }
 
   return (
-    <OnboardingShell
-      title="Business Details"
-      subtitle="Tell us about your organization so we can set things up."
-      step="business"
-    >
-      <Form {...form}>
+    <Form {...form}>
+      <OnboardingShell
+        title="Business Details"
+        subtitle="Tell us about your organization so we can set things up."
+        step="business"
+        actions={
+          <SubmitButton
+            loading={form.formState.isValidating || form.formState.isSubmitting}
+          />
+        }
+      >
         <Box
           as="form"
+          id="business-details"
           onSubmit={handleSubmit(onSubmit)}
           flexDirection="column"
           rowGap="xl"
@@ -407,12 +414,8 @@ export function BusinessDetailsStep() {
               }
             />
           )}
-
-          <SubmitButton
-            loading={form.formState.isValidating || form.formState.isSubmitting}
-          />
         </Box>
-      </Form>
-    </OnboardingShell>
+      </OnboardingShell>
+    </Form>
   )
 }

@@ -1,7 +1,9 @@
 import asyncio
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any, assert_never, cast
 from urllib.parse import urlparse
 from uuid import UUID
@@ -30,6 +32,9 @@ from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.stripe.account_risk import (
     ACTIONABLE_RISK_LEVELS,
     AccountRiskSignal,
+    MerchantRiskSignal,
+    UnknownAccountRiskEvaluation,
+    WebsiteRiskSignal,
 )
 from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -56,6 +61,7 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
+    OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationDisputeSettings,
     OrganizationStatus,
@@ -77,6 +83,9 @@ from polar.organization_review.appeal_case import (
 )
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
+)
+from polar.organization_review.repository import (
+    OrganizationRiskSignalRepository,
 )
 from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.organization_review.schemas import (
@@ -200,6 +209,51 @@ def _append_internal_note(
         organization.internal_notes = note
 
 
+def _payout_account_missing(payout_account: PayoutAccount | None) -> str | None:
+    if payout_account is None:
+        return "No payout account is connected"
+    if not payout_account.is_payout_ready:
+        return f"Payout account is not ready ({payout_account.status.value})"
+    return None
+
+
+def _owner_identity_missing(owner_user: User | None) -> str | None:
+    if owner_user is None:
+        return "Organization has no owner"
+    if not owner_user.identity_verified:
+        return (
+            "Owner identity is "
+            f"{owner_user.identity_verification_status.get_display_name()}"
+        )
+    return None
+
+
+def _review_missing(review: OrganizationReview | None) -> str | None:
+    if review is None:
+        return "No organization review has been submitted"
+    if review.is_approved:
+        return None
+    missing = f"Review verdict is {review.verdict.value}"
+    if review.appeal_decision is not None:
+        missing += f" (appeal {review.appeal_decision.value})"
+    return missing
+
+
+def _merge_customer_portal_settings(
+    stored: OrganizationCustomerPortalSettings,
+    update: OrganizationCustomerPortalSettings,
+) -> OrganizationCustomerPortalSettings:
+    merged: dict[str, Any] = {**stored}
+    for key, value in update.items():
+        current = merged.get(key)
+        merged[key] = (
+            {**current, **value}
+            if isinstance(current, dict) and isinstance(value, dict)
+            else value
+        )
+    return cast(OrganizationCustomerPortalSettings, merged)
+
+
 class PaymentStatusResponse(BaseModel):
     """Service-level response for payment status."""
 
@@ -232,6 +286,56 @@ class OrganizationDeletionCheckResult(BaseModel):
 class OrganizationError(PolarError): ...
 
 
+class ActivationGate(StrEnum):
+    details = "Organization details submitted"
+    payout_account = "Payout account ready"
+    owner_identity = "Owner identity verified"
+    review = "Review approved"
+
+
+@dataclass(frozen=True)
+class ActivationRequirement:
+    gate: ActivationGate
+    missing: str | None = None
+
+    @property
+    def label(self) -> str:
+        return self.gate.value
+
+    @property
+    def ready(self) -> bool:
+        return self.missing is None
+
+
+@dataclass(frozen=True)
+class ActivationReadiness:
+    requirements: tuple[ActivationRequirement, ...]
+
+    @property
+    def onboarding_ready(self) -> bool:
+        return all(
+            requirement.ready
+            for requirement in self.requirements
+            if requirement.gate is not ActivationGate.review
+        )
+
+    @property
+    def is_ready(self) -> bool:
+        return all(requirement.ready for requirement in self.requirements)
+
+    @property
+    def missing(self) -> list[ActivationRequirement]:
+        return [
+            requirement for requirement in self.requirements if not requirement.ready
+        ]
+
+
+class BackofficeActivationResult(StrEnum):
+    activated = "activated"
+    submitted_for_review = "submitted_for_review"
+    still_incomplete = "still_incomplete"
+
+
 class CannotChangeOwnerError(OrganizationError):
     def __init__(self, reason: str) -> None:
         super().__init__(f"Cannot change organization owner: {reason}")
@@ -259,6 +363,15 @@ class SSOEnforcementRequiresConnection(OrganizationError):
         super().__init__(
             "This organization must have an enabled SSO connection before SSO "
             "can be enforced.",
+            409,
+        )
+
+
+class PayoutAccountAlreadyLinked(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This payout account already belongs to another organization. "
+            "Each organization needs its own payout account.",
             409,
         )
 
@@ -368,7 +481,6 @@ class OrganizationService:
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
         feature_settings = create_data.get("feature_settings", {})
         feature_settings["member_model_enabled"] = True
-        feature_settings["seat_based_pricing_enabled"] = True
         create_data["feature_settings"] = feature_settings
 
         if settings.is_sandbox():
@@ -475,9 +587,6 @@ class OrganizationService:
             old_member_model = organization.feature_settings.get(
                 "member_model_enabled", False
             )
-            old_seat_based = organization.feature_settings.get(
-                "seat_based_pricing_enabled", False
-            )
 
             organization.feature_settings = {
                 **organization.feature_settings,
@@ -486,44 +595,9 @@ class OrganizationService:
                 ),
             }
 
-            new_seat_based = organization.feature_settings.get(
-                "seat_based_pricing_enabled", False
-            )
             new_member_model = organization.feature_settings.get(
                 "member_model_enabled", False
             )
-
-            if old_seat_based and not new_seat_based:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "loc": (
-                                "body",
-                                "feature_settings",
-                                "seat_based_pricing_enabled",
-                            ),
-                            "msg": "Seat-based pricing cannot be disabled once enabled.",
-                            "type": "value_error",
-                            "input": False,
-                        }
-                    ]
-                )
-
-            if not old_seat_based and new_seat_based and not new_member_model:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "loc": (
-                                "body",
-                                "feature_settings",
-                                "seat_based_pricing_enabled",
-                            ),
-                            "msg": "Member model must be enabled before enabling seat-based pricing.",
-                            "type": "value_error",
-                            "input": True,
-                        }
-                    ]
-                )
 
             if not old_member_model and new_member_model:
                 enqueue_job(
@@ -573,6 +647,12 @@ class OrganizationService:
                 },
             )
 
+        if update_schema.customer_portal_settings is not None:
+            organization.customer_portal_settings = _merge_customer_portal_settings(
+                organization.customer_portal_settings,
+                update_schema.customer_portal_settings,
+            )
+
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -590,6 +670,7 @@ class OrganizationService:
                 "feature_settings",
                 "subscription_settings",
                 "dispute_settings",
+                "customer_portal_settings",
                 "details",
             },
         )
@@ -599,7 +680,15 @@ class OrganizationService:
                 OrganizationDetails, update_schema.details.model_dump()
             )
 
+        previous_website = organization.website
+
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if organization.website != previous_website:
+            enqueue_job(
+                "organization.sync_payout_account_website",
+                organization_id=organization.id,
+            )
 
         if sso_newly_enforced:
             await oauth2_token_service.revoke_for_sso_enforcement(
@@ -890,9 +979,18 @@ class OrganizationService:
         organization: Organization,
         payout_account: PayoutAccount,
     ) -> Organization:
+        organization_repository = OrganizationRepository.from_session(session)
+
+        # Stripe requires one connected account per website, so a payout account
+        # serves a single organization.
+        linked_organizations = await organization_repository.get_all_by_payout_account(
+            payout_account.id
+        )
+        if any(linked.id != organization.id for linked in linked_organizations):
+            raise PayoutAccountAlreadyLinked()
+
         previous_payout_account_id = organization.payout_account_id
 
-        organization_repository = OrganizationRepository.from_session(session)
         await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
@@ -916,6 +1014,11 @@ class OrganizationService:
                 account_id=organization.account_id,
                 payout_account_id=previous_payout_account_id,
             )
+
+        enqueue_job(
+            "organization.sync_payout_account_website",
+            organization_id=organization.id,
+        )
 
         # Reusing an already-ready payout account doesn't fire a Stripe
         # `account.updated` webhook, so attempt activation here too.
@@ -1202,34 +1305,45 @@ class OrganizationService:
 
         return confirmed
 
-    async def _is_activation_ready(
-        self, session: AsyncSession, organization: Organization
-    ) -> bool:
-        """Whether onboarding gates (details, payout account, KYC) are met.
+    async def get_activation_readiness(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> ActivationReadiness:
+        """Checklist of gates that must pass for CREATED → ACTIVE.
 
-        Mirrors the non-review gates checked by `maybe_activate` so the
-        backoffice approval path can decide whether a reactivation should go
-        straight to ACTIVE or revert to CREATED to finish onboarding.
+        Used by automated activation (`maybe_activate`) and the backoffice
+        Activate dialog. Review approval is listed separately from onboarding
+        (details, payout account, owner identity).
         """
-        if not organization.details_submitted_at or not organization.details:
-            return False
-
-        if organization.payout_account_id is None:
-            return False
-
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id,
-        )
-        if payout_account is None or not payout_account.is_payout_ready:
-            return False
+        payout_account: PayoutAccount | None = None
+        if organization.payout_account_id is not None:
+            payout_account_repository = PayoutAccountRepository.from_session(session)
+            payout_account = await payout_account_repository.get_by_id(
+                organization.payout_account_id,
+            )
 
         organization_repository = OrganizationRepository.from_session(session)
         owner_user = await organization_repository.get_owner_user(organization)
-        return not (
-            owner_user is None
-            or owner_user.identity_verification_status
-            != IdentityVerificationStatus.verified
+
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+
+        return ActivationReadiness(
+            requirements=(
+                ActivationRequirement(
+                    ActivationGate.details,
+                    None
+                    if organization.details_submitted_at and organization.details
+                    else "Organization details have not been submitted",
+                ),
+                ActivationRequirement(
+                    ActivationGate.payout_account,
+                    _payout_account_missing(payout_account),
+                ),
+                ActivationRequirement(
+                    ActivationGate.owner_identity, _owner_identity_missing(owner_user)
+                ),
+                ActivationRequirement(ActivationGate.review, _review_missing(review)),
+            ),
         )
 
     async def maybe_activate(
@@ -1237,12 +1351,9 @@ class OrganizationService:
     ) -> bool:
         """Transition CREATED → ACTIVE when every onboarding gate passes.
 
-        Gates:
-          1. Status is CREATED.
-          2. Review is approved: verdict PASS, or verdict FAIL with an
-             APPROVED appeal.
-          3. Details submitted, payout account ready, owner identity
-             verified (see `_is_activation_ready`).
+        Gates: status is CREATED and every `get_activation_readiness`
+        requirement passes (details submitted, payout account ready, owner
+        identity verified, review approved).
 
         Idempotent — safe to call from automated triggers (AI review, Stripe
         ``account.updated``, identity verification). Returns True iff the org
@@ -1256,12 +1367,8 @@ class OrganizationService:
         if organization.status != OrganizationStatus.CREATED:
             return False
 
-        review_repository = OrganizationReviewRepository.from_session(session)
-        review = await review_repository.get_by_organization(organization.id)
-        if review is None or not review.is_approved:
-            return False
-
-        if not await self._is_activation_ready(session, organization):
+        readiness = await self.get_activation_readiness(session, organization)
+        if not readiness.is_ready:
             return False
 
         organization.set_status(OrganizationStatus.ACTIVE)
@@ -1281,6 +1388,34 @@ class OrganizationService:
         )
         return True
 
+    async def backoffice_submit_and_maybe_activate(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> BackofficeActivationResult:
+        """Complete review submission from backoffice, then try `maybe_activate`.
+
+        Does not force ``CREATED → ACTIVE``. If onboarding or review is still
+        incomplete after submission, the org stays ``CREATED`` until a later
+        `maybe_activate` (review agent, payout account, identity webhook).
+        """
+        if organization.status != OrganizationStatus.CREATED:
+            raise OrganizationError(
+                f"Cannot activate organization {organization.id}: requires "
+                f"CREATED status, got {organization.status.get_display_name()}.",
+                409,
+            )
+
+        submitted_for_review = organization.details_submitted_at is None
+        if submitted_for_review:
+            await self.submit_for_review(session, organization)
+
+        if await self.maybe_activate(session, organization):
+            return BackofficeActivationResult.activated
+        if submitted_for_review:
+            return BackofficeActivationResult.submitted_for_review
+        return BackofficeActivationResult.still_incomplete
+
     async def _reactivate_organization(
         self,
         session: AsyncSession,
@@ -1299,7 +1434,8 @@ class OrganizationService:
         if next_review_threshold is None:
             next_review_threshold = FIRST_REVIEW_THRESHOLD_CENTS
 
-        is_ready = await self._is_activation_ready(session, organization)
+        readiness = await self.get_activation_readiness(session, organization)
+        is_ready = readiness.onboarding_ready
         target_status = (
             OrganizationStatus.ACTIVE if is_ready else OrganizationStatus.CREATED
         )
@@ -1689,6 +1825,65 @@ class OrganizationService:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
+    async def sync_payout_account_website(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        payout_account_id: uuid.UUID | None = None,
+    ) -> str | None:
+        """Put the organization's website on a Stripe connected account.
+
+        Stripe requires one connected account per website, and reads that
+        website from the account itself. Defaults to the account the
+        organization currently uses. Returns the Stripe account id the website
+        was pushed to.
+        """
+        payout_account_id = payout_account_id or organization.payout_account_id
+        if payout_account_id is None:
+            log.info(
+                "organization.sync_payout_account_website.skipped",
+                reason="no_payout_account",
+                organization_id=str(organization.id),
+            )
+            return None
+
+        website = organization.website.strip() if organization.website else ""
+        if not website:
+            log.info(
+                "organization.sync_payout_account_website.skipped",
+                reason="no_website",
+                organization_id=str(organization.id),
+            )
+            return None
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(payout_account_id)
+        if payout_account is None or payout_account.stripe_id is None:
+            log.info(
+                "organization.sync_payout_account_website.skipped",
+                reason="no_stripe_account",
+                organization_id=str(organization.id),
+            )
+            return None
+
+        # InvalidRequestError is a deterministic rejection (a URL Stripe won't
+        # accept, an account missing required fields): retrying can't succeed,
+        # so log instead of raising.
+        try:
+            await stripe_service.update_account_website(
+                payout_account.stripe_id, website
+            )
+        except stripe_lib.InvalidRequestError as e:
+            log.warning(
+                "organization.sync_payout_account_website.rejected",
+                organization_id=str(organization.id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            return None
+
+        return payout_account.stripe_id
+
     async def evaluate_website_risk(
         self, session: AsyncSession, organization: Organization
     ) -> None:
@@ -1697,14 +1892,6 @@ class OrganizationService:
             log.info(
                 "organization.evaluate_website_risk.skipped",
                 reason="webhook_secret_not_configured",
-                organization_id=str(organization.id),
-            )
-            return
-
-        if organization.payout_account_id is None:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_payout_account",
                 organization_id=str(organization.id),
             )
             return
@@ -1718,48 +1905,35 @@ class OrganizationService:
             )
             return
 
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id
-        )
-        if payout_account is None or payout_account.stripe_id is None:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_stripe_account",
-                organization_id=str(organization.id),
-            )
-            return
-
-        # Stripe evaluates the website attached to the account, so sync it
-        # first. InvalidRequestError is a deterministic rejection (a URL
-        # Stripe won't accept, an account missing required fields): retrying
-        # can't succeed, so log instead of raising.
         try:
-            await stripe_service.update_account_website(
-                payout_account.stripe_id, website
-            )
-        except stripe_lib.InvalidRequestError as e:
-            log.warning(
-                "organization.evaluate_website_risk.rejected",
-                step="sync_website",
-                organization_id=str(organization.id),
-                stripe_account_id=payout_account.stripe_id,
-                error=str(e),
-            )
-            return
-
-        try:
-            await stripe_service.create_website_risk_evaluation(
-                payout_account.stripe_id
-            )
+            result = await stripe_service.create_website_risk_evaluation(website)
         except stripe_lib.InvalidRequestError as e:
             log.warning(
                 "organization.evaluate_website_risk.rejected",
                 step="create_evaluation",
                 organization_id=str(organization.id),
-                stripe_account_id=payout_account.stripe_id,
+                website=website,
                 error=str(e),
             )
+            return
+
+        evaluation_id = result.get("id")
+        if not isinstance(evaluation_id, str) or not evaluation_id:
+            log.warning(
+                "organization.evaluate_website_risk.missing_id",
+                organization_id=str(organization.id),
+                website=website,
+            )
+            return
+
+        await risk_signal_service.record(
+            session,
+            organization,
+            source=OrganizationRiskSignal.Source.STRIPE,
+            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            account_evaluation_id=evaluation_id,
+        )
 
     async def handle_account_risk_signal(
         self,
@@ -1772,6 +1946,56 @@ class OrganizationService:
         we also pull a live org into review, so a high-risk signal isn't sitting
         in a table nobody reads yet. We never auto-block.
         """
+        if isinstance(signal, WebsiteRiskSignal):
+            await self._handle_website_risk_signal(session, signal)
+            return
+
+        await self._handle_merchant_risk_signal(session, signal)
+
+    async def _handle_website_risk_signal(
+        self,
+        session: AsyncSession,
+        signal: WebsiteRiskSignal,
+    ) -> None:
+        risk_signal_repository = OrganizationRiskSignalRepository.from_session(session)
+        pending = await risk_signal_repository.get_by_account_evaluation(
+            signal.evaluation_id
+        )
+        if pending is None:
+            log.warning(
+                "Risk signal for unknown website evaluation",
+                evaluation_id=signal.evaluation_id,
+            )
+            raise UnknownAccountRiskEvaluation(signal.evaluation_id)
+
+        if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
+            await risk_signal_repository.soft_delete(pending)
+            return
+
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(
+            pending.organization_id, include_blocked=True
+        )
+        if organization is None:
+            return
+        await risk_signal_repository.update(
+            pending,
+            update_dict={
+                "risk_level": signal.risk_level,
+                "description": signal.description,
+                "payload": signal.payload,
+            },
+        )
+        if organization.status == OrganizationStatus.ACTIVE:
+            await self.set_organization_under_review(
+                session, organization, enqueue_review=False
+            )
+
+    async def _handle_merchant_risk_signal(
+        self,
+        session: AsyncSession,
+        signal: MerchantRiskSignal,
+    ) -> None:
         if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
             return
 
@@ -1781,9 +2005,8 @@ class OrganizationService:
         )
         if payout_account is None:
             log.warning(
-                "Risk signal for unknown payout account",
+                "Risk signal for unknown organization",
                 stripe_account_id=signal.account_id,
-                signal_type=signal.type,
             )
             return
 
@@ -1794,7 +2017,7 @@ class OrganizationService:
                 session,
                 organization,
                 source=OrganizationRiskSignal.Source.STRIPE,
-                type=signal.type,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
                 risk_level=signal.risk_level,
                 description=signal.description,
                 payload=signal.payload,

@@ -257,6 +257,31 @@ def host_for_origin(origin: ParsedOrigin) -> str | None:
     return str(HostPattern(scheme, origin.host, port, False))
 
 
+def csp_frame_ancestors(hosts: list[str]) -> list[str]:
+    """The `frame-ancestors` source list admitting the same origins as `matches`."""
+    sources: list[str] = []
+    for entry in hosts:
+        pattern = parse_host_pattern(entry)
+        if pattern is None or pattern.host.startswith("["):
+            continue
+
+        host = f"{WILDCARD_PREFIX}{pattern.host}" if pattern.wildcard else pattern.host
+        port = f":{pattern.port}" if pattern.port is not None else ""
+
+        if pattern.scheme is not None:
+            sources.append(f"{pattern.scheme}://{host}{port}")
+            continue
+
+        sources.append(f"https://{host}{port}")
+        probe = (
+            f"{_WILDCARD_LABEL}.{pattern.host}" if pattern.wildcard else pattern.host
+        )
+        if is_local_host(probe):
+            sources.append(f"http://{host}{port}")
+
+    return sources or ["'none'"]
+
+
 def uncovered_hosts(
     observed: Iterable[tuple[str, int, datetime]], hosts: list[str]
 ) -> list[ObservedHost]:

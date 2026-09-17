@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import (
     UUID4,
@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models import SlackApp
 
 # Slack app IDs look like A0XXXXXXXXX (11 chars). Client IDs are numeric.dot.numeric.
 # Signing secrets and client secrets are 32-char hex blobs in practice but Slack
@@ -116,7 +117,7 @@ class SlackWorkspaceUsersResponse(Schema):
     )
 
 
-class SlackIntegration(TimestampedSchema):
+class SlackIntegrationListItem(TimestampedSchema):
     id: UUID4 = Field(description="ID of the Slack integration.")
     organization_id: UUID4 = Field(
         description="Organization that owns the Slack integration."
@@ -128,14 +129,6 @@ class SlackIntegration(TimestampedSchema):
     client_id_last_4: SecretLast4 = Field(
         validation_alias=AliasPath("client_id"),
         description="Last four characters of the Client ID (display only).",
-    )
-    client_secret_last_4: SecretLast4 = Field(
-        validation_alias=AliasPath("client_secret"),
-        description="Last four characters of the client secret (display only).",
-    )
-    signing_secret_last_4: SecretLast4 = Field(
-        validation_alias=AliasPath("signing_secret"),
-        description="Last four characters of the signing secret (display only).",
     )
 
     team_id: str | None = Field(description="Slack workspace ID, if installed.")
@@ -158,7 +151,28 @@ class SlackIntegration(TimestampedSchema):
         return _empty_if_none(value)
 
 
+class SlackIntegration(SlackIntegrationListItem):
+    client_secret_last_4: SecretLast4 = Field(
+        validation_alias=AliasPath("client_secret"),
+        description="Last four characters of the client secret (display only).",
+    )
+    signing_secret_last_4: SecretLast4 = Field(
+        validation_alias=AliasPath("signing_secret"),
+        description="Last four characters of the signing secret (display only).",
+    )
+
+    @classmethod
+    async def from_slack_app(cls, slack_app: SlackApp) -> Self:
+        return cls.model_validate(
+            {
+                **SlackIntegrationListItem.model_validate(slack_app).model_dump(),
+                "client_secret": await slack_app.get_client_secret() or "",
+                "signing_secret": await slack_app.get_signing_secret() or "",
+            }
+        )
+
+
 class SlackIntegrationsResponse(Schema):
-    integrations: list[SlackIntegration] = Field(
+    integrations: list[SlackIntegrationListItem] = Field(
         description="Slack apps configured for the organization."
     )

@@ -24,6 +24,9 @@ def _get_check_redis() -> Redis:
 async def publish_webhook_event(
     organization_id: UUID,
     payload: str,
+    *,
+    webhook_event_id: UUID | None = None,
+    triggered: bool = False,
 ) -> None:
     """
     Publish a webhook event to the eventstream for CLI listeners.
@@ -31,6 +34,9 @@ async def publish_webhook_event(
     Args:
         organization_id: The organization to publish the event for
         payload: The raw JSON string of the webhook payload
+        webhook_event_id: Identifier for the event, generated when omitted
+        triggered: Whether the event was produced by `polar trigger`
+            rather than by real activity
     """
     redis = _get_check_redis()
     if not await has_active_listener(redis, organization_id):
@@ -39,8 +45,9 @@ async def publish_webhook_event(
     await publish(
         WebhookEvent.webhook_created,
         {
-            "webhook_event_id": str(generate_uuid()),
+            "webhook_event_id": str(webhook_event_id or generate_uuid()),
             "payload": payload,
+            "triggered": triggered,
         },
         organization_id=organization_id,
     )

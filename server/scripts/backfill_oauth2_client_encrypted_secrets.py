@@ -19,8 +19,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-from sqlalchemy import func, or_, select
-from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy import Select, func, select
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -32,20 +31,71 @@ from .helper import configure_script_logging, typer_async
 cli = typer.Typer()
 
 
-def _needs_backfill() -> ColumnElement[bool]:
-    """A row still to backfill: any hash or ciphertext column is NULL. Both
-    plaintext secrets are non-nullable, so a missing derived column is the only
-    thing that qualifies a row."""
-    return or_(
-        OAuth2Client.client_secret_hash.is_(None),
-        OAuth2Client.client_secret_encrypted.is_(None),
-        OAuth2Client.registration_access_token_hash.is_(None),
-        OAuth2Client.registration_access_token_encrypted.is_(None),
+def _hash_null_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
+    return (
+        select(OAuth2Client)
+        .where(OAuth2Client.client_secret_hash.is_(None))
+        .limit(batch_size)
+        .with_for_update(skip_locked=True)
     )
 
 
+def _registration_token_only_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
+    return (
+        select(OAuth2Client)
+        .where(
+            OAuth2Client.client_secret_hash.is_not(None),
+            OAuth2Client.registration_access_token_hash.is_(None),
+        )
+        .limit(batch_size)
+        .with_for_update(skip_locked=True)
+    )
+
+
+async def _fill_secrets(client: OAuth2Client) -> None:
+    if client.client_secret_hash is None:
+        client.client_secret_hash = OAuth2Client.hash_secret(client.client_secret)
+    if client.client_secret_encrypted is None:
+        client.client_secret_encrypted = await OAuth2Client.encrypt_client_secret(
+            client.id, client.client_secret
+        )
+    if client.registration_access_token_hash is None:
+        client.registration_access_token_hash = OAuth2Client.hash_secret(
+            client.registration_access_token
+        )
+    if client.registration_access_token_encrypted is None:
+        client.registration_access_token_encrypted = (
+            await OAuth2Client.encrypt_registration_access_token(
+                client.id, client.registration_access_token
+            )
+        )
+
+
+async def _count_remaining(session: AsyncSession) -> int:
+    hash_null = (
+        await session.scalar(
+            select(func.count())
+            .select_from(OAuth2Client)
+            .where(OAuth2Client.client_secret_hash.is_(None))
+        )
+        or 0
+    )
+    registration_only = (
+        await session.scalar(
+            select(func.count())
+            .select_from(OAuth2Client)
+            .where(
+                OAuth2Client.client_secret_hash.is_not(None),
+                OAuth2Client.registration_access_token_hash.is_(None),
+            )
+        )
+        or 0
+    )
+    return hash_null + registration_only
+
+
 async def run_backfill(
-    batch_size: int = 500,
+    batch_size: int = 50,
     sleep_seconds: float = 0.1,
     dry_run: bool = False,
     session: AsyncSession | None = None,
@@ -80,14 +130,7 @@ async def run_backfill(
 
     try:
         if dry_run:
-            count = (
-                await session.scalar(
-                    select(func.count())
-                    .select_from(OAuth2Client)
-                    .where(_needs_backfill())
-                )
-                or 0
-            )
+            count = await _count_remaining(session)
             typer.echo(f"[dry-run] {count} oauth2 clients would be encrypted")
             return count
 
@@ -100,29 +143,16 @@ async def run_backfill(
             task = progress.add_task("[cyan]Batch 0: 0 rows encrypted", total=None)
 
             while True:
-                # Lock the batch so a concurrent secret rotation can't be
-                # overwritten with stale values; skip rows it holds, retry later.
-                statement = (
-                    select(OAuth2Client)
-                    .where(_needs_backfill())
-                    .order_by(OAuth2Client.id)
-                    .limit(batch_size)
-                    .with_for_update(skip_locked=True)
-                )
-                result = await session.execute(statement)
+                result = await session.execute(_hash_null_batch(batch_size))
                 clients = list(result.scalars().all())
+                if not clients:
+                    result = await session.execute(
+                        _registration_token_only_batch(batch_size)
+                    )
+                    clients = list(result.scalars().all())
 
                 if not clients:
-                    # An empty batch can also mean the rest are held by a
-                    # concurrent rotation (skip_locked); say so instead of "done".
-                    remaining = (
-                        await session.scalar(
-                            select(func.count())
-                            .select_from(OAuth2Client)
-                            .where(_needs_backfill())
-                        )
-                        or 0
-                    )
+                    remaining = await _count_remaining(session)
                     if remaining > 0:
                         progress.update(
                             task,
@@ -141,26 +171,7 @@ async def run_backfill(
                     break
 
                 for client in clients:
-                    if client.client_secret_hash is None:
-                        client.client_secret_hash = OAuth2Client.hash_secret(
-                            client.client_secret
-                        )
-                    if client.client_secret_encrypted is None:
-                        client.client_secret_encrypted = (
-                            await OAuth2Client.encrypt_client_secret(
-                                client.id, client.client_secret
-                            )
-                        )
-                    if client.registration_access_token_hash is None:
-                        client.registration_access_token_hash = (
-                            OAuth2Client.hash_secret(client.registration_access_token)
-                        )
-                    if client.registration_access_token_encrypted is None:
-                        client.registration_access_token_encrypted = (
-                            await OAuth2Client.encrypt_registration_access_token(
-                                client.id, client.registration_access_token
-                            )
-                        )
+                    await _fill_secrets(client)
 
                 await session.commit()
                 session.expunge_all()
@@ -190,7 +201,7 @@ async def run_backfill(
 @typer_async
 async def backfill(
     batch_size: int = typer.Option(
-        500, min=1, help="Number of rows to process per batch"
+        50, min=1, help="Number of rows to process per batch"
     ),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
     execute: bool = typer.Option(

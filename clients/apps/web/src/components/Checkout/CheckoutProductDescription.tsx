@@ -27,15 +27,11 @@ export const CheckoutProductDescription = ({
     const el = textRef.current
     if (!el) return
 
-    const checkClamped = () => {
-      requestAnimationFrame(() => {
-        setIsClamped(el.scrollHeight > el.clientHeight + 1)
-      })
-    }
-
-    checkClamped()
-    window.addEventListener('resize', checkClamped)
-    return () => window.removeEventListener('resize', checkClamped)
+    const observer = new ResizeObserver(() => {
+      setIsClamped(el.scrollHeight > el.clientHeight + 1)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [description])
 
   return (

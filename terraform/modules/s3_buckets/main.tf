@@ -43,6 +43,12 @@ variable "malware_protection_role_arn" {
   default     = null
 }
 
+variable "app_access_account_id" {
+  description = "Workload account holding the polar-{environment}-* roles that read and write these buckets"
+  type        = string
+  default     = null
+}
+
 locals {
   name_prefix         = (var.environment == "production" ? "polar" : "polar-${var.environment}")
   full_name_prefix    = "polar-${var.environment}"
@@ -103,25 +109,58 @@ locals {
       },
     ]
   }
+
+  app_access_enabled = var.app_access_account_id != null
+
+  app_access_read_write = [
+    "s3:PutObject",
+    "s3:GetObject",
+    "s3:GetObjectAttributes",
+    "s3:GetObjectVersion",
+    "s3:GetObjectVersionAttributes",
+  ]
+
+  app_access_read_write_delete = concat(local.app_access_read_write, [
+    "s3:DeleteObject",
+    "s3:DeleteObjectVersion",
+  ])
+
+  app_access_actions = {
+    customer_invoices = local.app_access_read_write
+    customer_receipts = local.app_access_read_write
+    payout_invoices   = local.app_access_read_write
+    files             = local.app_access_read_write_delete
+    public_files      = local.app_access_read_write_delete
+    logs              = ["s3:PutObject"]
+  }
+
+  app_access_bucket_arns = {
+    customer_invoices = aws_s3_bucket.customer_invoices.arn
+    customer_receipts = aws_s3_bucket.customer_receipts.arn
+    payout_invoices   = aws_s3_bucket.payout_invoices.arn
+    files             = aws_s3_bucket.files.arn
+    public_files      = aws_s3_bucket.public_files.arn
+    logs              = aws_s3_bucket.logs.arn
+  }
+
+  app_access_statements = local.app_access_enabled ? {
+    for key, actions in local.app_access_actions :
+    key => [
+      {
+        Sid       = "AppAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.app_access_account_id}:root" }
+        Action    = actions
+        Resource  = "${local.app_access_bucket_arns[key]}/*"
+        Condition = {
+          ArnLike = {
+            "aws:PrincipalArn" = "arn:aws:iam::${var.app_access_account_id}:role/polar-${var.environment}-*"
+          }
+        }
+      },
+    ]
+  } : {}
 }
-
-
-# resource "aws_s3_bucket" "backups" {
-#   bucket = "polar-sh-backups"
-# }
-#
-# resource "aws_s3_bucket_lifecycle_configuration" "backups_lifecycle" {
-#   bucket = aws_s3_bucket.backups.id
-#
-#   rule {
-#     id     = "14-days-expiration-rule"
-#     status = "Enabled"
-#     filter {}
-#     expiration {
-#       days = 14
-#     }
-#   }
-# }
 
 resource "aws_s3_bucket" "customer_invoices" {
   bucket = "${local.name_prefix}-customer-invoices"
@@ -135,6 +174,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "customer_invoices
       sse_algorithm = "AES256"
     }
   }
+}
+
+resource "aws_s3_bucket_policy" "customer_invoices" {
+  count = local.app_access_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.customer_invoices.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = local.app_access_statements["customer_invoices"]
+  })
 }
 
 resource "aws_s3_bucket" "customer_receipts" {
@@ -151,6 +200,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "customer_receipts
   }
 }
 
+resource "aws_s3_bucket_policy" "customer_receipts" {
+  count = local.app_access_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.customer_receipts.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = local.app_access_statements["customer_receipts"]
+  })
+}
+
 resource "aws_s3_bucket" "payout_invoices" {
   bucket = "${local.name_prefix}-payout-invoices"
 }
@@ -163,6 +222,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "payout_invoices" 
       sse_algorithm = "AES256"
     }
   }
+}
+
+resource "aws_s3_bucket_policy" "payout_invoices" {
+  count = local.app_access_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.payout_invoices.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = local.app_access_statements["payout_invoices"]
+  })
 }
 
 resource "aws_s3_bucket" "files" {
@@ -191,12 +260,15 @@ resource "aws_s3_bucket_cors_configuration" "files" {
 }
 
 resource "aws_s3_bucket_policy" "files" {
-  count = var.malware_protection_enabled ? 1 : 0
+  count = var.malware_protection_enabled || local.app_access_enabled ? 1 : 0
 
   bucket = aws_s3_bucket.files.id
   policy = jsonencode({
-    Version   = "2012-10-17"
-    Statement = local.malware_scan_tbac_statements["files"]
+    Version = "2012-10-17"
+    Statement = concat(
+      try(local.app_access_statements["files"], []),
+      lookup(local.malware_scan_tbac_statements, "files", []),
+    )
   })
 }
 
@@ -275,6 +347,7 @@ resource "aws_s3_bucket_policy" "public_files" {
           Resource  = "${aws_s3_bucket.public_files.arn}/*"
         }
       ],
+      try(local.app_access_statements["public_files"], []),
       lookup(local.malware_scan_tbac_statements, "public_files", []),
     )
   })
@@ -304,4 +377,14 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
       sse_algorithm = "AES256"
     }
   }
+}
+
+resource "aws_s3_bucket_policy" "logs" {
+  count = local.app_access_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.logs.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = local.app_access_statements["logs"]
+  })
 }

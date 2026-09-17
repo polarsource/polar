@@ -100,6 +100,7 @@ from polar.user_organization.schemas import (
 )
 from polar.user_organization.service import (
     CannotRemoveOrganizationOwner,
+    ConcurrentRoleModification,
     InvalidOwnerRoleAssignment,
     OwnerRoleCannotBeRemoved,
     UserNotMemberOfOrganization,
@@ -134,6 +135,7 @@ from .schemas import (
 from .service import (
     CannotCreateOrganizationError,
     DisputeAutoAcceptNotEnabled,
+    PayoutAccountAlreadyLinked,
     SSOEnforcementRequiresConnection,
 )
 from .service import organization as organization_service
@@ -150,7 +152,7 @@ OrganizationNotFound = {
     "/",
     summary="List Organizations",
     response_model=ListResource[OrganizationSchema],
-    tags=[APITag.public],
+    tags=[APITag.public, APITag.mcp, APITag.cli],
     operation_id="organizations:list",
 )
 async def list_organizations(
@@ -181,7 +183,7 @@ async def list_organizations(
     summary="Get Organization",
     response_model=OrganizationSchema,
     responses={404: OrganizationNotFound},
-    tags=[APITag.public],
+    tags=[APITag.public, APITag.mcp, APITag.cli],
 )
 async def get(
     authz: AuthorizeOrgAccess,
@@ -224,6 +226,10 @@ async def get_account(
     response_model=OrganizationSchema,
     responses={
         404: OrganizationNotFound,
+        409: {
+            "description": "Payout account already linked to another organization.",
+            "model": PayoutAccountAlreadyLinked.schema(),
+        },
     },
     tags=[APITag.private],
 )
@@ -233,9 +239,10 @@ async def set_payout_account(
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Set the payout account for an organization."""
-    # Resolve payout account and check admin ownership
+    # Resolve payout account and check admin ownership. Lock it so two
+    # concurrent requests can't link it to two organizations.
     pa_repo = PayoutAccountRepository.from_session(session)
-    payout_account = await pa_repo.get_by_id(body.payout_account_id)
+    payout_account = await pa_repo.get_by_id(body.payout_account_id, for_update=True)
     if (
         payout_account is None
         or payout_account.admin_id != authz.auth_subject.subject.id
@@ -701,6 +708,7 @@ async def remove_member(
             "model": NotPermitted.schema(),
         },
         404: OrganizationNotFound,
+        409: {"model": ConcurrentRoleModification.schema()},
     },
 )
 async def set_member_role(
@@ -1328,7 +1336,7 @@ async def set_default_payment_method(
     tags=[APITag.private],
 )
 async def get_order_invoice(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeFinanceRead,
     order_id: str,
 ) -> OrganizationOrderInvoice:
     """Get the invoice URL for a Polar order belonging to this organization."""

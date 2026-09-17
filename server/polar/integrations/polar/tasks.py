@@ -33,7 +33,7 @@ from polar.worker import (
 )
 
 from .client import get_client
-from .exceptions import PolarSelfInvoiceNotReady
+from .exceptions import PolarSelfInvoiceNotReady, PolarSelfOrderNotEligible
 from .service import polar_self
 
 
@@ -276,6 +276,10 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
                 if can_retry():
                     raise Retry() from e
                 raise
+            except PolarSelfOrderNotEligible:
+                # Order is draft/void: permanently ineligible for invoicing.
+                # Nothing to email — drop the message instead of retrying.
+                return
 
 
 @actor(actor_name="polar_self.webhook.subscription.canceled", priority=TaskPriority.LOW)

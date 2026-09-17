@@ -160,6 +160,20 @@ describe('PolarEmbedPaymentMethod', () => {
       embed.close()
     })
 
+    it('opts the overlay out of Lenis smooth scrolling', async () => {
+      const promise = PolarEmbedPaymentMethod.create({
+        sessionToken: CUSTOMER_SESSION_TOKEN,
+      })
+
+      expect(
+        document.querySelector('iframe')!.getAttribute('data-lenis-prevent'),
+      ).toBe('')
+
+      dispatchLoaded()
+      const embed = await promise
+      embed.close()
+    })
+
     it('calls onLoaded callback when the embed loads', async () => {
       const onLoaded = vi.fn()
 

@@ -1,4 +1,9 @@
 import revalidate from '@/app/actions'
+import { MetadataForm } from '@/components/Metadata/MetadataForm'
+import {
+  WithMetadataEntries,
+  entriesToMetadata,
+} from '@/components/Metadata/utils'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { useCreateCustomer } from '@/hooks/queries'
@@ -19,14 +24,10 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerCreateForm = Omit<
-  schemas['CustomerIndividualCreate'],
-  'metadata'
-> & {
-  metadata: { key: string; value: string | number | boolean }[]
-}
+type CustomerCreateForm = WithMetadataEntries<
+  schemas['CustomerIndividualCreate']
+>
 
 export const CreateCustomerModal = ({
   organization,
@@ -51,10 +52,7 @@ export const CreateCustomerModal = ({
   const handleCreateCustomer = (customerCreate: CustomerCreateForm) => {
     const data = {
       ...customerCreate,
-      metadata: customerCreate.metadata?.reduce(
-        (acc, { key, value }) => ({ ...acc, [key]: value }),
-        {} as Record<string, string | number | boolean>,
-      ),
+      metadata: entriesToMetadata(customerCreate.metadata),
     }
 
     createCustomer.mutateAsync(data).then(({ data: customer, error }) => {
@@ -150,11 +148,7 @@ export const CreateCustomerModal = ({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="metadata"
-                render={() => <CustomerMetadataForm />}
-              />
+              <MetadataForm label="Metadata" />
             </div>
             <Button
               type="submit"

@@ -2,6 +2,7 @@ locals {
   backend_config = {
     environment                          = "test"
     base_url                             = "https://test-api.polar.sh"
+    backoffice_host                      = local.private_backoffice_hostname
     user_session_cookie_domain           = "polar.sh"
     user_session_cookie_key              = "polar_test_session"
     authentication_session_cookie_domain = "polar.sh"
@@ -12,7 +13,6 @@ locals {
     email_from_domain                    = "notifications.test.polar.sh"
     frontend_base_url                    = "https://test.polar.sh"
     checkout_base_url                    = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    jwks_path                            = "/etc/secrets/jwks.json"
     log_level                            = "INFO"
     testing                              = "0"
     auth_cookie_domain                   = "test.polar.sh"
@@ -23,21 +23,20 @@ locals {
   }
 
   backend_secrets = {
-    stripe_publishable_key   = var.stripe_publishable_key
-    current_jwk_kid          = var.backend_current_jwk_kid
-    discord_bot_token        = var.backend_discord_bot_token
-    discord_client_id        = var.backend_discord_client_id
-    discord_client_secret    = var.backend_discord_client_secret
-    discord_proxy_url        = var.backend_discord_proxy_url
-    resend_api_key           = var.backend_resend_api_key
-    resend_webhook_secret    = var.backend_resend_webhook_secret
-    firecrawl_api_key        = var.firecrawl_api_key
-    logo_dev_publishable_key = var.backend_logo_dev_publishable_key
-    secret                   = var.backend_secret
-    sentry_dsn               = var.backend_sentry_dsn
-    jwks                     = var.backend_jwks
-    numeral_api_key          = var.numeral_api_key
-    turnstile_secret         = var.turnstile_secret
+    stripe_publishable_key         = var.stripe_publishable_key
+    discord_bot_token              = var.backend_discord_bot_token
+    discord_client_id              = var.backend_discord_client_id
+    discord_client_secret          = var.backend_discord_client_secret
+    discord_proxy_url              = var.backend_discord_proxy_url
+    resend_api_key                 = var.backend_resend_api_key
+    resend_active_users_segment_id = var.resend_active_users_segment_id
+    resend_webhook_secret          = var.backend_resend_webhook_secret
+    firecrawl_api_key              = var.firecrawl_api_key
+    logo_dev_publishable_key       = var.backend_logo_dev_publishable_key
+    secret                         = var.backend_secret
+    sentry_dsn                     = var.backend_sentry_dsn
+    numeral_api_key                = var.numeral_api_key
+    turnstile_secret               = var.turnstile_secret
   }
 
   google_secrets = {
@@ -134,8 +133,10 @@ module "backend_environment" {
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets
   aws_kms_config = {
-    key_id   = one(module.secrets_kms[*].key_arn)
-    role_arn = one(module.secrets_kms[*].role_arn)
+    key_id                 = one(module.secrets_kms[*].key_arn)
+    jwks_key_id            = one(module.jwks_signing_key[*].current_key_arn)
+    jwks_published_key_ids = one(module.jwks_signing_key[*].published_key_arns)
+    role_arn               = one(module.secrets_kms[*].role_arn)
   }
   worker_sqs_config = {
     enabled      = "true"

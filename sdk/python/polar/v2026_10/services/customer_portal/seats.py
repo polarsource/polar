@@ -58,7 +58,7 @@ class SeatsSync(SyncServiceBase):
 
         Raises:
             CustomerPortalSeatsListSeats401Error: Authentication required
-            CustomerPortalSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsListSeats403Error: Not permitted
             CustomerPortalSeatsListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -102,7 +102,7 @@ class SeatsSync(SyncServiceBase):
         Raises:
             CustomerPortalSeatsAssignSeat400Error: No available seats or customer already has a seat
             CustomerPortalSeatsAssignSeat401Error: Authentication required
-            CustomerPortalSeatsAssignSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsAssignSeat403Error: Not permitted
             CustomerPortalSeatsAssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -144,7 +144,7 @@ class SeatsSync(SyncServiceBase):
 
         Raises:
             CustomerPortalSeatsRevokeSeat401Error: Authentication required
-            CustomerPortalSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsRevokeSeat403Error: Not permitted
             CustomerPortalSeatsRevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -187,7 +187,7 @@ class SeatsSync(SyncServiceBase):
         Raises:
             CustomerPortalSeatsResendInvitation400Error: Seat is not pending or already claimed
             CustomerPortalSeatsResendInvitation401Error: Authentication required
-            CustomerPortalSeatsResendInvitation403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsResendInvitation403Error: Not permitted
             CustomerPortalSeatsResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -325,7 +325,7 @@ class SeatsAsync(AsyncServiceBase):
 
         Raises:
             CustomerPortalSeatsListSeats401Error: Authentication required
-            CustomerPortalSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsListSeats403Error: Not permitted
             CustomerPortalSeatsListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -369,7 +369,7 @@ class SeatsAsync(AsyncServiceBase):
         Raises:
             CustomerPortalSeatsAssignSeat400Error: No available seats or customer already has a seat
             CustomerPortalSeatsAssignSeat401Error: Authentication required
-            CustomerPortalSeatsAssignSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsAssignSeat403Error: Not permitted
             CustomerPortalSeatsAssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -411,7 +411,7 @@ class SeatsAsync(AsyncServiceBase):
 
         Raises:
             CustomerPortalSeatsRevokeSeat401Error: Authentication required
-            CustomerPortalSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsRevokeSeat403Error: Not permitted
             CustomerPortalSeatsRevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -454,7 +454,7 @@ class SeatsAsync(AsyncServiceBase):
         Raises:
             CustomerPortalSeatsResendInvitation400Error: Seat is not pending or already claimed
             CustomerPortalSeatsResendInvitation401Error: Authentication required
-            CustomerPortalSeatsResendInvitation403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsResendInvitation403Error: Not permitted
             CustomerPortalSeatsResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.

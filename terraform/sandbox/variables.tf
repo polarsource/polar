@@ -45,12 +45,6 @@ variable "pydantic_ai_gateway_api_key_sandbox" {
 }
 
 # Backend - Sandbox
-variable "backend_current_jwk_kid_sandbox" {
-  description = "Current JWK KID for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_discord_bot_token_sandbox" {
   description = "Discord Bot Token for sandbox"
   type        = string
@@ -81,6 +75,12 @@ variable "backend_resend_api_key_sandbox" {
   sensitive   = true
 }
 
+variable "resend_active_users_segment_id" {
+  description = "Resend ACTIVE_USERS segment ID; empty disables contact synchronization"
+  type        = string
+  default     = ""
+}
+
 variable "backend_resend_webhook_secret" {
   description = "Resend Webhook Secret for sandbox"
   type        = string
@@ -106,31 +106,19 @@ variable "backend_sentry_dsn_sandbox" {
   sensitive   = true
 }
 
-variable "backend_jwks_sandbox" {
-  description = "Backend JWKS content for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "lambda_worker_tailscale_token" {
   description = "Tailscale auth token for sandbox Lambda workers"
   type        = string
   sensitive   = true
 }
 
+variable "ec2_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:sandbox"
+  type        = string
+  sensitive   = true
+}
+
 # AWS S3 - Sandbox
-variable "aws_access_key_id_sandbox" {
-  description = "AWS Access Key ID for sandbox"
-  type        = string
-  sensitive   = true
-}
-
-variable "aws_secret_access_key_sandbox" {
-  description = "AWS Secret Access Key for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "s3_files_download_salt_sandbox" {
   description = "S3 Files Download Salt for sandbox"
   type        = string
@@ -471,4 +459,38 @@ variable "merchant_migration_destination_stripe_account_id" {
   description = "Stripe account ID merchants copy or import saved cards into"
   type        = string
   default     = ""
+}
+
+variable "private_backoffice_enabled" {
+  description = "Provision the private backoffice replica."
+  type        = bool
+  default     = false
+}
+
+variable "private_backoffice_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret for the private backoffice replica."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_cloudflare_api_token" {
+  description = "Cloudflare DNS token for private backoffice certificates."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_tailscale_ip" {
+  description = "Stable TailVIP IPv4 address of the pre-created Tailscale Service."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = var.private_backoffice_tailscale_ip == "" ? true : (
+      can(cidrnetmask("${var.private_backoffice_tailscale_ip}/32")) &&
+      try(cidrhost("${var.private_backoffice_tailscale_ip}/10", 0) == "100.64.0.0", false)
+    )
+    error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
+  }
 }

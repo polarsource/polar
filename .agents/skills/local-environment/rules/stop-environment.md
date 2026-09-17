@@ -29,8 +29,9 @@ dev docker down -i 1
 
 ## Cleanup (destructive)
 
-**Reset this instance** — removes its api/worker/web containers and their
-build/cache volumes. Shared infra and its data are left intact:
+**Reset this instance** — removes its api/worker/web containers, build/cache
+volumes, postgres database (`polar_dev_<N>`), redis DB, and S3 buckets. Shared
+infra stays running so other worktrees are unaffected:
 ```bash
 dev docker cleanup -f
 ```
@@ -42,9 +43,9 @@ machine:
 dev docker cleanup --all -f
 ```
 
-Use per-instance cleanup for a fresh app stack; use `--all` only when you truly
-want to reset the machine-wide data. To drop just one instance's DB/buckets
-without touching others, delete its worktree and run `dev docker prune`.
+Use per-instance cleanup for a fresh start of this worktree; use `--all` only
+when you truly want to reset the machine-wide data. `dev docker prune` still
+reclaims data from worktrees you've deleted.
 
 ## Restart vs stop/start
 

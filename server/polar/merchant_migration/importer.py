@@ -109,6 +109,8 @@ async def create_imported_subscription(
     product: Product,
     price: ProductPriceFixed,
     customer: Customer,
+    *,
+    provider: str,
 ) -> Subscription:
     return await subscription_service.create_imported(
         session,
@@ -118,7 +120,10 @@ async def create_imported_subscription(
         current_period_start=subscription.current_period_start,
         current_period_end=subscription.current_period_end,
         anchor_day=subscription.anchor_day,
-        user_metadata={"stripe_subscription_id": subscription.source_id},
+        user_metadata={
+            "provider": provider,
+            "provider_subscription_id": subscription.source_id,
+        },
     )
 
 
@@ -167,6 +172,14 @@ class CatalogImporter:
 
     async def run(self) -> MerchantMigrationImportReport:
         records = await self.record_repository.list_by_migration(self.migration.id)
+        imported_dependencies = (
+            await self.record_repository.list_imported_catalog_dependencies(
+                self.organization.id
+            )
+        )
+        catalog = self._catalog_with_imported_dependencies(
+            records, imported_dependencies
+        )
         product_records = self._records_of(records, MerchantMigrationRecordType.product)
         customer_records = self._records_of(
             records, MerchantMigrationRecordType.customer
@@ -177,7 +190,9 @@ class CatalogImporter:
 
         product_source_ids, customer_source_ids = (
             self._selected_subscription_dependencies(
-                subscription_records, product_records, customer_records
+                subscription_records,
+                self._records_of(catalog, MerchantMigrationRecordType.product),
+                self._records_of(catalog, MerchantMigrationRecordType.customer),
             )
         )
 
@@ -197,6 +212,18 @@ class CatalogImporter:
             step=self.migration.step,
             results=[product_result, customer_result, subscription_result],
         )
+
+    @staticmethod
+    def _catalog_with_imported_dependencies(
+        records: Sequence[MerchantMigrationRecord],
+        imported_dependencies: Sequence[MerchantMigrationRecord],
+    ) -> list[MerchantMigrationRecord]:
+        catalog = {
+            (record.type, record.source_id): record for record in imported_dependencies
+        }
+        for record in records:
+            catalog[(record.type, record.source_id)] = record
+        return list(catalog.values())
 
     def _records_of(
         self,

@@ -79,7 +79,7 @@ The extracted dataset is split 80/20 into train/val. GEPA samples mini-batches f
 ```
 eval/
 ├── dataset.py      # EvalInput, EvalMetadata, extract_dataset()
-├── evaluators.py   # VerdictMatch, NotFalseNegative, NotFalsePositive
+├── evaluators.py   # VerdictMatch
 ├── task.py         # create_review_task() — wraps ReviewAnalyzer for eval
 └── optimize.py     # ReviewAdapter (GEPAAdapter) + run_optimization()
 ```

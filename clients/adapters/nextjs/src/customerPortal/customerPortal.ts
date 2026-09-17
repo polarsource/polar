@@ -1,9 +1,10 @@
-import { Polar } from '@polar-sh/sdk'
+import { createCustomerSessions } from '@polar-sh/sdk/2026-04/services/customer_sessions'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
 import { type NextRequest, NextResponse } from 'next/server'
 
 interface CustomerPortalBaseConfig {
   accessToken: string
-  server: 'sandbox' | 'production'
+  environment?: Environment
   returnUrl?: string
 }
 
@@ -28,11 +29,11 @@ export type CustomerPortalConfig =
   | CustomerPortalExternalCustomerIdConfig
 
 export const CustomerPortal = (config: CustomerPortalConfig) => {
-  const { accessToken, server, returnUrl } = config
+  const { accessToken, environment, returnUrl } = config
 
-  const polar = new Polar({
+  const polar = createPolarCore({
     accessToken,
-    server,
+    environment,
   })
 
   return async (req: NextRequest) => {
@@ -51,12 +52,12 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
       }
 
       try {
-        const { customerPortalUrl } = await polar.customerSessions.create({
-          returnUrl: decodedReturnUrl,
-          externalCustomerId,
+        const { customer_portal_url } = await createCustomerSessions(polar)({
+          return_url: decodedReturnUrl,
+          external_customer_id: externalCustomerId,
         })
 
-        return NextResponse.redirect(customerPortalUrl)
+        return NextResponse.redirect(customer_portal_url)
       } catch (error) {
         console.error(error)
         return NextResponse.error()
@@ -73,12 +74,12 @@ export const CustomerPortal = (config: CustomerPortalConfig) => {
     }
 
     try {
-      const { customerPortalUrl } = await polar.customerSessions.create({
-        returnUrl: decodedReturnUrl,
-        customerId,
+      const { customer_portal_url } = await createCustomerSessions(polar)({
+        return_url: decodedReturnUrl,
+        customer_id: customerId,
       })
 
-      return NextResponse.redirect(customerPortalUrl)
+      return NextResponse.redirect(customer_portal_url)
     } catch (error) {
       console.error(error)
       return NextResponse.error()

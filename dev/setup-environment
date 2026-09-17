@@ -22,7 +22,6 @@ import urllib.parse
 import webbrowser
 
 import httpx
-from authlib.jose import JsonWebKey, KeySet
 from dotenv import dotenv_values
 from yaspin import yaspin
 from yaspin.spinners import Spinners
@@ -332,15 +331,6 @@ def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) ->
     _write_env_file(template_file_path, env_file_path, replacements)
 
 
-def _generate_jwks() -> None:
-    options = {"kid": "polar_dev", "use": "sig"}
-    key = JsonWebKey.generate_key("RSA", 2048, options, is_private=True)
-    keyset = KeySet(keys=[key])
-    json_keyset = keyset.as_json(is_private=True)
-    with open(ROOT_PATH / "server" / ".jwks.json", "w") as jwks_file:
-        jwks_file.write(json_keyset)
-
-
 def _get_options():
     default_backend_external_url = None
     default_github_app_name = (
@@ -433,5 +423,4 @@ if __name__ == "__main__":
         spinner.text = "Writing environment files..."
         _write_server_env_file(github_app, options.database_name)
         _write_apps_web_env_file(github_app)
-        _generate_jwks()
         spinner.ok("Environment files have been successfully setup")

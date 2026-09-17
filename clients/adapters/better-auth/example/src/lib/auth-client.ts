@@ -10,7 +10,7 @@ export const authClient = createAuthClient({
 export const checkoutForOrganization = (organizationId: string) =>
   authClient.checkout({
     slug: 'pro',
-    organizationId,
+    organization_id: organizationId,
   })
 
 export const openOrganizationPortal = (organizationId: string) =>

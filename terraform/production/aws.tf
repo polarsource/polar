@@ -11,6 +11,15 @@ module "secrets_kms" {
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
+module "jwks_signing_key" {
+  source = "../modules/jwks_signing_key"
+
+  environment        = "production"
+  role_name          = module.secrets_kms.role_name
+  generations        = ["2026-09"]
+  current_generation = "2026-09"
+}
+
 module "lambda_worker_ecr" {
   source = "../modules/ecr_repository"
 
@@ -30,6 +39,14 @@ module "redis" {
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   security_group_id            = module.redis.security_group_id
   referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_tailscale" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = module.ec2_tailscale.security_group_id
   from_port                    = module.redis.port
   to_port                      = module.redis.port
   ip_protocol                  = "tcp"
@@ -66,16 +83,12 @@ locals {
     module.backend_environment.environment_variables,
     module.backend_environment.secret_environment_variables,
     {
-      POLAR_JWKS              = "/tmp/jwks.json"
       POLAR_POSTGRES_DATABASE = "polar_cpit_p9lf"
       POLAR_POSTGRES_HOST     = module.pgbouncer_aws.host
       POLAR_POSTGRES_PORT     = module.pgbouncer_aws.port
       POLAR_POSTGRES_USER     = local.db_user
       POLAR_POSTGRES_SSL      = "false"
-      POLAR_REDIS_HOST        = module.redis.host
-      POLAR_REDIS_PORT        = tostring(module.redis.port)
-      POLAR_REDIS_DB          = "1"
-      POLAR_JWKS_CONTENT      = var.backend_jwks_production
+      POLAR_REDIS_URL         = "rediss://${module.redis.host}:${tostring(module.redis.port)}/1"
       POLAR_POSTGRES_PWD      = local.db_password
       TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
     },
@@ -127,6 +140,8 @@ module "lambda_worker" {
   secrets_arn        = aws_secretsmanager_secret.lambda_worker.arn
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker.version_id
   kms_key_arn        = module.secrets_kms.key_arn
+
+  additional_policy_documents = [data.aws_iam_policy_document.s3_access.json]
 }
 
 module "lambda_worker_queue" {
@@ -152,6 +167,61 @@ module "lambda_worker_queue" {
   secrets_arn        = aws_secretsmanager_secret.lambda_worker.arn
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker.version_id
   kms_key_arn        = module.secrets_kms.key_arn
+
+  additional_policy_documents = [data.aws_iam_policy_document.s3_access.json]
+}
+
+# =============================================================================
+# S3 access policy (attached to the secrets_kms role and the worker Lambdas)
+# The buckets live in the management account, which grants these roles in its
+# bucket policies.
+# =============================================================================
+
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    sid = "FilesReadWriteDelete"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAttributes",
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+    ]
+    resources = [
+      "arn:aws:s3:::${local.files_bucket_name}/*",
+      "arn:aws:s3:::${local.files_public_bucket_name}/*",
+    ]
+  }
+
+  statement {
+    sid = "DocumentsReadWrite"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAttributes",
+    ]
+    resources = [
+      "arn:aws:s3:::${local.aws_s3_config.customer_invoices_bucket_name}/*",
+      "arn:aws:s3:::${local.aws_s3_config.customer_receipts_bucket_name}/*",
+      "arn:aws:s3:::${local.aws_s3_config.payout_invoices_bucket_name}/*",
+    ]
+  }
+
+  statement {
+    sid       = "LogsWrite"
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${local.aws_s3_config.logs_bucket_name}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "s3_access" {
+  name   = "polar-production-s3-access"
+  role   = module.secrets_kms.role_name
+  policy = data.aws_iam_policy_document.s3_access.json
 }
 
 # =============================================================================

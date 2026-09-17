@@ -40,6 +40,13 @@ class LogCorrelationIdMiddleware:
         root_span = scope.get("logfire.span")
         if root_span is not None and root_span.is_recording():
             root_span.set_attribute("correlation_id", correlation_id)
+            api_version = scope.get("state", {}).get("api_version")
+            if api_version is not None:
+                root_span.set_attribute("api_version", str(api_version))
+                root_span.set_attribute(
+                    "api_version_set",
+                    scope.get("state", {}).get("api_version_set", False),
+                )
 
         # Capture client identification headers (sent by the mobile app)
         # so we can correlate API traffic to specific client builds for
@@ -198,6 +205,27 @@ class SandboxResponseHeaderMiddleware:
                 message.setdefault("headers", [])
                 headers = MutableHeaders(scope=message)
                 headers["X-Polar-Sandbox"] = "1"
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+class HSTSMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                message.setdefault("headers", [])
+                headers = MutableHeaders(scope=message)
+                headers["Strict-Transport-Security"] = (
+                    "max-age=63072000; includeSubDomains"
+                )
             await send(message)
 
         await self.app(scope, receive, send_wrapper)

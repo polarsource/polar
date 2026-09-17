@@ -77,6 +77,24 @@ def test_validate_event_accepts_standard_webhooks_secret() -> None:
     )
 
 
+def test_validate_event_accepts_unpadded_standard_webhooks_secret() -> None:
+    key = os.urandom(32)
+    secret = "whsec_" + base64.b64encode(key).decode().rstrip("=")
+    assert len(secret.removeprefix("whsec_")) % 4 == 3
+    body = json.dumps({"type": _EVENT_TYPE, "value": "payload"})
+    timestamp = datetime.datetime.now(tz=datetime.UTC)
+    signature = Webhook(secret).sign("test-webhook", timestamp, body)
+    headers = {
+        "Webhook-Id": "test-webhook",
+        "Webhook-Timestamp": str(int(timestamp.timestamp())),
+        "Webhook-Signature": signature,
+    }
+
+    assert _validate_event(body, headers, secret) == DummyPayload(
+        type=_EVENT_TYPE, value="payload"
+    )
+
+
 def test_validate_event_rejects_invalid_signature() -> None:
     body = json.dumps({"type": _EVENT_TYPE, "value": "payload"})
 

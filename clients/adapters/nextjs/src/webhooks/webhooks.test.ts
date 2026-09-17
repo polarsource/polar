@@ -5,24 +5,41 @@ vi.mock('@polar-sh/adapter-utils', () => ({
   handleWebhookPayload: vi.fn(),
 }))
 
-vi.mock('@polar-sh/sdk/webhooks', () => ({
-  validateEvent: vi.fn(),
-  WebhookVerificationError: class WebhookVerificationError extends Error {
+vi.mock('@polar-sh/sdk/2026-04', () => {
+  class PolarWebhookError extends Error {}
+  class PolarWebhookVerificationError extends PolarWebhookError {
     constructor(message: string) {
       super(message)
-      this.name = 'WebhookVerificationError'
+      this.name = 'PolarWebhookVerificationError'
     }
-  },
-}))
+  }
+  class PolarWebhookUnknownTypeError extends PolarWebhookError {
+    constructor(public readonly eventType: string | null) {
+      super(`Unknown webhook event type: ${JSON.stringify(eventType)}`)
+      this.name = 'PolarWebhookUnknownTypeError'
+    }
+  }
+
+  return {
+    webhooks: {
+      validateEvent: vi.fn(),
+      PolarWebhookError,
+      PolarWebhookVerificationError,
+      PolarWebhookUnknownTypeError,
+    },
+  }
+})
 
 import { handleWebhookPayload } from '@polar-sh/adapter-utils'
-import { validateEvent } from '@polar-sh/sdk/webhooks'
+import { webhooks } from '@polar-sh/sdk/2026-04'
 import { Webhooks } from './webhooks'
 
 const mockHandleWebhookPayload = vi.mocked(handleWebhookPayload) as ReturnType<
   typeof vi.fn
 >
-const mockValidateEvent = vi.mocked(validateEvent) as ReturnType<typeof vi.fn>
+const mockValidateEvent = vi.mocked(webhooks.validateEvent) as ReturnType<
+  typeof vi.fn
+>
 const mockEntitlements = {} as NonNullable<
   Parameters<typeof Webhooks>[0]['entitlements']
 >
@@ -36,10 +53,10 @@ describe('Webhooks', () => {
     it('should validate webhook headers and process payload', async () => {
       const mockPayload = {
         type: 'checkout.created' as const,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         data: { id: 'checkout_123' },
       }
-      mockValidateEvent.mockReturnValue(mockPayload)
+      mockValidateEvent.mockResolvedValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({
@@ -84,10 +101,10 @@ describe('Webhooks', () => {
     it('should handle missing webhook headers', async () => {
       const mockPayload = {
         type: 'checkout.created' as const,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         data: { id: 'checkout_123' },
       }
-      mockValidateEvent.mockReturnValue(mockPayload)
+      mockValidateEvent.mockResolvedValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({
@@ -116,11 +133,9 @@ describe('Webhooks', () => {
     })
 
     it('should return 403 for webhook verification errors', async () => {
-      const { WebhookVerificationError } =
-        await import('@polar-sh/sdk/webhooks')
-      mockValidateEvent.mockImplementation(() => {
-        throw new WebhookVerificationError('Invalid signature')
-      })
+      mockValidateEvent.mockRejectedValue(
+        new webhooks.PolarWebhookVerificationError('Invalid signature'),
+      )
 
       const webhookHandler = Webhooks({
         webhookSecret: 'secret_123',
@@ -145,10 +160,65 @@ describe('Webhooks', () => {
       expect(mockHandleWebhookPayload).not.toHaveBeenCalled()
     })
 
-    it('should re-throw non-verification errors', async () => {
-      mockValidateEvent.mockImplementation(() => {
-        throw new Error('Unexpected error')
+    it('should acknowledge signed unknown webhook events', async () => {
+      mockValidateEvent.mockRejectedValue(
+        new webhooks.PolarWebhookUnknownTypeError('future.event'),
+      )
+
+      const webhookHandler = Webhooks({ webhookSecret: 'secret_123' })
+      const request = new NextRequest('https://example.com/webhooks', {
+        method: 'POST',
+        body: JSON.stringify({ type: 'future.event' }),
       })
+
+      const response = await webhookHandler(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.received).toBe(true)
+      expect(mockHandleWebhookPayload).not.toHaveBeenCalled()
+    })
+
+    it('should return 400 when the webhook event type is missing', async () => {
+      mockValidateEvent.mockRejectedValue(
+        new webhooks.PolarWebhookUnknownTypeError(null),
+      )
+
+      const webhookHandler = Webhooks({ webhookSecret: 'secret_123' })
+      const request = new NextRequest('https://example.com/webhooks', {
+        method: 'POST',
+        body: '{}',
+      })
+
+      const response = await webhookHandler(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.received).toBe(false)
+      expect(mockHandleWebhookPayload).not.toHaveBeenCalled()
+    })
+
+    it('should return 400 for malformed webhook payloads', async () => {
+      mockValidateEvent.mockRejectedValue(
+        new webhooks.PolarWebhookError('Failed to parse webhook payload'),
+      )
+
+      const webhookHandler = Webhooks({ webhookSecret: 'secret_123' })
+      const request = new NextRequest('https://example.com/webhooks', {
+        method: 'POST',
+        body: 'invalid payload',
+      })
+
+      const response = await webhookHandler(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.received).toBe(false)
+      expect(mockHandleWebhookPayload).not.toHaveBeenCalled()
+    })
+
+    it('should re-throw non-verification errors', async () => {
+      mockValidateEvent.mockRejectedValue(new Error('Unexpected error'))
 
       const webhookHandler = Webhooks({
         webhookSecret: 'secret_123',
@@ -168,14 +238,14 @@ describe('Webhooks', () => {
     it('should pass all configuration to handleWebhookPayload', async () => {
       const mockPayload = {
         type: 'checkout.created' as const,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         data: { id: 'checkout_123' },
       }
       const onPayload = vi.fn()
       const onCheckoutCreated = vi.fn()
       const entitlements = mockEntitlements
 
-      mockValidateEvent.mockReturnValue(mockPayload)
+      mockValidateEvent.mockResolvedValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({
@@ -208,10 +278,10 @@ describe('Webhooks', () => {
     it('should handle minimal configuration', async () => {
       const mockPayload = {
         type: 'order.created' as const,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         data: {},
       }
-      mockValidateEvent.mockReturnValue(mockPayload)
+      mockValidateEvent.mockResolvedValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({
@@ -235,13 +305,13 @@ describe('Webhooks', () => {
     it('should handle multiple event handlers', async () => {
       const mockPayload = {
         type: 'subscription.created' as const,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         data: { id: 'sub_123' },
       }
       const onSubscriptionCreated = vi.fn()
       const onSubscriptionUpdated = vi.fn()
 
-      mockValidateEvent.mockReturnValue(mockPayload)
+      mockValidateEvent.mockResolvedValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({
@@ -269,12 +339,12 @@ describe('Webhooks', () => {
     it('should read request body as text', async () => {
       const mockPayload = {
         type: 'order.created' as const,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         data: {},
       }
       const payloadString = JSON.stringify(mockPayload)
 
-      mockValidateEvent.mockReturnValue(mockPayload)
+      mockValidateEvent.mockResolvedValue(mockPayload)
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({
@@ -296,7 +366,7 @@ describe('Webhooks', () => {
     })
 
     it('should handle empty request body', async () => {
-      mockValidateEvent.mockReturnValue({})
+      mockValidateEvent.mockResolvedValue({})
       mockHandleWebhookPayload.mockResolvedValue([])
 
       const webhookHandler = Webhooks({

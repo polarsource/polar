@@ -1,13 +1,15 @@
 from collections.abc import AsyncGenerator, Sequence
+from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, and_, exists, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -17,6 +19,7 @@ from polar.models import (
     Customer,
     MerchantMigration,
     MerchantMigrationRecord,
+    MerchantMigrationSourcePlatform,
     PaymentMethod,
 )
 from polar.models.merchant_migration_operation import (
@@ -28,7 +31,13 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 
-from .canonical import CanonicalRecord, serialize
+from .canonical import (
+    CanonicalProduct,
+    CanonicalRecord,
+    canonical_price_key,
+    deserialize,
+    serialize,
+)
 
 type RecordCounts = dict[
     tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
@@ -46,6 +55,27 @@ class MerchantMigrationRepository(
     RepositoryBase[MerchantMigration],
 ):
     model = MerchantMigration
+
+    async def lock_stripe_account(self, stripe_account_id: str) -> None:
+        await pg_advisory_xact_lock(
+            self.session, "merchant_migration.stripe_account", stripe_account_id
+        )
+
+    async def stripe_account_id_exists(
+        self, stripe_account_id: str, *, exclude_organization_id: UUID
+    ) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                MerchantMigration.source_platform
+                == MerchantMigrationSourcePlatform.stripe,
+                MerchantMigration.source_credentials["stripe_user_id"].astext
+                == stripe_account_id,
+                MerchantMigration.organization_id != exclude_organization_id,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
@@ -103,6 +133,26 @@ class MerchantMigrationRecordRepository(
     RepositoryBase[MerchantMigrationRecord],
 ):
     model = MerchantMigrationRecord
+
+    async def has_moved_subscription(self, subscription_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .join(
+                MerchantMigration,
+                onclause=MerchantMigration.id
+                == MerchantMigrationRecord.merchant_migration_id,
+            )
+            .where(
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+                MerchantMigrationRecord.target_id == subscription_id,
+                MerchantMigrationRecord.cutover_status
+                == MerchantMigrationCutoverStatus.moved,
+                MerchantMigration.deleted_at.is_(None),
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
 
     async def get_by_source(
         self,
@@ -286,10 +336,10 @@ class MerchantMigrationRecordRepository(
         return await self.get_all(statement)
 
     async def get_imported_customer_dependency(
-        self, migration_id: UUID, customer_source_id: str
+        self, organization_id: UUID, customer_source_id: str
     ) -> MerchantMigrationRecord | None:
         statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
@@ -298,10 +348,10 @@ class MerchantMigrationRecordRepository(
         return await self.get_one_or_none(statement)
 
     async def get_imported_product_dependency(
-        self, migration_id: UUID, price_source_id: str
+        self, organization_id: UUID, price_source_id: str
     ) -> MerchantMigrationRecord | None:
         statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id,
+            MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type == MerchantMigrationRecordType.product,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
             MerchantMigrationRecord.target_id.is_not(None),
@@ -312,6 +362,22 @@ class MerchantMigrationRecordRepository(
             ),
         )
         return await self.get_one_or_none(statement)
+
+    async def list_imported_catalog_dependencies(
+        self, organization_id: UUID
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type.in_(
+                (
+                    MerchantMigrationRecordType.customer,
+                    MerchantMigrationRecordType.product,
+                )
+            ),
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+        )
+        return await self.get_all(statement)
 
     def _switchable_subscriptions_statement(
         self, migration_id: UUID
@@ -325,8 +391,8 @@ class MerchantMigrationRecordRepository(
         pending_ready = and_(
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             exists().where(
-                CustomerRecord.merchant_migration_id
-                == MerchantMigrationRecord.merchant_migration_id,
+                CustomerRecord.organization_id
+                == MerchantMigrationRecord.organization_id,
                 CustomerRecord.type == MerchantMigrationRecordType.customer,
                 CustomerRecord.status == MerchantMigrationRecordStatus.imported,
                 CustomerRecord.target_id.is_not(None),
@@ -335,8 +401,8 @@ class MerchantMigrationRecordRepository(
                 CustomerRecord.deleted_at.is_(None),
             ),
             exists().where(
-                ProductRecord.merchant_migration_id
-                == MerchantMigrationRecord.merchant_migration_id,
+                ProductRecord.organization_id
+                == MerchantMigrationRecord.organization_id,
                 ProductRecord.type == MerchantMigrationRecordType.product,
                 ProductRecord.status == MerchantMigrationRecordStatus.imported,
                 ProductRecord.target_id.is_not(None),
@@ -380,6 +446,24 @@ class MerchantMigrationRecordRepository(
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    async def stream_imported_subscriptions(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[MerchantMigrationRecord]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+            )
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+        async for record in self.stream(statement):
+            yield record
 
     def _selection_filter(
         self, selection: MerchantMigrationOperationSelection | None
@@ -458,16 +542,33 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
 
-    async def payment_method_coverage(self, migration_id: UUID) -> set[UUID]:
+    async def payment_method_coverage(
+        self, migration_id: UUID, *, exact: bool = False
+    ) -> set[UUID]:
         """Switchable subscription record ids whose Polar customer has a card."""
         CustomerRecord = aliased(MerchantMigrationRecord)
+        payment_method_filters = [
+            PaymentMethod.customer_id == Customer.id,
+            PaymentMethod.deleted_at.is_(None),
+            PaymentMethod.type == "card",
+        ]
+        if exact:
+            payment_method_filters.append(
+                or_(
+                    PaymentMethod.processor_id
+                    == MerchantMigrationRecord.canonical["payment_method"].op("->>")(
+                        "source_id"
+                    ),
+                    PaymentMethod.id == Customer.default_payment_method_id,
+                )
+            )
         statement = (
             self._switchable_subscriptions_statement(migration_id)
             .join(
                 CustomerRecord,
                 and_(
-                    CustomerRecord.merchant_migration_id
-                    == MerchantMigrationRecord.merchant_migration_id,
+                    CustomerRecord.organization_id
+                    == MerchantMigrationRecord.organization_id,
                     CustomerRecord.type == MerchantMigrationRecordType.customer,
                     CustomerRecord.status == MerchantMigrationRecordStatus.imported,
                     CustomerRecord.target_id.is_not(None),
@@ -487,11 +588,7 @@ class MerchantMigrationRecordRepository(
             )
             .join(
                 PaymentMethod,
-                and_(
-                    PaymentMethod.customer_id == Customer.id,
-                    PaymentMethod.deleted_at.is_(None),
-                    PaymentMethod.type == "card",
-                ),
+                and_(*payment_method_filters),
             )
             .with_only_columns(MerchantMigrationRecord.id)
             .order_by(None)
@@ -524,11 +621,21 @@ class MerchantMigrationRecordRepository(
                 record, update_dict={"cutover_status": None, "cutover_error": None}
             )
 
+    async def delete_pending(self, migration_id: UUID) -> None:
+        await self.session.execute(
+            delete(MerchantMigrationRecord).where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            )
+        )
+
     async def upsert(
         self,
         merchant_migration: MerchantMigration,
         organization: Organization,
         record: CanonicalRecord,
+        *,
+        merge_product_prices: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
         re-run refreshes a still-pending row; imported/skipped/failed rows are
@@ -541,6 +648,25 @@ class MerchantMigrationRecordRepository(
         canonical = serialize(record)
         if existing is not None:
             if existing.status == MerchantMigrationRecordStatus.pending:
+                if (
+                    merge_product_prices
+                    and existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalProduct)
+                ):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalProduct):
+                        prices = {
+                            canonical_price_key(price): price
+                            for price in current.prices
+                        }
+                        prices.update(
+                            {
+                                canonical_price_key(price): price
+                                for price in record.prices
+                            }
+                        )
+                        record = replace(record, prices=list(prices.values()))
+                        canonical = serialize(record)
                 return await self.update(
                     existing,
                     update_dict={

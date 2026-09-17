@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Text, Uuid
+from sqlalchemy import ForeignKey, Index, String, Text, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -31,8 +31,19 @@ class OrganizationRiskSignal(RecordModel):
     # risk_level is a free-form string so future sources can use their own
     # vocabulary; this is the one value all consumers treat as most severe.
     HIGHEST_RISK_LEVEL = "highest"
+    UNKNOWN_RISK_LEVEL = "unknown"
 
     __tablename__ = "organization_risk_signals"
+    __table_args__ = (
+        Index(
+            "ix_organization_risk_signals_account_evaluation_id",
+            "account_evaluation_id",
+            unique=True,
+            postgresql_where=text(
+                "account_evaluation_id IS NOT NULL AND deleted_at IS NULL"
+            ),
+        ),
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -44,6 +55,9 @@ class OrganizationRiskSignal(RecordModel):
     type: Mapped[Type] = mapped_column(StringEnum(Type), nullable=False)
     risk_level: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    account_evaluation_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     @declared_attr

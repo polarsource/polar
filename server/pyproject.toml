@@ -66,7 +66,7 @@ dependencies = [
   "anyio>=4.14.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
-  "reauth==0.2.2",
+  "reauth==0.4.0",
   "langcodes>=3.5.1",
   "pypdf>=6.14.2",
   "google-auth[requests]>=2.38.0",
@@ -128,7 +128,6 @@ tb_deploy = { cmd = "python -m scripts.tinybird", help = "deploy tinybird dataso
 preview = { cmd = "python -m scripts.preview", help = "manage preview environments" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
-generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
 seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test data into the database" }
 enable_payments = { cmd = "python -m scripts.enable_payments", help = "enable payments for an organization by slug" }
 loadtest_setup = { cmd = "python -m scripts.loadtest_setup", help = "setup load test data for event ingestion" }
@@ -137,6 +136,7 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = [
   "auth",
+  "api_version(*versions): Run the test for each APIVersion with its Polar-Version client header",
   "benchmark: performance benchmark, deselected by default (run with -m benchmark)",
 ]
 addopts = "-m 'not benchmark'"
@@ -184,6 +184,7 @@ ignore = [
   "F401", # remove unused import
 ]
 "scripts/*" = ["T20"]
+"docker/*" = ["T20"]
 "tests/**/test_*_benchmark.py" = ["T20"] # benchmarks report their measurements
 
 [tool.mypy]

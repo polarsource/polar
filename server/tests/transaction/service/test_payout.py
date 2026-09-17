@@ -15,6 +15,7 @@ from polar.models import (
 )
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.repository import TransactionRepository
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
@@ -136,10 +137,16 @@ class TestCreate:
         assert transaction.account_amount < 0
         assert transaction.transfer_id is None
 
-        assert len(transaction.paid_transactions) == 3 + len(
+        transaction_repository = TransactionRepository.from_session(session)
+        paid_transactions = (
+            await transaction_repository.get_all_paid_transactions_by_payout(
+                transaction.id
+            )
+        )
+        assert len(paid_transactions) == 3 + len(
             transaction.account_incurred_transactions
         )
-        paid_transaction_ids = {t.id for t in transaction.paid_transactions}
+        paid_transaction_ids = {t.id for t in paid_transactions}
         assert balance_transaction_1.id in paid_transaction_ids
         assert balance_transaction_2.id in paid_transaction_ids
         assert payout_reversal_transaction.id in paid_transaction_ids

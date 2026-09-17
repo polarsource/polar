@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
 from babel.dates import format_date
-from sqlalchemy import BigInteger, Boolean, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, Boolean, ForeignKey, String, Uuid
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -30,6 +30,12 @@ class OrderItem(RecordModel):
     net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=False)
     tax_amount: Mapped[int] = mapped_column("tax_amount_v2", BigInteger, nullable=False)
     proration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    start_timestamp: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    end_timestamp: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
     order_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("orders.id", ondelete="cascade"), index=True
     )
@@ -116,7 +122,15 @@ class OrderItem(RecordModel):
         formatted_start = format_date(start.date(), locale="en_US")
         formatted_end = format_date(end.date(), locale="en_US")
         label = f"Trial period for {product.name} ({formatted_start} - {formatted_end})"
-        return cls(label=label, amount=0, tax_amount=0, net_amount=0, proration=False)
+        return cls(
+            label=label,
+            amount=0,
+            tax_amount=0,
+            net_amount=0,
+            proration=False,
+            start_timestamp=start,
+            end_timestamp=end,
+        )
 
     @classmethod
     def from_wallet(cls, wallet: "Wallet", amount: int) -> Self:

@@ -8,8 +8,6 @@ from polar.models import (
     Order,
     Organization,
     Subscription,
-    User,
-    UserOrganization,
 )
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.order import OrderStatus
@@ -24,26 +22,14 @@ from tests.fixtures.random_objects import (
 
 
 @pytest_asyncio.fixture
-async def seat_enabled_organization(
-    save_fixture: SaveFixture, organization: Organization
-) -> Organization:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "seat_based_pricing_enabled": True,
-    }
-    await save_fixture(organization)
-    return organization
-
-
-@pytest_asyncio.fixture
 async def subscription_with_seats(
     save_fixture: SaveFixture,
-    seat_enabled_organization: Organization,
+    organization: Organization,
     customer: Customer,
 ) -> Subscription:
     product = await create_product(
         save_fixture,
-        organization=seat_enabled_organization,
+        organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
         prices=[("seat", 1000, "usd")],
     )
@@ -56,20 +42,6 @@ async def subscription_with_seats(
         status=SubscriptionStatus.active,
         started_at=utc_now(),
     )
-
-
-@pytest_asyncio.fixture
-async def user_organization_seat_enabled(
-    save_fixture: SaveFixture,
-    seat_enabled_organization: Organization,
-    user: User,
-) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=seat_enabled_organization.id,
-    )
-    await save_fixture(user_organization)
-    return user_organization
 
 
 @pytest_asyncio.fixture
@@ -114,12 +86,12 @@ async def customer_seat_claimed(
 @pytest_asyncio.fixture
 async def order_with_seats(
     save_fixture: SaveFixture,
-    seat_enabled_organization: Organization,
+    organization: Organization,
     customer: Customer,
 ) -> Order:
     product = await create_product(
         save_fixture,
-        organization=seat_enabled_organization,
+        organization=organization,
         recurring_interval=None,  # One-time purchase
         prices=[("seat", 1000, "usd")],
     )

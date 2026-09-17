@@ -2,11 +2,14 @@
 (never Polar's platform key) and normalizes it into CanonicalRecords."""
 
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 import stripe as stripe_lib
+
+from polar.kit.schemas import Schema
 
 from ..canonical import (
     CanonicalAccount,
@@ -21,6 +24,7 @@ from ..canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from .base import ExtractionPage
 
 # Period data moved onto the subscription item in this version; read it per item.
 STRIPE_API_VERSION = "2026-01-28.clover"
@@ -45,6 +49,17 @@ _SUBSCRIPTION_EXPAND = [
 ]
 
 
+class StripeExtractionPhase(StrEnum):
+    prices = "prices"
+    customers = "customers"
+    subscriptions = "subscriptions"
+
+
+class StripeExtractionCursor(Schema):
+    phase: StripeExtractionPhase = StripeExtractionPhase.prices
+    starting_after: str | None = None
+
+
 class StripeAdapter:
     def __init__(self, access_token: str) -> None:
         self._client = stripe_lib.StripeClient(
@@ -61,7 +76,9 @@ class StripeAdapter:
         other failure — an invalid key (``AuthenticationError``), a rate limit, a
         network blip — propagates, so we fail closed rather than accept a key we
         couldn't fully check. The probes cover exactly what ``extract()`` reads
-        plus the ``subscription_write`` needed to stop billing at cutover.
+        plus the ``subscription_write`` needed to stop billing at cutover and
+        All accounts Read so we can store the Stripe account id and check
+        country / Connect blockers.
         """
         v1 = self._client.v1
         probes: list[tuple[str, Callable[[], Awaitable[Any]]]] = [
@@ -75,6 +92,7 @@ class StripeAdapter:
                     params={"limit": 1, "type": "card"}
                 ),
             ),
+            ("All accounts", self._probe_account_read),
             ("Subscriptions (write)", self._probe_subscription_write),
         ]
         results = await asyncio.gather(
@@ -101,11 +119,15 @@ class StripeAdapter:
         except stripe_lib.InvalidRequestError:
             pass
 
+    async def _probe_account_read(self) -> None:
+        # Direct retrieve so PermissionError isn't swallowed by _current_account.
+        self._account = await self._client.v1.accounts.retrieve_current_async()
+
     async def _current_account(self) -> stripe_lib.Account | None:
-        # Best-effort: a restricted key may lack account read scope. Only a
-        # successful read is cached — creating a migration needs both the account
-        # id and its country, but a rate-limited read must not stick and cost the
-        # id we would otherwise have stored.
+        # Create probes this via verify_scopes. Extract still best-effort for
+        # keys stored before All accounts Read was required. Only a successful
+        # read is cached — a rate-limited read must not stick and cost the id
+        # we would otherwise have stored.
         if self._account is None:
             try:
                 self._account = await self._client.v1.accounts.retrieve_current_async()
@@ -118,12 +140,24 @@ class StripeAdapter:
         return account.id if account else None
 
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
-        async for product in self._extract_products():
-            yield product
-        async for customer in self._extract_customers():
-            yield customer
-        async for subscription in self._extract_subscriptions():
-            yield subscription
+        cursor: dict[str, Any] | None = None
+        while True:
+            page = await self.extract_page(cursor)
+            for record in page.records:
+                yield record
+            cursor = page.next_cursor
+            if cursor is None:
+                return
+
+    async def extract_page(
+        self, cursor: dict[str, Any] | None = None
+    ) -> ExtractionPage:
+        extraction_cursor = StripeExtractionCursor.model_validate(cursor or {})
+        if extraction_cursor.phase == StripeExtractionPhase.prices:
+            return await self._extract_price_page(extraction_cursor)
+        if extraction_cursor.phase == StripeExtractionPhase.customers:
+            return await self._extract_customer_page(extraction_cursor)
+        return await self._extract_subscription_page(extraction_cursor)
 
     async def _has_connected_accounts(self) -> bool:
         # Best-effort: a restricted key may lack Connect read scope. Stripe
@@ -144,18 +178,33 @@ class StripeAdapter:
             has_connected_accounts=has_connected_accounts,
         )
 
-    async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:
-        # Buffer + group prices per (product, interval); catalogs are small,
-        # unlike customers, so holding them in memory is fine.
-        grouped: dict[str, CanonicalProduct] = {}
-        prices = await self._client.v1.prices.list_async(
-            params={
-                "active": True,
-                "limit": PAGE_SIZE,
-                "expand": ["data.product", "data.currency_options"],
-            }
+    async def _extract_price_page(
+        self, cursor: StripeExtractionCursor
+    ) -> ExtractionPage:
+        params: stripe_lib.params.PriceListParams = {
+            "active": True,
+            "limit": PAGE_SIZE,
+            "expand": ["data.product", "data.currency_options"],
+        }
+        if cursor.starting_after is not None:
+            params["starting_after"] = cursor.starting_after
+        prices = await self._client.v1.prices.list_async(params=params)
+        records = self._map_product_page(prices.data)
+        return ExtractionPage(
+            records,
+            self._next_cursor(
+                StripeExtractionPhase.prices,
+                StripeExtractionPhase.customers,
+                prices.data,
+                prices.has_more,
+            ),
         )
-        async for price in prices.auto_paging_iter():
+
+    def _map_product_page(
+        self, prices: Sequence[stripe_lib.Price]
+    ) -> list[CanonicalProduct]:
+        grouped: dict[str, CanonicalProduct] = {}
+        for price in prices:
             product = price.product
             # A deleted product deserializes as a Product with no `active`/`name`;
             # `not active` skips deleted and archived alike.
@@ -177,30 +226,66 @@ class StripeAdapter:
                 )
                 grouped[key] = canonical
             canonical.prices.extend(self._map_prices(price))
-        for canonical in grouped.values():
-            yield canonical
+        return list(grouped.values())
 
-    async def _extract_customers(self) -> AsyncIterator[CanonicalCustomer]:
-        customers = await self._client.v1.customers.list_async(
-            params={"limit": PAGE_SIZE}
+    async def _extract_customer_page(
+        self, cursor: StripeExtractionCursor
+    ) -> ExtractionPage:
+        params: stripe_lib.params.CustomerListParams = {"limit": PAGE_SIZE}
+        if cursor.starting_after is not None:
+            params["starting_after"] = cursor.starting_after
+        customers = await self._client.v1.customers.list_async(params=params)
+        return ExtractionPage(
+            [self._map_customer(customer) for customer in customers.data],
+            self._next_cursor(
+                StripeExtractionPhase.customers,
+                StripeExtractionPhase.subscriptions,
+                customers.data,
+                customers.has_more,
+            ),
         )
-        async for customer in customers.auto_paging_iter():
-            yield self._map_customer(customer)
 
-    async def _extract_subscriptions(self) -> AsyncIterator[CanonicalSubscription]:
-        subscriptions = await self._client.v1.subscriptions.list_async(
-            params={
-                "status": "all",
-                "limit": PAGE_SIZE,
-                "expand": [f"data.{path}" for path in _SUBSCRIPTION_EXPAND],
-            }
+    async def _extract_subscription_page(
+        self, cursor: StripeExtractionCursor
+    ) -> ExtractionPage:
+        params: stripe_lib.params.SubscriptionListParams = {
+            "status": "all",
+            "limit": PAGE_SIZE,
+            "expand": [f"data.{path}" for path in _SUBSCRIPTION_EXPAND],
+        }
+        if cursor.starting_after is not None:
+            params["starting_after"] = cursor.starting_after
+        subscriptions = await self._client.v1.subscriptions.list_async(params=params)
+        records = [
+            self._map_subscription(subscription)
+            for subscription in subscriptions.data
+            if subscription.status not in SKIPPED_SUBSCRIPTION_STATUSES
+            and subscription["items"]["data"]
+        ]
+        return ExtractionPage(
+            records,
+            self._next_cursor(
+                StripeExtractionPhase.subscriptions,
+                None,
+                subscriptions.data,
+                subscriptions.has_more,
+            ),
         )
-        async for subscription in subscriptions.auto_paging_iter():
-            if subscription.status in SKIPPED_SUBSCRIPTION_STATUSES:
-                continue
-            if not subscription["items"]["data"]:
-                continue
-            yield self._map_subscription(subscription)
+
+    def _next_cursor(
+        self,
+        phase: StripeExtractionPhase,
+        next_phase: StripeExtractionPhase | None,
+        data: Sequence[Any],
+        has_more: bool,
+    ) -> dict[str, Any] | None:
+        if has_more:
+            return StripeExtractionCursor(
+                phase=phase, starting_after=data[-1].id
+            ).model_dump(mode="json")
+        if next_phase is None:
+            return None
+        return StripeExtractionCursor(phase=next_phase).model_dump(mode="json")
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         try:

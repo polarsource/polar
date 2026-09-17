@@ -59,7 +59,6 @@ class TestRevokeSeatForMember:
 
         organization.feature_settings = {
             **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
         }
         await save_fixture(organization)

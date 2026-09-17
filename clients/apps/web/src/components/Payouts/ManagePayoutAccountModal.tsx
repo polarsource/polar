@@ -98,6 +98,30 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
     [_organization],
   )
 
+  const handleSwitch = useCallback(
+    async (payoutAccountId: string) => {
+      const { error } =
+        await setOrganizationPayoutAccount.mutateAsync(payoutAccountId)
+      if (error) {
+        toast({
+          title: 'Failed to switch payout account',
+          description: extractApiErrorMessage(
+            error,
+            'An error occurred while switching the payout account.',
+          ),
+        })
+      } else {
+        toast({
+          title: 'Payout account updated',
+          description: 'Your active payout account has been updated.',
+        })
+        refetchOrganization()
+        refetchPayoutAccounts()
+      }
+    },
+    [setOrganizationPayoutAccount, refetchOrganization, refetchPayoutAccounts],
+  )
+
   const handleDelete = useCallback(
     async (payoutAccountId: string) => {
       const { error } = await deletePayoutAccount.mutateAsync(payoutAccountId)
@@ -119,29 +143,6 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
       }
     },
     [deletePayoutAccount, refetchOrganization, refetchPayoutAccounts],
-  )
-
-  const handleSwitch = useCallback(
-    async (payoutAccountId: string) => {
-      const { error } =
-        await setOrganizationPayoutAccount.mutateAsync(payoutAccountId)
-      if (error) {
-        toast({
-          title: 'Failed to switch payout account',
-          description: extractApiErrorMessage(
-            error,
-            'An error occurred while switching the payout account.',
-          ),
-        })
-      } else {
-        toast({
-          title: 'Payout account updated',
-          description: 'Your active payout account has been updated.',
-        })
-        refetchOrganization()
-      }
-    },
-    [setOrganizationPayoutAccount, refetchOrganization],
   )
 
   const accounts = [...(payoutAccountsList?.items ?? [])].sort((a, b) => {
@@ -183,6 +184,9 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
           {accounts.map((account) => {
             const isActive =
               organization && account.id === organization.payout_account_id
+
+            const isUnused = account.organizations.length === 0
+            const isShared = account.organizations.length > 1
             return (
               <li
                 key={account.id}
@@ -228,7 +232,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                         <ExternalLink className="ml-2 h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {!isActive && (
+                    {isUnused && (
                       <Button
                         variant="secondary"
                         size="sm"
@@ -238,7 +242,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                         Make Active
                       </Button>
                     )}
-                    {!isActive && (
+                    {isUnused && (
                       <Button
                         variant="destructive"
                         size="sm"
@@ -276,14 +280,14 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                             : 'Complete Setup'}
                         </DropdownMenuItem>
                       )}
-                      {!isActive && (
+                      {isUnused && (
                         <DropdownMenuItem
                           onClick={() => handleSwitch(account.id)}
                         >
                           Make Active
                         </DropdownMenuItem>
                       )}
-                      {!isActive && (
+                      {isUnused && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -320,7 +324,20 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                     />
                     {account.is_payout_ready ? 'Ready' : 'Setup required'}
                   </span>
+                  <span className="dark:text-polar-400 text-xs text-gray-500">
+                    {isUnused
+                      ? 'Not used by any organization'
+                      : account.organizations
+                          .map(({ slug }) => slug)
+                          .join(', ')}
+                  </span>
                 </div>
+                {isShared && (
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    Stripe requires one payout account per organization. Give
+                    each of these their own.
+                  </p>
+                )}
               </li>
             )
           })}

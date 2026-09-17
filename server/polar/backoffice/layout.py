@@ -15,9 +15,9 @@ def layout(
 
     Generates the full page layout including sidebar navigation, main content area,
     and responsive behavior. The layout supports both full page loads and HTMX
-    partial updates. For HTMX boosted requests targeting the content area, only
-    the content, title, and menu are updated. Otherwise, the complete layout
-    with sidebar is rendered.
+    partial updates. For requests that swap into ``#content`` (``HX-Target:
+    content`` or ``HX-Boosted``), only the content, title, and menu are
+    updated. Otherwise, the complete layout with sidebar is rendered.
 
     The layout includes:
     - Responsive drawer-based sidebar for mobile

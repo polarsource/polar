@@ -4,13 +4,21 @@ import typing
 from collections.abc import Sequence
 from datetime import datetime
 from inspect import Parameter, Signature
-from typing import Annotated, Any, Literal, assert_never, get_args, get_origin
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    assert_never,
+    get_args,
+    get_origin,
+)
 
 from babel.dates import format_date
 from fastapi.routing import APIRoute
 from makefun import with_signature
 from pydantic import (
     Discriminator,
+    Field,
     GetJsonSchemaHandler,
     TypeAdapter,
 )
@@ -88,6 +96,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_cycled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_migrated], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -204,8 +213,7 @@ class BaseWebhookPayload(Schema):
     def __get_pydantic_json_schema__(
         cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
-        json_schema = handler(core_schema)
-        json_schema = handler.resolve_ref_schema(json_schema)
+        json_schema = super().__get_pydantic_json_schema__(core_schema, handler)
 
         # Force the example of the `type` field to be the event type literal value
         type_field_annotation = cls.model_fields["type"].annotation
@@ -1133,6 +1141,29 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
         return self._get_uncanceled_slack_payload(target)
 
 
+class WebhookSubscriptionMigratedPayload(BaseWebhookPayload):
+    """
+    Sent when Polar takes over billing of a subscription migrated from another provider.
+
+    This fires at cutover, once the subscription is live on Polar. `provider`
+    and `provider_subscription_id` identify the subscription on the billing
+    provider so you can correlate the two.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.subscription_migrated]
+    data: SubscriptionSchema
+    provider: str = Field(
+        description="The billing provider the subscription was migrated from.",
+        examples=["stripe"],
+    )
+    provider_subscription_id: str = Field(
+        description="The identifier of the subscription on the billing provider.",
+        examples=["sub_1Sabc2Def3Ghi"],
+    )
+
+
 class WebhookSubscriptionCycledPayload(BaseWebhookPayload):
     """
     Sent when a subscription enters a new billing period.
@@ -1545,6 +1576,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
     | WebhookSubscriptionResumedPayload
+    | WebhookSubscriptionMigratedPayload
     | WebhookRefundCreatedPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload

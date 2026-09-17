@@ -1,8 +1,9 @@
+import asyncio
 from typing import Any
 
 from fastapi import Depends, Request
 
-from polar.config import settings
+from polar.kit.signer import get_published_signers
 from polar.routing import APIRouter
 
 from ..authorization_server import AuthorizationServer
@@ -14,7 +15,9 @@ router = APIRouter(prefix="/.well-known", tags=["well_known"], include_in_schema
 
 @router.get("/jwks.json", name="well_known.jwks")
 async def well_known_jwks() -> dict[str, Any]:
-    return settings.JWKS.as_dict(is_private=False)
+    signers = get_published_signers()
+    keys = await asyncio.to_thread(lambda: [signer.public_jwk() for signer in signers])
+    return {"keys": keys}
 
 
 @router.get("/oauth-authorization-server", name="well_known.oauth_authorization_server")

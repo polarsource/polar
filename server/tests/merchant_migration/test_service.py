@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from datetime import timedelta
+from typing import Any
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -13,10 +14,12 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
+from polar.merchant_migration.adapters.base import ExtractionPage
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -29,14 +32,16 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    deserialize,
     serialize,
 )
-from polar.merchant_migration.cards import AmbiguousCopiedCard
+from polar.merchant_migration.cards import (
+    AmbiguousCopiedCard,
+)
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
-    STEP_RESOLVE_UNCOVERED,
     STEP_VERIFY_CARDS,
 )
 from polar.merchant_migration.repository import (
@@ -54,7 +59,9 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     CutoverNotStarted,
     InvalidSourceCredentials,
+    MigrationOperationInProgress,
     MissingStripeScopes,
+    SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -91,6 +98,7 @@ from polar.models.merchant_migration_record import (
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
@@ -118,6 +126,7 @@ class _FakeAdapter:
         verify_error: Exception | None = None,
         account_id: str | None = "acct_test",
         source_account: CanonicalAccount | None = None,
+        page_size: int | None = None,
     ) -> None:
         self._records = records or []
         self._missing_scopes = missing_scopes or []
@@ -126,6 +135,7 @@ class _FakeAdapter:
         self._source_account = source_account or CanonicalAccount(
             country="US", has_connected_accounts=False
         )
+        self._page_size = page_size
         self.stopped: list[str] = []
 
     async def verify_scopes(self) -> list[str]:
@@ -139,6 +149,17 @@ class _FakeAdapter:
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
         for record in self._records:
             yield record
+
+    async def extract_page(
+        self, cursor: dict[str, Any] | None = None
+    ) -> ExtractionPage:
+        offset = int((cursor or {}).get("offset", 0))
+        page_size = self._page_size or len(self._records) or 1
+        next_offset = offset + page_size
+        return ExtractionPage(
+            self._records[offset:next_offset],
+            {"offset": next_offset} if next_offset < len(self._records) else None,
+        )
 
     async def get_source_account(self) -> CanonicalAccount:
         return self._source_account
@@ -204,6 +225,101 @@ class TestCreate:
         assert credentials["livemode"] is False
         assert credentials["api_key_encrypted"].startswith("v1.")
         assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+
+    @pytest.mark.auth
+    async def test_rejects_stripe_account_used_by_another_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        await build_connected_migration(save_fixture, organization_second)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_test"),
+        )
+
+        with pytest.raises(SourceAccountAlreadyMigrated):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_allows_stripe_account_from_same_organization_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        existing = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_test"),
+        )
+
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        assert migration.id != existing.id
+        assert migration.source_credentials["stripe_user_id"] == "acct_test"
+
+    @pytest.mark.auth
+    async def test_allows_stripe_account_from_soft_deleted_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        existing = await build_connected_migration(save_fixture, organization_second)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.soft_delete(existing)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_test"),
+        )
+
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        assert migration.source_credentials["stripe_user_id"] == "acct_test"
+
+    @pytest.mark.auth
+    async def test_rejects_source_without_stripe_account_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id=None),
+        )
+
+        with pytest.raises(MissingStripeScopes) as exc_info:
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        assert exc_info.value.missing == ["All accounts"]
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
     async def test_missing_scopes_raises_and_persists_nothing(
@@ -494,6 +610,336 @@ class TestRunPrecheck:
             await service.run_precheck(session, auth_subject, migration.id)
 
 
+@pytest.mark.asyncio
+class TestStartPrecheck:
+    @pytest.mark.auth
+    async def test_enqueues_and_sets_pending(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        started = await service.start_precheck(session, auth_subject, migration.id)
+
+        assert started.operation is not None
+        assert started.operation.status == MerchantMigrationOperationStatus.pending
+        assert started.step == MerchantMigrationStep.source_setup
+        enqueue.assert_called_once_with(
+            "merchant_migration.precheck", merchant_migration_id=migration.id
+        )
+
+    @pytest.mark.auth
+    async def test_rejects_a_second_start_while_running(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+
+        with pytest.raises(MigrationOperationInProgress):
+            await service.start_precheck(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
+    async def test_replaces_a_stalled_run(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+        )
+        await save_fixture(migration)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        started = await service.start_precheck(session, auth_subject, migration.id)
+
+        assert started.operation is not None
+        assert started.operation.status == MerchantMigrationOperationStatus.pending
+        enqueue.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestExecutePrecheck:
+    @pytest.mark.auth
+    async def test_fetches_page_before_locking_the_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter(_catalog())
+        events: list[str] = []
+        extract_page = adapter.extract_page
+        refresh_for_update = MerchantMigrationRepository.refresh_for_update
+
+        async def fetch_page(cursor: dict[str, Any] | None = None) -> ExtractionPage:
+            events.append("fetch")
+            return await extract_page(cursor)
+
+        async def lock_migration(
+            repository: MerchantMigrationRepository,
+            migration: MerchantMigration,
+        ) -> None:
+            events.append("lock")
+            await refresh_for_update(repository, migration)
+
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch.object(adapter, "extract_page", side_effect=fetch_page)
+        mocker.patch.object(
+            MerchantMigrationRepository,
+            "refresh_for_update",
+            lock_migration,
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+
+        await service.execute_precheck(session, migration.id)
+
+        assert events == ["fetch", "lock"]
+
+    @pytest.mark.auth
+    async def test_stages_and_marks_done(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog()),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+
+        await service.execute_precheck(session, migration.id)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.step == MerchantMigrationStep.pre_check
+        assert updated.operation is not None
+        assert updated.operation.status == MerchantMigrationOperationStatus.done
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.get_all(
+            record_repository.get_base_statement()
+        )
+        assert len(records) == 2
+
+    @pytest.mark.auth
+    async def test_stages_one_page_and_enqueues_the_next(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog(), page_size=1),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        enqueue.reset_mock()
+
+        await service.execute_precheck(session, migration.id)
+
+        assert migration.step == MerchantMigrationStep.source_setup
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
+        assert migration.operation.cursor == {"offset": 1}
+        enqueue.assert_called_once_with(
+            "merchant_migration.precheck", merchant_migration_id=migration.id
+        )
+
+        enqueue.reset_mock()
+        await service.execute_precheck(session, migration.id)
+
+        assert migration.step.value == MerchantMigrationStep.pre_check.value
+        assert migration.operation is not None
+        assert (
+            migration.operation.status.value
+            == MerchantMigrationOperationStatus.done.value
+        )
+        assert migration.operation.cursor is None
+        enqueue.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_merges_prices_for_a_product_split_across_pages(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        products: list[CanonicalRecord] = [
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id=price_id,
+                        currency=currency,
+                        amount=amount,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            )
+            for price_id, currency, amount in (
+                ("price_usd", "usd", 1000),
+                ("price_eur", "eur", 900),
+            )
+        ]
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(products, page_size=1),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+
+        await service.execute_precheck(session, migration.id)
+        await service.execute_precheck(session, migration.id)
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.get_all(
+            record_repository.get_base_statement()
+        )
+        assert len(records) == 1
+        product = deserialize(records[0].type, records[0].canonical)
+        assert isinstance(product, CanonicalProduct)
+        assert {(price.source_id, price.currency) for price in product.prices} == {
+            ("price_usd", "usd"),
+            ("price_eur", "eur"),
+        }
+
+    async def test_skips_when_no_active_operation(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        await service.execute_precheck(session, migration.id)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.step == MerchantMigrationStep.source_setup
+
+    @pytest.mark.auth
+    async def test_marks_failed_on_merchant_migration_error(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter()
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        mocker.patch.object(adapter, "extract_page", side_effect=SourceNotConnected())
+
+        await service.execute_precheck(session, migration.id)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.step == MerchantMigrationStep.source_setup
+        assert updated.operation is not None
+        assert updated.operation.status == MerchantMigrationOperationStatus.failed
+        assert updated.operation.error == "The migration source is not connected yet."
+
+    @pytest.mark.auth
+    async def test_marks_failed_on_stripe_error(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter()
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        mocker.patch.object(
+            adapter,
+            "extract_page",
+            side_effect=stripe_lib.APIConnectionError("Stripe unavailable"),
+        )
+
+        await service.execute_precheck(session, migration.id)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.operation is not None
+        assert updated.operation.status == MerchantMigrationOperationStatus.failed
+        assert updated.operation.error == SourceVerificationUnavailable().message
+
+
 def _catalog() -> list[CanonicalRecord]:
     return [
         CanonicalProduct(
@@ -628,6 +1074,84 @@ class TestListRecords:
         )
         assert prod_1 is not None
         assert prod_1.id in {item.record_id for item in items}
+
+    @pytest.mark.auth
+    async def test_imported_customer_wins_duplicate_email_classification(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_catalog(),
+                CanonicalCustomer(
+                    source_id="cus_current",
+                    email="shared@example.com",
+                    name="Current",
+                    country="US",
+                ),
+                canonical_subscription(
+                    customer_source_id="cus_reused",
+                    price_source_id="price_1",
+                ),
+            ],
+        )
+        earlier = await build_connected_migration(save_fixture, organization)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="shared@example.com",
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_reused",
+                target_id=customer.id,
+                canonical=serialize(
+                    CanonicalCustomer(
+                        source_id="cus_reused",
+                        email="shared@example.com",
+                        name="Reused",
+                        country="US",
+                    )
+                ),
+            )
+        )
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        customer_items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.customers,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert len(customer_items) == 1
+        assert customer_items[0].source_id == "cus_current"
+        assert customer_items[0].status == PrecheckRecordStatus.skipped
+        assert customer_items[0].reason_code == "duplicate_customer_email"
 
 
 def _importable_catalog() -> list[CanonicalRecord]:
@@ -792,6 +1316,28 @@ class TestImportCatalog:
         assert updated.step == MerchantMigrationStep.create_catalog
 
     @pytest.mark.auth
+    async def test_rejects_while_precheck_is_running(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now(),
+        )
+        await save_fixture(migration)
+
+        with pytest.raises(MigrationOperationInProgress):
+            await service.import_catalog(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
     async def test_blocked_organization_cannot_import(
         self,
         mocker: MockerFixture,
@@ -949,6 +1495,19 @@ class TestImportCatalog:
         assert count == 1
         assert [item.source_id for item in items] == ["prod_1"]
 
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            exclude_import_status=MerchantMigrationRecordStatus.imported,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert count == 1
+        assert [item.source_id for item in items] == ["prod_2"]
+
     @pytest.mark.auth
     async def test_imports_subscription_dependencies_without_creating_subscription(
         self,
@@ -1000,6 +1559,18 @@ class TestImportCatalog:
         )
         assert len(items) == 1
         assert items[0].dependencies_imported is True
+        ready_items, ready_count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=PrecheckRecordStatus.importable,
+            import_status=MerchantMigrationRecordStatus.pending,
+            dependencies_imported=True,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert ready_count == 1
+        assert ready_items[0].source_id == "sub_1"
         summary = await service.summarize_records(session, auth_subject, migration.id)
         subscriptions = next(
             entry
@@ -1007,6 +1578,7 @@ class TestImportCatalog:
             if entry.entity == PrecheckEntity.subscriptions
         )
         assert subscriptions.selectable == 0
+        assert subscriptions.ready == 1
 
     @pytest.mark.auth
     async def test_excluded_subscription_leaves_its_dependencies_pending(
@@ -1371,7 +1943,8 @@ class TestImportCatalog:
         )
         assert subscription is not None
         assert subscription.status == SubscriptionStatus.active
-        assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
+        assert subscription.user_metadata["provider"] == "stripe"
+        assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
 
     @pytest.mark.auth
     async def test_excluded_product_id_is_ignored_when_subscriptions_exist(
@@ -1519,12 +2092,18 @@ class TestSummarizeRecords:
         assert products.importable == 1
         assert products.skipped == 1
         assert products.imported == 1
+        assert products.ready == 0
+        assert products.action_required == 0
         assert products.selectable == 0
 
         customers = by_entity[PrecheckEntity.customers]
         assert customers.total == 1
         assert customers.imported == 1
+        assert customers.ready == 0
         assert customers.selectable == 0
+
+        subscriptions = by_entity[PrecheckEntity.subscriptions]
+        assert subscriptions.ready == 1
 
         items, count = await service.list_records(
             session,
@@ -1536,6 +2115,7 @@ class TestSummarizeRecords:
             pagination=PaginationParams(page=1, limit=100),
         )
         assert summary.action_required == count
+        assert sum(entity.action_required for entity in summary.entities) == count
 
     @pytest.mark.auth
     async def test_summary_counts_what_is_still_selectable(
@@ -1556,8 +2136,11 @@ class TestSummarizeRecords:
         by_entity = {entry.entity: entry for entry in summary.entities}
         products = by_entity[PrecheckEntity.products]
         assert products.imported == 0
+        assert products.ready == 0
         assert products.selectable == 0
-        assert by_entity[PrecheckEntity.subscriptions].selectable == 1
+        subscriptions = by_entity[PrecheckEntity.subscriptions]
+        assert subscriptions.ready == 0
+        assert subscriptions.selectable == 1
 
 
 def _canonical_subscription(
@@ -1600,7 +2183,10 @@ async def _imported_subscription(
 ) -> MerchantMigrationRecord:
     """A pending subscription whose customer and product are already in Polar."""
     customer = await create_customer(
-        save_fixture, organization=organization, email=email
+        save_fixture,
+        organization=organization,
+        email=email,
+        stripe_customer_id=f"cus_{source_id}",
     )
     await save_fixture(
         MerchantMigrationRecord(
@@ -1662,6 +2248,113 @@ async def _imported_subscription(
 
 
 @pytest.mark.asyncio
+class TestImportPaymentMethodMappings:
+    async def test_imports_and_assigns_the_exact_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mapped = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="mapped@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_old",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        uncovered = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_uncovered",
+            email="uncovered@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_uncovered",
+                type=CanonicalPaymentMethodType.card,
+            ),
+        )
+        uncovered_subscription = deserialize(uncovered.type, uncovered.canonical)
+        assert isinstance(uncovered_subscription, CanonicalSubscription)
+        uncovered_subscription.customer_source_id = "cus_sub_1"
+        uncovered.canonical = serialize(uncovered_subscription)
+        await save_fixture(uncovered)
+        stripe_payment_method = build_stripe_payment_method(customer="cus_sub_1")
+        stripe_payment_method.id = "pm_new"
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=stripe_payment_method),
+        )
+
+        await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_sub_1,pm_old,cus_sub_1,pm_new\n"
+            ),
+        )
+
+        customer_record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_imported_customer_dependency(migration.organization_id, "cus_sub_1")
+        assert customer_record is not None
+        assert customer_record.target_id is not None
+        customer = await session.get(Customer, customer_record.target_id)
+        assert customer is not None
+        assert customer.stripe_customer_id == "cus_sub_1"
+        payment_method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, "pm_new"
+        )
+        assert payment_method is not None
+        mapped_subscription = deserialize(mapped.type, mapped.canonical)
+        assert isinstance(mapped_subscription, CanonicalSubscription)
+        assert mapped_subscription.payment_method is not None
+        assert mapped_subscription.payment_method.source_id == "pm_new"
+        uncovered_subscription = deserialize(uncovered.type, uncovered.canonical)
+        assert isinstance(uncovered_subscription, CanonicalSubscription)
+        assert uncovered_subscription.payment_method is not None
+        assert uncovered_subscription.payment_method.source_id == "pm_uncovered"
+        coverage = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).payment_method_coverage(migration.id, exact=True)
+        assert coverage == {mapped.id}
+        customer.default_payment_method_id = payment_method.id
+        await session.flush()
+        coverage = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).payment_method_coverage(migration.id, exact=True)
+        assert coverage == {mapped.id, uncovered.id}
+
+    async def test_skips_a_mapping_for_another_migration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_unknown,pm_old,cus_unknown,pm_new\n"
+            ),
+        )
+
+
+@pytest.mark.asyncio
 class TestRunCardVerification:
     @pytest.mark.auth
     async def test_links_card_to_pending_subscription_customer(
@@ -1686,6 +2379,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         customer = await CustomerRepository.from_session(
             session
@@ -1720,6 +2414,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         await _imported_subscription(
             save_fixture,
@@ -1756,7 +2451,7 @@ class TestRunCardVerification:
         await service.run_card_verification(session, migration.id)
 
         checklist = service._checklist(migration)
-        assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+        assert checklist.current_step_key == STEP_CUTOVER
 
     async def test_re_running_picks_up_only_what_arrived_since(
         self,
@@ -1773,6 +2468,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         await _imported_subscription(
             save_fixture,
@@ -1841,6 +2537,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         charged = CanonicalPaymentMethod(
             source_id="pm_source",
@@ -1890,6 +2587,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         await _imported_subscription(
             save_fixture,
@@ -1935,7 +2633,7 @@ class TestRunCardVerification:
         await service.run_card_verification(session, migration.id)
 
         checklist = service._checklist(migration)
-        assert checklist.current_step_key == STEP_RESOLVE_UNCOVERED
+        assert checklist.current_step_key == STEP_CUTOVER
 
     async def test_lists_a_customer_once_however_many_subscriptions(
         self,
@@ -1950,6 +2648,7 @@ class TestRunCardVerification:
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
         await save_fixture(migration)
         first = await _imported_subscription(
             save_fixture,
@@ -2002,6 +2701,32 @@ def _fake_cutover(
         service, "_build_adapter", new=mocker.AsyncMock(return_value=object())
     )
     return runner
+
+
+@pytest.mark.asyncio
+class TestFinishCardChecks:
+    async def test_moves_the_migration_onto_the_switch(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.copy_cards
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+
+        await service._complete_step(session, migration, STEP_VERIFY_CARDS)
+
+        await session.flush()
+        await session.refresh(migration)
+        checklist = service._checklist(migration)
+        assert checklist.current_step_key == STEP_CUTOVER
+        assert migration.step == MerchantMigrationStep.activate_subscriptions
 
 
 @pytest.mark.asyncio

@@ -157,7 +157,7 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         return object
 
     async def count(self, statement: Select[tuple[M]]) -> int:
-        count_statement = statement.with_only_columns(func.count())
+        count_statement = statement.with_only_columns(func.count()).order_by(None)
         result = await self.session.execute(count_statement)
         return result.scalar_one()
 

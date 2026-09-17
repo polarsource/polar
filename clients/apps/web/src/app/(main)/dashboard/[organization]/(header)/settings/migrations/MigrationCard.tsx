@@ -50,7 +50,7 @@ export function MigrationCard({
           <StripeMark size={40} />
           <Status
             status={connected ? 'Connected' : 'Not connected'}
-            color={connected ? 'green' : 'gray'}
+            color="gray"
             size="small"
           />
         </Box>

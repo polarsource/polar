@@ -17,7 +17,9 @@ from .schemas import Payment as PaymentSchema
 from .schemas import PaymentAdapter, PaymentID
 from .service import payment as payment_service
 
-router = APIRouter(prefix="/payments", tags=["payments", APITag.public])
+router = APIRouter(
+    prefix="/payments", tags=["payments", APITag.public, APITag.mcp, APITag.cli]
+)
 
 
 PaymentNotFound = {

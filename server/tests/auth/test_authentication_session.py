@@ -46,9 +46,9 @@ class TestGetOptionalAuthenticationSession:
         cookie = f"{settings.AUTHENTICATION_SESSION_COOKIE_KEY}=token-中文".encode()
         request = Request({"type": "http", "headers": [(b"cookie", cookie)]})
         service = AuthenticationSessionService(session, set())
-        get_by_token_mock = mocker.patch.object(service, "get_by_token")
+        validate_mock = mocker.patch.object(service, "validate")
 
         result = await get_optional_authentication_session(request, service)
 
         assert result is None
-        get_by_token_mock.assert_not_called()
+        validate_mock.assert_not_called()

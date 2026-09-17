@@ -17,6 +17,7 @@ from polar.feedback import tasks as feedback
 from polar.file import tasks as file
 from polar.integrations.chargeback_stop import tasks as chargeback_stop
 from polar.integrations.polar import tasks as polar_self
+from polar.integrations.resend import tasks as resend
 from polar.integrations.stripe import tasks as stripe
 from polar.integrations.tinybird import tasks as tinybird
 from polar.license_key import tasks as license_key
@@ -82,6 +83,7 @@ __all__ = [
     "processor_transaction",
     "receipt",
     "refund",
+    "resend",
     "slo_report",
     "stripe",
     "subscription",

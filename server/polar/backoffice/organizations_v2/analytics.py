@@ -7,7 +7,6 @@ from polar.models import (
     Benefit,
     CheckoutLink,
     Dispute,
-    Order,
     Organization,
     OrganizationAccessToken,
     Payment,
@@ -76,14 +75,13 @@ class PaymentAnalyticsService:
                 func.count(func.distinct(Refund.order_id)),
                 func.coalesce(-func.sum(Transaction.amount), 0),
             )
-            .join(Order, Refund.order_id == Order.id)
             .outerjoin(
                 Transaction,
                 onclause=(Transaction.refund_id == Refund.id)
                 & (Transaction.type == TransactionType.refund),
             )
             .where(
-                Order.organization_id == organization_id,
+                Refund.organization_id == organization_id,
                 Refund.status == RefundStatus.succeeded,
             )
         )

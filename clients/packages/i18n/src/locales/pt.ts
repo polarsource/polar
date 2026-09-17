@@ -261,6 +261,7 @@ export default {
       description:
         'Você já usou um teste grátis para este produto, então a cobrança será feita hoje. Continue abaixo para concluir sua compra.',
     },
+    orderSummary: 'Resumo do pedido',
   },
   intervals: {
     short: {

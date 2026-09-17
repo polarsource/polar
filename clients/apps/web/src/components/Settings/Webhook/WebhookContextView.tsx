@@ -32,7 +32,6 @@ export default function WebhookContextView({
       api_version: apiVersion,
       format: endpoint.format,
       events: endpoint.events,
-      enabled: endpoint.enabled,
     },
   })
 

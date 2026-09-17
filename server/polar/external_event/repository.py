@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from polar.kit.repository import (
@@ -84,6 +84,22 @@ class ExternalEventRepository(
             ExternalEvent.handled_at.is_not(None), ExternalEvent.created_at < before
         )
         await self.session.execute(statement)
+
+    async def get_unhandled_ids(
+        self, older_than: datetime, *, limit: int
+    ) -> tuple[list[UUID], int]:
+        statement = (
+            select(ExternalEvent.id, func.count().over())
+            .where(
+                ExternalEvent.handled_at.is_(None),
+                ExternalEvent.created_at < older_than,
+            )
+            .order_by(ExternalEvent.created_at.asc(), ExternalEvent.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        rows = result.fetchall()
+        return [row[0] for row in rows], rows[0][1] if rows else 0
 
     def get_sorting_clause(self, property: ExternalEventSortProperty) -> SortingClause:
         match property:

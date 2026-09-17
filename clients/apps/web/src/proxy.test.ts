@@ -1,6 +1,6 @@
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { config, proxy } from './proxy'
 
 vi.mock('./utils/client', () => ({
@@ -424,5 +424,133 @@ describe('the /to/ dance', () => {
 
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toContain('/auth')
+  })
+})
+
+describe('checkout frame ancestors', () => {
+  let mockFetch: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ frame_ancestors: ['https://example.com'] }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const framedRequest = (url: string) =>
+    new NextRequest(url, {
+      headers: {
+        'Sec-Fetch-Dest': 'iframe',
+        Referer: 'https://example.com/pricing',
+      },
+    })
+
+  it('asks for the policy of a framed checkout', async () => {
+    const response = await proxy(
+      framedRequest('https://polar.sh/checkout/polar_c_123'),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockFetch).toHaveBeenCalledOnce()
+
+    const [url, init] = mockFetch.mock.calls[0]
+    expect(url).toContain('/v1/checkouts/client/polar_c_123/embed-policy')
+    expect(init.headers).toMatchObject({
+      Referer: 'https://example.com/pricing',
+      'Sec-Fetch-Dest': 'iframe',
+    })
+  })
+
+  it('resolves the same secret on the confirmation page', async () => {
+    await proxy(
+      framedRequest('https://polar.sh/checkout/polar_c_123/confirmation'),
+    )
+
+    expect(mockFetch.mock.calls[0][0]).toContain(
+      '/v1/checkouts/client/polar_c_123/embed-policy',
+    )
+  })
+
+  it('admits the hosts the organization listed', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        frame_ancestors: ['https://example.com', 'https://*.shop.example.com'],
+      }),
+    })
+
+    const response = await proxy(
+      framedRequest('https://polar.sh/checkout/polar_c_123'),
+    )
+
+    const policy = response.headers.get('Content-Security-Policy')
+    expect(policy).toContain(
+      'frame-ancestors https://example.com https://*.shop.example.com;',
+    )
+    expect(policy).toContain("script-src 'self'")
+  })
+
+  it('asks nothing on a top-level navigation, and refuses framing', async () => {
+    const request = new NextRequest('https://polar.sh/checkout/polar_c_123', {
+      headers: { 'Sec-Fetch-Dest': 'document' },
+    })
+
+    const response = await proxy(request)
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
+  })
+
+  it('leaves other pages to the static policy', async () => {
+    const response = await proxy(
+      framedRequest('https://polar.sh/embed/payment-method'),
+    )
+
+    expect(response.headers.get('Content-Security-Policy')).toBeNull()
+  })
+
+  it.each(['iframe', 'frame', 'object', 'embed'])(
+    'asks for every destination that can hold a document: %s',
+    async (destination) => {
+      await proxy(
+        new NextRequest('https://polar.sh/checkout/polar_c_123', {
+          headers: { 'Sec-Fetch-Dest': destination },
+        }),
+      )
+
+      expect(mockFetch).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('asks when the browser sends no fetch destination', async () => {
+    await proxy(new NextRequest('https://polar.sh/checkout/polar_c_123'))
+
+    expect(mockFetch).toHaveBeenCalledOnce()
+  })
+
+  it('asks nothing outside checkout', async () => {
+    await proxy(framedRequest('https://polar.sh/embed/payment-method'))
+
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('refuses framing when the call fails', async () => {
+    mockFetch.mockRejectedValue(new Error('unreachable'))
+
+    const response = await proxy(
+      framedRequest('https://polar.sh/checkout/polar_c_123'),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
   })
 })

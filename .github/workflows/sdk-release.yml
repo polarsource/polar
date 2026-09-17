@@ -134,7 +134,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3.0.2
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: "sdk/${{ needs.detect-release.outputs.version }}"
           name: "SDK ${{ needs.detect-release.outputs.version }}"

@@ -104,11 +104,7 @@ async def list_integrations(
 
     repository = SlackAppRepository.from_session(session)
     integrations = await repository.list_by_organization_id(organization_id)
-    return SlackIntegrationsResponse(
-        integrations=[
-            SlackIntegration.model_validate(integration) for integration in integrations
-        ]
-    )
+    return SlackIntegrationsResponse.model_validate({"integrations": integrations})
 
 
 @router.get(
@@ -158,7 +154,7 @@ async def post_credentials(
     integration = await slack_app_service.set_credentials(
         session, payload.organization_id, payload, redirect_uri=redirect_uri
     )
-    return SlackIntegration.model_validate(integration)
+    return await SlackIntegration.from_slack_app(integration)
 
 
 @router.get(
@@ -177,7 +173,7 @@ async def authorize(
         raise SlackIntegrationNotConfigured()
 
     redirect_uri = str(request.url_for(CALLBACK_ROUTE_NAME))
-    authorize_url = slack_app_service.build_authorize_url(
+    authorize_url = await slack_app_service.build_authorize_url(
         integration,
         subject_id=auth_subject.subject.id,
         redirect_uri=redirect_uri,
@@ -195,7 +191,7 @@ async def callback(
     state: str = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    state_data = slack_app_service.decode_state(state)
+    state_data = await slack_app_service.decode_state(state)
 
     if state_data.get("subject_id") != str(auth_subject.subject.id):
         raise SlackIntegrationInvalidState(
@@ -233,7 +229,7 @@ async def get_integration(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackIntegration:
     integration = await _get_writable_integration(session, auth_subject, id)
-    return SlackIntegration.model_validate(integration)
+    return await SlackIntegration.from_slack_app(integration)
 
 
 @router.delete(

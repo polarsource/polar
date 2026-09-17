@@ -27,11 +27,12 @@ from polar.customer_meter.service import customer_meter as customer_meter_servic
 from polar.customer_seat.service import seat_service
 from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.discount.service import discount as discount_service
+from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.deduplication import (
     subscription_renewal_reminder_key,
     subscription_trial_conversion_reminder_key,
 )
-from polar.email.schemas import EmailAdapter
+from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import enqueue_email_template
 from polar.enums import (
     PaymentMode,
@@ -43,6 +44,7 @@ from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
+    SubscriptionMigratedMetadata,
     SubscriptionPastDueMetadata,
     SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
@@ -55,7 +57,6 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.exceptions import (
-    BadRequest,
     PolarError,
     PolarRequestValidationError,
     ResourceUnavailable,
@@ -215,6 +216,13 @@ class NoScheduledPause(SubscriptionError):
         super().__init__(message, 409)
 
 
+class SubscriptionNotScheduledToCancel(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not scheduled to be canceled, so it cannot be uncanceled."
+        super().__init__(message, 409)
+
+
 class NotPausedSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -270,40 +278,70 @@ class SeatsAlreadyAssigned(PolarRequestValidationError):
 
 class BelowMinimumSeats(PolarRequestValidationError):
     def __init__(
-        self, subscription: Subscription, minimum_seats: int, requested_seats: int
+        self,
+        subscription: Subscription,
+        minimum_seats: int,
+        requested_seats: int,
+        *,
+        product_id: uuid.UUID | None = None,
     ) -> None:
         self.subscription = subscription
         self.minimum_seats = minimum_seats
         self.requested_seats = requested_seats
-        super().__init__(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "seats"),
-                    "msg": f"Minimum {minimum_seats} seats required.",
-                    "input": requested_seats,
-                }
-            ]
-        )
+        # A product change keeps the live seat count, so the offending input is
+        # the target product, not a submitted seat count.
+        error: ValidationError
+        if product_id is not None:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "product_id"),
+                "msg": (
+                    f"Current seat count of {requested_seats} is below the "
+                    f"minimum of {minimum_seats} seats for this product."
+                ),
+                "input": product_id,
+            }
+        else:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "seats"),
+                "msg": f"Minimum {minimum_seats} seats required.",
+                "input": requested_seats,
+            }
+        super().__init__([error])
 
 
 class AboveMaximumSeats(PolarRequestValidationError):
     def __init__(
-        self, subscription: Subscription, maximum_seats: int, requested_seats: int
+        self,
+        subscription: Subscription,
+        maximum_seats: int,
+        requested_seats: int,
+        *,
+        product_id: uuid.UUID | None = None,
     ) -> None:
         self.subscription = subscription
         self.maximum_seats = maximum_seats
         self.requested_seats = requested_seats
-        super().__init__(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "seats"),
-                    "msg": f"Maximum {maximum_seats} seats allowed.",
-                    "input": requested_seats,
-                }
-            ]
-        )
+        error: ValidationError
+        if product_id is not None:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "product_id"),
+                "msg": (
+                    f"Current seat count of {requested_seats} is above the "
+                    f"maximum of {maximum_seats} seats for this product."
+                ),
+                "input": product_id,
+            }
+        else:
+            error = {
+                "type": "value_error",
+                "loc": ("body", "seats"),
+                "msg": f"Maximum {maximum_seats} seats allowed.",
+                "input": requested_seats,
+            }
+        super().__init__([error])
 
 
 class NotAUnitBasedSubscription(PolarRequestValidationError):
@@ -881,6 +919,8 @@ class SubscriptionService:
         trial_end: datetime | None,
         anchor_day: int | None = None,
         payment_method: PaymentMethod,
+        provider: str,
+        provider_subscription_id: str,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -918,6 +958,12 @@ class SubscriptionService:
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
+        await self._on_subscription_migrated(
+            session,
+            subscription,
+            provider=provider,
+            provider_subscription_id=provider_subscription_id,
+        )
         enqueue_job("customer.state_changed", subscription.customer_id)
 
         log.info(
@@ -1113,6 +1159,11 @@ class SubscriptionService:
             subscription.status = SubscriptionStatus.paused
             subscription.paused_at = utc_now()
             subscription.pause_at_period_end = False
+            # A scheduled change targets the next cycle, which never begins.
+            if subscription.pending_update is not None:
+                subscription = await self.clear_pending_update(
+                    session, ctx, subscription
+                )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
             return await repository.update(
@@ -1934,7 +1985,7 @@ class SubscriptionService:
                 proration_behavior = organization.proration_behavior
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
             self._promote_units_for_unit_transition(
                 subscription, currency_prices, proration_behavior, product_id
@@ -2515,15 +2566,13 @@ class SubscriptionService:
         if not subscription.active:
             raise InactiveSubscription(subscription)
 
-        if subscription.cancel_at_period_end:
-            raise AlreadyCanceledSubscription(subscription)
-
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
         old_period_end = subscription.current_period_end
 
         subscription.current_period_end = new_period_end
         subscription.anchor_day = new_period_end.day
+
+        if subscription.cancel_at_period_end:
+            subscription.ends_at = new_period_end
 
         await event_service.create_event(
             session,
@@ -2558,7 +2607,7 @@ class SubscriptionService:
             raise ResourceUnavailable()
 
         if not subscription.can_uncancel():
-            raise BadRequest()
+            raise SubscriptionNotScheduledToCancel(subscription)
 
         subscription.cancel_at_period_end = False
         subscription.ends_at = None
@@ -2739,6 +2788,11 @@ class SubscriptionService:
             )
         )
         subscription.initialize_meter_period(now)
+
+        # Scheduling a change on a paused subscription is still allowed; it
+        # snapshots the pre-pause period, which this fresh one supersedes.
+        if subscription.pending_update is not None:
+            subscription = await self.clear_pending_update(session, ctx, subscription)
 
         self._clear_expired_discount(subscription)
 
@@ -3149,7 +3203,7 @@ class SubscriptionService:
                 allowed_visibilities=allowed_visibilities,
             )
             self._promote_seats_for_seat_transition(
-                subscription, currency_prices, proration_behavior
+                subscription, currency_prices, proration_behavior, product_id
             )
             self._promote_units_for_unit_transition(
                 subscription, currency_prices, proration_behavior, product_id
@@ -3267,6 +3321,7 @@ class SubscriptionService:
         subscription: Subscription,
         currency_prices: PriceSet,
         proration_behavior: SubscriptionProrationBehavior,
+        product_id: uuid.UUID,
     ) -> bool:
         """Promote `subscription.seats` to the new product's first seat-price tier
         minimum, so the proration debit and `apply_update`'s product-branch rebuild
@@ -3274,13 +3329,26 @@ class SubscriptionService:
         seat auto-claim has to run immediately, or the billing customer loses benefit
         access. Returns whether this was a non-seat → seat transition.
         """
-        if any(is_seat_price(price) for price in subscription.prices):
-            return False
-
         seat_price = next(
             (price for price in currency_prices if is_seat_price(price)), None
         )
         if seat_price is None:
+            return False
+
+        if any(is_seat_price(price) for price in subscription.prices):
+            seats = subscription.seats
+            if seats is None:
+                return False
+            minimum_seats = seat_price.get_minimum_seats()
+            if seats < minimum_seats:
+                raise BelowMinimumSeats(
+                    subscription, minimum_seats, seats, product_id=product_id
+                )
+            maximum_seats = seat_price.get_maximum_seats()
+            if maximum_seats is not None and seats > maximum_seats:
+                raise AboveMaximumSeats(
+                    subscription, maximum_seats, seats, product_id=product_id
+                )
             return False
 
         if proration_behavior == SubscriptionProrationBehavior.next_period:
@@ -3834,6 +3902,44 @@ class SubscriptionService:
                 session, product.organization, event_type, subscription
             )
 
+    async def _on_subscription_migrated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        provider: str,
+        provider_subscription_id: str,
+    ) -> None:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = cast(
+            Subscription,
+            await repository.get_by_id(
+                subscription.id, options=repository.get_eager_options()
+            ),
+        )
+        await webhook_service.send(
+            session,
+            subscription.organization,
+            WebhookEventType.subscription_migrated,
+            subscription,
+            provider=provider,
+            provider_subscription_id=provider_subscription_id,
+        )
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_migrated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionMigratedMetadata(
+                    subscription_id=str(subscription.id),
+                    provider=provider,
+                    provider_subscription_id=provider_subscription_id,
+                    product_id=str(subscription.product_id),
+                ),
+            ),
+        )
+
     async def _is_within_revocation_grace_period(
         self,
         session: AsyncSession,
@@ -4148,6 +4254,13 @@ class SubscriptionService:
 
         subject = subject_template.format(product=product)
 
+        extra_context = dict(extra_context or {})
+        extra_context[
+            "previous_billing_provider"
+        ] = await previous_billing_provider_for_notice(
+            session, subscription, EmailTemplate(template_name)
+        )
+
         async def send_to_recipients(recipients: Sequence[str]) -> None:
             for recipient_email in recipients:
                 token = await customer_service.create_session_token_for_recipient(
@@ -4176,7 +4289,7 @@ class SubscriptionService:
                             "product": product,
                             "subscription": subscription,
                             "url": portal_url,
-                            **(extra_context or {}),
+                            **extra_context,
                         },
                     }
                 )

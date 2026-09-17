@@ -44,6 +44,7 @@ from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
+    create_payment_method,
     create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
@@ -51,6 +52,7 @@ from tests.merchant_migration._helpers import (
     build_connected_migration,
     canonical_subscription,
     copied_cards,
+    pan_steps_until,
     stage_subscription_record,
 )
 
@@ -228,7 +230,73 @@ class TestRun:
         assert subscription.status == SubscriptionStatus.active
         assert subscription.customer_id == imported_customer.id
         assert subscription.payment_method_id is not None
-        assert subscription.user_metadata["stripe_subscription_id"] == "sub_1"
+        assert subscription.user_metadata["provider"] == "stripe"
+        assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
+
+    async def test_creates_from_dependencies_imported_on_earlier_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        earlier = await build_connected_migration(save_fixture, organization)
+        current = await build_connected_migration(save_fixture, organization)
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_1",
+                target_id=imported_customer.id,
+                canonical={},
+            )
+        )
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=earlier,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="prod_1:month:1",
+                target_id=product.id,
+                canonical=serialize(
+                    CanonicalProduct(
+                        source_id="prod_1:month:1",
+                        product_source_id="prod_1",
+                        name="Product",
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id="price_1",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                ),
+            )
+        )
+        pending = MerchantMigrationRecord(
+            merchant_migration=current,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_1",
+            canonical=serialize(canonical_subscription()),
+        )
+        await save_fixture(pending)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await SubscriptionCutover(session, current, _source()).run(pending)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert pending.target_id is not None
 
     async def test_duplicate_pending_subscription_stays_on_source(
         self,
@@ -292,7 +360,7 @@ class TestRun:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.paused,
-            user_metadata={"stripe_subscription_id": "sub_1"},
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         pending_record.target_id = subscription.id
         pending_record.status = MerchantMigrationRecordStatus.imported
@@ -324,6 +392,95 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
         assert subscription.payment_method_id is not None
+
+    async def test_does_not_guess_when_a_mapping_was_uploaded(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        await save_fixture(migration)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_uses_customer_default_for_an_uncovered_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        imported_customer: Customer,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        payment_method = await create_payment_method(save_fixture, imported_customer)
+        imported_customer.default_payment_method_id = payment_method.id
+        await save_fixture(imported_customer)
+        await save_fixture(migration)
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id == payment_method.id
+
+    async def test_uses_the_exact_mapped_method_already_in_polar(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        imported_customer: Customer,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        payment_method = await create_payment_method(
+            save_fixture, imported_customer, processor_id="pm_destination"
+        )
+        staged = deserialize(pending_record.type, pending_record.canonical)
+        assert isinstance(staged, CanonicalSubscription)
+        staged.payment_method = CanonicalPaymentMethod(
+            source_id=payment_method.processor_id,
+            type=CanonicalPaymentMethodType.card,
+        )
+        pending_record.canonical = serialize(staged)
+        await save_fixture(pending_record)
+        await save_fixture(migration)
+        get_payment_method = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError("unavailable", "id")
+            ),
+        )
+
+        outcome = await cutover(
+            _source(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_source",
+                    type=CanonicalPaymentMethodType.card,
+                )
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id == payment_method.id
+        get_payment_method.assert_not_awaited()
 
     async def test_keeps_a_running_trial_running(
         self,
@@ -539,7 +696,7 @@ class TestRun:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.paused,
-            user_metadata={"stripe_subscription_id": "sub_1"},
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         pending_record.target_id = subscription.id
         pending_record.status = MerchantMigrationRecordStatus.imported
@@ -594,7 +751,7 @@ class TestAlreadyLiveOnPolar:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.active,
-            user_metadata={"stripe_subscription_id": "sub_1"},
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         return await stage_subscription_record(
             save_fixture, migration, organization, subscription

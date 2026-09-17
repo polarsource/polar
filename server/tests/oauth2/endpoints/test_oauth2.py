@@ -1,6 +1,7 @@
 from datetime import timedelta
 from urllib.parse import parse_qs, urlparse
 
+import jwt
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -1046,6 +1047,72 @@ class TestOAuth2Consent:
         assert response.json()["error"] == "invalid_request"
 
     @pytest.mark.auth
+    async def test_state_echoed_on_invalid_scope_redirect(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email invalid_scope_xyz",
+            "sub_type": "user",
+            "state": "xyz123",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        query = parse_qs(urlparse(location).query)
+        assert query["error"] == ["invalid_scope"]
+        assert query["state"] == ["xyz123"]
+        assert query["iss"] == [settings.BASE_URL]
+
+    @pytest.mark.auth
+    async def test_state_echoed_on_unsupported_response_type_redirect(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "token",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "state": "abc456",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        query = parse_qs(urlparse(location).query)
+        assert query["error"] == ["unsupported_response_type"]
+        assert query["state"] == ["abc456"]
+
+    @pytest.mark.auth
+    async def test_state_echoed_on_invalid_request_json(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+            "state": "jsonstate",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "invalid_request"
+        assert body["state"] == "jsonstate"
+
+    @pytest.mark.auth
     async def test_organization_deny(
         self,
         client: AsyncClient,
@@ -1302,6 +1369,53 @@ class TestOAuth2Token:
         assert access_token.startswith("polar_at_o_")
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_o_")
+
+    async def test_authorization_code_id_token_signed_with_published_key(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        id_token = response.json()["id_token"]
+
+        header = jwt.get_unverified_header(id_token)
+        assert header["typ"] == "JWT"
+        assert header["alg"] == "RS256"
+        assert header["kid"] == settings.LOCAL_JWK_KID
+
+        jwks_response = await client.get("/.well-known/jwks.json")
+        signing_key = jwt.PyJWKSet.from_dict(jwks_response.json())[header["kid"]]
+        claims = jwt.decode(
+            id_token,
+            signing_key.key,
+            algorithms=[header["alg"]],
+            audience=oauth2_client.client_id,
+        )
+
+        assert claims["iss"] == settings.BASE_URL
+        assert claims["sub"] == str(user.id)
+        assert "kid" not in claims
 
     async def test_authorization_code_revoked_public_client(
         self,

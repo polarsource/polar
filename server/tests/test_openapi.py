@@ -16,3 +16,4 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
 
     assert len(schema["webhooks"]) > 0
     assert schema["info"]["version"] == str(version)
+    assert "subscription.migrated" in schema["webhooks"]

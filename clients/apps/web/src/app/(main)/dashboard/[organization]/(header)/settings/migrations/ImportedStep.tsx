@@ -4,7 +4,6 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useId, useRef, useState } from 'react'
 import { ImportedHandoff } from './ImportedHandoff'
-import { importedTotal } from './review/importSummary'
 import { useRecordSummary } from './review/recordSummary'
 import { ReviewTable } from './review/ReviewTable'
 
@@ -73,8 +72,11 @@ function summary(outcome: ReturnType<typeof useRecordSummary>): string {
   if (outcome.isLoading || outcome.isError) {
     return ''
   }
-  const imported = `${importedTotal(outcome.imported)} imported`
-  return outcome.selectableTotal > 0
-    ? `${imported} · ${outcome.selectableTotal} not prepared`
-    : imported
+  const ready = outcome.counts.subscriptions.ready
+  const toPrepare = outcome.selectableTotal
+  const parts = [
+    ready > 0 ? `${ready} ready to switch` : null,
+    toPrepare > 0 ? `${toPrepare} to prepare` : null,
+  ].filter(Boolean)
+  return parts.join(' · ') || 'No subscriptions to prepare or switch'
 }

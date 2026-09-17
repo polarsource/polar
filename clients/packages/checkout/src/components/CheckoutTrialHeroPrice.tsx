@@ -4,6 +4,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 import { DEFAULT_LOCALE, useTranslations } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
+import { cn } from '@polar-sh/ui/lib/utils'
 import type { ProductCheckoutPublic } from '../guards'
 import { isTemporaryDiscount } from '../utils/discount'
 import { isLegacyRecurringPrice } from '../utils/product'
@@ -11,6 +12,7 @@ import { isLegacyRecurringPrice } from '../utils/product'
 export interface CheckoutTrialHeroPriceProps {
   checkout: ProductCheckoutPublic
   locale?: AcceptedLocale
+  compact?: boolean
 }
 
 const TRIAL_FREE_KEYS = {
@@ -29,6 +31,7 @@ const INTERVAL_SUFFIX_KEYS = {
 const CheckoutTrialHeroPrice = ({
   checkout,
   locale,
+  compact = false,
 }: CheckoutTrialHeroPriceProps) => {
   const { product, product_price } = checkout
   const effectiveLocale = locale ?? DEFAULT_LOCALE
@@ -50,9 +53,9 @@ const CheckoutTrialHeroPrice = ({
 
   if (isTemporaryDiscount(checkout.discount)) {
     return (
-      <div className="flex flex-col gap-y-1">
+      <div className={cn('flex flex-col', !compact && 'gap-y-1')}>
         <span>{trialLabel}</span>
-        {checkout.trial_end && (
+        {!compact && checkout.trial_end && (
           <span className="dark:text-polar-500 text-sm text-gray-500">
             {t('checkout.trial.hero.freeUntil', {
               date: formatDate(checkout.trial_end, effectiveLocale, {
@@ -73,26 +76,32 @@ const CheckoutTrialHeroPrice = ({
   const intervalSuffix = (() => {
     if (!interval || !(interval in INTERVAL_SUFFIX_KEYS)) return ''
     const intervalKey = interval as keyof typeof INTERVAL_SUFFIX_KEYS
-    if (intervalCount && intervalCount > 1) {
-      return ` / ${t(`intervals.short.${intervalKey}`, { count: intervalCount })}`
+    if (compact || (intervalCount && intervalCount > 1)) {
+      return ` / ${t(`intervals.short.${intervalKey}`, { count: intervalCount ?? 1 })}`
     }
     return t(INTERVAL_SUFFIX_KEYS[intervalKey])
   })()
   const format = formatCurrency('standard', effectiveLocale)
   const priceStr = `${format(recurringAmount, currency)}${intervalSuffix}`
 
-  const dateStr = checkout.trial_end
-    ? formatDate(checkout.trial_end, effectiveLocale, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null
+  const dateStr =
+    !compact && checkout.trial_end
+      ? formatDate(checkout.trial_end, effectiveLocale, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : null
 
   return (
-    <div className="flex flex-col gap-y-1">
+    <div className={cn('flex flex-col', !compact && 'gap-y-1')}>
       <span>{trialLabel}</span>
-      <span className="dark:text-polar-500 text-sm text-gray-500">
+      <span
+        className={cn(
+          'dark:text-polar-500 text-gray-500',
+          compact ? 'text-xs' : 'text-sm',
+        )}
+      >
         {t('checkout.trial.hero.then')}{' '}
         <strong className="font-semibold">{priceStr}</strong>
         {dateStr

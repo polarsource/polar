@@ -24,17 +24,6 @@ CONTEXT_MAP = {
 }
 
 
-# Protocol for the task function returned by create_review_task.
-# The `costs` attribute tracks per-call USD cost for reporting.
-class ReviewTaskFn:
-    """Type stub — the actual object is an async function with a .costs list."""
-
-    costs: list[float]
-
-    async def __call__(self, eval_input: EvalInput) -> str:
-        raise NotImplementedError
-
-
 def create_review_task(
     model: str | None = None,
     policy_override: str | None = None,

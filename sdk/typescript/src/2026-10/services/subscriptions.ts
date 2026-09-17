@@ -19,6 +19,7 @@ import {
   ResourceNotFound,
   SubscriptionLocked,
   SubscriptionsUpdate403Error,
+  SubscriptionsUpdate409Error,
 } from "../errors";
 
 export const listSubscriptions = (client: ClientBase) => {
@@ -326,7 +327,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PaymentFailed} Payment required to apply the subscription update.
    * @throws {SubscriptionsUpdate403Error} Subscription is already canceled or will be at the end of the period, or is not active.
    * @throws {ResourceNotFound} Subscription not found.
-   * @throws {SubscriptionLocked} Subscription is pending an update.
+   * @throws {SubscriptionsUpdate409Error} Subscription is pending an update, or is not scheduled to be canceled.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
@@ -350,7 +351,7 @@ export const updateSubscriptions = (client: ClientBase) => {
       402: PaymentFailed,
       403: SubscriptionsUpdate403Error,
       404: ResourceNotFound,
-      409: SubscriptionLocked,
+      409: SubscriptionsUpdate409Error,
       422: HTTPValidationError,
     });
   };

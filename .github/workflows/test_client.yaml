@@ -33,6 +33,7 @@ jobs:
             clients:
               - 'clients/**'
               - '.github/workflows/test_client.yaml'
+              - '.github/workflows/release_cli.yml'
 
   build:
     name: "Client: Tests 🎨"
@@ -93,6 +94,13 @@ jobs:
 
       - name: "🧪 Test: Adapters"
         run: pnpm turbo run test --filter='./adapters/*'
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - name: "🧪 Test: CLI"
+        run: pnpm --filter polar-cli test
 
       - name: 🛠️ Build
         run: pnpm build

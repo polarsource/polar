@@ -1,12 +1,16 @@
 'use client'
 
-import { UploadImage } from '@/components/Image/Image'
 import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
+import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
+import {
+  isExpiredCheckoutError,
+  isOrderSummaryCollapsible,
+} from '@/utils/checkout'
 import { getResizedImage } from '@/utils/getResizedImage'
 import { ArrowLeft } from 'lucide-react'
 import {
@@ -26,26 +30,18 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { ClientResponseError, type schemas } from '@polar-sh/client'
+import type { schemas } from '@polar-sh/client'
 import { AcceptedLocale } from '@polar-sh/i18n'
 import { Alert, Avatar } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@polar-sh/ui/components/ui/dialog'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Slideshow } from '../Products/Slideshow'
+import { CheckoutCollapsibleOrderSummary } from './CheckoutCollapsibleOrderSummary'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
-import { CheckoutProductDescription } from './CheckoutProductDescription'
+import { CheckoutOrderSummary } from './CheckoutOrderSummary'
 
 const PaymentNotReadyBanner = ({
   organizationStatus,
@@ -100,18 +96,16 @@ const Checkout = ({
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
-  const hasActiveTrial = Boolean(
-    checkout.active_trial_interval && checkout.active_trial_interval_count,
+  const isMobileViewport = useIsMobileViewport()
+  const collapsibleOrderSummary =
+    hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
+  const { isTreatment: collapsedOrderSummaryExperiment } = useExperiment(
+    'checkout_collapsed_order_summary',
+    { trackExposure: !embed && isMobileViewport && collapsibleOrderSummary },
   )
-  const { isTreatment } = useExperiment('checkout_trial_due_today', {
-    trackExposure: hasActiveTrial,
-  })
-  const trialDueTodayExperiment = hasActiveTrial && isTreatment
 
-  const { isTreatment: ctaColorExperiment } = useExperiment(
-    'checkout_cta_primary_color',
-    { trackExposure: !embed },
-  )
+  const collapsedOrderSummary =
+    collapsibleOrderSummary && collapsedOrderSummaryExperiment
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -149,7 +143,7 @@ const Checkout = ({
   const disableCheckout =
     shouldBlockCheckout &&
     (paymentStatus?.organization_status === 'denied' ||
-      checkout.is_payment_required)
+      checkout.is_payment_form_required)
 
   // Track payment not ready state
   useEffect(() => {
@@ -193,10 +187,7 @@ const Checkout = ({
       try {
         return await _update(data)
       } catch (error) {
-        if (
-          error instanceof ClientResponseError &&
-          error.response.status === 410
-        ) {
+        if (isExpiredCheckoutError(error)) {
           window.location.reload()
         }
         throw error
@@ -216,10 +207,7 @@ const Checkout = ({
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
-        if (
-          error instanceof ClientResponseError &&
-          error.response.status === 410
-        ) {
+        if (isExpiredCheckoutError(error)) {
           window.location.reload()
         }
         setFullLoading(false)
@@ -306,11 +294,7 @@ const Checkout = ({
                       <hr className="dark:border-polar-700 border-gray-200" />
                     </>
                   )}
-                <CheckoutPricingBreakdown
-                  checkout={checkout}
-                  locale={locale}
-                  trialDueTodayExperiment={trialDueTodayExperiment}
-                />
+                <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
                 <CheckoutDiscountInput
                   checkout={checkout}
                   update={update}
@@ -323,9 +307,6 @@ const Checkout = ({
       </ShadowBox>
     )
   }
-
-  const hasMedia =
-    hasProductCheckout(checkout) && checkout.product.medias.length > 0
 
   const orgHeader = (
     <div className="flex flex-row items-center gap-x-4">
@@ -355,119 +336,27 @@ const Checkout = ({
   return (
     <div className="md:grid md:min-h-screen md:grid-cols-2">
       <div className="md:flex md:justify-end">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-12 md:pl-4">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-6 px-4 py-6 pb-0 md:mx-0 md:py-12 md:pr-12 md:pl-4">
           {orgHeader}
-          <div className="flex flex-col gap-y-8 md:sticky md:top-8">
-            {hasProductCheckout(checkout) && (
-              <>
-                <div className="flex flex-col gap-y-2">
-                  <div className="flex flex-row items-center gap-x-3">
-                    {hasMedia && checkout.product.medias[0]?.public_url && (
-                      <Dialog>
-                        <DialogTrigger
-                          asChild
-                          disabled={checkout.product.medias.length <= 1}
-                        >
-                          <button
-                            className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
-                          >
-                            <UploadImage
-                              src={checkout.product.medias[0].public_url}
-                              approximateWidth={40}
-                              alt={checkout.product.name}
-                              className="h-10 w-10 rounded-lg object-cover"
-                            />
-                            {checkout.product.medias.length > 1 && (
-                              <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
-                                +{checkout.product.medias.length - 1}
-                              </span>
-                            )}
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="dark:bg-polar-900 max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>{checkout.product.name}</DialogTitle>
-                            <DialogDescription className="sr-only">
-                              Product images
-                            </DialogDescription>
-                          </DialogHeader>
-                          <Slideshow
-                            images={checkout.product.medias.map((m) =>
-                              getResizedImage(m.public_url, 672),
-                            )}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    <div className="flex min-w-0 flex-col gap-y-1">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {checkout.product.name}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-3xl font-medium">
-                    <CheckoutHeroPrice checkout={checkout} locale={locale} />
-                  </span>
-                </div>
-                <CheckoutProductSwitcher
+          {collapsedOrderSummary && hasProductCheckout(checkout) ? (
+            <CheckoutCollapsibleOrderSummary
+              checkout={checkout}
+              update={update}
+              themePreset={themePreset}
+              locale={locale}
+            />
+          ) : (
+            <div className="flex flex-col gap-y-8 md:sticky md:top-8">
+              {hasProductCheckout(checkout) && (
+                <CheckoutOrderSummary
                   checkout={checkout}
-                  update={
-                    update as (
-                      data: schemas['CheckoutUpdatePublic'],
-                    ) => Promise<ProductCheckoutPublic>
-                  }
+                  update={update}
                   themePreset={themePreset}
                   locale={locale}
                 />
-                {checkout.product_price.amount_type === 'custom' && (
-                  <CheckoutPWYWForm
-                    checkout={checkout}
-                    update={update}
-                    productPrice={
-                      checkout.product_price as schemas['ProductPriceCustom']
-                    }
-                    locale={locale}
-                  />
-                )}
-                {!checkout.is_free_product_price && (
-                  <div className="flex flex-col gap-4 text-sm">
-                    {!!getSeatPrice(checkout) && (
-                      <CheckoutSeatSelector
-                        checkout={checkout}
-                        updateCheckout={update}
-                        locale={locale}
-                      />
-                    )}
-                    {!!getUnitPrice(checkout) && (
-                      <CheckoutUnitSelector
-                        checkout={checkout}
-                        updateCheckout={update}
-                        locale={locale}
-                      />
-                    )}
-                    <CheckoutPricingBreakdown
-                      checkout={checkout}
-                      locale={locale}
-                      trialDueTodayExperiment={trialDueTodayExperiment}
-                    />
-                    <CheckoutDiscountInput
-                      checkout={checkout}
-                      update={update}
-                      locale={locale}
-                      collapsible
-                    />
-                  </div>
-                )}
-                {checkout.product.description && (
-                  <CheckoutProductDescription
-                    description={checkout.product.description}
-                    productName={checkout.product.name}
-                    locale={locale}
-                  />
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div className="dark:md:bg-polar-900 md:bg-white">
@@ -487,7 +376,6 @@ const Checkout = ({
             loadingLabel={label}
             theme={theme}
             themePreset={themePreset}
-            ctaColorExperiment={ctaColorExperiment}
             disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}

@@ -34,12 +34,14 @@ locals {
       POLAR_INVOICES_ADDITIONAL_INFO             = var.backend_config.invoices_additional_info
       POLAR_INVOICES_VAT_NUMBERS                 = var.backend_config.invoices_vat_numbers
       POLAR_STRIPE_PUBLISHABLE_KEY               = var.backend_secrets.stripe_publishable_key
-      POLAR_CURRENT_JWK_KID                      = var.backend_secrets.current_jwk_kid
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = var.backend_secrets.logo_dev_publishable_key
       POLAR_TAX_PROCESSORS                       = var.backend_config.tax_processors
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
     },
+    var.backend_config.backoffice_host != null ? {
+      POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
+    } : {},
     var.backend_config.plain_default_tier_external_id != "" ? {
       POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = var.backend_config.plain_default_tier_external_id
     } : {},
@@ -62,6 +64,9 @@ locals {
       POLAR_NUMERAL_API_KEY       = var.backend_secrets.numeral_api_key
       POLAR_TURNSTILE_SECRET      = var.backend_secrets.turnstile_secret
     },
+    var.backend_secrets.resend_active_users_segment_id != "" ? {
+      POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID = var.backend_secrets.resend_active_users_segment_id
+    } : {},
     var.backend_config.user_session_cookie_key != "" ? {
       POLAR_USER_SESSION_COOKIE_KEY = var.backend_config.user_session_cookie_key
     } : {},
@@ -71,7 +76,6 @@ locals {
   )
 
   backend_production_environment_variables = var.environment == "production" ? {
-    POLAR_BACKOFFICE_HOST    = var.backend_config.backoffice_host
     POLAR_CHECKOUT_LINK_HOST = var.backend_config.checkout_link_host
   } : {}
 
@@ -99,14 +103,18 @@ locals {
   }
 
   aws_s3_secrets = {
-    POLAR_AWS_ACCESS_KEY_ID        = var.aws_s3_secrets.access_key_id
-    POLAR_AWS_SECRET_ACCESS_KEY    = var.aws_s3_secrets.secret_access_key
-    POLAR_S3_FILES_DOWNLOAD_SALT   = var.aws_s3_secrets.files_download_salt
-    POLAR_S3_FILES_DOWNLOAD_SECRET = var.aws_s3_secrets.files_download_secret
+    for key, value in {
+      POLAR_AWS_ACCESS_KEY_ID        = var.aws_s3_secrets.access_key_id
+      POLAR_AWS_SECRET_ACCESS_KEY    = var.aws_s3_secrets.secret_access_key
+      POLAR_S3_FILES_DOWNLOAD_SALT   = var.aws_s3_secrets.files_download_salt
+      POLAR_S3_FILES_DOWNLOAD_SECRET = var.aws_s3_secrets.files_download_secret
+    } : key => value if value != null
   }
 
   secrets_kms_environment_variables = {
-    POLAR_AWS_KMS_KEY_ID = var.aws_kms_config.key_id
+    POLAR_AWS_KMS_KEY_ID                 = var.aws_kms_config.key_id
+    POLAR_AWS_JWKS_KMS_KEY_ID            = var.aws_kms_config.jwks_key_id
+    POLAR_AWS_JWKS_KMS_PUBLISHED_KEY_IDS = jsonencode(var.aws_kms_config.jwks_published_key_ids)
   }
 
   secrets_kms_render_environment_variables = {
@@ -117,11 +125,6 @@ locals {
     POLAR_WORKER_SQS_ENABLED      = var.worker_sqs_config.enabled
     POLAR_WORKER_SQS_ACTORS       = var.worker_sqs_config.actors
     POLAR_WORKER_SQS_QUEUE_PREFIX = var.worker_sqs_config.queue_prefix
-  } : {}
-
-  worker_sqs_render_secrets = var.worker_sqs_config != null && var.worker_sqs_config.aws_access_key_id != null ? {
-    POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = var.worker_sqs_config.aws_access_key_id
-    POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = var.worker_sqs_config.aws_secret_access_key
   } : {}
 
   github_secrets = {
@@ -219,12 +222,11 @@ locals {
     backend = merge(
       local.backend_environment_variables,
       local.backend_secrets,
-      { POLAR_JWKS = var.backend_config.jwks_path },
     )
     backend_production = var.environment == "production" ? merge(local.backend_production_environment_variables, local.backend_production_secrets) : null
     aws_s3             = merge(local.aws_s3_environment_variables, local.aws_s3_secrets)
     secrets_kms        = merge(local.secrets_kms_environment_variables, local.secrets_kms_render_environment_variables)
-    worker_sqs         = var.worker_sqs_config != null ? merge(local.worker_sqs_environment_variables, local.worker_sqs_render_secrets) : null
+    worker_sqs         = var.worker_sqs_config != null ? local.worker_sqs_environment_variables : null
     github             = local.github_secrets
     stripe             = local.stripe_secrets
     logfire            = var.logfire_config != null ? merge(local.logfire_environment_variables, local.logfire_secrets) : null

@@ -42,7 +42,6 @@ from .schemas import (
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
-    PrecheckReport,
 )
 from .service import (
     CatalogImportBlocked,
@@ -51,7 +50,9 @@ from .service import (
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
+    MigrationOperationInProgress,
     MissingStripeScopes,
+    SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -110,6 +111,10 @@ async def list(
             "migrations aren't enabled for it.",
             "model": NotPermitted.schema() | MerchantMigrationNotEnabled.schema(),
         },
+        409: {
+            "description": "The Stripe account is already used by another migration.",
+            "model": SourceAccountAlreadyMigrated.schema(),
+        },
         502: {
             "description": "Couldn't reach Stripe to validate the key.",
             "model": SourceVerificationUnavailable.schema(),
@@ -145,7 +150,7 @@ async def get(
 
 @router.post(
     "/{id}/precheck",
-    response_model=PrecheckReport,
+    response_model=MerchantMigrationSchema,
     summary="Run Merchant Migration Pre-check",
     responses={
         400: {
@@ -160,14 +165,18 @@ async def get(
             "description": "Merchant migration not found.",
             "model": MerchantMigrationNotFound.schema(),
         },
+        409: {
+            "description": "A pre-check is already running.",
+            "model": MigrationOperationInProgress.schema(),
+        },
     },
 )
 async def precheck(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> PrecheckReport:
-    return await merchant_migration_service.run_precheck(session, auth_subject, id)
+) -> MerchantMigration:
+    return await merchant_migration_service.start_precheck(session, auth_subject, id)
 
 
 @router.post(
@@ -188,8 +197,11 @@ async def precheck(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The pre-check hasn't run yet, or it reports a blocker.",
-            "model": CatalogImportNotReady.schema() | CatalogImportBlocked.schema(),
+            "description": "The pre-check hasn't run yet, it reports a blocker, "
+            "or another job is still running.",
+            "model": CatalogImportNotReady.schema()
+            | CatalogImportBlocked.schema()
+            | MigrationOperationInProgress.schema(),
         },
     },
 )
@@ -457,7 +469,11 @@ async def records(
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
+    exclude_import_status: Annotated[
+        MerchantMigrationRecordStatus | None, Query()
+    ] = None,
     cutover_status: Annotated[MerchantMigrationCutoverStatus | None, Query()] = None,
+    dependencies_imported: Annotated[bool | None, Query()] = None,
     # The primary, like the summary above: it supplies the selection ceiling
     # and these rows supply the checkboxes, so a split would let replica lag
     # show a tickable row the count doesn't include.
@@ -471,7 +487,9 @@ async def records(
         status=status,
         reason_level=reason_level,
         import_status=import_status,
+        exclude_import_status=exclude_import_status,
         cutover_status=cutover_status,
+        dependencies_imported=dependencies_imported,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

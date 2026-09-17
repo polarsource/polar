@@ -74,6 +74,7 @@ class Invoice(BaseModel):
     number: str
     date: datetime
     seller_name: str
+    organization_name: str | None = None
     seller_address: Address
     seller_additional_info: str | None = None
     customer_name: str
@@ -89,6 +90,7 @@ class Invoice(BaseModel):
     currency: str
     items: list[InvoiceItem]
     notes: str | None = None
+    statement_descriptor: str | None = None
     extra_heading_items: list[InvoiceHeadingItem] | None = None
     extra_totals_items: list[InvoiceTotalsItem] | None = None
 
@@ -143,7 +145,7 @@ class Invoice(BaseModel):
                 )
             )
 
-        if len(self.tax_breakdown) > 1:
+        if len(items) > 1:
             items.append(
                 InvoiceTotalsItem(
                     label="Total tax",
@@ -222,6 +224,8 @@ class Invoice(BaseModel):
             number=order.invoice_number,
             date=order.created_at,
             seller_name=settings.INVOICES_NAME,
+            organization_name=order.organization.name,
+            statement_descriptor=f"POLAR*{order.statement_descriptor_suffix}",
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=order.billing_name,
@@ -385,12 +389,9 @@ class InvoiceGenerator(FPDF):
     ) -> None:
         super().__init__()
 
-        # To use a font we first add the font to fpdf, and then we set the
-        # fallback order. Here we load all of the fonts. CJK fonts are
-        # downloaded in the Dockerfile build stage and may be absent in
-        # dev/CI, so skip any family whose files aren't present.
         self.loaded_font_families: set[str] = set()
-        for family, (regular, bold) in self.font_files.items():
+        for family in (self.font_name, self.hebrew_font_name, self.arabic_font_name):
+            regular, bold = self.font_files[family]
             if not (regular.exists() and bold.exists()):
                 continue
             self.add_font(family, fname=regular)
@@ -402,36 +403,51 @@ class InvoiceGenerator(FPDF):
         self.add_font(self.font_name, fname=regular, style="I")
         self.add_font(self.font_name, fname=bold, style="BI")
 
-        # Fallback order: Hebrew, Arabic, then CJK with the customer's script
-        # first so shared Han chars get the right regional glyph form.
-        # customer locale/country first, and then all other scripts.
         customer_script = self.cjk_script_from_locale(
             data.customer_locale
         ) or self.resolve_cjk_script(
             data.customer_address.country if data.customer_address else None
         )
 
-        fallback_fonts = [
+        self.fallback_font_families = [
             family
-            for family in [
-                self.hebrew_font_name,
-                self.arabic_font_name,
-                self.cjk_font_name_for_script(customer_script),
-                *(
-                    self.cjk_font_name_for_script(s)
-                    for s in self.cjk_scripts
-                    if s != customer_script
-                ),
-            ]
+            for family in (self.hebrew_font_name, self.arabic_font_name)
             if family in self.loaded_font_families
         ]
-        self.set_fallback_fonts(fallback_fonts, exact_match=False)
+        self.remaining_cjk_font_families = iter(
+            [
+                self.cjk_font_name_for_script(script)
+                for script in (
+                    customer_script,
+                    *(s for s in self.cjk_scripts if s != customer_script),
+                )
+            ]
+        )
+        self.set_fallback_fonts(self.fallback_font_families, exact_match=False)
         self.set_font(self.font_name, size=self.base_font_size)
 
         self.alias_nb_pages()
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
+
+    def get_fallback_font(self, char: str, style: str = "") -> str | None:
+        if font := super().get_fallback_font(char, style):
+            return font
+
+        for family in self.remaining_cjk_font_families:
+            regular, bold = self.font_files[family]
+            if not (regular.exists() and bold.exists()):
+                continue
+            self.add_font(family, fname=regular)
+            self.add_font(family, fname=bold, style="B")
+            self.loaded_font_families.add(family)
+            self.fallback_font_families.append(family)
+            self.set_fallback_fonts(self.fallback_font_families, exact_match=False)
+            if font := super().get_fallback_font(char, style):
+                return font
+
+        return None
 
     def set_font(
         self,
@@ -511,6 +527,7 @@ class InvoiceGenerator(FPDF):
         self._render_addresses()
         self._render_items_table()
         self._render_totals_table()
+        self._render_statement_descriptor()
         self._render_notes()
 
     def _render_title(self) -> None:
@@ -554,11 +571,17 @@ class InvoiceGenerator(FPDF):
         self.set_y(max(seller_end_y, customer_end_y) + self.elements_y_margin)
 
     def _render_seller_block(self) -> float:
-        self.set_font(style="B")
+        self.set_font(style="")
+        seller_name = f"**{escape_markdown(self.data.seller_name)}**"
+        if self.data.organization_name is not None:
+            seller_name = (
+                f"**{escape_markdown(self.data.organization_name)}** via {seller_name}"
+            )
         self.multi_cell(
             80,
             self.cell_height(),
-            text=self._shape_text(self.data.seller_name),
+            text=self._shape_text(seller_name),
+            markdown=True,
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
@@ -653,6 +676,31 @@ class InvoiceGenerator(FPDF):
                 row.cell(self._shape_text(total_item.label))
                 self.set_font(style="")
                 row.cell(format_currency(total_item.amount, total_item.currency))
+
+    def _render_statement_descriptor(self) -> None:
+        if self.data.statement_descriptor is None:
+            return
+        prefix = "This payment will appear on your statement as "
+        descriptor = self._shape_text(self.data.statement_descriptor)
+        self.set_font(style="")
+        prefix_width = self.get_string_width(prefix)
+        self.set_font(style="B")
+        descriptor_width = self.get_string_width(descriptor)
+        self.set_font(style="")
+        period_width = self.get_string_width(".")
+        line_width = prefix_width + descriptor_width + period_width
+        self.set_xy(
+            self.l_margin + (self.epw - line_width) / 2,
+            self.get_y() + self.elements_y_margin,
+        )
+        self.set_text_color(123, 123, 123)
+        self.write(h=self.cell_height(), text=prefix)
+        self.set_font(style="B")
+        self.write(h=self.cell_height(), text=descriptor)
+        self.set_font(style="")
+        self.write(h=self.cell_height(), text=".")
+        self.set_text_color(0, 0, 0)
+        self.ln(self.cell_height())
 
     def _render_notes(self) -> None:
         self.set_font(style="")

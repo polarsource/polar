@@ -26,9 +26,11 @@ from polar.models import (
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.version import NEXT_API_VERSION
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
+from tests.fixtures.random_objects import create_member
 
 
 @pytest.mark.asyncio
@@ -943,6 +945,57 @@ class TestValidateLicenseKey:
         assert response.status_code == 200
         data = response.json()
         assert data["usage"] == 0
+
+    async def test_returns_seat_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="seat-member@example.com",
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        lk.member_id = member.id
+        await save_fixture(lk)
+
+        response = await client.post(
+            "/v1/customer-portal/license-keys/validate",
+            json={"key": lk.key, "organization_id": str(lk.organization_id)},
+            headers={"Polar-Version": str(NEXT_API_VERSION)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["member_id"] == str(member.id)
+        assert data["member"]["email"] == "seat-member@example.com"
+        assert data["customer"]["email"] == customer.email
+
+        response = await client.post(
+            "/v1/customer-portal/license-keys/validate",
+            json={"key": lk.key, "organization_id": str(lk.organization_id)},
+        )
+
+        assert response.status_code == 200
+        assert "member" not in response.json()
 
 
 @pytest.mark.asyncio

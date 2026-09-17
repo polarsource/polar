@@ -1,5 +1,4 @@
 import time
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import delete, or_, select, update
@@ -32,7 +31,7 @@ class OAuth2TokenRepository(RepositoryBase[OAuth2Token]):
         )
         await self.session.execute(statement)
 
-    async def delete_expired(self, *, exclude_client_ids: Sequence[str] = ()) -> None:
+    async def delete_expired(self) -> None:
         now = int(time.time())
         statement = delete(OAuth2Token).where(
             OAuth2Token.issued_at + OAuth2Token.expires_in < now,
@@ -41,8 +40,4 @@ class OAuth2TokenRepository(RepositoryBase[OAuth2Token]):
                 OAuth2Token.refresh_token_revoked_at != 0,
             ),
         )
-        if exclude_client_ids:
-            statement = statement.where(
-                OAuth2Token.client_id.notin_(exclude_client_ids)
-            )
         await self.session.execute(statement)

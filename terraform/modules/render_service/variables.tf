@@ -101,6 +101,7 @@ variable "environment_groups" {
       POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN = string
       POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = string
       POLAR_BASE_URL                             = string
+      POLAR_BACKOFFICE_HOST                      = optional(string)
       POLAR_DEBUG                                = string
       POLAR_EMAIL_SENDER                         = string
       POLAR_EMAIL_FROM_NAME                      = string
@@ -108,19 +109,18 @@ variable "environment_groups" {
       POLAR_ENV                                  = string
       POLAR_FRONTEND_BASE_URL                    = string
       POLAR_CHECKOUT_BASE_URL                    = string
-      POLAR_JWKS                                 = string
       POLAR_LOG_LEVEL                            = string
       POLAR_TESTING                              = string
       POLAR_AUTH_COOKIE_DOMAIN                   = string
       POLAR_INVOICES_ADDITIONAL_INFO             = string
       POLAR_INVOICES_VAT_NUMBERS                 = string
       POLAR_STRIPE_PUBLISHABLE_KEY               = string
-      POLAR_CURRENT_JWK_KID                      = string
       POLAR_DISCORD_BOT_TOKEN                    = string
       POLAR_DISCORD_CLIENT_ID                    = string
       POLAR_DISCORD_CLIENT_SECRET                = string
       POLAR_DISCORD_PROXY_URL                    = string
       POLAR_RESEND_API_KEY                       = string
+      POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID       = optional(string)
       POLAR_RESEND_WEBHOOK_SECRET                = string
       POLAR_FIRECRAWL_API_KEY                    = string
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = string
@@ -138,7 +138,6 @@ variable "environment_groups" {
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
     })
     backend_production = object({
-      POLAR_BACKOFFICE_HOST                = string
       POLAR_CHECKOUT_LINK_HOST             = string
       POLAR_DISCORD_WEBHOOK_URL            = string
       POLAR_POSTHOG_PROJECT_API_KEY        = string
@@ -159,21 +158,21 @@ variable "environment_groups" {
       POLAR_S3_CUSTOMER_RECEIPTS_BUCKET_NAME = string
       POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME   = string
       POLAR_S3_LOGS_BUCKET_NAME              = string
-      POLAR_AWS_ACCESS_KEY_ID                = string
-      POLAR_AWS_SECRET_ACCESS_KEY            = string
+      POLAR_AWS_ACCESS_KEY_ID                = optional(string)
+      POLAR_AWS_SECRET_ACCESS_KEY            = optional(string)
       POLAR_S3_FILES_DOWNLOAD_SALT           = string
       POLAR_S3_FILES_DOWNLOAD_SECRET         = string
     })
     secrets_kms = object({
-      POLAR_AWS_KMS_KEY_ID = string
-      AWS_ROLE_ARN         = string
+      POLAR_AWS_KMS_KEY_ID                 = string
+      POLAR_AWS_JWKS_KMS_KEY_ID            = string
+      POLAR_AWS_JWKS_KMS_PUBLISHED_KEY_IDS = string # "[\"arn:aws:kms:...\"]"
+      AWS_ROLE_ARN                         = string
     })
     worker_sqs = object({
-      POLAR_WORKER_SQS_ENABLED               = string
-      POLAR_WORKER_SQS_ACTORS                = string
-      POLAR_WORKER_SQS_QUEUE_PREFIX          = string
-      POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = optional(string)
-      POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = optional(string)
+      POLAR_WORKER_SQS_ENABLED      = string
+      POLAR_WORKER_SQS_ACTORS       = string
+      POLAR_WORKER_SQS_QUEUE_PREFIX = string
     })
     github = object({
       POLAR_GITHUB_CLIENT_ID                           = string
@@ -234,12 +233,6 @@ variable "environment_groups" {
     })
   })
   sensitive = true
-}
-
-variable "backend_jwks" {
-  description = "Backend JWKS written to Render secret files and cron-job temporary files."
-  type        = string
-  sensitive   = true
 }
 
 variable "email_from_domain" {

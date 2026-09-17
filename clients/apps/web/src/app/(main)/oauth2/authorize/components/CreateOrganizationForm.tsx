@@ -8,10 +8,10 @@ import { useCreateOrganization } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Checkbox, Input } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormMessage,
@@ -22,6 +22,7 @@ import {
   useEffect,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import SupportedUseCases from './SupportedUseCases'
@@ -37,8 +38,10 @@ type FormSchema = Pick<
 // from the OAuth flow. Lives inside the consent <form>, so it never renders a
 // nested form — the submit button drives the mutation directly.
 const CreateOrganizationForm = ({
+  actionsContainer,
   onCreated,
 }: {
+  actionsContainer: HTMLElement | null
   onCreated: (organization: schemas['Organization']) => void
 }) => {
   const { currentUser, reloadUser } = useAuth()
@@ -109,7 +112,11 @@ const CreateOrganizationForm = ({
 
   return (
     <Form {...form}>
-      <div className="flex flex-col gap-y-4">
+      <Box
+        flexDirection="column"
+        gap="l"
+        marginBottom={{ base: 'none', lg: 'xl' }}
+      >
         <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-white p-6">
           <FormField
             control={control}
@@ -179,9 +186,6 @@ const CreateOrganizationForm = ({
                   />
                 </FormControl>
                 <FormMessage />
-                <FormDescription>
-                  The default currency for your products
-                </FormDescription>
               </FormItem>
             )}
           />
@@ -262,18 +266,21 @@ const CreateOrganizationForm = ({
             {errors.root.message}
           </p>
         )}
-
-        <Button
-          type="button"
-          loading={createOrganization.isPending}
-          disabled={
-            !name || !slug || name.length < 3 || slug.length < 3 || !terms
-          }
-          onClick={handleSubmit(onSubmit)}
-        >
-          Create Organization
-        </Button>
-      </div>
+      </Box>
+      {actionsContainer &&
+        createPortal(
+          <Button
+            type="button"
+            loading={createOrganization.isPending}
+            disabled={
+              !name || !slug || name.length < 3 || slug.length < 3 || !terms
+            }
+            onClick={handleSubmit(onSubmit)}
+          >
+            Create Organization
+          </Button>,
+          actionsContainer,
+        )}
     </Form>
   )
 }

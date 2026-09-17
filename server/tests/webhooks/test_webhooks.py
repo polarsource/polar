@@ -12,6 +12,7 @@ import pytest
 import respx
 from dramatiq import Retry
 from pydantic import Field
+from pydantic.json_schema import JsonSchemaMode
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
@@ -45,7 +46,7 @@ from polar.webhook.tasks import (
     sign_webhook,
     webhook_event_send,
 )
-from polar.webhook.webhooks import BaseWebhookPayload
+from polar.webhook.webhooks import BaseWebhookPayload, WebhookCustomerCreatedPayload
 from tests.fixtures.database import SaveFixture
 from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
 
@@ -53,6 +54,17 @@ from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.webhook.service.enqueue_job")
+
+
+class TestWebhookJsonSchema:
+    @pytest.mark.parametrize("mode", ["validation", "serialization"])
+    def test_datetime_and_event_type_examples(self, mode: JsonSchemaMode) -> None:
+        schema = WebhookCustomerCreatedPayload.model_json_schema(mode=mode)
+
+        assert schema["properties"]["timestamp"]["examples"] == [
+            "2026-01-01T00:00:00.000000Z"
+        ]
+        assert schema["properties"]["type"]["examples"] == ["customer.created"]
 
 
 def test_versioned_raw_payload() -> None:
@@ -274,6 +286,47 @@ async def test_webhook_send(
 
     enqueue_job_mock.assert_called_once_with(
         "webhook_event.send", webhook_event_id=event.id
+    )
+
+
+@pytest.mark.asyncio
+async def test_webhook_send_subscription_migrated(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    enqueue_job_mock: MagicMock,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_migrated],
+        api_version=CURRENT_API_VERSION,
+    )
+    await save_fixture(endpoint)
+
+    events = await webhook_service.send(
+        session,
+        organization,
+        WebhookEventType.subscription_migrated,
+        subscription,
+        provider="stripe",
+        provider_subscription_id="sub_123",
+    )
+    assert len(events) == 1
+
+    raw_payload = events[0].payload
+    assert raw_payload is not None
+    payload = json.loads(raw_payload)
+    assert payload["type"] == "subscription.migrated"
+    assert payload["provider"] == "stripe"
+    assert payload["provider_subscription_id"] == "sub_123"
+    assert payload["data"]["id"] == str(subscription.id)
+
+    enqueue_job_mock.assert_called_once_with(
+        "webhook_event.send", webhook_event_id=events[0].id
     )
 
 

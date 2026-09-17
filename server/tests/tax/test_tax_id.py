@@ -88,6 +88,10 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("98765432", "HK", ("98765432", TaxIDFormat.hk_br)),
         ("1234567-8", "HK", ("12345678", TaxIDFormat.hk_br)),
         ("1234567(8)", "HK", ("12345678", TaxIDFormat.hk_br)),
+        # NZ GST: IRD number, 8 or 9 digits
+        ("49098576", "NZ", ("49098576", TaxIDFormat.nz_gst)),
+        ("49-098-576", "NZ", ("49098576", TaxIDFormat.nz_gst)),
+        ("136410132", "NZ", ("136410132", TaxIDFormat.nz_gst)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -126,6 +130,8 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("1-1000-0001", "CR"),  # cédula física (individual), not accepted
         ("210303670014", "UY"),  # Wrong check digit
         ("1234567", "HK"),  # Too short (7 digits)
+        ("49098577", "NZ"),  # Wrong check digit
+        ("1234567", "NZ"),  # Too short (7 digits)
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

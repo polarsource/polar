@@ -746,6 +746,21 @@ class OrganizationDetailView:
                                 outline=True,
                                 hx_get=str(
                                     request.url_for(
+                                        "organizations:activate_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Activate")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
                                         "organizations:deny_dialog",
                                         organization_id=self.org.id,
                                     )

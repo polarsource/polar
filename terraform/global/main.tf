@@ -13,6 +13,10 @@ resource "tfe_variable" "apple_client_id" {
   description     = "Apple Client ID"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "apple_team_id" {
@@ -21,6 +25,10 @@ resource "tfe_variable" "apple_team_id" {
   description     = "Apple Team ID"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "apple_key_id" {
@@ -29,6 +37,10 @@ resource "tfe_variable" "apple_key_id" {
   description     = "Apple Key ID"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "apple_key_value" {
@@ -37,6 +49,10 @@ resource "tfe_variable" "apple_key_value" {
   description     = "Apple Key Value"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "ghcr_auth_token" {
@@ -45,6 +61,10 @@ resource "tfe_variable" "ghcr_auth_token" {
   description     = "GitHub Container Registry auth token"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "ghcr_username" {
@@ -53,6 +73,10 @@ resource "tfe_variable" "ghcr_username" {
   description     = "GitHub username for GHCR authentication"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "render_api_key" {
@@ -61,6 +85,10 @@ resource "tfe_variable" "render_api_key" {
   description     = "Render API Key"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "render_owner_id" {
@@ -77,6 +105,10 @@ resource "tfe_variable" "grafana_cloud_prometheus_url" {
   description     = "Grafana Cloud Prometheus base URL (e.g. https://prometheus-prod-XX.grafana.net)"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "grafana_cloud_prometheus_username" {
@@ -85,6 +117,10 @@ resource "tfe_variable" "grafana_cloud_prometheus_username" {
   description     = "Grafana Cloud Prometheus username (numeric stack ID)"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "grafana_cloud_prometheus_password" {
@@ -93,6 +129,10 @@ resource "tfe_variable" "grafana_cloud_prometheus_password" {
   description     = "Grafana Cloud Prometheus write API key"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "vercel_api_token" {
@@ -101,6 +141,10 @@ resource "tfe_variable" "vercel_api_token" {
   description     = "Vercel API token"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "logfire_token" {
@@ -109,4 +153,8 @@ resource "tfe_variable" "logfire_token" {
   description     = "Logfire Token"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

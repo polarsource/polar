@@ -1,6 +1,5 @@
 'use client'
 
-import { useExperiment } from '@/experiments/client'
 import { CONFIG } from '@/utils/config'
 import { usePostHog } from 'posthog-js/react'
 import { useCallback, useMemo } from 'react'
@@ -23,7 +22,6 @@ export interface OnboardingSessionState {
   current_step: OnboardingStep
   steps_completed: number
   signup_method: SignupMethod
-  experiment_variant?: string | null
 }
 
 const getOnboardingSession = (): OnboardingSessionState | null => {
@@ -64,15 +62,10 @@ interface UseOnboardingTrackingReturn {
   trackCompleted: (organizationId: string) => void
   getSession: () => OnboardingSessionState | null
   clearSession: () => void
-  experimentVariant: string
 }
 
 export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
   const posthog = usePostHog()
-
-  const { variant: experimentVariant } = useExperiment('onboarding_flow_v1', {
-    trackExposure: false,
-  })
 
   const mode = CONFIG.IS_SANDBOX ? 'sandbox' : 'production'
 
@@ -97,15 +90,9 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       const sessionId = crypto.randomUUID()
       const startedAt = new Date().toISOString()
 
-      posthog?.capture('$feature_flag_called', {
-        $feature_flag: 'onboarding_flow_v1',
-        $feature_flag_response: experimentVariant,
-      })
-
       captureEvent('dashboard:onboarding:started', {
         onboarding_session_id: sessionId,
         signup_method: signupMethod,
-        '$feature/onboarding_flow_v1': experimentVariant,
       })
 
       const session: OnboardingSessionState = {
@@ -114,13 +101,12 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
         current_step: 'org',
         steps_completed: 0,
         signup_method: signupMethod,
-        experiment_variant: experimentVariant,
       }
 
       setOnboardingSession(session)
       return session
     },
-    [posthog, experimentVariant, captureEvent],
+    [captureEvent],
   )
 
   const trackStepStarted = useCallback(
@@ -132,7 +118,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
         onboarding_session_id: session.session_id,
         step,
         organization_id: organizationId,
-        experiment_variant: session.experiment_variant,
       })
 
       setOnboardingSession({ ...session, current_step: step })
@@ -149,7 +134,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
         onboarding_session_id: session.session_id,
         step,
         organization_id: organizationId,
-        experiment_variant: session.experiment_variant,
       })
 
       setOnboardingSession({
@@ -169,7 +153,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
         onboarding_session_id: session.session_id,
         step,
         organization_id: organizationId,
-        experiment_variant: session.experiment_variant,
       })
     },
     [captureEvent],
@@ -183,7 +166,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       captureEvent('dashboard:onboarding:completed', {
         onboarding_session_id: session.session_id,
         organization_id: organizationId,
-        experiment_variant: session.experiment_variant,
       })
 
       clearOnboardingSession()
@@ -208,7 +190,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       trackCompleted,
       getSession,
       clearSession,
-      experimentVariant,
     }),
     [
       startOnboarding,
@@ -218,7 +199,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       trackCompleted,
       getSession,
       clearSession,
-      experimentVariant,
     ],
   )
 }

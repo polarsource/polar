@@ -3,6 +3,7 @@ from polar.kit.db.models import Model, TimestampedModel
 from .account import Account
 from .account_credit import AccountCredit
 from .authentication_session import AuthenticationSession
+from .backoffice_user import BackofficeUser
 from .backup_codes_enrollment import BackupCodesEnrollment
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
@@ -21,6 +22,7 @@ from .customer_meter import CustomerMeter
 from .customer_seat import CustomerSeat, SeatStatus
 from .customer_session import CustomerSession
 from .customer_session_code import CustomerSessionCode
+from .discord_guild_connection import DiscordGuildConnection
 from .discount import Discount
 from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
@@ -132,6 +134,7 @@ __all__ = [
     "Account",
     "AccountCredit",
     "AuthenticationSession",
+    "BackofficeUser",
     "BackupCodesEnrollment",
     "Benefit",
     "BenefitGrant",
@@ -150,6 +153,7 @@ __all__ = [
     "CustomerSeat",
     "CustomerSession",
     "CustomerSessionCode",
+    "DiscordGuildConnection",
     "Discount",
     "DiscountProduct",
     "DiscountRedemption",

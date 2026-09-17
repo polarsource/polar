@@ -48,12 +48,6 @@ variable "pydantic_ai_gateway_api_key_production" {
 }
 
 # Backend - Production
-variable "backend_current_jwk_kid_production" {
-  description = "Current JWK KID for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_discord_bot_token_production" {
   description = "Discord Bot Token for production"
   type        = string
@@ -94,6 +88,12 @@ variable "backend_resend_api_key_production" {
   description = "Resend API Key for production"
   type        = string
   sensitive   = true
+}
+
+variable "resend_active_users_segment_id" {
+  description = "Resend ACTIVE_USERS segment ID; empty disables contact synchronization"
+  type        = string
+  default     = ""
 }
 
 variable "backend_resend_webhook_secret" {
@@ -139,25 +139,7 @@ variable "backend_plain_chat_secret_production" {
   sensitive   = true
 }
 
-variable "backend_jwks_production" {
-  description = "Backend JWKS content for production"
-  type        = string
-  sensitive   = true
-}
-
 # AWS S3 - Production
-variable "aws_access_key_id_production" {
-  description = "AWS Access Key ID for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "aws_secret_access_key_production" {
-  description = "AWS Secret Access Key for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "s3_files_download_salt_production" {
   description = "S3 Files Download Salt for production"
   type        = string
@@ -423,6 +405,12 @@ variable "lambda_worker_tailscale_token" {
   sensitive   = true
 }
 
+variable "ec2_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  type        = string
+  sensitive   = true
+}
+
 variable "plain_default_tier_external_id" {
   description = "Default Plain tier external ID used as a fallback for the polar-self support benefit"
   type        = string
@@ -560,4 +548,50 @@ variable "merchant_migration_destination_stripe_account_id" {
   description = "Stripe account ID merchants copy or import saved cards into"
   type        = string
   default     = ""
+}
+
+variable "private_backoffice_enabled" {
+  description = "Provision the private backoffice replica."
+  type        = bool
+  default     = false
+}
+
+variable "private_backoffice_tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret for the private backoffice replica."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_cloudflare_api_token" {
+  description = "Cloudflare DNS token for private backoffice certificates."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "private_backoffice_tailscale_ip" {
+  description = "Stable TailVIP IPv4 address of the pre-created Tailscale Service."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = var.private_backoffice_tailscale_ip == "" ? true : (
+      can(cidrnetmask("${var.private_backoffice_tailscale_ip}/32")) &&
+      try(cidrhost("${var.private_backoffice_tailscale_ip}/10", 0) == "100.64.0.0", false)
+    )
+    error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
+  }
+}
+
+variable "render_api_key" {
+  description = "Render API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "backup_alert_slack_bot_token" {
+  description = "Slack bot token for database backup copy failure alerts"
+  type        = string
+  sensitive   = true
 }

@@ -439,6 +439,23 @@ async def product_unit_based_with_min(
 
 
 @pytest_asyncio.fixture
+async def product_unit_based_with_max(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """$29/unit flat, monthly, maximum 10 units."""
+    return await create_product_unit_based(
+        save_fixture,
+        organization=organization,
+        tiers=Tiers.model_validate(
+            {
+                "type": TierType.volume,
+                "tiers": [{"bound": 10, "unit_amount": "2900"}],
+            }
+        ),
+    )
+
+
+@pytest_asyncio.fixture
 async def product_seat_based_with_min(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -2989,6 +3006,55 @@ class TestCheckoutLinkCreate:
         assert checkout.custom_field_data == {"company": "Acme Inc"}
         assert "invalid_field" not in checkout.custom_field_data
 
+    async def test_query_prefill_discount_code_when_disallowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+        checkout_link.allow_discount_codes = False
+        await save_fixture(checkout_link)
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"discount_code": discount_fixed_once.code},
+        )
+
+        assert checkout.allow_discount_codes is False
+        assert checkout.discount is None
+
+    async def test_query_prefill_discount_code_overwrites_preset_when_disallowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+        discount_percentage_50: Discount,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time],
+            discount=discount_percentage_50,
+        )
+        checkout_link.allow_discount_codes = False
+        await save_fixture(checkout_link)
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"discount_code": discount_fixed_once.code},
+        )
+
+        assert checkout.allow_discount_codes is False
+        # Preset discount should survive; customer code should NOT be applied
+        assert checkout.discount == discount_percentage_50
+        assert checkout.discount != discount_fixed_once
+
     @pytest.mark.parametrize(
         ("ip_country", "product_currencies", "expected_currency"),
         [
@@ -4355,6 +4421,87 @@ class TestUpdate:
                 CheckoutUpdate(product_id=product_seat_based_with_min_max.id, seats=10),
             )
 
+    async def test_switching_products_preserves_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_unit_based: Product,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_unit_based, product_unit_based_with_min],
+            product=product_unit_based,
+            units=5,
+        )
+
+        assert checkout.units == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_unit_based_with_min.id),
+        )
+
+        assert updated_checkout.product == product_unit_based_with_min
+        assert updated_checkout.units == 5
+
+    async def test_switching_products_clamps_units_to_new_bounds(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_unit_based: Product,
+        product_unit_based_with_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_unit_based, product_unit_based_with_max],
+            product=product_unit_based,
+            units=15,
+        )
+
+        assert checkout.units == 15
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_unit_based_with_max.id),
+        )
+
+        assert updated_checkout.product == product_unit_based_with_max
+        assert updated_checkout.units == 10
+
+    async def test_switching_products_preserves_locked_units(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_unit_based: Product,
+        product_unit_based_with_min: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_unit_based, product_unit_based_with_min],
+            product=product_unit_based,
+            units=5,
+            min_units=5,
+            max_units=5,
+        )
+
+        assert checkout.units == 5
+        assert checkout.min_units == 5
+        assert checkout.max_units == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_unit_based_with_min.id),
+        )
+
+        assert updated_checkout.product == product_unit_based_with_min
+        assert updated_checkout.units == 5
+        assert updated_checkout.min_units == 5
+        assert updated_checkout.max_units == 5
+
     async def test_update_seats_below_minimum(
         self,
         save_fixture: SaveFixture,
@@ -4794,7 +4941,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -4832,7 +4979,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -4954,7 +5101,7 @@ class TestConfirm:
             id=existing.stripe_customer_id
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5152,7 +5299,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         checkout = await checkout_service.confirm(
             session,
@@ -5170,6 +5317,7 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata == {
+            "intent_id": "STRIPE_INTENT_ID",
             "intent_client_secret": "CLIENT_SECRET",
             "intent_status": "succeeded",
             "customer_id": "STRIPE_CUSTOMER_ID",
@@ -5219,7 +5367,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         checkout = await checkout_service.confirm(
             session,
@@ -5237,6 +5385,7 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata == {
+            "intent_id": "STRIPE_INTENT_ID",
             "intent_client_secret": "CLIENT_SECRET",
             "intent_status": "succeeded",
             "customer_id": "STRIPE_CUSTOMER_ID",
@@ -5411,7 +5560,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         checkout = await checkout_service.confirm(
             session,
@@ -5431,6 +5580,7 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata == {
+            "intent_id": "STRIPE_INTENT_ID",
             "intent_client_secret": "CLIENT_SECRET",
             "intent_status": "succeeded",
             "customer_id": "STRIPE_CUSTOMER_ID",
@@ -5515,7 +5665,7 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5557,7 +5707,7 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5602,7 +5752,7 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5655,7 +5805,7 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5693,7 +5843,7 @@ class TestConfirm:
         checkout_one_time_fixed.customer_metadata = {"key": "updated", "key2": "value2"}
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5728,7 +5878,7 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -5764,7 +5914,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -5818,6 +5968,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID",
             client_secret="CLIENT_SECRET",
             status="succeeded",
             payment_method=payment_method,
@@ -5879,6 +6030,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID",
             client_secret="CLIENT_SECRET",
             status="succeeded",
             payment_method=SimpleNamespace(
@@ -5953,10 +6105,10 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         with pytest.raises(DiscountRedemptionLimitReached):
@@ -6031,10 +6183,10 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         # `customer_name` is set, so the token is only fetched because the discount
@@ -6087,7 +6239,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         seen_customer_states: list[bool] = []
@@ -6096,7 +6248,9 @@ class TestConfirm:
             assert checkout.customer is not None
             state = orm_inspect(checkout.customer)
             seen_customer_states.append(state.persistent)
-            return SimpleNamespace(client_secret="CLIENT_SECRET", status="succeeded")
+            return SimpleNamespace(
+                id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+            )
 
         stripe_service_mock.create_payment_intent.side_effect = _capture_intent
 
@@ -6142,7 +6296,7 @@ class TestConfirm:
         )
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -6185,7 +6339,7 @@ class TestConfirm:
         )
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -6699,7 +6853,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -6745,7 +6899,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -6793,7 +6947,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -6840,7 +6994,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -6878,7 +7032,7 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         checkout = await checkout_service.confirm(
@@ -7257,6 +7411,7 @@ class TestHandleFailure:
     @pytest.mark.parametrize(
         "status",
         [
+            CheckoutStatus.open,
             CheckoutStatus.expired,
             CheckoutStatus.succeeded,
             CheckoutStatus.failed,
@@ -7289,30 +7444,41 @@ class TestHandleFailure:
 
     async def test_valid_with_redemption(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         checkout_confirmed_one_time: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
+        metadata = {
+            "intent_id": "pi_current",
+            "intent_client_secret": "pi_current_secret_test",
+            "intent_status": "requires_action",
+        }
+        checkout_confirmed_one_time.payment_processor_metadata = metadata
+        await save_fixture(checkout_confirmed_one_time)
         discount_redemption = DiscountRedemption(
             discount=discount_fixed_once,
             checkout=checkout_confirmed_one_time,
         )
         await save_fixture(discount_redemption)
+        remove_redemption = mocker.spy(discount_service, "remove_checkout_redemption")
 
         checkout = await checkout_service.handle_failure(
             session, checkout_confirmed_one_time
         )
 
-        assert checkout.status == CheckoutStatus.open
-
         discount_redemption_repository = DiscountRedemptionRepository.from_session(
             session
         )
+        assert checkout.status == CheckoutStatus.open
+        assert checkout.payment_processor_metadata == {"intent_id": "pi_current"}
         assert (
             await discount_redemption_repository.get_by_id(discount_redemption.id)
             is None
         )
+        await checkout_service.handle_failure(session, checkout)
+        remove_redemption.assert_called_once()
 
 
 @pytest.mark.asyncio

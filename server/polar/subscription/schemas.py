@@ -406,7 +406,9 @@ class SubscriptionUpdateBillingPeriod(Schema):
             """
             Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
 
-            It is not possible to update the current billing period on a canceled subscription.
+            If the subscription is set to cancel at the end of the period, it'll end on this new date instead.
+
+            It is not possible to update the current billing period on a subscription that's already revoked or not active.
             """
         ),
     )

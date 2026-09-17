@@ -261,6 +261,7 @@ export default {
       description:
         'Já utilizou uma avaliação gratuita para este produto, por isso será cobrado hoje. Continue abaixo para concluir a compra.',
     },
+    orderSummary: 'Resumo da encomenda',
   },
   intervals: {
     short: {

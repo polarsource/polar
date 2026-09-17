@@ -71,11 +71,9 @@ import typer
 from rich.console import Console
 from rich.table import Table
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from tld import get_fld, is_tld
 
-from polar.config import settings
-from polar.kit.db import postgres as kit_postgres
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Checkout, Organization
 from polar.organization.embed_hosts import (
@@ -88,7 +86,13 @@ from polar.organization.embed_hosts import (
 )
 from polar.organization.schemas import validate_embed_hosts
 from polar.postgres import create_async_engine
-from scripts.helper import configure_script_console_logging, typer_async
+from scripts.helper import (
+    configure_script_console_logging,
+    typer_async,
+)
+from scripts.helper import (
+    read_engine as script_read_engine,
+)
 
 cli = typer.Typer()
 console = Console()
@@ -136,30 +140,6 @@ def _registrable(host: str) -> str | None:
     reduces to itself rather than to `vercel.app`.
     """
     return get_fld(f"https://{host}", fail_silently=True)
-
-
-def _read_engine(command_timeout: float) -> AsyncEngine:
-    """The replica when there is one, and long enough to finish.
-
-    Scanning a window of `checkouts` runs well past the 30 seconds the shared
-    engine allows, and `embed_origin` has no index, so this reads where a long
-    scan costs nothing.
-    """
-    dsn = (
-        settings.get_postgres_read_dsn("asyncpg")
-        if settings.is_read_replica_configured()
-        else settings.get_postgres_dsn("asyncpg")
-    )
-    return kit_postgres.create_async_engine(
-        dsn=str(dsn),
-        application_name=f"{settings.ENV.value}.script",
-        pool_logging_name="script_read",
-        pool_size=1,
-        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
-        command_timeout=command_timeout,
-        connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
-        ssl="require" if settings.POSTGRES_SSL else None,
-    )
 
 
 def _is_preview_host(host: str) -> bool:
@@ -604,7 +584,7 @@ async def set_embed_hosts(
     verbose: bool = typer.Option(False, help="Also list the hosts held back"),
 ) -> None:
     since = datetime.now(UTC) - timedelta(days=window_days)
-    read_engine = _read_engine(command_timeout)
+    read_engine = script_read_engine(command_timeout)
 
     try:
         async with create_async_sessionmaker(read_engine)() as session:

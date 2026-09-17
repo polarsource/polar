@@ -15,8 +15,11 @@ export const DiscordCells = ({
 }: {
   benefit: schemas['BenefitDiscord']
 }) => {
-  const { guild_token, role_id, kick_member } = benefit.properties
-  const { data: guild, isLoading } = useDiscordGuild(guild_token)
+  const { guild_id, role_id, kick_member } = benefit.properties
+  const { data: guild, isLoading } = useDiscordGuild(
+    benefit.organization_id,
+    guild_id,
+  )
   const role = guild?.roles.find((role) => role.id === role_id)
 
   return (
@@ -111,11 +114,7 @@ export const SlackSharedChannelCells = ({
   )
 }
 
-export const FeatureFlagCells = ({
-  benefit,
-}: {
-  benefit: schemas['BenefitFeatureFlag']
-}) => {
+export const MetadataCells = ({ benefit }: { benefit: schemas['Benefit'] }) => {
   const entries = Object.entries(benefit.metadata)
 
   if (entries.length === 0) {

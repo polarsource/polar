@@ -255,3 +255,21 @@ class TestBuildRequest:
         )
         assert request.method == "GET"
         assert str(request.url) == "https://api.polar.sh/v1/items/?string_param=value&bool_param=true&int_param=42&list_param=a&list_param=b&list_param=c&dict_param%5Bkey%5D=value"
+
+    def test_query_params_inner_none_in_dict_dropped(self, client: SyncClientBase | AsyncClientBase) -> None:
+        request = client.build_request(
+            method="GET",
+            url="/v1/items/",
+            query_params={"metadata": {"key": None}},
+        )
+        assert request.method == "GET"
+        assert str(request.url) == "https://api.polar.sh/v1/items/"
+
+    def test_query_params_mixed_inner_none_in_dict(self, client: SyncClientBase | AsyncClientBase) -> None:
+        request = client.build_request(
+            method="GET",
+            url="/v1/items/",
+            query_params={"metadata": {"dropped": None, "kept": "value"}},
+        )
+        assert request.method == "GET"
+        assert str(request.url) == "https://api.polar.sh/v1/items/?metadata%5Bkept%5D=value"

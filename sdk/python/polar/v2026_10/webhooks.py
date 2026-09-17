@@ -39,6 +39,8 @@ class WebhookBenefitCreatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Benefit
 
 
@@ -51,6 +53,8 @@ class WebhookBenefitGrantCreatedPayload:
     type: typing.Literal["benefit_grant.created"]
 
     timestamp: str
+
+    api_version: str
 
     data: BenefitGrantWebhook
 
@@ -66,6 +70,8 @@ class WebhookBenefitGrantCycledPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: BenefitGrantWebhook
 
 
@@ -78,6 +84,8 @@ class WebhookBenefitGrantRevokedPayload:
     type: typing.Literal["benefit_grant.revoked"]
 
     timestamp: str
+
+    api_version: str
 
     data: BenefitGrantWebhook
 
@@ -92,6 +100,8 @@ class WebhookBenefitGrantUpdatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: BenefitGrantWebhook
 
 
@@ -105,6 +115,8 @@ class WebhookBenefitUpdatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Benefit
 
 
@@ -117,6 +129,8 @@ class WebhookCheckoutCreatedPayload:
     type: typing.Literal["checkout.created"]
 
     timestamp: str
+
+    api_version: str
 
     data: Checkout
 
@@ -134,6 +148,8 @@ class WebhookCheckoutExpiredPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Checkout
 
 
@@ -146,6 +162,8 @@ class WebhookCheckoutUpdatedPayload:
     type: typing.Literal["checkout.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Checkout
 
@@ -165,6 +183,8 @@ class WebhookCustomerCreatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Customer
 
 
@@ -177,6 +197,8 @@ class WebhookCustomerDeletedPayload:
     type: typing.Literal["customer.deleted"]
 
     timestamp: str
+
+    api_version: str
 
     data: Customer
 
@@ -192,6 +214,8 @@ class WebhookCustomerSeatAssignedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: CustomerSeat
 
 
@@ -205,6 +229,8 @@ class WebhookCustomerSeatClaimedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: CustomerSeat
 
 
@@ -217,6 +243,8 @@ class WebhookCustomerSeatRevokedPayload:
     type: typing.Literal["customer_seat.revoked"]
 
     timestamp: str
+
+    api_version: str
 
     data: CustomerSeat
 
@@ -237,6 +265,8 @@ class WebhookCustomerStateChangedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: CustomerState
 
 
@@ -254,6 +284,8 @@ class WebhookCustomerUpdatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Customer
 
 
@@ -266,6 +298,8 @@ class WebhookDiscountCreatedPayload:
     type: typing.Literal["discount.created"]
 
     timestamp: str
+
+    api_version: str
 
     data: Discount
 
@@ -280,6 +314,8 @@ class WebhookDiscountDeletedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Discount
 
 
@@ -292,6 +328,8 @@ class WebhookDiscountUpdatedPayload:
     type: typing.Literal["discount.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Discount
 
@@ -311,6 +349,8 @@ class WebhookMemberCreatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Member
 
 
@@ -327,6 +367,8 @@ class WebhookMemberDeletedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Member
 
 
@@ -342,6 +384,8 @@ class WebhookMemberUpdatedPayload:
     type: typing.Literal["member.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Member
 
@@ -366,6 +410,8 @@ class WebhookOrderCreatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Order
 
 
@@ -381,6 +427,8 @@ class WebhookOrderPaidPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Order
 
 
@@ -393,6 +441,8 @@ class WebhookOrderRefundedPayload:
     type: typing.Literal["order.refunded"]
 
     timestamp: str
+
+    api_version: str
 
     data: Order
 
@@ -412,6 +462,8 @@ class WebhookOrderUpdatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Order
 
 
@@ -424,6 +476,8 @@ class WebhookOrganizationUpdatedPayload:
     type: typing.Literal["organization.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Organization
 
@@ -438,6 +492,8 @@ class WebhookProductCreatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Product
 
 
@@ -450,6 +506,8 @@ class WebhookProductUpdatedPayload:
     type: typing.Literal["product.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Product
 
@@ -464,6 +522,8 @@ class WebhookRefundCreatedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Refund
 
 
@@ -476,6 +536,8 @@ class WebhookRefundUpdatedPayload:
     type: typing.Literal["refund.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Refund
 
@@ -491,6 +553,8 @@ class WebhookSubscriptionActivePayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Subscription
 
 
@@ -504,6 +568,8 @@ class WebhookSubscriptionCanceledPayload:
     type: typing.Literal["subscription.canceled"]
 
     timestamp: str
+
+    api_version: str
 
     data: Subscription
 
@@ -519,6 +585,8 @@ class WebhookSubscriptionCreatedPayload:
     type: typing.Literal["subscription.created"]
 
     timestamp: str
+
+    api_version: str
 
     data: Subscription
 
@@ -541,6 +609,8 @@ class WebhookSubscriptionCycledPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Subscription
 
 
@@ -559,6 +629,8 @@ class WebhookSubscriptionPastDuePayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Subscription
 
 
@@ -575,6 +647,8 @@ class WebhookSubscriptionPausedPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Subscription
 
 
@@ -589,6 +663,8 @@ class WebhookSubscriptionResumedPayload:
     type: typing.Literal["subscription.resumed"]
 
     timestamp: str
+
+    api_version: str
 
     data: Subscription
 
@@ -605,6 +681,8 @@ class WebhookSubscriptionRevokedPayload:
     type: typing.Literal["subscription.revoked"]
 
     timestamp: str
+
+    api_version: str
 
     data: Subscription
 
@@ -623,6 +701,8 @@ class WebhookSubscriptionUncanceledPayload:
 
     timestamp: str
 
+    api_version: str
+
     data: Subscription
 
 
@@ -639,6 +719,8 @@ class WebhookSubscriptionUpdatedPayload:
     type: typing.Literal["subscription.updated"]
 
     timestamp: str
+
+    api_version: str
 
     data: Subscription
 

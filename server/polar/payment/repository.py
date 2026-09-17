@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
@@ -13,12 +14,13 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Order, Payment
+from polar.models import Order, Payment, Transaction
 from polar.models.payment import (
     DUNNING_COUNTING_TRIGGERS,
     PaymentStatus,
     PaymentTrigger,
 )
+from polar.models.transaction import TransactionType
 
 from .sorting import PaymentSortProperty
 
@@ -30,6 +32,28 @@ class PaymentRepository(
     RepositoryBase[Payment],
 ):
     model = Payment
+
+    async def get_succeeded_without_transaction_ids(
+        self, since: datetime, *, limit: int
+    ) -> Sequence[UUID]:
+        statement = (
+            select(Payment.id)
+            .where(
+                Payment.status == PaymentStatus.succeeded,
+                Payment.created_at > since,
+                ~select(Transaction.id)
+                .where(
+                    Transaction.type == TransactionType.payment,
+                    Transaction.charge_id == Payment.processor_id,
+                    Transaction.created_at > since,
+                )
+                .exists(),
+            )
+            .order_by(Payment.created_at.asc(), Payment.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def get_all_by_customer(
         self, customer_id: UUID, *, status: PaymentStatus | None = None

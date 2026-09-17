@@ -6,27 +6,17 @@
  * 2. Add it here with variants and default
  * 3. Use useExperiment() or <Experiment> in your components
  *
+ * Below is an example of a experiment definition:
+ * test_experiment: {
+ *   description: 'Brief description of what the experiment does',
+ *   variants: ['control', 'treatment'] as const,
+ *   defaultVariant: 'control',
+ * }
  */
 export const experiments = {
-  test_experiment: {
-    description: 'Test experiment',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
-  onboarding_flow_v1: {
-    description: 'Test onboarding flow variations',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
-  checkout_trial_due_today: {
+  checkout_collapsed_order_summary: {
     description:
-      'Show an emphasized "Due today $0" total on trial checkouts, with the recurring price de-emphasized',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
-  checkout_cta_primary_color: {
-    description:
-      'Alternative primary color for the checkout CTA button instead of the default black/white',
+      'Collapse the order summary on mobile hosted checkouts so the CTA moves above the fold',
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },

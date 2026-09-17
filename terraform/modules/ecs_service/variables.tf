@@ -34,6 +34,12 @@ variable "command" {
   default     = null
 }
 
+variable "entrypoint" {
+  description = "Container entrypoint override."
+  type        = list(string)
+  default     = null
+}
+
 variable "profile" {
   description = "Preconfigured task size: tiny (256/512), small (512/1024), medium (1024/2048) or big (2048/4096). Mutually exclusive with cpu/memory."
   type        = string
@@ -95,6 +101,12 @@ variable "task_role_arn" {
   description = "IAM role assumed by the running task, if any."
   type        = string
   default     = null
+}
+
+variable "enable_execute_command" {
+  description = "Enable ECS Exec. The task role must grant the required ssmmessages permissions."
+  type        = bool
+  default     = false
 }
 
 variable "service_registry" {

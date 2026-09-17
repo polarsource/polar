@@ -26,6 +26,7 @@ from polar.product.sorting import ProductSortProperty
 from .. import formatters
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from ..search import organization_ilike
 
 router = BackofficeRouter()
 
@@ -110,8 +111,7 @@ async def list(
             statement = statement.where(
                 or_(
                     Product.search_vector.op("@@")(ts_query_english),
-                    Organization.slug.ilike(ilike_term),
-                    Organization.name.ilike(ilike_term),
+                    organization_ilike(ilike_term),
                 )
             )
 

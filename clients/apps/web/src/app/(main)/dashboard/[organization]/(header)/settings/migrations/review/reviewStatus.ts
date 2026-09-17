@@ -14,7 +14,7 @@ export interface ReviewStatus {
 // property of the Stripe record, so it lives in the row's detail modal.
 export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (isImported(row)) {
-    return { label: 'Imported', color: 'gray' }
+    return { label: 'Switched', color: 'gray' }
   }
   if (row.import_status === 'failed') {
     return { label: 'Import failed', color: 'red' }
@@ -33,5 +33,5 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (needsAttention(row)) {
     return { label: 'Needs info', color: 'yellow' }
   }
-  return { label: 'Ready' }
+  return { label: 'To prepare' }
 }

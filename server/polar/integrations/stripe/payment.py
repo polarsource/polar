@@ -12,6 +12,7 @@ from polar.integrations.stripe.service import (
 from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -116,7 +117,7 @@ async def resolve_checkout(
 
     repository = CheckoutRepository.from_session(session)
     return await repository.get_by_id(
-        uuid.UUID(checkout_id), options=repository.get_eager_options()
+        uuid.UUID(checkout_id), options=repository.get_eager_options(), for_update=True
     )
 
 
@@ -282,17 +283,30 @@ async def handle_failure(
     trigger = _resolve_trigger(object)
 
     payment: Payment | None = None
+    intent_id: str | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, organization, checkout, wallet, order, trigger=trigger
+        )
+        intent_id = (
+            get_expandable_id(object.payment_intent) if object.payment_intent else None
         )
     elif object.OBJECT_NAME == "payment_intent":
         payment = await payment_service.upsert_from_stripe_payment_intent(
             session, object, organization, checkout, order, trigger=trigger
         )
+        intent_id = object.id
+    elif object.OBJECT_NAME == "setup_intent":
+        intent_id = object.id
 
     if checkout is not None:
-        await checkout_service.handle_failure(session, checkout, payment=payment)
+        current_intent_id = checkout.payment_processor_metadata.get("intent_id")
+        if (
+            current_intent_id is None
+            or intent_id is None
+            or current_intent_id == intent_id
+        ):
+            await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
         # Failures from triggers that don't count toward the dunning ceiling

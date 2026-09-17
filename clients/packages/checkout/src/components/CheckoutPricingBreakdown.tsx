@@ -44,15 +44,17 @@ function formatShortDate(date: Date, locale: AcceptedLocale): string {
 export interface CheckoutPricingBreakdownProps {
   checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
-  trialDueTodayExperiment?: boolean
 }
 
 const CheckoutPricingBreakdown = ({
   checkout,
   locale = DEFAULT_LOCALE,
-  trialDueTodayExperiment = false,
 }: CheckoutPricingBreakdownProps) => {
   const t = useTranslations(locale)
+
+  const hasActiveTrial = Boolean(
+    checkout.active_trial_interval && checkout.active_trial_interval_count,
+  )
 
   const temporaryDiscount = isTemporaryDiscount(checkout.discount)
 
@@ -261,7 +263,7 @@ const CheckoutPricingBreakdown = ({
                 ? formatShortDate(new Date(checkout.trial_end), locale)
                 : undefined
             }
-            emphasis={!trialDueTodayExperiment}
+            emphasis={!hasActiveTrial}
           >
             <AmountLabel
               amount={checkout.total_amount}
@@ -272,7 +274,7 @@ const CheckoutPricingBreakdown = ({
               locale={locale}
             />
           </DetailRow>
-          {trialDueTodayExperiment && (
+          {hasActiveTrial && (
             <DetailRow title={t('checkout.pricing.dueToday')} emphasis>
               {formatCurrency('standard', locale)(0, checkout.currency)}
             </DetailRow>

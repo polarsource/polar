@@ -3,8 +3,8 @@
 from shared import (
     SERVER_DIR,
     Context,
-    console,
     run_command,
+    step_failed,
     step_spinner,
     step_status,
 )
@@ -36,7 +36,11 @@ def run(ctx: Context) -> bool:
             step_status(True, "Backoffice assets", "built")
             return True
         else:
-            step_status(False, "Backoffice assets", "build failed")
-            if result and result.stderr:
-                console.print(f"[dim]{result.stderr[:500]}[/dim]")
+            step_failed(
+                "Backoffice assets",
+                "build failed",
+                result,
+                hints=("Run [bold]uv run task backoffice[/bold] in server/ to retry with the full log",),
+                lines=40,
+            )
             return False

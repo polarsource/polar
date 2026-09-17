@@ -1,7 +1,6 @@
 import uuid
 from typing import Any, cast
 
-import jwt
 from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
 from reauth.factors.oauth2.oidc import (
     OIDCExtraParams,
@@ -10,7 +9,7 @@ from reauth.factors.oauth2.oidc import (
     PrivateKeyJWTOIDCFactor,
 )
 
-from polar.config import settings
+from polar.kit.signer import get_signer
 from polar.models import OrganizationSSOConnection
 from polar.models.organization_sso_connection import OIDCAuthMethod
 from polar.sso.schemas import DISCOVERY_PATH
@@ -104,8 +103,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         super().__init__(
             identifier=str(connection_id),
             client_id=client_id,
-            jwks=jwt.PyJWKSet.from_dict(settings.JWKS.as_dict(is_private=True)),
-            kid=settings.CURRENT_JWK_KID,
+            signer=get_signer(),
             discovery_endpoint=_discovery_endpoint(issuer),
             state_service=state_service,
             advance_by=2,

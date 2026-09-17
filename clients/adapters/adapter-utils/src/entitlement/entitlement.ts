@@ -1,19 +1,17 @@
-import type { Customer } from '@polar-sh/sdk/models/components/customer'
-import type { WebhookBenefitGrantCreatedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantcreatedpayload'
-import type { WebhookBenefitGrantRevokedPayload } from '@polar-sh/sdk/models/components/webhookbenefitgrantrevokedpayload'
+import type { models, webhooks } from '@polar-sh/sdk/2026-04'
 
 export type EntitlementProperties = Record<string, string>
 
-export type EntitlementHandler = (
-  payload:
-    | WebhookBenefitGrantCreatedPayload
-    | WebhookBenefitGrantRevokedPayload,
-) => Promise<void>
+type EntitlementPayload =
+  | webhooks.WebhookBenefitGrantCreatedPayload
+  | webhooks.WebhookBenefitGrantRevokedPayload
+
+export type EntitlementHandler = (payload: EntitlementPayload) => Promise<void>
 
 export interface EntitlementContext<T extends EntitlementProperties> {
-  customer: Customer
+  customer: models.Customer
   properties: T
-  payload: WebhookBenefitGrantCreatedPayload | WebhookBenefitGrantRevokedPayload
+  payload: EntitlementPayload
 }
 
 export class EntitlementStrategy<T extends EntitlementProperties> {
@@ -36,11 +34,7 @@ export class EntitlementStrategy<T extends EntitlementProperties> {
   }
 
   public handler(slug: string): EntitlementHandler {
-    return async (
-      payload:
-        | WebhookBenefitGrantCreatedPayload
-        | WebhookBenefitGrantRevokedPayload,
-    ) => {
+    return async (payload: EntitlementPayload) => {
       if (payload.data.benefit.description === slug) {
         switch (payload.type) {
           case 'benefit_grant.created':

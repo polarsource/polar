@@ -1366,7 +1366,7 @@ export interface paths {
      * Get Organization Order Invoice
      * @description Get the invoice URL for a Polar order belonging to this organization.
      *
-     *     **Scopes**: `organizations:read` `organizations:write`
+     *     **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
      */
     get: operations['organizations:get_order_invoice']
     put?: never
@@ -2944,9 +2944,49 @@ export interface paths {
      * Listen
      * @description **Scopes**: `webhooks:read` `webhooks:write`
      */
-    get: operations['cli:listen']
+    get: operations['cli_router:listen']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cli/events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Events
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['cli_router:events']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cli/trigger/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Trigger
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    post: operations['cli_router:trigger']
     delete?: never
     options?: never
     head?: never
@@ -6228,7 +6268,7 @@ export interface paths {
     post?: never
     /**
      * Delete
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     delete: operations['payout_accounts:delete']
     options?: never
@@ -6247,7 +6287,7 @@ export interface paths {
     put?: never
     /**
      * Sync
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     post: operations['payout_accounts:sync']
     delete?: never
@@ -6267,7 +6307,7 @@ export interface paths {
     put?: never
     /**
      * Onboarding Link
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     post: operations['payout_accounts:onboarding_link']
     delete?: never
@@ -6287,7 +6327,7 @@ export interface paths {
     put?: never
     /**
      * Dashboard Link
-     * @description **Scopes**: `payouts:read` `payouts:write`
+     * @description **Scopes**: `payouts:write`
      */
     post: operations['payout_accounts:dashboard_link']
     delete?: never
@@ -6989,6 +7029,32 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'subscription.migrated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription_migrated
+     * @description Sent when Polar takes over billing of a subscription migrated from another provider.
+     *
+     *     This fires at cutover, once the subscription is live on Polar. `provider`
+     *     and `provider_subscription_id` identify the subscription on the billing
+     *     provider so you can correlate the two.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointsubscription_migrated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'refund.created': {
     parameters: {
       query?: never
@@ -7313,6 +7379,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -7359,6 +7426,7 @@ export interface components {
       /**
        * Granted At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       granted_at: string
       /** Expires At */
@@ -8160,6 +8228,8 @@ export interface components {
       id: string
       /** Slug */
       slug: string
+      /** Name */
+      name: string
       /** Avatar Url */
       avatar_url: string | null
     }
@@ -8461,6 +8531,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -8559,6 +8630,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -8667,6 +8739,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -8742,6 +8815,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -8848,6 +8922,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -8958,6 +9033,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -9067,6 +9143,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9181,6 +9258,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9232,6 +9310,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9329,6 +9408,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -9406,6 +9486,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9494,8 +9575,11 @@ export interface components {
      * @description Properties to create a benefit of type `discord`.
      */
     BenefitDiscordCreateProperties: {
-      /** Guild Token */
-      guild_token: string
+      /**
+       * Guild Id
+       * @description The ID of the Discord server.
+       */
+      guild_id: string
       /**
        * Role Id
        * @description The ID of the Discord role to grant.
@@ -9527,8 +9611,6 @@ export interface components {
        * @description Whether to kick the member from the Discord server on revocation.
        */
       kick_member: boolean
-      /** Guild Token */
-      readonly guild_token: string
     }
     /** BenefitDiscordPublic */
     BenefitDiscordPublic: {
@@ -9542,6 +9624,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9593,6 +9676,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9721,6 +9805,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Flagged Malicious At */
@@ -9750,6 +9835,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9866,6 +9952,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -9917,6 +10004,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10014,6 +10102,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10122,6 +10211,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10173,6 +10263,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10269,6 +10360,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10412,6 +10504,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10463,6 +10556,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10561,6 +10655,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10645,6 +10740,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10732,6 +10828,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10813,6 +10910,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10900,6 +10998,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -10992,6 +11091,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11077,6 +11177,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11172,6 +11273,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11263,6 +11365,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11368,6 +11471,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -11464,6 +11568,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11585,6 +11690,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11636,6 +11742,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11742,6 +11849,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11875,6 +11983,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -11940,6 +12049,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12055,6 +12165,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -12127,6 +12238,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12283,6 +12395,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12334,6 +12447,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12429,6 +12543,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12493,6 +12608,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -12611,6 +12727,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12823,6 +12940,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -12863,6 +12981,7 @@ export interface components {
        * Expires At
        * Format: date-time
        * @description Expiration date and time of the checkout session.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
       /**
@@ -13208,6 +13327,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -13434,6 +13554,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -13790,6 +13911,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -13956,6 +14078,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -14176,6 +14299,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -14618,6 +14742,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -14658,6 +14783,7 @@ export interface components {
        * Expires At
        * Format: date-time
        * @description Expiration date and time of the checkout session.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
       /**
@@ -14909,6 +15035,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -14944,6 +15071,7 @@ export interface components {
        * Expires At
        * Format: date-time
        * @description Expiration date and time of the checkout session.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
       /**
@@ -15401,6 +15529,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -15431,6 +15560,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -15456,6 +15586,17 @@ export interface components {
     CompassThreadUpdate: {
       /** Title */
       title?: string | null
+    }
+    /** ConcurrentRoleModification */
+    ConcurrentRoleModification: {
+      /**
+       * Error
+       * @example ConcurrentRoleModification
+       * @constant
+       */
+      error: 'ConcurrentRoleModification'
+      /** Detail */
+      detail: string
     }
     /**
      * ConfidenceLevel
@@ -16023,6 +16164,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16305,6 +16447,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16365,6 +16508,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16425,6 +16569,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16503,6 +16648,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16750,6 +16896,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16806,6 +16953,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16868,6 +17016,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16924,6 +17073,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -16980,6 +17130,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17042,6 +17193,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17098,6 +17250,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17154,6 +17307,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17267,6 +17421,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
     }
@@ -17288,6 +17443,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -17371,6 +17527,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17418,6 +17575,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17461,6 +17619,7 @@ export interface components {
       /**
        * Expires At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
       /** Return Url */
@@ -17481,6 +17640,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -17576,6 +17736,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The start of the period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -17605,6 +17766,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17749,6 +17911,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -17844,6 +18007,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18075,6 +18239,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18183,6 +18348,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18227,12 +18393,14 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_end: string
       /**
@@ -18354,6 +18522,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18437,6 +18606,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18514,6 +18684,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18548,6 +18719,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18580,6 +18752,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18638,6 +18811,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18743,6 +18917,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -18824,6 +18999,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19010,6 +19186,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19028,6 +19205,7 @@ export interface components {
       /**
        * Expires At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
       /** Return Url */
@@ -19209,6 +19387,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19272,6 +19451,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19378,6 +19558,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19427,6 +19608,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19553,6 +19735,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19612,6 +19795,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19709,6 +19893,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19753,12 +19938,14 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_end: string
       /**
@@ -19942,6 +20129,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -19988,6 +20176,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -20035,6 +20224,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -20204,6 +20394,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -20428,6 +20619,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -20533,6 +20725,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -20836,6 +21029,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -20926,6 +21120,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21020,6 +21215,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21112,6 +21308,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21271,6 +21468,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21344,6 +21542,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21421,6 +21620,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21496,6 +21696,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21569,6 +21770,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21737,6 +21939,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21849,6 +22052,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -21958,6 +22162,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -22084,6 +22289,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Flagged Malicious At */
@@ -22169,6 +22375,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp?: string
       /**
@@ -22223,6 +22430,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp?: string
       /**
@@ -22307,12 +22515,14 @@ export interface components {
        * First Seen
        * Format: date-time
        * @description The first time the event occurred.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       first_seen: string
       /**
        * Last Seen
        * Format: date-time
        * @description The last time the event occurred.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       last_seen: string
     }
@@ -22429,6 +22639,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -22526,12 +22737,14 @@ export interface components {
        * First Seen
        * Format: date-time
        * @description The first time the event occurred.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       first_seen: string
       /**
        * Last Seen
        * Format: date-time
        * @description The last time the event occurred.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       last_seen: string
     }
@@ -22605,6 +22818,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -22823,6 +23037,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -23147,6 +23362,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -23329,6 +23545,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -23407,6 +23624,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -23531,6 +23749,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Modified At */
@@ -23557,6 +23776,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Modified At */
@@ -23576,6 +23796,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -23667,6 +23888,25 @@ export interface components {
        */
       activation_id: string
     }
+    /** LicenseKeyMember */
+    LicenseKeyMember: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Email
+       * @description The email address of the seat member.
+       */
+      email: string
+      /**
+       * External Id
+       * @description The external ID of the seat member, if set.
+       */
+      external_id: string | null
+    }
     /** LicenseKeyRead */
     LicenseKeyRead: {
       /**
@@ -23679,6 +23919,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -23802,6 +24043,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24114,10 +24356,10 @@ export interface components {
       items: components['schemas']['Payment'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[PayoutAccount] */
-    ListResource_PayoutAccount_: {
+    /** ListResource[PayoutAccountWithOrganizations] */
+    ListResource_PayoutAccountWithOrganizations_: {
       /** Items */
-      items: components['schemas']['PayoutAccount'][]
+      items: components['schemas']['PayoutAccountWithOrganizations'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Payout] */
@@ -24232,6 +24474,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24265,6 +24508,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24293,6 +24537,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24345,6 +24590,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24413,6 +24659,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24482,6 +24729,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24656,6 +24904,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -24690,6 +24939,8 @@ export interface components {
       source: {
         [key: string]: unknown
       } | null
+      /** @description Background work for the current step, if any. None until a run starts. */
+      operation: components['schemas']['MerchantMigrationOperation'] | null
     }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
@@ -24836,6 +25087,29 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * MerchantMigrationOperation
+     * @description Background work for the current migration step.
+     */
+    MerchantMigrationOperation: {
+      /** @description pending or running while Polar works; done or failed when it finishes. */
+      status: components['schemas']['MerchantMigrationOperationStatus']
+      /**
+       * Stalled
+       * @description Whether an active operation has stopped making progress.
+       */
+      stalled: boolean
+      /**
+       * Error
+       * @description Why the run failed. None while it is pending, running, or done.
+       */
+      error: string | null
+    }
+    /**
+     * MerchantMigrationOperationStatus
+     * @enum {string}
+     */
+    MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -25007,6 +25281,16 @@ export interface components {
        */
       imported: number
       /**
+       * Ready
+       * @description How many subscriptions are prepared and ready to switch.
+       */
+      ready: number
+      /**
+       * Action Required
+       * @description How many require merchant action before they can be prepared.
+       */
+      action_required: number
+      /**
        * Selectable
        * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */
@@ -25039,6 +25323,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -25161,6 +25446,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -25247,6 +25533,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp for the current period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -25271,6 +25558,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -25452,6 +25740,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Value */
@@ -25487,6 +25776,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -25539,6 +25829,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description Timestamp of this period data.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Active Subscriptions */
@@ -25907,6 +26198,17 @@ export interface components {
       /** Seat Utilization Rate */
       seat_utilization_rate?: number | null
     }
+    /** MigrationOperationInProgress */
+    MigrationOperationInProgress: {
+      /**
+       * Error
+       * @example MigrationOperationInProgress
+       * @constant
+       */
+      error: 'MigrationOperationInProgress'
+      /** Detail */
+      detail: string
+    }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
       /**
@@ -25937,6 +26239,17 @@ export interface components {
        * @constant
        */
       error: 'MissingStripeScopes'
+      /** Detail */
+      detail: string
+    }
+    /** NoActiveListener */
+    NoActiveListener: {
+      /**
+       * Error
+       * @example NoActiveListener
+       * @constant
+       */
+      error: 'NoActiveListener'
       /** Detail */
       detail: string
     }
@@ -25983,6 +26296,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26079,6 +26393,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26195,6 +26510,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26221,6 +26537,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26348,6 +26665,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26594,7 +26912,7 @@ export interface components {
       /**
        * Product Id
        * Format: uuid4
-       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price and free products are supported.
+       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
        */
       product_id: string
       /**
@@ -26604,9 +26922,14 @@ export interface components {
       currency?: string | null
       /**
        * Amount
-       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum.
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
        */
       amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
       /**
        * Description
        * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
@@ -26626,6 +26949,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26754,6 +27078,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -26796,6 +27121,16 @@ export interface components {
        * @description Associated price ID, if any.
        */
       product_price_id: string | null
+      /**
+       * Start Timestamp
+       * @description Start of the period covered by this line item, if any.
+       */
+      start_timestamp: string | null
+      /**
+       * End Timestamp
+       * @description End of the period covered by this line item, if any.
+       */
+      end_timestamp: string | null
     }
     /** OrderNotDraft */
     OrderNotDraft: {
@@ -26845,6 +27180,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -26949,6 +27285,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -27032,6 +27369,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -27142,6 +27480,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -27186,12 +27525,14 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_end: string
       /**
@@ -27309,6 +27650,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -27422,6 +27764,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -27497,6 +27840,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -27861,6 +28205,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -27950,6 +28295,7 @@ export interface components {
        * Appeal Submitted At
        * Format: date-time
        * @description When the appeal was submitted
+       * @example 2026-01-01T00:00:00.000000Z
        */
       appeal_submitted_at: string
     }
@@ -28029,6 +28375,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Size Readable */
@@ -28158,6 +28505,7 @@ export interface components {
       /**
        * Expires At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
     }
@@ -28654,12 +29002,6 @@ export interface components {
        */
       issue_funding_enabled: boolean
       /**
-       * Seat Based Pricing Enabled
-       * @description If this organization has seat-based pricing enabled
-       * @default false
-       */
-      seat_based_pricing_enabled: boolean
-      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -28742,6 +29084,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Frame Ancestors Enforced
+       * @description If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+       * @default false
+       */
+      frame_ancestors_enforced: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -28751,12 +29099,6 @@ export interface components {
      *     provided and keep their current value.
      */
     OrganizationFeatureSettingsUpdate: {
-      /**
-       * Seat Based Pricing Enabled
-       * @description If this organization has seat-based pricing enabled
-       * @default false
-       */
-      seat_based_pricing_enabled: boolean
       /**
        * Member Model Enabled
        * @description If this organization has the Member model enabled
@@ -28792,6 +29134,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -29164,6 +29507,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description The time the OrganizationMember was created.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Email */
@@ -29220,6 +29564,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Invoice Number */
@@ -29384,6 +29729,7 @@ export interface components {
       /**
        * Submitted At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       submitted_at: string
       /** Reviewed At */
@@ -29560,6 +29906,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -29851,6 +30198,7 @@ export interface components {
       /**
        * Applies At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       applies_at: string
     }
@@ -29899,6 +30247,7 @@ export interface components {
        * Last Seen At
        * Format: date-time
        * @description When it last opened one.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       last_seen_at: string
     }
@@ -30240,6 +30589,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -30891,6 +31241,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -30936,6 +31287,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -30975,6 +31327,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -31075,6 +31428,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -31135,6 +31489,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -31152,6 +31507,17 @@ export interface components {
       /** Is Payout Ready */
       is_payout_ready: boolean
       status: components['schemas']['PayoutAccountStatus']
+    }
+    /** PayoutAccountAlreadyLinked */
+    PayoutAccountAlreadyLinked: {
+      /**
+       * Error
+       * @example PayoutAccountAlreadyLinked
+       * @constant
+       */
+      error: 'PayoutAccountAlreadyLinked'
+      /** Detail */
+      detail: string
     }
     /** PayoutAccountCreate */
     PayoutAccountCreate: {
@@ -31172,6 +31538,16 @@ export interface components {
     PayoutAccountLink: {
       /** Url */
       url: string
+    }
+    /** PayoutAccountOrganization */
+    PayoutAccountOrganization: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string
+      /** Slug */
+      slug: string
     }
     /**
      * PayoutAccountStatus
@@ -31216,12 +31592,49 @@ export interface components {
      * @enum {string}
      */
     PayoutAccountType: 'stripe' | 'manual'
+    /** PayoutAccountWithOrganizations */
+    PayoutAccountWithOrganizations: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      type: components['schemas']['PayoutAccountType']
+      /** Processor Id */
+      processor_id: string | null
+      /** Country */
+      country: string
+      /** Currency */
+      currency: string
+      /** Is Payout Ready */
+      is_payout_ready: boolean
+      status: components['schemas']['PayoutAccountStatus']
+      /**
+       * Organizations
+       * @description Organizations this payout account pays out for.
+       */
+      organizations: components['schemas']['PayoutAccountOrganization'][]
+    }
     /** PayoutAttempt */
     PayoutAttempt: {
       /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -31330,6 +31743,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -31347,6 +31761,7 @@ export interface components {
        * Applies At
        * Format: date-time
        * @description The date and time when the subscription update will be applied.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       applies_at: string
       /**
@@ -31371,6 +31786,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -31495,41 +31911,6 @@ export interface components {
      * @enum {string}
      */
     PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
-    /** PrecheckEntitySummary */
-    PrecheckEntitySummary: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Total
-       * @description How many were read from the source.
-       */
-      total: number
-      /**
-       * Importable
-       * @description How many will be imported into Polar.
-       */
-      importable: number
-      /**
-       * Skipped
-       * @description How many won't be imported and stay on the source.
-       */
-      skipped: number
-    }
-    /** PrecheckIssue */
-    PrecheckIssue: {
-      level: components['schemas']['PrecheckIssueLevel']
-      /** Code */
-      code: string
-      /** Message */
-      message: string
-      /** Source Id */
-      source_id: string | null
-    }
-    /**
-     * PrecheckIssueLevel
-     * @enum {string}
-     */
-    PrecheckIssueLevel: 'blocker' | 'warning'
     /**
      * PrecheckReasonLevel
      * @enum {string}
@@ -31540,18 +31921,6 @@ export interface components {
      * @enum {string}
      */
     PrecheckRecordStatus: 'importable' | 'skipped'
-    /** PrecheckReport */
-    PrecheckReport: {
-      /** Can Start */
-      can_start: boolean
-      /** Issues */
-      issues: components['schemas']['PrecheckIssue'][]
-      /**
-       * Entities
-       * @description Per-entity counts of what will be imported vs stay on the source.
-       */
-      entities: components['schemas']['PrecheckEntitySummary'][]
-    }
     /**
      * PresentmentCurrency
      * @enum {string}
@@ -31704,6 +32073,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -32036,6 +32406,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Size Readable */
@@ -32059,6 +32430,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -32426,6 +32798,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -32659,6 +33032,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -32753,6 +33127,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -32853,6 +33228,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -33005,6 +33381,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -33244,6 +33621,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -33355,6 +33733,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -33486,6 +33865,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -33558,6 +33938,7 @@ export interface components {
       /**
        * Expires At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
     }
@@ -33610,6 +33991,7 @@ export interface components {
       /**
        * Expires At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       expires_at: string
       /**
@@ -33953,6 +34335,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -33993,6 +34376,41 @@ export interface components {
        */
       client_id_last_4: string
       /**
+       * Team Id
+       * @description Slack workspace ID, if installed.
+       */
+      team_id: string | null
+      /**
+       * Team Name
+       * @description Slack workspace name, if installed.
+       */
+      team_name: string | null
+      /**
+       * Bot User Id
+       * @description Installed bot user ID, if any.
+       */
+      bot_user_id: string | null
+      /**
+       * Authed User Id
+       * @description Slack user ID that authorized the app, if installed.
+       */
+      authed_user_id: string | null
+      /**
+       * Scopes
+       * @description Granted Slack bot scopes, if any.
+       */
+      scopes: string[] | null
+      /**
+       * Installed At
+       * @description Timestamp when the Slack app was installed.
+       */
+      installed_at: string | null
+      /**
+       * Revoked At
+       * @description Timestamp when the Slack app was revoked or uninstalled.
+       */
+      revoked_at: string | null
+      /**
        * Client Secret Last 4
        * @description Last four characters of the client secret (display only).
        */
@@ -34002,6 +34420,87 @@ export interface components {
        * @description Last four characters of the signing secret (display only).
        */
       signing_secret_last_4: string
+    }
+    /** SlackIntegrationCredentialsUpdate */
+    SlackIntegrationCredentialsUpdate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description Organization the integration belongs to.
+       */
+      organization_id: string
+      /**
+       * Display Name
+       * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
+       */
+      display_name: string
+      /**
+       * Slack App Id
+       * @description App ID from your Slack app's Basic Information page.
+       */
+      slack_app_id: string
+      /**
+       * Client Id
+       * @description Client ID from your Slack app's Basic Information page.
+       */
+      client_id: string
+      /**
+       * Client Secret
+       * @description Client Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
+       */
+      client_secret?: string | null
+      /**
+       * Signing Secret
+       * @description Signing Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
+       */
+      signing_secret?: string | null
+    }
+    /** SlackIntegrationListItem */
+    SlackIntegrationListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description ID of the Slack integration.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description Organization that owns the Slack integration.
+       */
+      organization_id: string
+      /**
+       * Display Name
+       * @description Display name used by the Slack app.
+       */
+      display_name: string
+      /**
+       * Slack App Id
+       * @description Slack app ID.
+       */
+      slack_app_id: string
+      /**
+       * Client Id
+       * @description Slack client ID.
+       */
+      client_id: string
+      /**
+       * Client Id Last 4
+       * @description Last four characters of the Client ID (display only).
+       */
+      client_id_last_4: string
       /**
        * Team Id
        * @description Slack workspace ID, if installed.
@@ -34038,40 +34537,6 @@ export interface components {
        */
       revoked_at: string | null
     }
-    /** SlackIntegrationCredentialsUpdate */
-    SlackIntegrationCredentialsUpdate: {
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description Organization the integration belongs to.
-       */
-      organization_id: string
-      /**
-       * Display Name
-       * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
-       */
-      display_name: string
-      /**
-       * Slack App Id
-       * @description App ID from your Slack app's Basic Information page.
-       */
-      slack_app_id: string
-      /**
-       * Client Id
-       * @description Client ID from your Slack app's Basic Information page.
-       */
-      client_id: string
-      /**
-       * Client Secret
-       * @description Client Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
-       */
-      client_secret?: string | null
-      /**
-       * Signing Secret
-       * @description Signing Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
-       */
-      signing_secret?: string | null
-    }
     /** SlackIntegrationManifest */
     SlackIntegrationManifest: {
       /**
@@ -34094,7 +34559,7 @@ export interface components {
        * Integrations
        * @description Slack apps configured for the organization.
        */
-      integrations: components['schemas']['SlackIntegration'][]
+      integrations: components['schemas']['SlackIntegrationListItem'][]
     }
     /** SlackWorkspaceUser */
     SlackWorkspaceUser: {
@@ -34132,6 +34597,17 @@ export interface components {
        * @description Active, non-bot users in the connected Slack workspace.
        */
       users: components['schemas']['SlackWorkspaceUser'][]
+    }
+    /** SourceAccountAlreadyMigrated */
+    SourceAccountAlreadyMigrated: {
+      /**
+       * Error
+       * @example SourceAccountAlreadyMigrated
+       * @constant
+       */
+      error: 'SourceAccountAlreadyMigrated'
+      /** Detail */
+      detail: string
     }
     /** SourceAccountNotMigratable */
     SourceAccountNotMigratable: {
@@ -34186,18 +34662,21 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description Period timestamp
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
        * Period Start
        * Format: date-time
        * @description Period start (inclusive)
+       * @example 2026-01-01T00:00:00.000000Z
        */
       period_start: string
       /**
        * Period End
        * Format: date-time
        * @description Period end (exclusive)
+       * @example 2026-01-01T00:00:00.000000Z
        */
       period_end: string
       /**
@@ -34341,6 +34820,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -34385,12 +34865,14 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_end: string
       /**
@@ -34542,6 +35024,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -34687,6 +35170,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -34978,6 +35462,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35068,6 +35553,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -35159,6 +35645,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35281,6 +35768,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -35323,6 +35811,104 @@ export interface components {
       meter: components['schemas']['Meter']
     }
     /**
+     * SubscriptionMigratedEvent
+     * @description An event created by Polar when a subscription is migrated to Polar.
+     */
+    SubscriptionMigratedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.migrated'
+      metadata: components['schemas']['SubscriptionMigratedMetadata']
+    }
+    /** SubscriptionMigratedMetadata */
+    SubscriptionMigratedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Provider */
+      provider: string
+      /** Provider Subscription Id */
+      provider_subscription_id: string
+      /** Product Id */
+      product_id: string
+    }
+    /** SubscriptionNotScheduledToCancel */
+    SubscriptionNotScheduledToCancel: {
+      /**
+       * Error
+       * @example SubscriptionNotScheduledToCancel
+       * @constant
+       */
+      error: 'SubscriptionNotScheduledToCancel'
+      /** Detail */
+      detail: string
+    }
+    /**
      * SubscriptionPastDueEvent
      * @description An event created by Polar when a subscription becomes past due.
      */
@@ -35337,6 +35923,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35448,6 +36035,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35542,6 +36130,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35635,6 +36224,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35725,6 +36315,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35824,6 +36415,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -35958,6 +36550,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -36048,6 +36641,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -36170,6 +36764,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -36260,6 +36855,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -36388,7 +36984,10 @@ export interface components {
        * Format: date-time
        * @description Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
        *
-       *     It is not possible to update the current billing period on a canceled subscription.
+       *     If the subscription is set to cancel at the end of the period, it'll end on this new date instead.
+       *
+       *     It is not possible to update the current billing period on a subscription that's already revoked or not active.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_billing_period_end: string
     }
@@ -36415,6 +37014,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -36519,6 +37119,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -36619,6 +37220,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -36640,6 +37242,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -36742,6 +37345,7 @@ export interface components {
       /**
        * Created At
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /** Size Readable */
@@ -36756,6 +37360,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -36847,6 +37452,7 @@ export interface components {
       | components['schemas']['SubscriptionReinstatedEvent']
       | components['schemas']['SubscriptionPausedEvent']
       | components['schemas']['SubscriptionResumedEvent']
+      | components['schemas']['SubscriptionMigratedEvent']
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
@@ -37209,6 +37815,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37272,6 +37879,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37340,6 +37948,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37364,6 +37973,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37387,6 +37997,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37413,6 +38024,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37436,6 +38048,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -37541,6 +38154,52 @@ export interface components {
      * @enum {string}
      */
     TrialInterval: 'day' | 'week' | 'month' | 'year'
+    /** TriggerEvent */
+    TriggerEvent: {
+      type: components['schemas']['WebhookEventType']
+      /**
+       * Description
+       * @description One-line description of when Polar sends this event.
+       */
+      description: string
+    }
+    /** TriggerRequest */
+    TriggerRequest: {
+      event: components['schemas']['WebhookEventType']
+      /**
+       * Overrides
+       * @description Payload fields to override, keyed by dotted path relative to the payload root, e.g. `data.amount`.
+       */
+      overrides?: {
+        [key: string]: unknown
+      }
+      /**
+       * Seed
+       * @description Seed for generated IDs and numbers, for reproducible payloads.
+       */
+      seed?: number | null
+      /**
+       * Deliver
+       * @description Send the event to the organization's active CLI listener.
+       * @default true
+       */
+      deliver: boolean
+    }
+    /** TriggerResponse */
+    TriggerResponse: {
+      /**
+       * Webhook Event Id
+       * Format: uuid
+       */
+      webhook_event_id: string
+      event: components['schemas']['WebhookEventType']
+      /** Delivered */
+      delivered: boolean
+      /** Payload */
+      payload: {
+        [key: string]: unknown
+      }
+    }
     /** Unauthorized */
     Unauthorized: {
       /**
@@ -37648,6 +38307,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -37748,6 +38408,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -38081,6 +38742,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -38167,6 +38829,7 @@ export interface components {
        * Timestamp
        * Format: date-time
        * @description Timestamp of the root event.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /**
@@ -38260,6 +38923,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -38330,6 +38994,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38353,6 +39018,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38377,6 +39043,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38400,6 +39067,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38423,6 +39091,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38446,6 +39115,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38469,6 +39139,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38494,6 +39165,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38516,6 +39188,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38543,6 +39216,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38565,6 +39239,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38588,6 +39263,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38610,6 +39286,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38632,6 +39309,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38660,6 +39338,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38686,6 +39365,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38701,6 +39381,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -38748,6 +39429,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38771,6 +39453,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38794,6 +39477,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -38810,6 +39494,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -38941,6 +39626,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -39019,6 +39705,7 @@ export interface components {
       | 'subscription.past_due'
       | 'subscription.paused'
       | 'subscription.resumed'
+      | 'subscription.migrated'
       | 'refund.created'
       | 'refund.updated'
       | 'product.created'
@@ -39059,6 +39746,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39084,6 +39772,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39109,6 +39798,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39141,6 +39831,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39165,6 +39856,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39187,6 +39879,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39214,6 +39907,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39236,6 +39930,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39258,6 +39953,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39280,6 +39976,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39302,6 +39999,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39324,6 +40022,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39347,6 +40046,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39370,6 +40070,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39394,6 +40095,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39424,11 +40126,51 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
       api_version: string
       data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionMigratedPayload
+     * @description Sent when Polar takes over billing of a subscription migrated from another provider.
+     *
+     *     This fires at cutover, once the subscription is live on Polar. `provider`
+     *     and `provider_subscription_id` identify the subscription on the billing
+     *     provider so you can correlate the two.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookSubscriptionMigratedPayload: {
+      /**
+       * Type
+       * @example subscription.migrated
+       * @constant
+       */
+      type: 'subscription.migrated'
+      /**
+       * Timestamp
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /** Api Version */
+      api_version: string
+      data: components['schemas']['Subscription']
+      /**
+       * Provider
+       * @description The billing provider the subscription was migrated from.
+       * @example stripe
+       */
+      provider: string
+      /**
+       * Provider Subscription Id
+       * @description The identifier of the subscription on the billing provider.
+       * @example sub_1Sabc2Def3Ghi
+       */
+      provider_subscription_id: string
     }
     /**
      * WebhookSubscriptionPastDuePayload
@@ -39451,6 +40193,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39476,6 +40219,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39500,6 +40244,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39525,6 +40270,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39551,6 +40297,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -39577,6 +40324,7 @@ export interface components {
       /**
        * Timestamp
        * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
       timestamp: string
       /** Api Version */
@@ -40063,7 +40811,8 @@ export interface operations {
   }
   'integrations_discord:integrations.discord.bot_authorize': {
     parameters: {
-      query?: {
+      query: {
+        organization_id: string
         return_to?: string | null
       }
       header?: never
@@ -40079,6 +40828,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description User lacks `products_manage` permission on the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */
@@ -40129,7 +40887,8 @@ export interface operations {
   'integrations_discord:discord_guild_lookup': {
     parameters: {
       query: {
-        guild_token: string
+        guild_id: string
+        organization_id: string
       }
       header?: never
       path?: never
@@ -40144,6 +40903,24 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
+        }
+      }
+      /** @description User lacks `products_read` permission on the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The organization has not connected this Discord server. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -41088,6 +41865,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Payout account already linked to another organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountAlreadyLinked']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -41583,6 +42369,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConcurrentRoleModification']
         }
       }
       /** @description Validation Error */
@@ -43180,13 +43975,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Subscription is pending an update. */
+      /** @description Subscription is pending an update, or is not scheduled to be canceled. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionLocked']
+          'application/json':
+            | components['schemas']['SubscriptionLocked']
+            | components['schemas']['SubscriptionNotScheduledToCancel']
         }
       }
       /** @description Validation Error */
@@ -47093,7 +47890,7 @@ export interface operations {
       }
     }
   }
-  'cli:listen': {
+  'cli_router:listen': {
     parameters: {
       query?: never
       header?: never
@@ -47111,6 +47908,79 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cli_router:events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TriggerEvent'][]
+        }
+      }
+    }
+  }
+  'cli_router:trigger': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TriggerRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TriggerResponse']
+        }
+      }
+      /** @description Organization not found or not accessible. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description No CLI is listening for this organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NoActiveListener']
         }
       }
       /** @description Validation Error */
@@ -52818,7 +53688,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -52879,7 +53749,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -52931,7 +53801,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -52990,7 +53860,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -54442,6 +55312,7 @@ export interface operations {
           'application/json':
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['PauseResumeNotAllowed']
+            | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
             | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
         }
@@ -54455,13 +55326,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The subscription has no payment method to charge. */
+      /** @description The subscription has no payment method to charge, or is not scheduled to be canceled. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentMethodRequired']
+          'application/json':
+            | components['schemas']['PaymentMethodRequired']
+            | components['schemas']['SubscriptionNotScheduledToCancel']
         }
       }
       /** @description Validation Error */
@@ -54785,7 +55658,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -54846,7 +55719,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -54898,7 +55771,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -54957,7 +55830,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Not permitted or seat-based pricing not enabled */
+      /** @description Not permitted */
       403: {
         headers: {
           [name: string]: unknown
@@ -55163,6 +56036,15 @@ export interface operations {
             | components['schemas']['MerchantMigrationNotEnabled']
         }
       }
+      /** @description The Stripe account is already used by another migration. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceAccountAlreadyMigrated']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -55238,7 +56120,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PrecheckReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */
@@ -55268,6 +56150,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description A pre-check is already running. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MigrationOperationInProgress']
         }
       }
       /** @description Validation Error */
@@ -55336,7 +56227,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The pre-check hasn't run yet, or it reports a blocker. */
+      /** @description The pre-check hasn't run yet, it reports a blocker, or another job is still running. */
       409: {
         headers: {
           [name: string]: unknown
@@ -55345,6 +56236,7 @@ export interface operations {
           'application/json':
             | components['schemas']['CatalogImportNotReady']
             | components['schemas']['CatalogImportBlocked']
+            | components['schemas']['MigrationOperationInProgress']
         }
       }
       /** @description Validation Error */
@@ -55779,9 +56671,13 @@ export interface operations {
         import_status?:
           | components['schemas']['MerchantMigrationRecordStatus']
           | null
+        exclude_import_status?:
+          | components['schemas']['MerchantMigrationRecordStatus']
+          | null
         cutover_status?:
           | components['schemas']['MerchantMigrationCutoverStatus']
           | null
+        dependencies_imported?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -60439,7 +61335,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_PayoutAccount_']
+          'application/json': components['schemas']['ListResource_PayoutAccountWithOrganizations_']
         }
       }
     }
@@ -61551,6 +62447,39 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['WebhookSubscriptionResumedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointsubscription_migrated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionMigratedPayload']
       }
     }
     responses: {
@@ -69173,6 +70102,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationOperationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
+> = ['pending', 'running', 'done', 'failed']
 export const merchantMigrationRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
 > = ['pending', 'imported', 'skipped', 'failed']
@@ -70816,9 +71748,6 @@ export const pledgeStateValues: ReadonlyArray<
 export const precheckEntityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
 > = ['products', 'prices', 'customers', 'subscriptions']
-export const precheckIssueLevelValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
-> = ['blocker', 'warning']
 export const precheckReasonLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
 > = ['action_required', 'info']
@@ -71315,6 +72244,9 @@ export const subscriptionExportColumnValues: ReadonlyArray<
   'trial_start',
   'trial_end',
 ]
+export const subscriptionMigratedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionMigratedEvent']['name']
+> = ['subscription.migrated']
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']
@@ -71871,6 +72803,7 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.past_due',
   'subscription.paused',
   'subscription.resumed',
+  'subscription.migrated',
   'refund.created',
   'refund.updated',
   'product.created',

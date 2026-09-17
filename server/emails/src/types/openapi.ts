@@ -318,6 +318,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -388,6 +389,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -453,8 +455,6 @@ export interface components {
        * @description Whether to kick the member from the Discord server on revocation.
        */
       kick_member: boolean
-      /** Guild Token */
-      readonly guild_token: string
     }
     /** BenefitDownloadables */
     BenefitDownloadables: {
@@ -468,6 +468,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -540,6 +541,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -607,6 +609,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -705,6 +708,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -780,6 +784,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -852,6 +857,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -1442,6 +1448,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -1594,6 +1601,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -1636,6 +1644,16 @@ export interface components {
        * @description Associated price ID, if any.
        */
       product_price_id: string | null
+      /**
+       * Start Timestamp
+       * @description Start of the period covered by this line item, if any.
+       */
+      start_timestamp: string | null
+      /**
+       * End Timestamp
+       * @description End of the period covered by this line item, if any.
+       */
+      end_timestamp: string | null
     }
     /**
      * OrderStatus
@@ -1654,6 +1672,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2123,12 +2142,6 @@ export interface components {
        */
       issue_funding_enabled: boolean
       /**
-       * Seat Based Pricing Enabled
-       * @description If this organization has seat-based pricing enabled
-       * @default false
-       */
-      seat_based_pricing_enabled: boolean
-      /**
        * Wallets Enabled
        * @description If this organization has Wallets enabled
        * @default false
@@ -2212,6 +2225,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Frame Ancestors Enforced
+       * @description If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+       * @default false
+       */
+      frame_ancestors_enforced: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -2320,6 +2339,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2526,6 +2546,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2639,6 +2660,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /** SubscriptionConfirmationEmail */
     SubscriptionConfirmationEmail: {
@@ -2659,6 +2685,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionCycledAfterTrialEmail */
@@ -2680,6 +2711,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionCycledEmail */
@@ -2701,6 +2737,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionEmail */
@@ -2709,6 +2750,7 @@ export interface components {
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       created_at: string
       /**
@@ -2753,12 +2795,14 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_start: string
       /**
        * Current Period End
        * Format: date-time
        * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
        */
       current_period_end: string
       /**
@@ -2882,6 +2926,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail']
     }
     /** SubscriptionPastDueEmail */
@@ -2903,6 +2952,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       /**
        * Access Ends At
        * @default null
@@ -2933,6 +2987,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /**
      * SubscriptionProrationBehavior
@@ -2962,6 +3021,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       /** Renewal Date */
       renewal_date: string
     }
@@ -2984,6 +3048,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /** SubscriptionRevokedEmail */
     SubscriptionRevokedEmail: {
@@ -3004,6 +3073,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /**
      * SubscriptionStatus
@@ -3037,6 +3111,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       /** Conversion Date */
       conversion_date: string
     }
@@ -3059,6 +3138,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /** SubscriptionUpdatedEmail */
     SubscriptionUpdatedEmail: {
@@ -3079,6 +3163,11 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
       order: components['schemas']['OrderEmail'] | null
     }
     /** SupportCaseOrganizationNewMessageEmail */

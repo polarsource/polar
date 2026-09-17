@@ -264,7 +264,7 @@ jobs:
 
       - name: Configure AWS credentials (test)
         if: needs.changes.outputs.test-enabled == 'true'
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -275,7 +275,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (sandbox)
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -285,7 +285,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (production)
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -325,7 +325,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -351,7 +351,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -377,7 +377,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.4
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -405,7 +405,7 @@ jobs:
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: "srv-d089jj7diees73934kgg"
+      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -429,7 +429,7 @@ jobs:
     with:
       environment: test
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
-      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00"
+      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -449,7 +449,7 @@ jobs:
     with:
       environment: production
       render-api-service-id: "srv-ci4r87h8g3ne0dmvvl60"
-      render-worker-service-ids: "srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0,srv-d4uto5ili9vc73dd37tg,srv-d5l0oekhg0os73clofm0,srv-d733djuuk2gs73e98h1g,srv-d7us9je7r5hc73be5ieg,srv-d4k6otfgi27c73cicnpg"
+      render-worker-service-ids: "srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0,srv-d4uto5ili9vc73dd37tg,srv-d5l0oekhg0os73clofm0,srv-d733djuuk2gs73e98h1g,srv-d7us9je7r5hc73be5ieg,srv-d4k6otfgi27c73cicnpg,srv-daju8pe7bikc73dhc6mg"
       has-migrations: ${{ needs.changes.outputs.migrations-production == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-production != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-production != 'true' && github.event_name != 'workflow_dispatch' }}

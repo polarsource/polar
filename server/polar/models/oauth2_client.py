@@ -33,7 +33,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     # HMAC for synchronous verification and value lookup; the encrypted
     # column reveals the plaintext. See the secrets-encryption design doc.
     client_secret_hash: Mapped[str | None] = mapped_column(
-        String(80), nullable=True, default=None, index=True
+        String(64), nullable=True, default=None, index=True
     )
     client_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(OAUTH2_CLIENT_SECRET_CONTEXT),
@@ -44,7 +44,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         String, index=True, nullable=False
     )
     registration_access_token_hash: Mapped[str | None] = mapped_column(
-        String(80), nullable=True, default=None, index=True
+        String(64), nullable=True, default=None, index=True
     )
     registration_access_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(OAUTH2_CLIENT_REGISTRATION_ACCESS_TOKEN_CONTEXT),

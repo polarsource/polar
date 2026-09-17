@@ -2,7 +2,7 @@ from datetime import datetime
 from urllib.parse import urlencode
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -19,7 +19,7 @@ def get_expires_at() -> datetime:
 class CustomerSession(RecordModel):
     __tablename__ = "customer_sessions"
 
-    token: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    token: Mapped[str] = mapped_column(CHAR(64), unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True, default=get_expires_at
     )

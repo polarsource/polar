@@ -166,6 +166,7 @@ module "test" {
   workers = {
     worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
+      custom_domains     = [{ name = "worker-test.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
   }
@@ -238,6 +239,17 @@ resource "cloudflare_dns_record" "test_api" {
   type    = "CNAME"
   content = replace(module.test[0].api_service_url, "https://", "")
   proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "worker" {
+  for_each = merge(module.test[*].worker_urls...)
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
+  type    = "CNAME"
+  content = replace(each.value, "https://", "")
+  proxied = false
   ttl     = 1
 }
 

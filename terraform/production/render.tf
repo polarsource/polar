@@ -195,6 +195,7 @@ module "production" {
     "scheduler" = {
       start_command      = "uv run python -m polar.worker.scheduler"
       plan               = "standard"
+      custom_domains     = [{ name = "scheduler.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
     "worker" = {
@@ -204,23 +205,28 @@ module "production" {
     }
     "worker-medium-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
+      custom_domains     = [{ name = "worker-medium-priority.polar.sh" }]
       dramatiq_prom_port = "10001"
     }
     "worker-high-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority"
+      custom_domains     = [{ name = "worker-high-priority.polar.sh" }]
       dramatiq_prom_port = "10001"
     }
     "worker-webhook" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
+      custom_domains     = [{ name = "worker-webhook.polar.sh" }]
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
     worker-tinybird = {
       start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
+      custom_domains     = [{ name = "worker-tinybird.polar.sh" }]
       dramatiq_prom_port = "10002"
     }
     worker-drain = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8"
+      custom_domains     = [{ name = "worker-drain.polar.sh" }]
       dramatiq_prom_port = "10004"
       redis_host         = render_redis.redis.id
       redis_port         = "6379"
@@ -229,6 +235,7 @@ module "production" {
     worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
+      custom_domains     = [{ name = "worker-invoices-receipts.polar.sh" }]
       dramatiq_prom_port = "10003"
     }
   }
@@ -366,11 +373,18 @@ resource "cloudflare_dns_record" "backoffice" {
   ttl     = 300
 }
 
+moved {
+  from = cloudflare_dns_record.worker
+  to   = cloudflare_dns_record.worker["worker"]
+}
+
 resource "cloudflare_dns_record" "worker" {
+  for_each = module.production.worker_urls
+
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "worker.polar.sh"
+  name    = "${each.key}.polar.sh"
   type    = "CNAME"
-  content = replace(module.production.worker_urls["worker"], "https://", "")
+  content = replace(each.value, "https://", "")
   proxied = false
   ttl     = 1
 }

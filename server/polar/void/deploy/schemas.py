@@ -10,6 +10,7 @@ from polar.void.activity.schemas import DeployActivity
 from polar.void.entitlement.schemas import SLUG_PATTERN as KEY_PATTERN
 from polar.void.product.schemas import MeterTerms, ProductPrice
 from polar.void.reducer.schemas import ReducerCreate
+from polar.void.schemas import PlainDecimal
 
 from .config_hash import configuration_hash
 
@@ -126,8 +127,8 @@ class PricePreviewCustomer(BaseModel):
 class MeterPricePreview(BaseModel):
     window: PricePreviewWindow
     currency: str
-    current_unit_amount: Decimal
-    proposed_unit_amount: Decimal
+    current_unit_amount: PlainDecimal
+    proposed_unit_amount: PlainDecimal
     customers: list[PricePreviewCustomer]
     billable_units: Decimal
     current_amount: Decimal

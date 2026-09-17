@@ -1,12 +1,26 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "ignoreWorkspaces": ["apps/app", "examples/*"],
+  "ignoreWorkspaces": [
+    "apps/app",
+    "examples/*"
+  ],
   "workspaces": {
     ".": {
-      "ignoreDependencies": ["only-allow"]
+      "ignoreDependencies": [
+        "only-allow"
+      ]
     },
     "packages/client": {
-      "ignore": ["src/v1.ts"]
+      "ignore": [
+        "src/v1.ts"
+      ]
+    },
+    "apps/po-bot": {
+      "entry": [
+        "src/setup.ts",
+        "void.ts",
+        "drizzle.config.ts"
+      ]
     }
   }
 }

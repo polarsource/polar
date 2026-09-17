@@ -1,9 +1,21 @@
 from datetime import datetime
+from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, PlainSerializer
 
 from polar.kit.schemas import IDSchema
+
+PlainDecimal = Annotated[
+    Decimal, PlainSerializer(lambda v: format(v, "f"), return_type=str)
+]
+"""A decimal that never serializes in scientific notation.
+
+Twelve-scale amounts read from Postgres come back as `Decimal("0E-12")` when
+zero, and `str()` keeps that exponent form, which clients parsing a plain
+decimal string reject.
+"""
 
 
 class VoidOrganization(IDSchema):

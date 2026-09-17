@@ -8,6 +8,7 @@ from polar.kit.schemas import Schema
 from polar.models import VoidSubscriptionStatus as SubscriptionStatus
 from polar.void.event.schemas import EventCreate
 from polar.void.product.schemas import Product
+from polar.void.schemas import PlainDecimal
 
 
 class SubscriptionCreate(Schema):
@@ -59,8 +60,8 @@ class SubscriptionCycleMeter(Schema):
     meter_id: uuid.UUID
     slug: str
     usage: float
-    unit_amount: Decimal
-    amount: Decimal
+    unit_amount: PlainDecimal
+    amount: PlainDecimal
 
 
 class SubscriptionCycle(Schema):

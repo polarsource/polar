@@ -1,0 +1,47 @@
+{
+  "name": "po-bot",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 3004",
+    "build": "next build --turbopack",
+    "start": "next start -p 3004",
+    "format": "oxfmt ./src",
+    "format:check": "oxfmt --check ./src",
+    "typecheck": "tsc --noEmit",
+    "void": "node --env-file=.env.local ../../packages/void-sdk/bin/void.mjs",
+    "bootstrap": "pnpm void deploy --activate && mkdir -p data && drizzle-kit push && node --env-file=.env.local --import tsx src/setup.ts",
+    "reset": "rm -rf data"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "dependencies": {
+    "@ai-sdk/react": "^4.0.100",
+    "@libsql/client": "^0.18.0",
+    "@polar-sh/orbit": "workspace:*",
+    "@stylexjs/stylex": "catalog:",
+    "@void/sdk": "workspace:*",
+    "ai": "7.0.94",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "catalog:",
+    "next": "^16.2.6",
+    "next-themes": "catalog:",
+    "react": "19.2.5",
+    "react-dom": "19.2.5"
+  },
+  "devDependencies": {
+    "@polar-sh/typescript-config": "workspace:*",
+    "@stylexjs/babel-plugin": "catalog:",
+    "@stylexjs/postcss-plugin": "catalog:",
+    "@tailwindcss/forms": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "^24.0.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "catalog:",
+    "tsx": "^4.23.13",
+    "typescript": "5.9.3"
+  }
+}

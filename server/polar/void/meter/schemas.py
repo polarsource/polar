@@ -8,6 +8,7 @@ from pydantic import Field
 from polar.kit.schemas import Schema
 from polar.void.entitlement.schemas import SLUG_PATTERN, MeterEntitlementState
 from polar.void.metric.schemas import TimeInterval
+from polar.void.schemas import PlainDecimal
 
 from .balance import MeterCycle
 
@@ -29,7 +30,7 @@ class Meter(Schema):
     slug: str
     usage_reducer_id: UUID
     credit_reducer_id: UUID
-    unit_amount: Decimal
+    unit_amount: PlainDecimal
     currency: str
     created_at: datetime
 

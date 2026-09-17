@@ -2082,6 +2082,7 @@ class TestSummarizeRecords:
         assert set(by_entity) == {
             PrecheckEntity.products,
             PrecheckEntity.customers,
+            PrecheckEntity.discounts,
             PrecheckEntity.subscriptions,
         }
 

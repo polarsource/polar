@@ -5,4 +5,5 @@ export const ENTITY_LABELS: Record<schemas['PrecheckEntity'], string> = {
   customers: 'Customers',
   products: 'Products',
   prices: 'Prices',
+  discounts: 'Discounts',
 }

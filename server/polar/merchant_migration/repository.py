@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import replace
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -32,6 +33,7 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import (
+    CanonicalDiscount,
     CanonicalProduct,
     CanonicalRecord,
     canonical_price_key,
@@ -647,6 +649,14 @@ class MerchantMigrationRecordRepository(
                         )
                         record = replace(record, prices=list(prices.values()))
                         canonical = serialize(record)
+                if (
+                    existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalDiscount)
+                ):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalDiscount):
+                        record = self._merge_discount_code(current, record)
+                        canonical = serialize(record)
                 return await self.update(
                     existing,
                     update_dict={
@@ -666,3 +676,50 @@ class MerchantMigrationRecordRepository(
             ),
             flush=True,
         )
+
+    @staticmethod
+    def _merge_discount_code(
+        current: CanonicalDiscount, incoming: CanonicalDiscount
+    ) -> CanonicalDiscount:
+        """Refresh coupon terms on re-extract and attach the first Polar-valid
+        promotion code. Extra codes are counted so the precheck can warn."""
+        if incoming.code is None:
+            return replace(
+                incoming,
+                code=current.code,
+                extra_codes=current.extra_codes,
+                max_redemptions=_tighter_redemptions(
+                    incoming.max_redemptions, current.max_redemptions
+                ),
+                ends_at=_earlier_ends_at(incoming.ends_at, current.ends_at),
+            )
+        if current.code is None:
+            return replace(
+                current,
+                code=incoming.code,
+                max_redemptions=incoming.max_redemptions,
+                ends_at=_earlier_ends_at(current.ends_at, incoming.ends_at),
+            )
+        if current.code != incoming.code:
+            return replace(current, extra_codes=current.extra_codes + 1)
+        return replace(
+            current,
+            max_redemptions=_tighter_redemptions(
+                incoming.max_redemptions, current.max_redemptions
+            ),
+            ends_at=_earlier_ends_at(incoming.ends_at, current.ends_at),
+        )
+
+
+def _tighter_redemptions(*caps: int | None) -> int | None:
+    defined = [cap for cap in caps if cap is not None]
+    if not defined:
+        return None
+    return min(defined)
+
+
+def _earlier_ends_at(*values: datetime | None) -> datetime | None:
+    defined = [value for value in values if value is not None]
+    if not defined:
+        return None
+    return min(defined)

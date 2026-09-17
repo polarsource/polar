@@ -27,7 +27,7 @@ variable "ssosync_scim_access_token" {
 variable "ssosync_schedule_expression" {
   description = "ssosync EventBridge schedule; empty disables it."
   type        = string
-  default     = ""
+  default     = "cron(0 6-17 ? * MON-FRI *)"
 }
 
 variable "ssosync_version" {

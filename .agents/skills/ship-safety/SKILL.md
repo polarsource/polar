@@ -23,9 +23,10 @@ Diffs touching `server/migrations/versions/`, `**/tasks.py`, `polar/models/`,
 `server/scripts/`; or that remove or rename an endpoint; or that span `server/` and `clients/`
 with a dependency between them.
 
-**Owned elsewhere.** `ADR-0006` covers the migration rules — lock timeout, nullable → batched
-`run_batched_update` script → NOT NULL across separate PRs, the unconditional `UPDATE` in the
-enforce migration, and keeping migration PRs isolated from code. CI enforces it with the
+**Owned elsewhere.** `ADR-0006` covers the migration rules — lock timeout (5s for lock-taking
+DDL, `5min` for `CREATE INDEX CONCURRENTLY`), nullable → batched `run_batched_update` script →
+NOT NULL across separate PRs, the unconditional `UPDATE` in the enforce migration, and keeping
+migration PRs isolated from code. CI enforces it with the
 Migration Isolation Check. `adr-check` reports violations; do not restate ADR-0006 here.
 Reinvented helpers → `reuse-check`. Billing-specific lock and cycle rules → `billing-review`.
 
@@ -48,7 +49,10 @@ Ask of every schema change: *is the currently-deployed code still correct agains
 ### 2. Blocking DDL
 
 - `postgresql_concurrently=True` for an index on a large table, with the migration outside a
-  transaction.
+  transaction. Size is not the test: a concurrent build waits for every concurrent transaction in
+  the database, so it is slow on a busy database even when the table is empty. Flag any
+  `CONCURRENTLY` still carrying the template's 5s timeout — that is a failed deploy, not a
+  fast-fail (ADR-0006).
 - For NOT NULL on a large table, prefer `CHECK ... NOT VALID` then `VALIDATE CONSTRAINT`, so
   Postgres skips the full-table lock. On a small table this is ceremony — say which you think
   applies.

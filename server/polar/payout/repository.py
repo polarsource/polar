@@ -40,7 +40,7 @@ class PayoutRepository(
                     a.datname AS database_name,
                     a.pid,
                     a.application_name,
-                    a.query_id,
+                    a.query_id::text AS query_id,
                     a.query_start,
                     EXTRACT(EPOCH FROM clock_timestamp() - a.query_start)
                         AS query_age_seconds,
@@ -54,7 +54,7 @@ class PayoutRepository(
                             'pid', b.pid,
                             'application_name', b.application_name,
                             'state', b.state,
-                            'query_id', b.query_id,
+                            'query_id', b.query_id::text,
                             'query_start', b.query_start,
                             'transaction_start', b.xact_start,
                             'wait_event_type', b.wait_event_type,
@@ -70,6 +70,125 @@ class PayoutRepository(
                     AND a.query_start < statement_timestamp() - interval '1 second'
                     AND a.query ~* 'UPDATE (public[.])?transactions SET'
                     AND a.query ILIKE '%payout_transaction_id%'
+            """)
+        )
+        return result.mappings().all()
+
+    async def sample_database_statistics(self) -> RowMapping:
+        await self.session.execute(text("SET LOCAL statement_timeout = '1s'"))
+        result = await self.session.execute(
+            text("""
+                SELECT
+                    clock_timestamp() AS sampled_at,
+                    current_database() AS database_name,
+                    pg_postmaster_start_time() AS server_started_at,
+                    current_setting('server_version_num') AS server_version,
+                    to_regclass('pg_stat_statements') IS NOT NULL
+                        AND current_setting('pg_stat_statements.track', true)
+                            IN ('top', 'all') AS statement_statistics_available,
+                    (SELECT jsonb_object_agg(name,
+                        jsonb_build_object('value', setting, 'unit', unit))
+                        FROM pg_settings WHERE name IN (
+                            'block_size', 'shared_buffers', 'effective_cache_size',
+                            'track_counts', 'track_activities', 'track_io_timing',
+                            'track_wal_io_timing', 'compute_query_id',
+                            'checkpoint_timeout', 'checkpoint_completion_target',
+                            'max_wal_size', 'synchronous_commit',
+                            'autovacuum', 'autovacuum_vacuum_scale_factor',
+                            'autovacuum_vacuum_threshold'
+                        )) AS settings,
+                    (SELECT to_jsonb(d) FROM pg_stat_database d
+                        WHERE datname = current_database()) AS database,
+                    (SELECT to_jsonb(w) FROM pg_stat_wal w) AS cluster_wal,
+                    (SELECT to_jsonb(b) FROM pg_stat_bgwriter b)
+                        AS cluster_bgwriter,
+                    ARRAY(
+                        SELECT to_jsonb(s) || to_jsonb(io)
+                            || jsonb_build_object(
+                                'heap_size_bytes', pg_relation_size(s.relid))
+                        FROM pg_stat_user_tables s
+                        JOIN pg_statio_user_tables io USING (relid)
+                        WHERE s.schemaname = 'public'
+                            AND s.relname IN ('transactions', 'accounts', 'payouts')
+                        ORDER BY s.relname
+                    ) AS tables,
+                    ARRAY(
+                        SELECT to_jsonb(s) || to_jsonb(io)
+                            || jsonb_build_object(
+                                'size_bytes', pg_relation_size(s.indexrelid),
+                                'valid', i.indisvalid)
+                        FROM pg_stat_user_indexes s
+                        JOIN pg_statio_user_indexes io USING (indexrelid)
+                        JOIN pg_index i ON i.indexrelid = s.indexrelid
+                        WHERE s.schemaname = 'public'
+                            AND s.relname IN ('transactions', 'accounts', 'payouts')
+                        ORDER BY s.indexrelid
+                    ) AS indexes,
+                    ARRAY(
+                        SELECT to_jsonb(activity)
+                        FROM (
+                            SELECT backend_type, state, wait_event_type, wait_event,
+                                count(*) AS connections,
+                                max(EXTRACT(EPOCH FROM
+                                    statement_timestamp() - xact_start))
+                                    AS oldest_transaction_seconds
+                            FROM pg_stat_activity
+                            WHERE datname = current_database()
+                                AND pid <> pg_backend_pid()
+                            GROUP BY backend_type, state, wait_event_type, wait_event
+                        ) activity
+                    ) AS activity,
+                    ARRAY(
+                        SELECT to_jsonb(oldest)
+                        FROM (
+                            SELECT pid, application_name, state,
+                                query_id::text AS query_id, xact_start,
+                                wait_event_type, wait_event, age(backend_xmin)
+                                    AS xmin_age
+                            FROM pg_stat_activity
+                            WHERE datname = current_database()
+                                AND pid <> pg_backend_pid()
+                                AND xact_start < statement_timestamp()
+                                    - interval '30 seconds'
+                            ORDER BY xact_start LIMIT 10
+                        ) oldest
+                    ) AS oldest_transactions,
+                    ARRAY(
+                        SELECT to_jsonb(v) FROM pg_stat_progress_vacuum v
+                        WHERE datname = current_database()
+                    ) AS vacuum_progress,
+                    (SELECT jsonb_build_object(
+                        'replicas', count(*),
+                        'max_write_lag_seconds', max(EXTRACT(EPOCH FROM write_lag)),
+                        'max_flush_lag_seconds', max(EXTRACT(EPOCH FROM flush_lag)),
+                        'max_replay_lag_seconds', max(EXTRACT(EPOCH FROM replay_lag))
+                    ) FROM pg_stat_replication) AS cluster_replication
+            """)
+        )
+        return result.mappings().one()
+
+    async def sample_payout_query_statistics(self) -> Sequence[RowMapping]:
+        await self.session.execute(text("SET LOCAL statement_timeout = '1s'"))
+        result = await self.session.execute(
+            text("""
+                SELECT s.queryid::text AS query_id, s.userid, s.toplevel,
+                    s.calls, s.rows, s.total_exec_time, s.min_exec_time,
+                    s.max_exec_time, s.mean_exec_time, s.stddev_exec_time,
+                    s.shared_blks_hit, s.shared_blks_read,
+                    s.shared_blks_dirtied, s.shared_blks_written,
+                    s.temp_blks_read, s.temp_blks_written,
+                    s.blk_read_time, s.blk_write_time,
+                    s.wal_records, s.wal_fpi, s.wal_bytes,
+                    count(*) OVER () AS matching_statements,
+                    info.stats_reset, info.dealloc
+                FROM pg_stat_statements s
+                CROSS JOIN pg_stat_statements_info info
+                WHERE s.dbid = (SELECT oid FROM pg_database
+                    WHERE datname = current_database())
+                    AND s.query ~* '^UPDATE (public[.])?transactions SET'
+                    AND s.query ILIKE '%payout_transaction_id%'
+                ORDER BY s.total_exec_time DESC, s.queryid
+                LIMIT 100
             """)
         )
         return result.mappings().all()

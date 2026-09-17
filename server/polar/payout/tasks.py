@@ -1,11 +1,20 @@
 import uuid
+from time import monotonic
 
 import structlog
+from sqlalchemy.exc import DBAPIError
 
 from polar.exceptions import PolarTaskError
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.payout import PayoutStatus
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    get_message_timestamp,
+)
 
 from .repository import PayoutRepository
 from .service import (
@@ -35,13 +44,40 @@ class PayoutDoesNotExist(PayoutTaskError):
     max_retries=0,
 )
 async def sample_database_waits() -> None:
+    started_at = monotonic()
+    queue_delay_seconds = (utc_now() - get_message_timestamp()).total_seconds()
     # Observe the primary: replica activity cannot explain payout UPDATE waits.
     async with AsyncSessionMaker() as session:
-        samples = await PayoutRepository(session).sample_database_waits()
-    if not samples:
-        log.info("payout.database_wait_no_samples")
-    for sample in samples:
-        log.info("payout.database_wait_sample", **sample)
+        repository = PayoutRepository(session)
+        samples = await repository.sample_database_waits()
+        for sample in samples:
+            log.info("payout.database_wait_sample", **sample)
+        statistics = await repository.sample_database_statistics()
+        log.info(
+            "payout.database_statistics",
+            **statistics,
+            queue_delay_seconds=queue_delay_seconds,
+            capture_duration_seconds=monotonic() - started_at,
+            slow_update_count=len(samples),
+        )
+        if not samples:
+            log.info("payout.database_wait_no_samples")
+        if statistics["statement_statistics_available"]:
+            try:
+                statement_started_at = monotonic()
+                async with session.begin_nested():
+                    query_statistics = await repository.sample_payout_query_statistics()
+                log.info(
+                    "payout.database_query_statistics",
+                    sampled_at=utc_now(),
+                    database_name=statistics["database_name"],
+                    capture_duration_seconds=monotonic() - statement_started_at,
+                    statements=[dict(row) for row in query_statistics],
+                )
+            except DBAPIError:
+                log.warning(
+                    "payout.database_query_statistics_unavailable", exc_info=True
+                )
 
 
 @actor(actor_name="payout.created", priority=TaskPriority.LOW)

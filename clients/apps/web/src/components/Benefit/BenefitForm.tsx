@@ -205,7 +205,7 @@ const DiscordBenefitForm = ({
   const { control, watch } = useFormContext<schemas['BenefitDiscordCreate']>()
   const pathname = usePathname()
   const description = watch('description')
-  const guildToken = watch('properties.guild_token')
+  const guildId = watch('properties.guild_id')
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
@@ -219,7 +219,10 @@ const DiscordBenefitForm = ({
     })
   }, [pathname, description, organization.id])
 
-  const { data: discordGuild } = useDiscordGuild(guildToken ?? undefined)
+  const { data: discordGuild } = useDiscordGuild(
+    organization.id,
+    guildId ?? undefined,
+  )
   const polarBotRolePosition = useMemo(() => {
     if (!discordGuild) {
       return undefined
@@ -229,18 +232,18 @@ const DiscordBenefitForm = ({
 
   return (
     <>
-      {!guildToken && (
+      {!guildId && (
         <Button asChild>
           <a href={authorizeURL} className="w-full text-center">
             Connect your Discord server
           </a>
         </Button>
       )}
-      {guildToken && discordGuild && (
+      {guildId && discordGuild && (
         <>
           <FormField
             control={control}
-            name="properties.guild_token"
+            name="properties.guild_id"
             render={({ field }) => {
               return <input type="hidden" defaultValue={field.value ?? ''} />
             }}

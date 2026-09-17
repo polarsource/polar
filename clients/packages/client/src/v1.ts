@@ -40894,7 +40894,8 @@ export interface operations {
   'integrations_discord:discord_guild_lookup': {
     parameters: {
       query: {
-        guild_token: string
+        guild_id: string
+        organization_id: string
       }
       header?: never
       path?: never
@@ -40909,6 +40910,24 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
+        }
+      }
+      /** @description User lacks `products_read` permission on the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The organization has not connected this Discord server. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

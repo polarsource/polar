@@ -10,12 +10,17 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.exceptions import NotPermitted, Unauthorized
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import oauth
@@ -136,17 +141,8 @@ async def discord_bot_callback(
         UUID(decoded_state["organization_id"]), guild_id, auth_subject.subject.id
     )
 
-    # We need to set this ID on a subsequent API call (e.g. create Discord benefit).
-    # To make sure a malicious user won't arbitrarily set guild IDs, we pass it as
-    # a signed JWT token.
-    guild_token = jwt.encode(
-        data={"guild_id": guild_id},
-        secret=settings.SECRET,
-        type="discord_guild_token",
-    )
-
     redirect_url = get_safe_return_url(
-        add_query_parameters(return_to, guild_token=guild_token, guild_id=guild_id)
+        add_query_parameters(return_to, guild_id=guild_id)
     )
 
     return RedirectResponse(redirect_url, 303)
@@ -157,18 +153,35 @@ async def discord_bot_callback(
 ###############################################################################
 
 
-@router.get("/guild/lookup", response_model=DiscordGuild)
+@router.get(
+    "/guild/lookup",
+    response_model=DiscordGuild,
+    responses={
+        403: {
+            "description": "User lacks `products_read` permission on the organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "The organization has not connected this Discord server.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+)
 async def discord_guild_lookup(
-    guild_token: str, auth_subject: AuthorizeWebUserRead
+    guild_id: str,
+    organization_id: Annotated[OrganizationID, Query()],
+    auth_subject: AuthorizeWebUserRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> DiscordGuild:
-    try:
-        guild_token_data = jwt.decode(
-            token=guild_token,
-            secret=settings.SECRET,
-            type="discord_guild_token",
-        )
-        guild_id = guild_token_data["guild_id"]
-    except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError) as e:
-        raise Unauthorized() from e
+    await assert_organization_permission(
+        session, auth_subject, organization_id, OrganizationPermission.products_read
+    )
+
+    repository = DiscordGuildConnectionRepository.from_session(session)
+    connection = await repository.get_by_organization_and_guild(
+        organization_id, guild_id
+    )
+    if connection is None:
+        raise ResourceNotFound()
 
     return await discord_bot_service.get_guild(guild_id)

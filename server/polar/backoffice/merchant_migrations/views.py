@@ -11,7 +11,6 @@ from polar.merchant_migration.pan_transfer import (
     PanTransferStep,
 )
 from polar.models import MerchantMigration, MerchantMigrationRecord
-from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 
 from .. import formatters
 from ..components import button
@@ -28,12 +27,6 @@ from .status import (
     is_ops_actionable,
     step_position,
 )
-
-SOURCE_PLATFORM_LABELS: dict[MerchantMigrationSourcePlatform, str] = {
-    MerchantMigrationSourcePlatform.stripe: "Stripe",
-    MerchantMigrationSourcePlatform.lemon_squeezy: "Lemon Squeezy",
-    MerchantMigrationSourcePlatform.paddle: "Paddle",
-}
 
 # Colour is reserved for the two levels that mean "an operator has to do
 # something". Everything else is a neutral badge, so a full queue still reads as
@@ -76,7 +69,7 @@ def attention_badge(attention: Attention) -> None:
 
 def source_cell(migration: MerchantMigration) -> None:
     with tag.div(classes="flex items-center gap-2"):
-        text(SOURCE_PLATFORM_LABELS[migration.source_platform])
+        text(migration.source_platform.label)
         if not migration.source_connected:
             with tag.div(classes="badge badge-sm badge-warning whitespace-nowrap"):
                 text("Not connected")

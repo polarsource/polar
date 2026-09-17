@@ -37,6 +37,7 @@ from polar.models.merchant_migration import (
     MerchantMigrationStep,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
@@ -186,6 +187,7 @@ async def stage_subscription_record(
     source_id: str = "sub_1",
     price_source_id: str = "price_1",
     currency: str | None = "usd",
+    cutover_status: MerchantMigrationCutoverStatus | None = None,
 ) -> MerchantMigrationRecord:
     """An imported subscription in the ledger: what the cutover reads."""
     record = MerchantMigrationRecord(
@@ -195,6 +197,7 @@ async def stage_subscription_record(
         status=MerchantMigrationRecordStatus.imported,
         source_id=source_id,
         target_id=subscription.id,
+        cutover_status=cutover_status,
         canonical=serialize(
             canonical_subscription(
                 source_id=source_id,

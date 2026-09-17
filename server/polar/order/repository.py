@@ -37,7 +37,7 @@ from polar.models import (
     ProductPrice,
     Subscription,
 )
-from polar.models.order import OrderStatus
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
@@ -335,6 +335,20 @@ class OrderRepository(
             .options(*options)
         )
         return await self.get_all(statement)
+
+    async def count_subscription_cycle_orders(self, subscription_id: UUID) -> int:
+        statement = self.get_base_statement().where(
+            Order.subscription_id == subscription_id,
+            Order.billing_reason.in_(
+                (
+                    OrderBillingReasonInternal.subscription_cycle,
+                    OrderBillingReasonInternal.subscription_cycle_after_trial,
+                    OrderBillingReasonInternal.subscription_meter_cycle,
+                    OrderBillingReasonInternal.subscription_update,
+                )
+            ),
+        )
+        return await self.count(statement)
 
     async def get_pending_orders_for_subscription(
         self, subscription_id: UUID, *, options: Options = ()

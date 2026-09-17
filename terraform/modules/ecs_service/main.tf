@@ -93,6 +93,10 @@ resource "aws_secretsmanager_secret_version" "logfire_header" {
   secret_string = "Authorization ${var.logfire.token}"
 }
 
+resource "terraform_data" "logfire_header" {
+  triggers_replace = var.logfire == null ? null : aws_secretsmanager_secret_version.logfire_header[0].version_id
+}
+
 data "aws_iam_policy_document" "secrets" {
   count = length(local.secret_arns) == 0 ? 0 : 1
 
@@ -192,7 +196,7 @@ resource "aws_ecs_task_definition" "this" {
   ))
 
   lifecycle {
-    replace_triggered_by = [aws_secretsmanager_secret_version.logfire_header]
+    replace_triggered_by = [terraform_data.logfire_header]
 
     precondition {
       condition     = alltrue([for n in local.aws_names : length(n.value) <= n.max])

@@ -1,6 +1,6 @@
 import functools
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from typing import ParamSpec, cast
 
 import stripe as stripe_lib
@@ -32,7 +32,7 @@ from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
 
 from . import payment
-from .account_risk import parse_account_risk_event
+from .account_risk import UnknownAccountRiskEvaluation, parse_account_signal
 
 log: Logger = structlog.get_logger()
 
@@ -75,22 +75,32 @@ async def account_updated(event_id: uuid.UUID) -> None:
 async def account_risk_signal(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
-            stripe_event_id = event.data.get("id")
-            if not stripe_event_id:
-                log.warning("Stripe risk event without id")
-                return
-
-            # These are thin events with no inline data; fetch the full event.
-            full_event = await stripe_service.get_account_risk_event(stripe_event_id)
-            signal = parse_account_risk_event(full_event)
-            if signal is None:
+            related = event.data.get("related_object")
+            related_id = related.get("id") if isinstance(related, Mapping) else None
+            if not related_id:
                 log.warning(
-                    "Unparseable Stripe risk event",
-                    stripe_event_id=stripe_event_id,
+                    "Stripe risk event without related Account Signal",
+                    stripe_event_id=event.data.get("id"),
                 )
                 return
 
-            await organization_service.handle_account_risk_signal(session, signal)
+            signal = parse_account_signal(
+                await stripe_service.get_account_signal(str(related_id))
+            )
+            if signal is None:
+                log.warning(
+                    "Unparseable Stripe Account Signal",
+                    stripe_event_id=event.data.get("id"),
+                    related_object_id=str(related_id),
+                )
+                return
+
+            try:
+                await organization_service.handle_account_risk_signal(session, signal)
+            except UnknownAccountRiskEvaluation as e:
+                if can_retry():
+                    raise Retry() from e
+                raise
 
 
 @actor(actor_name="stripe.webhook.payment_intent.succeeded", priority=TaskPriority.HIGH)

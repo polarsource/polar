@@ -18,8 +18,10 @@ from polar.enums import (
 )
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.account_risk import (
-    AccountRiskSignal,
+    MerchantRiskSignal,
     StripeAccountRiskLevel,
+    UnknownAccountRiskEvaluation,
+    WebsiteRiskSignal,
 )
 from polar.kit.http import UrlReachability
 from polar.models import (
@@ -74,11 +76,8 @@ from polar.organization.service import (
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
-from polar.organization_review.repository import (
-    OrganizationReviewRepository,
-    OrganizationRiskSignalRepository,
-)
-from polar.organization_review.schemas import DecisionType, ReviewContext, ReviewVerdict
+from polar.organization_review.repository import OrganizationRiskSignalRepository
+from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
@@ -1966,22 +1965,32 @@ class TestSetOrganizationUnderReview:
 
 @pytest.mark.asyncio
 class TestHandleAccountRiskSignal:
-    def _signal(
+    def _merchant(
         self,
         account_id: str,
         level: StripeAccountRiskLevel,
         *,
-        type: OrganizationRiskSignal.Type = (
-            OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-        ),
-        description: str | None = "Deceptive website",
-    ) -> AccountRiskSignal:
-        return AccountRiskSignal(
-            type=type,
-            account_id=account_id,
+        description: str | None = "Indicators: disputes",
+    ) -> MerchantRiskSignal:
+        return MerchantRiskSignal(
             risk_level=level,
+            account_id=account_id,
             description=description,
             payload={"account": account_id},
+        )
+
+    def _website(
+        self,
+        evaluation_id: str,
+        level: StripeAccountRiskLevel,
+        *,
+        description: str | None = "Deceptive website",
+    ) -> WebsiteRiskSignal:
+        return WebsiteRiskSignal(
+            risk_level=level,
+            evaluation_id=evaluation_id,
+            description=description,
+            payload={"account_evaluation": evaluation_id},
         )
 
     async def _signals(
@@ -1990,40 +1999,21 @@ class TestHandleAccountRiskSignal:
         repository = OrganizationRiskSignalRepository.from_session(session)
         return await repository.list_by_organization(organization.id)
 
-    async def test_actionable_website_on_active_org(
+    async def _pending_website_eval(
         self,
-        mocker: MockerFixture,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
-    ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
-        await save_fixture(organization)
-        await create_payout_account(
-            save_fixture, organization, user, stripe_id="acct_risk"
+        evaluation_id: str,
+    ) -> OrganizationRiskSignal:
+        signal = OrganizationRiskSignal(
+            organization=organization,
+            source=OrganizationRiskSignal.Source.STRIPE,
+            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            account_evaluation_id=evaluation_id,
         )
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-
-        await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_risk", StripeAccountRiskLevel.HIGHEST)
-        )
-
-        assert organization.status == OrganizationStatus.REVIEW
-        assert organization.internal_notes is None
-        # Never runs the AI agent for an external risk signal.
-        enqueue_job_mock.assert_not_called()
-
-        signals = await self._signals(session, organization)
-        assert len(signals) == 1
-        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
-        assert signals[0].risk_level == "highest"
-
-        decision = await OrganizationReviewRepository.from_session(
-            session
-        ).get_current_decision(organization.id)
-        assert decision is not None
-        assert decision.decision == DecisionType.ESCALATE
+        await save_fixture(signal)
+        return signal
 
     async def test_actionable_merchant_on_active_org(
         self,
@@ -2042,12 +2032,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._signal(
-                "acct_risk",
-                StripeAccountRiskLevel.ELEVATED,
-                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
-                description="Indicators: disputes",
-            ),
+            self._merchant("acct_risk", StripeAccountRiskLevel.ELEVATED),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2055,66 +2040,88 @@ class TestHandleAccountRiskSignal:
         assert len(signals) == 1
         assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
 
-    async def test_non_actionable_signal_does_nothing(
+    async def test_actionable_website_matches_org_by_evaluation_id(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
+        organization_second: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
+        organization.website = "https://example.com"
         await save_fixture(organization)
-        await create_payout_account(
-            save_fixture, organization, user, stripe_id="acct_risk"
+        await self._pending_website_eval(save_fixture, organization, "acctevl_456")
+        organization_second.website = "https://example.com"
+        await save_fixture(organization_second)
+        await self._pending_website_eval(
+            save_fixture, organization_second, "acctevl_other"
         )
         mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_risk", StripeAccountRiskLevel.LOW)
-        )
-
-        assert organization.status == OrganizationStatus.ACTIVE
-        assert organization.internal_notes is None
-        assert await self._signals(session, organization) == []
-
-    async def test_actionable_on_reviewed_org_records_without_transition(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        organization.status = OrganizationStatus.REVIEW
-        await save_fixture(organization)
-        await create_payout_account(
-            save_fixture, organization, user, stripe_id="acct_risk"
-        )
-        mocker.patch("polar.organization.service.enqueue_job")
-
-        await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_risk", StripeAccountRiskLevel.HIGHEST)
+            session,
+            self._website("acctevl_456", StripeAccountRiskLevel.HIGHEST),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
-        assert len(await self._signals(session, organization)) == 1
+        signals = await self._signals(session, organization)
+        assert len(signals) == 1
+        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_456")
+        assert pending is not None
+        assert pending.id == signals[0].id
+        assert pending.account_evaluation_id == "acctevl_456"
 
-    async def test_unknown_account_does_nothing(
+        await session.refresh(organization_second)
+        assert organization_second.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization_second) == []
+
+    async def test_unknown_evaluation_id_raises(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
+        await self._pending_website_eval(save_fixture, organization, "acctevl_ours")
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        with pytest.raises(UnknownAccountRiskEvaluation):
+            await organization_service.handle_account_risk_signal(
+                session,
+                self._website("acctevl_unknown", StripeAccountRiskLevel.HIGHEST),
+            )
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization) == []
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_ours")
+        assert pending is not None
+
+    async def test_non_actionable_evaluation_drops_pending(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._pending_website_eval(save_fixture, organization, "acctevl_456")
         mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.handle_account_risk_signal(
-            session, self._signal("acct_missing", StripeAccountRiskLevel.HIGHEST)
+            session,
+            self._website("acctevl_456", StripeAccountRiskLevel.LOW),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE
         assert await self._signals(session, organization) == []
+        pending = await OrganizationRiskSignalRepository.from_session(
+            session
+        ).get_by_account_evaluation("acctevl_456")
+        assert pending is None
 
 
 class TestGetPaymentStatus:

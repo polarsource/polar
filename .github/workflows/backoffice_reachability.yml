@@ -23,28 +23,27 @@ jobs:
         env:
           HOST: ${{ matrix.host }}
         run: |
-          fail() {
-            echo "::error::$1"
-            echo "FAILURE_REASON=$1" >> "$GITHUB_ENV"
-            exit 1
-          }
+          python3 - <<'PY'
+          import os
+          import socket
 
-          for url in "https://$HOST/" "http://$HOST/"; do
-            set +e
-            status=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 "$url")
-            exit_code=$?
-            set -e
-            if [ "$exit_code" -eq 0 ]; then
-              fail "$url answered with HTTP $status from a GitHub runner."
-            fi
-            # 7 (connection failed) and 28 (timeout) are the expected outcomes for
-            # an unroutable address. Any other code means a host completed enough
-            # of the handshake to report something, which is reachability too.
-            if [ "$exit_code" -ne 7 ] && [ "$exit_code" -ne 28 ]; then
-              fail "$url failed with unexpected curl exit code $exit_code."
-            fi
-            echo "$url is unreachable (curl exit $exit_code)"
-          done
+          host = os.environ["HOST"]
+          reachable = []
+
+          for port in (443, 80):
+              try:
+                  with socket.create_connection((host, port), timeout=10):
+                      reachable.append(f"{host}:{port}")
+              except OSError as error:
+                  print(f"{host}:{port} is unreachable ({error})")
+
+          if reachable:
+              reason = f"{', '.join(reachable)} accepted a TCP connection from a GitHub runner."
+              print(f"::error::{reason}")
+              with open(os.environ["GITHUB_ENV"], "a") as github_env:
+                  github_env.write(f"FAILURE_REASON={reason}\n")
+              raise SystemExit(1)
+          PY
 
       - name: Notify Slack on failure
         if: failure()

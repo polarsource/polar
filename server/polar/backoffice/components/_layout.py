@@ -41,6 +41,18 @@ def menu(
     yield
 
 
+def _is_content_swap_request(request: Request) -> bool:
+    """True when the client is swapping into ``#content``.
+
+    Boosted nav sets both ``HX-Boosted`` and ``HX-Target: content``. Either
+    header is enough: proxies and caches sometimes drop one, and a full-page
+    body swapped into ``#content`` nests the layout inside itself.
+    """
+    if request.headers.get("HX-Target") == "content":
+        return True
+    return bool(request.headers.get("HX-Boosted"))
+
+
 @contextlib.contextmanager
 def layout(
     request: Request,
@@ -49,10 +61,7 @@ def layout(
     active_route_name: str,
 ) -> Generator[None]:
     title_parts = [title for title, href in breadcrumbs]
-    if (
-        request.headers.get("HX-Boosted")
-        and request.headers.get("HX-Target") == "content"
-    ):
+    if _is_content_swap_request(request):
         with content(request, breadcrumbs):
             yield
         with title(title_parts):

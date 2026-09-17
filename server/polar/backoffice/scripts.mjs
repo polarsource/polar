@@ -4,6 +4,37 @@ import { EventSourcePlus } from "event-source-plus";
 
 window.htmx = htmx;
 
+// Full HTML swapped into #content nests the sidebar inside itself.
+const extractContentSwapPartial = (html) => {
+  if (!/<html[\s>]/i.test(html)) {
+    return null;
+  }
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const content = doc.getElementById("content");
+  if (!content) {
+    return null;
+  }
+  const pieces = [content.innerHTML];
+  for (const el of doc.querySelectorAll("[hx-swap-oob], [data-hx-swap-oob]")) {
+    if (content.contains(el)) {
+      continue;
+    }
+    pieces.push(el.outerHTML);
+  }
+  return pieces.join("");
+};
+
+document.addEventListener("htmx:beforeSwap", (event) => {
+  const { target, serverResponse } = event.detail;
+  if (!target || target.id !== "content" || typeof serverResponse !== "string") {
+    return;
+  }
+  const partial = extractContentSwapPartial(serverResponse);
+  if (partial !== null) {
+    event.detail.serverResponse = partial;
+  }
+});
+
 const formPostSSE = (formElement, target) => {
   const eventSource = new EventSourcePlus(formElement.action, {
     method: formElement.method || "GET",

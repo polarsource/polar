@@ -82,4 +82,11 @@ class SecurityHeadersMiddleware:
             "camera=(), microphone=(), geolocation=(), interest-cohort=()"
         )
 
+        content_type = headers.get("content-type", "")
+        if content_type.startswith("text/html"):
+            # Full-page and HTMX partials share URLs. Caching without Vary
+            # serves a full document into #content and nests the layout.
+            headers["Cache-Control"] = "private, no-store"
+            headers["Vary"] = "HX-Request, HX-Boosted, HX-Target"
+
         await send(message)

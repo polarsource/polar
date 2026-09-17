@@ -92,6 +92,10 @@ module "backup_copy" {
     RENDER_API_KEY = aws_secretsmanager_secret.render_api_key.arn
   }
 
+  logfire = {
+    token = var.logfire_token
+  }
+
   depends_on = [aws_secretsmanager_secret_version.render_api_key]
 }
 

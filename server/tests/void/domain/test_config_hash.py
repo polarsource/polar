@@ -110,3 +110,64 @@ def test_product_meter_terms_hash_by_slug_regardless_of_order() -> None:
         forward
         != config(products=[{**product, "meters": ["calls", "tokens"]}]).version_id
     )
+
+
+def _meter_signal(**overrides: Any) -> dict[str, Any]:
+    return {
+        "slug": "low-balance",
+        "kind": "meter",
+        "meter": "tokens",
+        "enter_below": 100,
+        "exit_at_least": 500,
+        **overrides,
+    }
+
+
+def _semantic_signal(**overrides: Any) -> dict[str, Any]:
+    return {
+        "slug": "abuse",
+        "kind": "semantic",
+        "meter": "tokens",
+        "when": "Is this identity abusing the service?",
+        "enter_above": 0.8,
+        "exit_below": 0.4,
+        **overrides,
+    }
+
+
+def test_empty_signals_do_not_change_the_hash() -> None:
+    baseline = config()
+    assert config(signals=[]).version_id == baseline.version_id
+
+
+def test_signals_change_the_version() -> None:
+    baseline = config()
+    assert config(signals=[_meter_signal()]).version_id != baseline.version_id
+    assert config(signals=[_semantic_signal()]).version_id != baseline.version_id
+
+
+def test_signal_order_does_not_change_the_hash() -> None:
+    forward = config(signals=[_meter_signal(), _semantic_signal()]).version_id
+    backward = config(signals=[_semantic_signal(), _meter_signal()]).version_id
+    assert forward == backward
+
+
+def test_semantic_default_window_does_not_change_the_hash() -> None:
+    implicit = config(signals=[_semantic_signal()]).version_id
+    explicit = config(
+        signals=[_semantic_signal(over={"amount": 1, "unit": "hour"})]
+    ).version_id
+    assert implicit == explicit
+    assert (
+        config(signals=[_semantic_signal(over={"amount": 2, "unit": "day"})]).version_id
+        != implicit
+    )
+
+
+def test_signal_thresholds_are_validated() -> None:
+    with pytest.raises(ValidationError):
+        config(signals=[_meter_signal(enter_below=500, exit_at_least=100)])
+    with pytest.raises(ValidationError):
+        config(signals=[_semantic_signal(enter_above=0.4, exit_below=0.8)])
+    with pytest.raises(ValidationError):
+        config(signals=[_semantic_signal(enter_above=1.5)])

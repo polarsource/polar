@@ -130,6 +130,7 @@ export const reconcile = Effect.fn('cli.reconcile')(function* (
       entitlements: ir.entitlements,
       products: ir.products,
       ...(ir.activities?.length ? { activities: ir.activities } : {}),
+      ...(ir.signals?.length ? { signals: ir.signals } : {}),
       ...(command === 'plan' && preview ? { preview } : {}),
     },
   })

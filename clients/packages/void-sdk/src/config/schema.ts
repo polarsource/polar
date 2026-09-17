@@ -612,7 +612,7 @@ export interface MeterSignalOptions {
 export interface SemanticSignalOptions {
   /** The meter whose recent events Jev reads. */
   readonly meter: MeterDef
-  /** The question Polar asks Jev, verbatim. Stays in the SDK; never deployed. */
+  /** The question Polar asks Jev, verbatim. Deployed so the judge endpoint resolves it by key. */
   readonly when: string
   /** How far back the events go. Defaults to `recent(1, 'hour')`. */
   readonly over?: SignalWindow

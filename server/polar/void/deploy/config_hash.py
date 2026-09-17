@@ -29,21 +29,24 @@ REQUEST_FIELDS = {"checksum", "dry_run", "preview", "activate"}
 def configuration_payload(config: BaseModel) -> dict[str, Any]:
     """The configuration alone, as stored on a deployment for scenarios to start from."""
     payload = config.model_dump(mode="json", exclude=REQUEST_FIELDS)
-    if not payload.get("activities"):
-        payload.pop("activities", None)
+    for optional in ("activities", "signals"):
+        if not payload.get(optional):
+            payload.pop(optional, None)
     return payload
 
 
 def configuration_hash(config: BaseModel) -> str:
     payload = _normalize(config.model_dump(exclude=REQUEST_FIELDS))
-    if not payload.get("activities"):
-        payload.pop("activities", None)
+    for optional in ("activities", "signals"):
+        if not payload.get(optional):
+            payload.pop(optional, None)
     for key in (
         "reducers",
         "meters",
         "products",
         "entitlements",
         "activities",
+        "signals",
     ):
         if key in payload:
             payload[key].sort(key=lambda item: item["slug"])

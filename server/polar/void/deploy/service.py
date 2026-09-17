@@ -234,6 +234,7 @@ class DeployService:
             "entitlements",
             "products",
             "activities",
+            "signals",
         ):
             definitions = getattr(config, kind)
             if len({definition.slug for definition in definitions}) != len(definitions):
@@ -317,6 +318,11 @@ class DeployService:
             if set(product.entitlements) - entitlements:
                 raise ProductInvalid(
                     f"Product {product.slug!r} grants an entitlement which is not in this deploy"
+                )
+        for signal in config.signals:
+            if signal.meter not in meters:
+                raise InvalidDeployment(
+                    f"Signal {signal.slug!r} reads meter {signal.meter!r}, which is not in this deploy"
                 )
 
     async def _reconcile(

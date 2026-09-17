@@ -27,15 +27,27 @@ class JudgeWindow(Schema):
 
 
 class JudgeRequest(Schema):
-    meter: str = Field(
+    signal: str | None = Field(
+        default=None,
         min_length=1,
         pattern=SLUG_PATTERN,
-        description="Slug of the meter whose recent events Jev reads.",
+        description="Key of a deployed semantic signal. When set, the meter, "
+        "question and window come from the deployed definition and the inline "
+        "fields below are ignored.",
     )
-    when: str = Field(
+    meter: str | None = Field(
+        default=None,
+        min_length=1,
+        pattern=SLUG_PATTERN,
+        description="Slug of the meter whose recent events Jev reads. "
+        "Required unless `signal` is set.",
+    )
+    when: str | None = Field(
+        default=None,
         min_length=1,
         max_length=512,
-        description="The question Jev answers with a noul, verbatim.",
+        description="The question Jev answers with a noul, verbatim. "
+        "Required unless `signal` is set.",
     )
     over: JudgeWindow = Field(
         default_factory=lambda: JudgeWindow(amount=1, unit="hour"),
@@ -46,6 +58,12 @@ class JudgeRequest(Schema):
         pattern=r"^[0-9a-f]{64}$",
         description="Configuration version whose meter to read. Defaults to the active deployment.",
     )
+
+    @model_validator(mode="after")
+    def criteria_present(self) -> "JudgeRequest":
+        if self.signal is None and (self.meter is None or self.when is None):
+            raise ValueError("provide a signal key, or both meter and when")
+        return self
 
 
 class Evidence(Schema):

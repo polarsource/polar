@@ -72,7 +72,7 @@ it('pulls span and run, and omits the default span key', () => {
   assert.notInclude(source, 'runBy')
 })
 
-it('keeps semantic signals out of the IR and the checksum', () => {
+it('compiles semantic signals into the IR and the checksum', () => {
   const completion = event<{ tokens: number }>('llm.completion')
   const tokens = meter('tokens', {
     reducer: sum(completion, 'tokens'),
@@ -93,9 +93,18 @@ it('keeps semantic signals out of the IR and the checksum', () => {
   })
   const compiled = compile(judged)
   assert.notProperty(compiled, 'senses')
-  assert.notProperty(compiled, 'signals')
-  assert.deepEqual(compiled, compile(plain))
-  assert.equal(checksum(compiled), checksum(compile(plain)))
+  assert.deepEqual(compiled.signals, [
+    {
+      slug: 'retry-storm',
+      kind: 'semantic',
+      meter: 'tokens',
+      when: 'most recent spend is retries or loops, not progress',
+      over: { amount: 1, unit: 'hour' },
+      enter_above: 0.7,
+      exit_below: 0.4,
+    },
+  ])
+  assert.notEqual(checksum(compiled), checksum(compile(plain)))
   assert.deepEqual(judged.signals[0]?.definition, {
     kind: 'semantic',
     meter: tokens,

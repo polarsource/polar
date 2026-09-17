@@ -24,7 +24,7 @@ from polar.models import (
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncSession
-from polar.void.deploy.exceptions import DeploymentNotActivatable
+from polar.void.deploy.exceptions import DeploymentNotActivatable, InvalidDeployment
 from polar.void.deploy.schemas import DeployCreate
 from polar.void.deploy.service import deploy as deploy_service
 from polar.void.entitlement.schemas import EntitlementCreate
@@ -521,3 +521,58 @@ class TestDeploy:
         assert second.version_id != first.version_id
         assert entry(second, "activity", "agent").action == "replace"
         assert await counts(session, organization) == [2, 2, 1, 2, 2, 2]
+
+
+SEMANTIC_SIGNAL: dict[str, Any] = {
+    "slug": "abuse",
+    "kind": "semantic",
+    "meter": "tokens",
+    "when": "Is this identity abusing the service?",
+    "enter_above": 0.8,
+    "exit_below": 0.4,
+}
+METER_SIGNAL: dict[str, Any] = {
+    "slug": "low-balance",
+    "kind": "meter",
+    "meter": "tokens",
+    "enter_below": 100,
+    "exit_at_least": 500,
+}
+
+
+@pytest.mark.asyncio
+class TestDeploySignals:
+    async def test_signals_are_stored_on_the_configuration(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        config = DeployCreate.model_validate(
+            {**deepcopy(CONFIG), "signals": [METER_SIGNAL, SEMANTIC_SIGNAL]}
+        )
+        result = await deploy_service.deploy(session, organization.id, config)
+        deployment = await deploy_service.for_version(
+            session, organization.id, result.version_id
+        )
+        assert deployment is not None
+        assert deployment.configuration is not None
+        stored = {s["slug"]: s for s in deployment.configuration["signals"]}
+        assert set(stored) == {"abuse", "low-balance"}
+        assert stored["abuse"]["when"] == SEMANTIC_SIGNAL["when"]
+        assert stored["abuse"]["over"] == {"amount": 1, "unit": "hour"}
+
+    async def test_signal_referencing_an_unknown_meter_is_rejected(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        config = DeployCreate.model_validate(
+            {**deepcopy(CONFIG), "signals": [{**SEMANTIC_SIGNAL, "meter": "ghost"}]}
+        )
+        with pytest.raises(InvalidDeployment):
+            await deploy_service.deploy(session, organization.id, config)
+
+    async def test_duplicate_signal_keys_are_rejected(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        config = DeployCreate.model_validate(
+            {**deepcopy(CONFIG), "signals": [METER_SIGNAL, {**SEMANTIC_SIGNAL, "slug": "low-balance"}]}
+        )
+        with pytest.raises(InvalidDeployment):
+            await deploy_service.deploy(session, organization.id, config)

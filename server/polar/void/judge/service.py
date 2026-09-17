@@ -14,9 +14,10 @@ from uuid import UUID
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import VoidEvent, VoidJudgment
+from polar.models import VoidDeployment, VoidEvent, VoidJudgment
 from polar.postgres import AsyncSession
 from polar.void.activity.service import event_metadata, state_hash
+from polar.void.deploy.repository import DeployRepository
 from polar.void.event.repository import EventRepository
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.service import meter as meter_service
@@ -26,7 +27,7 @@ from polar.void.reducer.repository import ReducerRepository
 from polar.void.typesafe import Judge, TypeSafe, TypeSafeError
 
 from .repository import JudgmentRepository
-from .schemas import Evidence, JudgeRequest, Judgment
+from .schemas import Evidence, JudgeRequest, JudgeWindow, Judgment
 
 MIN_INTERVAL = timedelta(seconds=60)
 EVENT_FETCH_CAP = 1000
@@ -111,9 +112,55 @@ def summarize(matched: Sequence[Matched]) -> Evidence:
     )
 
 
+def _semantic_signal(
+    configuration: Mapping[str, Any] | None, slug: str
+) -> Mapping[str, Any] | None:
+    """The deployed semantic signal with this slug, or None."""
+    if configuration is None:
+        return None
+    for signal in configuration.get("signals", []):
+        if signal.get("slug") == slug and signal.get("kind") == "semantic":
+            return signal
+    return None
+
+
 class JudgeService:
     def __init__(self, judge: Judge | None = None) -> None:
         self.jev = judge or TypeSafe()
+
+    async def _criteria(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        request: JudgeRequest,
+        version_id: str,
+        deployment: VoidDeployment | None,
+    ) -> tuple[str, str, JudgeWindow]:
+        """The meter, question and window to judge: from the deployed signal
+        when `signal` names one, otherwise the inline request fields (a signal
+        that isn't deployed yet, or a raw caller judging ad hoc)."""
+        signal: Mapping[str, Any] | None = None
+        if request.signal is not None:
+            if deployment is None or deployment.version_id != version_id:
+                deployment = await DeployRepository.from_session(session).by_version(
+                    organization_id, version_id
+                )
+            signal = _semantic_signal(
+                deployment.configuration if deployment is not None else None,
+                request.signal,
+            )
+        if signal is not None:
+            over = signal["over"]
+            return (
+                signal["meter"],
+                signal["when"],
+                JudgeWindow(amount=over["amount"], unit=over["unit"]),
+            )
+        if request.meter is not None and request.when is not None:
+            return request.meter, request.when, request.over
+        raise ResourceNotFound(
+            f"No semantic signal {request.signal!r} in version {version_id[:12]}."
+        )
 
     async def judge(
         self,
@@ -122,15 +169,19 @@ class JudgeService:
         identity_id: str,
         request: JudgeRequest,
         version_id: str | None,
+        deployment: VoidDeployment | None = None,
     ) -> Judgment:
         if version_id is None:
             raise ResourceNotFound("No active deployment to judge against.")
+        meter_slug, when, over = await self._criteria(
+            session, organization_id, request, version_id, deployment
+        )
         meter = meters_in_version(
             await meter_service.list(session, organization_id), version_id
-        ).get(request.meter)
+        ).get(meter_slug)
         if meter is None:
             raise ResourceNotFound(
-                f"No meter {request.meter!r} in version {version_id[:12]}."
+                f"No meter {meter_slug!r} in version {version_id[:12]}."
             )
         reducer = await ReducerRepository.from_session(session).get_scoped(
             organization_id, meter.usage_reducer_id
@@ -141,7 +192,7 @@ class JudgeService:
         root = await identity_service.root_of(session, identity)
         subtree = await identity_service.subtree(session, identity)
         now = utc_now()
-        start = now - timedelta(seconds=request.over.seconds)
+        start = now - timedelta(seconds=over.seconds)
         matcher = EventMatcher(reducer.filter)
         matched: list[Matched] = []
         for event in await EventRepository.from_session(session).list_window(
@@ -164,20 +215,20 @@ class JudgeService:
             }
         )
         question = state_hash(
-            {"when": request.when, "over": request.over.model_dump(mode="json")}
+            {"when": when, "over": over.model_dump(mode="json")}
         )
         repository = JudgmentRepository.from_session(session)
         current = await repository.get(
-            organization_id, version_id, identity_id, request.meter, question
+            organization_id, version_id, identity_id, meter_slug, question
         )
 
         def reply(row: VoidJudgment) -> Judgment:
             return Judgment(
                 identity_id=identity_id,
                 root_id=root.external_id,
-                meter=request.meter,
-                when=request.when,
-                over=request.over,
+                meter=meter_slug,
+                when=when,
+                over=over,
                 noul=row.noul,
                 model=row.model,
                 judged_at=row.judged_at,
@@ -199,7 +250,7 @@ class JudgeService:
                 organization_id=organization_id,
                 version_id=version_id,
                 external_identity_id=identity_id,
-                meter_slug=request.meter,
+                meter_slug=meter_slug,
                 question_hash=question,
                 state_hash=digest,
                 evidence=dumped,
@@ -212,9 +263,9 @@ class JudgeService:
             if matched:
                 result = await self.jev.judge(
                     {
-                        "when": request.when,
+                        "when": when,
                         "window": {
-                            **request.over.model_dump(mode="json"),
+                            **over.model_dump(mode="json"),
                             "start": start.isoformat(),
                             "end": now.isoformat(),
                         },
@@ -230,7 +281,7 @@ class JudgeService:
                         },
                         "evidence": dumped,
                     },
-                    request.when,
+                    when,
                 )
                 current.noul, current.model = result.noul, result.model
             else:

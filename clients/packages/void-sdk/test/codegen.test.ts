@@ -24,6 +24,8 @@ import {
   on,
   oneTime,
   product,
+  recent,
+  signal,
   sum,
 } from '../src/config/index'
 
@@ -50,6 +52,11 @@ const purchase = event<{ amount: number; note: string }>('corner.purchase')
 const bytes = sum('corner-bytes', page, 'bytes')
 const granted = sum('corner-granted', purchase, 'amount')
 const okCount = count('corner-ok', on(page, { status: 'ok' }))
+// A meter referenced only by signals still round-trips.
+const signalMeter = meter('corner-signal-meter', {
+  reducer: bytes,
+  price: money('eur', 0.1),
+})
 // A slug that collides with a helper.
 const sumEntitlement = entitlement('sum', {
   description: 'Named like a helper',
@@ -88,6 +95,20 @@ const cornerCases = defineConfig({
       name: 'Lifetime',
       price: oneTime({ amount: money('eur', 199) }),
       entitlements: [sumEntitlement],
+    }),
+    // A meter signal (default field) and a semantic signal with a custom window.
+    lowSignal: signal('corner-low', {
+      meter: signalMeter,
+      field: 'remaining',
+      enter: { below: 100 },
+      exit: { atLeast: 500 },
+    }),
+    abuseSignal: signal('corner-abuse', {
+      meter: signalMeter,
+      when: 'Is this identity abusing the service?',
+      over: recent(2, 'day'),
+      enter: { above: 0.9 },
+      exit: { below: 0.3 },
     }),
   },
 })

@@ -701,6 +701,9 @@ export const judgeSignal = Effect.fn('Scope.judgeSignal')(function* (
   const { meter, when, over } = ref.definition
   return yield* api.identitiesJudge(id, {
     payload: {
+      // The server resolves the criterion from the deployed signal by key;
+      // the inline fields stay as a fallback for undeployed or preview configs.
+      signal: ref.key,
       meter: meter.key,
       when,
       over: { amount: over.amount, unit: over.unit },

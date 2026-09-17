@@ -13,6 +13,9 @@ import {
   type ProductDef,
   type AnyReducer,
   type ActivityDef,
+  type DurationUnit,
+  type SignalRef,
+  isMeterSignal,
 } from './schema'
 
 /**
@@ -85,6 +88,29 @@ export interface IrActivity {
   run_by?: string
   taxonomy: string
 }
+export interface IrSignalWindow {
+  amount: number
+  unit: DurationUnit
+}
+/** Thresholds are latched client-side; deployed for the dashboard to list. */
+export interface IrMeterSignal {
+  slug: string
+  kind: 'meter'
+  meter: string
+  enter_below: number
+  exit_at_least: number
+}
+/** The `when` prompt is deployed so the judge endpoint can resolve it by slug. */
+export interface IrSemanticSignal {
+  slug: string
+  kind: 'semantic'
+  meter: string
+  when: string
+  over: IrSignalWindow
+  enter_above: number
+  exit_below: number
+}
+export type IrSignal = IrMeterSignal | IrSemanticSignal
 export interface Ir {
   version: 4
   events: IrEvent[]
@@ -93,6 +119,7 @@ export interface Ir {
   entitlements: IrEntitlement[]
   products: IrProduct[]
   activities?: IrActivity[]
+  signals?: IrSignal[]
 }
 
 const isComparison = (value: unknown): value is Comparison =>
@@ -207,6 +234,28 @@ const compileActivity = (activity: ActivityDef): IrActivity => ({
   taxonomy: activity.taxonomy,
 })
 
+const compileSignal = (signal: SignalRef): IrSignal =>
+  isMeterSignal(signal)
+    ? {
+        slug: signal.key,
+        kind: 'meter',
+        meter: signal.definition.meter.key,
+        enter_below: signal.definition.enter.below,
+        exit_at_least: signal.definition.exit.atLeast,
+      }
+    : {
+        slug: signal.key,
+        kind: 'semantic',
+        meter: signal.definition.meter.key,
+        when: signal.definition.when,
+        over: {
+          amount: signal.definition.over.amount,
+          unit: signal.definition.over.unit,
+        },
+        enter_above: signal.definition.enter.above,
+        exit_below: signal.definition.exit.below,
+      }
+
 export const compile = (config: Config): Ir => {
   return {
     version: 4,
@@ -225,6 +274,9 @@ export const compile = (config: Config): Ir => {
     products: config.products.map(compileProduct).sort(bySlug),
     ...(config.activities.length
       ? { activities: config.activities.map(compileActivity).sort(bySlug) }
+      : {}),
+    ...(config.signals.length
+      ? { signals: config.signals.map(compileSignal).sort(bySlug) }
       : {}),
   }
 }

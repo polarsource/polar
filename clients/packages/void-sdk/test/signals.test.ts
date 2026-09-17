@@ -255,10 +255,18 @@ function setup(sqlite = true, signalRefreshInterval?: number) {
   }
 }
 
-it('collects signal dependencies but does not deploy or checksum thresholds', () => {
+it('collects signal dependencies and deploys and checksums thresholds', () => {
   const config = defineConfig({ schema: { budgetLow } })
   expect(config.meters).toEqual([credits])
-  expect(compile(config)).not.toHaveProperty('signals')
+  expect(compile(config).signals).toEqual([
+    {
+      slug: 'budget-low',
+      kind: 'meter',
+      meter: 'credits',
+      enter_below: 100,
+      exit_at_least: 150,
+    },
+  ])
   const changed = defineConfig({
     schema: {
       budgetLow: signal('budget-low', {
@@ -267,7 +275,8 @@ it('collects signal dependencies but does not deploy or checksum thresholds', ()
       }),
     },
   })
-  expect(checksumOf(changed)).toBe(checksumOf(config))
+  expect(checksumOf(changed)).not.toBe(checksumOf(config))
+  // signalRefreshInterval is runtime-only and does not change the checksum.
   const tuned = defineConfig({
     schema: { budgetLow },
     signalRefreshInterval: 5000,

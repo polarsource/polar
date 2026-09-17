@@ -14,6 +14,7 @@ import {
   oneTime,
   product,
   recurring,
+  signal,
   sum,
   unlimited,
   usd,
@@ -396,4 +397,41 @@ it('metadata declarations are type-only and do not enter the deploy checksum', (
     checksum(compile(defineConfig({ schema: { purchase: before } }))),
     checksum(compile(defineConfig({ schema: { purchase: after } }))),
   )
+})
+
+it('signals compile into the IR and change the checksum', () => {
+  const lowBalance = signal('low-balance', {
+    meter: tokens,
+    field: 'remaining',
+    enter: { below: 100 },
+    exit: { atLeast: 500 },
+  })
+  const abuse = signal('abuse', {
+    meter: tokens,
+    when: 'Is this identity abusing the service?',
+    enter: { above: 0.8 },
+    exit: { below: 0.4 },
+  })
+  const base = compile(defineConfig({ schema }))
+  assert.equal(base.signals, undefined)
+  const ir = compile(defineConfig({ schema: { ...schema, lowBalance, abuse } }))
+  assert.deepEqual(ir.signals, [
+    {
+      slug: 'abuse',
+      kind: 'semantic',
+      meter: 'tokens',
+      when: 'Is this identity abusing the service?',
+      over: { amount: 1, unit: 'hour' },
+      enter_above: 0.8,
+      exit_below: 0.4,
+    },
+    {
+      slug: 'low-balance',
+      kind: 'meter',
+      meter: 'tokens',
+      enter_below: 100,
+      exit_at_least: 500,
+    },
+  ])
+  assert.notEqual(checksum(base), checksum(ir))
 })

@@ -1,0 +1,63 @@
+---
+title: "ADR-0010: Signals are part of the deployed configuration"
+description: "Void signals compile into the deployment IR so the dashboard can list them and the judge endpoint can resolve semantic criteria server-side."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-09-17
+</Info>
+
+## Context
+
+Every Void `define*` primitive — events, reducers, meters, entitlements, products,
+activities — compiles into the deployment IR and is stored on the deployment's
+`configuration`, which is what the dashboard reads. Signals are the exception: both
+meter and semantic signals live only in the SDK, so the dashboard cannot show which
+signals a deployment defines. Worse, a semantic signal sends its full criterion (the
+`when` prompt, `meter`, and window) inline to `POST /identities/{id}/judge` on every
+call, so the server trusts a client-supplied prompt string it can neither attribute to
+a named signal nor validate against the deployment.
+
+## Decision
+
+Compile signals into the deployment IR alongside the other primitives, and let the judge
+endpoint resolve a semantic signal's criterion from the deployed definition by
+`(version_id, signal key)` — keeping the inline criterion only as a fallback for
+undeployed or preview configs.
+
+## Consequences
+
+- The dashboard can list a deployment's signals from `configuration`, closing the one
+  gap where a first-class primitive was invisible.
+- Semantic judgments key on the deployed criterion, not a string the caller happened to
+  send: the server can validate the signal exists, attribute the judgment to a named
+  signal, and stop trusting arbitrary client prompts.
+- Signals become **version-gated**: changing a semantic `when` prompt or a threshold now
+  requires a deployment, not just shipping new SDK code. This is intended — a semantic
+  criterion is billing-affecting logic and belongs under the same version gate as prices.
+- Meter-signal thresholds are persisted for **display only**; classification stays
+  client-side arithmetic over the reconciled balance, exactly as before.
+- Signals are omitted from the IR and the configuration hash when a config defines none,
+  so existing deployments' `version_id`s are unchanged; only configs that actually add a
+  signal get a new version.
+
+## Alternatives considered
+
+- **Display-only persistence (store signals, keep judge inline)**: satisfies the
+  dashboard but leaves the server trusting client-supplied prompts and unable to
+  attribute judgments. Rejected because the semantic-signal trust gap is the more
+  valuable half of the change.
+- **A separate signals table**: signals are part of a configuration version's identity,
+  so they belong in the versioned `configuration` blob with every other primitive, not
+  in a mutable side table.
+
+## References
+
+- SDK: `clients/packages/void-sdk/src/config/compile.ts` (`compileSignal`, `IrSignal`),
+  `src/storage/reconcile.ts` (`judgeSignal`).
+- Backend: `server/polar/void/deploy/schemas.py` (`DeploySignal`),
+  `server/polar/void/deploy/config_hash.py`, `server/polar/void/judge/`.

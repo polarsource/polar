@@ -39,6 +39,7 @@ const HELPERS = [
   'on',
   'oneTime',
   'product',
+  'recent',
   'recurring',
   'signal',
   'sum',
@@ -295,7 +296,7 @@ const meterDefinition = (
 /**
  * Best-effort TypeScript for an IR, in one canonical form per definition.
  * The result compiles back to the same IR except where a comment says
- * otherwise. Meter names, plugins, signals and event storage are not part of
+ * otherwise. Meter names, plugins and event storage are not part of
  * the deployed configuration and are not recovered.
  */
 export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
@@ -432,10 +433,39 @@ export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
       `${e.use('activities')}({\n  ${fields.join(',\n  ')},\n})`,
     )
   }
+  for (const signal of ir.signals ?? []) {
+    const meterName = names.of('meter', signal.meter)
+    const fields =
+      signal.kind === 'meter'
+        ? [
+            `meter: ${meterName}`,
+            `field: 'remaining'`,
+            `enter: { below: ${signal.enter_below} }`,
+            `exit: { atLeast: ${signal.exit_at_least} }`,
+          ]
+        : [
+            `meter: ${meterName}`,
+            `when: ${str(signal.when)}`,
+            ...(signal.over.amount === 1 && signal.over.unit === 'hour'
+              ? []
+              : [
+                  `over: ${e.use('recent')}(${signal.over.amount}, ${str(
+                    signal.over.unit,
+                  )})`,
+                ]),
+            `enter: { above: ${signal.enter_above} }`,
+            `exit: { below: ${signal.exit_below} }`,
+          ]
+    define(
+      'signal',
+      signal.slug,
+      `${e.use('signal')}(${str(signal.slug)}, {\n  ${fields.join(',\n  ')},\n})`,
+    )
+  }
 
   const header = [
     `// Pulled from Polar Void${options.source ? `: ${options.source}` : ''}.`,
-    '// Best effort: meter names, plugins, signals and event storage are',
+    '// Best effort: meter names, plugins and event storage are',
     '// not part of the deployed configuration. Review any TODO',
     '// before deploying.',
   ]

@@ -5519,6 +5519,28 @@
             "type": "array",
             "title": "Activities",
             "default": []
+          },
+          "signals": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DeployMeterSignal"
+                },
+                {
+                  "$ref": "#/components/schemas/DeploySemanticSignal"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "meter": "#/components/schemas/DeployMeterSignal",
+                  "semantic": "#/components/schemas/DeploySemanticSignal"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Signals",
+            "default": []
           }
         },
         "type": "object",
@@ -5565,6 +5587,28 @@
             },
             "type": "array",
             "title": "Activities",
+            "default": []
+          },
+          "signals": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DeployMeterSignal"
+                },
+                {
+                  "$ref": "#/components/schemas/DeploySemanticSignal"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "meter": "#/components/schemas/DeployMeterSignal",
+                  "semantic": "#/components/schemas/DeploySemanticSignal"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Signals",
             "default": []
           },
           "checksum": {
@@ -5644,6 +5688,28 @@
             },
             "type": "array",
             "title": "Activities",
+            "default": []
+          },
+          "signals": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DeployMeterSignal"
+                },
+                {
+                  "$ref": "#/components/schemas/DeploySemanticSignal"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "meter": "#/components/schemas/DeployMeterSignal",
+                  "semantic": "#/components/schemas/DeploySemanticSignal"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Signals",
             "default": []
           },
           "checksum": {
@@ -5897,6 +5963,48 @@
           "unit_amount"
         ],
         "title": "DeployMeter"
+      },
+      "DeployMeterSignal": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "kind": {
+            "type": "string",
+            "const": "meter",
+            "title": "Kind"
+          },
+          "meter": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Meter",
+            "description": "Slug of the meter whose remaining balance the thresholds read."
+          },
+          "enter_below": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Enter Below",
+            "description": "Active once remaining drops below this."
+          },
+          "exit_at_least": {
+            "type": "number",
+            "title": "Exit At Least",
+            "description": "Inactive once remaining is at least this."
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "kind",
+          "meter",
+          "enter_below",
+          "exit_at_least"
+        ],
+        "title": "DeployMeterSignal"
       },
       "DeployProduct-Input": {
         "properties": {
@@ -6227,6 +6335,59 @@
           "aggregation"
         ],
         "title": "DeployReducer"
+      },
+      "DeploySemanticSignal": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Slug"
+          },
+          "kind": {
+            "type": "string",
+            "const": "semantic",
+            "title": "Kind"
+          },
+          "meter": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Meter",
+            "description": "Slug of the meter whose recent events Jev reads."
+          },
+          "when": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "When",
+            "description": "The question Jev answers with a noul, verbatim."
+          },
+          "over": {
+            "$ref": "#/components/schemas/JudgeWindow",
+            "description": "How far back the events go. Defaults to the last hour."
+          },
+          "enter_above": {
+            "type": "number",
+            "title": "Enter Above",
+            "description": "Active once the noul rises above this."
+          },
+          "exit_below": {
+            "type": "number",
+            "title": "Exit Below",
+            "description": "Inactive once the noul falls below this."
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "kind",
+          "meter",
+          "when",
+          "enter_above",
+          "exit_below"
+        ],
+        "title": "DeploySemanticSignal"
       },
       "DeploymentConflict": {
         "properties": {
@@ -7316,19 +7477,47 @@
       "JsonValue": {},
       "JudgeRequest": {
         "properties": {
+          "signal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal",
+            "description": "Key of a deployed semantic signal. When set, the meter, question and window come from the deployed definition and the inline fields below are ignored."
+          },
           "meter": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z0-9][a-z0-9_-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Meter",
-            "description": "Slug of the meter whose recent events Jev reads."
+            "description": "Slug of the meter whose recent events Jev reads. Required unless `signal` is set."
           },
           "when": {
-            "type": "string",
-            "maxLength": 512,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "When",
-            "description": "The question Jev answers with a noul, verbatim."
+            "description": "The question Jev answers with a noul, verbatim. Required unless `signal` is set."
           },
           "over": {
             "$ref": "#/components/schemas/JudgeWindow",
@@ -7349,10 +7538,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "meter",
-          "when"
-        ],
         "title": "JudgeRequest"
       },
       "JudgeWindow": {

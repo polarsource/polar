@@ -435,7 +435,15 @@ layer(
     assert.equal(method, 'POST')
     assert.equal(path, '/v1/void/deploys')
     assert.notProperty(body, 'version_id')
-    assert.notProperty(body, 'signals')
+    expect((body as { signals?: unknown }).signals).toEqual([
+      {
+        slug: 'budget-low',
+        kind: 'meter',
+        meter: 'tokens',
+        enter_below: 100,
+        exit_at_least: 150,
+      },
+    ])
     expect(body).toMatchObject({
       products: [
         {
@@ -491,13 +499,24 @@ layer(
     const payload = body as {
       activities?: unknown
       meters: ReadonlyArray<{ slug: string }>
+      signals?: unknown
     }
     expect(payload.activities).toMatchObject([
       { slug: 'agent', event: 'ai_call', group_by: 'call_id' },
     ])
     expect(payload.meters.map((m) => m.slug)).toEqual(['tokens'])
     assert.notProperty(payload, 'senses')
-    assert.notProperty(payload, 'signals')
+    expect(payload.signals).toEqual([
+      {
+        slug: 'retry-storm',
+        kind: 'semantic',
+        meter: 'tokens',
+        when: 'retries, not progress',
+        over: { amount: 1, unit: 'hour' },
+        enter_above: 0.7,
+        exit_below: 0.4,
+      },
+    ])
     return {
       id: null,
       checksum: 'c',
@@ -510,7 +529,7 @@ layer(
     }
   }),
 )((it) => {
-  it.effect('deploys a semantic signal as its meter only', () =>
+  it.effect('deploys a semantic signal with its criterion', () =>
     Effect.gen(function* () {
       const completion = event<{ tokens: number }>('ai_call')
       const agent = activities({ source: completion })

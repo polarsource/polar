@@ -2,12 +2,14 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.void.deploy.repository import DeployRepository
 from polar.void.judge.schemas import JudgeRequest, JudgeWindow
 from polar.void.judge.service import MIN_INTERVAL, JudgeService
 from polar.void.typesafe import TypeSafeError
@@ -16,6 +18,15 @@ from tests.void.conftest import VERSION
 from .conftest import WHEN, FixedJudge, Tree, completion, ingest
 
 REQUEST = JudgeRequest(meter="tokens", when=WHEN)
+
+
+def test_request_requires_a_signal_or_inline_criteria() -> None:
+    JudgeRequest(signal="abuse")
+    JudgeRequest(meter="tokens", when=WHEN)
+    with pytest.raises(ValidationError):
+        JudgeRequest(meter="tokens")
+    with pytest.raises(ValidationError):
+        JudgeRequest()
 
 
 class Boom:
@@ -161,3 +172,60 @@ class TestJudge:
             )
         with pytest.raises(ResourceNotFound):
             await service.judge(session, organization.id, "root", REQUEST, None)
+
+
+@pytest.mark.asyncio
+class TestSignalResolution:
+    async def _deploy_signal(
+        self, session: AsyncSession, organization: Organization, **signal: Any
+    ) -> None:
+        deployment = await DeployRepository.from_session(session).active(
+            organization.id
+        )
+        assert deployment is not None
+        deployment.configuration = {
+            "signals": [
+                {
+                    "slug": "abuse",
+                    "kind": "semantic",
+                    "meter": "tokens",
+                    "when": WHEN,
+                    "over": {"amount": 1, "unit": "hour"},
+                    "enter_above": 0.8,
+                    "exit_below": 0.4,
+                    **signal,
+                }
+            ]
+        }
+        await session.flush()
+
+    async def test_resolves_criteria_from_the_deployed_signal(
+        self, session: AsyncSession, organization: Organization, tree: Tree
+    ) -> None:
+        await self._deploy_signal(session, organization)
+        await ingest(session, organization, completion("e1", minutes_ago=2))
+        jev = FixedJudge()
+        result = await JudgeService(jev).judge(
+            session,
+            organization.id,
+            "root",
+            JudgeRequest(signal="abuse"),
+            VERSION,
+        )
+        assert result.meter == "tokens"
+        assert result.when == WHEN
+        assert result.noul == 0.81
+        assert jev.calls == 1
+
+    async def test_unknown_signal_is_not_found(
+        self, session: AsyncSession, organization: Organization, tree: Tree
+    ) -> None:
+        await self._deploy_signal(session, organization)
+        with pytest.raises(ResourceNotFound):
+            await JudgeService(FixedJudge()).judge(
+                session,
+                organization.id,
+                "root",
+                JudgeRequest(signal="ghost"),
+                VERSION,
+            )

@@ -50,8 +50,8 @@ ls handbook/engineering/decisions/[0-9]*.mdx
 Read each one. For every ADR with **Status: Accepted**, extract its **Decision**
 (the rule) and its **Area** (Backend, Frontend, Infra, or Cross-cutting). Apply an
 ADR only to files in its Area: a frontend ADR does not apply to `server/`, and vice
-versa. Reading the ADRs each run keeps the check current as ADRs are added or
-superseded.
+versa. Reading the ADRs each run keeps the check current as ADRs are added, edited
+or superseded.
 
 ### 3. Check each relevant ADR against the diff
 

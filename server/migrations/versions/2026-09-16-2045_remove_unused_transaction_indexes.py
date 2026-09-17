@@ -1,7 +1,7 @@
 """remove unused transaction indexes
 
-Revision ID: 0ca20ea806d4
-Revises: 38a9961f9d09
+Revision ID: 1e1927f940ee
+Revises: 0ca20ea806d4
 Create Date: 2026-09-16 20:45:52.552650
 
 """

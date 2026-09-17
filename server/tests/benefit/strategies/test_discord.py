@@ -1,8 +1,10 @@
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.benefit.strategies import BenefitPropertiesValidationError
+from polar.benefit.strategies.discord.schemas import BenefitDiscordCreateProperties
 from polar.benefit.strategies.discord.service import BenefitDiscordService
 from polar.integrations.discord.schemas import DiscordGuild, DiscordGuildRole
 from polar.models import DiscordGuildConnection, Organization, User, UserOrganization
@@ -114,3 +116,16 @@ class TestValidateProperties:
         )
 
         assert properties["guild_id"] == GUILD_ID
+
+
+class TestCreateProperties:
+    def test_guild_id(self) -> None:
+        properties = BenefitDiscordCreateProperties.model_validate(_PROPERTIES)
+
+        assert properties.model_dump(mode="json") == _PROPERTIES
+
+    def test_guild_id_missing(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitDiscordCreateProperties.model_validate(
+                {"role_id": ROLE_ID, "kick_member": False}
+            )

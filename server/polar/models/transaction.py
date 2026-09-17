@@ -208,6 +208,12 @@ class Transaction(RecordModel):
     __tablename__ = "transactions"
     __table_args__ = (
         Index(
+            "ix_transactions_account_type_amount",
+            "account_id",
+            "type",
+            postgresql_include=["amount"],
+        ),
+        Index(
             "ix_payment_charge_id_uniqueness",
             "type",
             "charge_id",

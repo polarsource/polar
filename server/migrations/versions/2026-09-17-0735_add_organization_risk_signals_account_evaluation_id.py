@@ -30,7 +30,10 @@ def upgrade() -> None:
     )
 
     with op.get_context().autocommit_block():
-        op.execute("SET lock_timeout = '5s'")
+        # CREATE INDEX CONCURRENTLY waits for every concurrent transaction in the
+        # database to finish, whatever table it touches, so it needs far more
+        # headroom than the 5s we use for lock-taking DDL.
+        op.execute("SET lock_timeout = '5min'")
         try:
             # Drop any INVALID leftover from an interrupted concurrent build first.
             op.drop_index(
@@ -55,7 +58,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
-        op.execute("SET lock_timeout = '5s'")
+        op.execute("SET lock_timeout = '5min'")
         try:
             op.drop_index(
                 INDEX_NAME,

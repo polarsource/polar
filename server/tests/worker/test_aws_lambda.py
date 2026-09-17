@@ -1,5 +1,6 @@
 import importlib
 import sys
+import time
 from collections.abc import Iterator
 from types import ModuleType
 
@@ -10,6 +11,7 @@ from logfire.integrations.structlog import LogfireProcessor
 from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 
+from polar.config import settings
 from polar.worker._sqs import build_envelope
 
 
@@ -84,3 +86,76 @@ class TestHandler:
             assert span.parent is not None
             assert span.context is not None
             assert span.context.trace_id == task_span.context.trace_id
+
+    def test_ignored_actor_debounce_log_is_suppressed(
+        self,
+        aws_lambda: ModuleType,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"dummy": mocker.AsyncMock()},
+        )
+        mocker.patch.object(settings, "LOGFIRE_IGNORED_ACTORS", {"dummy"})
+        mocker.patch("polar.worker._debounce.log", aws_lambda.log)
+        redis = mocker.Mock()
+        redis.hgetall = mocker.AsyncMock(
+            return_value={
+                "executed": "0",
+                "message_id": "other",
+                "enqueue_timestamp": str(int(time.time())),
+            }
+        )
+        mocker.patch("polar.worker._runner.RedisMiddleware.get", return_value=redis)
+        context = mocker.Mock()
+        context.get_remaining_time_in_millis.return_value = 30000
+        event = {
+            "Records": [
+                {
+                    "messageId": "message-1",
+                    "body": build_envelope(
+                        "dummy",
+                        (),
+                        {},
+                        "source-1",
+                        message_id="message-1",
+                        debounce_key="debounce:dummy",
+                    ),
+                    "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:test",
+                }
+            ]
+        }
+
+        assert aws_lambda.handler(event, context) == {"batchItemFailures": []}
+        assert capfire.exporter.exported_spans == []
+
+    def test_ignored_actor_failure_is_logged(
+        self,
+        aws_lambda: ModuleType,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"dummy": mocker.AsyncMock(side_effect=ValueError("boom"))},
+        )
+        mocker.patch.object(settings, "LOGFIRE_IGNORED_ACTORS", {"dummy"})
+        mocker.patch.object(aws_lambda, "send_delayed_message")
+        context = mocker.Mock()
+        context.get_remaining_time_in_millis.return_value = 30000
+        event = {
+            "Records": [
+                {
+                    "messageId": "message-1",
+                    "body": build_envelope("dummy", (), {}, "source-1"),
+                    "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:test",
+                }
+            ]
+        }
+
+        assert aws_lambda.handler(event, context) == {"batchItemFailures": []}
+        assert {span.name for span in capfire.exporter.exported_spans} == {
+            "polar.worker.sqs_task_failed",
+            "polar.worker.sqs_retry_reenqueued",
+        }

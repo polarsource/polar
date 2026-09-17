@@ -84,7 +84,7 @@ export const Chat = ({
         paddingVertical="s"
         borderBottomWidth={1}
         borderStyle="solid"
-        borderColor="border-primary"
+        borderColor="border-secondary"
       >
         <Avatar
           name={agent.name}
@@ -109,6 +109,9 @@ export const Chat = ({
         overflowY="auto"
         paddingHorizontal="l"
         paddingVertical="m"
+        maxWidth={760}
+        width="100%"
+        marginHorizontal="auto"
       >
         {messages.length === 0 && (
           <Box as="li">
@@ -141,11 +144,6 @@ export const Chat = ({
               rowGap="xs"
               marginRight="4xl"
               alignSelf="start"
-              borderRadius="l"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-              paddingHorizontal="l"
               paddingVertical="s"
             >
               {hasParts(message) ? (
@@ -179,7 +177,7 @@ export const Chat = ({
         padding="s"
         borderTopWidth={1}
         borderStyle="solid"
-        borderColor="border-primary"
+        borderColor="border-secondary"
       >
         <TextArea
           value={draft}

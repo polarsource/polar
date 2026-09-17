@@ -4,8 +4,8 @@ import { pct, usd } from '@/format'
 import type { Mix } from '@/activity'
 import { Pill, Text, type PillColor } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Card } from './Card'
 import { Meter } from './Meter'
+import { SectionLabel } from './SectionLabel'
 
 const ACTIVITY_COLOR = {
   plan: 'purple',
@@ -30,7 +30,7 @@ export const ActivityPill = ({ slug }: { slug: string }) => (
   </Pill>
 )
 
-export const MixCard = ({
+export const MixSection = ({
   title,
   taxonomy,
   mix,
@@ -39,27 +39,28 @@ export const MixCard = ({
   taxonomy: string
   mix: Mix
 }) => (
-  <Card flexDirection="column" rowGap="xs" padding="s">
-    <Box justifyContent="between" alignItems="baseline" columnGap="s">
-      <Text variant="caption" color="muted" as="h2">
-        {title}
-      </Text>
-      <Text variant="caption" color="muted" as="span">
-        Jev · {taxonomy}
-      </Text>
-    </Box>
+  <Box flexDirection="column" rowGap="s" width="100%">
+    <SectionLabel
+      aside={
+        <Text variant="caption" color="muted" as="span">
+          Jev {taxonomy}
+        </Text>
+      }
+    >
+      {title}
+    </SectionLabel>
     {mix.shares.length === 0 ? (
-      <Text variant="caption" color="muted">
+      <Text variant="caption" color="muted" style={{ paddingInline: 4 }}>
         {mix.pendingCost > 0 ? 'Classifying spans…' : 'No classified spans yet'}
       </Text>
     ) : (
-      <Box flexDirection="column" rowGap="s">
+      <Box flexDirection="column" rowGap="s" paddingHorizontal="xs">
         {mix.shares.map((share) => (
           <Box key={share.slug} flexDirection="column" rowGap="xs">
             <Box justifyContent="between" alignItems="center" columnGap="s">
               <ActivityPill slug={share.slug} />
               <Text variant="caption" color="muted" as="span" tabularNums>
-                {pct(share.share)} · {share.spans}
+                {pct(share.share)}, {share.spans} spans
               </Text>
             </Box>
             <Meter
@@ -72,11 +73,17 @@ export const MixCard = ({
       </Box>
     )}
     {(mix.pendingCost > 0 || mix.unlabeledCost > 0) && (
-      <Text variant="caption" color="muted" as="span" tabularNums>
+      <Text
+        variant="caption"
+        color="muted"
+        as="span"
+        tabularNums
+        style={{ paddingInline: 4 }}
+      >
         {mix.pendingCost > 0 && `pending ${usd(mix.pendingCost)}`}
-        {mix.pendingCost > 0 && mix.unlabeledCost > 0 && ' · '}
+        {mix.pendingCost > 0 && mix.unlabeledCost > 0 && ', '}
         {mix.unlabeledCost > 0 && `unlabeled ${usd(mix.unlabeledCost)}`}
       </Text>
     )}
-  </Card>
+  </Box>
 )

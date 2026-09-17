@@ -25,7 +25,7 @@ export const CreditBar = ({
   const spent = shown.remaining === 0
   const share = Math.min(100, (shown.usage / limit) * 100)
   return (
-    <Box flexDirection="column" rowGap="xs">
+    <Box flexDirection="column" rowGap="xs" width="100%">
       <Box justifyContent="between" alignItems="baseline" columnGap="m">
         <Text
           variant="caption"

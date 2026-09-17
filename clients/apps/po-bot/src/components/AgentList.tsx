@@ -6,20 +6,20 @@ import { Avatar, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Card } from './Card'
 import { useLive } from './Live'
 
+/** Flat rows like the dashboard's navigation: tinted on hover and when open. */
 export const AgentList = ({ agents }: { agents: readonly Agent[] }) => {
   const { agentId } = useParams<{ agentId?: string }>()
   const { member } = useLive()
   if (agents.length === 0)
     return (
-      <Text color="muted" style={{ paddingInline: 4 }}>
+      <Text variant="caption" color="muted" style={{ paddingInline: 8 }}>
         No agents yet. Create one below.
       </Text>
     )
   return (
-    <Box as="ul" flexDirection="column" rowGap="s" width="100%">
+    <Box as="ul" flexDirection="column" rowGap="none" width="100%">
       {agents.map((agent) => {
         const active = agent.id === agentId
         const used =
@@ -30,22 +30,20 @@ export const AgentList = ({ agents }: { agents: readonly Agent[] }) => {
               href={`/members/${agent.memberId}/agents/${agent.id}`}
               style={{ display: 'contents' }}
             >
-              <Card
+              <Box
+                className="nav-row"
+                data-active={active}
                 alignItems="center"
                 columnGap="s"
-                padding="s"
-                backgroundColor={{
-                  base: active ? 'background-card' : 'background-primary',
-                  hover: 'background-card',
-                }}
-                transitionProperty="colors"
-                transitionDuration="fast"
+                paddingHorizontal="s"
+                paddingVertical="xs"
+                borderRadius="m"
                 cursor="pointer"
               >
                 <Avatar
                   name={agent.name}
                   avatar_url={null}
-                  className="h-7 w-7 text-xs"
+                  className="h-6 w-6 text-[10px]"
                 />
                 <Box flexDirection="column" minWidth={0} flex={1}>
                   <Text variant="caption" truncate>
@@ -58,7 +56,7 @@ export const AgentList = ({ agents }: { agents: readonly Agent[] }) => {
                 <Pill color="gray" className="font-mono text-[10px]">
                   {shortModel(agent.model)}
                 </Pill>
-              </Card>
+              </Box>
             </Link>
           </Box>
         )

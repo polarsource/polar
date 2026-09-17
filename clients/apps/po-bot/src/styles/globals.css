@@ -249,6 +249,7 @@
   }
 
   body {
+    background: var(--background);
     color: var(--foreground);
     text-rendering: optimizeLegibility;
     letter-spacing: 0.015em;
@@ -260,7 +261,7 @@
 
 @layer base {
   :root {
-    --background: var(--color-gray-50);
+    --background: var(--color-gray-100);
     --foreground: var(--color-gray-900);
 
     --card: var(--color-white);
@@ -269,8 +270,8 @@
     --popover: var(--color-white);
     --popover-foreground: hsl(224 71.4% 4.1%);
 
-    --primary: var(--color-blue);
-    --primary-foreground: var(--color-gray-50);
+    --primary: var(--color-gray-900);
+    --primary-foreground: var(--color-white);
 
     --secondary: var(--color-gray-100);
     --secondary-foreground: var(--color-gray-900);
@@ -278,7 +279,7 @@
     --muted: var(--color-gray-100);
     --muted-foreground: var(--color-gray-500);
 
-    --accent: var(--color-blue);
+    --accent: var(--color-indigo-500);
     --accent-foreground: var(--color-white);
 
     --destructive: var(--color-red-500);
@@ -298,8 +299,8 @@
   }
 
   :root.dark {
-    --background: var(--color-polar-900);
-    --foreground: var(--color-polar-500);
+    --background: var(--color-polar-950);
+    --foreground: var(--color-polar-50);
 
     --card: var(--color-polar-800);
     --card-foreground: var(--color-polar-50);
@@ -307,8 +308,8 @@
     --popover: var(--color-polar-900);
     --popover-foreground: var(--color-polar-50);
 
-    --primary: var(--color-blue);
-    --primary-foreground: var(--color-polar-50);
+    --primary: var(--color-white);
+    --primary-foreground: var(--color-polar-950);
 
     --secondary: var(--color-polar-900);
     --secondary-foreground: var(--color-polar-50);
@@ -316,8 +317,8 @@
     --muted: var(--color-polar-700);
     --muted-foreground: var(--color-polar-500);
 
-    --accent: var(--color-blue);
-    --accent-foreground: var(--color-polar-50);
+    --accent: var(--color-indigo-500);
+    --accent-foreground: var(--color-white);
 
     --destructive: var(--color-red-500);
     --destructive-foreground: var(--color-red-500);
@@ -343,9 +344,8 @@
 .pulse-dot {
   opacity: 0;
   offset-rotate: 0deg;
-  background: var(--color-blue-500);
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-blue-500) 35%, transparent);
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 35%, transparent);
   animation-name: travel;
   animation-timing-function: ease-in-out;
   animation-fill-mode: forwards;
@@ -370,9 +370,8 @@
 @keyframes flash {
   0% {
     opacity: 1;
-    background: color-mix(in oklch, var(--color-blue-500) 18%, transparent);
-    box-shadow: 0 0 0 0
-      color-mix(in oklch, var(--color-blue-500) 50%, transparent);
+    background: color-mix(in oklch, var(--accent) 18%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 50%, transparent);
   }
   100% {
     opacity: 0;
@@ -419,4 +418,73 @@
   font-size: 11px;
   line-height: 1.6;
   white-space: pre;
+}
+
+/* The three panes are the dashboard's body surface: white on the gray canvas
+   in light, polar-900 with a polar-800 hairline in dark. Orbit's background
+   token cannot express the dark pair, so this one class carries it. */
+.surface {
+  background: var(--color-white);
+  border-color: var(--color-gray-200);
+}
+html.dark .surface {
+  background: var(--color-polar-900);
+  border-color: var(--color-polar-800);
+}
+
+/* The new-agent form hides behind a row until opened. */
+.disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure > summary .disclosure-closed {
+  display: inline-flex;
+}
+.disclosure > summary .disclosure-open {
+  display: none;
+}
+.disclosure[open] > summary .disclosure-closed {
+  display: none;
+}
+.disclosure[open] > summary .disclosure-open {
+  display: inline-flex;
+}
+
+.tree-edge {
+  stroke: var(--color-gray-300);
+}
+html.dark .tree-edge {
+  stroke: var(--color-polar-700);
+}
+
+/* Sidebar rows sit on the canvas, so they lift to the surface color on
+   hover and while open; Orbit's card token would equal the canvas in light. */
+.nav-row {
+  transition: background-color 120ms ease-out;
+}
+.nav-row:hover,
+.nav-row[data-active='true'] {
+  background: var(--color-white);
+}
+html.dark .nav-row:hover,
+html.dark .nav-row[data-active='true'] {
+  background: var(--color-polar-800);
+}
+
+/* Meter tracks need one step more contrast than the card token on a canvas. */
+.meter-track {
+  background: var(--color-gray-200);
+}
+html.dark .meter-track {
+  background: var(--color-polar-700);
+}
+
+.disclosure-chevron {
+  transition: transform 120ms ease-out;
+}
+.disclosure[open] > summary .disclosure-chevron {
+  transform: rotate(90deg);
 }

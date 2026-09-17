@@ -1,5 +1,7 @@
 import { createMember } from '@/actions'
-import { Card } from '@/components/Card'
+import { Surface } from '@/components/Card'
+import { PoBotLogo } from '@/components/PoBotLogo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { CreditBar } from '@/components/CreditBar'
 import { db } from '@/db'
 import { members } from '@/db/schema'
@@ -29,6 +31,11 @@ export default async function Home() {
       paddingHorizontal="xl"
       paddingVertical="4xl"
     >
+      <Box as="header" alignItems="center" justifyContent="between">
+        <PoBotLogo />
+        <ThemeToggle />
+      </Box>
+
       <Box as="section" flexDirection="column" rowGap="m">
         <Text variant="heading-xs" as="h1">
           Acme
@@ -54,17 +61,14 @@ export default async function Home() {
               href={`/members/${member.id}`}
               style={{ display: 'contents' }}
             >
-              <Card
+              <Surface
                 flexDirection="column"
                 rowGap="m"
                 padding="l"
-                backgroundColor={{
-                  base: 'background-primary',
-                  hover: 'background-card',
-                }}
-                transitionProperty="colors"
-                transitionDuration="fast"
                 cursor="pointer"
+                transitionProperty="all"
+                transitionDuration="fast"
+                boxShadow={{ base: 's', hover: 'm' }}
               >
                 <Box alignItems="center" columnGap="m">
                   <Avatar
@@ -77,51 +81,50 @@ export default async function Home() {
                   </Text>
                 </Box>
                 <CreditBar credits={each[i]} limit={member.cap} />
-              </Card>
+              </Surface>
             </Link>
           ))}
         </Grid>
       </Box>
 
-      <Card
-        as="form"
-        action={createMember}
-        alignItems="end"
-        columnGap="s"
-        padding="l"
-      >
-        <Box
-          as="label"
-          display="flex"
-          flexDirection="column"
-          rowGap="xs"
-          flex={1}
-        >
-          <Text variant="caption" color="muted" as="span">
-            Name
-          </Text>
-          <Input name="name" placeholder="Ada" required />
+      <Box as="section" flexDirection="column" rowGap="m">
+        <Text variant="label" color="muted" as="h2">
+          Add member
+        </Text>
+        <Box as="form" action={createMember} alignItems="end" columnGap="s">
+          <Box
+            as="label"
+            display="flex"
+            flexDirection="column"
+            rowGap="xs"
+            flex={1}
+          >
+            <Text variant="caption" color="muted" as="span">
+              Name
+            </Text>
+            <Input name="name" placeholder="Ada" required />
+          </Box>
+          <Box
+            as="label"
+            display="flex"
+            flexDirection="column"
+            rowGap="xs"
+            width={160}
+          >
+            <Text variant="caption" color="muted" as="span">
+              Credit cap per month
+            </Text>
+            <Input
+              name="cap"
+              type="number"
+              min={1}
+              defaultValue={10_000}
+              required
+            />
+          </Box>
+          <Button type="submit">Add member</Button>
         </Box>
-        <Box
-          as="label"
-          display="flex"
-          flexDirection="column"
-          rowGap="xs"
-          width={160}
-        >
-          <Text variant="caption" color="muted" as="span">
-            Credit cap per month
-          </Text>
-          <Input
-            name="cap"
-            type="number"
-            min={1}
-            defaultValue={10_000}
-            required
-          />
-        </Box>
-        <Button type="submit">Add member</Button>
-      </Card>
+      </Box>
     </Box>
   )
 }

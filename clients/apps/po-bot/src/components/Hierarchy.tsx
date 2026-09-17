@@ -6,7 +6,6 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Card } from './Card'
 import { useLive, type Pulse } from './Live'
 import { Meter } from './Meter'
 
@@ -113,7 +112,7 @@ export const Hierarchy = () => {
             style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
           >
             {bands.map(({ member, agents }) => (
-              <g key={member.id} stroke="var(--border)" fill="none">
+              <g key={member.id} className="tree-edge" fill="none">
                 <path d={edge(member, org)} strokeWidth={1.5} />
                 {agents.map((agent) => (
                   <path
@@ -227,7 +226,7 @@ const Node = ({
   const spent = standing.remaining === 0
   const share = limit > 0 ? Math.min(100, (standing.usage / limit) * 100) : 0
   const body = (
-    <Card
+    <Box
       position="absolute"
       flexDirection="column"
       rowGap="xs"
@@ -237,8 +236,12 @@ const Node = ({
       height={NODE.h}
       paddingHorizontal="s"
       paddingVertical="xs"
+      borderRadius="m"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor={current ? 'border-primary' : 'border-secondary'}
       backgroundColor={{
-        base: current ? 'background-card' : 'background-primary',
+        base: current ? 'background-card' : 'background-secondary',
         hover: href ? 'background-card' : undefined,
       }}
       transitionProperty="colors"
@@ -288,7 +291,7 @@ const Node = ({
             className="node-flash"
             position="absolute"
             inset={0}
-            borderRadius="l"
+            borderRadius="m"
             pointerEvents="none"
             style={{ animationDelay: `${delay}s` }}
           />
@@ -311,7 +314,7 @@ const Node = ({
           </Box>
         </Box>
       ))}
-    </Card>
+    </Box>
   )
   return href ? (
     <Link href={href} style={{ display: 'contents' }}>

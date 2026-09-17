@@ -15,9 +15,9 @@ export const Meter = ({
   height?: number
 }) => (
   <Box
+    className="meter-track"
     height={height}
     borderRadius="full"
-    backgroundColor="background-card"
     overflow="hidden"
   >
     <Box

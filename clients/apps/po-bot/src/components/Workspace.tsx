@@ -2,7 +2,7 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 import { useState, useSyncExternalStore } from 'react'
-import { Card } from './Card'
+import { Surface } from './Card'
 
 /**
  * A size the user drags, kept in localStorage and read as an external store
@@ -91,20 +91,21 @@ export const Workspace = ({
       height="100%"
       gap="s"
       padding="s"
-      gridTemplateColumns={`240px minmax(0,1fr) ${width}px`}
+      gridTemplateColumns={`248px minmax(0,1fr) ${width}px`}
       userSelect={dragging ? 'none' : 'auto'}
       style={dragging ? { cursor: CURSOR[dragging] } : undefined}
     >
-      <Card
+      <Box
         as="aside"
         flexDirection="column"
-        rowGap="s"
+        rowGap="m"
         minHeight={0}
         overflowY="auto"
-        padding="s"
+        paddingHorizontal="xs"
+        paddingVertical="s"
       >
         {sidebar}
-      </Card>
+      </Box>
       <Box
         display="grid"
         minHeight={0}
@@ -112,10 +113,15 @@ export const Workspace = ({
         gap="s"
         gridTemplateRows={`minmax(0,1fr) ${height}px`}
       >
-        <Card as="main" flexDirection="column" minHeight={0} overflow="hidden">
+        <Surface
+          as="main"
+          flexDirection="column"
+          minHeight={0}
+          overflow="hidden"
+        >
           {main}
-        </Card>
-        <Card as="section" position="relative" minHeight={0}>
+        </Surface>
+        <Surface as="section" position="relative" minHeight={0}>
           <Handle
             axis="y"
             size={BOTTOM}
@@ -124,9 +130,9 @@ export const Workspace = ({
             onDragging={(on) => setDragging(on ? 'y' : null)}
           />
           {bottom}
-        </Card>
+        </Surface>
       </Box>
-      <Card as="aside" position="relative" minHeight={0} padding="s">
+      <Surface as="aside" position="relative" minHeight={0} overflow="hidden">
         <Handle
           axis="x"
           size={PANEL}
@@ -135,7 +141,7 @@ export const Workspace = ({
           onDragging={(on) => setDragging(on ? 'x' : null)}
         />
         {panel}
-      </Card>
+      </Surface>
     </Box>
   )
 }

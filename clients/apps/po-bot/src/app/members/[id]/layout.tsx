@@ -1,20 +1,20 @@
 import { AgentList } from '@/components/AgentList'
-import { Card } from '@/components/Card'
+import { Divider, Surface } from '@/components/Card'
 import { CreditBar } from '@/components/CreditBar'
 import { EventLog } from '@/components/EventLog'
 import { Hierarchy } from '@/components/Hierarchy'
 import { LiveProvider } from '@/components/Live'
 import { MemberSwitcher } from '@/components/MemberSwitcher'
 import { NewAgentForm } from '@/components/NewAgentForm'
+import { PoBotLogo } from '@/components/PoBotLogo'
+import { SectionLabel } from '@/components/SectionLabel'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Workspace } from '@/components/Workspace'
 import { db } from '@/db'
 import { agents, members } from '@/db/schema'
 import { frame } from '@/live'
-import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { eq } from 'drizzle-orm'
-import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -37,19 +37,27 @@ export default async function MemberLayout({
       <Workspace
         sidebar={
           <>
-            <Box alignItems="center" columnGap="s">
-              <Link href="/" style={{ display: 'contents' }}>
-                <Button variant="ghost" size="icon" aria-label="Organization">
-                  <ArrowLeft size={16} />
-                </Button>
-              </Link>
-              <MemberSwitcher members={all} current={id} />
+            <Box
+              alignItems="center"
+              justifyContent="between"
+              paddingHorizontal="s"
+              paddingTop="xs"
+            >
+              <PoBotLogo />
+              <ThemeToggle />
             </Box>
-            <Card flexDirection="column" padding="s">
-              <CreditBar limit={member.cap} />
-            </Card>
-            <Box minHeight={72} flex={1} overflowY="auto">
-              <AgentList agents={owned} />
+            <Surface flexDirection="column" rowGap="s" padding="xs">
+              <MemberSwitcher members={all} current={id} />
+              <Box paddingHorizontal="xs" paddingBottom="xs" width="100%">
+                <CreditBar limit={member.cap} />
+              </Box>
+            </Surface>
+            <Divider />
+            <Box flexDirection="column" rowGap="xs" minHeight={72} flex={1}>
+              <SectionLabel>Agents</SectionLabel>
+              <Box minHeight={0} flex={1} overflowY="auto">
+                <AgentList agents={owned} />
+              </Box>
             </Box>
             <NewAgentForm memberId={id} />
           </>

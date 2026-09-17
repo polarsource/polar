@@ -76,24 +76,3 @@ resource "aws_s3_bucket_lifecycle_configuration" "primary" {
     }
   }
 }
-
-resource "aws_iam_policy" "uploader" {
-  name = "polar-sh-backups"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "VisualEditor0"
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:GetObjectAttributes",
-          "s3:GetObjectVersion",
-          "s3:GetObjectVersionAttributes",
-          "s3:PutObject",
-        ]
-        Resource = "${aws_s3_bucket.primary.arn}/*"
-      },
-    ]
-  })
-}

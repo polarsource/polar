@@ -327,7 +327,6 @@ module "production_github_oidc_backup" {
     "pull_request",
   ]
   policy_arns = {
-    backups          = module.production_backups.uploader_policy_arn
     lambda_artifacts = aws_iam_policy.production_lambda_artifacts_upload.arn
     e2e_reports      = aws_iam_policy.production_e2e_reports_upload.arn
   }
@@ -602,11 +601,6 @@ import {
 import {
   to = module.production_github_oidc_backup.aws_iam_role.github_actions
   id = "github-actions-backup"
-}
-
-import {
-  to = module.production_github_oidc_backup.aws_iam_role_policy_attachment.policies["backups"]
-  id = "github-actions-backup/arn:aws:iam::975049931254:policy/polar-sh-backups"
 }
 
 import {

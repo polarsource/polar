@@ -9,7 +9,11 @@ locals {
     echo "Copying Render export for $DATE"
     URL=$(curl -fsS "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
       -H "Authorization: Bearer $RENDER_API_KEY" \
-      | jq -er --arg d "$DATE" '[.[] | select(.createdAt | startswith($d))][0].url')
+      | jq -r --arg d "$DATE" '[.[] | select(.createdAt | startswith($d))][0].url // empty')
+    if [ -z "$URL" ]; then
+      echo "Error: No export for $DATE found" >&2
+      exit 1
+    fi
     curl -fsS "$URL" | aws s3 cp - "s3://$BUCKET_NAME/$${DATE//-/}/$${DATE//-/}_backup.tar.gz" \
       --expected-size 200000000000 --checksum-algorithm SHA256
   EOT
@@ -90,6 +94,10 @@ module "backup_copy" {
 
   secrets = {
     RENDER_API_KEY = aws_secretsmanager_secret.render_api_key.arn
+  }
+
+  logfire = {
+    token = var.logfire_token
   }
 
   depends_on = [aws_secretsmanager_secret_version.render_api_key]

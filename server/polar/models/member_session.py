@@ -25,7 +25,9 @@ def get_expires_at() -> datetime:
 class MemberSession(RecordModel):
     __tablename__ = "member_sessions"
 
-    token: Mapped[str | None] = mapped_column(CHAR(64), unique=True, nullable=True)
+    token: Mapped[str | None] = mapped_column(
+        CHAR(64), unique=True, nullable=True, deferred=True
+    )
     token_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

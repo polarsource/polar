@@ -34,7 +34,7 @@ cli = typer.Typer()
 def _hash_null_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
     return (
         select(OAuth2Client)
-        .where(OAuth2Client.client_secret_hash.is_(None))
+        .where(OAuth2Client.client_secret_hash_v2.is_(None))
         .limit(batch_size)
         .with_for_update(skip_locked=True)
     )
@@ -44,8 +44,8 @@ def _registration_token_only_batch(batch_size: int) -> Select[tuple[OAuth2Client
     return (
         select(OAuth2Client)
         .where(
-            OAuth2Client.client_secret_hash.is_not(None),
-            OAuth2Client.registration_access_token_hash.is_(None),
+            OAuth2Client.client_secret_hash_v2.is_not(None),
+            OAuth2Client.registration_access_token_hash_v2.is_(None),
         )
         .limit(batch_size)
         .with_for_update(skip_locked=True)
@@ -53,14 +53,14 @@ def _registration_token_only_batch(batch_size: int) -> Select[tuple[OAuth2Client
 
 
 async def _fill_secrets(client: OAuth2Client) -> None:
-    if client.client_secret_hash is None:
-        client.client_secret_hash = OAuth2Client.hash_secret(client.client_secret)
+    if client.client_secret_hash_v2 is None:
+        client.client_secret_hash_v2 = OAuth2Client.hash_secret(client.client_secret)
     if client.client_secret_encrypted is None:
         client.client_secret_encrypted = await OAuth2Client.encrypt_client_secret(
             client.id, client.client_secret
         )
-    if client.registration_access_token_hash is None:
-        client.registration_access_token_hash = OAuth2Client.hash_secret(
+    if client.registration_access_token_hash_v2 is None:
+        client.registration_access_token_hash_v2 = OAuth2Client.hash_secret(
             client.registration_access_token
         )
     if client.registration_access_token_encrypted is None:
@@ -76,7 +76,7 @@ async def _count_remaining(session: AsyncSession) -> int:
         await session.scalar(
             select(func.count())
             .select_from(OAuth2Client)
-            .where(OAuth2Client.client_secret_hash.is_(None))
+            .where(OAuth2Client.client_secret_hash_v2.is_(None))
         )
         or 0
     )
@@ -85,8 +85,8 @@ async def _count_remaining(session: AsyncSession) -> int:
             select(func.count())
             .select_from(OAuth2Client)
             .where(
-                OAuth2Client.client_secret_hash.is_not(None),
-                OAuth2Client.registration_access_token_hash.is_(None),
+                OAuth2Client.client_secret_hash_v2.is_not(None),
+                OAuth2Client.registration_access_token_hash_v2.is_(None),
             )
         )
         or 0

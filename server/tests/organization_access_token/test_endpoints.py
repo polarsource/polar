@@ -21,7 +21,6 @@ async def _build_oat(
 ) -> OrganizationAccessToken:
     token = OrganizationAccessToken(
         comment=comment,
-        token=get_token_hash("polar_oat_test"),
         token_v2=get_token_hash("polar_oat_test"),
         organization=organization,
         expires_at=utc_now() + timedelta(days=1),

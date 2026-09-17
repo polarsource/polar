@@ -762,7 +762,6 @@ class TestAuthenticate:
         # This simulates an edge case where the member was deleted after code was requested
         code, code_hash = customer_session_service._generate_code_hash()
         customer_session_code = CustomerSessionCode(
-            code=code_hash,
             code_v2=code_hash,
             email="deleted-member@example.com",  # No member with this email
             customer=customer,

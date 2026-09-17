@@ -6,6 +6,32 @@ resource "aws_s3_bucket" "primary" {
   bucket = "polar-sh-backups"
 }
 
+resource "aws_s3_bucket_ownership_controls" "primary" {
+  bucket = aws_s3_bucket.primary.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_policy" "primary" {
+  count  = length(var.uploader_role_arns) == 0 ? 0 : 1
+  bucket = aws_s3_bucket.primary.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowCrossAccountUploads"
+        Effect    = "Allow"
+        Principal = { AWS = var.uploader_role_arns }
+        Action    = ["s3:PutObject", "s3:AbortMultipartUpload"]
+        Resource  = "${aws_s3_bucket.primary.arn}/*"
+      },
+    ]
+  })
+}
+
 resource "aws_s3_bucket_versioning" "primary" {
   bucket = aws_s3_bucket.primary.id
 

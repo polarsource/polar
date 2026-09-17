@@ -34,6 +34,12 @@ variable "command" {
   default     = null
 }
 
+variable "entrypoint" {
+  description = "Container entrypoint override."
+  type        = list(string)
+  default     = null
+}
+
 variable "profile" {
   description = "Preconfigured task size: tiny (256/512), small (512/1024), medium (1024/2048) or big (2048/4096). Mutually exclusive with cpu/memory."
   type        = string

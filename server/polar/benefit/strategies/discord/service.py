@@ -8,6 +8,9 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.oauth import DiscordOAuth2WithProxy
+from polar.integrations.discord.repository import (
+    DiscordGuildConnectionRepository,
+)
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
@@ -191,6 +194,24 @@ class BenefitDiscordService(
     ) -> BenefitDiscordProperties:
         guild_id: str = properties["guild_id"]
         role_id: str = properties["role_id"]
+
+        connection_repository = DiscordGuildConnectionRepository.from_session(
+            self.session
+        )
+        connection = await connection_repository.get_by_organization_and_guild(
+            organization.id, guild_id
+        )
+        if connection is None:
+            raise BenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "guild_not_connected",
+                        "msg": "This organization has not connected this Discord server. Please connect it again.",
+                        "loc": ("guild_id",),
+                        "input": guild_id,
+                    }
+                ]
+            )
 
         guild = await discord_bot_service.get_guild(guild_id)
         guild_roles = [role.id for role in guild.roles]

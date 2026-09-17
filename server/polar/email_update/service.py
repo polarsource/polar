@@ -2,21 +2,21 @@ from math import ceil
 from urllib.parse import urlencode
 
 from sqlalchemy import delete
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.email.schemas import EmailUpdateEmail, EmailUpdateProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.resend.service import resend as resend_service
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
-from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models import EmailVerification
 from polar.models.user import User
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
+
+from .repository import EmailVerificationRepository
 
 TOKEN_PREFIX = "polar_ev_"
 
@@ -92,10 +92,8 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         )
 
     async def verify(self, session: AsyncSession, token: str, user: User) -> User:
-        token_hash = get_token_hash(token)
-        email_update_record = await self._get_email_update_record_by_token_hash(
-            session, token_hash
-        )
+        repository = EmailVerificationRepository.from_session(session)
+        email_update_record = await repository.get_by_token(token)
 
         if email_update_record is None or email_update_record.user_id != user.id:
             raise InvalidEmailUpdate()
@@ -110,21 +108,6 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         resend_service.enqueue_sync_user(user.id, previous_email=previous_email)
 
         return user
-
-    async def _get_email_update_record_by_token_hash(
-        self, session: AsyncSession, token_hash: str
-    ) -> EmailVerification | None:
-        statement = (
-            sql.select(EmailVerification)
-            .where(
-                EmailVerification.token_hash == token_hash,
-                EmailVerification.expires_at > utc_now(),
-            )
-            .options(joinedload(EmailVerification.user))
-        )
-
-        res = await session.execute(statement)
-        return res.scalars().unique().one_or_none()
 
     async def delete_expired_record(self, session: AsyncSession) -> None:
         statement = delete(EmailVerification).where(

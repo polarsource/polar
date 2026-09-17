@@ -5,17 +5,18 @@ from uuid import UUID
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select
+from sqlalchemy import delete
 
 from polar.config import settings
 from polar.enums import TokenType
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.http import get_safe_return_url
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import User, UserSession, UserSessionOrganization
 from polar.postgres import AsyncSession
 
+from .repository import UserSessionRepository
 from .schemas import LoginMethod
 from .scope import Scope
 
@@ -115,12 +116,8 @@ class AuthService:
     async def _get_user_session_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> UserSession | None:
-        token_hash = get_token_hash(token)
-        statement = select(UserSession).where(UserSession.token == token_hash)
-        if not expired:
-            statement = statement.where(UserSession.expires_at > utc_now())
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        repository = UserSessionRepository.from_session(session)
+        return await repository.get_by_token(token, expired=expired)
 
     async def _create_user_session(
         self,

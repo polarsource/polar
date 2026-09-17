@@ -3,13 +3,10 @@ from typing import cast
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
-from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import OAuth2Token, User
@@ -26,14 +23,8 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
     async def get_by_access_token(
         self, session: AsyncSession, access_token: str
     ) -> OAuth2Token | None:
-        access_token_hash = get_token_hash(access_token)
-        statement = (
-            select(OAuth2Token)
-            .where(OAuth2Token.access_token == access_token_hash)
-            .options(joinedload(OAuth2Token.client))
-        )
-        result = await session.execute(statement)
-        token = result.unique().scalar_one_or_none()
+        repository = OAuth2TokenRepository.from_session(session)
+        token = await repository.get_by_access_token(access_token)
 
         if token is None:
             return None
@@ -74,25 +65,8 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         notifier: str,
         url: str | None = None,
     ) -> bool:
-        statement = select(OAuth2Token).options(
-            joinedload(OAuth2Token.user),
-            joinedload(OAuth2Token.organization),
-            joinedload(OAuth2Token.client),
-        )
-
-        if token_type == TokenType.access_token:
-            statement = statement.where(
-                OAuth2Token.access_token == get_token_hash(token)
-            )
-        elif token_type == TokenType.refresh_token:
-            statement = statement.where(
-                OAuth2Token.refresh_token == get_token_hash(token)
-            )
-        else:
-            raise ValueError(f"Unsupported token type: {token_type}")
-
-        result = await session.execute(statement)
-        oauth2_token = result.unique().scalar_one_or_none()
+        repository = OAuth2TokenRepository.from_session(session)
+        oauth2_token = await repository.get_by_leaked_token(token, token_type)
 
         if oauth2_token is None:
             return False

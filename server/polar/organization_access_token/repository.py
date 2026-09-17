@@ -5,6 +5,7 @@ from sqlalchemy import Select, or_, update
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.crypto import get_token_hash
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -22,14 +23,14 @@ class OrganizationAccessTokenRepository(
 ):
     model = OrganizationAccessToken
 
-    async def get_by_token_hash(
-        self, token_hash: str, *, expired: bool = False
+    async def get_by_token(
+        self, token: str, *, expired: bool = False
     ) -> OrganizationAccessToken | None:
         statement = (
             self.get_base_statement()
             .join(OrganizationAccessToken.organization)
             .where(
-                OrganizationAccessToken.token == token_hash,
+                OrganizationAccessToken.token == get_token_hash(token),
                 Organization.can_authenticate,
             )
             .options(contains_eager(OrganizationAccessToken.organization))

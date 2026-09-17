@@ -15,12 +15,7 @@ from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import (
-    AsyncReadSession,
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import oauth
@@ -171,7 +166,7 @@ async def discord_guild_lookup(
     guild_id: str,
     organization_id: Annotated[OrganizationID, Query()],
     auth_subject: AuthorizeWebUserRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> DiscordGuild:
     await assert_organization_permission(
         session, auth_subject, organization_id, OrganizationPermission.products_read

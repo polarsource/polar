@@ -25,6 +25,7 @@ from polar.void.meter.versions import meters_in_version
 from polar.void.reducer.buckets import bucket_start
 from polar.void.reducer.schemas import Reducer as ReducerSchema
 from polar.void.tinybird import TinybirdApi
+from polar.void.sense.service import sense as sense_service
 
 from .repository import CustomerRepository, CustomerStateRepository
 from .schemas import (
@@ -271,4 +272,11 @@ async def customer_state(
             ReducerSchema.model_validate(r, from_attributes=True) for r in reducers
         ],
         buckets=[ReducerState.model_validate(b, from_attributes=True) for b in buckets],
+        senses=(
+            await sense_service.observations_for(
+                session, organization_id, version_id, sorted(identity_ids)
+            )
+            if version_id is not None
+            else []
+        ),
     )

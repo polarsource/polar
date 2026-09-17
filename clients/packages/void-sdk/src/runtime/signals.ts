@@ -3,15 +3,23 @@ import type { Effect } from 'effect'
 import type { Api, ApiError } from '../api/index'
 import type { RunEffect } from '../api/layers'
 import type { Config } from '../config/config'
-import type { SignalRef } from '../config/schema'
+import {
+  isMeterSignal,
+  isSenseSignal,
+  type MeterSignalRef,
+  type SenseSignalRef,
+  type SignalRef,
+} from '../config/schema'
 import { MalformedResponse, VoidError, VoidHttpError } from '../errors'
 import type { EventChanges } from '../storage/events'
 import type { Background } from './background'
 import {
+  loadCustomerSnapshot,
   loadReconciliation,
   reconcile,
   reconciliationEvents,
 } from '../storage/reconcile'
+import type { CustomerSenseState } from '../api/generated'
 import type { BalanceResult } from './queries'
 
 const DEFAULT_REFRESH_INTERVAL = 30_000
@@ -38,6 +46,7 @@ function retryable(error: ApiError): boolean {
 
 export interface SignalState {
   readonly customerId: string
+  readonly identityId: string
   readonly signal: string
   readonly status: 'active' | 'inactive' | 'unknown'
   /** Set on the observation that crossed a threshold; null otherwise. */
@@ -52,7 +61,9 @@ export interface SignalState {
   readonly balance: Pick<
     BalanceResult,
     'remaining' | 'limit' | 'reason' | 'period'
-  >
+  > | null
+  /** Polar's stored noul for a semantic signal; null on meter signals. */
+  readonly noul: number | null
 }
 
 /** Runs once per published observation, sequentially; a rejection stops the listener. */
@@ -104,7 +115,7 @@ export interface SignalQuery {
 }
 
 type Loaded = Pick<
-  Effect.Success<ReturnType<typeof loadReconciliation>>,
+  Effect.Success<ReturnType<typeof loadCustomerSnapshot>>,
   'snapshot' | 'effectiveConfig'
 >
 type Listener = {
@@ -134,10 +145,10 @@ type Customer = {
   poll?: ReturnType<typeof setTimeout>
 }
 
-function classify(
+function classifyMeter(
   balance: BalanceResult,
   active: boolean,
-  ref: SignalRef,
+  ref: MeterSignalRef,
 ): SignalState['status'] {
   if (balance.reason !== 'ok') return 'unknown'
   if (balance.remaining === null)
@@ -148,6 +159,69 @@ function classify(
       ? 'inactive'
       : 'active'
   return balance.remaining < ref.definition.enter.below ? 'active' : 'inactive'
+}
+
+function classifySense(
+  noul: number | null,
+  active: boolean,
+  ref: SenseSignalRef,
+): SignalState['status'] {
+  if (noul === null || !Number.isFinite(noul)) return 'unknown'
+  if (active) return noul < ref.definition.exit.below ? 'inactive' : 'active'
+  return noul > ref.definition.enter.above ? 'active' : 'inactive'
+}
+
+function senseNoul(
+  snapshot: { senses?: ReadonlyArray<CustomerSenseState> },
+  identityId: string,
+  slug: string,
+): number | null {
+  const match = (snapshot.senses ?? []).find(
+    (row) => row.slug === slug && row.identity_id === identityId,
+  )
+  return match === undefined ? null : match.noul
+}
+
+function observe(
+  customerId: string,
+  entry: Entry,
+  next: {
+    status: SignalState['status']
+    previousActive: boolean
+    provisional: boolean
+    now: Date
+    snapshotAt: string
+    balance: SignalState['balance']
+    noul: number | null
+  },
+): void {
+  let transition: SignalState['transition'] = null
+  if (next.status === 'active' && !next.previousActive) transition = 'entered'
+  if (next.status === 'inactive' && next.previousActive) transition = 'exited'
+  const previous = entry.state
+  if (
+    !previous ||
+    previous.status !== next.status ||
+    previous.provisional !== next.provisional ||
+    previous.noul !== next.noul ||
+    !isDeepStrictEqual(previous.balance, next.balance)
+  ) {
+    entry.state = {
+      customerId,
+      identityId: customerId,
+      signal: entry.ref.key,
+      status: next.status,
+      transition,
+      provisional: next.provisional,
+      evaluatedAt: next.now,
+      snapshotAt: new Date(next.snapshotAt),
+      balance: next.balance,
+      noul: next.noul,
+    }
+    for (const listener of entry.listeners) listener.state(entry.state)
+  } else {
+    entry.state = { ...previous, snapshotAt: new Date(next.snapshotAt) }
+  }
 }
 
 /** Signals own conditions; the existing balance fold owns all billing arithmetic. */
@@ -210,9 +284,12 @@ export function makeSignals(
       .then(async () => {
         if (!customer.loaded || disposed) return
         const { snapshot, effectiveConfig } = customer.loaded
-        const allEvents = await run(
-          reconciliationEvents(config, snapshot, new Date(), true),
+        const hasMeter = [...customer.entries.values()].some((entry) =>
+          isMeterSignal(entry.ref),
         )
+        const allEvents = hasMeter
+          ? await run(reconciliationEvents(config, snapshot, new Date(), true))
+          : []
         if (disposed) return
         const now = new Date(Math.max(Date.now(), Date.parse(snapshot.at)))
         const events = allEvents.filter(
@@ -235,6 +312,24 @@ export function makeSignals(
           deadlines.push(Date.parse(snapshot.next_change_at))
         for (const entry of customer.entries.values()) {
           const previousActive = entry.active
+          if (isSenseSignal(entry.ref)) {
+            const noul = senseNoul(snapshot, customer.id, entry.ref.key)
+            const status = classifySense(noul, entry.active, entry.ref)
+            if (status !== 'unknown') {
+              entry.active = status === 'active'
+              entry.stableActive = entry.active
+            }
+            observe(customer.id, entry, {
+              status,
+              previousActive,
+              provisional: false,
+              now,
+              snapshotAt: snapshot.at,
+              balance: null,
+              noul,
+            })
+            continue
+          }
           const meter = entry.ref.definition.meter
           const balance =
             balances.get(meter.key) ??
@@ -257,52 +352,36 @@ export function makeSignals(
               prefix.push(event)
               const partial = reconcile(
                 effectiveConfig,
-                entry.ref.definition.meter,
+                meter,
                 snapshot,
                 customer.id,
                 prefix,
                 now,
                 'balance',
               )
-              const status = classify(partial, entry.active, entry.ref)
+              const status = classifyMeter(partial, entry.active, entry.ref)
               if (status !== 'unknown') entry.active = status === 'active'
             }
           }
-          const status = classify(balance, entry.active, entry.ref)
+          const status = classifyMeter(balance, entry.active, entry.ref)
           if (status !== 'unknown') entry.active = status === 'active'
           const provisional = balance.reconciliation?.applied ?? false
           if (!provisional && status !== 'unknown')
             entry.stableActive = entry.active
-          const observed: SignalState['balance'] = {
-            remaining: balance.remaining,
-            limit: balance.limit,
-            reason: balance.reason,
-            period: balance.period,
-          }
-          const previous = entry.state
-          let transition: SignalState['transition'] = null
-          if (status === 'active' && !previousActive) transition = 'entered'
-          if (status === 'inactive' && previousActive) transition = 'exited'
-          if (
-            !previous ||
-            previous.status !== status ||
-            previous.provisional !== provisional ||
-            !isDeepStrictEqual(previous.balance, observed)
-          ) {
-            entry.state = {
-              customerId: customer.id,
-              signal: entry.ref.key,
-              status,
-              transition,
-              provisional,
-              evaluatedAt: now,
-              snapshotAt: new Date(snapshot.at),
-              balance: observed,
-            }
-            for (const listener of entry.listeners) listener.state(entry.state)
-          } else {
-            entry.state = { ...previous, snapshotAt: new Date(snapshot.at) }
-          }
+          observe(customer.id, entry, {
+            status,
+            previousActive,
+            provisional,
+            now,
+            snapshotAt: snapshot.at,
+            balance: {
+              remaining: balance.remaining,
+              limit: balance.limit,
+              reason: balance.reason,
+              period: balance.period,
+            },
+            noul: null,
+          })
           if (balance.period) deadlines.push(balance.period.end.getTime())
         }
         // Only meaningful deadlines wake the SDK; no interval reevaluates idle customers.
@@ -350,12 +429,14 @@ export function makeSignals(
         // Return to get() callers even when notifications keep arriving.
         for (let pass = 0; customer.dirty && !disposed && pass < 2; pass++) {
           customer.dirty = false
-          const ref = customer.entries.values().next().value?.ref
-          if (!ref) return
-          const loaded = await run(
-            loadReconciliation(config, ref.definition.meter, customer.id, true),
-          )
-          if (loaded.snapshot.customer.external_id !== customer.id)
+          if (!customer.entries.size) return
+          const meter = [...customer.entries.values()]
+            .map((entry) => entry.ref)
+            .find(isMeterSignal)?.definition.meter
+          const loaded = meter
+            ? await run(loadReconciliation(config, meter, customer.id, true))
+            : await run(loadCustomerSnapshot(config, customer.id))
+          if (meter && loaded.snapshot.customer.external_id !== customer.id)
             throw new VoidError({
               reason: 'invalid_argument',
               message: 'Signals require a root customer identity',
@@ -531,7 +612,7 @@ export function makeSignals(
         if (!condition.state)
           throw new VoidError({
             reason: 'reconciliation',
-            message: 'Signal has no balance snapshot',
+            message: 'Signal has no snapshot',
           })
         return condition.state
       },

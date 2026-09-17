@@ -28,7 +28,7 @@ export const POST = async (request: Request) => {
   const prompt = textOf(message)
 
   const result = streamText({
-    model: agentModel(agent),
+    model: await agentModel(agent),
     system: agent.systemPrompt || undefined,
     tools,
     stopWhen: stepCountIs(8),

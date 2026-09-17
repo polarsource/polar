@@ -1,4 +1,5 @@
 import {
+  activities,
   count,
   defineConfig,
   event,
@@ -6,7 +7,9 @@ import {
   meter,
   on,
   product,
+  recent,
   recurring,
+  signal,
   sum,
   usd,
 } from '../src/index'
@@ -63,6 +66,34 @@ export const pro = product('sdk_demo_pro', {
   ],
 })
 
+export const agent = activities({ source: ai, run: 'call_id' })
+
+export const retryStorm = signal('retry-storm', {
+  activity: agent,
+  when: 'most recent spend is retries or loops, not progress',
+  over: recent(1, 'hour'),
+  enter: { above: 0.7 },
+  exit: { below: 0.4 },
+})
+
+export const humanInTheLoop = signal('human-in-the-loop', {
+  activity: agent,
+  when: 'this run now needs a person',
+  over: 'run',
+  enter: { above: 0.75 },
+  exit: { below: 0.35 },
+})
+
 export const config = defineConfig({
-  schema: { page, bandwidth, indexed, ai, wallet, pro },
+  schema: {
+    page,
+    bandwidth,
+    indexed,
+    ai,
+    wallet,
+    pro,
+    agent,
+    retryStorm,
+    humanInTheLoop,
+  },
 })

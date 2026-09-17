@@ -11,6 +11,7 @@ from polar.void.entitlement.schemas import SLUG_PATTERN as KEY_PATTERN
 from polar.void.product.schemas import MeterTerms, ProductPrice
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.schemas import PlainDecimal
+from polar.void.sense.schemas import DeploySense
 
 from .config_hash import configuration_hash
 
@@ -75,6 +76,7 @@ class DeployConfiguration(BaseModel):
     entitlements: list[DeployEntitlement] = []
     products: list[DeployProduct] = []
     activities: list[DeployActivity] = []
+    senses: list[DeploySense] = []
 
 
 class DeployCreate(DeployConfiguration):
@@ -139,7 +141,7 @@ class MeterPricePreview(BaseModel):
 
 
 class DeployEntry(BaseModel):
-    kind: Literal["reducer", "meter", "entitlement", "product", "activity"]
+    kind: Literal["reducer", "meter", "entitlement", "product", "activity", "sense"]
     key: str
     action: Action
     reason: str | None

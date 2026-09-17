@@ -31,6 +31,8 @@ def configuration_payload(config: BaseModel) -> dict[str, Any]:
     payload = config.model_dump(mode="json", exclude=REQUEST_FIELDS)
     if not payload.get("activities"):
         payload.pop("activities", None)
+    if not payload.get("senses"):
+        payload.pop("senses", None)
     return payload
 
 
@@ -38,7 +40,16 @@ def configuration_hash(config: BaseModel) -> str:
     payload = _normalize(config.model_dump(exclude=REQUEST_FIELDS))
     if not payload.get("activities"):
         payload.pop("activities", None)
-    for key in ("reducers", "meters", "products", "entitlements", "activities"):
+    if not payload.get("senses"):
+        payload.pop("senses", None)
+    for key in (
+        "reducers",
+        "meters",
+        "products",
+        "entitlements",
+        "activities",
+        "senses",
+    ):
         if key in payload:
             payload[key].sort(key=lambda item: item["slug"])
     for product in payload["products"]:

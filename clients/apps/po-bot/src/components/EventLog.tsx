@@ -4,11 +4,13 @@ import { n, pct, time, usd } from '@/format'
 import type { LogEvent } from '@/live'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import type { Wire } from '@void/sdk'
 import { ChevronRight } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { ActivityPill, MixSection } from './Activity'
 import { Divider } from './Card'
 import { useChatActivity, useLive } from './Live'
+import { Meter } from './Meter'
 import { SectionLabel } from './SectionLabel'
 
 const Row = ({
@@ -26,6 +28,54 @@ const Row = ({
       {children}
     </Text>
   </>
+)
+
+const grain = (over: Wire.SenseOver) =>
+  over.type === 'run'
+    ? 'this run'
+    : `last ${over.amount} ${over.unit}${over.amount === 1 ? '' : 's'}`
+
+/** Polar's judgement of an identity's recent spend. Labels never move money. */
+const SenseSection = ({
+  senses,
+}: {
+  senses: readonly Wire.CustomerSenseState[]
+}) => (
+  <Box flexDirection="column" rowGap="s" width="100%">
+    <SectionLabel>Senses</SectionLabel>
+    {senses.length === 0 ? (
+      <Text variant="caption" color="muted" style={{ paddingInline: 4 }}>
+        Polar has not judged this identity yet.
+      </Text>
+    ) : (
+      <Box flexDirection="column" rowGap="s" paddingHorizontal="xs">
+        {senses.map((sense) => (
+          <Box
+            key={`${sense.slug}:${sense.identity_id}`}
+            flexDirection="column"
+            rowGap="xs"
+          >
+            <Box justifyContent="between" alignItems="baseline" columnGap="s">
+              <Text variant="caption" as="span">
+                {sense.slug}
+              </Text>
+              <Text variant="caption" color="muted" as="span" tabularNums>
+                {pct(sense.noul)}, {grain(sense.over)}
+              </Text>
+            </Box>
+            <Meter
+              share={sense.noul * 100}
+              spent={sense.noul >= 0.7}
+              height={4}
+            />
+            <Text variant="caption" color="muted">
+              {sense.when}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    )}
+  </Box>
 )
 
 const Span = ({ event }: { event: LogEvent }) => {
@@ -124,10 +174,14 @@ const Entry = ({ entry, scoped }: { entry: LogEvent; scoped: boolean }) => {
  */
 export const EventLog = () => {
   const { agentId } = useParams<{ agentId?: string }>()
-  const { tree, member } = useLive()
+  const { tree, member, senses } = useLive()
   const { events, mix, agent, taxonomy } = useChatActivity(agentId)
   const org = tree.org.standing
   const scoped = Boolean(agentId)
+  const ids = scoped
+    ? new Set([agentId])
+    : new Set(member.agents.map((row) => row.id))
+  const shown = senses.filter((sense) => ids.has(sense.identity_id))
   return (
     <Box flexDirection="column" height="100%" width="100%" minHeight={0}>
       <Box flexDirection="column" rowGap="xs" padding="m">
@@ -155,6 +209,11 @@ export const EventLog = () => {
           taxonomy={taxonomy}
           mix={mix}
         />
+      </Box>
+      <Divider />
+
+      <Box padding="m">
+        <SenseSection senses={shown} />
       </Box>
       <Divider />
 

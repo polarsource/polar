@@ -91,6 +91,22 @@ def test_empty_activities_do_not_change_the_hash() -> None:
     )
 
 
+def test_empty_senses_do_not_change_the_hash() -> None:
+    baseline = config()
+    assert config(senses=[]).version_id == baseline.version_id
+    labeled = config(
+        senses=[
+            {
+                "slug": "retry-storm",
+                "activity": "agent",
+                "when": "retries, not progress",
+                "over": {"type": "window", "amount": 1, "unit": "hour"},
+            }
+        ]
+    )
+    assert labeled.version_id != baseline.version_id
+
+
 def test_product_meter_terms_hash_by_slug_regardless_of_order() -> None:
     product = {
         "slug": "pro",

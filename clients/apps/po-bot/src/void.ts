@@ -1,5 +1,5 @@
 import { createVoid, type Wire } from '@void/sdk'
-import { ai, config } from '../void'
+import { ai, CHEAPER, config } from '../void'
 import type { Agent } from './db/schema'
 
 export { MODELS } from '../void'
@@ -19,8 +19,20 @@ export const addMember = async (id: string, cap: number) => {
 export const addAgent = (memberId: string, id: string) =>
   void_.as(memberId).spawn(id)
 
-export const agentModel = (agent: Agent) =>
-  void_.as(agent.id).ai.model(agent.model)
+export const agentModel = async (agent: Agent) => {
+  const model = await cheaperIfStorm(agent)
+  return void_.as(agent.id).ai.model(model)
+}
+
+const cheaperIfStorm = async (agent: Agent) => {
+  try {
+    const storm = await void_.as(agent.id).signals.retryStorm.get()
+    if (storm.status === 'active') return CHEAPER[agent.model] ?? agent.model
+  } catch {
+    // Polar has not judged this window yet; keep the agent's model.
+  }
+  return agent.model
+}
 
 export const credits = (identity: string) =>
   void_.as(identity).ai.credits.balance()
@@ -69,6 +81,18 @@ export const activityReport = async (): Promise<Wire.ActivityReport> => {
     return await withTimeout(void_.api.activities.list(), 3_000)
   } catch {
     return EMPTY_ACTIVITIES
+  }
+}
+
+export const customerSenses = async (): Promise<
+  readonly Wire.CustomerSenseState[]
+> => {
+  try {
+    return (
+      (await withTimeout(void_.api.customers.state(ORG), 3_000)).senses ?? []
+    )
+  } catch {
+    return []
   }
 }
 

@@ -18,6 +18,7 @@ import {
   VoidEvent,
   VoidIdentity,
   VoidIdentityKind,
+  VoidSense,
   VoidSubscription,
 } from './types'
 
@@ -232,6 +233,43 @@ const buildActivities = (
       }),
   )
 
+const SENSES: [string, string, string][] = [
+  [
+    'retry-storm',
+    'most recent spend is retries or loops, not progress',
+    'last 1 hour',
+  ],
+  ['human-in-the-loop', 'this run now needs a person', 'this run'],
+]
+
+const buildSenses = (identities: VoidIdentity[]): VoidSense[] =>
+  identities.flatMap((identity, index) => {
+    if (identity.usage <= 0) return []
+    const storm = 0.18 + ((index * 17) % 70) / 100
+    const hitl = index % 4 === 0 ? 0.82 : 0.22 + ((index * 11) % 40) / 100
+    const rows: VoidSense[] = [
+      {
+        slug: SENSES[0][0],
+        when: SENSES[0][1],
+        over: SENSES[0][2],
+        noul: storm,
+        span_count: 4 + (identity.id.length % 9),
+        identity_id: identity.id,
+      },
+    ]
+    if (identity.kind !== 'human') {
+      rows.push({
+        slug: SENSES[1][0],
+        when: SENSES[1][1],
+        over: SENSES[1][2],
+        noul: hitl,
+        span_count: 2 + (identity.id.length % 5),
+        identity_id: identity.id,
+      })
+    }
+    return rows
+  })
+
 export const getVoidData = (): VoidData => {
   const end = new Date()
   const random = seeded(20260910)
@@ -279,5 +317,6 @@ export const getVoidData = (): VoidData => {
     subscriptions,
     entitlements: buildEntitlements(subscriptions),
     activities: buildActivities(identities),
+    senses: buildSenses(identities),
   }
 }

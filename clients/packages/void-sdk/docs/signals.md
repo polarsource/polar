@@ -1,8 +1,9 @@
 # SDK signals
 
-A signal is a local condition over a reconciled meter balance. Void evaluates it
-inside your SDK client. Polar processes billing events and serves customer state;
-it does not evaluate, persist, or push signals.
+A signal is a local condition the SDK latches. Meter signals watch a reconciled
+balance. Semantic signals watch Polar's stored noul for a `when` clause over
+labeled activity spend. Polar does not latch, persist signal history, or push
+webhooks; `enter` / `exit` stay in the SDK and never change the deploy checksum.
 
 ## Define and use a signal
 
@@ -52,21 +53,46 @@ await subscription.closed
 await client.dispose()
 ```
 
+## Semantic signals
+
+```ts
+import { activities, recent, signal } from '@void/sdk'
+
+const agent = activities({ source: ai, run: 'call_id' })
+const retryStorm = signal('retry-storm', {
+  activity: agent,
+  when: 'most recent spend is retries or loops, not progress',
+  over: recent(1, 'hour'),
+  enter: { above: 0.7 },
+  exit: { below: 0.4 },
+})
+```
+
+`when` and `over` deploy with the activity. Polar asks Jev for a noul on that
+window or run; the SDK latches `enter.above` / `exit.below`. Labels never move
+money. `client.as(agentId).signals.retryStorm.get()` works on a child identity.
+
 The source meter and its reducers are collected automatically and must be deployed
 as usual. Signal definitions stay in the SDK. Threshold changes do not affect the
 deployment checksum, create a billing version, or require `void deploy`.
 `signal(slug)` without a definition is no longer supported.
 
-Signals currently require a root customer. Child usage contributes to the root's
+Meter signals require a root customer. Child usage contributes to the root's
 balance through the existing reconciliation rules. Meter selection follows the
 client's configured version, or the organization's active deployment when omitted.
 
 ## Evaluation
 
-For thresholds 100 and 150, balances `180 → 95 → 80 → 110 → 160` produce
+For meter thresholds 100 and 150, balances `180 → 95 → 80 → 110 → 160` produce
 `inactive → active → active → active → inactive`. Entry is strictly below 100;
 exit is at or above 150. Thresholds must be finite, with
 `0 < enter.below < exit.atLeast`.
+
+Semantic signals latch the other way: noul `0.5 → 0.8 → 0.55 → 0.3` with
+`enter.above` 0.7 and `exit.below` 0.4 produces
+`inactive → active → active → inactive`. Thresholds must be finite, with
+`0 < exit.below < enter.above <= 1`. Polar's stored noul is the input; the SDK
+does not re-ask Jev.
 
 Signals use the same balance fold as reconciled checks and balances, including
 credits, holder limits, entitlement caps, and subscription periods. Unlimited

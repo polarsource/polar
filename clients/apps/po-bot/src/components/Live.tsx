@@ -1,5 +1,6 @@
 'use client'
 
+import { mixFrom, ofIdentities } from '@/activity'
 import type { Frame, MemberNode } from '@/live'
 import {
   createContext,
@@ -128,4 +129,27 @@ export const useLive = () => {
   const live = useContext(LiveContext)
   if (!live) throw new Error('useLive needs a LiveProvider above it')
   return live
+}
+
+/**
+ * Completions and Jev labels for one agent — the identity that recorded
+ * them — or, with no identity, every agent of the member on this page.
+ * Each agent has one thread, so this is the chat.
+ */
+export const useChatActivity = (identity?: string) => {
+  const live = useLive()
+  return useMemo(() => {
+    const ids = identity
+      ? new Set([identity])
+      : new Set(live.member.agents.map((agent) => agent.id))
+    const events = ofIdentities(live.events, ids)
+    return {
+      events,
+      mix: mixFrom(events),
+      agent: identity
+        ? live.member.agents.find((agent) => agent.id === identity)
+        : undefined,
+      taxonomy: live.activities.taxonomy,
+    }
+  }, [identity, live.events, live.member, live.activities.taxonomy])
 }

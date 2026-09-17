@@ -56,7 +56,8 @@ the identities and events already on the server stay.
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `void.ts`                      | The billing model: models, rates, the team plan.                                                                                                      |
 | `src/void.ts`                  | Every call the app makes to Void: spawn a member with a cap, spawn an agent, the agent's metered model, credits per identity, the latest completions. |
-| `src/live.ts`                  | One frame of the organization: the identity tree with every node's standing, and the latest completions.                                              |
+| `src/live.ts`                  | One frame of the organization: the identity tree, standings, and completions. Each completion belongs to the agent identity that ran it.              |
+| `src/activity.ts`              | Scope those completions to one chat and fold Jev's labels into a mix.                                                                                 |
 | `src/db/schema.ts`             | The app's own tables: members, agents, messages.                                                                                                      |
 | `src/actions.ts`               | Creating a member or agent: insert the row, then one call into `src/void.ts`.                                                                         |
 | `src/tools.ts`                 | Shared tools every agent can call: web, files, a code sandbox, email. Implementations are mocked.                                                      |

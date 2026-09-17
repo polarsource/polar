@@ -2,11 +2,12 @@
 
 import { n, pct, time, usd } from '@/format'
 import type { LogEvent } from '@/live'
-import { Grid, Pill, Text, type PillColor } from '@polar-sh/orbit'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { useParams } from 'next/navigation'
+import { ActivityPill, MixCard } from './Activity'
 import { Card } from './Card'
-import { useLive } from './Live'
-import { Meter } from './Meter'
+import { useChatActivity, useLive } from './Live'
 
 const Row = ({
   label,
@@ -24,80 +25,6 @@ const Row = ({
     </Text>
   </>
 )
-
-const ACTIVITY_COLOR = {
-  plan: 'purple',
-  retrieve: 'blue',
-  implement: 'green',
-  act: 'yellow',
-  review: 'gray',
-  retry: 'red',
-  other: 'gray',
-  pending: 'gray',
-  unlabeled: 'yellow',
-} as const satisfies Record<string, PillColor>
-
-const colorOf = (slug: string): PillColor =>
-  slug in ACTIVITY_COLOR
-    ? ACTIVITY_COLOR[slug as keyof typeof ACTIVITY_COLOR]
-    : 'gray'
-
-const ActivityPill = ({ slug }: { slug: string }) => (
-  <Pill color={colorOf(slug)} className="font-mono text-[10px]">
-    {slug}
-  </Pill>
-)
-
-const Mix = () => {
-  const { activities } = useLive()
-  const { by_activity: shares, totals, taxonomy } = activities
-  const waiting = shares.length === 0
-  return (
-    <Card flexDirection="column" rowGap="xs" padding="s">
-      <Box justifyContent="between" alignItems="baseline" columnGap="s">
-        <Text variant="caption" color="muted" as="h2">
-          Activities
-        </Text>
-        <Text variant="caption" color="muted" as="span">
-          Jev · {taxonomy}
-        </Text>
-      </Box>
-      {waiting ? (
-        <Text variant="caption" color="muted">
-          {totals.pending_cost > 0
-            ? 'Classifying spans…'
-            : 'No classified spans yet'}
-        </Text>
-      ) : (
-        <Box flexDirection="column" rowGap="s">
-          {shares.map((share) => (
-            <Box key={share.slug} flexDirection="column" rowGap="xs">
-              <Box justifyContent="between" alignItems="center" columnGap="s">
-                <ActivityPill slug={share.slug} />
-                <Text variant="caption" color="muted" as="span" tabularNums>
-                  {pct(share.share)} · {share.spans}
-                </Text>
-              </Box>
-              <Meter
-                share={share.share * 100}
-                spent={share.slug === 'retry'}
-                height={4}
-              />
-            </Box>
-          ))}
-        </Box>
-      )}
-      {(totals.pending_cost > 0 || totals.unlabeled_cost > 0) && (
-        <Text variant="caption" color="muted" as="span" tabularNums>
-          {totals.pending_cost > 0 && `pending ${usd(totals.pending_cost)}`}
-          {totals.pending_cost > 0 && totals.unlabeled_cost > 0 && ' · '}
-          {totals.unlabeled_cost > 0 &&
-            `unlabeled ${usd(totals.unlabeled_cost)}`}
-        </Text>
-      )}
-    </Card>
-  )
-}
 
 const Span = ({ event }: { event: LogEvent }) => {
   const { span } = event
@@ -121,14 +48,16 @@ const Span = ({ event }: { event: LogEvent }) => {
 }
 
 /**
- * Every completion the plugin recorded, newest first, for the whole
- * organization. Each one was folded into the credits meter of its agent, the
- * agent's member and the org; the balances above show the result. Jev's
- * labels land after ingest and do not move money.
+ * Completions for the open chat — the agent identity that recorded them —
+ * newest first. Each one was folded into that agent's credits, then the
+ * member and the org; Jev's labels land after ingest and do not move money.
  */
 export const EventLog = () => {
-  const { events, tree, member } = useLive()
+  const { agentId } = useParams<{ agentId?: string }>()
+  const { tree, member } = useLive()
+  const { events, mix, agent, taxonomy } = useChatActivity(agentId)
   const org = tree.org.standing
+  const scoped = Boolean(agentId)
   return (
     <Box flexDirection="column" rowGap="s" height="100%" width="100%">
       <Card flexDirection="column" rowGap="xs" padding="s">
@@ -143,21 +72,24 @@ export const EventLog = () => {
             {n(member.standing.usage)} used · {n(member.standing.remaining)}{' '}
             left
           </Row>
+          {agent && <Row label="this chat">{n(agent.standing.usage)} used</Row>}
         </Grid>
       </Card>
 
-      <Mix />
+      <MixCard
+        title={agent ? `${agent.name}'s chat` : "This member's chats"}
+        taxonomy={taxonomy}
+        mix={mix}
+      />
 
       <Text variant="caption" color="muted" as="h2">
-        Event log
+        {agent ? 'This chat' : 'Event log'}
       </Text>
       {events.length === 0 && (
         <Text variant="caption" color="muted">
-          Send a message. Its{' '}
-          <Text as="code" monospace>
-            po_bot.completion
-          </Text>{' '}
-          event shows up here once the server has it.
+          {scoped
+            ? 'Send a message. Its completion shows up here once the server has it.'
+            : 'Pick an agent, or send a message from one of them.'}
         </Text>
       )}
       <Box
@@ -169,7 +101,7 @@ export const EventLog = () => {
         overflowY="auto"
       >
         {events.map((entry) => {
-          const { event, agent, member: who } = entry
+          const { event, agent: who, member: owner } = entry
           const m = event.metadata
           return (
             <Card
@@ -181,7 +113,7 @@ export const EventLog = () => {
             >
               <Box justifyContent="between" alignItems="baseline" columnGap="s">
                 <Text variant="caption" as="span">
-                  {who} › {agent}
+                  {scoped ? String(m.model) : `${owner} › ${who}`}
                 </Text>
                 <Text variant="caption" color="muted" as="span" tabularNums>
                   {time(event.timestamp)}
@@ -193,9 +125,11 @@ export const EventLog = () => {
                 columnGap="s"
                 minWidth={0}
               >
-                <Text variant="caption" color="muted" monospace>
-                  {String(m.model)}
-                </Text>
+                {!scoped && (
+                  <Text variant="caption" color="muted" monospace>
+                    {String(m.model)}
+                  </Text>
+                )}
                 <Span event={entry} />
               </Box>
               <Grid

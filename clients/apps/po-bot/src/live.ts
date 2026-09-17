@@ -14,7 +14,9 @@ import {
 /**
  * One frame of the organization's live state: the identity tree with every
  * node's standing on the credits meter, and the latest completions that fold
- * into it. The layout renders the first frame; `/api/live` streams the rest.
+ * into it. Each completion is stamped with the agent identity that ran it;
+ * the chat UI scopes the activity mix to that identity. The layout renders
+ * the first frame; `/api/live` streams the rest.
  */
 
 export interface AgentNode {

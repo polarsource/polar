@@ -145,6 +145,24 @@ def _merged_prices(
     return list(prices.values())
 
 
+def _products_for_unmerged_prices(
+    current: CanonicalProduct, incoming: CanonicalProduct
+) -> list[CanonicalProduct]:
+    """Prices a refresh found on an already-imported product. Each becomes its
+    own Polar product so the settled snapshot and `target_id` stay in sync."""
+    seen = {canonical_price_key(price) for price in current.prices}
+    return [
+        replace(
+            incoming,
+            source_id=f"{current.source_id}:{price.source_id}",
+            prices=[price],
+            archived=True,
+        )
+        for price in incoming.prices
+        if canonical_price_key(price) not in seen
+    ]
+
+
 class MerchantMigrationRecordRepository(
     RepositorySoftDeletionIDMixin[MerchantMigrationRecord, UUID],
     RepositorySoftDeletionMixin[MerchantMigrationRecord],
@@ -656,8 +674,8 @@ class MerchantMigrationRecordRepository(
         merge_product_prices: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
-        re-run refreshes a still-pending row. Settled rows keep their status;
-        newly discovered product prices are merged into the settled snapshot."""
+        re-run refreshes a still-pending row. Settled rows keep their status
+        and snapshot; extra prices become their own pending products."""
         existing = await self.get_by_source(
             organization_id=organization.id,
             type=record.type,
@@ -683,15 +701,15 @@ class MerchantMigrationRecordRepository(
                     },
                     flush=True,
                 )
-            if merge_product_prices and isinstance(record, CanonicalProduct):
+            if isinstance(record, CanonicalProduct):
                 current = deserialize(existing.type, existing.canonical)
                 if isinstance(current, CanonicalProduct):
-                    merged = replace(current, prices=_merged_prices(current, record))
-                    if merged != current:
-                        return await self.update(
-                            existing,
-                            update_dict={"canonical": serialize(merged)},
-                            flush=True,
+                    for extra in _products_for_unmerged_prices(current, record):
+                        await self.upsert(
+                            merchant_migration,
+                            organization,
+                            extra,
+                            merge_product_prices=merge_product_prices,
                         )
             return existing
         return await self.create(

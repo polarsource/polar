@@ -276,6 +276,86 @@ class TestUpsert:
         assert resolved is not None
         assert resolved.id == staged.id
 
+    async def test_extra_price_on_imported_product_is_its_own_record(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        catalog_product = CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_live",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+        imported = await repository.upsert(
+            migration, organization, catalog_product, merge_product_prices=True
+        )
+        await repository.update(
+            imported,
+            update_dict={
+                "status": MerchantMigrationRecordStatus.imported,
+                "target_id": product.id,
+            },
+        )
+
+        reused = await repository.upsert(
+            migration,
+            organization,
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_live",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                    CanonicalPrice(
+                        source_id="price_extra",
+                        currency="usd",
+                        amount=500,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                ],
+            ),
+            merge_product_prices=True,
+        )
+
+        assert reused.id == imported.id
+        assert reused.status == MerchantMigrationRecordStatus.imported
+        assert [price["source_id"] for price in reused.canonical["prices"]] == [
+            "price_live"
+        ]
+        extra = await repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1:price_extra",
+        )
+        assert extra is not None
+        assert extra.id != imported.id
+        assert extra.status == MerchantMigrationRecordStatus.pending
+        assert extra.canonical["archived"] is True
+        assert [price["source_id"] for price in extra.canonical["prices"]] == [
+            "price_extra"
+        ]
+
     async def test_replaces_prices_when_repointing_a_pending_product(
         self,
         session: AsyncSession,

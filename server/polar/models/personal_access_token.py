@@ -12,7 +12,7 @@ from polar.models.user import User
 class PersonalAccessToken(RecordModel):
     __tablename__ = "personal_access_tokens"
 
-    token: Mapped[str] = mapped_column(CHAR(64), unique=True, nullable=False)
+    token: Mapped[str | None] = mapped_column(CHAR(64), unique=True, nullable=True)
     token_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

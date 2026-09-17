@@ -19,7 +19,7 @@ def get_expires_at() -> datetime:
 class CustomerSession(RecordModel):
     __tablename__ = "customer_sessions"
 
-    token: Mapped[str] = mapped_column(CHAR(64), unique=True, nullable=False)
+    token: Mapped[str | None] = mapped_column(CHAR(64), unique=True, nullable=True)
     token_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

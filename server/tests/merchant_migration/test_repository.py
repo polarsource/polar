@@ -356,6 +356,169 @@ class TestUpsert:
             "price_extra"
         ]
 
+    async def test_extra_currency_on_imported_price_stays_on_the_same_record(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        catalog_product = CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_live",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+        imported = await repository.upsert(
+            migration, organization, catalog_product, merge_product_prices=True
+        )
+        await repository.update(
+            imported,
+            update_dict={
+                "status": MerchantMigrationRecordStatus.imported,
+                "target_id": product.id,
+            },
+        )
+
+        reused = await repository.upsert(
+            migration,
+            organization,
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_live",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                    CanonicalPrice(
+                        source_id="price_live",
+                        currency="eur",
+                        amount=900,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                ],
+            ),
+            merge_product_prices=True,
+        )
+
+        assert reused.id == imported.id
+        assert reused.status == MerchantMigrationRecordStatus.imported
+        assert {
+            (price["source_id"], price["currency"])
+            for price in reused.canonical["prices"]
+        } == {("price_live", "usd"), ("price_live", "eur")}
+        assert (
+            await repository.get_by_source(
+                organization_id=organization.id,
+                type=MerchantMigrationRecordType.product,
+                source_id="prod_1:month:1:price_live",
+            )
+            is None
+        )
+        resolved = await repository.get_imported_product_dependency(
+            organization.id, "price_live"
+        )
+        assert resolved is not None
+        assert resolved.id == imported.id
+
+    async def test_extra_price_keeps_its_currencies_on_one_record(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        catalog_product = CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_live",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+        imported = await repository.upsert(
+            migration, organization, catalog_product, merge_product_prices=True
+        )
+        await repository.update(
+            imported,
+            update_dict={
+                "status": MerchantMigrationRecordStatus.imported,
+                "target_id": product.id,
+            },
+        )
+
+        await repository.upsert(
+            migration,
+            organization,
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_live",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                    CanonicalPrice(
+                        source_id="price_archived",
+                        currency="usd",
+                        amount=500,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                    CanonicalPrice(
+                        source_id="price_archived",
+                        currency="eur",
+                        amount=450,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    ),
+                ],
+            ),
+            merge_product_prices=True,
+        )
+
+        extra = await repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1:price_archived",
+        )
+        assert extra is not None
+        assert extra.id != imported.id
+        assert extra.status == MerchantMigrationRecordStatus.pending
+        assert {
+            (price["source_id"], price["currency"])
+            for price in extra.canonical["prices"]
+        } == {("price_archived", "usd"), ("price_archived", "eur")}
+
     async def test_replaces_prices_when_repointing_a_pending_product(
         self,
         session: AsyncSession,

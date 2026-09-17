@@ -455,8 +455,6 @@ export interface components {
        * @description Whether to kick the member from the Discord server on revocation.
        */
       kick_member: boolean
-      /** Guild Token */
-      readonly guild_token: string
     }
     /** BenefitDownloadables */
     BenefitDownloadables: {

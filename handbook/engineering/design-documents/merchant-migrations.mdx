@@ -301,7 +301,7 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 
 ### Reading the account
 
-We can't reuse Polar's platform Stripe service (it's bound to the global platform key). Read the merchant account with a dedicated `StripeClient(api_key="rk_…")`. Required restricted-key read and write scopes: Customers, Payment Methods, Products, Prices, (read and write)Subscriptions, Coupons (and Invoices / Charges for the refund/dispute precheck). Mention those scopes in the merchant UI.
+We can't reuse Polar's platform Stripe service (it's bound to the global platform key). Read the merchant account with a dedicated `StripeClient(api_key="rk_…")`. Required restricted-key read and write scopes: Customers, Payment Methods, Products, Prices, (read and write)Subscriptions, All accounts, Coupons (and Invoices / Charges for the refund/dispute precheck). Mention those scopes in the merchant UI.
 
 ### Stripe-specific prechecks
 
@@ -324,4 +324,4 @@ The merchant pastes a Stripe **restricted API key** (`rk_…`) when creating the
 
 We originally built a Polar Stripe App (one-click OAuth), but Stripe does **not** let a Connect platform account (which Polar is) own the public app that external-merchant OAuth requires. So we fell back to the pasted-restricted-key approach this doc's Appendix D always contemplated.
 
-Required permissions, validated before the migration is saved (matching what `extract()` reads plus the cutover pause): Customers, Products, Prices, Subscriptions (read **and write**), Payment methods. Coupons / promotion codes and charge / invoice reads will be added when discount import and the refund/dispute precheck land. Validation fails closed: a transient Stripe error rejects the key rather than accepting it unchecked.
+Required permissions, validated before the migration is saved (matching what `extract()` reads plus the cutover pause): Customers, Products, Prices, Subscriptions (read **and write**), Payment methods, All accounts (read — Stripe account id for the uniqueness lock, country and Connect detection). Coupons / promotion codes and charge / invoice reads will be added when discount import and the refund/dispute precheck land. Validation fails closed: a transient Stripe error rejects the key rather than accepting it unchecked. A missing All accounts Read is a missing scope (400), not a transient 502.

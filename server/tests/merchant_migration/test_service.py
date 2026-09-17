@@ -315,9 +315,10 @@ class TestCreate:
             return_value=_FakeAdapter(account_id=None),
         )
 
-        with pytest.raises(SourceVerificationUnavailable):
+        with pytest.raises(MissingStripeScopes) as exc_info:
             await service.create(session, auth_subject, _create_schema(organization))
 
+        assert exc_info.value.missing == ["All accounts"]
         await assert_no_migrations(session, organization)
 
     @pytest.mark.auth

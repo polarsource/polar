@@ -1,10 +1,18 @@
 import { useCreateMerchantMigration } from '@/hooks/queries/merchantMigrations'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Alert, Button, InlineModalHeader, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { ConnectGuide } from './ConnectGuide'
 import { StripeMark } from './StripeMark'
+import {
+  parseMissingStripeScopes,
+  stripeKeyError,
+  stripeKeyPlaceholder,
+} from './stripeKey'
+
+const CONNECT_FALLBACK = 'Please check the API key and try again.'
 
 export function CreateMigrationModal({
   organizationId,
@@ -17,26 +25,31 @@ export function CreateMigrationModal({
 }) {
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [missingResources, setMissingResources] = useState<string[]>([])
   const createMigration = useCreateMerchantMigration(organizationId)
+  const keyError = stripeKeyError(apiKey)
 
   const create = async () => {
-    if (!apiKey) return
+    if (keyError || !apiKey.trim()) {
+      return
+    }
     setError(null)
+    setMissingResources([])
     try {
       const result = await createMigration.mutateAsync({
         organization_id: organizationId,
         source_platform: 'stripe',
-        api_key: apiKey,
+        api_key: apiKey.trim(),
       })
       if (result.data) {
         onCreated(result.data)
         return
       }
-      const detail = result.error?.detail
+      const apiError = result.error ?? {}
+      setMissingResources(parseMissingStripeScopes(apiError))
       setError(
-        typeof detail === 'string'
-          ? detail
-          : 'Please check the API key and try again.',
+        extractApiErrorMessage(apiError, CONNECT_FALLBACK).trim() ||
+          CONNECT_FALLBACK,
       )
     } catch {
       setError('Something went wrong. Please try again.')
@@ -79,30 +92,45 @@ export function CreateMigrationModal({
           billing. Nothing in Stripe changes until you approve each step.
         </Text>
 
-        <ConnectGuide />
+        <ConnectGuide missingResources={missingResources} />
 
-        <Input
-          type="password"
-          placeholder="rk_live_..."
-          value={apiKey}
-          onChange={(e) => {
-            setApiKey(e.target.value)
-            setError(null)
-          }}
-          autoFocus
-        />
+        <Box flexDirection="column" rowGap="xs">
+          <Input
+            type="password"
+            placeholder={stripeKeyPlaceholder()}
+            value={apiKey}
+            aria-invalid={keyError !== null}
+            onChange={(e) => {
+              setApiKey(e.target.value)
+              setError(null)
+              setMissingResources([])
+            }}
+            autoFocus
+          />
+          {keyError ? (
+            <Text variant="caption" color="danger" role="alert">
+              {keyError}
+            </Text>
+          ) : null}
+        </Box>
 
-        {error && (
+        {error && !keyError ? (
           <Alert
             variant="danger"
-            title="We couldn't connect this account"
+            title={
+              missingResources.length > 0
+                ? 'This key is missing permissions'
+                : "We couldn't connect this account"
+            }
             description={error}
           />
-        )}
+        ) : null}
 
         <Button
           type="submit"
-          disabled={!apiKey || createMigration.isPending}
+          disabled={
+            !apiKey.trim() || keyError !== null || createMigration.isPending
+          }
           loading={createMigration.isPending}
           fullWidth
         >

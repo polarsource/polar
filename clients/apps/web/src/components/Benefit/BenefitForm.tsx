@@ -134,9 +134,7 @@ const BenefitForm = ({
         />
       ) : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
-      {type === 'discord' && (
-        <DiscordBenefitForm organization={organization} />
-      )}
+      {type === 'discord' && <DiscordBenefitForm organization={organization} />}
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}

@@ -1,11 +1,10 @@
 import structlog
-from sqlalchemy import select
 
 from polar.enums import TokenType
-from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import OAuth2AuthorizationCode
+from polar.oauth2.repository import OAuth2AuthorizationCodeRepository
 from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
@@ -21,12 +20,8 @@ class OAuth2AuthorizationCodeService(ResourceServiceReader[OAuth2AuthorizationCo
         notifier: str,
         url: str | None = None,
     ) -> bool:
-        statement = select(OAuth2AuthorizationCode).where(
-            OAuth2AuthorizationCode.code == get_token_hash(token)
-        )
-
-        result = await session.execute(statement)
-        authorization_code = result.unique().scalar_one_or_none()
+        repository = OAuth2AuthorizationCodeRepository.from_session(session)
+        authorization_code = await repository.get_by_code(token)
 
         if authorization_code is None:
             return False

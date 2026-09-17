@@ -73,9 +73,7 @@ async def user_authorize(
 ) -> RedirectResponse:
     state = {"return_to": return_to}
 
-    encoded_state = jwt.encode(
-        data=state, secret=settings.SECRET, type="github_repository_benefit_oauth"
-    )
+    encoded_state = await jwt.encode(data=state, type="github_repository_benefit_oauth")
 
     authorization_url = await github_oauth_client.get_authorization_url(
         redirect_uri=str(

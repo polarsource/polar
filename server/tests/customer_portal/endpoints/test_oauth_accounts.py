@@ -124,7 +124,7 @@ class TestAuthorize:
         assert "member_id" in decoded
 
 
-def _encode_state(customer_id: str, member_id: str | None = None) -> str:
+async def _encode_state(customer_id: str, member_id: str | None = None) -> str:
     payload: dict[str, str] = {
         "platform": CustomerOAuthPlatform.discord.value,
         "return_to": "/",
@@ -132,7 +132,7 @@ def _encode_state(customer_id: str, member_id: str | None = None) -> str:
     }
     if member_id is not None:
         payload["member_id"] = member_id
-    return jwt.encode(data=payload, secret=settings.SECRET, type="customer_oauth")
+    return await jwt.encode(data=payload, type="customer_oauth")
 
 
 @pytest.mark.asyncio
@@ -152,7 +152,7 @@ class TestCallback:
         customer = await create_customer(
             save_fixture, organization=organization, email="replay-c@example.com"
         )
-        state = _encode_state(str(customer.id))
+        state = await _encode_state(str(customer.id))
 
         response = await client.get(
             "/v1/customer-portal/oauth-accounts/callback",
@@ -186,7 +186,7 @@ class TestCallback:
         member: Member,
         session: AsyncSession,
     ) -> None:
-        state = _encode_state(str(member.customer_id), member_id=str(member.id))
+        state = await _encode_state(str(member.customer_id), member_id=str(member.id))
 
         response = await client.get(
             "/v1/customer-portal/oauth-accounts/callback",
@@ -221,7 +221,7 @@ class TestCallback:
         customer = await create_customer(
             save_fixture, organization=organization, email="replay-err@example.com"
         )
-        state = _encode_state(str(customer.id))
+        state = await _encode_state(str(customer.id))
 
         response = await client.get(
             "/v1/customer-portal/oauth-accounts/callback",
@@ -263,7 +263,7 @@ class TestCallback:
             organization=organization,
             email="token-timeout@example.com",
         )
-        state = _encode_state(str(customer.id))
+        state = await _encode_state(str(customer.id))
 
         oauth_client = OAUTH_CLIENTS[CustomerOAuthPlatform.discord]
         mocker.patch.object(
@@ -314,7 +314,7 @@ class TestCallback:
             organization=organization,
             email="profile-timeout@example.com",
         )
-        state = _encode_state(str(customer.id))
+        state = await _encode_state(str(customer.id))
 
         oauth_client = OAUTH_CLIENTS[CustomerOAuthPlatform.discord]
         mocker.patch.object(
@@ -362,7 +362,7 @@ class TestCallback:
             organization=organization,
             email="missing-token@example.com",
         )
-        state = _encode_state(str(customer.id))
+        state = await _encode_state(str(customer.id))
 
         oauth_client = OAUTH_CLIENTS[CustomerOAuthPlatform.discord]
         mocker.patch.object(

@@ -173,7 +173,7 @@ async def authorize(
         raise SlackIntegrationNotConfigured()
 
     redirect_uri = str(request.url_for(CALLBACK_ROUTE_NAME))
-    authorize_url = slack_app_service.build_authorize_url(
+    authorize_url = await slack_app_service.build_authorize_url(
         integration,
         subject_id=auth_subject.subject.id,
         redirect_uri=redirect_uri,

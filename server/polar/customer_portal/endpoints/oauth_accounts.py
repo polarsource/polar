@@ -102,9 +102,7 @@ async def authorize(
         # customer_id, so that id must come from an authenticated subject.
         raise Unauthorized()
 
-    encoded_state = jwt.encode(
-        data=state, secret=settings.SECRET, type="customer_oauth"
-    )
+    encoded_state = await jwt.encode(data=state, type="customer_oauth")
     client = OAUTH_CLIENTS[platform]
     authorization_url = await client.get_authorization_url(
         redirect_uri=str(request.url_for("customer_portal.oauth_accounts.callback")),

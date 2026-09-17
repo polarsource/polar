@@ -5,7 +5,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.repository import BenefitGrantRepository
-from polar.config import settings
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.integrations.slack.schemas import SlackIntegrationCredentialsUpdate
 from polar.integrations.slack.service import (
@@ -262,27 +261,23 @@ class TestSetCredentials:
             )
 
 
+@pytest.mark.asyncio
 class TestDecodeState:
-    def test_rejects_unexpected_token_type(self) -> None:
-        state = jwt.encode(
-            data={},
-            secret=settings.SECRET,
-            type="discord_oauth",
-        )
+    async def test_rejects_unexpected_token_type(self) -> None:
+        state = await jwt.encode(data={}, type="discord_oauth")
 
         with pytest.raises(SlackIntegrationInvalidState):
             SlackAppService().decode_state(state)
 
-    def test_decodes_expected_token_type(self) -> None:
+    async def test_decodes_expected_token_type(self) -> None:
         integration_id = uuid4()
         subject_id = uuid4()
-        state = jwt.encode(
+        state = await jwt.encode(
             data={
                 "integration_id": str(integration_id),
                 "subject_id": str(subject_id),
                 "return_to": "https://polar.sh/dashboard",
             },
-            secret=settings.SECRET,
             type=OAUTH_STATE_JWT_TYPE,
         )
 

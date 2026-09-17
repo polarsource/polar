@@ -82,7 +82,7 @@ async def discord_bot_authorize(
         "return_to": return_to,
     }
 
-    encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="discord_oauth")
+    encoded_state = await jwt.encode(data=state, type="discord_oauth")
 
     authorization_url = await oauth.bot_client.get_authorization_url(
         redirect_uri=str(request.url_for("integrations.discord.bot_callback")),

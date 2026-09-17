@@ -23,7 +23,6 @@ from ..canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
-    canonical_price_key,
 )
 from .base import ExtractionPage
 
@@ -42,9 +41,8 @@ SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
 # that as the customer having churned and strand the subscription unbilled.
 CANCELLATION_COMMENT_PREFIX = "Migrated to Polar"
 
-# Expansions the cutover needs on a single subscription read. Product and
-# currency_options also let extract stage a live sub's price even when Stripe
-# no longer lists that price as active.
+# Cutover plus subscription extract: archived prices still need product and
+# currency_options so a live sub can import them.
 _SUBSCRIPTION_EXPAND = [
     "default_payment_method",
     "customer.invoice_settings.default_payment_method",
@@ -219,10 +217,9 @@ class StripeAdapter:
         self, price: stripe_lib.Price, *, require_active: bool
     ) -> CanonicalProduct | None:
         product = price.product
-        # A deleted product deserializes as a Product with no `name`, or with
-        # `deleted`. Catalog extract still skips archived (`active=false`).
-        # Subscription extract stages an archived price as its own Polar product
-        # so a live sub can import without merging into the active catalog row.
+        # Deleted Stripe products have no usable catalog row. Archived prices
+        # are skipped in catalog extract (`require_active`) and staged from a
+        # live subscription as their own Polar product (Polar can archive).
         if not isinstance(product, stripe_lib.Product) or product.get("deleted"):
             return None
         archived = not bool(price.get("active", True)) or not bool(
@@ -253,12 +250,7 @@ class StripeAdapter:
         if existing is None:
             grouped[product.source_id] = product
             return
-        seen = {canonical_price_key(price) for price in existing.prices}
-        for price in product.prices:
-            key = canonical_price_key(price)
-            if key not in seen:
-                existing.prices.append(price)
-                seen.add(key)
+        existing.prices.extend(product.prices)
 
     async def _extract_customer_page(
         self, cursor: StripeExtractionCursor

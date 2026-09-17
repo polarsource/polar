@@ -145,46 +145,6 @@ def _merged_prices(
     return list(prices.values())
 
 
-def _prices_with_new_currencies(
-    current: CanonicalProduct, incoming: CanonicalProduct
-) -> list[CanonicalPrice]:
-    """Extra presentment currencies for a Stripe price already on this product."""
-    known_ids = {price.source_id for price in current.prices}
-    seen = {canonical_price_key(price) for price in current.prices}
-    extra = [
-        price
-        for price in incoming.prices
-        if price.source_id in known_ids and canonical_price_key(price) not in seen
-    ]
-    if not extra:
-        return current.prices
-    return [*current.prices, *extra]
-
-
-def _products_for_unmerged_prices(
-    current: CanonicalProduct, incoming: CanonicalProduct
-) -> list[CanonicalProduct]:
-    """Stripe prices a refresh found that this imported product does not have.
-
-    All currencies of one Stripe price stay on one Polar product. A different
-    price id (an archived extra) becomes its own product.
-    """
-    seen_ids = {price.source_id for price in current.prices}
-    extras: dict[str, list[CanonicalPrice]] = {}
-    for price in incoming.prices:
-        if price.source_id not in seen_ids:
-            extras.setdefault(price.source_id, []).append(price)
-    return [
-        replace(
-            incoming,
-            source_id=f"{current.source_id}:{source_id}",
-            prices=prices,
-            archived=True,
-        )
-        for source_id, prices in extras.items()
-    ]
-
-
 class MerchantMigrationRecordRepository(
     RepositorySoftDeletionIDMixin[MerchantMigrationRecord, UUID],
     RepositorySoftDeletionMixin[MerchantMigrationRecord],
@@ -696,9 +656,8 @@ class MerchantMigrationRecordRepository(
         merge_product_prices: bool = False,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
-        re-run refreshes a still-pending row. Settled rows keep their status.
-        Extra currencies of a price already on the snapshot stay there; extra
-        Stripe prices become their own pending products."""
+        re-run refreshes a still-pending row; imported/skipped/failed rows are
+        left as-is so a prior run's results aren't re-imported."""
         existing = await self.get_by_source(
             organization_id=organization.id,
             type=record.type,
@@ -724,27 +683,6 @@ class MerchantMigrationRecordRepository(
                     },
                     flush=True,
                 )
-            if isinstance(record, CanonicalProduct):
-                current = deserialize(existing.type, existing.canonical)
-                if isinstance(current, CanonicalProduct):
-                    for extra in _products_for_unmerged_prices(current, record):
-                        await self.upsert(
-                            merchant_migration,
-                            organization,
-                            extra,
-                            merge_product_prices=merge_product_prices,
-                        )
-                    merged_prices = _prices_with_new_currencies(current, record)
-                    if merged_prices != current.prices:
-                        return await self.update(
-                            existing,
-                            update_dict={
-                                "canonical": serialize(
-                                    replace(current, prices=merged_prices)
-                                )
-                            },
-                            flush=True,
-                        )
             return existing
         return await self.create(
             MerchantMigrationRecord(

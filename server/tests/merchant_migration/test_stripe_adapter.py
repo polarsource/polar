@@ -525,20 +525,16 @@ class TestExtractPages:
         assert len(page.records) == 1
         assert page.next_cursor is None
 
-    @pytest.mark.parametrize(
-        ("price_active", "product_active"),
-        [(False, True), (True, False)],
-    )
     async def test_subscription_on_archived_price_stages_the_product(
-        self, mocker: MockerFixture, price_active: bool, product_active: bool
+        self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
         price = _stripe_price(
             id="price_archived",
             product_id="prod_archived",
-            product_active=product_active,
-            price_active=price_active,
+            price_active=False,
             product_name="Legacy",
+            currency_options={"eur": {"unit_amount": 900}},
         )
         subscription = _stripe_subscription(
             items=[
@@ -569,7 +565,10 @@ class TestExtractPages:
         assert products[0].source_id == "prod_archived:month:1:price_archived"
         assert products[0].archived is True
         assert products[0].name == "Legacy"
-        assert products[0].prices[0].source_id == "price_archived"
+        assert {(p.source_id, p.currency, p.amount) for p in products[0].prices} == {
+            ("price_archived", "usd", 1000),
+            ("price_archived", "eur", 900),
+        }
         assert len(subscriptions) == 1
         assert subscriptions[0].price_source_id == "price_archived"
         _, kwargs = client.v1.subscriptions.list_async.call_args

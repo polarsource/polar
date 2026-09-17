@@ -77,9 +77,9 @@ class CanonicalProduct:
     # In Polar the recurring interval lives on the product and a product holds
     # several prices (one per currency), so a source product is grouped per
     # interval: one CanonicalProduct = one Polar product = (source product,
-    # interval), carrying its currency prices. An archived Stripe price that a
-    # live subscription still sits on is a separate row, keyed by price id, so
-    # it is not merged into the active catalog product.
+    # interval), carrying its currency prices. An archived Stripe price a live
+    # subscription still sits on is keyed by price id so it is not mixed into
+    # the active catalog product.
     source_id: str
     product_source_id: str
     name: str

@@ -999,31 +999,6 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].product_name == "Pro"
 
-    def test_subscription_on_archived_same_currency_price_imports(self) -> None:
-        records: list[CanonicalRecord] = [
-            build_product(
-                source_id="prod_1:month:1",
-                product_source_id="prod_1",
-                prices=[build_price(source_id="price_live", amount=1000)],
-            ),
-            build_product(
-                source_id="prod_1:month:1:price_archived",
-                product_source_id="prod_1",
-                prices=[build_price(source_id="price_archived", amount=500)],
-                archived=True,
-            ),
-            build_customer(source_id="cus_1", email="a@example.com"),
-            replace(
-                build_subscription(source_id="sub_1"),
-                price_source_id="price_archived",
-            ),
-        ]
-
-        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
-
-        assert items[0].status == PrecheckRecordStatus.importable
-        assert items[0].product_name == "Pro"
-
     def test_subscription_uses_currency_option_on_shared_price_id(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(

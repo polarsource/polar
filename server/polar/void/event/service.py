@@ -43,10 +43,12 @@ class EventService:
         external_identity_id: str | None = None,
         external_root_id: str | None = None,
         name: str | None = None,
+        page: int = 1,
     ) -> EventsList:
         params: dict[str, str | int] = {
             "organization_id": str(organization_id),
             "limit": limit,
+            "offset": (page - 1) * limit,
         }
         for key, value in (
             ("external_identity_id", external_identity_id),

@@ -93,6 +93,8 @@ export interface VoidEventRecord {
   source: 'user' | 'system'
   external_id: string
   external_identity_id: string | null
+  external_root_id?: string | null
+  metadata?: Record<string, unknown>
 }
 
 export interface VoidEventsList {

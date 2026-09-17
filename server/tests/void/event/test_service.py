@@ -281,9 +281,23 @@ class TestList:
             {
                 "organization_id": str(organization.id),
                 "limit": 5,
+                "offset": 0,
                 "external_identity_id": "actor",
                 "external_root_id": "root",
                 "name": "usage",
+            },
+        )
+
+    async def test_pages_with_offset(self, organization: Organization) -> None:
+        tinybird = MagicMock(spec=TinybirdApi)
+        tinybird.query.return_value = {"data": []}
+        await event_service.list(tinybird, organization.id, 5, None, None, None, 3)
+        tinybird.query.assert_called_once_with(
+            "void_events_list",
+            {
+                "organization_id": str(organization.id),
+                "limit": 5,
+                "offset": 10,
             },
         )
 

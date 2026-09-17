@@ -1,6 +1,6 @@
 ---
 title: "ADR-0006: Migrations and backfills are deploy-safe by construction"
-description: "Migrations run under a lock timeout, backfills run as separate batched scripts, and migration PRs stay isolated from code."
+description: "Migrations run under a lock timeout sized to what they actually wait for, backfills run as separate batched scripts, and migration PRs stay isolated from code."
 ---
 
 <Info>
@@ -13,17 +13,23 @@ description: "Migrations run under a lock timeout, backfills run as separate bat
 
 ## Context
 
-Two things make migrations risky during a deploy:
+Three things make migrations risky during a deploy:
 
 - **Locks.** A blocking `ALTER` or an unbatched `UPDATE` on a hot table takes an `ACCESS EXCLUSIVE`
   lock, which can stall live API traffic until it finishes.
 - **Deploy order.** The API deploys before the workers. If a migration ships in the same PR as the
   code that needs it, that code can go live before its schema exists.
+- **Snapshot waits.** `CREATE INDEX CONCURRENTLY` takes no blocking lock, but it finishes by
+  waiting for every concurrent transaction in the database to end, whatever table they touch. A
+  short timeout there fails the deploy without protecting anything.
 
 ## Decision
 
 - Generate migrations with `alembic revision --autogenerate`. Every migration inherits
-  `SET LOCAL lock_timeout = '5s'` from the template. Raise it for a busy table.
+  `SET LOCAL lock_timeout = '5s'` from the template. That 5s is for lock-taking DDL.
+- `CREATE INDEX CONCURRENTLY` sets its own `lock_timeout` of `5min` inside the
+  `autocommit_block`, and drops any `INVALID` leftover before rebuilding. Table size is not the
+  criterion: the wait is on other transactions, not on the build.
 - Add a NOT NULL column across separate PRs: add it nullable, backfill with a batched script
   (`run_batched_update`), then enforce NOT NULL.
 - The enforce migration runs an unconditional `UPDATE ... WHERE col IS NULL` immediately before
@@ -41,9 +47,26 @@ The `UPDATE` stays because the script misses two things: environments where nobo
 rows written NULL between the backfill and the deploy. Either one fails `SET NOT NULL` and
 strands the schema on the previous revision.
 
+A concurrent index build sets its own timeout and clears the leftover from any failed attempt:
+
+```python
+with op.get_context().autocommit_block():
+    op.execute("SET lock_timeout = '5min'")
+    try:
+        op.drop_index(
+            INDEX_NAME, table_name="...", postgresql_concurrently=True, if_exists=True
+        )
+        op.create_index(INDEX_NAME, "...", [...], postgresql_concurrently=True)
+    finally:
+        op.execute("RESET lock_timeout")
+```
+
 ## Consequences
 
 - A lock-holding migration fails fast at the lock timeout instead of taking the database down.
+- A concurrent index build waits instead of failing. It holds only `SHARE UPDATE EXCLUSIVE`,
+  which conflicts with neither reads nor writes, so the cost of the longer timeout is a stalled
+  deploy, not a stalled app.
 - Large backfills run outside the deploy path, in controlled batches.
 - Code never ships ahead of the schema it needs.
 - CI enforces this: a "Migration Isolation Check" gates which files travel together, and
@@ -58,9 +81,14 @@ strands the schema on the previous revision.
   `UPDATE` has nothing left to do.
 - **Ship a migration in the same PR as the code that depends on it**: breaks the
   API-before-workers ordering.
+- **Keep the 5s default for concurrent index builds too**: uniform, but it makes every deploy a
+  race against unrelated traffic. It failed repeatedly on a table holding **zero rows** before we
+  raised it, because none of those 5 seconds were spent building anything.
 
 ## References
 
 - `server/migrations/script.py.mako`, `server/migrations/env.py`, `server/migrations/README.md`.
 - `server/scripts/helper.py` (`run_batched_update`) and the `server/scripts/backfill_*.py`
   scripts. CI: `.github/workflows/test_server.yaml` (`migration-check`).
+- Worked example of the concurrent-index rule, and why 5s was not enough:
+  [#14583](https://github.com/polarsource/polar/pull/14583).

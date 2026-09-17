@@ -15,7 +15,7 @@ from polar.auth.scope import READ_ONLY_SCOPES
 from polar.auth.service import auth as auth_service
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
-from polar.kit.token_hash import hash_token
+from polar.kit.crypto import get_token_hash
 from polar.models import (
     User,
     UserSession,
@@ -78,7 +78,7 @@ async def start_impersonation(
 
     admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
     if admin_token:
-        token_hash = hash_token(admin_token)
+        token_hash = get_token_hash(admin_token)
         if token_hash != admin_session.token:
             admin_token = None
     if not admin_token:

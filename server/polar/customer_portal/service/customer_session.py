@@ -16,8 +16,8 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.email.schemas import CustomerSessionCodeEmail, CustomerSessionCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
+from polar.kit.crypto import get_token_hash
 from polar.kit.db.locking import is_lock_not_available_error
-from polar.kit.token_hash import hash_token
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -241,7 +241,7 @@ class CustomerSessionService:
     async def authenticate(
         self, session: AsyncSession, code: str
     ) -> tuple[str, CustomerSession | MemberSession]:
-        code_hash = hash_token(code)
+        code_hash = get_token_hash(code)
 
         code_repository = CustomerSessionCodeRepository.from_session(session)
         try:
@@ -294,7 +294,7 @@ class CustomerSessionService:
             secrets.choice(string.ascii_uppercase + string.digits)
             for _ in range(settings.CUSTOMER_SESSION_CODE_LENGTH)
         )
-        code_hash = hash_token(code)
+        code_hash = get_token_hash(code)
         return code, code_hash
 
 

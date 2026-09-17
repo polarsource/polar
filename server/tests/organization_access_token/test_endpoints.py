@@ -5,7 +5,6 @@ from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
-from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationAccessToken, User, UserOrganization
@@ -22,7 +21,7 @@ async def _build_oat(
 ) -> OrganizationAccessToken:
     token = OrganizationAccessToken(
         comment=comment,
-        token=get_token_hash("polar_oat_test", secret=settings.SECRET),
+        token=get_token_hash("polar_oat_test"),
         organization=organization,
         expires_at=utc_now() + timedelta(days=1),
         scope=" ".join(s.value for s in scopes),

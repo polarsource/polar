@@ -5,7 +5,6 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.config import settings
 from polar.customer_email_update.service import (
     TOKEN_PREFIX,
     CustomerEmailUpdateService,
@@ -42,9 +41,7 @@ async def _create_verification(
     customer: Customer,
     email: str = "new@example.com",
 ) -> tuple[CustomerEmailVerification, str]:
-    token, token_hash = generate_token_hash_pair(
-        secret=settings.SECRET, prefix=TOKEN_PREFIX
-    )
+    token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
     record = CustomerEmailVerification(
         email=email,
         token_hash=token_hash,
@@ -135,7 +132,7 @@ class TestRequestEmailUpdate:
         assert token.startswith(TOKEN_PREFIX)
 
         # Verify token hash matches
-        expected_hash = get_token_hash(token, secret=settings.SECRET)
+        expected_hash = get_token_hash(token)
         assert record.token_hash == expected_hash
 
 

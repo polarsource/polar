@@ -21,9 +21,9 @@ from polar.email.schemas import (
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.token_hash import generate_token_hash, hash_token
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import OrganizationAccessToken, User
@@ -109,7 +109,7 @@ class OrganizationAccessTokenService:
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> OrganizationAccessToken | None:
-        token_hash = hash_token(token)
+        token_hash = get_token_hash(token)
         repository = OrganizationAccessTokenRepository.from_session(session)
         return await repository.get_by_token_hash(token_hash, expired=expired)
 
@@ -129,7 +129,7 @@ class OrganizationAccessTokenService:
             OrganizationPermission.organization_manage,
         )
         self._validate_scopes_within_caller(auth_subject, create_schema.scopes)
-        token, token_hash = generate_token_hash(prefix=TOKEN_PREFIX)
+        token, token_hash = generate_token_hash_pair(prefix=TOKEN_PREFIX)
         organization_access_token = OrganizationAccessToken(
             **create_schema.model_dump(
                 exclude={"scopes", "expires_in", "organization_id"}

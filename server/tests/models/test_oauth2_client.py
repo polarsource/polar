@@ -2,7 +2,6 @@ import pytest
 from cryptography.exceptions import InvalidTag
 from sqlalchemy import select
 
-from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.encryption import EncryptedString
 from polar.models import OAuth2Client, User
@@ -24,7 +23,7 @@ def _build(user: User) -> OAuth2Client:
 class TestHashSecret:
     def test_hashes_with_secret(self) -> None:
         assert OAuth2Client.hash_secret("polar_cs_test") == get_token_hash(
-            "polar_cs_test", secret=settings.SECRET
+            "polar_cs_test"
         )
 
     def test_is_deterministic(self) -> None:

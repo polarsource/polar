@@ -9,8 +9,8 @@ from sqlalchemy.orm import joinedload
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
+from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
-from polar.kit.token_hash import hash_token
 from polar.logging import Logger
 from polar.models import OAuth2Token, User
 from polar.oauth2.repository import OAuth2TokenRepository
@@ -26,7 +26,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
     async def get_by_access_token(
         self, session: AsyncSession, access_token: str
     ) -> OAuth2Token | None:
-        access_token_hash = hash_token(access_token)
+        access_token_hash = get_token_hash(access_token)
         statement = (
             select(OAuth2Token)
             .where(OAuth2Token.access_token == access_token_hash)
@@ -81,9 +81,13 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         )
 
         if token_type == TokenType.access_token:
-            statement = statement.where(OAuth2Token.access_token == hash_token(token))
+            statement = statement.where(
+                OAuth2Token.access_token == get_token_hash(token)
+            )
         elif token_type == TokenType.refresh_token:
-            statement = statement.where(OAuth2Token.refresh_token == hash_token(token))
+            statement = statement.where(
+                OAuth2Token.refresh_token == get_token_hash(token)
+            )
         else:
             raise ValueError(f"Unsupported token type: {token_type}")
 

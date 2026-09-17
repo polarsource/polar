@@ -120,8 +120,8 @@ async def create_oauth2_token(
     token = OAuth2Token(
         client_id=client.client_id,
         token_type="bearer",
-        access_token=get_token_hash(access_token, secret=settings.SECRET),
-        refresh_token=get_token_hash(refresh_token, secret=settings.SECRET),
+        access_token=get_token_hash(access_token),
+        refresh_token=get_token_hash(refresh_token),
         scope=" ".join(scopes),
         access_token_revoked_at=access_token_revoked_at,
         refresh_token_revoked_at=refresh_token_revoked_at,
@@ -156,7 +156,7 @@ async def create_oauth2_authorization_code(
     code_challenge_method: Literal["plain", "S256"] | None = None,
 ) -> OAuth2AuthorizationCode:
     authorization_code = OAuth2AuthorizationCode(
-        code=get_token_hash(code, secret=settings.SECRET),
+        code=get_token_hash(code),
         client_id=client.client_id,
         scope=" ".join(scopes),
         redirect_uri=redirect_uri,

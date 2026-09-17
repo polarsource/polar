@@ -3107,10 +3107,7 @@ def polar_self_env() -> None:
             for t in existing:
                 await session.delete(t)
 
-            token, token_hash = generate_token_hash_pair(
-                secret=settings.SECRET,
-                prefix="polar_oat_",
-            )
+            token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
             oat = OrganizationAccessToken(
                 organization_id=org.id,
                 token=token_hash,
@@ -3233,7 +3230,7 @@ def customer_portal_session(
             ).scalar_one_or_none()
 
             token, token_hash = generate_token_hash_pair(
-                secret=settings.SECRET, prefix=CUSTOMER_SESSION_TOKEN_PREFIX
+                prefix=CUSTOMER_SESSION_TOKEN_PREFIX
             )
             session.add(
                 CustomerSession(

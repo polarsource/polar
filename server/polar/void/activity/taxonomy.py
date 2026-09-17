@@ -37,5 +37,3 @@ WASTE_INSTRUCTIONS = (
     "Did most of this span's spend go to retries, loops, failed tools, or "
     "other steps the user would not count as progress?"
 )
-
-SLUGS: tuple[ActivitySlug, ...] = tuple(ACTIVITY_CRITERIA)

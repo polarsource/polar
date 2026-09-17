@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Literal
-from uuid import UUID
 
 from pydantic import Field
 
@@ -25,17 +24,6 @@ class DeployActivity(Schema):
     group_by: str = Field(default=DEFAULT_GROUP_BY, min_length=1, max_length=128)
     run_by: str | None = Field(default=None, min_length=1, max_length=128)
     taxonomy: str = Field(default=TAXONOMY, min_length=1, max_length=64)
-
-
-class ActivityDefinition(Schema):
-    id: UUID
-    slug: str
-    version_id: str
-    event_name: str
-    group_by: str
-    run_by: str | None
-    taxonomy: str
-    created_at: datetime
 
 
 class ActivityShare(Schema):

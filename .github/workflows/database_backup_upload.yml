@@ -1,8 +1,6 @@
 name: Upload database backup to S3
 
 on:
-  schedule:
-    - cron: "0 12 * * *"
   workflow_dispatch:
     inputs:
       date:

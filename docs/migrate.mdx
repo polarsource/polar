@@ -4,7 +4,7 @@ sidebarTitle: "Migrate to Polar"
 description: "Move new sales and existing subscriptions from Stripe to Polar without a big-bang cutover."
 ---
 
-import { MigrationCoexistence } from "/snippets/migration-coexistence.jsx"
+import { MigrationCoexistence } from "/snippets/migration-coexistence.jsx";
 
 You do not need to move everything on one cutover day. Start by using Polar for
 new sales while Stripe continues to renew existing subscriptions. Then prepare
@@ -14,8 +14,8 @@ The key idea is simple: **each subscription has one system responsible for its
 next renewal**.
 
 <Info>
-Stripe migrations are rolling out gradually. If **Migrations** is not
-available in your organization settings, [contact Polar support](/support).
+  Stripe migrations are rolling out gradually. If **Migrations** is not available in your
+  organization settings, [contact Polar support](/support).
 </Info>
 
 ## Before you begin
@@ -44,9 +44,9 @@ until you switch them through Polar.
 <MigrationCoexistence />
 
 <Warning>
-**Never let the same subscription renew in both systems.** Use the switch in
-Polar to coordinate the change. Do not manually activate a matching Polar
-subscription while the Stripe subscription can still renew.
+  **Never let the same subscription renew in both systems.** Use the switch in Polar to coordinate
+  the change. Do not manually activate a matching Polar subscription while the Stripe subscription
+  can still renew.
 </Warning>
 
 ## Migration overview
@@ -73,10 +73,10 @@ Integrate [Polar Checkout](/features/checkout/links),
 create their orders and subscriptions in Polar. Existing Stripe subscriptions
 continue renewing in Stripe.
 
-| Customer type | Checkout | Next renewal |
-| --- | --- | --- |
-| New signup | Polar | Polar |
-| Existing Stripe subscriber | Unchanged | Stripe |
+| Customer type              | Checkout  | Next renewal |
+| -------------------------- | --------- | ------------ |
+| New signup                 | Polar     | Polar        |
+| Existing Stripe subscriber | Unchanged | Stripe       |
 
 Use a stable application customer ID as Polar's `external_customer_id` so you
 can look customers up later. Keep Stripe IDs in your database for the
@@ -108,12 +108,12 @@ in Polar.
 Polar assesses your recurring products, prices, customers, and subscriptions.
 You review what is ready and what needs attention, then import your selection.
 
-| After import | In Polar | Still renews in |
-| --- | --- | --- |
-| Products and prices | Created | — |
-| Customers | Created or reused | — |
-| Subscriptions you plan to switch | Not created yet | Stripe |
-| Unsupported subscriptions | Left alone | Stripe |
+| After import                     | In Polar          | Still renews in |
+| -------------------------------- | ----------------- | --------------- |
+| Products and prices              | Created           | —               |
+| Customers                        | Created or reused | —               |
+| Subscriptions you plan to switch | Not created yet   | Stripe          |
+| Unsupported subscriptions        | Left alone        | Stripe          |
 
 Polar does not create Polar subscriptions or change Stripe billing at this
 stage. Leave unsupported subscriptions on Stripe until you resolve them or
@@ -157,11 +157,11 @@ subscription, stops it on Stripe, and activates it in Polar with the same paid
 period. The next renewal happens in Polar; the customer is not charged again
 for time they already paid for.
 
-| Before switch | After successful switch |
-| --- | --- |
-| Renews in Stripe | Renews in Polar |
-| Paid period already paid | Same period kept |
-| Card verified in Polar | Used on the next Polar renewal |
+| Before switch            | After successful switch        |
+| ------------------------ | ------------------------------ |
+| Renews in Stripe         | Renews in Polar                |
+| Paid period already paid | Same period kept               |
+| Card verified in Polar   | Used on the next Polar renewal |
 
 If a subscription renews within 24 hours, Polar leaves it on Stripe to avoid a
 billing conflict. A subscription already scheduled to end also stays there
@@ -170,9 +170,7 @@ because there is no future renewal to take over.
 **Continue when:** Every selected subscription shows as moved, skipped, or
 failed, and every subscription left on Stripe has a clear next action.
 
-<Warning>
-Switching is not reversible. Review your selection before confirming it.
-</Warning>
+<Warning>Switching is not reversible. Review your selection before confirming it.</Warning>
 
 ## 6. Reconcile and clean up
 
@@ -231,6 +229,7 @@ for payments it processes.
     Set everything else to **None**. Subscription write access allows Polar to
     stop billing on Stripe during the switch. All accounts read access lets
     Polar identify the Stripe account and reject unsupported Connect platforms.
+
   </Accordion>
 
   <Accordion title="Subscriptions that need attention">
@@ -249,6 +248,7 @@ for payments it processes.
 
     Polar also rechecks subscriptions during the switch. Subscriptions renewing
     within 24 hours or already scheduled to end remain on Stripe at that point.
+
   </Accordion>
 
   <Accordion title="Saved card transfer">
@@ -260,6 +260,7 @@ for payments it processes.
     Polar usually accepts the request within one business day. Stripe then moves
     the card data, usually within a few hours and sometimes up to 72 hours. Polar
     verifies the result and identifies subscriptions without a copied card.
+
   </Accordion>
 
   <Accordion title="Checklist for your application">
@@ -275,6 +276,7 @@ for payments it processes.
 
     Your application remains responsible for mapping customers and translating
     billing events into access to your product.
+
   </Accordion>
 </AccordionGroup>
 
@@ -285,7 +287,7 @@ the prompt below. It asks for a migration plan and reconciliation contract
 before any code changes. Review that plan before asking it to implement
 anything. Never paste Stripe or Polar secrets into a conversation.
 
-````markdown title="Migration assistant prompt" icon="wand-magic-sparkles" expandable
+```markdown title="Migration assistant prompt" icon="wand-magic-sparkles" expandable
 # Plan a safe Stripe-to-Polar migration
 
 You are a senior payments integration engineer helping migrate this
@@ -584,6 +586,6 @@ Label every recommendation as:
 
 End with the smallest safe implementation slice. Wait for approval before
 editing code or changing billing state.
-````
+```
 
 Need help planning the migration? [Contact Polar support](/support).

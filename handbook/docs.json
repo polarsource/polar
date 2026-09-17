@@ -111,7 +111,8 @@
               "engineering/decisions/0008-encrypt-secrets-at-rest",
               "engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates",
               "engineering/decisions/0010-jwks-signing-keys-in-kms",
-              "engineering/decisions/0011-specialized-webhooks-also-emit-updated"
+              "engineering/decisions/0011-specialized-webhooks-also-emit-updated",
+              "engineering/decisions/0012-minimize-data-in-ai-api-calls"
             ]
           },
           "engineering/tech-notes",

@@ -28,6 +28,7 @@ import {
   SubscriptionsTable,
   TableSection,
 } from './VoidIdentityTables'
+import { VoidIdentityActivities } from './VoidIdentityActivities'
 import { VoidIdentityTree } from './VoidIdentityTree'
 import { VoidIdentityUsage } from './VoidIdentityUsage'
 
@@ -167,6 +168,10 @@ export const VoidIdentityPage = ({ identityId }: { identityId: string }) => {
         </Box>
 
         <VoidIdentityUsage root={focusedNode} rolled={rolled} base={base} />
+
+        {data.activities[focused.id] ? (
+          <VoidIdentityActivities mix={data.activities[focused.id]} />
+        ) : null}
 
         {isRoot ? (
           <MetricChartBox

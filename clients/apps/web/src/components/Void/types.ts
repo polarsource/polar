@@ -61,6 +61,24 @@ export interface VoidDeployment {
   status: 'Active' | 'Draft' | 'Archived'
 }
 
+export interface VoidActivityShare {
+  slug: string
+  cost: number
+  share: number
+  spans: number
+  waste_cost: number
+}
+
+export interface VoidActivityMix {
+  totals: {
+    cost: number
+    labeled_cost: number
+    unlabeled_cost: number
+    pending_cost: number
+  }
+  by_activity: VoidActivityShare[]
+}
+
 export interface VoidEvent {
   id: string
   name: string
@@ -80,4 +98,5 @@ export interface VoidData {
   eventCount: number
   subscriptions: VoidSubscription[]
   entitlements: VoidEntitlement[]
+  activities: Record<string, VoidActivityMix>
 }

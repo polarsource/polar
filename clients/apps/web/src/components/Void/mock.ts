@@ -11,6 +11,8 @@ import {
 } from './fixtures'
 import { cadenceFor, metersFor, usageSeriesFor } from './generators'
 import {
+  VoidActivityMix,
+  VoidActivityShare,
   VoidData,
   VoidEntitlement,
   VoidEvent,
@@ -187,6 +189,49 @@ const buildEntitlements = (
       : []),
   ])
 
+const ACTIVITY_WEIGHTS: [string, number][] = [
+  ['implement', 0.42],
+  ['retrieve', 0.22],
+  ['plan', 0.14],
+  ['act', 0.08],
+  ['review', 0.07],
+  ['retry', 0.05],
+  ['other', 0.02],
+]
+
+const buildActivities = (
+  identities: VoidIdentity[],
+): Record<string, VoidActivityMix> =>
+  Object.fromEntries(
+    identities
+      .filter((identity) => identity.usage > 0)
+      .map((identity) => {
+        const shares: VoidActivityShare[] = ACTIVITY_WEIGHTS.map(
+          ([slug, weight], index) => {
+            const cost = Math.round(identity.usage * weight)
+            return {
+              slug,
+              cost,
+              share: weight,
+              spans: 2 + ((identity.id.length + index) % 7),
+              waste_cost: slug === 'retry' ? cost : Math.round(cost * 0.08),
+            }
+          },
+        )
+        const cost = shares.reduce((sum, share) => sum + share.cost, 0)
+        const mix: VoidActivityMix = {
+          totals: {
+            cost,
+            labeled_cost: cost,
+            unlabeled_cost: 0,
+            pending_cost: 0,
+          },
+          by_activity: shares,
+        }
+        return [identity.id, mix]
+      }),
+  )
+
 export const getVoidData = (): VoidData => {
   const end = new Date()
   const random = seeded(20260910)
@@ -233,5 +278,6 @@ export const getVoidData = (): VoidData => {
     eventCount: 2_418_306,
     subscriptions,
     entitlements: buildEntitlements(subscriptions),
+    activities: buildActivities(identities),
   }
 }

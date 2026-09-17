@@ -9,6 +9,12 @@ import { investors } from './investors'
 import { OpenRoles } from './OpenRoles'
 import { TeamCarouselWrapper } from './TeamCarouselWrapper'
 
+const MISSION = [
+  'Billing was built for a world where a customer was a person, a product was a seat, and a price was set once a year.',
+  'AI products are consumed by the token, by agents nobody is watching. Costs move hourly, pricing changes weekly, and every request has to decide whether an agent may keep going.',
+  'Our mission is to make billing a function of events. Usage in, revenue out, with what every customer has used, is entitled to and costs to serve known the moment it happens. A finance layer that keeps pace with the products it bills.',
+]
+
 export default function CompanyPage() {
   return (
     <Box width="100%" flexDirection="column">
@@ -16,7 +22,7 @@ export default function CompanyPage() {
         as="section"
         width="100%"
         flexDirection="column"
-        rowGap={{ base: '3xl', md: '4xl' }}
+        rowGap={{ base: '3xl', md: '5xl' }}
         paddingTop={{ base: 'm', md: '5xl' }}
         paddingBottom={{ base: '3xl', md: '5xl' }}
       >
@@ -24,21 +30,40 @@ export default function CompanyPage() {
           templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
           gap={{ base: '2xl', lg: 'l' }}
         >
-          <Box flexDirection="column" alignItems="start" rowGap="3xl">
-            <Box flexDirection="column" rowGap="m">
-              <Text variant="heading-xl" as="h1" wrap="balance">
-                Small team, big ambitions
+          <Box flexDirection="column" rowGap="s">
+            <Text variant="heading-xl" as="h1" wrap="balance">
+              Small team, big ambitions
+            </Text>
+            <Text variant="heading-xl" as="p" color="muted" wrap="balance">
+              Rewriting billing for the AI era
+            </Text>
+          </Box>
+        </Grid>
+        <Grid
+          templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+          gap={{ base: '2xl', lg: 'l' }}
+        >
+          <Box
+            flexDirection="column"
+            justifyContent="end"
+            alignItems="start"
+            rowGap="3xl"
+          >
+            <Box display="block" maxWidth="32rem">
+              <Text variant="heading-m" wrap="pretty">
+                A small, senior team working remotely across the world.
               </Text>
-              <Text variant="heading-xl" as="p" color="muted" wrap="balance">
-                Join our quest to build new financial primitives
+              <Text variant="heading-m" color="muted" wrap="pretty">
+                Building the finance layer for the next generation of AI
+                products.
               </Text>
             </Box>
             <a href="#open-roles">
               <Button size="lg">Join us</Button>
             </a>
           </Box>
+          <TeamCarouselWrapper />
         </Grid>
-        <TeamCarouselWrapper />
       </Box>
 
       <Chapter
@@ -46,7 +71,6 @@ export default function CompanyPage() {
         name="Mission"
         title="billing = fn(events)"
         subtitle="Usage in, revenue out"
-        description="Modern software is priced around usage, yet billing systems remain static. We believe analytics and billing belong in the same platform, and we're building Polar to become the standard stack for the next generation of software."
       >
         <Box flexDirection="column" rowGap={{ base: '3xl', md: '5xl' }}>
           <Box
@@ -56,11 +80,17 @@ export default function CompanyPage() {
           >
             <Box display={{ base: 'none', lg: 'flex' }} />
             <Box flexDirection="column" rowGap="xl">
-              <Text variant="heading-s" color="muted" wrap="pretty">
-                Real-time event ingestion powers instant unit economics and
-                analytics, leading to deterministic and versioned billing as
-                code.
-              </Text>
+              {MISSION.map((paragraph) => (
+                <Text
+                  key={paragraph}
+                  variant="heading-s"
+                  as="p"
+                  color="muted"
+                  wrap="pretty"
+                >
+                  {paragraph}
+                </Text>
+              ))}
             </Box>
           </Box>
           <StaticImage

@@ -1,75 +1,156 @@
-import { BlogHero } from '@/components/Blog/BlogHero'
 import { StaticImage } from '@/components/Image/StaticImage'
-import { getAllContent } from '@/utils/blog'
+import { ContentPost, getAllContent } from '@/utils/blog'
+import { Grid, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 
 function formatDate(dateStr: string) {
   if (!dateStr) return null
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
 }
 
-const TYPE_LABEL: Record<string, string> = {
+const TYPE_LABEL: Record<ContentPost['type'], string> = {
   blog: 'Blog',
-  story: 'Customer Story',
+  story: 'Customer story',
 }
 
+const Cover = ({ post, sizes }: { post: ContentPost; sizes: string }) => (
+  <Box
+    position="relative"
+    overflow="hidden"
+    aspectRatio="16 / 9"
+    backgroundColor="background-secondary"
+  >
+    {post.image ? (
+      <StaticImage
+        src={post.image}
+        alt={post.title}
+        fill
+        className="object-cover"
+        sizes={sizes}
+        unoptimized
+      />
+    ) : null}
+  </Box>
+)
+
+const Meta = ({ post }: { post: ContentPost }) => (
+  <Box columnGap="s" alignItems="baseline">
+    <Text variant="body" color="muted">
+      {TYPE_LABEL[post.type]}
+    </Text>
+    {post.date ? (
+      <>
+        <Text variant="body" color="muted">
+          ·
+        </Text>
+        <Text variant="body" color="muted">
+          {formatDate(post.date)}
+        </Text>
+      </>
+    ) : null}
+  </Box>
+)
+
+const FeaturedPost = ({ post }: { post: ContentPost }) => (
+  <Link href={post.href}>
+    <Grid
+      templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+      gap={{ base: 'xl', lg: 'l' }}
+    >
+      <Box flexDirection="column" justifyContent="end" rowGap="xl">
+        <Box flexDirection="column" rowGap="s" maxWidth="32rem">
+          <Text variant="heading-l" as="h2" wrap="pretty">
+            {post.title}
+          </Text>
+          {post.description ? (
+            <Box display="block">
+              <Text variant="heading-s" color="muted" wrap="pretty">
+                {post.description}
+              </Text>
+            </Box>
+          ) : null}
+        </Box>
+        <Meta post={post} />
+      </Box>
+      <Cover post={post} sizes="(min-width: 1024px) 50vw, 100vw" />
+    </Grid>
+  </Link>
+)
+
+const PostCard = ({ post }: { post: ContentPost }) => (
+  <Link href={post.href}>
+    <Box flexDirection="column" rowGap="l">
+      <Cover
+        post={post}
+        sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
+      />
+      <Box flexDirection="column" rowGap="xs">
+        <Text variant="heading-xs" as="h3" wrap="balance">
+          {post.title}
+        </Text>
+        <Meta post={post} />
+      </Box>
+    </Box>
+  </Link>
+)
+
 export default function BlogPage() {
-  const posts = getAllContent()
+  const [featured, ...posts] = getAllContent()
 
   return (
-    <div className="dark:bg-polar-950 min-h-screen bg-white text-gray-900 dark:text-white">
-      <section className="mx-auto flex w-full max-w-2xl flex-col items-center px-6 py-12">
-        <BlogHero
-          title="Blog"
-          description="Building in the open — payments, developer tools, and lessons from the road."
-        />
-      </section>
+    <Box width="100%" flexDirection="column">
+      <Box
+        as="section"
+        width="100%"
+        flexDirection="column"
+        rowGap={{ base: '3xl', md: '4xl' }}
+        paddingTop={{ base: 'm', md: '5xl' }}
+        paddingBottom={{ base: '3xl', md: '5xl' }}
+      >
+        <Grid
+          templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+          gap={{ base: '2xl', lg: 'l' }}
+        >
+          <Box flexDirection="column" rowGap="s">
+            <Text variant="heading-xl" as="h1">
+              Blog
+            </Text>
+            <Text variant="heading-xl" as="p" color="muted" wrap="balance">
+              Thinking out loud
+            </Text>
+          </Box>
+        </Grid>
+        {featured ? <FeaturedPost post={featured} /> : null}
+      </Box>
 
-      <section className="mx-auto w-full max-w-4xl px-6 pb-24">
-        <div className="grid gap-12 md:grid-cols-2">
+      <Box
+        as="section"
+        width="100%"
+        paddingVertical={{ base: '4xl', md: '5xl' }}
+        marginVertical={{ base: 'none', md: '2xl' }}
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        <Grid
+          templateColumns={{
+            base: '1fr',
+            md: 'repeat(2, 1fr)',
+            xl: 'repeat(4, 1fr)',
+          }}
+          columnGap="l"
+          rowGap={{ base: '3xl', xl: '4xl' }}
+        >
           {posts.map((post) => (
-            <Link
-              key={`${post.type}-${post.slug}`}
-              href={post.href}
-              className="group flex flex-col gap-4"
-            >
-              <div className="dark:bg-polar-800 relative aspect-video w-full overflow-hidden rounded-md bg-gray-100">
-                {post.image ? (
-                  <StaticImage
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="dark:bg-polar-800 absolute inset-0 bg-gray-100" />
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <h2 className="text-lg leading-snug font-medium transition-opacity group-hover:opacity-70">
-                  {post.title}
-                </h2>
-                <div className="dark:text-polar-500 flex items-center gap-2 text-sm text-gray-400">
-                  <span className="font-medium">{TYPE_LABEL[post.type]}</span>
-                  {post.date && (
-                    <>
-                      <span>·</span>
-                      <span>{formatDate(post.date)}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Link>
+            <PostCard key={`${post.type}-${post.slug}`} post={post} />
           ))}
-        </div>
-      </section>
-    </div>
+        </Grid>
+      </Box>
+    </Box>
   )
 }

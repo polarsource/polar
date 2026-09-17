@@ -225,9 +225,7 @@ class Transaction(RecordModel):
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)
     """Type of transaction."""
-    processor: Mapped[Processor | None] = mapped_column(
-        String, nullable=True, index=True
-    )
+    processor: Mapped[Processor | None] = mapped_column(String, nullable=True)
     """Payment processor. For TransactionType.balance, it should be `None`."""
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
@@ -242,7 +240,7 @@ class Transaction(RecordModel):
     """Amount of tax collected by Polar for this payment."""
     tax_country: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     """Country for which Polar collected the tax."""
-    tax_state: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
+    tax_state: Mapped[str] = mapped_column(String(2), nullable=True)
     """State for which Polar collected the tax."""
     presentment_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     """Amount in cents of this transaction from customer's perspective."""
@@ -296,11 +294,9 @@ class Transaction(RecordModel):
     """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the charge (payment) in the payment processor system."""
-    transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    transfer_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the transfer in the payment processor system."""
-    transfer_reversal_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True
-    )
+    transfer_reversal_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the transfer reversal in the payment processor system."""
     fee_balance_transaction_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True

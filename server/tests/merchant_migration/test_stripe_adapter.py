@@ -579,9 +579,19 @@ class TestExtractPages:
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
+        subscription = _stripe_subscription(
+            items=[
+                {
+                    "price": _stripe_price(),
+                    "quantity": 1,
+                    "current_period_start": 1_700_000_000,
+                    "current_period_end": 1_702_000_000,
+                }
+            ]
+        )
         client.v1.subscriptions.list_async = mocker.AsyncMock(
             return_value=mocker.MagicMock(
-                data=[_stripe_subscription()],
+                data=[subscription],
                 has_more=False,
             )
         )

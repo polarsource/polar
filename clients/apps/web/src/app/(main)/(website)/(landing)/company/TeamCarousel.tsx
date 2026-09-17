@@ -3,7 +3,7 @@
 import { StaticImage } from '@/components/Image/StaticImage'
 import { useMemo } from 'react'
 
-const IMAGES = Array.from({ length: 25 }, (_, i) => i + 1)
+const IMAGES = Array.from({ length: 59 }, (_, i) => i + 1)
 
 export function TeamCarousel() {
   const order = useMemo(() => {

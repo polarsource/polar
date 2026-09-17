@@ -2,14 +2,14 @@
 
 import dynamic from 'next/dynamic'
 
-const TeamCarousel = dynamic(
-  () => import('./TeamCarousel').then((m) => m.TeamCarousel),
+const TeamFlipbook = dynamic(
+  () => import('./TeamFlipbook').then((m) => m.TeamFlipbook),
   {
     ssr: false,
-    loading: () => <div className="h-[115px] w-full md:h-[269px]" />,
+    loading: () => <div className="aspect-[3/2] w-full" />,
   },
 )
 
 export function TeamCarouselWrapper() {
-  return <TeamCarousel />
+  return <TeamFlipbook />
 }

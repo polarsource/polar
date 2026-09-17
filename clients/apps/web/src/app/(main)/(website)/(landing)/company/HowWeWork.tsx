@@ -33,14 +33,14 @@ export const HowWeWork = () => (
         as="li"
         display="flex"
         flexDirection={{ base: 'column', md: 'row' }}
-        rowGap="xs"
+        rowGap="l"
         columnGap="xl"
         paddingVertical="xl"
         borderTopWidth={index > 0 ? 1 : 0}
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box flex={1} alignItems="baseline" columnGap="2xl">
+        <Box flex={1} alignItems="baseline" columnGap="l">
           <Text as="span" variant="heading-s" color="muted" tabularNums>
             {String(index + 1).padStart(2, '0')}
           </Text>

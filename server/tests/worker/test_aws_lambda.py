@@ -129,3 +129,33 @@ class TestHandler:
 
         assert aws_lambda.handler(event, context) == {"batchItemFailures": []}
         assert capfire.exporter.exported_spans == []
+
+    def test_ignored_actor_failure_is_logged(
+        self,
+        aws_lambda: ModuleType,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"dummy": mocker.AsyncMock(side_effect=ValueError("boom"))},
+        )
+        mocker.patch.object(settings, "LOGFIRE_IGNORED_ACTORS", {"dummy"})
+        mocker.patch.object(aws_lambda, "send_delayed_message")
+        context = mocker.Mock()
+        context.get_remaining_time_in_millis.return_value = 30000
+        event = {
+            "Records": [
+                {
+                    "messageId": "message-1",
+                    "body": build_envelope("dummy", (), {}, "source-1"),
+                    "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:test",
+                }
+            ]
+        }
+
+        assert aws_lambda.handler(event, context) == {"batchItemFailures": []}
+        assert {span.name for span in capfire.exporter.exported_spans} == {
+            "polar.worker.sqs_task_failed",
+            "polar.worker.sqs_retry_reenqueued",
+        }

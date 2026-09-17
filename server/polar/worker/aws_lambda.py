@@ -53,9 +53,11 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             with contextlib.ExitStack() as stack:
                 try:
                     envelope = parse_envelope(record["body"])
+                    task_telemetry: contextlib.AbstractContextManager[Any]
                     if envelope.actor in settings.LOGFIRE_IGNORED_ACTORS:
-                        stack.enter_context(logfire.suppress_instrumentation())
+                        task_telemetry = logfire.suppress_instrumentation()
                     else:
+                        task_telemetry = contextlib.nullcontext()
                         stack.enter_context(
                             logfire.span(
                                 "SQS {actor}",
@@ -64,25 +66,26 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                                 source_correlation_id=envelope.correlation_id,
                             )
                         )
-                    _loop.run_until_complete(
-                        run_task(
-                            envelope.actor,
-                            envelope.args,
-                            envelope.kwargs,
-                            receive_count=_effective_receive_count(
-                                record, envelope.attempt
-                            ),
-                            source_correlation_id=envelope.correlation_id,
-                            remaining_time_seconds=(
-                                context.get_remaining_time_in_millis() / 1000
-                                - _REMAINING_TIME_MARGIN_SECONDS
-                            ),
-                            message_timestamp=envelope.message_timestamp,
-                            message_id=envelope.message_id,
-                            debounce_key=envelope.debounce_key,
-                            message_options=envelope.message_options,
+                    with task_telemetry:
+                        _loop.run_until_complete(
+                            run_task(
+                                envelope.actor,
+                                envelope.args,
+                                envelope.kwargs,
+                                receive_count=_effective_receive_count(
+                                    record, envelope.attempt
+                                ),
+                                source_correlation_id=envelope.correlation_id,
+                                remaining_time_seconds=(
+                                    context.get_remaining_time_in_millis() / 1000
+                                    - _REMAINING_TIME_MARGIN_SECONDS
+                                ),
+                                message_timestamp=envelope.message_timestamp,
+                                message_id=envelope.message_id,
+                                debounce_key=envelope.debounce_key,
+                                message_options=envelope.message_options,
+                            )
                         )
-                    )
                 except Retry as exc:
                     if _apply_retry_backoff(record, exc):
                         batch_item_failures.append({"itemIdentifier": message_id})

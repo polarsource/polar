@@ -74,9 +74,7 @@ export const getBotDiscordAuthorizeURL = (
   if (params.return_to) {
     searchParams.set('return_to', params.return_to)
   }
-  if (params.organization_id) {
-    searchParams.set('organization_id', params.organization_id)
-  }
+  searchParams.set('organization_id', params.organization_id)
   return `${getPublicServerURL()}/v1/integrations/discord/bot/authorize?${searchParams}`
 }
 

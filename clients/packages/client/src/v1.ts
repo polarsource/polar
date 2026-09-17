@@ -40810,8 +40810,8 @@ export interface operations {
   }
   'integrations_discord:integrations.discord.bot_authorize': {
     parameters: {
-      query?: {
-        organization_id?: string | null
+      query: {
+        organization_id: string
         return_to?: string | null
       }
       header?: never

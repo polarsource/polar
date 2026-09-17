@@ -40829,6 +40829,15 @@ export interface operations {
           'application/json': unknown
         }
       }
+      /** @description User lacks `products_manage` permission on the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {

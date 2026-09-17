@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -23,3 +25,20 @@ class DiscordGuildConnectionRepository(
             DiscordGuildConnection.guild_id == guild_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def create_if_absent(
+        self, organization_id: UUID, guild_id: str, user_id: UUID
+    ) -> None:
+        statement = (
+            pg_insert(DiscordGuildConnection)
+            .values(
+                organization_id=organization_id,
+                guild_id=guild_id,
+                user_id=user_id,
+            )
+            .on_conflict_do_nothing(
+                index_elements=["organization_id", "guild_id"],
+                index_where=DiscordGuildConnection.deleted_at.is_(None),
+            )
+        )
+        await self.session.execute(statement)

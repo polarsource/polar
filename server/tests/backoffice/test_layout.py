@@ -39,6 +39,7 @@ class TestLayoutContentSwap:
         assert response.status_code == 200
         assert "<html" in response.text
         assert response.text.count('id="content"') == 1
+        assert 'id="toast"' in response.text
         assert response.headers["cache-control"] == "private, no-store"
         assert "HX-Request" in response.headers["vary"]
         assert "HX-Boosted" in response.headers["vary"]
@@ -63,6 +64,7 @@ class TestLayoutContentSwap:
         assert "Dashboard" in response.text
         assert 'id="menu"' in response.text
         assert 'id="page_title"' in response.text
+        assert 'id="toast"' in response.text
 
     async def test_hx_request_alone_still_returns_full_page(
         self, backoffice_client: httpx.AsyncClient

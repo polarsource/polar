@@ -15,13 +15,11 @@ const extractContentSwapPartial = (html) => {
     return null;
   }
   const pieces = [content.innerHTML];
-  const pageTitle = doc.getElementById("page_title");
-  const menu = doc.getElementById("menu");
-  if (pageTitle) {
-    pieces.push(pageTitle.outerHTML);
-  }
-  if (menu) {
-    pieces.push(menu.outerHTML);
+  for (const el of doc.querySelectorAll("[hx-swap-oob], [data-hx-swap-oob]")) {
+    if (content.contains(el)) {
+      continue;
+    }
+    pieces.push(el.outerHTML);
   }
   return pieces.join("");
 };

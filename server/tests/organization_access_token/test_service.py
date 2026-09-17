@@ -64,6 +64,7 @@ class TestRevokeLeaked:
         organization_access_token = OrganizationAccessToken(
             comment="Test",
             token=token_hash,
+            token_v2=token_hash,
             organization=organization,
             expires_at=utc_now() + timedelta(days=1),
             scope="openid",

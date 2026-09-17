@@ -763,6 +763,7 @@ class TestAuthenticate:
         code, code_hash = customer_session_service._generate_code_hash()
         customer_session_code = CustomerSessionCode(
             code=code_hash,
+            code_v2=code_hash,
             email="deleted-member@example.com",  # No member with this email
             customer=customer,
         )

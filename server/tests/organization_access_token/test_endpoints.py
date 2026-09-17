@@ -22,6 +22,7 @@ async def _build_oat(
     token = OrganizationAccessToken(
         comment=comment,
         token=get_token_hash("polar_oat_test"),
+        token_v2=get_token_hash("polar_oat_test"),
         organization=organization,
         expires_at=utc_now() + timedelta(days=1),
         scope=" ".join(s.value for s in scopes),

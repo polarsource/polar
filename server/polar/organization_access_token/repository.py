@@ -30,7 +30,7 @@ class OrganizationAccessTokenRepository(
             self.get_base_statement()
             .join(OrganizationAccessToken.organization)
             .where(
-                OrganizationAccessToken.token == get_token_hash(token),
+                OrganizationAccessToken.token_v2 == get_token_hash(token),
                 Organization.can_authenticate,
             )
             .options(contains_eager(OrganizationAccessToken.organization))

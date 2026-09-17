@@ -19,9 +19,15 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { buildTree } from '../identities'
+import { useVoidDataSource } from '../dataSource'
+import { buildTree, identityHref, identityIdFromPath } from '../identities'
+import {
+  composeIdentities,
+  toLiveIdentity,
+  VoidLiveIdentity,
+} from '../identityLive'
+import { useVoidCustomers, useVoidIdentities } from '../identityQueries'
 import { getVoidData } from '../mock'
-import { VoidIdentity } from '../types'
 
 const FILTERS = ['all', 'customer', 'human', 'agent', 'service'] as const
 type Filter = (typeof FILTERS)[number]
@@ -34,7 +40,9 @@ const FILTER_LABELS: Record<Filter, string> = {
   service: 'Services',
 }
 
-const matches = (identity: VoidIdentity, filter: Filter) =>
+const LIVE_FILTERS: Filter[] = ['all', 'customer', 'agent', 'service']
+
+const matches = (identity: VoidLiveIdentity, filter: Filter) =>
   filter === 'all' ||
   (filter === 'customer'
     ? identity.parent_id === null
@@ -42,7 +50,10 @@ const matches = (identity: VoidIdentity, filter: Filter) =>
 
 export const VoidIdentityListSidebar = () => {
   const { organization } = useContext(OrganizationContext)
-  const base = `/void/dashboard/${organization.slug}/identities`
+  const source = useVoidDataSource()
+  const live = source === 'live'
+  const root = `/void/dashboard/${organization.slug}`
+  const base = `${root}/identities`
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const withQuerystring = (href: string) => {
@@ -54,7 +65,7 @@ export const VoidIdentityListSidebar = () => {
     return qs ? `${href}?${qs}` : href
   }
   const selectedId = pathname.startsWith(`${base}/`)
-    ? pathname.slice(base.length + 1).split('/')[0]
+    ? identityIdFromPath(pathname.slice(base.length + 1))
     : null
 
   const [query, setQuery] = useQueryState('query', parseAsString)
@@ -67,13 +78,22 @@ export const VoidIdentityListSidebar = () => {
     parseAsStringLiteral(['newest', 'oldest'] as const).withDefault('newest'),
   )
 
-  const data = useMemo(() => getVoidData(), [])
-  const tree = useMemo(() => buildTree(data.identities), [data])
-  const needle = (query ?? '').trim().toLowerCase()
+  const liveIdentities = useVoidIdentities(organization.id, { enabled: live })
+  const liveCustomers = useVoidCustomers(organization.id, { enabled: live })
 
-  const identities = useMemo(
+  const identities = useMemo(() => {
+    if (!live) return getVoidData().identities.map(toLiveIdentity)
+    if (!liveIdentities.data) return []
+    return composeIdentities(liveIdentities.data, liveCustomers.data ?? [])
+  }, [live, liveIdentities.data, liveCustomers.data])
+
+  const tree = useMemo(() => buildTree(identities), [identities])
+  const needle = (query ?? '').trim().toLowerCase()
+  const filterOptions = live ? LIVE_FILTERS : FILTERS
+
+  const visible = useMemo(
     () =>
-      data.identities
+      identities
         .filter((identity) => matches(identity, filter))
         .filter(
           (identity) =>
@@ -85,15 +105,18 @@ export const VoidIdentityListSidebar = () => {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           return sorting === 'newest' ? diff : -diff
         }),
-    [data, filter, needle, sorting],
+    [identities, filter, needle, sorting],
   )
 
-  const secondary = (identity: VoidIdentity) => {
+  const secondary = (identity: VoidLiveIdentity) => {
     const parent = identity.parent_id
       ? tree.byId.get(identity.parent_id)?.identity.name
       : null
     return parent ? `${identity.kind} · ${parent}` : identity.kind
   }
+
+  const liveError = liveIdentities.error
+  const liveLoading = live && liveIdentities.isLoading
 
   return (
     <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
@@ -107,7 +130,7 @@ export const VoidIdentityListSidebar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {FILTERS.map((option) => (
+              {filterOptions.map((option) => (
                 <DropdownMenuItem
                   key={option}
                   onClick={() => setFilter(option)}
@@ -154,42 +177,58 @@ export const VoidIdentityListSidebar = () => {
         />
       </div>
       <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
-        {identities.map((identity) => (
-          <Link
-            key={identity.id}
-            href={withQuerystring(`${base}/${identity.id}`)}
-            className={twMerge(
-              'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-              selectedId === identity.id && 'dark:bg-polar-800 bg-gray-100',
-            )}
-          >
-            <Box
-              alignItems="center"
-              columnGap="m"
-              paddingHorizontal="l"
-              paddingVertical="m"
-            >
-              <Avatar
-                className="h-8 w-8"
-                avatar_url={null}
-                name={identity.name}
-              />
-              <Box flexDirection="column" minWidth={0}>
-                <Text truncate>{identity.name}</Text>
-                <Text truncate color="muted" variant="caption">
-                  {secondary(identity)}
-                </Text>
-              </Box>
-            </Box>
-          </Link>
-        ))}
-        {identities.length === 0 ? (
+        {liveLoading ? (
           <Box padding="l">
             <Text color="muted" variant="caption">
-              No identities match
+              Loading identities
             </Text>
           </Box>
-        ) : null}
+        ) : liveError ? (
+          <Box padding="l">
+            <Text color="muted" variant="caption">
+              {liveError.message}
+            </Text>
+          </Box>
+        ) : (
+          <>
+            {visible.map((identity) => (
+              <Link
+                key={identity.id}
+                href={withQuerystring(identityHref(root, identity.id))}
+                className={twMerge(
+                  'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
+                  selectedId === identity.id && 'dark:bg-polar-800 bg-gray-100',
+                )}
+              >
+                <Box
+                  alignItems="center"
+                  columnGap="m"
+                  paddingHorizontal="l"
+                  paddingVertical="m"
+                >
+                  <Avatar
+                    className="h-8 w-8"
+                    avatar_url={null}
+                    name={identity.name}
+                  />
+                  <Box flexDirection="column" minWidth={0}>
+                    <Text truncate>{identity.name}</Text>
+                    <Text truncate color="muted" variant="caption">
+                      {secondary(identity)}
+                    </Text>
+                  </Box>
+                </Box>
+              </Link>
+            ))}
+            {visible.length === 0 ? (
+              <Box padding="l">
+                <Text color="muted" variant="caption">
+                  {live ? 'No identities' : 'No identities match'}
+                </Text>
+              </Box>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   )

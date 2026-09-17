@@ -6,7 +6,9 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { IdentityNode, walk } from './identities'
+import { dailyUsageFor } from './Identities/insights'
+import { IdentityNode, IdentityRef, walk } from './identities'
+import { VoidIdentity } from './types'
 import { VoidUsageByMember } from './VoidUsageByMember'
 import { VoidUsageChart } from './VoidUsageChart'
 
@@ -35,23 +37,36 @@ export const VoidIdentityUsage = ({
   root,
   rolled,
   base,
+  cadence,
+  ownUsage,
 }: {
-  /** The identity whose subtree is summarised. */
-  root: IdentityNode
+  root: IdentityNode<IdentityRef & { name: string }>
   rolled: Record<string, number>
   base: string
+  cadence?: Record<string, number[]>
+  ownUsage?: Record<string, number>
 }) => {
-  const used = rolled[root.identity.id]
-  const total = root.identity.credits ?? used
-  const showCredits = root.identity.credits !== null
+  const used = rolled[root.identity.id] ?? 0
+  const credits: number | null =
+    'credits' in root.identity && typeof root.identity.credits === 'number'
+      ? root.identity.credits
+      : null
+  const total = credits ?? used
+  const showCredits = credits !== null
   const showMembers = root.children.length > 0
   const remaining = Math.max(total - used, 0)
   const share = total > 0 ? used / total : 0
 
   const series = useMemo(() => {
+    if (cadence) {
+      const days = dailyUsageFor(root, cadence)
+      return days.length > 0 ? { Usage: days } : {}
+    }
     const merged: Record<string, number[]> = {}
     for (const node of walk(root)) {
-      for (const [name, values] of Object.entries(node.identity.usageSeries)) {
+      if (!('usageSeries' in node.identity)) continue
+      const identity = node.identity as VoidIdentity
+      for (const [name, values] of Object.entries(identity.usageSeries)) {
         const target = (merged[name] ??= values.map(() => 0))
         values.forEach((value, index) => {
           target[index] += value
@@ -59,7 +74,7 @@ export const VoidIdentityUsage = ({
       }
     }
     return merged
-  }, [root])
+  }, [root, cadence])
 
   return (
     <Box flexDirection="column" rowGap="2xl">
@@ -122,7 +137,12 @@ export const VoidIdentityUsage = ({
             title="Usage by member"
             caption={`${walk(root).length} identities`}
           />
-          <VoidUsageByMember root={root} rolled={rolled} base={base} />
+          <VoidUsageByMember
+            root={root}
+            rolled={rolled}
+            base={base}
+            ownUsage={ownUsage}
+          />
         </Box>
       ) : null}
     </Box>

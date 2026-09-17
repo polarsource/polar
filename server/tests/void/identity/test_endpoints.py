@@ -214,6 +214,37 @@ class TestListAndGet:
         )
         assert missing_parent.status_code == 404
 
+    async def test_slashed_external_id(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_token(save_fixture, organization)
+        root = VoidBillingIdentity(
+            organization=organization, external_id="orbital-foods"
+        )
+        await save_fixture(root)
+        await save_fixture(
+            VoidBillingIdentity(
+                organization=organization,
+                external_id="orbital-foods/deploy-bot",
+                parent=root,
+            )
+        )
+        detail = await void_client.get(
+            f"{PATH}/orbital-foods/deploy-bot", headers=HEADERS
+        )
+        assert detail.status_code == 200
+        assert detail.json()["external_id"] == "orbital-foods/deploy-bot"
+        assert detail.json()["chain"] == ["orbital-foods/deploy-bot", "orbital-foods"]
+        snapshot = await void_client.get(
+            f"{PATH}/orbital-foods/deploy-bot/snapshot", headers=HEADERS
+        )
+        if snapshot.status_code == 200:
+            assert "meters" in snapshot.json()
+        assert "deploy-bot/snapshot" not in snapshot.text
+
     @pytest.mark.parametrize("path", [PATH, f"{PATH}/root"])
     async def test_anonymous(self, void_client: AsyncClient, path: str) -> None:
         response = await void_client.get(path)

@@ -1,3 +1,4 @@
+import re
 from copy import copy
 from dataclasses import replace
 from itertools import product
@@ -16,6 +17,12 @@ from polar.kit.versioning import (
     routes_for_version,
 )
 from polar.version import CURRENT_API_VERSION, VERSIONS
+
+_OPENAPI_PATH = re.compile(r"\{([^}:]+):[^}]+\}")
+
+
+def _openapi_path(path: str) -> str:
+    return _OPENAPI_PATH.sub(r"{\1}", path)
 
 
 def _scope_groups(dependant: Dependant) -> set[tuple[str, ...]]:
@@ -65,7 +72,7 @@ def get_void_openapi(version: APIVersion = CURRENT_API_VERSION) -> dict[str, Any
         # FastAPI merges scopes; our authenticators accept any scope within each group.
         scope_groups = _scope_groups(version_route.dependant)
         for method in context.methods or ():
-            operation = schema["paths"][context.path][method.lower()]
+            operation = schema["paths"][_openapi_path(context.path)][method.lower()]
             operation["security"] = [
                 {"oat": sorted(set(scopes))}
                 for scopes in product(*sorted(scope_groups))

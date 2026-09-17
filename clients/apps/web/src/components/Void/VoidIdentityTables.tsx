@@ -6,7 +6,17 @@ import { DataTable, DataTableColumnDef, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { shortDate } from './identities'
-import { VoidEntitlement, VoidEvent, VoidSubscription } from './types'
+import { VoidMeterBalance } from './identityLive'
+import { VoidEntitlement, VoidEvent } from './types'
+
+export type SubscriptionRow = {
+  id: string
+  product: string
+  status: 'active' | 'canceled' | 'trialing' | 'revoked'
+  started_at: string
+  current_period_end: string | null
+  ends_at: string | null
+}
 
 export const TableSection = ({
   title,
@@ -33,11 +43,11 @@ export const TableSection = ({
 )
 
 const STATUS_COLOR: Record<
-  VoidSubscription['status'],
+  SubscriptionRow['status'],
   'green' | 'red' | 'blue'
-> = { active: 'green', canceled: 'red', trialing: 'blue' }
+> = { active: 'green', canceled: 'red', trialing: 'blue', revoked: 'red' }
 
-const subscriptionColumns: DataTableColumnDef<VoidSubscription>[] = [
+const subscriptionColumns: DataTableColumnDef<SubscriptionRow>[] = [
   {
     accessorKey: 'product',
     enableSorting: false,
@@ -70,7 +80,9 @@ const subscriptionColumns: DataTableColumnDef<VoidSubscription>[] = [
       <Text color="muted">
         {original.ends_at
           ? `Ends ${shortDate(original.ends_at)}`
-          : `Renews ${shortDate(original.current_period_end)}`}
+          : original.current_period_end
+            ? `Renews ${shortDate(original.current_period_end)}`
+            : '—'}
       </Text>
     ),
   },
@@ -141,7 +153,7 @@ const eventColumns: DataTableColumnDef<VoidEvent>[] = [
   },
 ]
 
-export const SubscriptionsTable = ({ rows }: { rows: VoidSubscription[] }) =>
+export const SubscriptionsTable = ({ rows }: { rows: SubscriptionRow[] }) =>
   rows.length === 0 ? (
     <Text color="muted">
       None. A parent may still hold one, see entitlements.
@@ -183,3 +195,63 @@ export const EventsTable = ({ rows }: { rows: VoidEvent[] }) =>
   ) : (
     <DataTable columns={eventColumns} data={rows} isLoading={false} />
   )
+
+interface SnapshotMeterRow {
+  slug: string
+  usage: number
+  remaining: number | null
+  overage: number
+}
+
+const snapshotMeterColumns: DataTableColumnDef<SnapshotMeterRow>[] = [
+  {
+    accessorKey: 'slug',
+    enableSorting: false,
+    header: 'Meter',
+    cell: ({ getValue }) => getValue() as string,
+  },
+  {
+    accessorKey: 'usage',
+    enableSorting: false,
+    header: 'Units',
+    cell: ({ getValue }) => formatHumanFriendlyScalar(getValue() as number),
+  },
+  {
+    accessorKey: 'remaining',
+    enableSorting: false,
+    header: 'Remaining',
+    cell: ({ getValue }) => {
+      const remaining = getValue() as number | null
+      return remaining === null ? '—' : formatHumanFriendlyScalar(remaining)
+    },
+  },
+  {
+    accessorKey: 'overage',
+    enableSorting: false,
+    header: 'Overage',
+    cell: ({ getValue }) => formatHumanFriendlyScalar(getValue() as number),
+  },
+]
+
+export const SnapshotMetersTable = ({
+  meters,
+}: {
+  meters: Record<string, VoidMeterBalance>
+}) => {
+  const rows = Object.entries(meters).map(([slug, balance]) => ({
+    slug,
+    usage: balance.usage,
+    remaining: balance.remaining,
+    overage: balance.overage,
+  }))
+  return rows.length === 0 ? (
+    <Text color="muted">No meter balances for this identity.</Text>
+  ) : (
+    <DataTable
+      columns={snapshotMeterColumns}
+      data={rows}
+      isLoading={false}
+      getRowId={(row) => row.slug}
+    />
+  )
+}

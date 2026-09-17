@@ -8,6 +8,7 @@ import {
 } from '@/components/Shared/Toplist'
 import { Avatar, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { identityHref } from '../identities'
 import { Delta } from '../Simulation/Delta'
 import { usd } from '../Simulation/format'
 import { Mover } from './insights'
@@ -22,7 +23,7 @@ const MoverList = ({
 }: {
   title: string
   caption: string
-  items: Mover[]
+  items: Mover<{ id: string; name: string }>[]
   base: string
 }) => (
   <Box flexDirection="column" rowGap="l">
@@ -36,7 +37,7 @@ const MoverList = ({
         {items.map((mover) => (
           <ToplistItem
             key={mover.identity.id}
-            href={`${base}/identities/${mover.identity.id}`}
+            href={identityHref(base, mover.identity.id)}
           >
             <Avatar
               className="h-8 w-8"
@@ -65,7 +66,7 @@ export const IdentitiesMovers = ({
   movers,
   base,
 }: {
-  movers: Mover[]
+  movers: Mover<{ id: string; name: string }>[]
   base: string
 }) => {
   const growing = movers

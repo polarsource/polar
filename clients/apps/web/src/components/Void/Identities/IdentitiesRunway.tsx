@@ -4,6 +4,7 @@ import { ToplistHeader } from '@/components/Shared/Toplist'
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
+import { identityHref } from '../identities'
 import { Runway } from './insights'
 
 const LIMIT = 5
@@ -33,7 +34,7 @@ export const IdentitiesRunway = ({
         return (
           <Link
             key={entry.identity.id}
-            href={`${base}/identities/${entry.identity.id}`}
+            href={identityHref(base, entry.identity.id)}
           >
             <Box flexDirection="column" rowGap="s">
               <Box alignItems="center" columnGap="m">

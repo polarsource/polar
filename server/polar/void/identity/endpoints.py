@@ -75,33 +75,7 @@ async def ensure_identity(
 
 
 @router.get(
-    "/{external_id}",
-    response_model=IdentityDetail,
-    operation_id="identities:get",
-    responses={
-        404: {"model": ResourceNotFound.schema()},
-        409: {"model": IdentityHierarchyConflict.schema()},
-    },
-)
-async def get_identity(
-    external_id: str,
-    auth: VoidRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> IdentityDetail:
-    result = await identity_service.get(session, auth.organization.id, external_id)
-    chain = await identity_service.chain(session, result)
-    children = await identity_service.children(session, result)
-    return IdentityDetail.model_validate(
-        {
-            **Identity.model_validate(result).model_dump(),
-            "chain": [node.external_id for node in chain],
-            "children": children,
-        }
-    )
-
-
-@router.get(
-    "/{external_id}/snapshot",
+    "/{external_id:path}/snapshot",
     response_model=IdentitySnapshot,
     operation_id="identities:snapshot",
     responses={
@@ -126,7 +100,7 @@ async def snapshot(
 
 
 @router.get(
-    "/{external_id}/entitlements",
+    "/{external_id:path}/entitlements",
     response_model=IdentityEntitlements,
     operation_id="identities:entitlements",
     responses={
@@ -143,7 +117,7 @@ async def entitlements(
 
 
 @router.put(
-    "/{external_id}/entitlements",
+    "/{external_id:path}/entitlements",
     response_model=EntitlementAssignmentRead,
     operation_id="identities:assignEntitlements",
     responses={
@@ -165,3 +139,29 @@ async def assign_entitlements(
         session, auth.organization.id, external_id, body
     )
     return EntitlementAssignmentRead.model_validate(assignment.model_dump())
+
+
+@router.get(
+    "/{external_id:path}",
+    response_model=IdentityDetail,
+    operation_id="identities:get",
+    responses={
+        404: {"model": ResourceNotFound.schema()},
+        409: {"model": IdentityHierarchyConflict.schema()},
+    },
+)
+async def get_identity(
+    external_id: str,
+    auth: VoidRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> IdentityDetail:
+    result = await identity_service.get(session, auth.organization.id, external_id)
+    chain = await identity_service.chain(session, result)
+    children = await identity_service.children(session, result)
+    return IdentityDetail.model_validate(
+        {
+            **Identity.model_validate(result).model_dump(),
+            "chain": [node.external_id for node in chain],
+            "children": children,
+        }
+    )

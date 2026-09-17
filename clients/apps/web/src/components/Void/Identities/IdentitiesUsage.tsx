@@ -3,7 +3,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo } from 'react'
-import { IdentityTree } from '../identities'
+import { IdentityRef, IdentityTree } from '../identities'
 import { VoidUsageChart } from '../VoidUsageChart'
 import { Concentration, dailyUsageFor } from './insights'
 
@@ -12,9 +12,11 @@ const TOP = 4
 export const IdentitiesUsage = ({
   tree,
   concentration,
+  cadence,
 }: {
-  tree: IdentityTree
-  concentration: Concentration
+  tree: IdentityTree<IdentityRef & { name: string }>
+  concentration: Concentration<IdentityRef & { name: string }>
+  cadence?: Record<string, number[]>
 }) => {
   const series = useMemo(() => {
     const top = concentration.top.slice(0, TOP)
@@ -22,18 +24,18 @@ export const IdentitiesUsage = ({
     const merged: Record<string, number[]> = {}
     for (const entry of top) {
       const root = tree.byId.get(entry.identity.id)
-      if (root) merged[entry.identity.name] = dailyUsageFor(root)
+      if (root) merged[entry.identity.name] = dailyUsageFor(root, cadence)
     }
     const other: number[] = []
     for (const root of tree.roots) {
       if (topIds.has(root.identity.id)) continue
-      dailyUsageFor(root).forEach((value, day) => {
+      dailyUsageFor(root, cadence).forEach((value, day) => {
         other[day] = (other[day] ?? 0) + value
       })
     }
     if (other.some((value) => value > 0)) merged.Other = other
     return merged
-  }, [tree, concentration])
+  }, [tree, concentration, cadence])
 
   const topShare = concentration.top
     .slice(0, 3)

@@ -379,7 +379,7 @@ class CatalogImporter:
                 )
             )
         # A bulk import must not webhook or re-review the org for every product.
-        return await product_service.create(
+        polar_product = await product_service.create(
             self.session,
             ProductCreateRecurring(
                 name=product.name,
@@ -393,6 +393,10 @@ class CatalogImporter:
             self.auth_subject,
             notify=False,
         )
+        if product.archived:
+            polar_product.is_archived = True
+            await self.session.flush()
+        return polar_product
 
     async def _create_or_reuse_customer(
         self, customer: CanonicalCustomer

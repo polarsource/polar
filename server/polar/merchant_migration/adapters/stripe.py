@@ -220,22 +220,30 @@ class StripeAdapter:
     ) -> CanonicalProduct | None:
         product = price.product
         # A deleted product deserializes as a Product with no `name`, or with
-        # `deleted`. Catalog extract still skips archived (`active=false`);
-        # subscription extract keeps archived so a live sub can import.
+        # `deleted`. Catalog extract still skips archived (`active=false`).
+        # Subscription extract stages an archived price as its own Polar product
+        # so a live sub can import without merging into the active catalog row.
         if not isinstance(product, stripe_lib.Product) or product.get("deleted"):
             return None
-        if require_active and not product.get("active"):
+        archived = not bool(price.get("active", True)) or not bool(
+            product.get("active")
+        )
+        if require_active and archived:
             return None
         recurring = price.recurring
         interval = recurring.interval if recurring else None
         interval_count = recurring.interval_count if recurring else 1
+        source_id = f"{product.id}:{interval}:{interval_count}"
+        if archived:
+            source_id = f"{source_id}:{price.id}"
         return CanonicalProduct(
-            source_id=f"{product.id}:{interval}:{interval_count}",
+            source_id=source_id,
             product_source_id=product.id,
             name=product.name or "",
             recurring_interval=interval,
             recurring_interval_count=interval_count,
             prices=self._map_prices(price),
+            archived=archived,
         )
 
     def _accumulate_product(
@@ -289,7 +297,7 @@ class StripeAdapter:
                 continue
             records.append(self._map_subscription(subscription))
             product = self._map_product_from_subscription(subscription)
-            if product is not None:
+            if product is not None and product.archived:
                 self._accumulate_product(products, product)
         return ExtractionPage(
             [*products.values(), *records],

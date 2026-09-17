@@ -566,12 +566,33 @@ class TestExtractPages:
         ]
         assert len(products) == 1
         assert products[0].product_source_id == "prod_archived"
+        assert products[0].source_id == "prod_archived:month:1:price_archived"
+        assert products[0].archived is True
         assert products[0].name == "Legacy"
         assert products[0].prices[0].source_id == "price_archived"
         assert len(subscriptions) == 1
         assert subscriptions[0].price_source_id == "price_archived"
         _, kwargs = client.v1.subscriptions.list_async.call_args
         assert "data.items.data.price.product" in kwargs["params"]["expand"]
+
+    async def test_live_subscription_does_not_stage_a_catalog_product(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[_stripe_subscription()],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        assert [
+            record for record in page.records if isinstance(record, CanonicalProduct)
+        ] == []
+        assert len(page.records) == 1
+        assert isinstance(page.records[0], CanonicalSubscription)
 
 
 @pytest.mark.asyncio

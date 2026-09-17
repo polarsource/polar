@@ -200,7 +200,7 @@ class TestUpsert:
         all_records = await repository.get_all(repository.get_base_statement())
         assert len(all_records) == 1
 
-    async def test_merges_prices_into_an_imported_product(
+    async def test_archived_price_product_is_its_own_record(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -225,7 +225,7 @@ class TestUpsert:
             ],
         )
         archived_price_product = CanonicalProduct(
-            source_id="prod_1:month:1",
+            source_id="prod_1:month:1:price_archived",
             product_source_id="prod_1",
             name="Pro",
             recurring_interval="month",
@@ -238,6 +238,7 @@ class TestUpsert:
                     pricing_scheme=CanonicalPricingScheme.fixed,
                 )
             ],
+            archived=True,
         )
         imported = await repository.upsert(
             migration, organization, catalog_product, merge_product_prices=True
@@ -250,23 +251,30 @@ class TestUpsert:
             },
         )
 
-        reused = await repository.upsert(
+        staged = await repository.upsert(
             migration,
             organization,
             archived_price_product,
             merge_product_prices=True,
         )
 
-        assert reused.status == MerchantMigrationRecordStatus.imported
-        assert {price["source_id"] for price in reused.canonical["prices"]} == {
-            "price_live",
-            "price_archived",
-        }
+        assert staged.id != imported.id
+        assert staged.status == MerchantMigrationRecordStatus.pending
+        assert [price["source_id"] for price in imported.canonical["prices"]] == [
+            "price_live"
+        ]
+        await repository.update(
+            staged,
+            update_dict={
+                "status": MerchantMigrationRecordStatus.imported,
+                "target_id": product.id,
+            },
+        )
         resolved = await repository.get_imported_product_dependency(
             organization.id, "price_archived"
         )
         assert resolved is not None
-        assert resolved.id == reused.id
+        assert resolved.id == staged.id
 
     async def test_replaces_prices_when_repointing_a_pending_product(
         self,

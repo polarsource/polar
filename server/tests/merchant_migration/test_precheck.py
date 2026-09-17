@@ -96,6 +96,7 @@ def build_product(
     recurring_interval: str | None = "month",
     recurring_interval_count: int = 1,
     prices: list[CanonicalPrice] | None = None,
+    archived: bool = False,
 ) -> CanonicalProduct:
     # A canonical product is keyed per (product, interval); default to a source_id
     # unique to that pair so distinct products don't collide.
@@ -110,6 +111,7 @@ def build_product(
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
         prices=prices if prices is not None else [build_price()],
+        archived=archived,
     )
 
 
@@ -607,7 +609,7 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
-    def test_two_prices_in_one_currency_import_the_first(self) -> None:
+    def test_two_prices_in_one_currency_skip_the_product(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1",
@@ -620,14 +622,9 @@ class TestClassifyRecords:
 
         items = classify_records(records, PrecheckEntity.products, "usd")
 
-        assert items[0].status == PrecheckRecordStatus.importable
-        assert items[0].reason_code is None
-
-        prices = classify_records(records, PrecheckEntity.prices, "usd")
-        by_id = {item.source_id: item for item in prices}
-        assert by_id["price_old"].status == PrecheckRecordStatus.importable
-        assert by_id["price_new"].status == PrecheckRecordStatus.skipped
-        assert by_id["price_new"].reason_code == "multiple_prices_same_currency"
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "multiple_prices_same_currency"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
 
     def test_one_price_per_currency_imports(self) -> None:
         records: list[CanonicalRecord] = [
@@ -985,8 +982,10 @@ class TestClassifyCascade:
     ) -> None:
         records: list[CanonicalRecord] = [
             build_product(
+                source_id="prod_archived:month:1:price_archived",
                 product_source_id="prod_archived",
                 prices=[build_price(source_id="price_archived")],
+                archived=True,
             ),
             build_customer(source_id="cus_1", email="a@example.com"),
             replace(
@@ -1003,11 +1002,15 @@ class TestClassifyCascade:
     def test_subscription_on_archived_same_currency_price_imports(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
+                source_id="prod_1:month:1",
                 product_source_id="prod_1",
-                prices=[
-                    build_price(source_id="price_live", amount=1000),
-                    build_price(source_id="price_archived", amount=500),
-                ],
+                prices=[build_price(source_id="price_live", amount=1000)],
+            ),
+            build_product(
+                source_id="prod_1:month:1:price_archived",
+                product_source_id="prod_1",
+                prices=[build_price(source_id="price_archived", amount=500)],
+                archived=True,
             ),
             build_customer(source_id="cus_1", email="a@example.com"),
             replace(
@@ -1109,19 +1112,6 @@ class TestPlanProductImports:
 
         assert plan.importable is True
         assert plan.importable_prices == {("price_ok", "usd")}
-
-    def test_keeps_the_first_price_when_two_share_a_currency(self) -> None:
-        product = build_product(
-            prices=[
-                build_price(source_id="price_live", amount=1000),
-                build_price(source_id="price_archived", amount=500),
-            ]
-        )
-
-        plan = plan_product_imports([product], "usd")[product.source_id]
-
-        assert plan.importable is True
-        assert plan.importable_prices == {("price_live", "usd")}
 
     def test_product_with_no_importable_price_is_skipped(self) -> None:
         product = build_product(

@@ -1316,6 +1316,104 @@ class TestImportCatalog:
         assert updated.step == MerchantMigrationStep.create_catalog
 
     @pytest.mark.auth
+    async def test_imports_archived_price_as_subscription_dependency(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            *_importable_catalog(),
+            CanonicalProduct(
+                source_id="prod_1:month:1:price_archived",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_archived",
+                        currency="usd",
+                        amount=500,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+                archived=True,
+            ),
+            CanonicalSubscription(
+                source_id="sub_live",
+                customer_source_id="cus_1",
+                price_source_id="price_1",
+                status=CanonicalSubscriptionStatus.active,
+                collection_method=CanonicalCollectionMethod.charge_automatically,
+                current_period_start=None,
+                current_period_end=None,
+                trialing=False,
+                paused_collection=False,
+                line_item_count=1,
+                quantity=1,
+                payment_method=None,
+                currency="usd",
+            ),
+            CanonicalSubscription(
+                source_id="sub_legacy",
+                customer_source_id="cus_1",
+                price_source_id="price_archived",
+                status=CanonicalSubscriptionStatus.active,
+                collection_method=CanonicalCollectionMethod.charge_automatically,
+                current_period_start=None,
+                current_period_end=None,
+                trialing=False,
+                paused_collection=False,
+                line_item_count=1,
+                quantity=1,
+                payment_method=None,
+                currency="usd",
+            ),
+        ]
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 2
+        products = await _products(session, organization)
+        by_amount = {
+            price.price_amount: product
+            for product in products
+            for price in product.prices
+            if isinstance(price, ProductPriceFixed)
+        }
+        assert set(by_amount) == {1000, 500}
+        assert by_amount[1000].is_archived is False
+        assert by_amount[500].is_archived is True
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        by_source = {item.source_id: item for item in items}
+        assert set(by_source) == {"sub_live", "sub_legacy"}
+        assert by_source["sub_live"].status == PrecheckRecordStatus.importable
+        assert by_source["sub_live"].dependencies_imported is True
+        assert by_source["sub_legacy"].status == PrecheckRecordStatus.importable
+        assert by_source["sub_legacy"].dependencies_imported is True
+
+    @pytest.mark.auth
     async def test_rejects_while_precheck_is_running(
         self,
         mocker: MockerFixture,

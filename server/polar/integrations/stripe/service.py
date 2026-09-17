@@ -149,15 +149,12 @@ class StripeService:
         )
         return await stripe_lib.Account.reject_async(id, reason=reason)
 
-    async def retrieve_balance(self, id: str) -> tuple[str, int]:
-        # Return available balance in the account's default currency (we assume that
-        # there is no balance in other currencies for now)
-        account = await stripe_lib.Account.retrieve_async(id)
-        balance = await stripe_lib.Balance.retrieve_async(stripe_account=id)
+    async def retrieve_balance(self, account_id: str, currency: str) -> tuple[str, int]:
+        balance = await stripe_lib.Balance.retrieve_async(stripe_account=account_id)
         for b in balance.available:
-            if b.currency == account.default_currency:
-                return (b.currency, b.amount)
-        return (cast(str, account.default_currency), 0)
+            if b.currency == currency:
+                return (currency, b.amount)
+        return currency, 0
 
     async def create_account_link(
         self, stripe_id: str, return_path: str, payout_account_id: uuid.UUID

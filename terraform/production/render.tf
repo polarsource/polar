@@ -373,11 +373,6 @@ resource "cloudflare_dns_record" "backoffice" {
   ttl     = 300
 }
 
-moved {
-  from = cloudflare_dns_record.worker
-  to   = cloudflare_dns_record.worker["worker"]
-}
-
 resource "cloudflare_dns_record" "worker" {
   for_each = module.production.worker_urls
 
@@ -385,7 +380,7 @@ resource "cloudflare_dns_record" "worker" {
   name    = "${each.key}.polar.sh"
   type    = "CNAME"
   content = replace(each.value, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }
 

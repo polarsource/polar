@@ -267,7 +267,7 @@ class TestDecodeState:
         state = await jwt.encode(data={}, type="discord_oauth")
 
         with pytest.raises(SlackIntegrationInvalidState):
-            SlackAppService().decode_state(state)
+            await SlackAppService().decode_state(state)
 
     async def test_decodes_expected_token_type(self) -> None:
         integration_id = uuid4()
@@ -281,7 +281,7 @@ class TestDecodeState:
             type=OAUTH_STATE_JWT_TYPE,
         )
 
-        decoded = SlackAppService().decode_state(state)
+        decoded = await SlackAppService().decode_state(state)
 
         assert decoded["integration_id"] == str(integration_id)
         assert decoded["subject_id"] == str(subject_id)

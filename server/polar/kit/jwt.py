@@ -61,13 +61,14 @@ def decode_unsafe(*, token: str, secret: str) -> dict[str, Any]:
     return jwt.decode(token, key, algorithms=[algorithm])
 
 
-def decode(
+async def decode(
     *,
     token: str,
     secret: str,
     type: TYPE,
 ) -> dict[str, Any]:
-    res = decode_unsafe(token=token, secret=secret)
+    # Resolving the key is a blocking KMS call the first time a process sees it.
+    res = await asyncio.to_thread(decode_unsafe, token=token, secret=secret)
 
     token_type = res.get("type", "")
     if token_type != type:

@@ -35,9 +35,10 @@ def _with_kid(token: str, kid: str) -> str:
     return f"{header.decode()}.{claims}.{signature}"
 
 
-def test_decodes_a_legacy_symmetric_token() -> None:
+@pytest.mark.asyncio
+async def test_decodes_a_legacy_symmetric_token() -> None:
     """Minted before the switch to the JWKS key. Drops out once none can be alive."""
-    decoded = jwt.decode(
+    decoded = await jwt.decode(
         token=_legacy_hs256(), secret=settings.SECRET, type="discord_oauth"
     )
 
@@ -49,29 +50,32 @@ async def test_encode_signs_with_the_current_key() -> None:
     token = await jwt.encode(data=dict(CLAIMS), type="discord_oauth")
 
     assert pyjwt.get_unverified_header(token)["kid"] == get_signer().kid
-    assert (
-        jwt.decode(token=token, secret=settings.SECRET, type="discord_oauth")["user_id"]
-        == CLAIMS["user_id"]
+    decoded = await jwt.decode(
+        token=token, secret=settings.SECRET, type="discord_oauth"
     )
+    assert decoded["user_id"] == CLAIMS["user_id"]
 
 
-def test_rejects_a_token_signed_by_an_unpublished_key() -> None:
+@pytest.mark.asyncio
+async def test_rejects_a_token_signed_by_an_unpublished_key() -> None:
     with pytest.raises(jwt.DecodeError):
-        jwt.decode(
+        await jwt.decode(
             token=_with_kid(_signed(), "unpublished"),
             secret=settings.SECRET,
             type="discord_oauth",
         )
 
 
-def test_guards_the_token_type_of_a_signed_token() -> None:
+@pytest.mark.asyncio
+async def test_guards_the_token_type_of_a_signed_token() -> None:
     with pytest.raises(jwt.InvalidTokenTypeError):
-        jwt.decode(token=_signed(), secret=settings.SECRET, type="customer_oauth")
+        await jwt.decode(token=_signed(), secret=settings.SECRET, type="customer_oauth")
 
 
-def test_expired_signed_token_raises_expired_signature() -> None:
+@pytest.mark.asyncio
+async def test_expired_signed_token_raises_expired_signature() -> None:
     with pytest.raises(jwt.ExpiredSignatureError):
-        jwt.decode(
+        await jwt.decode(
             token=_signed(expires_in=timedelta(minutes=-1)),
             secret=settings.SECRET,
             type="discord_oauth",

@@ -82,7 +82,9 @@ class TestAuthorize:
         assert response.status_code == 200
 
         state = _extract_state(response.json()["url"])
-        decoded = jwt.decode(token=state, secret=settings.SECRET, type="customer_oauth")
+        decoded = await jwt.decode(
+            token=state, secret=settings.SECRET, type="customer_oauth"
+        )
         assert decoded["customer_id"] == str(customer.id)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
@@ -95,7 +97,9 @@ class TestAuthorize:
         )
         assert response.status_code == 200
         state = _extract_state(response.json()["url"])
-        decoded = jwt.decode(token=state, secret=settings.SECRET, type="customer_oauth")
+        decoded = await jwt.decode(
+            token=state, secret=settings.SECRET, type="customer_oauth"
+        )
         assert decoded["customer_id"] == str(customer.id)
 
     @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
@@ -119,7 +123,9 @@ class TestAuthorize:
         assert response.status_code == 200
 
         state = _extract_state(response.json()["url"])
-        decoded = jwt.decode(token=state, secret=settings.SECRET, type="customer_oauth")
+        decoded = await jwt.decode(
+            token=state, secret=settings.SECRET, type="customer_oauth"
+        )
         assert decoded["customer_id"] != str(attacker_customer.id)
         assert "member_id" in decoded
 

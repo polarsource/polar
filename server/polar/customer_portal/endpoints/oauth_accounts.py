@@ -122,7 +122,7 @@ async def callback(
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     try:
-        state_data = jwt.decode(
+        state_data = await jwt.decode(
             token=state,
             secret=settings.SECRET,
             type="customer_oauth",

@@ -191,7 +191,7 @@ async def callback(
     state: str = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    state_data = slack_app_service.decode_state(state)
+    state_data = await slack_app_service.decode_state(state)
 
     if state_data.get("subject_id") != str(auth_subject.subject.id):
         raise SlackIntegrationInvalidState(

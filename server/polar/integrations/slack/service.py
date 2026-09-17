@@ -181,9 +181,9 @@ class SlackAppService:
         }
         return f"https://slack.com/oauth/v2/authorize?{urlencode(params)}"
 
-    def decode_state(self, state: str) -> dict[str, Any]:
+    async def decode_state(self, state: str) -> dict[str, Any]:
         try:
-            return jwt.decode(
+            return await jwt.decode(
                 token=state,
                 secret=settings.SECRET,
                 type=OAUTH_STATE_JWT_TYPE,

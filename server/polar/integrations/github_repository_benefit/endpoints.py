@@ -35,7 +35,7 @@ router = APIRouter(
 ###############################################################################
 
 
-def get_decoded_token_state(
+async def get_decoded_token_state(
     access_token_state: tuple[OAuth2Token, str | None],
 ) -> tuple[OAuth2Token, dict[str, Any]]:
     token_data, state = access_token_state
@@ -43,7 +43,7 @@ def get_decoded_token_state(
         raise Unauthorized("No state")
 
     try:
-        state_data = jwt.decode(
+        state_data = await jwt.decode(
             token=state,
             secret=settings.SECRET,
             type="github_repository_benefit_oauth",
@@ -95,7 +95,7 @@ async def user_callback(
         oauth2_authorize_callback
     ),
 ) -> RedirectResponse:
-    token_data, state = get_decoded_token_state(access_token_state)
+    token_data, state = await get_decoded_token_state(access_token_state)
 
     try:
         await github_repository_benefit_user_service.create_oauth_account(

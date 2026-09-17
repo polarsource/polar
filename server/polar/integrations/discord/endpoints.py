@@ -36,9 +36,9 @@ router = APIRouter(
 ###############################################################################
 
 
-def get_decoded_token_state(state: str) -> dict[str, Any]:
+async def get_decoded_token_state(state: str) -> dict[str, Any]:
     try:
-        state_data = jwt.decode(
+        state_data = await jwt.decode(
             token=state,
             secret=settings.SECRET,
             type="discord_oauth",
@@ -102,7 +102,7 @@ async def discord_bot_callback(
     code_verifier: str | None = None,
     error: str | None = None,
 ) -> RedirectResponse:
-    decoded_state = get_decoded_token_state(state)
+    decoded_state = await get_decoded_token_state(state)
     return_to = decoded_state["return_to"]
     if code is None or error is not None:
         redirect_url = get_safe_return_url(

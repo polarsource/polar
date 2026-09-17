@@ -34,6 +34,9 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     client_secret_hash: Mapped[str | None] = mapped_column(
         String(64), nullable=True, default=None, index=True
     )
+    client_secret_hash_v2: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, default=None, index=True
+    )
     client_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(OAUTH2_CLIENT_SECRET_CONTEXT),
         nullable=True,
@@ -44,6 +47,9 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     )
     registration_access_token_hash: Mapped[str | None] = mapped_column(
         String(64), nullable=True, default=None, index=True
+    )
+    registration_access_token_hash_v2: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, default=None, index=True
     )
     registration_access_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(OAUTH2_CLIENT_REGISTRATION_ACCESS_TOKEN_CONTEXT),

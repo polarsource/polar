@@ -20,6 +20,9 @@ class CustomerSession(RecordModel):
     __tablename__ = "customer_sessions"
 
     token: Mapped[str] = mapped_column(CHAR(64), unique=True, nullable=False)
+    token_v2: Mapped[str | None] = mapped_column(
+        String(80), unique=True, nullable=True, default=None
+    )
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True, default=get_expires_at
     )

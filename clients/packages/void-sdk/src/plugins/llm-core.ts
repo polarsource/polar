@@ -75,6 +75,12 @@ export type LlmCompletion<Extra extends Metadata = Record<never, never>> = {
   readonly fallback_from?: string | null
   readonly finish_reason?: string
   readonly latency_ms?: number
+  /** Tool names invoked this step, first-seen order. Names only, no arguments. */
+  readonly tools?: readonly string[]
+  /** Subset of `tools` that failed or were invalid. */
+  readonly tool_errors?: readonly string[]
+  /** True when this step produced user-facing text. */
+  readonly has_text?: boolean
 } & Extra
 
 /** A credit grant: `amount` plus whatever the app wants to remember about it. */

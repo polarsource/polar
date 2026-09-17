@@ -15,6 +15,7 @@ import {
 import {
   llm,
   canonicalModel,
+  completionEvidence,
   costPlus,
   fallback,
   tags,
@@ -311,6 +312,9 @@ it('a wrapped model gates on the meter pair, tags the gateway request, and recor
   assert.equal(m.call_id, null)
   assert.equal(m.fallback_from, null)
   assert.equal(m.finish_reason, 'stop')
+  assert.deepEqual(m.tools, [])
+  assert.deepEqual(m.tool_errors, [])
+  assert.equal(m.has_text, true)
   assert.equal(m.feature, 'chat')
   assert.equal(typeof m.latency_ms, 'number')
   assert.ok(!('cached_input_tokens' in m))
@@ -442,7 +446,73 @@ it('a streamed call records from the finish part with the response id', async ()
   assert.equal(m.output_tokens, 40)
   assert.equal(m.generation_id, 'gen_01')
   assert.equal(m.response_id, 'resp_2')
+  assert.deepEqual(m.tools, [])
+  assert.equal(m.has_text, true)
   await void_.dispose()
+})
+
+it('records tool names and errors, never arguments', async () => {
+  const server = serve(generous)
+  const void_ = client(server)
+  const model = void_.as('org_1').ai.model(
+    new MockLanguageModelV4({
+      provider: 'gateway',
+      modelId: 'anthropic/claude-sonnet-5',
+      doGenerate: {
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'c1',
+            toolName: 'read_file',
+            input: { path: '/secret/prompt.md' },
+          },
+          {
+            type: 'tool-call',
+            toolCallId: 'c2',
+            toolName: 'apply_patch',
+            input: { diff: 'CLASSIFIED' },
+            invalid: true,
+            error: 'bad args',
+          },
+        ],
+        finishReason: { unified: 'tool-calls', raw: 'tool_use' },
+        usage,
+        providerMetadata: gateway,
+        response: {
+          id: 'resp_tools',
+          modelId: 'anthropic/claude-sonnet-5',
+          timestamp: new Date(0),
+        },
+        warnings: [],
+      },
+    }),
+    { tags: { feature: 'chat' }, gate: 'off' },
+  )
+  await generateText({ model, prompt: 'edit the file' })
+  const m = metadata(server.posts[0])
+  assert.deepEqual(m.tools, ['read_file', 'apply_patch'])
+  assert.deepEqual(m.tool_errors, ['apply_patch'])
+  assert.equal(m.has_text, false)
+  assert.ok(!JSON.stringify(server.posts[0]).includes('/secret'))
+  assert.ok(!JSON.stringify(server.posts[0]).includes('CLASSIFIED'))
+  await void_.dispose()
+})
+
+it('completionEvidence keeps first-seen names and caps the list', () => {
+  assert.deepEqual(
+    completionEvidence([
+      { type: 'text', text: 'hi' },
+      { type: 'tool-call', toolName: 'read_file' },
+      { type: 'tool-call', toolName: 'read_file' },
+      { type: 'tool-error', toolName: 'grep' },
+    ]),
+    { tools: ['read_file', 'grep'], tool_errors: ['grep'], has_text: true },
+  )
+  const many = Array.from({ length: 20 }, (_, i) => ({
+    type: 'tool-call' as const,
+    toolName: `t${i}`,
+  }))
+  assert.equal(completionEvidence(many).tools.length, 16)
 })
 
 /** Resolves model ids to mocks the way the AI SDK's default provider would. */

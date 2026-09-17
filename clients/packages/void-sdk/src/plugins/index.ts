@@ -41,6 +41,7 @@ export type {
 } from './llm-gateways'
 export {
   canonicalModel,
+  completionEvidence,
   completionFromStep,
   estimateInputTokens,
   fallback,
@@ -52,6 +53,7 @@ export type {
   CallStart,
   Canonical,
   CaptureOptions,
+  CompletionEvidence,
   Estimate,
   Fallback,
   FallbackOptions,

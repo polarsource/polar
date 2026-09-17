@@ -51,6 +51,69 @@ type Finished = Pick<
 >
 type Step = StepResult<ToolSet>
 
+const TOOL_CAP = 16
+
+export type CompletionEvidence = {
+  readonly tools: readonly string[]
+  readonly tool_errors: readonly string[]
+  readonly has_text: boolean
+}
+
+const toolName = (part: object): string | undefined => {
+  if (!('toolName' in part) || typeof part.toolName !== 'string')
+    return undefined
+  return part.toolName === '' ? undefined : part.toolName
+}
+
+const pushUnique = (into: string[], seen: Set<string>, name: string) => {
+  if (seen.has(name) || into.length >= TOOL_CAP) return
+  seen.add(name)
+  into.push(name)
+}
+
+/** Names and outcomes from SDK content, stream parts, or tool-call arrays. */
+export const completionEvidence = (
+  parts: readonly unknown[],
+  text?: string,
+): CompletionEvidence => {
+  const tools: string[] = []
+  const tool_errors: string[] = []
+  const seen = new Set<string>()
+  const seenError = new Set<string>()
+  let has_text = typeof text === 'string' && text.length > 0
+  for (const raw of parts) {
+    if (typeof raw !== 'object' || raw === null) continue
+    const type = 'type' in raw && typeof raw.type === 'string' ? raw.type : ''
+    if (
+      type === 'text' ||
+      type === 'text-delta' ||
+      type === 'text-start' ||
+      type === 'text-end'
+    ) {
+      if (type === 'text' && 'text' in raw && raw.text === '') continue
+      has_text = true
+    }
+    const name = toolName(raw)
+    if (name === undefined) continue
+    if (type === 'tool-call' || type === 'tool-result' || type === 'tool-error')
+      pushUnique(tools, seen, name)
+    const failed =
+      type === 'tool-error' ||
+      ('invalid' in raw && raw.invalid === true) ||
+      ('error' in raw && raw.error != null)
+    if (failed) pushUnique(tool_errors, seenError, name)
+  }
+  return { tools, tool_errors, has_text }
+}
+
+const evidenceFromStep = (step: Step): CompletionEvidence =>
+  completionEvidence(step.content, step.text)
+
+const evidenceFromResult = (result: object): CompletionEvidence =>
+  completionEvidence(
+    'content' in result && Array.isArray(result.content) ? result.content : [],
+  )
+
 // ---- options ---------------------------------------------------------------
 
 export type LlmOptions<
@@ -323,12 +386,15 @@ export const completionFromStep = <Extra extends Metadata>(
     | 'providerMetadata'
     | 'performance'
     | 'response'
+    | 'content'
+    | 'text'
   >,
   extra: Extra,
   gateway: Gateway,
   canonical: Canonical,
-): LlmCompletion<Extra> =>
-  ({
+): LlmCompletion<Extra> => {
+  const evidence = evidenceFromStep(step as Step)
+  return {
     ...extra,
     model: canonical(step.model.provider, step.model.modelId),
     provider: step.model.provider,
@@ -340,7 +406,9 @@ export const completionFromStep = <Extra extends Metadata>(
     fallback_from: null,
     finish_reason: step.finishReason,
     latency_ms: Math.round(step.performance.responseTimeMs),
-  }) as LlmCompletion<Extra>
+    ...evidence,
+  } as LlmCompletion<Extra>
+}
 
 /** A model no name in `models` matched, as the provider reported it and as it was recorded. */
 export interface UnknownModel {
@@ -630,6 +698,7 @@ export const llm = <
           done: Finished,
           responseId: string | null,
           started: number,
+          evidence: CompletionEvidence,
         ) => {
           const completion = await record({
             ...extra,
@@ -643,6 +712,7 @@ export const llm = <
             fallback_from: routed.get(params)?.from ?? null,
             finish_reason: done.finishReason.unified,
             latency_ms: Date.now() - started,
+            ...evidence,
           } as LlmCompletion<Extra>)
           await onEnd?.({ completion })
         }
@@ -663,6 +733,7 @@ export const llm = <
                 result,
                 result.response?.id ?? null,
                 started,
+                evidenceFromResult(result),
               )
               return {
                 ...result,
@@ -681,11 +752,13 @@ export const llm = <
             const started = Date.now()
             const { stream, ...rest } = await doStream()
             let responseId: string | null = null
+            const streamed: unknown[] = []
             const observe = new TransformStream<StreamPart, StreamPart>({
               transform: async (part, controller) => {
                 if (part.type === 'response-metadata')
                   responseId = part.id ?? null
                 if (part.type !== 'finish') {
+                  streamed.push(part)
                   controller.enqueue(part)
                   return
                 }
@@ -706,6 +779,7 @@ export const llm = <
                     done,
                     responseId,
                     started,
+                    completionEvidence(streamed),
                   )
                 } catch (error) {
                   onError?.(error)

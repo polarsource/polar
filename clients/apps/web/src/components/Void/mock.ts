@@ -7,9 +7,16 @@ import {
   METERS,
   NOTES,
   PLANS,
+  REDUCERS,
   ROOTS,
 } from './fixtures'
-import { cadenceFor, metersFor, usageSeriesFor } from './generators'
+import {
+  cadenceFor,
+  dailySeriesFor,
+  metersFor,
+  usageSeriesFor,
+} from './generators'
+import { VoidReducerMetric } from './identityLive'
 import {
   VoidActivityMix,
   VoidActivityShare,
@@ -319,4 +326,21 @@ export const getVoidData = (): VoidData => {
     activities: buildActivities(identities),
     senses: buildSenses(identities),
   }
+}
+
+export const getVoidReducerMetrics = (): VoidReducerMetric[] => {
+  const end = new Date()
+  const random = seeded(20260910)
+  return REDUCERS.map((reducer, index) => {
+    const values = dailySeriesFor(reducer.total, random)
+    return {
+      id: `reducer_${index + 1}`,
+      slug: reducer.slug,
+      total: values.reduce((sum, value) => sum + value, 0),
+      periods: values.map((value, day) => ({
+        timestamp: startOfUtcDay(subDays(end, DAYS - 1 - day)).toISOString(),
+        value,
+      })),
+    }
+  })
 }

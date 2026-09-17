@@ -24,8 +24,8 @@ from polar.void.meter.service import meter as meter_service
 from polar.void.meter.versions import meters_in_version
 from polar.void.reducer.buckets import bucket_start
 from polar.void.reducer.schemas import Reducer as ReducerSchema
-from polar.void.tinybird import TinybirdApi
 from polar.void.sense.service import sense as sense_service
+from polar.void.tinybird import TinybirdApi
 
 from .repository import CustomerRepository, CustomerStateRepository
 from .schemas import (

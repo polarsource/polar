@@ -127,6 +127,7 @@ export interface VoidMeterRecord {
 export interface VoidReducerRecord {
   id: string
   slug: string
+  type: 'scalar' | 'dict'
 }
 
 export interface VoidMetricSeries {
@@ -134,6 +135,13 @@ export interface VoidMetricSeries {
   external_root_id: string | null
   periods: { timestamp: string; value: number | null }[]
   total: number | null
+}
+
+export interface VoidReducerMetric {
+  id: string
+  slug: string
+  total: number | null
+  periods: VoidMetricSeries['periods']
 }
 
 export interface VoidMetrics {

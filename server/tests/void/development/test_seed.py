@@ -11,8 +11,9 @@ from sqlalchemy import func, select
 from polar.auth.scope import Scope
 from polar.config import Environment, settings
 from polar.kit.utils import utc_now
-from polar.models import Account, Organization
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
+from polar.models.user_organization import OrganizationRole
 from polar.oauth2.service.oauth2_client import (
     oauth2_client as oauth2_client_service,
 )
@@ -23,6 +24,7 @@ from polar.organization_access_token.service import (
 from polar.postgres import AsyncSession
 from polar.void.development.service import (
     ACCOUNT_ID,
+    OPERATOR_EMAIL,
     ORGANIZATION_ID,
     ORGANIZATION_SLUG,
     DevelopmentSeedConflict,
@@ -50,6 +52,33 @@ class TestDevelopmentSeed:
         assert organization.id == ORGANIZATION_ID
         assert organization.slug == ORGANIZATION_SLUG
         assert ORGANIZATION_ID.version == ACCOUNT_ID.version == 4
+
+    async def test_seed_adds_operator_as_admin(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        organization, created = await development_service.seed(session)
+        assert created
+        user = await session.scalar(select(User).where(User.email == OPERATOR_EMAIL))
+        assert user is not None
+        membership = await session.scalar(
+            select(UserOrganization).where(
+                UserOrganization.user_id == user.id,
+                UserOrganization.organization_id == organization.id,
+            )
+        )
+        assert membership is not None
+        assert membership.role == OrganizationRole.admin
+        _, repeated = await development_service.seed(session)
+        assert not repeated
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(UserOrganization)
+                .where(UserOrganization.organization_id == organization.id)
+            )
+            == 1
+        )
 
     async def test_repeat_reuses_organization_and_issues_scoped_tokens(
         self,

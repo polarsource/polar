@@ -49,7 +49,6 @@ from polar.models import (
 )
 from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import create_redis
-from polar.user.service import user as user_service
 from polar.void.customer.schemas import CustomerCreate
 from polar.void.customer.service import customer as customer_service
 from polar.void.deploy.repository import DeployRepository
@@ -68,7 +67,6 @@ from polar.void.subscription.schemas import SubscriptionCreate
 from polar.void.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
-USER_EMAIL = "void@polar.sh"
 SEED = 20260910
 DAYS = 30
 EVENT_BATCH = 1_000
@@ -460,9 +458,7 @@ class DemoSeeder:
         await self.session.flush()
         return emitters
 
-    async def seed_senses(
-        self, version_id: str, emitters: dict[str, list[str]]
-    ) -> int:
+    async def seed_senses(self, version_id: str, emitters: dict[str, list[str]]) -> int:
         """Latest noul per identity, as if Jev had judged the labeled mix."""
         senses = {
             sense.slug: sense
@@ -645,11 +641,9 @@ class DemoSeeder:
                 )
 
     async def run(self) -> dict[str, int]:
-        user = await self.session.scalar(select(User).where(User.email == USER_EMAIL))
-        if user is None:
-            raise RuntimeError(
-                f"{USER_EMAIL} does not exist; run `dev seed` or `task void_seed` first"
-            )
+        user = await development_service.ensure_operator(
+            self.session, self.organization
+        )
         auth: AuthzContext[User] = AuthzContext(
             organization=self.organization,
             auth_subject=AuthSubject(user, set(Scope), None),
@@ -684,7 +678,6 @@ async def run(reset: bool) -> dict[str, int] | None:
             session.begin(),
         ):
             organization, _ = await development_service.seed(session)
-            await user_service.get_by_email_or_create(session=session, email=USER_EMAIL)
             seeder = DemoSeeder(session, organization)
             if reset:
                 await seeder.reset()

@@ -15,7 +15,10 @@ const METER_WEIGHTS: Record<string, number> = {
   'Tool calls': 0.15,
 }
 
-const spread = (total: number, random: () => number): number[] => {
+export const dailySeriesFor = (
+  total: number,
+  random: () => number,
+): number[] => {
   const weights = Array.from({ length: DAYS }, () =>
     random() > 0.3 ? 0.3 + random() : 0.05,
   )
@@ -27,7 +30,7 @@ export const usageSeriesFor = (usage: number, random: () => number) =>
   Object.fromEntries(
     Object.entries(METER_WEIGHTS).map(([name, weight]) => [
       name,
-      spread(Math.round(usage * weight), random),
+      dailySeriesFor(Math.round(usage * weight), random),
     ]),
   )
 

@@ -105,6 +105,7 @@ from polar.models.webhook_endpoint import (
     WebhookEventType,
     WebhookFormat,
 )
+from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -125,7 +126,6 @@ from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
-from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.void.development.service import development as void_development_service
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager

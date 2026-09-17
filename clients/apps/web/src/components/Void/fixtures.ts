@@ -52,6 +52,13 @@ export const METERS: VoidMeter[] = [
   { id: 'meter_4', name: 'Sandbox minutes', units: 38_400, billed: 76_800 },
 ]
 
+export const REDUCERS: { slug: string; total: number }[] = [
+  { slug: 'output_tokens', total: 184_200_000 },
+  { slug: 'input_tokens', total: 612_000_000 },
+  { slug: 'tool_calls', total: 1_240_000 },
+  { slug: 'sandbox_minutes', total: 38_400 },
+]
+
 export const PLANS: VoidPlan[] = [
   { name: 'Scale', active: 41, mrr: 405_900 },
   { name: 'Team', active: 63, mrr: 189_000 },

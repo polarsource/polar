@@ -187,6 +187,10 @@ export const voidKeys = {
     'void_identity_usage',
     organizationId,
   ],
+  reducerMetrics: (organizationId: string) => [
+    'void_reducer_metrics',
+    organizationId,
+  ],
 }
 
 export const useVoidDeploys = (

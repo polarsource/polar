@@ -2,15 +2,19 @@ from uuid import UUID
 
 from polar.config import settings
 from polar.exceptions import PolarError
-from polar.models import Account, Organization
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
+from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 
 from .repository import DevelopmentRepository
 
 ORGANIZATION_SLUG = "void-development"
 ORGANIZATION_ID = UUID("053c646b-b21c-4b30-a2f5-125adfd68508")
 ACCOUNT_ID = UUID("b7ee8011-c378-4e35-83c1-bc45e9b1ca8a")
+OPERATOR_EMAIL = "void@polar.sh"
 
 
 class DevelopmentSeedConflict(PolarError):
@@ -52,6 +56,7 @@ class DevelopmentService:
                 "void_enabled": True,
             }
             await session.flush()
+            await self.ensure_operator(session, organization)
             return organization, False
         if account is not None:
             raise DevelopmentSeedConflict()
@@ -68,7 +73,29 @@ class DevelopmentService:
             feature_settings={"void_enabled": True},
         )
         await repository.create(organization, flush=True)
+        await self.ensure_operator(session, organization)
         return organization, True
+
+    async def ensure_operator(
+        self, session: AsyncSession, organization: Organization
+    ) -> User:
+        user, _ = await user_service.get_by_email_or_create(
+            session=session, email=OPERATOR_EMAIL
+        )
+        repository = UserOrganizationRepository.from_session(session)
+        membership = await repository.get_by_user_and_organization(
+            user.id, organization.id
+        )
+        if membership is None:
+            session.add(
+                UserOrganization(
+                    user=user,
+                    organization=organization,
+                    role=OrganizationRole.admin,
+                )
+            )
+            await session.flush()
+        return user
 
 
 development = DevelopmentService()

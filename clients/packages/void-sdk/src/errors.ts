@@ -10,12 +10,18 @@ export class VoidHttpError extends Schema.TaggedError<VoidHttpError>()(
     detail: Schema.Unknown,
   },
 ) {
+  #message?: string
+
   get message() {
+    if (this.#message !== undefined) return this.#message
     const detail =
       typeof this.detail === 'string'
         ? this.detail
         : JSON.stringify(this.detail)
     return `void ${this.path}: ${this.status} ${this.code}: ${detail}`
+  }
+  set message(value: string) {
+    this.#message = value
   }
   get notFound() {
     return this.status === 404
@@ -27,8 +33,13 @@ export class MalformedResponse extends Schema.TaggedError<MalformedResponse>()(
   'MalformedResponse',
   { path: Schema.String, cause: Schema.optionalKey(Schema.Unknown) },
 ) {
+  #message?: string
+
   get message() {
-    return `void ${this.path}: malformed response`
+    return this.#message ?? `void ${this.path}: malformed response`
+  }
+  set message(value: string) {
+    this.#message = value
   }
 }
 

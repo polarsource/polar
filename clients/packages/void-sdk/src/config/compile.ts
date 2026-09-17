@@ -13,10 +13,6 @@ import {
   type ProductDef,
   type AnyReducer,
   type ActivityDef,
-  type SenseSignalRef,
-  type SignalOver,
-  type SignalWindow,
-  isSenseSignal,
 } from './schema'
 
 /**
@@ -89,15 +85,6 @@ export interface IrActivity {
   run_by?: string
   taxonomy: string
 }
-export type IrSenseOver =
-  | { type: 'window'; amount: number; unit: SignalWindow['unit'] }
-  | { type: 'run' }
-export interface IrSense {
-  slug: string
-  activity: string
-  when: string
-  over: IrSenseOver
-}
 export interface Ir {
   version: 4
   events: IrEvent[]
@@ -106,7 +93,6 @@ export interface Ir {
   entitlements: IrEntitlement[]
   products: IrProduct[]
   activities?: IrActivity[]
-  senses?: IrSense[]
 }
 
 const isComparison = (value: unknown): value is Comparison =>
@@ -221,20 +207,7 @@ const compileActivity = (activity: ActivityDef): IrActivity => ({
   taxonomy: activity.taxonomy,
 })
 
-const compileOver = (over: SignalOver): IrSenseOver =>
-  over === 'run'
-    ? { type: 'run' }
-    : { type: 'window', amount: over.amount, unit: over.unit }
-
-const compileSense = (signal: SenseSignalRef): IrSense => ({
-  slug: signal.key,
-  activity: signal.definition.activity.key,
-  when: signal.definition.when,
-  over: compileOver(signal.definition.over),
-})
-
 export const compile = (config: Config): Ir => {
-  const senses = config.signals.filter(isSenseSignal).map(compileSense)
   return {
     version: 4,
     events: config.events.map(compileEvent).sort(byName),
@@ -253,7 +226,6 @@ export const compile = (config: Config): Ir => {
     ...(config.activities.length
       ? { activities: config.activities.map(compileActivity).sort(bySlug) }
       : {}),
-    ...(senses.length ? { senses: senses.sort(bySlug) } : {}),
   }
 }
 

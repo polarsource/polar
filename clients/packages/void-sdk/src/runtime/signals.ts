@@ -1,25 +1,24 @@
 import { isDeepStrictEqual } from 'node:util'
-import type { Effect } from 'effect'
 import type { Api, ApiError } from '../api/index'
 import type { RunEffect } from '../api/layers'
 import type { Config } from '../config/config'
 import {
   isMeterSignal,
-  isSenseSignal,
+  isSemanticSignal,
   type MeterSignalRef,
-  type SenseSignalRef,
+  type SemanticSignalRef,
   type SignalRef,
 } from '../config/schema'
 import { MalformedResponse, VoidError, VoidHttpError } from '../errors'
 import type { EventChanges } from '../storage/events'
 import type { Background } from './background'
 import {
-  loadCustomerSnapshot,
+  judgeSignal,
   loadReconciliation,
   reconcile,
   reconciliationEvents,
 } from '../storage/reconcile'
-import type { CustomerSenseState } from '../api/generated'
+import type { CustomerState, Evidence, Judgment } from '../api/generated'
 import type { BalanceResult } from './queries'
 
 const DEFAULT_REFRESH_INTERVAL = 30_000
@@ -62,8 +61,10 @@ export interface SignalState {
     BalanceResult,
     'remaining' | 'limit' | 'reason' | 'period'
   > | null
-  /** Polar's stored noul for a semantic signal; null on meter signals. */
+  /** Jev's answer for a semantic signal; null on meter signals and while unknown. */
   readonly noul: number | null
+  /** What Jev saw when it answered; null on meter signals and while unknown. */
+  readonly evidence: Evidence | null
 }
 
 /** Runs once per published observation, sequentially; a rejection stops the listener. */
@@ -114,10 +115,11 @@ export interface SignalQuery {
   ): SignalSubscription
 }
 
-type Loaded = Pick<
-  Effect.Success<ReturnType<typeof loadCustomerSnapshot>>,
-  'snapshot' | 'effectiveConfig'
->
+type Loaded = {
+  /** Present when the group has a meter signal; semantic-only groups need no state. */
+  snapshot: CustomerState | null
+  effectiveConfig: Config
+}
 type Listener = {
   refreshInterval: number
   state(state: SignalState): void
@@ -130,6 +132,7 @@ type Entry = {
   active: boolean
   stableActive: boolean
   state?: SignalState
+  judgment?: Judgment
   listeners: Set<Listener>
 }
 type Customer = {
@@ -161,25 +164,14 @@ function classifyMeter(
   return balance.remaining < ref.definition.enter.below ? 'active' : 'inactive'
 }
 
-function classifySense(
+function classifySemantic(
   noul: number | null,
   active: boolean,
-  ref: SenseSignalRef,
+  ref: SemanticSignalRef,
 ): SignalState['status'] {
   if (noul === null || !Number.isFinite(noul)) return 'unknown'
   if (active) return noul < ref.definition.exit.below ? 'inactive' : 'active'
   return noul > ref.definition.enter.above ? 'active' : 'inactive'
-}
-
-function senseNoul(
-  snapshot: { senses?: ReadonlyArray<CustomerSenseState> },
-  identityId: string,
-  slug: string,
-): number | null {
-  const match = (snapshot.senses ?? []).find(
-    (row) => row.slug === slug && row.identity_id === identityId,
-  )
-  return match === undefined ? null : match.noul
 }
 
 function observe(
@@ -193,6 +185,7 @@ function observe(
     snapshotAt: string
     balance: SignalState['balance']
     noul: number | null
+    evidence: Evidence | null
   },
 ): void {
   let transition: SignalState['transition'] = null
@@ -204,6 +197,7 @@ function observe(
     previous.status !== next.status ||
     previous.provisional !== next.provisional ||
     previous.noul !== next.noul ||
+    !isDeepStrictEqual(previous.evidence, next.evidence) ||
     !isDeepStrictEqual(previous.balance, next.balance)
   ) {
     entry.state = {
@@ -217,6 +211,7 @@ function observe(
       snapshotAt: new Date(next.snapshotAt),
       balance: next.balance,
       noul: next.noul,
+      evidence: next.evidence,
     }
     for (const listener of entry.listeners) listener.state(entry.state)
   } else {
@@ -277,6 +272,33 @@ export function makeSignals(
     })
   }
 
+  /** Latches Jev's latest answer; unknown keeps the previous condition. */
+  function observeSemantic(
+    customer: Customer,
+    entry: Entry,
+    ref: SemanticSignalRef,
+  ): void {
+    const previousActive = entry.active
+    const judgment = entry.judgment
+    const noul = judgment?.noul ?? null
+    const status = classifySemantic(noul, entry.active, ref)
+    if (status !== 'unknown') {
+      entry.active = status === 'active'
+      entry.stableActive = entry.active
+    }
+    const now = new Date()
+    observe(customer.id, entry, {
+      status,
+      previousActive,
+      provisional: false,
+      now,
+      snapshotAt: judgment?.judged_at ?? now.toISOString(),
+      balance: null,
+      noul,
+      evidence: noul === null ? null : (judgment?.evidence ?? null),
+    })
+  }
+
   function evaluate(customer: Customer, rejected = false): Promise<void> {
     const previous = customer.evaluation ?? Promise.resolve()
     const next = previous
@@ -284,12 +306,15 @@ export function makeSignals(
       .then(async () => {
         if (!customer.loaded || disposed) return
         const { snapshot, effectiveConfig } = customer.loaded
-        const hasMeter = [...customer.entries.values()].some((entry) =>
-          isMeterSignal(entry.ref),
+        for (const entry of customer.entries.values()) {
+          if (isSemanticSignal(entry.ref))
+            observeSemantic(customer, entry, entry.ref)
+        }
+        // Everything below is the meter pipeline; semantic-only groups have no state.
+        if (!snapshot) return
+        const allEvents = await run(
+          reconciliationEvents(config, snapshot, new Date(), true),
         )
-        const allEvents = hasMeter
-          ? await run(reconciliationEvents(config, snapshot, new Date(), true))
-          : []
         if (disposed) return
         const now = new Date(Math.max(Date.now(), Date.parse(snapshot.at)))
         const events = allEvents.filter(
@@ -311,25 +336,8 @@ export function makeSignals(
         if (snapshot.next_change_at)
           deadlines.push(Date.parse(snapshot.next_change_at))
         for (const entry of customer.entries.values()) {
+          if (!isMeterSignal(entry.ref)) continue
           const previousActive = entry.active
-          if (isSenseSignal(entry.ref)) {
-            const noul = senseNoul(snapshot, customer.id, entry.ref.key)
-            const status = classifySense(noul, entry.active, entry.ref)
-            if (status !== 'unknown') {
-              entry.active = status === 'active'
-              entry.stableActive = entry.active
-            }
-            observe(customer.id, entry, {
-              status,
-              previousActive,
-              provisional: false,
-              now,
-              snapshotAt: snapshot.at,
-              balance: null,
-              noul,
-            })
-            continue
-          }
           const meter = entry.ref.definition.meter
           const balance =
             balances.get(meter.key) ??
@@ -381,6 +389,7 @@ export function makeSignals(
               period: balance.period,
             },
             noul: null,
+            evidence: null,
           })
           if (balance.period) deadlines.push(balance.period.end.getTime())
         }
@@ -430,23 +439,33 @@ export function makeSignals(
         for (let pass = 0; customer.dirty && !disposed && pass < 2; pass++) {
           customer.dirty = false
           if (!customer.entries.size) return
-          const meter = [...customer.entries.values()]
-            .map((entry) => entry.ref)
-            .find(isMeterSignal)?.definition.meter
-          const loaded = meter
+          const entries = [...customer.entries.values()]
+          const meter = entries.map((entry) => entry.ref).find(isMeterSignal)
+            ?.definition.meter
+          const loaded: Loaded = meter
             ? await run(loadReconciliation(config, meter, customer.id, true))
-            : await run(loadCustomerSnapshot(config, customer.id))
-          if (meter && loaded.snapshot.customer.external_id !== customer.id)
+            : { snapshot: null, effectiveConfig: config }
+          if (
+            loaded.snapshot &&
+            loaded.snapshot.customer.external_id !== customer.id
+          )
             throw new VoidError({
               reason: 'invalid_argument',
-              message: 'Signals require a root customer identity',
+              message: 'Meter signals require a root customer identity',
             })
+          // Semantic signals judge the identity itself; a child sees its own subtree.
+          await Promise.all(
+            entries.map(async (entry) => {
+              if (!isSemanticSignal(entry.ref)) return
+              const judgment = await run(
+                judgeSignal(config, entry.ref, customer.id),
+              )
+              if (!disposed) entry.judgment = judgment
+            }),
+          )
           if (disposed) return
           clearTimeout(customer.retry)
-          customer.loaded = {
-            snapshot: loaded.snapshot,
-            effectiveConfig: loaded.effectiveConfig,
-          }
+          customer.loaded = loaded
           await evaluate(customer)
         }
       })

@@ -29,6 +29,7 @@ class TestGetVoidOpenAPI:
             "/v1/void/subscriptions/rebuild",
             "/v1/void/identities",
             "/v1/void/identities/{external_id}/snapshot",
+            "/v1/void/identities/{external_id}/judge",
             "/v1/void/subscriptions/{id}/cycles",
             "/v1/void/subscriptions",
             "/v1/void/deploys/latest",
@@ -97,6 +98,8 @@ class TestGetVoidOpenAPI:
             assert {
                 frozenset(item["oat"]) for item in paths[path]["get"]["security"]
             } == expected_read
+        judge = paths["/v1/void/identities/{external_id}/judge"]["post"]
+        assert {frozenset(item["oat"]) for item in judge["security"]} == expected_read
         assert paths["/v1/void/customers"]["post"]["security"] == [
             {"oat": ["customers:write", "void:write"]}
         ]

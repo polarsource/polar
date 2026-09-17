@@ -6,8 +6,6 @@ import type {
   IrPrice,
   IrProductMeter,
   IrReducer,
-  IrSense,
-  IrSenseOver,
 } from './compile'
 import type { BillingInterval } from './schema'
 
@@ -57,12 +55,6 @@ export interface IrInput {
     readonly group_by?: string
     readonly run_by?: string | null
     readonly taxonomy?: string
-  }>
-  readonly senses?: ReadonlyArray<{
-    readonly slug: string
-    readonly activity: string
-    readonly when: string
-    readonly over: IrSenseOver
   }>
 }
 
@@ -183,13 +175,6 @@ export const normalizeIr = (input: IrInput): Ir => {
             .sort(bySlug),
         }
       : {}),
-    ...(input.senses?.length
-      ? {
-          senses: input.senses
-            .map((s) => withoutNulls(s) as IrSense)
-            .sort(bySlug),
-        }
-      : {}),
   }
 }
 
@@ -208,7 +193,6 @@ export const parseIr = (value: unknown): Ir => {
     'entitlements',
     'products',
     'activities',
-    'senses',
   ]) {
     const list = (input as Record<string, unknown>)[key]
     if (list !== undefined && !Array.isArray(list))

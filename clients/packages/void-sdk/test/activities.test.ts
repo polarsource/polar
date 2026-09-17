@@ -5,8 +5,10 @@ import {
   compile,
   defineConfig,
   event,
+  meter,
   recent,
   signal,
+  sum,
   toSource,
 } from '../src/config'
 import { llm, perToken } from '../src/plugins'
@@ -70,46 +72,66 @@ it('pulls span and run, and omits the default span key', () => {
   assert.notInclude(source, 'runBy')
 })
 
-it('compiles senses without thresholds and round-trips recent()', () => {
-  const completion = event('llm.completion')
-  const agent = activities({ source: completion, run: 'call_id' })
-  const labeled = defineConfig({
+it('keeps semantic signals out of the IR and the checksum', () => {
+  const completion = event<{ tokens: number }>('llm.completion')
+  const tokens = meter('tokens', {
+    reducer: sum(completion, 'tokens'),
+    price: { amount: 0 },
+  })
+  const plain = defineConfig({ schema: { completion, tokens } })
+  const judged = defineConfig({
     schema: {
       completion,
-      agent,
+      tokens,
       storm: signal('retry-storm', {
-        activity: agent,
+        meter: tokens,
         when: 'most recent spend is retries or loops, not progress',
-        over: recent(1, 'hour'),
         enter: { above: 0.7 },
         exit: { below: 0.4 },
       }),
     },
   })
-  const compiled = compile(labeled)
-  assert.deepEqual(compiled.senses, [
-    {
-      slug: 'retry-storm',
-      activity: 'agent',
-      when: 'most recent spend is retries or loops, not progress',
-      over: { type: 'window', amount: 1, unit: 'hour' },
-    },
-  ])
-  const changed = defineConfig({
-    schema: {
-      completion,
-      agent,
-      storm: signal('retry-storm', {
-        activity: agent,
-        when: 'most recent spend is retries or loops, not progress',
-        over: recent(1, 'hour'),
-        enter: { above: 0.9 },
-        exit: { below: 0.1 },
-      }),
-    },
+  const compiled = compile(judged)
+  assert.notProperty(compiled, 'senses')
+  assert.notProperty(compiled, 'signals')
+  assert.deepEqual(compiled, compile(plain))
+  assert.equal(checksum(compiled), checksum(compile(plain)))
+  assert.deepEqual(judged.signals[0]?.definition, {
+    kind: 'semantic',
+    meter: tokens,
+    when: 'most recent spend is retries or loops, not progress',
+    over: { kind: 'window', amount: 1, unit: 'hour' },
+    enter: { above: 0.7 },
+    exit: { below: 0.4 },
   })
-  assert.equal(checksum(compile(changed)), checksum(compiled))
-  const source = toSource(compiled)
-  assert.include(source, 'recent(1,')
-  assert.notInclude(source, "over: 'run'")
+  assert.equal(judged.meters.length, 1)
+})
+
+it('rejects a semantic signal over a week or without a meter', () => {
+  const completion = event<{ tokens: number }>('llm.completion')
+  const tokens = meter('tokens', {
+    reducer: sum(completion, 'tokens'),
+    price: { amount: 0 },
+  })
+  assert.throws(
+    () =>
+      signal('too-long', {
+        meter: tokens,
+        when: 'anything',
+        over: recent(8, 'day'),
+        enter: { above: 0.7 },
+        exit: { below: 0.4 },
+      }),
+    /7 days/,
+  )
+  assert.throws(
+    () =>
+      signal('inverted', {
+        meter: tokens,
+        when: 'anything',
+        enter: { above: 0.3 },
+        exit: { below: 0.4 },
+      }),
+    /thresholds/,
+  )
 })

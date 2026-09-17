@@ -5,7 +5,6 @@ import type {
   IrProduct,
   IrProductMeter,
   IrReducer,
-  IrSense,
 } from './compile'
 import { eventOf } from './ir'
 
@@ -40,7 +39,6 @@ const HELPERS = [
   'on',
   'oneTime',
   'product',
-  'recent',
   'recurring',
   'signal',
   'sum',
@@ -294,27 +292,11 @@ const meterDefinition = (
   return `${e.use('meter')}(${str(meter.slug)}, {\n  ${fields.join(',\n  ')},\n})`
 }
 
-const senseOver = (over: IrSense['over'], e: Emitter): string =>
-  over.type === 'run'
-    ? str('run')
-    : `${e.use('recent')}(${over.amount}, ${str(over.unit)})`
-
-const senseSignal = (sense: IrSense, names: Names, e: Emitter): string => {
-  const fields = [
-    `activity: ${names.of('activity', sense.activity)}`,
-    `when: ${str(sense.when)}`,
-    `over: ${senseOver(sense.over, e)}`,
-    'enter: { above: 0.7 }',
-    'exit: { below: 0.4 }',
-  ]
-  return `${e.use('signal')}(${str(sense.slug)}, {\n  ${fields.join(',\n  ')},\n})`
-}
-
 /**
  * Best-effort TypeScript for an IR, in one canonical form per definition.
  * The result compiles back to the same IR except where a comment says
- * otherwise. Meter names, plugins, meter-signal thresholds and event storage
- * are not part of the deployed configuration and are not recovered.
+ * otherwise. Meter names, plugins, signals and event storage are not part of
+ * the deployed configuration and are not recovered.
  */
 export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
   const used = new Set<Helper>(['defineConfig'])
@@ -450,16 +432,11 @@ export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
       `${e.use('activities')}({\n  ${fields.join(',\n  ')},\n})`,
     )
   }
-  for (const sense of ir.senses ?? []) {
-    define('signal', sense.slug, senseSignal(sense, names, e), [
-      '// TODO: enter/exit stay in the SDK and are not stored on Polar.',
-    ])
-  }
 
   const header = [
     `// Pulled from Polar Void${options.source ? `: ${options.source}` : ''}.`,
-    '// Best effort: meter names, plugins, meter-signal thresholds and event',
-    '// storage are not part of the deployed configuration. Review any TODO',
+    '// Best effort: meter names, plugins, signals and event storage are',
+    '// not part of the deployed configuration. Review any TODO',
     '// before deploying.',
   ]
   const imports = `import {\n${[...used]

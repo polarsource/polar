@@ -65,3 +65,34 @@ class EventRepository(RepositoryBase[VoidEvent]):
             .where(VoidEvent.id.in_([event.id for event in events]))
             .values(delivered_at=at)
         )
+
+    async def list_window(
+        self,
+        organization_id: UUID,
+        identities: Sequence[str],
+        start: datetime,
+        end: datetime,
+        event_names: Sequence[str] | None,
+        limit: int,
+    ) -> Sequence[VoidEvent]:
+        """Newest first, so the cap keeps the most recent events of a busy window."""
+        if not identities:
+            return []
+        statement = (
+            select(VoidEvent)
+            .where(
+                VoidEvent.organization_id == organization_id,
+                VoidEvent.payload["external_identity_id"]
+                .as_string()
+                .in_(list(identities)),
+                VoidEvent.timestamp >= start,
+                VoidEvent.timestamp <= end,
+            )
+            .order_by(VoidEvent.timestamp.desc(), VoidEvent.id.desc())
+            .limit(limit)
+        )
+        if event_names is not None:
+            statement = statement.where(
+                VoidEvent.payload["name"].as_string().in_(list(event_names))
+            )
+        return await self.get_all(statement)

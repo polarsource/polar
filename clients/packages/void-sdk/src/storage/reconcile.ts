@@ -8,7 +8,7 @@ import type {
 } from '../api/generated'
 import { compile } from '../config/compile'
 import type { Config } from '../config/config'
-import type { Limit, MeterDef } from '../config/schema'
+import type { Limit, MeterDef, SemanticSignalRef } from '../config/schema'
 import { VoidError } from '../errors'
 import { Background } from '../runtime/background'
 import type { BalanceResult, CheckResult } from '../runtime/queries'
@@ -688,27 +688,26 @@ export const loadReconciliation = Effect.fn('Scope.loadReconciliation')(
   },
 )
 
-/** Customer state without a meter, for sense-only signal groups. */
-export const loadCustomerSnapshot = Effect.fn('Scope.loadCustomerSnapshot')(
-  function* (config: Config, id: string) {
-    const api = yield* Api
-    const versionId =
-      config.versionId === undefined
-        ? (yield* api.organizationsCurrent(undefined)).active_version_id
-        : config.versionId
-    if (versionId === null)
-      return fail('no active deployment; run `void deploy --activate`')
-    const identity = yield* api.identitiesGet(id, undefined)
-    const root = identity.chain.at(-1) ?? id
-    const snapshot = yield* api.customersState(root, {
-      params: { version_id: versionId },
-    })
-    return {
-      snapshot,
-      effectiveConfig: { ...config, versionId },
-    }
-  },
-)
+/**
+ * Polar asks Jev the signal's question about this identity's recent meter
+ * events. The answer is cached by state on the server; the SDK only latches.
+ */
+export const judgeSignal = Effect.fn('Scope.judgeSignal')(function* (
+  config: Config,
+  ref: SemanticSignalRef,
+  id: string,
+) {
+  const api = yield* Api
+  const { meter, when, over } = ref.definition
+  return yield* api.identitiesJudge(id, {
+    payload: {
+      meter: meter.key,
+      when,
+      over: { amount: over.amount, unit: over.unit },
+      ...(config.versionId !== undefined && { version_id: config.versionId }),
+    },
+  })
+})
 
 export const checkLocally = Effect.fn('Scope.checkLocally')(function* (
   config: Config,

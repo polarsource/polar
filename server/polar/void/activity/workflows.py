@@ -14,14 +14,6 @@ class ClassifySpanInput:
     span_key: str
 
 
-@dataclass
-class ClassifySenseInput:
-    organization_id: str
-    sense_id: str
-    identity_id: str
-    run_key: str
-
-
 @workflow.defn
 class ClassifySpanWorkflow:
     def __init__(self) -> None:
@@ -40,31 +32,6 @@ class ClassifySpanWorkflow:
                 continue
             await workflow.execute_activity(
                 "classify_span",
-                input,
-                start_to_close_timeout=ACTIVITY_TIMEOUT,
-            )
-            if self.dirty and workflow.info().is_continue_as_new_suggested():
-                workflow.continue_as_new(input)
-
-
-@workflow.defn
-class ClassifySenseWorkflow:
-    def __init__(self) -> None:
-        self.dirty = True
-
-    @workflow.signal
-    def touch(self) -> None:
-        self.dirty = True
-
-    @workflow.run
-    async def run(self, input: ClassifySenseInput) -> None:
-        while self.dirty:
-            self.dirty = False
-            await workflow.sleep(DEBOUNCE)
-            if self.dirty:
-                continue
-            await workflow.execute_activity(
-                "classify_sense",
                 input,
                 start_to_close_timeout=ACTIVITY_TIMEOUT,
             )

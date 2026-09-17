@@ -17,6 +17,12 @@ class VoidEvent(RecordModel):
     __table_args__ = (
         UniqueConstraint("organization_id", "external_id"),
         Index(
+            "ix_void_events_identity_timestamp",
+            "organization_id",
+            text("(payload ->> 'external_identity_id')"),
+            "timestamp",
+        ),
+        Index(
             "ix_void_events_pending_delivery",
             "organization_id",
             "created_at",

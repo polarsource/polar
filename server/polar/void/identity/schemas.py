@@ -6,7 +6,6 @@ from pydantic import AliasChoices, Field
 from polar.kit.schemas import IDSchema, Schema
 from polar.void.customer.schemas import Customer
 from polar.void.meter.schemas import Balance
-from polar.void.sense.schemas import CustomerSenseState
 
 
 class IdentityCreate(Schema):
@@ -45,4 +44,3 @@ class IdentitySnapshot(Schema):
     entitlements: list[str] = Field(
         description="Entitlement slugs held through this identity's chain."
     )
-    senses: list[CustomerSenseState] = Field(default_factory=list)

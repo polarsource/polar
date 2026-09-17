@@ -258,89 +258,6 @@
         "x-speakeasy-name-override": "ensure_identity"
       }
     },
-    "/v1/void/identities/{external_id}": {
-      "get": {
-        "tags": [
-          "void",
-          "private",
-          "identities"
-        ],
-        "summary": "Get Identity",
-        "description": "**Scopes**: `void:read` `void:write`",
-        "operationId": "identities:get",
-        "security": [
-          {
-            "oat": [
-              "void:read"
-            ]
-          },
-          {
-            "oat": [
-              "void:write"
-            ]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "external_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "External Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IdentityDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResourceNotFound"
-                }
-              }
-            },
-            "description": "Not Found"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IdentityHierarchyConflict"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-polar-allowed-subjects": [
-          "Organization",
-          "User"
-        ],
-        "x-speakeasy-group": "identities",
-        "x-speakeasy-name-override": "get_identity"
-      }
-    },
     "/v1/void/identities/{external_id}/snapshot": {
       "get": {
         "tags": [
@@ -639,6 +556,196 @@
         ],
         "x-speakeasy-group": "identities",
         "x-speakeasy-name-override": "assign_entitlements"
+      }
+    },
+    "/v1/void/identities/{external_id}": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
+        "summary": "Get Identity",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "identities:get",
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityHierarchyConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "identities",
+        "x-speakeasy-name-override": "get_identity"
+      }
+    },
+    "/v1/void/identities/{external_id}/judge": {
+      "post": {
+        "tags": [
+          "void",
+          "private",
+          "identities"
+        ],
+        "summary": "Judge",
+        "description": "Ask Jev the SDK's question about this identity's recent meter events.\n\nCached by the window's state, re-asked at most once a minute, and free when\nthe window is empty. A missing Jev answer comes back as a null noul, not an\nerror, so the SDK reports `unknown` and keeps its latch.\n\n**Scopes**: `customers:read` `customers:write`",
+        "operationId": "identities:judge",
+        "security": [
+          {
+            "oat": [
+              "customers:read",
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "customers:read",
+              "void:write"
+            ]
+          },
+          {
+            "oat": [
+              "customers:write",
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "customers:write",
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JudgeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Judgment"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityHierarchyConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "identities",
+        "x-speakeasy-name-override": "judge"
       }
     },
     "/v1/void/customers": {
@@ -1031,6 +1138,17 @@
               "minimum": 1,
               "default": 25,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
             }
           },
           {
@@ -6624,6 +6742,89 @@
         ],
         "title": "EventsList"
       },
+      "Evidence": {
+        "properties": {
+          "events": {
+            "type": "integer",
+            "title": "Events",
+            "description": "Matching events in the window."
+          },
+          "identities": {
+            "type": "integer",
+            "title": "Identities",
+            "description": "Identities in the subtree that emitted them."
+          },
+          "first_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First At"
+          },
+          "last_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last At"
+          },
+          "totals": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Totals",
+            "description": "Sum of every numeric metadata key across the window."
+          },
+          "values": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Values",
+            "description": "Distinct string metadata values per key, capped."
+          },
+          "sample": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sample",
+            "description": "The events Jev saw: the first and the most recent ones."
+          }
+        },
+        "type": "object",
+        "required": [
+          "events",
+          "identities",
+          "first_at",
+          "last_at",
+          "totals",
+          "values",
+          "sample"
+        ],
+        "title": "Evidence"
+      },
       "Filter-Input": {
         "properties": {
           "conjunction": {
@@ -7113,6 +7314,156 @@
         "title": "InvalidScenario"
       },
       "JsonValue": {},
+      "JudgeRequest": {
+        "properties": {
+          "meter": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Meter",
+            "description": "Slug of the meter whose recent events Jev reads."
+          },
+          "when": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "When",
+            "description": "The question Jev answers with a noul, verbatim."
+          },
+          "over": {
+            "$ref": "#/components/schemas/JudgeWindow",
+            "description": "How far back the events go. Defaults to the last hour."
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id",
+            "description": "Configuration version whose meter to read. Defaults to the active deployment."
+          }
+        },
+        "type": "object",
+        "required": [
+          "meter",
+          "when"
+        ],
+        "title": "JudgeRequest"
+      },
+      "JudgeWindow": {
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Amount"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "minute",
+              "hour",
+              "day"
+            ],
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "unit"
+        ],
+        "title": "JudgeWindow"
+      },
+      "Judgment": {
+        "properties": {
+          "identity_id": {
+            "type": "string",
+            "title": "Identity Id"
+          },
+          "root_id": {
+            "type": "string",
+            "title": "Root Id"
+          },
+          "meter": {
+            "type": "string",
+            "title": "Meter"
+          },
+          "when": {
+            "type": "string",
+            "title": "When"
+          },
+          "over": {
+            "$ref": "#/components/schemas/JudgeWindow"
+          },
+          "noul": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Noul",
+            "description": "Jev's answer in [0, 1]. Unset until Jev has answered once."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "judged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judged At",
+            "description": "When Jev gave this answer."
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "The window changed since this noul was judged. Polar re-asks Jev at most once a minute per identity and question."
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/Evidence",
+            "description": "What Jev saw when it answered."
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id",
+          "root_id",
+          "meter",
+          "when",
+          "over",
+          "noul",
+          "model",
+          "judged_at",
+          "stale",
+          "evidence"
+        ],
+        "title": "Judgment"
+      },
       "LastProcessedEvent": {
         "properties": {
           "external_id": {
@@ -7272,7 +7623,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount"
           },
           "currency": {
@@ -7628,12 +7978,10 @@
           },
           "current_unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Current Unit Amount"
           },
           "proposed_unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Proposed Unit Amount"
           },
           "customers": {
@@ -9427,12 +9775,10 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount"
           },
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount"
           }
         },

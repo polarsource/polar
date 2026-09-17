@@ -128,13 +128,13 @@ from .void_billing_identity import VoidBillingIdentity
 from .void_deployment import VoidDeployment
 from .void_entitlement import VoidEntitlement
 from .void_event import VoidEvent
+from .void_judgment import VoidJudgment
 from .void_meter import VoidMeter
 from .void_product import VoidProduct
 from .void_reducer import VoidReducer
 from .void_reducer_bucket import VoidReducerBucket
 from .void_reducer_dependency import VoidReducerDependency, VoidReducerJob
 from .void_scenario import VoidScenario
-from .void_sense import VoidSense, VoidSenseObservation
 from .void_subscription import VoidSubscription, VoidSubscriptionStatus
 from .wallet import Wallet
 from .wallet_transaction import WalletTransaction
@@ -271,6 +271,7 @@ __all__ = [
     "VoidDeployment",
     "VoidEntitlement",
     "VoidEvent",
+    "VoidJudgment",
     "VoidMeter",
     "VoidProduct",
     "VoidReducer",
@@ -278,8 +279,6 @@ __all__ = [
     "VoidReducerDependency",
     "VoidReducerJob",
     "VoidScenario",
-    "VoidSense",
-    "VoidSenseObservation",
     "VoidSubscription",
     "VoidSubscriptionStatus",
     "Wallet",

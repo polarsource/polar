@@ -574,14 +574,12 @@ export const DEFAULT_CURRENCY = 'usd'
 
 export type DurationUnit = 'minute' | 'hour' | 'day'
 
-/** A rolling window of labeled spend. Named `recent` so it does not collide with `last`. */
+/** A rolling window of meter events. Named `recent` so it does not collide with `last`. */
 export interface SignalWindow {
   readonly kind: 'window'
   readonly amount: number
   readonly unit: DurationUnit
 }
-
-export type SignalOver = SignalWindow | 'run'
 
 const UNITS: ReadonlySet<string> = new Set(['minute', 'hour', 'day'])
 const WINDOW_MS: Record<DurationUnit, number> = {
@@ -611,18 +609,28 @@ export interface MeterSignalOptions {
   readonly exit: { readonly atLeast: number }
 }
 
-export interface SenseSignalOptions {
-  readonly activity: ActivityDef
-  /** The Noul Polar asks Jev. Deploys with the activity; thresholds do not. */
+export interface SemanticSignalOptions {
+  /** The meter whose recent events Jev reads. */
+  readonly meter: MeterDef
+  /** The question Polar asks Jev, verbatim. Stays in the SDK; never deployed. */
   readonly when: string
-  readonly over: SignalOver
-  /** Active when the stored noul rises above this. */
+  /** How far back the events go. Defaults to `recent(1, 'hour')`. */
+  readonly over?: SignalWindow
+  /** Active when the noul rises above this. */
   readonly enter: { readonly above: number }
   /** Inactive again once the noul falls below this. */
   readonly exit: { readonly below: number }
 }
 
-export type SignalOptions = MeterSignalOptions | SenseSignalOptions
+export type SemanticSignalDefinition = Required<SemanticSignalOptions> & {
+  readonly kind: 'semantic'
+}
+
+export type MeterSignalDefinition = MeterSignalOptions & {
+  readonly kind: 'meter'
+}
+
+export type SignalOptions = MeterSignalOptions | SemanticSignalOptions
 
 interface SignalBase {
   readonly kind: 'signal'
@@ -630,20 +638,20 @@ interface SignalBase {
 }
 
 export interface MeterSignalRef extends SignalBase {
-  readonly definition: MeterSignalOptions
+  readonly definition: MeterSignalDefinition
 }
 
-export interface SenseSignalRef extends SignalBase {
-  readonly definition: SenseSignalOptions
+export interface SemanticSignalRef extends SignalBase {
+  readonly definition: SemanticSignalDefinition
 }
 
-export type SignalRef = MeterSignalRef | SenseSignalRef
+export type SignalRef = MeterSignalRef | SemanticSignalRef
 
 export const isMeterSignal = (ref: SignalRef): ref is MeterSignalRef =>
-  'meter' in ref.definition
+  ref.definition.kind === 'meter'
 
-export const isSenseSignal = (ref: SignalRef): ref is SenseSignalRef =>
-  'activity' in ref.definition
+export const isSemanticSignal = (ref: SignalRef): ref is SemanticSignalRef =>
+  ref.definition.kind === 'semantic'
 
 export const isActivity = (value: unknown): value is ActivityDef =>
   typeof value === 'object' &&
@@ -654,7 +662,7 @@ export const isActivity = (value: unknown): value is ActivityDef =>
 const SLUG_KEY = /^[a-z0-9][a-z0-9_-]{0,127}$/
 
 function meterSignal(key: string, options: MeterSignalOptions): MeterSignalRef {
-  if (options.field !== 'remaining' || !isMeter(options.meter)) {
+  if (options.field !== 'remaining') {
     throw new Error('signal: field must be the remaining balance of a meter')
   }
   if (
@@ -671,6 +679,7 @@ function meterSignal(key: string, options: MeterSignalOptions): MeterSignalRef {
     kind: 'signal',
     key,
     definition: {
+      kind: 'meter',
       meter: options.meter,
       field: options.field,
       enter: { ...options.enter },
@@ -679,21 +688,18 @@ function meterSignal(key: string, options: MeterSignalOptions): MeterSignalRef {
   }
 }
 
-function senseSignal(key: string, options: SenseSignalOptions): SenseSignalRef {
-  if (!isActivity(options.activity)) {
-    throw new Error('signal: when requires an activities() source')
-  }
+function semanticSignal(
+  key: string,
+  options: SemanticSignalOptions,
+): SemanticSignalRef {
   const when = options.when.trim()
   if (!when || when.length > 512) {
     throw new Error('signal: when must be 1 to 512 characters')
   }
+  // Re-running `recent` validates and copies a window built by hand.
   const over = options.over
-  if (over !== 'run' && (over?.kind !== 'window' || !UNITS.has(over.unit))) {
-    throw new Error("signal: over must be recent(n, unit) or 'run'")
-  }
-  if (over !== 'run' && over.amount * WINDOW_MS[over.unit] > MAX_WINDOW_MS) {
-    throw new Error('signal: window must be at most 7 days')
-  }
+    ? recent(options.over.amount, options.over.unit)
+    : recent(1, 'hour')
   if (
     !Number.isFinite(options.enter.above) ||
     !Number.isFinite(options.exit.below) ||
@@ -709,9 +715,10 @@ function senseSignal(key: string, options: SenseSignalOptions): SenseSignalRef {
     kind: 'signal',
     key,
     definition: {
-      activity: options.activity,
+      kind: 'semantic',
+      meter: options.meter,
       when,
-      over: over === 'run' ? 'run' : { ...over },
+      over,
       enter: { ...options.enter },
       exit: { ...options.exit },
     },
@@ -719,15 +726,19 @@ function senseSignal(key: string, options: SenseSignalOptions): SenseSignalRef {
 }
 
 export function signal(key: string, options: MeterSignalOptions): MeterSignalRef
-export function signal(key: string, options: SenseSignalOptions): SenseSignalRef
+export function signal(
+  key: string,
+  options: SemanticSignalOptions,
+): SemanticSignalRef
 export function signal(key: string, options: SignalOptions): SignalRef
 export function signal(key: string, options: SignalOptions): SignalRef {
   if (!SLUG_KEY.test(key)) {
     throw new Error('signal: key must be a slug of at most 128 characters')
   }
-  if (!options) throw new Error('signal: a meter or a when clause is required')
-  return 'activity' in options
-    ? senseSignal(key, options)
+  if (!options || !isMeter(options.meter))
+    throw new Error('signal: a meter is required')
+  return 'when' in options
+    ? semanticSignal(key, options)
     : meterSignal(key, options)
 }
 

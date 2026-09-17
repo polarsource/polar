@@ -12,6 +12,7 @@ from .deploy.endpoints import router as deploy_router
 from .entitlement.endpoints import router as entitlement_router
 from .event.endpoints import router as event_router
 from .identity.endpoints import router as identity_router
+from .judge.endpoints import router as judge_router
 from .meter.endpoints import router as meter_router
 from .metric.endpoints import router as metric_router
 from .organization.service import organization as organization_service
@@ -41,6 +42,7 @@ async def current(
 
 
 router.include_router(identity_router)
+router.include_router(judge_router)
 router.include_router(customer_router)
 
 router.include_router(event_router)

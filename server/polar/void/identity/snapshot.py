@@ -6,7 +6,6 @@ from polar.void.customer.repository import CustomerRepository
 from polar.void.customer.service import customer as customer_service
 from polar.void.meter.service import meter as meter_service
 from polar.void.meter.versions import meters_in_version
-from polar.void.sense.service import sense as sense_service
 from polar.void.subscription.service import subscription as subscription_service
 from polar.void.tinybird import TinybirdApi
 
@@ -53,13 +52,6 @@ class IdentitySnapshotService:
                     session, organization_id, identity.external_id, at
                 )
             ).slugs,
-            senses=(
-                await sense_service.observations_for(
-                    session, organization_id, version_id, [identity.external_id]
-                )
-                if version_id is not None
-                else []
-            ),
         )
 
 

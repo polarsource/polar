@@ -490,21 +490,14 @@ layer(
     assert.equal(path, '/v1/void/deploys')
     const payload = body as {
       activities?: unknown
-      senses?: ReadonlyArray<{ when: string; over: unknown }>
+      meters: ReadonlyArray<{ slug: string }>
     }
     expect(payload.activities).toMatchObject([
       { slug: 'agent', event: 'ai_call', group_by: 'call_id' },
     ])
-    expect(payload.senses).toMatchObject([
-      {
-        slug: 'retry-storm',
-        activity: 'agent',
-        when: 'retries, not progress',
-        over: { type: 'window', amount: 1, unit: 'hour' },
-      },
-    ])
-    assert.notProperty(payload.senses?.[0], 'enter')
-    assert.notProperty(payload.senses?.[0], 'exit')
+    expect(payload.meters.map((m) => m.slug)).toEqual(['tokens'])
+    assert.notProperty(payload, 'senses')
+    assert.notProperty(payload, 'signals')
     return {
       id: null,
       checksum: 'c',
@@ -517,10 +510,14 @@ layer(
     }
   }),
 )((it) => {
-  it.effect('publishes senses without SDK thresholds', () =>
+  it.effect('deploys a semantic signal as its meter only', () =>
     Effect.gen(function* () {
-      const completion = event('ai_call')
+      const completion = event<{ tokens: number }>('ai_call')
       const agent = activities({ source: completion })
+      const tokens = meter('tokens', {
+        reducer: sum(completion, 'tokens'),
+        price: { amount: 0 },
+      })
       yield* reconcile(
         'deploy',
         defineConfig({
@@ -528,7 +525,7 @@ layer(
             completion,
             agent,
             storm: signal('retry-storm', {
-              activity: agent,
+              meter: tokens,
               when: 'retries, not progress',
               over: recent(1, 'hour'),
               enter: { above: 0.7 },

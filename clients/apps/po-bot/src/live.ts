@@ -5,7 +5,8 @@ import {
   ORG,
   activityReport,
   completions,
-  customerSenses,
+  judgments,
+  type AgentJudgment,
   spanKey,
   spansFor,
   standings,
@@ -56,27 +57,25 @@ export interface Frame {
   readonly events: readonly LogEvent[]
   readonly tree: Tree
   readonly activities: Wire.ActivityReport
-  readonly senses: readonly Wire.CustomerSenseState[]
+  readonly judgments: readonly AgentJudgment[]
 }
 
 const nothing: Standing = { usage: 0, credits: 0, remaining: null }
 
 export const frame = async (): Promise<Frame> => {
-  const [memberRows, agentRows, events, activities, senses] = await Promise.all(
-    [
-      db.select().from(members),
-      db.select().from(agents),
-      completions(),
-      activityReport(),
-      customerSenses(),
-    ],
-  )
-  const ids = [
-    ORG,
-    ...memberRows.map((row) => row.id),
-    ...agentRows.map((row) => row.id),
-  ]
-  const [at, spans] = await Promise.all([standings(ids), spansFor(events)])
+  const [memberRows, agentRows, events, activities] = await Promise.all([
+    db.select().from(members),
+    db.select().from(agents),
+    completions(),
+    activityReport(),
+  ])
+  const agentIds = agentRows.map((row) => row.id)
+  const ids = [ORG, ...memberRows.map((row) => row.id), ...agentIds]
+  const [at, spans, judged] = await Promise.all([
+    standings(ids),
+    spansFor(events),
+    judgments(agentIds),
+  ])
   const standing = (id: string) => at.get(id) ?? nothing
 
   const tree: Tree = {
@@ -110,7 +109,7 @@ export const frame = async (): Promise<Frame> => {
   return {
     tree,
     activities,
-    senses,
+    judgments: judged,
     events: events.map((event) => {
       const who = label.get(event.external_identity_id ?? '')
       return {

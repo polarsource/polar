@@ -68,20 +68,14 @@ export const pro = product('sdk_demo_pro', {
 
 export const agent = activities({ source: ai, run: 'call_id' })
 
+// A semantic signal: Polar asks Jev about this meter's recent events and the
+// SDK latches the answer. The question never leaves the SDK.
 export const retryStorm = signal('retry-storm', {
-  activity: agent,
+  meter: ai.models['anthropic/claude-fable-5-1'].output,
   when: 'most recent spend is retries or loops, not progress',
   over: recent(1, 'hour'),
   enter: { above: 0.7 },
   exit: { below: 0.4 },
-})
-
-export const humanInTheLoop = signal('human-in-the-loop', {
-  activity: agent,
-  when: 'this run now needs a person',
-  over: 'run',
-  enter: { above: 0.75 },
-  exit: { below: 0.35 },
 })
 
 export const config = defineConfig({
@@ -94,6 +88,5 @@ export const config = defineConfig({
     pro,
     agent,
     retryStorm,
-    humanInTheLoop,
   },
 })

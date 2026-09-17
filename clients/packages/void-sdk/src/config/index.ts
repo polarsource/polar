@@ -59,15 +59,15 @@ export type {
   RecurringPrice,
   ReducerDef,
   ScalarReducer,
-  SenseSignalOptions,
-  SenseSignalRef,
-  SignalOver,
+  SemanticSignalDefinition,
+  SemanticSignalOptions,
+  SemanticSignalRef,
   SignalRef,
   SignalOptions,
   SignalWindow,
   UnnamedReducer,
 } from './schema'
-export { isMeterSignal, isSenseSignal } from './schema'
+export { isMeterSignal, isSemanticSignal } from './schema'
 export { defineConfig } from './config'
 export { tags, plugin } from './plugin'
 export type { PluginContext, PluginDef, PluginSchema, VerbsOf } from './plugin'
@@ -108,6 +108,4 @@ export type {
   IrProduct,
   IrProductMeter,
   IrReducer,
-  IrSense,
-  IrSenseOver,
 } from './compile'

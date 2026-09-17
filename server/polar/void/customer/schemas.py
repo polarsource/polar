@@ -12,7 +12,6 @@ from polar.void.entitlement.schemas import (
 from polar.void.meter.balance import MeterCycle, MeterEvent
 from polar.void.meter.schemas import Meter, SubscriptionRead
 from polar.void.reducer.schemas import Reducer
-from polar.void.sense.schemas import CustomerSenseState
 
 
 class CustomerCreate(Schema):
@@ -103,4 +102,3 @@ class CustomerState(Schema):
     meters: list[CustomerMeterState]
     reducers: list[Reducer]
     buckets: list[ReducerState]
-    senses: list[CustomerSenseState] = Field(default_factory=list)

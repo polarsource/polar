@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, expect, it, vi } from '@effect/vitest'
+import { afterEach, assert, expect, it, vi } from '@effect/vitest'
 import {
   createVoid,
   defineConfig,
@@ -9,7 +9,6 @@ import {
   sum,
   checksumOf,
   compile,
-  activities,
   recent,
   type SignalState,
   type Wire,
@@ -896,96 +895,91 @@ it('rejects a non-positive refresh interval', () => {
   ).toThrow('refreshInterval')
 })
 
-const completion = event('llm.completion')
-const agent = activities({ source: completion })
+const completion = event<{ tokens: number }>('llm.completion')
+const tokens = meter('tokens', {
+  reducer: sum(completion, 'tokens'),
+  price: { amount: 0 },
+})
 const retryStorm = signal('retry-storm', {
-  activity: agent,
+  meter: tokens,
   when: 'most recent spend is retries or loops, not progress',
   over: recent(1, 'hour'),
   enter: { above: 0.7 },
   exit: { below: 0.4 },
 })
 
-function senseSetup(identityId = 'root') {
+function judgeSetup(noul: number | null = 0.5) {
   const at = new Date().toISOString()
-  let snapshot: Wire.CustomerState = {
-    ...fixture(),
-    meters: [],
-    buckets: [],
-    senses: [
-      {
-        slug: 'retry-storm',
-        activity: 'agent',
-        when: retryStorm.definition.when,
-        over: { type: 'window', amount: 1, unit: 'hour' },
-        identity_id: identityId,
-        run_key: null,
-        noul: 0.5,
-        span_count: 3,
-        cost: 0.1,
-        evaluated_at: at,
-      },
-    ],
+  let current = noul
+  const requests: Array<{ path: string; body: unknown }> = []
+  const evidence: Wire.Evidence = {
+    events: 3,
+    identities: 1,
+    first_at: at,
+    last_at: at,
+    totals: { tokens: 12 },
+    values: { model: ['anthropic/claude'] },
+    sample: [{ id: 'e1', at, identity: 'agent' }],
   }
-  const config = defineConfig({
-    schema: { completion, agent, retryStorm },
-  })
+  const config = defineConfig({ schema: { completion, tokens, retryStorm } })
   const client = createVoid(config, {
     apiUrl: 'http://void',
     token: 'token',
     fetch: async (input, init) => {
       const request = new Request(input, init)
       const path = new URL(request.url).pathname
-      if (path === '/v1/void/organizations/current')
-        return Response.json({
-          active_version_id: 'a'.repeat(64),
-          active_deployment_id: 'deployment',
-          can_activate: true,
-          id: 'org',
-          name: 'Org',
-          slug: 'org',
-          created_at: at,
-        })
-      if (path.startsWith('/v1/void/identities/')) {
-        const id = decodeURIComponent(path.slice('/v1/void/identities/'.length))
-        return Response.json({
-          entitlements: { features: null, meters: null },
-          id: 'identity',
-          external_id: id,
-          parent_external_id: id === 'root' ? null : 'root',
-          chain: id === 'root' ? ['root'] : [id, 'root'],
-          children: [],
-          created_at: at,
-          metadata: {},
-        })
+      const match = /^\/v1\/void\/identities\/(.+)\/judge$/.exec(path)
+      if (match && request.method === 'POST') {
+        const body = JSON.parse(await request.text()) as Record<string, unknown>
+        requests.push({ path, body })
+        const judgment: Wire.Judgment = {
+          identity_id: decodeURIComponent(match[1]!),
+          root_id: 'root',
+          meter: body.meter as string,
+          when: body.when as string,
+          over: body.over as Wire.JudgeWindow,
+          noul: current,
+          model: current === null ? null : 'jev-test',
+          judged_at: current === null ? null : at,
+          stale: false,
+          evidence,
+        }
+        return Response.json(judgment)
       }
-      if (path === '/v1/void/customers/root/state')
-        return Response.json(snapshot)
       throw new Error(`Unexpected request: ${path}`)
     },
   })
   clients.push(client)
   return {
     client,
-    noul(value: number) {
-      snapshot = {
-        ...snapshot,
-        at: new Date().toISOString(),
-        senses: snapshot.senses?.map((row) => ({ ...row, noul: value })),
-      }
+    requests,
+    evidence,
+    noul(value: number | null) {
+      current = value
     },
   }
 }
 
-it('latches a semantic signal from Polar noul without a meter', async () => {
-  const server = senseSetup()
+it('latches a semantic signal from Jev without customer state', async () => {
+  const server = judgeSetup()
   const query = server.client.as('root').signals.retryStorm
   expect(await query.get()).toMatchObject({
     status: 'inactive',
     noul: 0.5,
     balance: null,
     identityId: 'root',
+    evidence: server.evidence,
   })
+  expect(server.requests).toHaveLength(1)
+  expect(server.requests[0]).toMatchObject({
+    path: '/v1/void/identities/root/judge',
+    body: {
+      meter: 'tokens',
+      when: retryStorm.definition.when,
+      over: { amount: 1, unit: 'hour' },
+    },
+  })
+  assert.notProperty(server.requests[0]!.body as object, 'enter')
   server.noul(0.8)
   expect(await query.get()).toMatchObject({
     status: 'active',
@@ -993,10 +987,7 @@ it('latches a semantic signal from Polar noul without a meter', async () => {
     transition: 'entered',
   })
   server.noul(0.55)
-  expect(await query.get()).toMatchObject({
-    status: 'active',
-    noul: 0.55,
-  })
+  expect(await query.get()).toMatchObject({ status: 'active', noul: 0.55 })
   server.noul(0.3)
   expect(await query.get()).toMatchObject({
     status: 'inactive',
@@ -1005,13 +996,24 @@ it('latches a semantic signal from Polar noul without a meter', async () => {
   })
 })
 
-it('latches a sense on a child identity', async () => {
-  const server = senseSetup('agent')
-  expect(
-    await server.client.as('agent').signals.retryStorm.get(),
-  ).toMatchObject({
+it('judges a child identity on its own and keeps the latch while unknown', async () => {
+  const server = judgeSetup(0.9)
+  const query = server.client.as('agent').signals.retryStorm
+  expect(await query.get()).toMatchObject({
     identityId: 'agent',
+    status: 'active',
+    noul: 0.9,
+  })
+  expect(server.requests[0]?.path).toBe('/v1/void/identities/agent/judge')
+  server.noul(null)
+  expect(await query.get()).toMatchObject({
+    status: 'unknown',
+    noul: null,
+    evidence: null,
+  })
+  server.noul(0.2)
+  expect(await query.get()).toMatchObject({
     status: 'inactive',
-    noul: 0.5,
+    transition: 'exited',
   })
 })

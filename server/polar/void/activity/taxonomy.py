@@ -3,7 +3,6 @@ from typing import Literal
 TAXONOMY = "polar.agent/v1"
 DEFAULT_GROUP_BY = "call_id"
 CONFIDENCE_THRESHOLD = 0.6
-TYPESAFE_MODEL = "jev-latest"
 SPAN_EVENT_CAP = 20
 PENDING = "pending"
 UNLABELED = "unlabeled"

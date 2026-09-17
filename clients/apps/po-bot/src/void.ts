@@ -1,5 +1,10 @@
-import { createVoid, type Wire } from '@void/sdk'
-import { ai, CHEAPER, config } from '../void'
+import {
+  createVoid,
+  type SignalState,
+  type SignalWindow,
+  type Wire,
+} from '@void/sdk'
+import { ai, CHEAPER, config, retryStorm } from '../void'
 import type { Agent } from './db/schema'
 
 export { MODELS } from '../void'
@@ -84,17 +89,52 @@ export const activityReport = async (): Promise<Wire.ActivityReport> => {
   }
 }
 
-export const customerSenses = async (): Promise<
-  readonly Wire.CustomerSenseState[]
-> => {
-  try {
-    return (
-      (await withTimeout(void_.api.customers.state(ORG), 3_000)).senses ?? []
-    )
-  } catch {
-    return []
-  }
+/** One agent's semantic signal as the dashboard shows it. Serializable for SSE. */
+export interface AgentJudgment {
+  readonly identityId: string
+  readonly signal: string
+  readonly when: string
+  readonly over: SignalWindow
+  readonly status: SignalState['status']
+  readonly noul: number | null
+  readonly events: number
 }
+
+/** Polar re-asks Jev at most once a minute, so asking sooner cannot change the answer. */
+const JUDGMENT_TTL_MS = 30_000
+const judged = new Map<string, { at: number; state: AgentJudgment | null }>()
+
+const judgeAgent = async (id: string): Promise<AgentJudgment | null> => {
+  const cached = judged.get(id)
+  if (cached && Date.now() - cached.at < JUDGMENT_TTL_MS) return cached.state
+  let state: AgentJudgment | null = null
+  try {
+    const signal = await withTimeout(
+      void_.as(id).signals.retryStorm.get(),
+      3_000,
+    )
+    state = {
+      identityId: signal.identityId,
+      signal: signal.signal,
+      when: retryStorm.definition.when,
+      over: retryStorm.definition.over,
+      status: signal.status,
+      noul: signal.noul,
+      events: signal.evidence?.events ?? 0,
+    }
+  } catch {
+    // Keep the dashboard moving; the next frame asks again.
+  }
+  judged.set(id, { at: Date.now(), state })
+  return state
+}
+
+export const judgments = async (
+  agentIds: readonly string[],
+): Promise<readonly AgentJudgment[]> =>
+  (await Promise.all(agentIds.map(judgeAgent))).filter(
+    (state): state is AgentJudgment => state !== null,
+  )
 
 /** Same key the worker uses: `metadata.call_id`, else the event's `external_id`. */
 export const spanKey = (event: Wire.Event) => {

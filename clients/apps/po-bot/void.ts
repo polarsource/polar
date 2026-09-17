@@ -55,23 +55,16 @@ export const team = product('po_bot_team', {
 
 export const agent = activities({ source: ai, run: 'call_id' })
 
+/** Polar asks Jev about the agent's recent credit spend; the SDK latches the answer. */
 export const retryStorm = signal('retry-storm', {
-  activity: agent,
+  meter: ai.credits,
   when: 'most recent spend is retries or loops, not progress',
   over: recent(1, 'hour'),
   enter: { above: 0.7 },
   exit: { below: 0.4 },
 })
 
-export const humanInTheLoop = signal('human-in-the-loop', {
-  activity: agent,
-  when: 'this run now needs a person',
-  over: 'run',
-  enter: { above: 0.75 },
-  exit: { below: 0.35 },
-})
-
 export const config = defineConfig({
-  schema: { ai, team, agent, retryStorm, humanInTheLoop },
+  schema: { ai, team, agent, retryStorm },
   eventStorage: [{ type: 'sqlite', connection: events }],
 })

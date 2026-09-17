@@ -78,6 +78,7 @@
             "group": "Design Documents",
             "pages": [
               "engineering/design-documents/index",
+              "engineering/design-documents/template",
               "engineering/design-documents/seat-based-pricing",
               "engineering/design-documents/prorations",
               "engineering/design-documents/subscription-retries",

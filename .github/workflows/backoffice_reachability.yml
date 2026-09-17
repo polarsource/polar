@@ -1,0 +1,69 @@
+name: "Backoffice not publicly reachable"
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.host }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - backoffice.polar.sh
+          - backoffice.sandbox.polar.sh
+    steps:
+      - name: Check ${{ matrix.host }} is not publicly reachable
+        env:
+          HOST: ${{ matrix.host }}
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "FAILURE_REASON=$1" >> "$GITHUB_ENV"
+            exit 1
+          }
+
+          for url in "https://$HOST/" "http://$HOST/"; do
+            set +e
+            status=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 10 --max-time 20 "$url")
+            exit_code=$?
+            set -e
+            if [ "$exit_code" -eq 0 ]; then
+              fail "$url answered with HTTP $status from a GitHub runner."
+            fi
+            # 7 (connection failed) and 28 (timeout) are the expected outcomes for
+            # an unroutable address. Any other code means a host completed enough
+            # of the handshake to report something, which is reachability too.
+            if [ "$exit_code" -ne 7 ] && [ "$exit_code" -ne 28 ]; then
+              fail "$url failed with unexpected curl exit code $exit_code."
+            fi
+            echo "$url is unreachable (curl exit $exit_code)"
+          done
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "${{ matrix.host }} may be reachable from the public internet",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *${{ matrix.host }} may be reachable from the public internet*\n${{ env.FAILURE_REASON || 'The reachability check failed before it could reach a verdict.' }}\nThe backoffice should only be accessible via Tailscale, so this is worth a look.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                  }
+                }
+              ]
+            }

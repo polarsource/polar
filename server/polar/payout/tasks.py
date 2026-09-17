@@ -27,6 +27,21 @@ class PayoutDoesNotExist(PayoutTaskError):
         super().__init__(message)
 
 
+@actor(
+    actor_name="payout.sample_database_waits",
+    cron_trigger=CronTrigger(second="*/5"),
+    priority=TaskPriority.LOW,
+    max_age=5000,
+    max_retries=0,
+)
+async def sample_database_waits() -> None:
+    # Observe the primary: replica activity cannot explain payout UPDATE waits.
+    async with AsyncSessionMaker() as session:
+        samples = await PayoutRepository(session).sample_database_waits()
+    for sample in samples:
+        log.info("payout.database_wait_sample", **sample)
+
+
 @actor(actor_name="payout.created", priority=TaskPriority.LOW)
 async def payout_created(payout_id: uuid.UUID) -> None:
     # Event-only hook (fires for held payouts too); the Stripe transfer is the

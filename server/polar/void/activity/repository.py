@@ -39,16 +39,6 @@ class ActivityRepository(RepositoryBase[VoidActivity]):
             self.scoped_statement(organization_id).where(VoidActivity.id == id)
         )
 
-    async def get_in_version(
-        self, organization_id: UUID, slug: str, version_id: str
-    ) -> VoidActivity | None:
-        return await self.get_one_or_none(
-            self.scoped_statement(organization_id).where(
-                VoidActivity.slug == slug,
-                VoidActivity.version_id == version_id,
-            )
-        )
-
 
 class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
     model = VoidActivitySpan
@@ -74,15 +64,15 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
     async def list_spans(
         self,
         organization_id: UUID,
+        version_id: str,
         *,
-        version_id: str | None = None,
         identity: str | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
     ) -> Sequence[VoidActivitySpan]:
-        statement = self.scoped_statement(organization_id)
-        if version_id is not None:
-            statement = statement.where(VoidActivitySpan.version_id == version_id)
+        statement = self.scoped_statement(organization_id).where(
+            VoidActivitySpan.version_id == version_id
+        )
         if identity is not None:
             statement = statement.where(
                 or_(

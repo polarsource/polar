@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -11,8 +12,9 @@ from polar.void.activity.service import (
     span_key_of,
     summarize_events,
 )
+from polar.void.activity.service import activity as activity_service
 from polar.void.activity.taxonomy import PENDING, TAXONOMY, UNLABELED
-from polar.void.activity.typesafe import Classification, StaticClassifier, TypeSafeError
+from polar.void.activity.typesafe import Classification, TypeSafeError
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from tests.fixtures.database import SaveFixture
@@ -25,6 +27,14 @@ LABELED = Classification(
     waste=0.1,
     model="jev-latest",
 )
+
+
+class Fixed:
+    def __init__(self, result: Classification) -> None:
+        self.result = result
+
+    async def classify(self, state: object) -> Classification:
+        return self.result
 
 
 def completion(
@@ -65,7 +75,7 @@ async def definition(
     save_fixture: SaveFixture,
 ) -> VoidActivity:
     await activate_version(save_fixture, organization)
-    return await ActivityService().create(
+    return await activity_service.create(
         session,
         organization.id,
         ActivityCreate(
@@ -94,7 +104,7 @@ class TestClassify:
             [completion("e1"), completion("e2", cost=0.03)],
             EventSource.user,
         )
-        service = ActivityService(StaticClassifier(LABELED))
+        service = ActivityService(Fixed(LABELED))
         first = await service.classify_span(
             session, organization.id, created.id, "call_1"
         )
@@ -124,7 +134,7 @@ class TestClassify:
             session, organization.id, [completion("e1")], EventSource.user
         )
         unlabeled = await ActivityService(
-            StaticClassifier(
+            Fixed(
                 Classification(
                     activity="plan",
                     confidence=0.4,
@@ -148,7 +158,7 @@ class TestClassify:
             await ActivityService(Boom()).classify_span(
                 session, organization.id, created.id, "call_1"
             )
-        pending = await ActivityService().get_span(session, organization.id, "call_1")
+        pending = await activity_service.get_span(session, organization.id, "call_1")
         assert pending is not None
         assert pending.activity == PENDING
 
@@ -164,15 +174,17 @@ class TestClassify:
             organization.id,
             [
                 completion("ok", call_id="a", cost=0.08),
-                completion("loop", call_id="b", cost=0.02, step=1, tools=["apply_patch"]),
+                completion(
+                    "loop", call_id="b", cost=0.02, step=1, tools=["apply_patch"]
+                ),
             ],
             EventSource.user,
         )
-        await ActivityService(StaticClassifier(LABELED)).classify_span(
+        await ActivityService(Fixed(LABELED)).classify_span(
             session, organization.id, created.id, "a"
         )
         await ActivityService(
-            StaticClassifier(
+            Fixed(
                 Classification(
                     activity="retry",
                     confidence=0.8,
@@ -182,7 +194,7 @@ class TestClassify:
                 )
             )
         ).classify_span(session, organization.id, created.id, "b")
-        report = await ActivityService().report(session, organization.id)
+        report = await activity_service.report(session, organization.id)
         by_slug = {share.slug: share for share in report.by_activity}
         assert by_slug["implement"].share == pytest.approx(0.8)
         assert by_slug["retry"].waste_cost == pytest.approx(0.02)
@@ -192,57 +204,53 @@ class TestClassify:
 
 
 def test_summarize_rolls_up_tools_not_arguments() -> None:
-    events = [
-        type(
+    def event(external_id: str, metadata: dict[str, object]) -> object:
+        return type(
             "E",
             (),
             {
-                "external_id": "a",
-                "timestamp": datetime(2026, 1, 1, tzinfo=UTC),
+                "external_id": external_id,
                 "payload": {
                     "name": "llm.completion",
-                    "external_id": "a",
+                    "external_id": external_id,
                     "external_identity_id": "agent-1",
-                    "metadata": {
-                        "call_id": "call_1",
-                        "run_id": "run_1",
-                        "model": "anthropic/claude-sonnet",
-                        "step": 0,
-                        "finish_reason": "tool-calls",
-                        "input_tokens": 10,
-                        "output_tokens": 2,
-                        "cost": 0.01,
-                        "tools": ["read_file", "apply_patch"],
-                        "tool_errors": ["apply_patch"],
-                        "has_text": False,
-                    },
+                    "metadata": json.dumps(metadata),
                 },
             },
-        )(),
-        type(
-            "E",
-            (),
+        )()
+
+    events = [
+        event(
+            "a",
             {
-                "external_id": "b",
-                "timestamp": datetime(2026, 1, 1, tzinfo=UTC),
-                "payload": {
-                    "name": "llm.completion",
-                    "external_id": "b",
-                    "metadata": {
-                        "call_id": "call_1",
-                        "model": "anthropic/claude-sonnet",
-                        "step": 1,
-                        "finish_reason": "stop",
-                        "input_tokens": 4,
-                        "output_tokens": 8,
-                        "cost": 0.02,
-                        "tools": ["apply_patch"],
-                        "tool_errors": [],
-                        "has_text": True,
-                    },
-                },
+                "call_id": "call_1",
+                "run_id": "run_1",
+                "model": "anthropic/claude-sonnet",
+                "step": 0,
+                "finish_reason": "tool-calls",
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "cost": 0.01,
+                "tools": ["read_file", "apply_patch"],
+                "tool_errors": ["apply_patch"],
+                "has_text": False,
             },
-        )(),
+        ),
+        event(
+            "b",
+            {
+                "call_id": "call_1",
+                "model": "anthropic/claude-sonnet",
+                "step": 1,
+                "finish_reason": "stop",
+                "input_tokens": 4,
+                "output_tokens": 8,
+                "cost": 0.02,
+                "tools": ["apply_patch"],
+                "tool_errors": [],
+                "has_text": True,
+            },
+        ),
     ]
     state = summarize_events(events)  # type: ignore[arg-type]
     assert state["span"]["tools"] == ["read_file", "apply_patch"]

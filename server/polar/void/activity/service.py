@@ -8,9 +8,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-import structlog
 from temporalio.client import Client
-from temporalio.exceptions import WorkflowAlreadyStartedError
 
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -35,7 +33,6 @@ from .schemas import (
     ActivityShare,
     ActivityTotals,
     ActivityWindow,
-    DeployActivity,
 )
 from .schemas import (
     ActivitySpan as ActivitySpanSchema,
@@ -48,63 +45,37 @@ from .taxonomy import (
     TAXONOMY,
     UNLABELED,
 )
-from .typesafe import Classification, Classifier, TypeSafeClassifier, TypeSafeError
+from .typesafe import Classifier, TypeSafeClassifier, TypeSafeError
 from .workflows import ClassifySpanInput, ClassifySpanWorkflow
 
-log = structlog.get_logger()
-
-
-def same_definition(wanted: DeployActivity, current: VoidActivity) -> bool:
-    return (
-        current.event_name == wanted.event
-        and current.group_by == wanted.group_by
-        and current.run_by == wanted.run_by
-        and current.taxonomy == wanted.taxonomy
-    )
+_SPAN_METADATA = {
+    "model",
+    "provider",
+    "input_tokens",
+    "output_tokens",
+    "cost",
+    "cost_source",
+    "call_id",
+    "step",
+    "finish_reason",
+    "fallback_from",
+    "latency_ms",
+    "generation_id",
+    "response_id",
+    "credits",
+    "tools",
+    "tool_errors",
+    "has_text",
+}
 
 
 def event_metadata(payload: Mapping[str, Any]) -> dict[str, Any]:
-    raw = payload.get("metadata")
-    if isinstance(raw, str):
-        loaded = json.loads(raw)
-        return loaded if isinstance(loaded, dict) else {}
-    return dict(raw) if isinstance(raw, dict) else {}
+    return json.loads(payload["metadata"])
 
 
 def span_key_of(payload: Mapping[str, Any], group_by: str) -> str:
-    meta = event_metadata(payload)
-    value = meta.get(group_by)
-    if isinstance(value, str) and value:
-        return value
-    return str(payload["external_id"])
-
-
-def _number(value: Any) -> float | None:
-    if isinstance(value, bool) or value is None:
-        return None
-    if isinstance(value, int | float):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return None
-    return None
-
-
-def _int(value: Any) -> int:
-    number = _number(value)
-    return int(number) if number is not None else 0
-
-
-def _names(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, str) and item]
-
-
-def _flag(value: Any) -> bool | None:
-    return value if isinstance(value, bool) else None
+    value = event_metadata(payload).get(group_by)
+    return value if isinstance(value, str) and value else payload["external_id"]
 
 
 def summarize_events(events: Sequence[VoidEvent]) -> dict[str, Any]:
@@ -117,50 +88,40 @@ def summarize_events(events: Sequence[VoidEvent]) -> dict[str, Any]:
                 "step": meta.get("step"),
                 "model": meta.get("model"),
                 "finish_reason": meta.get("finish_reason"),
-                "input_tokens": _int(meta.get("input_tokens")),
-                "output_tokens": _int(meta.get("output_tokens")),
-                "cost": _number(meta.get("cost")),
+                "input_tokens": int(meta.get("input_tokens") or 0),
+                "output_tokens": int(meta.get("output_tokens") or 0),
+                "cost": meta.get("cost"),
                 "fallback_from": meta.get("fallback_from"),
-                "tools": _names(meta.get("tools")),
-                "tool_errors": _names(meta.get("tool_errors")),
-                "has_text": _flag(meta.get("has_text")),
+                "tools": [name for name in (meta.get("tools") or []) if name],
+                "tool_errors": [
+                    name for name in (meta.get("tool_errors") or []) if name
+                ],
+                "has_text": meta.get("has_text"),
             }
         )
     if len(rows) > SPAN_EVENT_CAP:
-        head, tail = rows[0], rows[-1]
-        middle = sorted(
-            rows[1:-1],
-            key=lambda row: (row["cost"] is None, -(row["cost"] or 0)),
+        ranked = sorted(
+            range(1, len(rows) - 1),
+            key=lambda i: (rows[i]["cost"] is None, -(rows[i]["cost"] or 0)),
         )[: SPAN_EVENT_CAP - 2]
-        kept = {id(head), id(tail), *(id(row) for row in middle)}
-        rows = [row for row in rows if id(row) in kept]
+        keep = {0, len(rows) - 1, *ranked}
+        rows = [row for i, row in enumerate(rows) if i in keep]
     first = events[0]
-    last = events[-1]
-    meta = event_metadata(first.payload)
-    tools: list[str] = []
-    tool_errors: list[str] = []
-    seen_tools: set[str] = set()
-    seen_errors: set[str] = set()
-    for row in rows:
-        for name in row["tools"]:
-            if name not in seen_tools:
-                seen_tools.add(name)
-                tools.append(name)
-        for name in row["tool_errors"]:
-            if name not in seen_errors:
-                seen_errors.add(name)
-                tool_errors.append(name)
+    tools = list(dict.fromkeys(name for row in rows for name in row["tools"]))
+    tool_errors = list(
+        dict.fromkeys(name for row in rows for name in row["tool_errors"])
+    )
     has_text = any(row["has_text"] is True for row in rows)
     has_tools = bool(tools)
-    shape = (
-        "mixed"
-        if has_text and has_tools
-        else "text"
-        if has_text
-        else "tools"
-        if has_tools
-        else "empty"
-    )
+    if has_text and has_tools:
+        shape = "mixed"
+    elif has_text:
+        shape = "text"
+    elif has_tools:
+        shape = "tools"
+    else:
+        shape = "empty"
+    meta = event_metadata(first.payload)
     return {
         "taxonomy": TAXONOMY,
         "span": {
@@ -168,13 +129,9 @@ def summarize_events(events: Sequence[VoidEvent]) -> dict[str, Any]:
             "external_identity_id": first.payload.get("external_identity_id"),
             "event_name": first.payload.get("name"),
             "event_count": len(events),
-            "models": sorted(
-                {row["model"] for row in rows if isinstance(row["model"], str)}
-            ),
+            "models": sorted({row["model"] for row in rows if row["model"]}),
             "finish_reasons": [
-                row["finish_reason"]
-                for row in rows
-                if isinstance(row["finish_reason"], str)
+                row["finish_reason"] for row in rows if row["finish_reason"]
             ],
             "steps": [row["step"] for row in rows if row["step"] is not None],
             "tools": tools,
@@ -185,28 +142,7 @@ def summarize_events(events: Sequence[VoidEvent]) -> dict[str, Any]:
             "output_tokens": sum(row["output_tokens"] for row in rows),
             "cost": sum(row["cost"] or 0 for row in rows) or None,
             "tags": {
-                key: value
-                for key, value in meta.items()
-                if key
-                not in {
-                    "model",
-                    "provider",
-                    "input_tokens",
-                    "output_tokens",
-                    "cost",
-                    "cost_source",
-                    "call_id",
-                    "step",
-                    "finish_reason",
-                    "fallback_from",
-                    "latency_ms",
-                    "generation_id",
-                    "response_id",
-                    "credits",
-                    "tools",
-                    "tool_errors",
-                    "has_text",
-                }
+                key: value for key, value in meta.items() if key not in _SPAN_METADATA
             },
         },
         "events": rows,
@@ -228,11 +164,11 @@ def _shares(spans: Sequence[VoidActivitySpan]) -> list[ActivityShare]:
     for slug in ACTIVITY_CRITERIA:
         bucket = grouped.get(slug, [])
         cost = sum(span.cost or 0 for span in bucket)
-        waste_cost = sum(
-            (span.cost or 0) * (span.waste or 0) for span in bucket if slug != "retry"
+        waste_cost = (
+            cost
+            if slug == "retry"
+            else sum((span.cost or 0) * (span.waste or 0) for span in bucket)
         )
-        if slug == "retry":
-            waste_cost = cost
         shares.append(
             ActivityShare(
                 slug=slug,
@@ -279,18 +215,18 @@ class ActivityService:
         organization_id: UUID,
         create_schema: ActivityCreate,
     ) -> VoidActivity:
-        row = VoidActivity(
-            slug=create_schema.slug,
-            version_id=create_schema.version_id,
-            event_name=create_schema.event_name,
-            group_by=create_schema.group_by,
-            run_by=create_schema.run_by,
-            taxonomy=create_schema.taxonomy,
-            organization_id=organization_id,
+        return await ActivityRepository.from_session(session).create(
+            VoidActivity(
+                slug=create_schema.slug,
+                version_id=create_schema.version_id,
+                event_name=create_schema.event_name,
+                group_by=create_schema.group_by,
+                run_by=create_schema.run_by,
+                taxonomy=create_schema.taxonomy,
+                organization_id=organization_id,
+            ),
+            flush=True,
         )
-        session.add(row)
-        await session.flush()
-        return row
 
     async def report(
         self,
@@ -313,7 +249,7 @@ class ActivityService:
             )
         spans = await ActivitySpanRepository.from_session(session).list_spans(
             organization_id,
-            version_id=version_id,
+            version_id,
             identity=identity,
             start=start,
             end=end,
@@ -400,43 +336,28 @@ class ActivityService:
             definitions = await self.list_for_version(
                 session, organization_id, version_id
             )
-            await self.touch_spans(temporal, organization_id, definitions, org_events)
-
-    async def touch_spans(
-        self,
-        temporal: Client,
-        organization_id: UUID,
-        definitions: Sequence[VoidActivity],
-        events: Sequence[VoidEvent],
-    ) -> None:
-        if not definitions:
-            return
-        by_name = {definition.event_name: definition for definition in definitions}
-        seen: set[tuple[UUID, str]] = set()
-        for event in events:
-            definition = by_name.get(str(event.payload.get("name")))
-            if definition is None:
+            if not definitions:
                 continue
-            key = span_key_of(event.payload, definition.group_by)
-            pair = (definition.id, key)
-            if pair in seen:
-                continue
-            seen.add(pair)
-            try:
+            by_name = {definition.event_name: definition for definition in definitions}
+            seen: set[tuple[UUID, str]] = set()
+            for event in org_events:
+                name = event.payload.get("name")
+                if not isinstance(name, str):
+                    continue
+                definition = by_name.get(name)
+                if definition is None:
+                    continue
+                key = span_key_of(event.payload, definition.group_by)
+                pair = (definition.id, key)
+                if pair in seen:
+                    continue
+                seen.add(pair)
                 await temporal.start_workflow(
                     ClassifySpanWorkflow.run,
                     ClassifySpanInput(str(organization_id), str(definition.id), key),
                     id=f"polar-void-activity-span-{organization_id}-{definition.id}-{key}",
                     task_queue=TASK_QUEUE,
                     start_signal="touch",
-                )
-            except WorkflowAlreadyStartedError:
-                pass
-            except Exception:
-                log.exception(
-                    "void.activity.touch_failed",
-                    organization_id=str(organization_id),
-                    span_key=key,
                 )
 
     async def classify_span(
@@ -468,10 +389,12 @@ class ActivityService:
             and current.activity != PENDING
         ):
             return current
-        first = events[0]
-        last = events[-1]
-        meta = event_metadata(first.payload)
-        run_key = meta.get(definition.run_by) if definition.run_by else None
+        first, last = events[0], events[-1]
+        run_key = (
+            event_metadata(first.payload).get(definition.run_by)
+            if definition.run_by
+            else None
+        )
         totals = state["span"]
         if current is None:
             current = VoidActivitySpan(
@@ -503,20 +426,17 @@ class ActivityService:
             current.activity = PENDING
             await session.flush()
             raise
-        self._apply(current, result)
+        if result.confidence >= CONFIDENCE_THRESHOLD:
+            current.activity = result.activity
+        else:
+            current.activity = UNLABELED
+        current.activity_confidence = result.confidence
+        current.activity_probabilities = result.probabilities
+        current.waste = result.waste
+        current.model = result.model
+        current.classified_at = utc_now()
         await session.flush()
         return current
-
-    def _apply(self, span: VoidActivitySpan, result: Classification) -> None:
-        if result.confidence >= CONFIDENCE_THRESHOLD:
-            span.activity = result.activity
-        else:
-            span.activity = UNLABELED
-        span.activity_confidence = result.confidence
-        span.activity_probabilities = result.probabilities
-        span.waste = result.waste
-        span.model = result.model
-        span.classified_at = utc_now()
 
 
 activity = ActivityService()

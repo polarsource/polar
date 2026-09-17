@@ -5,15 +5,15 @@ from decimal import Decimal
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
+from polar.models import VoidActivity
 from polar.models import VoidDeployment as Deployment
 from polar.models import VoidMeter as Meter
 from polar.models import VoidProduct as Product
 from polar.models import VoidReducer as Reducer
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.void.activity.schemas import ActivityCreate
+from polar.void.activity.schemas import ActivityCreate, DeployActivity
 from polar.void.activity.service import activity as activity_service
-from polar.void.activity.service import same_definition
 from polar.void.activity.versions import activities_in_version
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import classify as entitlement_action
@@ -83,6 +83,15 @@ def _same_meter(
         and current.credit_reducer_id == credit_reducer_id
         and Decimal(current.unit_amount) == wanted.unit_amount
         and current.currency == wanted.currency
+    )
+
+
+def _same_activity(wanted: DeployActivity, current: VoidActivity) -> bool:
+    return (
+        current.event_name == wanted.event
+        and current.group_by == wanted.group_by
+        and current.run_by == wanted.run_by
+        and current.taxonomy == wanted.taxonomy
     )
 
 
@@ -692,7 +701,7 @@ class DeployService:
                 activity_id = created.id
             if current is None:
                 action: Action = "create"
-            elif same_definition(wanted, current):
+            elif _same_activity(wanted, current):
                 action = "unchanged"
             else:
                 action = "replace"

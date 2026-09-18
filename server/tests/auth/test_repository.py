@@ -143,4 +143,7 @@ class TestUserSessionRepositoryGetByToken:
 
         assert found is not None
         assert found.id == user_session.id
+
+        await session.flush()
+        await session.refresh(found)
         assert found.token == get_token_hash(token)

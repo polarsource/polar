@@ -454,20 +454,27 @@ At migration cutover, expect:
 - Stripe `customer.subscription.deleted` when Polar cancels the source
   subscription. Its `cancellation_details.comment` starts with
   `Migrated to Polar`.
-- `subscription.updated` when the imported subscription activates
 - `subscription.migrated` with `provider` and `provider_subscription_id` to
   match the Polar subscription to its source
+- `subscription.updated` when the imported subscription activates
 - `customer.state_changed` asynchronously after activation
 - Relevant `benefit_grant.*` events
 - `order.paid` when the first Polar renewal succeeds
+
+The Stripe cancellation is immediate, without proration or a final invoice, so
+`customer.subscription.deleted` is the expected Stripe subscription lifecycle
+event. Other Stripe events can still arrive depending on the account's
+configuration.
 
 Do not expect `subscription.created`, `subscription.active`,
 `product.created`, or `customer.created` from migration, and do not invent a
 `merchant_migration.*` webhook.
 
-Stripe and Polar events can arrive in either order. Do not treat the Stripe
-cancellation as ordinary churn or revoke access while its matching migration
-is still being reconciled.
+This list is not delivery order. Polar currently enqueues
+`subscription.updated` before `subscription.migrated`, and Stripe and Polar
+events can arrive in either order. Do not treat the Stripe cancellation as
+ordinary churn or revoke access while its matching migration is still being
+reconciled.
 
 ## Phase 4: design coexistence and reconciliation
 

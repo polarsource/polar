@@ -167,6 +167,7 @@ variable "environment_groups" {
       POLAR_AWS_KMS_KEY_ID                 = string
       POLAR_AWS_JWKS_KMS_KEY_ID            = string
       POLAR_AWS_JWKS_KMS_PUBLISHED_KEY_IDS = string # "[\"arn:aws:kms:...\"]"
+      POLAR_AWS_HASH_SECRET_ARN            = string
       AWS_ROLE_ARN                         = string
     })
     worker_sqs = object({

@@ -9,6 +9,9 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "changesets/action"
+        update-types: ["version-update:semver-major"]
     groups:
       actions:
         patterns:

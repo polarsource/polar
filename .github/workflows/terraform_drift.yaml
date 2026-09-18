@@ -1,0 +1,76 @@
+name: "Terraform drift"
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: ${{ matrix.workspace }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - global
+          - identity
+          - organization
+          - production
+          - sandbox
+          - security
+          - test
+    env:
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: terraform/${{ matrix.workspace }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: terraform/${{ matrix.workspace }}
+        run: |
+          set +e
+          terraform plan -input=false -detailed-exitcode
+          code=$?
+          set -e
+          if [ "$code" -eq 2 ]; then
+            echo "FAILURE_REASON=The deployed configuration no longer matches the Terraform code in main." >> "$GITHUB_ENV"
+            echo "::error::terraform/${{ matrix.workspace }} has drifted"
+            exit 1
+          fi
+          exit "$code"
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "Terraform drift check failed for ${{ matrix.workspace }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *Terraform drift check failed for ${{ matrix.workspace }}*\n${{ env.FAILURE_REASON || 'The plan failed before it could reach a verdict.' }}\nInfrastructure should only change through Terraform, so this is worth a look.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                  }
+                }
+              ]
+            }

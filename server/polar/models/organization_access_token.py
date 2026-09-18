@@ -13,8 +13,8 @@ from .organization import Organization
 class OrganizationAccessToken(RecordModel):
     __tablename__ = "organization_access_tokens"
 
-    token_v2: Mapped[str | None] = mapped_column(
-        String(80), unique=True, nullable=True, default=None
+    token: Mapped[str | None] = mapped_column(
+        "token_v2", String(80), unique=True, nullable=True, default=None
     )
     scope: Mapped[str] = mapped_column(Text, nullable=False)
     expires_at: Mapped[datetime | None] = mapped_column(

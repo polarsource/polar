@@ -266,7 +266,7 @@ class TestDeleteExpired:
 
         # Create an expired session
         expired_session = MemberSession(
-            token_v2="expired_token_hash",
+            token="expired_token_hash",
             member_id=member.id,
             expires_at=utc_now() - timedelta(hours=1),
         )

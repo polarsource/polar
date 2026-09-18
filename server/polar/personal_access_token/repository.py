@@ -17,7 +17,7 @@ class PersonalAccessTokenRepository(RepositoryBase[PersonalAccessToken]):
             self.get_base_statement()
             .join(PersonalAccessToken.user)
             .where(
-                PersonalAccessToken.token_v2 == get_token_hash(token),
+                PersonalAccessToken.token == get_token_hash(token),
                 ~PersonalAccessToken.is_deleted,
                 User.can_authenticate,
             )

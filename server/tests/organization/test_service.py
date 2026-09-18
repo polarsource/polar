@@ -3037,7 +3037,7 @@ class TestGetReviewState:
         await save_fixture(
             OrganizationAccessToken(
                 comment="test",
-                token_v2="hash",
+                token="hash",
                 organization=organization,
                 scope="openid",
             )
@@ -3074,7 +3074,7 @@ class TestGetReviewState:
         await save_fixture(
             OrganizationAccessToken(
                 comment="test",
-                token_v2="hash",
+                token="hash",
                 organization=organization,
                 scope="openid",
             )
@@ -3125,7 +3125,7 @@ class TestGetReviewState:
         await save_fixture(
             OrganizationAccessToken(
                 comment="test",
-                token_v2="hash",
+                token="hash",
                 organization=organization,
                 scope="openid",
             )
@@ -3209,7 +3209,7 @@ class TestGetReviewState:
         await save_fixture(
             OrganizationAccessToken(
                 comment="test",
-                token_v2="hash",
+                token="hash",
                 organization=organization,
                 scope="openid",
             )

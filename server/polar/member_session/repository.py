@@ -29,7 +29,7 @@ class MemberSessionRepository(
             .join(MemberSession.member)
             .join(Member.customer)
             .where(
-                MemberSession.token_v2 == get_token_hash(token),
+                MemberSession.token == get_token_hash(token),
                 ~MemberSession.is_deleted,
                 ~Member.is_deleted,
                 Customer.can_authenticate,

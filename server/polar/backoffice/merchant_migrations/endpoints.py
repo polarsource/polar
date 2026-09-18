@@ -392,24 +392,21 @@ async def get_migration(
                     "Step", f"{position}/{total}", subtitle=STEP_LABELS[migration.step]
                 ):
                     pass
-                at_stake = views.usd_blend(breakdown.total, rates)
                 with metric_card(
                     "MRR at stake",
-                    at_stake or views.money(breakdown.total),
-                    subtitle=(
-                        views.money(breakdown.total) if at_stake else "per month"
-                    ),
+                    views.usd(breakdown.total, rates),
+                    subtitle="per month",
                 ):
                     pass
                 with metric_card(
                     "On Polar",
-                    views.money(breakdown.on_polar),
+                    views.usd(breakdown.on_polar, rates),
                     subtitle=f"{breakdown.share_on_polar(rates)}% of the migration",
                 ):
                     pass
                 with metric_card(
                     "Still to move",
-                    views.money(breakdown.to_move),
+                    views.usd(breakdown.to_move, rates),
                     subtitle=f"{records.pending} record(s) pending",
                 ):
                     pass

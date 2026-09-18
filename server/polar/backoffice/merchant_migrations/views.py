@@ -95,13 +95,13 @@ def money(amount: Money) -> str:
     )
 
 
-def usd_blend(amount: Money, rates: Mapping[str, float]) -> str | None:
-    if not amount.has_foreign_currency:
-        return None
-    usd = amount.to_usd(rates)
-    if usd is None:
-        return None
-    return formatters.currency(usd, "usd")
+def usd(amount: Money, rates: Mapping[str, float]) -> str:
+    if amount.is_zero:
+        return "—"
+    converted = amount.to_usd(rates)
+    if converted is None:
+        return money(amount)
+    return formatters.currency(converted, "usd")
 
 
 def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
@@ -111,19 +111,15 @@ def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
             text("No recurring revenue staged")
         return
 
-    blend = usd_blend(total, rates)
     with tag.div(classes="flex flex-col gap-1"):
         with tag.div(classes="whitespace-nowrap"):
-            text(f"{blend} /mo" if blend is not None else f"{money(total)} /mo")
-        if blend is not None:
-            with tag.div(classes="text-xs text-base-content/60"):
-                text(money(total))
+            text(f"{usd(total, rates)} /mo")
         with tag.div(classes="text-xs text-base-content/60"):
             parts = [f"{breakdown.share_on_polar(rates)}% on Polar"]
             if not breakdown.to_move.is_zero:
-                parts.append(f"{money(breakdown.to_move)} to move")
+                parts.append(f"{usd(breakdown.to_move, rates)} to move")
             if not breakdown.staying.is_zero:
-                parts.append(f"{money(breakdown.staying)} staying")
+                parts.append(f"{usd(breakdown.staying, rates)} staying")
             text(" · ".join(parts))
 
 
@@ -153,14 +149,12 @@ def mrr_table(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
                         with tag.td():
                             text(label)
                         with tag.td(classes="font-mono whitespace-nowrap"):
-                            text(money(amount))
+                            text(usd(amount, rates))
                 with tag.tr(classes="font-medium"):
                     with tag.td():
                         text("Total")
                     with tag.td(classes="font-mono whitespace-nowrap"):
-                        total = money(breakdown.total)
-                        blend = usd_blend(breakdown.total, rates)
-                        text(f"{total} ≈ {blend}" if blend is not None else total)
+                        text(usd(breakdown.total, rates))
 
 
 def records_table(records: RecordProgress) -> None:

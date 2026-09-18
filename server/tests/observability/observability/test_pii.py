@@ -24,6 +24,7 @@ class TestScrubEvent:
                 "user.email": "dave@example.com",
                 "username": "alice",
                 "processor_id": "pm_123",
+                "url": "https://example.invalid/verify?token=opaqueCredential",
                 "last4": "4242",
                 "customer_id": "cus-uuid",
             }
@@ -34,6 +35,7 @@ class TestScrubEvent:
         assert result["user.email"] == REDACTED
         assert result["username"] == REDACTED
         assert result["processor_id"] == REDACTED
+        assert result["url"] == REDACTED
         assert result["last4"] == "4242"
         assert result["customer_id"] == "cus-uuid"
 
@@ -47,6 +49,26 @@ class TestScrubEvent:
         assert result["customer"]["email"] == REDACTED
         assert result["customer"]["id"] == "abc"
         assert result["recipients"] == [REDACTED, "ok"]
+
+    def test_safe_parent_does_not_exempt_nested_keys(self) -> None:
+        result = scrub_event(
+            {
+                "subject": {
+                    "name": "Alice",
+                    "items": [{"password": "opaqueCredential"}],
+                    "details": ({"token": "opaqueToken"},),
+                    "customer_id": "customer-123",
+                }
+            }
+        )
+        assert result == {
+            "subject": {
+                "name": REDACTED,
+                "items": [{"password": REDACTED}],
+                "details": ({"token": REDACTED},),
+                "customer_id": "customer-123",
+            }
+        }
 
     def test_does_not_mutate_input(self) -> None:
         customer = {"name": "Alice"}
@@ -100,6 +122,8 @@ class TestScrubValue:
             "alice@example.com",
             VISA_TEST_PAN,
             "DE89370400440532013000",
+            "gb82west12345698765432",
+            "Gb82West12345698765432",
             JWT,
             "Bearer abc.def",
             "sk_live_abc123",
@@ -131,6 +155,10 @@ class TestScrubValue:
     )
     def test_redacts_card_under_safe_identifier_key(self, pan: str) -> None:
         assert scrub_value(pan, key="correlation_id") == REDACTED
+
+    def test_preserves_hex_identifier(self) -> None:
+        identifier = "de12ab34cd56ef78ab90cd12ef34ab56"
+        assert scrub_value(identifier) == identifier
 
     def test_non_luhn_digits_kept(self) -> None:
         number = "123456789012345"

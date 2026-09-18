@@ -19,7 +19,7 @@ class CustomerSessionRepository(RepositoryBase[CustomerSession]):
             self.get_base_statement()
             .join(CustomerSession.customer)
             .where(
-                CustomerSession.token_v2 == get_token_hash(token),
+                CustomerSession.token == get_token_hash(token),
                 ~CustomerSession.is_deleted,
                 Customer.can_authenticate,
             )

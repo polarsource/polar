@@ -26,7 +26,7 @@ from tests.fixtures.random_objects import (
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token_v2="0" * 64, user_agent="tests", user=user)
+    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
     backoffice_app.dependency_overrides[get_admin] = lambda: user_session

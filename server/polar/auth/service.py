@@ -131,7 +131,7 @@ class AuthService:
     ) -> tuple[str, UserSession]:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent=user_agent,
             user=user,
             scopes=scopes,

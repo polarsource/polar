@@ -255,12 +255,11 @@ class TestOAuth2Register:
             .scalar_one()
         )
 
-        assert oauth2_client.client_secret_hash_v2 == OAuth2Client.hash_secret(
+        assert oauth2_client.client_secret_hash == OAuth2Client.hash_secret(
             data["client_secret"]
         )
-        assert (
-            oauth2_client.registration_access_token_hash_v2
-            == OAuth2Client.hash_secret(data["registration_access_token"])
+        assert oauth2_client.registration_access_token_hash == OAuth2Client.hash_secret(
+            data["registration_access_token"]
         )
         assert isinstance(oauth2_client.client_secret_encrypted, EncryptedString)
         assert isinstance(
@@ -1790,7 +1789,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1819,7 +1818,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1849,7 +1848,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1885,7 +1884,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1941,7 +1940,7 @@ class TestOAuth2Token:
         )
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1986,7 +1985,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2033,7 +2032,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2082,7 +2081,7 @@ class TestOAuth2Token:
         )
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2135,7 +2134,7 @@ class TestOAuth2Token:
         )
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2168,7 +2167,7 @@ class TestOAuth2Token:
     ) -> None:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2224,7 +2223,7 @@ class TestOAuth2Token:
         )
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2265,7 +2264,7 @@ class TestOAuth2Token:
         )
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2320,7 +2319,7 @@ class TestOAuth2Token:
         )
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
-            token_v2=token_hash,
+            token=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),

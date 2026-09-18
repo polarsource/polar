@@ -52,22 +52,22 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
             client_secret="cs-legacy",
             registration_access_token="crt-legacy",
         )
-        assert client.client_secret_hash_v2 is None
+        assert client.client_secret_hash is None
         assert client.client_secret_encrypted is None
-        assert client.registration_access_token_hash_v2 is None
+        assert client.registration_access_token_hash is None
         assert client.registration_access_token_encrypted is None
 
         encrypted = await run_backfill(batch_size=10, sleep_seconds=0, session=session)
 
         assert encrypted == 1
         loaded = await _reload(session, client)
-        assert loaded.client_secret_hash_v2 == OAuth2Client.hash_secret("cs-legacy")
+        assert loaded.client_secret_hash == OAuth2Client.hash_secret("cs-legacy")
         assert isinstance(loaded.client_secret_encrypted, EncryptedString)
         assert (
             await loaded.client_secret_encrypted.decrypt(id=str(loaded.id))
             == "cs-legacy"
         )
-        assert loaded.registration_access_token_hash_v2 == OAuth2Client.hash_secret(
+        assert loaded.registration_access_token_hash == OAuth2Client.hash_secret(
             "crt-legacy"
         )
         assert isinstance(loaded.registration_access_token_encrypted, EncryptedString)
@@ -91,7 +91,7 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
             client_secret="cs-hashed",
             registration_access_token="crt-hashed",
         )
-        client.client_secret_hash_v2 = OAuth2Client.hash_secret("cs-hashed")
+        client.client_secret_hash = OAuth2Client.hash_secret("cs-hashed")
         client.client_secret_encrypted = await OAuth2Client.encrypt_client_secret(
             client.id, "cs-hashed"
         )
@@ -100,9 +100,9 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
         await run_backfill(batch_size=10, sleep_seconds=0, session=session)
 
         loaded = await _reload(session, client)
-        assert loaded.client_secret_hash_v2 == OAuth2Client.hash_secret("cs-hashed")
+        assert loaded.client_secret_hash == OAuth2Client.hash_secret("cs-hashed")
         assert isinstance(loaded.client_secret_encrypted, EncryptedString)
-        assert loaded.registration_access_token_hash_v2 == OAuth2Client.hash_secret(
+        assert loaded.registration_access_token_hash == OAuth2Client.hash_secret(
             "crt-hashed"
         )
         assert isinstance(loaded.registration_access_token_encrypted, EncryptedString)
@@ -170,7 +170,7 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
                 save_fixture, user, client_id=f"polar_ci_mixed_{i}"
             )
             if i % 2 == 0:
-                client.client_secret_hash_v2 = OAuth2Client.hash_secret(
+                client.client_secret_hash = OAuth2Client.hash_secret(
                     client.client_secret
                 )
                 client.client_secret_encrypted = (
@@ -178,7 +178,7 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
                         client.id, client.client_secret
                     )
                 )
-                client.registration_access_token_hash_v2 = OAuth2Client.hash_secret(
+                client.registration_access_token_hash = OAuth2Client.hash_secret(
                     client.registration_access_token
                 )
                 client.registration_access_token_encrypted = (
@@ -192,7 +192,7 @@ class TestBackfillOAuth2ClientEncryptedSecrets:
 
         assert encrypted == 4
         remaining = await session.execute(
-            select(OAuth2Client).where(OAuth2Client.client_secret_hash_v2.is_(None))
+            select(OAuth2Client).where(OAuth2Client.client_secret_hash.is_(None))
         )
         assert remaining.scalars().first() is None
 

@@ -228,7 +228,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             prefix=CUSTOMER_SESSION_TOKEN_PREFIX
         )
         customer_session = CustomerSession(
-            token_v2=token_hash,
+            token=token_hash,
             customer=customer,
             return_url=str(return_url) if return_url else None,
         )

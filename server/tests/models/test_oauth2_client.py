@@ -98,7 +98,7 @@ class TestSetters:
         await client.set_client_secret("cs-new")
 
         assert client.client_secret == "cs-new"
-        assert client.client_secret_hash_v2 == OAuth2Client.hash_secret("cs-new")
+        assert client.client_secret_hash == OAuth2Client.hash_secret("cs-new")
         assert isinstance(client.client_secret_encrypted, EncryptedString)
         assert (
             await client.client_secret_encrypted.decrypt(id=str(client.id)) == "cs-new"
@@ -112,7 +112,7 @@ class TestSetters:
         await client.set_registration_access_token("crt-new")
 
         assert client.registration_access_token == "crt-new"
-        assert client.registration_access_token_hash_v2 == OAuth2Client.hash_secret(
+        assert client.registration_access_token_hash == OAuth2Client.hash_secret(
             "crt-new"
         )
         assert isinstance(client.registration_access_token_encrypted, EncryptedString)
@@ -142,12 +142,12 @@ class TestPersistence:
         )
 
         assert loaded is not None
-        assert loaded.client_secret_hash_v2 == OAuth2Client.hash_secret("cs-test")
+        assert loaded.client_secret_hash == OAuth2Client.hash_secret("cs-test")
         assert isinstance(loaded.client_secret_encrypted, EncryptedString)
         assert await loaded.client_secret_encrypted.decrypt(id=str(loaded.id)) == (
             "cs-test"
         )
-        assert loaded.registration_access_token_hash_v2 == OAuth2Client.hash_secret(
+        assert loaded.registration_access_token_hash == OAuth2Client.hash_secret(
             "crt-test"
         )
         assert isinstance(loaded.registration_access_token_encrypted, EncryptedString)

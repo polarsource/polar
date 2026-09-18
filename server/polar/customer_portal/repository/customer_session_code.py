@@ -16,7 +16,7 @@ class CustomerSessionCodeRepository(RepositoryBase[CustomerSessionCode]):
             select(CustomerSessionCode)
             .where(
                 CustomerSessionCode.expires_at > utc_now(),
-                CustomerSessionCode.code_v2 == code_hash,
+                CustomerSessionCode.code == code_hash,
             )
             .options(
                 joinedload(CustomerSessionCode.customer).joinedload(

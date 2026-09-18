@@ -21,9 +21,7 @@ export const metadata: Metadata = {
     title: 'Company',
     description:
       'Small team, big ambitions. Learn about Polar, our open roles, and the investors who back us.',
-    images: [
-      'https://polar.sh/assets/brand/polar_og.jpg',
-    ],
+    images: ['https://polar.sh/assets/brand/polar_og.jpg'],
   },
 }
 

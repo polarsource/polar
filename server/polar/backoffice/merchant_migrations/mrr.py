@@ -71,11 +71,8 @@ class Money:
         return sorted(self.amounts.items(), key=lambda item: -item[1])
 
     @property
-    def has_foreign_currency(self) -> bool:
-        return any(
-            currency.lower() != "usd" and amount
-            for currency, amount in self.amounts.items()
-        )
+    def has_mixed_currency(self) -> bool:
+        return sum(1 for amount in self.amounts.values() if amount) > 1
 
     def to_usd(self, rates: Mapping[str, float]) -> int | None:
         total = 0

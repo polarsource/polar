@@ -23,6 +23,7 @@ class MerchantMigrationsService:
             {
                 currency.lower()
                 for breakdown in breakdowns
+                if breakdown.total.has_mixed_currency
                 for currency, amount in breakdown.total.amounts.items()
                 if amount and currency.lower() != "usd"
             }

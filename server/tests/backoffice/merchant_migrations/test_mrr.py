@@ -326,6 +326,11 @@ class TestMoney:
         assert Money().is_zero
         assert not Money({"usd": 1}).is_zero
 
+    def test_mixed_currency_needs_two_nonzero_amounts(self) -> None:
+        assert not Money({"eur": 11100}).has_mixed_currency
+        assert not Money({"usd": 100, "eur": 0}).has_mixed_currency
+        assert Money({"usd": 16350, "eur": 11100}).has_mixed_currency
+
     def test_to_usd_keeps_usd_and_converts_the_rest(self) -> None:
         amount = Money({"usd": 16350, "eur": 11100})
 

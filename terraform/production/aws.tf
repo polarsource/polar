@@ -20,6 +20,13 @@ module "jwks_signing_key" {
   current_generation = "2026-09"
 }
 
+module "hash_secret" {
+  source = "../modules/hash_secret"
+
+  environment = "production"
+  role_name   = module.secrets_kms.role_name
+}
+
 module "lambda_worker_ecr" {
   source = "../modules/ecr_repository"
 

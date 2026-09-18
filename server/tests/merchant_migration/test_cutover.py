@@ -402,6 +402,44 @@ class TestRun:
         assert reloaded.status == SubscriptionStatus.active
         assert reloaded.payment_method_id is not None
 
+    async def test_applies_canonical_tax_when_finishing_a_paused_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            tax_behavior=TaxBehavior.inclusive,
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        pending_record.canonical = serialize(
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
+        )
+        await save_fixture(pending_record)
+        subscription_id = subscription.id
+        session.expunge_all()
+        record = await session.get(MerchantMigrationRecord, pending_record.id)
+        assert record is not None
+
+        outcome = await SubscriptionCutover(session, migration, _source()).run(record)
+
+        reloaded = await session.get(Subscription, subscription_id)
+        assert reloaded is not None
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert reloaded.tax_behavior == TaxBehavior.exclusive
+        assert reloaded.tax_exempted is False
+
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
         mocker: MockerFixture,

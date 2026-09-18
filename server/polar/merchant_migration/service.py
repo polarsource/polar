@@ -501,6 +501,13 @@ class MerchantMigrationService:
         preserved_tax = await record_repository.pending_subscription_tax_behaviors(
             migration.id
         )
+        previous = (
+            migration.operation.subscription_tax_behavior
+            if migration.operation is not None
+            else None
+        )
+        if previous:
+            preserved_tax = {**previous, **preserved_tax}
         await record_repository.delete_pending(migration.id)
         await repository.update(
             migration,
@@ -1443,7 +1450,6 @@ class MerchantMigrationService:
         record_id: UUID,
         tax_behavior: TaxBehavior,
     ) -> MerchantMigrationRecordUpdate:
-        """Pin how Polar taxes this subscription after the switch."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
         record = await repository.get_by_id(record_id, for_update=True)

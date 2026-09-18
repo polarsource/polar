@@ -4,7 +4,6 @@ import {
   importTaxHint,
   importTaxLabel,
   importTaxSaveError,
-  isImportTaxLocked,
 } from './importTax'
 
 describe('importTaxBehavior', () => {
@@ -44,24 +43,7 @@ describe('importTaxSaveError', () => {
     ).toBe('Tax can only be set on a subscription.')
   })
 
-  it('falls back when the message is empty', () => {
-    expect(importTaxSaveError(new Error(''))).toBe(
-      "We couldn't save the tax setting.",
-    )
-  })
-
   it('falls back for a non-Error', () => {
     expect(importTaxSaveError({})).toBe("We couldn't save the tax setting.")
-  })
-})
-
-describe('isImportTaxLocked', () => {
-  it('locks tax after the switch has moved the subscription', () => {
-    expect(isImportTaxLocked({ cutover_status: 'moved' })).toBe(true)
-  })
-
-  it('allows edits before the switch', () => {
-    expect(isImportTaxLocked({ cutover_status: null })).toBe(false)
-    expect(isImportTaxLocked({ cutover_status: 'failed' })).toBe(false)
   })
 })

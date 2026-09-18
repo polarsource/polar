@@ -33,9 +33,3 @@ export function importTaxSaveError(error: unknown): string {
     ? error.message
     : "We couldn't save the tax setting."
 }
-
-export function isImportTaxLocked(row: {
-  cutover_status: schemas['MerchantMigrationCutoverStatus'] | null
-}): boolean {
-  return row.cutover_status === 'moved'
-}

@@ -632,6 +632,7 @@ class MerchantMigrationRecordRepository(
         ``start_precheck`` deletes pending rows before extract; this snapshot is
         what lets a rerun restore a merchant's exclusive pin.
         """
+        tax_behavior = MerchantMigrationRecord.canonical["tax_behavior"].astext
         statement = (
             self.get_base_statement()
             .where(
@@ -639,18 +640,17 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
                 MerchantMigrationRecord.type
                 == MerchantMigrationRecordType.subscription,
+                tax_behavior.is_not(None),
             )
             .with_only_columns(
                 MerchantMigrationRecord.source_id,
-                MerchantMigrationRecord.canonical,
+                tax_behavior,
             )
             .order_by(None)
         )
         preserved: dict[str, TaxBehavior] = {}
-        for source_id, canonical in (await self.session.execute(statement)).all():
-            if not isinstance(canonical, dict):
-                continue
-            behavior = parse_tax_behavior(canonical.get("tax_behavior"))
+        for source_id, raw in (await self.session.execute(statement)).all():
+            behavior = parse_tax_behavior(raw)
             if behavior is not None:
                 preserved[source_id] = behavior
         return preserved

@@ -5,8 +5,8 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
-import { isImportTaxLocked } from '../importTax'
 import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
+import { isSwitched } from '../switch/switchRows'
 import { ReviewRow, rowAmount } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -44,7 +44,7 @@ export function SubscriptionFields({
           migrationId={migrationId}
           recordId={row.record_id}
           taxBehavior={row.tax_behavior}
-          locked={isImportTaxLocked(row)}
+          locked={isSwitched(row)}
         />
       </Box>
       {row.import_status === 'failed' ? (

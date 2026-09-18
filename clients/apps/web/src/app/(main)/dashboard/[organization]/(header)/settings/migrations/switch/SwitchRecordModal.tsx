@@ -4,10 +4,9 @@ import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ImportTaxPicker } from '../ImportTaxPicker'
-import { isImportTaxLocked } from '../importTax'
 import { automaticTaxLabel, renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
-import { needsAttention, SwitchRow } from './switchRows'
+import { isSwitched, needsAttention, SwitchRow } from './switchRows'
 
 export function SwitchRecordModal({
   row,
@@ -75,7 +74,7 @@ export function SwitchRecordModal({
                 migrationId={migrationId}
                 recordId={row.record_id}
                 taxBehavior={row.tax_behavior}
-                locked={isImportTaxLocked(row)}
+                locked={isSwitched(row)}
               />
             </Box>
             <DetailCell

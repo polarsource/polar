@@ -1,0 +1,49 @@
+handbook/engineering/introduction.mdx
+  s_c6b4778affae67::t_7acf7ebbef092e 19
+handbook/engineering/decisions/index.mdx
+  s_c6b4778affae67::t_d640ab8e86aa11 23
+handbook/engineering/design-documents/template.mdx
+  s_c6b4778affae67::t_30669408eb5b87 1-2,4-16,18,20,24-28,30,32,34-36,38
+  s_c6b4778affae67::t_bf2b2784350a20 3,31,33,37,39-40
+  s_c6b4778affae67::t_a8bf8fbe3e95e1 17
+  s_c6b4778affae67::t_4c57581df83c95 19
+  s_c6b4778affae67::t_047c25640056d4 21-23
+  s_c6b4778affae67::t_e1d5471e76b5e3 29
+  s_c6b4778affae67::t_f3f477924585d1 41-43
+  s_c6b4778affae67::t_52eaa7b85cdaa0 44-55
+handbook/docs.json
+  s_c6b4778affae67::t_e557c2beb19a0e 81
+handbook/engineering/design-documents/index.mdx
+  s_c6b4778affae67::t_9f2da343342894 29-30
+  s_c6b4778affae67::t_8ee2c8bc4416de 3,8,12,23,27,35-37,40
+  s_c6b4778affae67::t_83298ef5508a21 1-2,4,10,26,28,34,39
+  s_92471cbd8292a8::t_35b5ffe5b564bb 6-7,14-16,18-21,25,31-33,38
+AGENTS.md
+  s_c6b4778affae67::t_121c07ee67097d 172
+  s_c6b4778affae67::t_f5e84ab34da274 168,171
+  s_c6b4778affae67::t_a77daa9b7ba7fb 169-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ddfe8d982dac252457afcde82506b1d14eaad145",
+  "prompts": {},
+  "sessions": {
+    "s_92471cbd8292a8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0aa0b-49af-7750-b5e4-c54ff7c6c953",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_c6b4778affae67": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8e3a75b5-9b18-4d22-9495-caa3f3bf967b",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

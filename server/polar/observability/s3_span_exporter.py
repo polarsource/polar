@@ -1,8 +1,10 @@
 import gzip
 import json
+import re
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 
 import boto3
 import logfire
@@ -10,9 +12,7 @@ from botocore.config import Config
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
-from polar.observability.pii import REDACTED, scrub_event
-
-__all__ = ["REDACTED", "S3SpanExporter"]
+REDACTED = "[Redacted]"
 
 
 class S3SpanExporter(SpanExporter):
@@ -25,9 +25,15 @@ class S3SpanExporter(SpanExporter):
         aws_access_key_id: str | None = None,
         aws_secret_access_key: str | None = None,
         region_name: str = "us-east-2",
+        scrub_patterns: Sequence[str] = (),
     ) -> None:
         self.bucket_name = bucket_name
         self.service_name = service_name
+        self._scrub_re = (
+            re.compile("|".join(scrub_patterns), re.IGNORECASE)
+            if scrub_patterns
+            else None
+        )
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint_url,
@@ -41,20 +47,34 @@ class S3SpanExporter(SpanExporter):
             ),
         )
 
+    def _scrub_dict(self, d: dict[str, Any]) -> None:
+        for key, value in d.items():
+            if self._scrub_re and self._scrub_re.search(key):
+                d[key] = REDACTED
+            elif isinstance(value, dict):
+                self._scrub_dict(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        self._scrub_dict(item)
+
     def _scrub_span_json(self, json_str: str) -> str:
         data = json.loads(json_str)
         if "attributes" in data:
-            data["attributes"] = scrub_event(data["attributes"])
+            self._scrub_dict(data["attributes"])
         for entry in [*data.get("events", []), *data.get("links", [])]:
             if "attributes" in entry:
-                entry["attributes"] = scrub_event(entry["attributes"])
+                self._scrub_dict(entry["attributes"])
         return json.dumps(data, separators=(",", ":"))
 
     def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
         if not spans:
             return SpanExportResult.SUCCESS
 
-        lines = [self._scrub_span_json(span.to_json(indent=None)) for span in spans]
+        if self._scrub_re:
+            lines = [self._scrub_span_json(span.to_json(indent=None)) for span in spans]
+        else:
+            lines = [span.to_json(indent=None) for span in spans]
         body = gzip.compress("\n".join(lines).encode())
 
         now = datetime.now(UTC)

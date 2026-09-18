@@ -46,10 +46,20 @@ export const NOTES: Record<string, string> = {
 }
 
 export const METERS: VoidMeter[] = [
-  { id: 'meter_1', name: 'Output tokens', units: 184_200_000, billed: 552_600 },
-  { id: 'meter_2', name: 'Input tokens', units: 612_000_000, billed: 306_000 },
-  { id: 'meter_3', name: 'Tool calls', units: 1_240_000, billed: 124_000 },
-  { id: 'meter_4', name: 'Sandbox minutes', units: 38_400, billed: 76_800 },
+  {
+    id: 'meter_1',
+    name: 'Output tokens',
+    units: 184_200_000,
+    billed: 55_260_000,
+  },
+  {
+    id: 'meter_2',
+    name: 'Input tokens',
+    units: 612_000_000,
+    billed: 30_600_000,
+  },
+  { id: 'meter_3', name: 'Tool calls', units: 1_240_000, billed: 12_400_000 },
+  { id: 'meter_4', name: 'Sandbox minutes', units: 38_400, billed: 7_680_000 },
 ]
 
 export const REDUCERS: { slug: string; total: number }[] = [

@@ -120,8 +120,12 @@ export interface VoidMeterRecord {
   id: string
   name: string
   slug: string
+  version_id: string
   usage_reducer_id: string
+  credit_reducer_id: string
   unit_amount: string
+  currency: string
+  created_at: string
 }
 
 export interface VoidReducerRecord {

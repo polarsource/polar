@@ -12,7 +12,7 @@ Rules:
   `.with_only_columns(...)` or a union/intersect call. This is the bug-prone
   inline pattern.
 - Variable-rooted chains (`statement.subquery()`) are NOT flagged — we can't
-  statically determine the root. Those cases rely on the CLAUDE.md rule and
+  statically determine the root. Those cases rely on the AGENTS.md rule and
   code review. If you introduce a new variable-rooted `.subquery()` on an
   entity select, call `.with_only_columns(...)` explicitly.
 - `# lint-skip: subquery-all-columns` on the call line is an explicit escape for

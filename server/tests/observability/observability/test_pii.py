@@ -156,13 +156,16 @@ class TestScrubValue:
     def test_redacts_card_under_safe_identifier_key(self, pan: str) -> None:
         assert scrub_value(pan, key="correlation_id") == REDACTED
 
-    def test_preserves_hex_identifier(self) -> None:
-        identifier = "de12ab34cd56ef78ab90cd12ef34ab56"
-        assert scrub_value(identifier) == identifier
-
-    def test_non_luhn_digits_kept(self) -> None:
-        number = "123456789012345"
-        assert scrub_value(number) == number
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "de12ab34cd56ef78ab90cd12ef34ab56",
+            "gb00west12345698765432",
+            "123456789012345",
+        ],
+    )
+    def test_redacts_candidates_without_checksum_validation(self, value: str) -> None:
+        assert scrub_value(value) == REDACTED
 
 
 class TestLoggingIntegration:

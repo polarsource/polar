@@ -4,7 +4,6 @@ from collections.abc import Mapping
 from typing import Any
 
 import re2
-from stdnum import iban, luhn
 
 REDACTED = "[Redacted]"
 
@@ -142,18 +141,8 @@ def _walk(value: Any) -> Any:
     return value
 
 
-def _replace_iban(match: Any) -> str:
-    value = match.group(0)
-    return REDACTED if iban.is_valid(value) else value
-
-
 def _replace_pan(match: Any) -> str:
-    if match.group("uuid") is not None:
-        return match.group(0)
-    digits = match.group(0).replace(" ", "").replace("-", "")
-    if 13 <= len(digits) <= 19 and luhn.is_valid(digits):
-        return REDACTED
-    return match.group(0)
+    return match.group("uuid") or REDACTED
 
 
 def _scrub_string(value: str) -> str:
@@ -162,7 +151,7 @@ def _scrub_string(value: str) -> str:
     value = _JWT_RE.sub(REDACTED, value)
     value = _BEARER_RE.sub(REDACTED, value)
     value = _STRIPE_SECRET_RE.sub(REDACTED, value)
-    value = _IBAN_RE.sub(_replace_iban, value)
+    value = _IBAN_RE.sub(REDACTED, value)
     value = _PAN_RE.sub(_replace_pan, value)
     return value
 

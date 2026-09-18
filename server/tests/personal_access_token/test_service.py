@@ -50,7 +50,6 @@ class TestRevokeLeaked:
         token_hash = get_token_hash("polar_pat_123")
         personal_access_token = PersonalAccessToken(
             comment="Test",
-            token=token_hash,
             token_v2=token_hash,
             user_id=user.id,
             expires_at=utc_now() + timedelta(days=1),

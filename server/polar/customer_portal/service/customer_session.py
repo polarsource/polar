@@ -159,7 +159,6 @@ class CustomerSessionService:
 
         code, code_hash = self._generate_code_hash()
         customer_session_code = CustomerSessionCode(
-            code=code_hash,
             code_v2=code_hash,
             email=member.email,
             customer=member.customer,
@@ -188,7 +187,7 @@ class CustomerSessionService:
 
         code, code_hash = self._generate_code_hash()
         customer_session_code = CustomerSessionCode(
-            code=code_hash, code_v2=code_hash, email=email, customer=customer
+            code_v2=code_hash, email=email, customer=customer
         )
         return customer_session_code, code
 

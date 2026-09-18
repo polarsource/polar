@@ -13,7 +13,9 @@ from .organization import Organization
 class OrganizationAccessToken(RecordModel):
     __tablename__ = "organization_access_tokens"
 
-    token: Mapped[str | None] = mapped_column(CHAR(64), unique=True, nullable=True)
+    token: Mapped[str | None] = mapped_column(
+        CHAR(64), unique=True, nullable=True, deferred=True
+    )
     token_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

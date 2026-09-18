@@ -134,7 +134,6 @@ class OrganizationAccessTokenService:
                 exclude={"scopes", "expires_in", "organization_id"}
             ),
             organization=organization,
-            token=token_hash,
             token_v2=token_hash,
             expires_at=utc_now() + create_schema.expires_in
             if create_schema.expires_in

@@ -63,7 +63,6 @@ class TestRevokeLeaked:
         token_hash = get_token_hash("polar_pat_123")
         organization_access_token = OrganizationAccessToken(
             comment="Test",
-            token=token_hash,
             token_v2=token_hash,
             organization=organization,
             expires_at=utc_now() + timedelta(days=1),

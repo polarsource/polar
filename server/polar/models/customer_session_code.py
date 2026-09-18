@@ -17,7 +17,7 @@ def get_expires_at() -> datetime:
 class CustomerSessionCode(RecordModel):
     __tablename__ = "customer_session_codes"
 
-    code: Mapped[str] = mapped_column(CHAR(64), unique=True, nullable=False)
+    code: Mapped[str | None] = mapped_column(CHAR(64), unique=True, nullable=True)
     code_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

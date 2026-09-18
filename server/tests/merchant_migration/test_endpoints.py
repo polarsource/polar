@@ -25,7 +25,10 @@ from polar.merchant_migration.canonical import (
     deserialize,
     serialize,
 )
-from polar.merchant_migration.repository import MerchantMigrationRepository
+from polar.merchant_migration.repository import (
+    MerchantMigrationRecordRepository,
+    MerchantMigrationRepository,
+)
 from polar.merchant_migration.service import (
     merchant_migration as merchant_migration_service,
 )

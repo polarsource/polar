@@ -4,7 +4,7 @@ import { useUpdateMigrationRecordTax } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   IMPORT_TAX_OPTIONS,
   importTaxBehavior,
@@ -24,13 +24,14 @@ export function ImportTaxPicker({
   taxBehavior: schemas['TaxBehavior'] | null
   locked?: boolean
 }) {
-  const initial = importTaxBehavior({ tax_behavior: taxBehavior })
-  const [value, setValue] = useState<ImportTaxBehavior>(initial)
+  const fallback = importTaxBehavior({ tax_behavior: taxBehavior })
+  const [optimistic, setOptimistic] = useState<{
+    recordId: string
+    value: ImportTaxBehavior
+  } | null>(null)
   const update = useUpdateMigrationRecordTax(migrationId)
-
-  useEffect(() => {
-    setValue(importTaxBehavior({ tax_behavior: taxBehavior }))
-  }, [recordId, taxBehavior])
+  const value =
+    recordId && optimistic?.recordId === recordId ? optimistic.value : fallback
 
   if (!recordId || locked) {
     return (
@@ -54,10 +55,12 @@ export function ImportTaxPicker({
             return
           }
           const previous = value
-          setValue(next)
+          setOptimistic({ recordId, value: next })
           update.mutate(
             { recordId, taxBehavior: next },
-            { onError: () => setValue(previous) },
+            {
+              onError: () => setOptimistic({ recordId, value: previous }),
+            },
           )
         }}
       />

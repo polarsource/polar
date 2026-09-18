@@ -1450,7 +1450,7 @@ class MerchantMigrationService:
             raise RecordTaxLocked()
         try:
             staged = deserialize(record.type, record.canonical)
-        except (KeyError, TypeError, ValueError):
+        except KeyError, TypeError, ValueError:
             raise MerchantMigrationRecordNotFound() from None
         if not isinstance(staged, CanonicalSubscription):
             raise RecordNotSubscription()

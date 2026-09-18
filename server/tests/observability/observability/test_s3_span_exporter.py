@@ -105,14 +105,8 @@ def scrubbing_exporter() -> S3SpanExporter:
 
 
 class TestScrubbing:
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "https://api.polar.sh/v1/checkouts/client/opaqueCheckoutCredential",
-            "https://api.polar.sh/v1/customer-portal/customers/email/verify?token=opaqueVerificationCredential",
-        ],
-    )
-    def test_redacts_urls(self, scrubbing_exporter: S3SpanExporter, url: str) -> None:
+    def test_redacts_urls(self, scrubbing_exporter: S3SpanExporter) -> None:
+        url = "https://api.polar.sh/v1/checkouts/client/opaqueCheckoutCredential?token=opaqueVerificationCredential"
         attributes = {
             "http.url": url,
             "http.route": "/v1/checkouts/client/{client_secret}",

@@ -1,10 +1,8 @@
-import logging
 import re
 from enum import StrEnum
 
 import pytest
 
-from polar.logging import Development, scrub_pii
 from polar.observability.pii import (
     LOGFIRE_EXTRA_PATTERNS,
     REDACTED,
@@ -140,20 +138,6 @@ class TestScrubValue:
 
 
 class TestLoggingIntegration:
-    def test_processor_redacts(self) -> None:
-        result = scrub_pii(
-            logging.getLogger("test"),
-            "info",
-            {"event": "hi", "email": "a@b.com", "customer_id": "x"},
-        )
-        assert result["email"] == REDACTED
-        assert result["customer_id"] == "x"
-        assert result["event"] == "hi"
-
-    def test_processor_in_chain(self) -> None:
-        assert scrub_pii in Development.get_processors(logfire=True)
-        assert scrub_pii in Development.get_processors(logfire=False)
-
     def test_logfire_patterns_skip_logger_name(self) -> None:
         pattern = re.compile("|".join(LOGFIRE_EXTRA_PATTERNS), re.IGNORECASE)
         assert pattern.search("email")

@@ -125,6 +125,9 @@ subscription, stops it on Stripe, and activates it in Polar with the same paid
 period. The next renewal happens in Polar; the customer is not charged again
 for time they already paid for.
 
+Polar handles both sides of the switch. Do not manually activate a matching
+Polar subscription, as this can cause double billing.
+
 <MigrationSwitch />
 
 If a subscription renews within 24 hours, Polar leaves it on Stripe to avoid a

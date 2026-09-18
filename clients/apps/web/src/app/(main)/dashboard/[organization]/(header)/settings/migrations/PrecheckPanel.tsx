@@ -7,6 +7,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { CATALOG_READ_DURATION } from './catalogReadCopy'
 
 export function PrecheckPanel({
   migration,
@@ -32,10 +33,15 @@ export function PrecheckPanel({
       </Text>
 
       {running && (
-        <Box alignItems="center" columnGap="s">
-          <Spinner />
+        <Box flexDirection="column" rowGap="xs">
+          <Box alignItems="center" columnGap="s">
+            <Spinner />
+            <Text variant="caption" color="muted">
+              Reading your Stripe catalog…
+            </Text>
+          </Box>
           <Text variant="caption" color="muted">
-            Reading your Stripe catalog…
+            {CATALOG_READ_DURATION}
           </Text>
         </Box>
       )}

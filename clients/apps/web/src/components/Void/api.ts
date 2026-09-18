@@ -222,6 +222,17 @@ export const voidKeys = {
     'void_reducer_metrics',
     organizationId,
   ],
+  reducers: (organizationId: string) => ['void_reducers', organizationId],
+  reducer: (organizationId: string, id: string) => [
+    'void_reducer',
+    organizationId,
+    id,
+  ],
+  reducerSeries: (organizationId: string, id: string) => [
+    'void_reducer_series',
+    organizationId,
+    id,
+  ],
   meters: (organizationId: string) => ['void_meters', organizationId],
   meterDetail: (organizationId: string, id: string) => [
     'void_meter_detail',

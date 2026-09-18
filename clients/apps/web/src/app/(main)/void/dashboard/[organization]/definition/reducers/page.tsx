@@ -1,8 +1,8 @@
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { VoidReducersPage } from '@/components/Void/VoidReducersPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Reducers' }
 
 export default function Page() {
-  return <DashboardBody title="Reducers" />
+  return <VoidReducersPage />
 }

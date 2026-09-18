@@ -115,15 +115,7 @@ def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float] | None = None) 
 
     blend = usd_blend(total, rates)
     with tag.div(classes="flex flex-col gap-1"):
-        headline = {
-            "classes": "whitespace-nowrap",
-            **(
-                {"title": "USD from Stripe FX Quotes, cached 24h"}
-                if blend is not None
-                else {}
-            ),
-        }
-        with tag.div(**headline):
+        with tag.div(classes="whitespace-nowrap"):
             text(f"{blend} /mo" if blend is not None else f"{money(total)} /mo")
         if blend is not None:
             with tag.div(classes="text-xs text-base-content/60"):

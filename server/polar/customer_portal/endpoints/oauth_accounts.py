@@ -122,11 +122,7 @@ async def callback(
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     try:
-        state_data = await jwt.decode(
-            token=state,
-            secret=settings.SECRET,
-            type="customer_oauth",
-        )
+        state_data = await jwt.decode(token=state, type="customer_oauth")
     except jwt.DecodeError as e:
         raise NotPermitted("Invalid state") from e
 

@@ -6,7 +6,6 @@ import structlog
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
-from polar.config import settings
 from polar.exceptions import BadRequest, PolarError, ResourceNotFound
 from polar.kit import jwt
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -183,11 +182,7 @@ class SlackAppService:
 
     async def decode_state(self, state: str) -> dict[str, Any]:
         try:
-            return await jwt.decode(
-                token=state,
-                secret=settings.SECRET,
-                type=OAUTH_STATE_JWT_TYPE,
-            )
+            return await jwt.decode(token=state, type=OAUTH_STATE_JWT_TYPE)
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             raise SlackIntegrationInvalidState(str(e)) from e
 

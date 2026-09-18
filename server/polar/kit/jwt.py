@@ -4,13 +4,11 @@ from typing import Any, Literal
 
 import jwt
 
-from polar.kit.signer import ALGORITHM as ASYMMETRIC_ALGORITHM
-from polar.kit.signer import get_published_signers, get_signer, sign_jws
+from polar.kit.signer import ALGORITHM, get_published_signers, get_signer, sign_jws
 
 from .utils import utc_now
 
 DEFAULT_EXPIRATION = 60 * 15  # 15 minutes
-ALGORITHM = "HS256"
 
 DecodeError = jwt.DecodeError
 ExpiredSignatureError = jwt.ExpiredSignatureError
@@ -46,29 +44,25 @@ async def encode(
     return await asyncio.to_thread(sign_jws, claims, get_signer())
 
 
-def _verification_key(token: str, secret: str) -> tuple[Any, str]:
+def _verification_key(token: str) -> Any:
     kid = jwt.get_unverified_header(token).get("kid")
-    if kid is None:
-        return secret, ALGORITHM
     for signer in get_published_signers():
         if signer.kid == kid:
-            return jwt.PyJWK(signer.public_jwk()).key, ASYMMETRIC_ALGORITHM
+            return jwt.PyJWK(signer.public_jwk()).key
     raise DecodeError(f"No published key with id {kid}")
 
 
-def decode_unsafe(*, token: str, secret: str) -> dict[str, Any]:
-    key, algorithm = _verification_key(token, secret)
-    return jwt.decode(token, key, algorithms=[algorithm])
+def decode_unsafe(*, token: str) -> dict[str, Any]:
+    return jwt.decode(token, _verification_key(token), algorithms=[ALGORITHM])
 
 
 async def decode(
     *,
     token: str,
-    secret: str,
     type: TYPE,
 ) -> dict[str, Any]:
     # Resolving the key is a blocking KMS call the first time a process sees it.
-    res = await asyncio.to_thread(decode_unsafe, token=token, secret=secret)
+    res = await asyncio.to_thread(decode_unsafe, token=token)
 
     token_type = res.get("type", "")
     if token_type != type:

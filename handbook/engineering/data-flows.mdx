@@ -1,0 +1,188 @@
+---
+title: "Data Flows"
+description: "Where data enters Polar, where it is processed and stored, which third parties receive it, and the controls applied at each stage."
+---
+
+<Info>
+**Status**: Active · **Owner**: Engineering · **Last Updated**: September 2026
+
+**Review**: annually, and on any change to the systems, sub-processors or flows below
+</Info>
+
+## Overall flows
+
+```mermaid
+flowchart LR
+    M((Merchant))
+    B((Buyer))
+    MS[Merchant server]
+
+    subgraph Polar["Polar platform"]
+        subgraph CFG["Cloudflare [distributed]"]
+            CF{{"Proxy and TLS for the API<br/>DNS only for the web app"}}
+        end
+
+        subgraph Vercel["Vercel [distributed]"]
+            WEB[Web app]
+        end
+
+        subgraph Render["Render [Ohio, US]"]
+            BE[API]
+            WORK[Workers]
+            PG[(Postgres)]
+        end
+
+        subgraph AWS["AWS [us-east-2]"]
+            LAM[Lambda workers]
+            RDS[(Redis)]
+            S3[(S3)]
+            BK[("Backups<br/>replicated us-west-2")]
+        end
+    end
+
+    subgraph TP["Integrated services"]
+        ST[Stripe]
+        TB[Tinybird]
+        RES[Resend]
+        PL[Plain]
+        AI[AI providers]
+        OBS[Observability]
+        CBS[ChargebackStop]
+    end
+
+    M --> WEB
+    B --> WEB
+    M --> CF
+    B --> CF
+    MS --> CF
+    WEB --> CF
+    CF --> BE
+
+    BE --> PG
+    BE --> RDS
+    BE --> WORK
+    BE --> LAM
+    WORK --> PG
+    WORK --> S3
+    LAM --> PG
+    PG -.->|daily export| BK
+
+    BE -->|minimized prompts| AI
+    BE -->|support threads| PL
+    BE -->|traces, errors, analytics| OBS
+    WORK -->|payments, payouts, tax| ST
+    WORK -->|metered events, customer email and name| TB
+    WORK -->|email| RES
+    WORK -->|platform events| MS
+
+    ST -.->|payment, dispute webhooks| CF
+    CBS -.->|chargeback alerts| CF
+```
+
+The diagram shows production. Sandbox runs the same platform against Stripe test mode, so it
+holds real merchant identities, organizations and product configuration, but no real payments or
+end-customer data. That data sits in a separate logical database, `polar_sandbox`, on the same
+physical Postgres instance as production.
+
+## Where data is processed
+
+One row per provider. The flows below say what reaches each one.
+
+| Provider | Region | Processes |
+| --- | --- | --- |
+| Cloudflare | Distributed edge | DNS for Polar's domains. Proxies and terminates TLS for API traffic only, so it sees source IP, headers and URLs on every API, SDK and webhook request; web app hostnames are DNS-only and resolve straight to Vercel. Turnstile challenge signals; product video via Stream |
+| Render | Ohio, USA | API, workers, and the Postgres instance holding all core platform data |
+| AWS | `us-east-2`; backups replicated to `us-west-2` | S3 for invoices, receipts, payout invoices, downloadable files, product media and the span archive; Lambda and SQS for background jobs; ElastiCache Redis for sessions, rate limits and job payloads; the backup buckets |
+| Vercel | Distributed edge | Web app and checkout rendering. No persistent store |
+| Stripe | USA | Card credentials, payments, payouts, tax calculation, identity verification |
+| Tinybird | USA | Metered events and derived metrics, including customer email and name |
+| Resend | USA | Transactional email: recipient address, subject, rendered body |
+| Plain | UK | Support threads, chat transcripts, attachments; context cards looked up by email address |
+| ChargebackStop | UK | Card transaction identifiers in pre-dispute alerts |
+| OpenAI | USA | Inference on minimized prompts, via the Pydantic AI Gateway |
+| Anthropic | USA | Inference on minimized prompts, via the Pydantic AI Gateway |
+| Sentry | USA | Error reports from the API, workers and browser |
+| PostHog | USA | Product analytics and feature flags |
+| Pydantic Logfire | USA | Traces, logs and metrics. 30-day retention |
+| Grafana | USA | Metrics dashboards via Grafana Cloud Prometheus |
+| Firecrawl | Not verified | Renders merchant websites during organization review |
+| GitHub | USA | Source hosting and CI; end-customer GitHub identity for repository benefits |
+| Discord | Not verified | End-customer Discord identity for guild benefits |
+| Google | USA | Maps address autocomplete in the browser; the acceptable-use policy document fetched from Drive |
+| Stilla | Belgium | Meeting transcripts, calendar, and content from connected internal systems |
+
+## Product flows
+
+### Merchant onboarding and review
+
+A merchant signs up with an email OTP, or through GitHub, Google or Apple. Creating an
+organization then triggers an automated review that decides whether they may sell on the
+platform.
+
+```mermaid
+sequenceDiagram
+    participant M as Merchant
+    participant P as Polar API
+    participant FC as Firecrawl
+    participant AI as AI provider
+    participant S as Stripe
+
+    M->>P: Sign up, create organization
+    P->>P: Collect review snapshot
+    P->>FC: Render merchant website
+    FC-->>P: Page text
+    P->>AI: Minimized review prompt
+    AI-->>P: Verdict and rationale
+    P->>P: Store review and risk signals
+    M->>S: Connect onboarding, identity documents
+    S-->>P: Account status webhook
+```
+
+Review prompts are built from a named field list rather than a serialized object, so only those
+fields reach the provider ([ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls)).
+
+### Checkout and payment
+
+```mermaid
+sequenceDiagram
+    participant B as Buyer browser
+    participant P as Polar API
+    participant CF as Cloudflare Turnstile
+    participant S as Stripe
+
+    B->>P: Open checkout, create session
+    P->>P: Resolve country from IP locally
+    B->>CF: Solve bot challenge
+    B->>P: Submit email, billing address, tax ID
+    P->>S: Tax calculation
+    S-->>P: Tax amount and jurisdiction
+    B->>S: Card details via Stripe.js
+    S-->>B: Payment method token
+    B->>P: Confirm with token
+    P->>S: Confirm payment intent
+    S-->>P: payment_intent.succeeded webhook
+    P->>P: Create order, customer, subscription
+```
+
+## Remaining flows
+
+| Flow | Source | Data | Processed by | Controls |
+| --- | --- | --- | --- | --- |
+| Fulfillment: invoices and receipts | Paid order | Financial records, personal data | S3 | Dedicated bucket per document class; presigned URLs, 1-hour TTL |
+| Fulfillment: file benefits | Merchant upload | Merchant content | S3 | Presigned URLs, 1-hour TTL |
+| Fulfillment: Discord and GitHub benefits | Benefit grant | End-customer OAuth identity, including access and refresh tokens | Postgres, Discord, GitHub | Scoped to the granting organization |
+| Fulfillment: license keys | Benefit grant | Key, per-device activations | Postgres | Scoped to the granting organization |
+| Fulfillment: email | Platform event | Recipient address, subject, rendered body | Resend | Sends recorded in `email_logs`; marketing audience keyed by `users.resend_id` |
+| Usage events and metering | Merchant API or SDK | Customer and member references plus **arbitrary merchant-supplied metadata**; the Tinybird row also carries customer email and name | Postgres, Tinybird | Scoped to the ingesting organization; per-environment Tinybird tokens; metadata treated as untrusted |
+| Outbound webhooks | Platform event | The same objects the API returns, including customer email and billing address | Merchant endpoint | Payload signing; 10 retries; failing endpoints disabled; events deleted after **90 days** |
+| Payouts | Paid orders | Balance transactions, payout records, payout invoice PDFs; Connect account ID, country, currency, capability flags | Postgres, S3, Stripe | Held until a minimum balance and delay elapse; payout invoices in a separate bucket from customer invoices |
+| Disputes and chargebacks | Stripe, ChargebackStop | Card transaction identifiers, dispute records | Postgres | Both signature-verified; payloads stored raw in `external_events` and processed asynchronously |
+| Support | Buyer or merchant | Support threads, chat transcripts, attachments; context cards looked up **by email address** | Plain | Plain's requests signature-verified; cards return only triage fields |
+| Telemetry | API, workers, browser | Traces, metrics, product analytics, error reports | Logfire, Sentry, PostHog, Grafana, S3 | Browser analytics and errors proxied through polar.sh; session replay disabled; health-check and token-usage spans dropped at the sampler |
+| Audit logs and span archive | Trace spans | Gzipped JSONL, the **Audit Logs** asset | S3 | Sensitive attribute keys redacted before the object is written |
+| Backups | Render Postgres | **Everything in this document, in one object** | S3 | Object Lock in COMPLIANCE mode means a backup **cannot be deleted before retention elapses, by anyone, including root**; deletion reaches backups by expiry rather than erasure |
+| Staff access | Polar admin via backoffice | Any production record; impersonation renders the merchant dashboard | Postgres | Impersonation restricted to `READ_ONLY_SCOPES` and one organization |
+| AI: organization review | Merchant signup | Products, website text, Stripe-verified identity (**name, date of birth, address country**), payout-account details, payment totals and risk scores, user history | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| AI: Compass | Merchant question | Merchant metrics; buyer personal data only when asked about that person | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| AI: Plain subject lines | Support message | The customer's message | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| Workspace assistant | Meetings, calendar, Slack, Google Workspace, GitHub | Meeting audio and transcripts, internal communications, documents, source code | Stilla | Zero-data-retention agreements with the underlying LLM providers; contractual bar on training |

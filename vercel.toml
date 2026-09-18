@@ -2,8 +2,7 @@
 # services from this one config. The API service builds from
 # server/pyproject.toml (see [tool.vercel] there).
 #
-# polar-test-services is the only Git-connected project using this file.
-# Git auto-deploys (main and previews) are off for now.
+# Off for now. polar-test-services is the only Git-connected project using this file.
 
 [git]
 deploymentEnabled = false

@@ -79,9 +79,10 @@ flowchart LR
     CBS -.->|chargeback alerts| CF
 ```
 
-The diagram is production. Sandbox holds **real merchant data**: identities, organizations and
-product configuration, but no real payments or end-customer data. It lives in its own
-`polar_sandbox` database on the same Render instance.
+The diagram shows production. Sandbox runs the same platform against Stripe test mode, so it
+holds real merchant identities, organizations and product configuration, but no real payments or
+end-customer data. That data sits in a separate logical database, `polar_sandbox`, on the same
+physical Postgres instance as production.
 
 ## Where data is processed
 
@@ -89,7 +90,7 @@ One row per provider. The flows below say what reaches each one.
 
 | Provider | Region | Processes |
 | --- | --- | --- |
-| Cloudflare | Distributed edge | DNS for Polar's domains. Proxy and TLS termination for **API traffic only**: source IP, headers and URLs for every API, SDK and inbound-webhook request. Web app hostnames run DNS-only, so that traffic goes straight to Vercel and Cloudflare sees the lookup, not the request. Turnstile challenge signals; product video via Stream |
+| Cloudflare | Distributed edge | DNS for Polar's domains. Proxies and terminates TLS for API traffic only, so it sees source IP, headers and URLs on every API, SDK and webhook request; web app hostnames are DNS-only and resolve straight to Vercel. Turnstile challenge signals; product video via Stream |
 | Render | Ohio, USA | API, workers, and the Postgres instance holding all core platform data |
 | AWS | `us-east-2`; backups replicated to `us-west-2` | S3 for invoices, receipts, payout invoices, downloadable files, product media and the span archive; Lambda and SQS for background jobs; ElastiCache Redis for sessions, rate limits and job payloads; the backup buckets |
 | Vercel | Distributed edge | Web app and checkout rendering. No persistent store |
@@ -174,12 +175,14 @@ sequenceDiagram
 | Fulfillment: email | Platform event | Recipient address, subject, rendered body | Resend | Sends recorded in `email_logs`; marketing audience keyed by `users.resend_id` |
 | Usage events and metering | Merchant API or SDK | Customer and member references plus **arbitrary merchant-supplied metadata**; the Tinybird row also carries customer email and name | Postgres, Tinybird | Scoped to the ingesting organization; per-environment Tinybird tokens; metadata treated as untrusted |
 | Outbound webhooks | Platform event | The same objects the API returns, including customer email and billing address | Merchant endpoint | Payload signing; 10 retries; failing endpoints disabled; events deleted after **90 days** |
-| Payouts | Paid orders | Balance transactions, payout records and payout invoice PDFs. Bank details live in Stripe; Polar holds the Connect account ID, country, currency and capability flags | Postgres, S3, Stripe | Held until a minimum balance and delay elapse; reviews triggered on risk signals; payout invoices in a separate bucket from customer invoices |
+| Payouts | Paid orders | Balance transactions, payout records, payout invoice PDFs; Connect account ID, country, currency, capability flags | Postgres, S3, Stripe | Held until a minimum balance and delay elapse; payout invoices in a separate bucket from customer invoices |
 | Disputes and chargebacks | Stripe, ChargebackStop | Card transaction identifiers, dispute records | Postgres | Both signature-verified; payloads stored raw in `external_events` and processed asynchronously |
 | Support | Buyer or merchant | Support threads, chat transcripts, attachments; context cards looked up **by email address** | Plain | Plain's requests signature-verified; cards return only triage fields |
 | Telemetry | API, workers, browser | Traces, metrics, product analytics, error reports | Logfire, Sentry, PostHog, Grafana, S3 | Browser analytics and errors proxied through polar.sh; session replay disabled; health-check and token-usage spans dropped at the sampler |
 | Audit logs and span archive | Trace spans | Gzipped JSONL, the **Audit Logs** asset | S3 | Sensitive attribute keys redacted before the object is written |
 | Backups | Render Postgres | **Everything in this document, in one object** | S3 | Object Lock in COMPLIANCE mode means a backup **cannot be deleted before retention elapses, by anyone, including root**; deletion reaches backups by expiry rather than erasure |
 | Staff access | Polar admin via backoffice | Any production record; impersonation renders the merchant dashboard | Postgres | Impersonation restricted to `READ_ONLY_SCOPES` and one organization |
-| AI features | Organization review, Compass, Plain subject lines | Review: products, website and webhook-host text, Stripe-verified identity (**name, date of birth, address country**), payout-account business details and capabilities, payment totals and risk scores, user history and prior decisions. Compass: merchant metrics, buyer personal data only when asked about that person in that turn. Plain: the customer's own message | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
-| Workspace assistant | Meetings, calendar, Slack, Google Workspace, GitHub | Meeting audio and transcripts, internal communications, documents, source code | Stilla | Zero-data-retention agreements with the underlying LLM providers and a contractual bar on training, which stops the flow continuing to a fourth party |
+| AI: organization review | Merchant signup | Products, website text, Stripe-verified identity (**name, date of birth, address country**), payout-account details, payment totals and risk scores, user history | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| AI: Compass | Merchant question | Merchant metrics; buyer personal data only when asked about that person | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| AI: Plain subject lines | Support message | The customer's message | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| Workspace assistant | Meetings, calendar, Slack, Google Workspace, GitHub | Meeting audio and transcripts, internal communications, documents, source code | Stilla | Zero-data-retention agreements with the underlying LLM providers; contractual bar on training |

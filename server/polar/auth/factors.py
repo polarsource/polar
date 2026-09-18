@@ -229,8 +229,13 @@ class BackupCodesFactor(BackupCodesFactorBase):
     async def verify(
         self, identity_id: typing.Any, code: str
     ) -> BackupCodesEnrollmentDataclass:
+        log.debug("Backup codes verification attempted", identity_id=identity_id)
+
         enrollment = await self.get_enrollment(identity_id)
         if enrollment is None:
+            log.warning(
+                "Backup codes verify failed: not enrolled", identity_id=identity_id
+            )
             raise NotEnrolledBackupCodesException()
 
         candidates = get_token_hash_candidates(code)
@@ -243,8 +248,15 @@ class BackupCodesFactor(BackupCodesFactorBase):
             None,
         )
         if stored is None:
+            log.warning(
+                "Backup codes verify failed: invalid code", identity_id=identity_id
+            )
             raise InvalidBackupCodeException()
         if stored in enrollment.used_codes_hashes:
+            log.warning(
+                "Backup codes verify failed: code already used",
+                identity_id=identity_id,
+            )
             raise AlreadyUsedBackupCodeException()
 
         current = candidates[settings.CURRENT_HASH_SECRET_ID]
@@ -254,6 +266,8 @@ class BackupCodesFactor(BackupCodesFactorBase):
         ]
         enrollment.used_codes_hashes = [*enrollment.used_codes_hashes, current]
         await self.update(enrollment)
+
+        log.info("Backup codes verification successful", identity_id=identity_id)
         return enrollment
 
     async def get_enrollment(

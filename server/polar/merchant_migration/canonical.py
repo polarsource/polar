@@ -193,7 +193,7 @@ def _parse_datetime(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
 
 
-def _parse_tax_behavior(value: str | None) -> TaxBehavior | None:
+def parse_tax_behavior(value: str | None) -> TaxBehavior | None:
     if not value:
         return None
     try:
@@ -264,7 +264,7 @@ def deserialize(
                 anchor_day=data.get("anchor_day"),
                 currency=data.get("currency"),
                 automatic_tax=data.get("automatic_tax"),
-                tax_behavior=_parse_tax_behavior(data.get("tax_behavior")),
+                tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

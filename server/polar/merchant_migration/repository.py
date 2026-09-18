@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from dataclasses import replace
 from typing import Any
 from uuid import UUID
@@ -9,6 +9,7 @@ from sqlalchemy.orm import aliased, joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
+from polar.enums import TaxBehavior
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
@@ -37,6 +38,7 @@ from .canonical import (
     CanonicalSubscription,
     canonical_price_key,
     deserialize,
+    parse_tax_behavior,
     serialize,
 )
 
@@ -622,6 +624,37 @@ class MerchantMigrationRecordRepository(
                 record, update_dict={"cutover_status": None, "cutover_error": None}
             )
 
+    async def pending_subscription_tax_behaviors(
+        self, migration_id: UUID
+    ) -> dict[str, TaxBehavior]:
+        """Tax choices on pending subscriptions, keyed by source id.
+
+        ``start_precheck`` deletes pending rows before extract; this snapshot is
+        what lets a rerun restore a merchant's exclusive pin.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+            )
+            .with_only_columns(
+                MerchantMigrationRecord.source_id,
+                MerchantMigrationRecord.canonical,
+            )
+            .order_by(None)
+        )
+        preserved: dict[str, TaxBehavior] = {}
+        for source_id, canonical in (await self.session.execute(statement)).all():
+            if not isinstance(canonical, dict):
+                continue
+            behavior = parse_tax_behavior(canonical.get("tax_behavior"))
+            if behavior is not None:
+                preserved[source_id] = behavior
+        return preserved
+
     async def delete_pending(self, migration_id: UUID) -> None:
         await self.session.execute(
             delete(MerchantMigrationRecord).where(
@@ -630,6 +663,33 @@ class MerchantMigrationRecordRepository(
             )
         )
 
+    def _restore_subscription_tax(
+        self,
+        record: CanonicalRecord,
+        *,
+        existing: MerchantMigrationRecord | None,
+        preserved_tax_behavior: Mapping[str, TaxBehavior] | None,
+    ) -> CanonicalRecord:
+        if not isinstance(record, CanonicalSubscription) or (
+            record.tax_behavior is not None
+        ):
+            return record
+        if (
+            existing is not None
+            and existing.status == MerchantMigrationRecordStatus.pending
+        ):
+            current = deserialize(existing.type, existing.canonical)
+            if (
+                isinstance(current, CanonicalSubscription)
+                and current.tax_behavior is not None
+            ):
+                return replace(record, tax_behavior=current.tax_behavior)
+        if preserved_tax_behavior is not None:
+            preserved = preserved_tax_behavior.get(record.source_id)
+            if preserved is not None:
+                return replace(record, tax_behavior=preserved)
+        return record
+
     async def upsert(
         self,
         merchant_migration: MerchantMigration,
@@ -637,6 +697,7 @@ class MerchantMigrationRecordRepository(
         record: CanonicalRecord,
         *,
         merge_product_prices: bool = False,
+        preserved_tax_behavior: Mapping[str, TaxBehavior] | None = None,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
         re-run refreshes a still-pending row; imported/skipped/failed rows are
@@ -646,17 +707,14 @@ class MerchantMigrationRecordRepository(
             type=record.type,
             source_id=record.source_id,
         )
+        record = self._restore_subscription_tax(
+            record,
+            existing=existing,
+            preserved_tax_behavior=preserved_tax_behavior,
+        )
         canonical = serialize(record)
         if existing is not None:
             if existing.status == MerchantMigrationRecordStatus.pending:
-                if isinstance(record, CanonicalSubscription):
-                    current = deserialize(existing.type, existing.canonical)
-                    if (
-                        isinstance(current, CanonicalSubscription)
-                        and current.tax_behavior is not None
-                    ):
-                        record = replace(record, tax_behavior=current.tax_behavior)
-                        canonical = serialize(record)
                 if (
                     merge_product_prices
                     and existing.merchant_migration_id == merchant_migration.id

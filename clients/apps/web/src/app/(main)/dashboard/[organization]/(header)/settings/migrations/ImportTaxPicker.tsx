@@ -10,6 +10,7 @@ import {
   importTaxBehavior,
   importTaxHint,
   importTaxLabel,
+  importTaxSaveError,
   type ImportTaxBehavior,
 } from './importTax'
 
@@ -69,9 +70,7 @@ export function ImportTaxPicker({
       </Text>
       {update.isError ? (
         <Text variant="caption" color="error">
-          {update.error instanceof Error
-            ? update.error.message
-            : "We couldn't save the tax setting."}
+          {importTaxSaveError(update.error)}
         </Text>
       ) : null}
     </Box>

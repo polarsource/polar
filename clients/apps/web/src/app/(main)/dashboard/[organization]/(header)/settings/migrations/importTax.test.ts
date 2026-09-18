@@ -3,6 +3,7 @@ import {
   importTaxBehavior,
   importTaxHint,
   importTaxLabel,
+  importTaxSaveError,
   isImportTaxLocked,
 } from './importTax'
 
@@ -33,6 +34,24 @@ describe('importTaxHint', () => {
 
   it('explains exclusive as tax on top', () => {
     expect(importTaxHint('exclusive')).toContain('on top')
+  })
+})
+
+describe('importTaxSaveError', () => {
+  it('uses a non-empty Error message', () => {
+    expect(
+      importTaxSaveError(new Error('Tax can only be set on a subscription.')),
+    ).toBe('Tax can only be set on a subscription.')
+  })
+
+  it('falls back when the message is empty', () => {
+    expect(importTaxSaveError(new Error(''))).toBe(
+      "We couldn't save the tax setting.",
+    )
+  })
+
+  it('falls back for a non-Error', () => {
+    expect(importTaxSaveError({})).toBe("We couldn't save the tax setting.")
   })
 })
 

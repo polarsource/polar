@@ -142,6 +142,31 @@ class TestUpsert:
 
         assert refreshed.canonical["tax_behavior"] == "exclusive"
 
+    async def test_preserves_tax_after_pending_delete(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        await repository.upsert(
+            migration,
+            organization,
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive),
+        )
+        preserved = await repository.pending_subscription_tax_behaviors(migration.id)
+        await repository.delete_pending(migration.id)
+
+        restored = await repository.upsert(
+            migration,
+            organization,
+            canonical_subscription(),
+            preserved_tax_behavior=preserved,
+        )
+
+        assert restored.canonical["tax_behavior"] == "exclusive"
+
     async def test_is_idempotent_per_source(
         self,
         session: AsyncSession,

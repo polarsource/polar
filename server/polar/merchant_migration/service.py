@@ -497,15 +497,18 @@ class MerchantMigrationService:
         await self._build_adapter(migration)
 
         repository = MerchantMigrationRepository.from_session(session)
-        await MerchantMigrationRecordRepository.from_session(session).delete_pending(
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        preserved_tax = await record_repository.pending_subscription_tax_behaviors(
             migration.id
         )
+        await record_repository.delete_pending(migration.id)
         await repository.update(
             migration,
             update_dict={
                 "operation": MerchantMigrationOperation(
                     status=MerchantMigrationOperationStatus.pending,
                     last_progress_at=utc_now(),
+                    subscription_tax_behavior=preserved_tax or None,
                 )
             },
         )
@@ -572,12 +575,14 @@ class MerchantMigrationService:
             update_dict={"operation": running_operation},
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
+        preserved_tax = current_operation.subscription_tax_behavior
         for record in page.records:
             await record_repository.upsert(
                 migration,
                 organization,
                 record,
                 merge_product_prices=True,
+                preserved_tax_behavior=preserved_tax,
             )
         if page.next_cursor is not None:
             await repository.update(
@@ -1441,7 +1446,7 @@ class MerchantMigrationService:
         """Pin how Polar taxes this subscription after the switch."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
-        record = await repository.get_by_id(record_id)
+        record = await repository.get_by_id(record_id, for_update=True)
         if record is None or record.merchant_migration_id != migration.id:
             raise MerchantMigrationRecordNotFound()
         if record.type != MerchantMigrationRecordType.subscription:

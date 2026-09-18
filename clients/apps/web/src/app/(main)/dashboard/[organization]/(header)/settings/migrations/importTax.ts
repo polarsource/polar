@@ -28,6 +28,12 @@ export function importTaxHint(behavior: ImportTaxBehavior): string {
     : 'Customer pays the listed price. Polar takes tax out of it.'
 }
 
+export function importTaxSaveError(error: unknown): string {
+  return error instanceof Error && error.message
+    ? error.message
+    : "We couldn't save the tax setting."
+}
+
 export function isImportTaxLocked(row: {
   cutover_status: schemas['MerchantMigrationCutoverStatus'] | null
 }): boolean {

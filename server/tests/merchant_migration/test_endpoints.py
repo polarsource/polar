@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.enums import TaxBehavior
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
 from polar.merchant_migration.canonical import (
@@ -20,8 +21,13 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    deserialize,
+    serialize,
 )
-from polar.merchant_migration.repository import MerchantMigrationRepository
+from polar.merchant_migration.repository import (
+    MerchantMigrationRecordRepository,
+    MerchantMigrationRepository,
+)
 from polar.merchant_migration.service import (
     merchant_migration as merchant_migration_service,
 )
@@ -41,6 +47,7 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
@@ -50,6 +57,7 @@ from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    canonical_subscription,
     pan_steps_until,
 )
 
@@ -600,6 +608,7 @@ class TestImport:
         )
         subscription_record_id = records.json()["items"][0]["record_id"]
         assert subscription_record_id is not None
+        assert records.json()["items"][0]["tax_behavior"] == "inclusive"
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/import",
@@ -1058,6 +1067,97 @@ class TestExportCustomerIds:
             == 'attachment; filename="stripe-customer-ids.csv"'
         )
         assert response.text == "cus_second\r\ncus_first\r\n"
+
+
+@pytest.mark.asyncio
+class TestUpdateRecord:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_sets_exclusive_tax_on_subscription(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        record = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="sub_1",
+            canonical=serialize(canonical_subscription()),
+        )
+        await save_fixture(record)
+
+        response = await client.patch(
+            f"/v1/merchant-migrations/{migration.id}/records/{record.id}",
+            json={"tax_behavior": "exclusive"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["tax_behavior"] == "exclusive"
+        reloaded = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_id(record.id)
+        assert reloaded is not None
+        staged = deserialize(reloaded.type, reloaded.canonical)
+        assert isinstance(staged, CanonicalSubscription)
+        assert staged.tax_behavior == TaxBehavior.exclusive
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_rejects_moved_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        record = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            status=MerchantMigrationRecordStatus.imported,
+            source_id="sub_1",
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+            canonical=serialize(canonical_subscription()),
+        )
+        await save_fixture(record)
+
+        response = await client.patch(
+            f"/v1/merchant-migrations/{migration.id}/records/{record.id}",
+            json={"tax_behavior": "exclusive"},
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_rejects_non_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        record = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            status=MerchantMigrationRecordStatus.pending,
+            source_id="cus_1",
+            canonical={},
+        )
+        await save_fixture(record)
+
+        response = await client.patch(
+            f"/v1/merchant-migrations/{migration.id}/records/{record.id}",
+            json={"tax_behavior": "inclusive"},
+        )
+
+        assert response.status_code == 400
 
 
 async def _create_migration(

@@ -241,6 +241,14 @@ class SubscriptionCutover:
         if subscription.status != SubscriptionStatus.paused:
             return _skip(_NOT_PAUSED)
 
+        try:
+            staged = deserialize(record.type, record.canonical)
+        except KeyError, TypeError, ValueError:
+            staged = None
+        if isinstance(staged, CanonicalSubscription):
+            subscription.tax_behavior = staged.import_tax_behavior()
+            subscription.tax_exempted = False
+
         if not already_stopped:
             await self.adapter.stop_source_subscription(
                 record.source_id, reference=str(self.migration.id)

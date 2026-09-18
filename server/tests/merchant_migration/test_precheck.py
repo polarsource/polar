@@ -3,6 +3,7 @@ from dataclasses import replace
 
 import pytest
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -1066,6 +1067,7 @@ class TestClassifyCascade:
         assert items[0].customer_source_id == "cus_1"
         assert items[0].customer_country == "US"
         assert items[0].automatic_tax is True
+        assert items[0].tax_behavior == TaxBehavior.inclusive
 
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,

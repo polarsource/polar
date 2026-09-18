@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
@@ -130,3 +131,5 @@ class TestDeserialize:
 
         assert isinstance(result, CanonicalSubscription)
         assert result.currency == "usd"
+        assert result.tax_behavior is None
+        assert result.import_tax_behavior() == TaxBehavior.inclusive

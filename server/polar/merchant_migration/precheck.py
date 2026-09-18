@@ -13,7 +13,7 @@ from collections.abc import AsyncIterable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.kit.currency import (
     PresentmentCurrency,
     format_currency,
@@ -667,6 +667,7 @@ def _item(
     customer_country: str | None = None,
     renews_at: datetime | None = None,
     automatic_tax: bool | None = None,
+    tax_behavior: TaxBehavior | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -701,6 +702,7 @@ def _item(
         cutover_error=None,
         renews_at=renews_at,
         automatic_tax=automatic_tax,
+        tax_behavior=tax_behavior,
         has_payment_method=None,
         dependencies_imported=None,
     )
@@ -915,6 +917,7 @@ def _subscription_items(
                 customer_country=customer.country if customer is not None else None,
                 renews_at=subscription.current_period_end,
                 automatic_tax=subscription.automatic_tax,
+                tax_behavior=subscription.import_tax_behavior(),
             )
         )
     return items

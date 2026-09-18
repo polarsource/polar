@@ -14,7 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxBehavior
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
@@ -765,6 +765,51 @@ class TestExecutePrecheck:
             record_repository.get_base_statement()
         )
         assert len(records) == 2
+
+    @pytest.mark.auth
+    async def test_retry_after_failed_precheck_keeps_merchant_subscription_tax(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await record_repository.upsert(
+            migration,
+            organization,
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive),
+        )
+        adapter = _FakeAdapter(_catalog_with_subscription())
+        stripe_adapter = mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        mocker.patch.object(
+            adapter,
+            "extract_page",
+            side_effect=stripe_lib.APIConnectionError("Stripe unavailable"),
+        )
+        await service.execute_precheck(session, migration.id)
+
+        stripe_adapter.return_value = _FakeAdapter(_catalog_with_subscription())
+        await service.start_precheck(session, auth_subject, migration.id)
+        await service.execute_precheck(session, migration.id)
+
+        staged = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert staged is not None
+        canonical = deserialize(staged.type, staged.canonical)
+        assert isinstance(canonical, CanonicalSubscription)
+        assert canonical.tax_behavior == TaxBehavior.exclusive
 
     @pytest.mark.auth
     async def test_stages_one_page_and_enqueues_the_next(

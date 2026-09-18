@@ -17,6 +17,7 @@ from sqlalchemy import Dialect
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import TypeDecorator
 
+from polar.enums import TaxBehavior
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
 
@@ -80,6 +81,7 @@ class MerchantMigrationOperation(Schema):
             "Bumped on enqueue and each successful batch; used for stall detection."
         ),
     )
+    subscription_tax_behavior: dict[str, TaxBehavior] | None = None
 
     @field_validator("last_progress_at", mode="after")
     @classmethod

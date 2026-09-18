@@ -4,6 +4,7 @@ from typing import Any
 
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxBehavior
 from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
@@ -154,6 +155,7 @@ def canonical_subscription(
     anchor_day: int | None = None,
     payment_method: CanonicalPaymentMethod | None = None,
     currency: str | None = "usd",
+    tax_behavior: TaxBehavior | None = None,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -175,6 +177,7 @@ def canonical_subscription(
         stopped_for_migration=stopped_for_migration,
         anchor_day=anchor_day,
         currency=currency,
+        tax_behavior=tax_behavior,
     )
 
 

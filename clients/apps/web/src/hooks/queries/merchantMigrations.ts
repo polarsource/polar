@@ -300,3 +300,24 @@ export const useMerchantMigrationRecordSummary = (
     enabled: !!id,
     refetchInterval: refetchInterval ?? false,
   })
+
+export const useUpdateMigrationRecordTax = (id: string) =>
+  useMutation({
+    mutationFn: ({
+      recordId,
+      taxBehavior,
+    }: {
+      recordId: string
+      taxBehavior: schemas['TaxBehavior']
+    }) =>
+      dataOrThrow(
+        api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
+          params: { path: { id, record_id: recordId } },
+          body: { tax_behavior: taxBehavior },
+        }),
+        "We couldn't save the tax setting.",
+      ),
+    onSuccess: () => {
+      invalidateMigrationRecords(id)
+    },
+  })

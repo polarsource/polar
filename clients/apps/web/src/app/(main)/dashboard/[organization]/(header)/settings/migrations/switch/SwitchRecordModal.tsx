@@ -3,17 +3,22 @@
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { renewalDate } from '../recordFormat'
+import { ImportTaxPicker } from '../ImportTaxPicker'
+import { automaticTaxLabel, renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
-import { needsAttention, SwitchRow } from './switchRows'
+import { isSwitched, needsAttention, SwitchRow } from './switchRows'
 
 export function SwitchRecordModal({
   row,
+  migrationId,
   onClose,
 }: {
   row: SwitchRow
+  migrationId: string
   onClose: () => void
 }) {
+  const tax = automaticTaxLabel(row)
+
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
@@ -60,6 +65,19 @@ export function SwitchRecordModal({
               value={row.has_payment_method ? 'Ready to charge' : null}
             />
             <DetailCell label="Renewal on Stripe" value={renewalDate(row)} />
+            {tax ? (
+              <DetailCell label="Stripe automatic tax" value={tax} />
+            ) : null}
+            <Box flexDirection="column" rowGap="s">
+              <Text color="muted">Tax after switch</Text>
+              <ImportTaxPicker
+                key={row.record_id ?? row.source_id}
+                migrationId={migrationId}
+                recordId={row.record_id}
+                taxBehavior={row.tax_behavior}
+                locked={isSwitched(row)}
+              />
+            </Box>
             <DetailCell
               label="Stripe subscription ID"
               value={row.source_id}

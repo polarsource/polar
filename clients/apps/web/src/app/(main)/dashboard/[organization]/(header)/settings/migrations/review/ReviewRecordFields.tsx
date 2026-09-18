@@ -4,7 +4,9 @@ import { DetailCell } from '@/components/Orders/OrderSection'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
+import { ImportTaxPicker } from '../ImportTaxPicker'
 import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
+import { isSwitched } from '../switch/switchRows'
 import { ReviewRow, rowAmount } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -21,7 +23,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-export function SubscriptionFields({ row }: { row: ReviewRow }) {
+export function SubscriptionFields({
+  row,
+  migrationId,
+}: {
+  row: ReviewRow
+  migrationId: string
+}) {
   const tax = automaticTaxLabel(row)
 
   return (
@@ -29,7 +37,17 @@ export function SubscriptionFields({ row }: { row: ReviewRow }) {
       <DetailCell label="Import" value={<ReviewStatusIndicator row={row} />} />
       {row.subtitle ? <DetailCell label="Status" value={row.subtitle} /> : null}
       <DetailCell label="Renewal" value={renewalDate(row)} />
-      {tax ? <DetailCell label="Automatic tax" value={tax} /> : null}
+      {tax ? <DetailCell label="Stripe automatic tax" value={tax} /> : null}
+      <Box flexDirection="column" rowGap="s">
+        <Text color="muted">Tax after switch</Text>
+        <ImportTaxPicker
+          key={row.record_id ?? row.source_id}
+          migrationId={migrationId}
+          recordId={row.record_id}
+          taxBehavior={row.tax_behavior}
+          locked={isSwitched(row)}
+        />
+      </Box>
       {row.import_status === 'failed' ? (
         <DetailCell label="Last run" value="Failed" />
       ) : null}

@@ -27,7 +27,11 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from polar.auth.scope import Scope
-from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.crypto import (
+    generate_token,
+    get_token_hash,
+    get_token_hash_candidates,
+)
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
@@ -259,17 +263,17 @@ class _QueryTokenMixin:
         token_string: str,
         token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
     ) -> OAuth2Token | None:
-        token_hash = get_token_hash(token_string)
+        token_hashes = get_token_hash_candidates(token_string)
         statement = select(OAuth2Token)
         if token_type_hint == "access_token":
-            statement = statement.where(OAuth2Token.access_token == token_hash)
+            statement = statement.where(OAuth2Token.access_token.in_(token_hashes))
         elif token_type_hint == "refresh_token":
-            statement = statement.where(OAuth2Token.refresh_token == token_hash)
+            statement = statement.where(OAuth2Token.refresh_token.in_(token_hashes))
         else:
             statement = statement.where(
                 or_(
-                    OAuth2Token.access_token == token_hash,
-                    OAuth2Token.refresh_token == token_hash,
+                    OAuth2Token.access_token.in_(token_hashes),
+                    OAuth2Token.refresh_token.in_(token_hashes),
                 )
             )
 

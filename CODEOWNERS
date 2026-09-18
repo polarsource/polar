@@ -7,6 +7,23 @@ server/polar/customer_seat/** @psincraian
 server/tests/customer_seat/** @psincraian
 server/tests/e2e/** @psincraian
 
+# Billing
+server/polar/billing_entry/** @frankie567
+server/tests/billing_entry/** @frankie567
+server/polar/models/billing_entry.py @frankie567
+server/polar/integrations/stripe/** @frankie567
+server/tests/integrations/stripe/** @frankie567
+server/polar/tax/** @frankie567
+server/tests/tax/** @frankie567
+server/polar/payout/** @frankie567
+server/tests/payout/** @frankie567
+server/polar/payout_account/** @frankie567
+server/tests/payout_account/** @frankie567
+server/polar/models/payout.py @frankie567
+server/polar/models/payout_account.py @frankie567
+server/polar/models/payout_attempt.py @frankie567
+server/tests/models/test_payout_account.py @frankie567
+
 # API
 server/polar/**/endpoints.py @frankie567
 server/polar/**/schemas.py @frankie567

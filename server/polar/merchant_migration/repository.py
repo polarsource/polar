@@ -1,6 +1,5 @@
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import replace
-from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -13,7 +12,6 @@ from sqlalchemy import (
     func,
     or_,
     select,
-    update,
 )
 from sqlalchemy.orm import aliased, joinedload
 
@@ -144,7 +142,6 @@ class MerchantMigrationRecordRepository(
     RepositoryBase[MerchantMigrationRecord],
 ):
     model = MerchantMigrationRecord
-    _migration_created_at_cache: dict[UUID, datetime] | None = None
 
     async def has_moved_subscription(self, subscription_id: UUID) -> bool:
         statement = select(
@@ -641,34 +638,6 @@ class MerchantMigrationRecordRepository(
             )
         )
 
-    async def adopt_settled(self, *, organization_id: UUID, migration_id: UUID) -> None:
-        """Attach imported/skipped/failed rows from earlier runs to this
-        migration so a new catalog read shows them as already settled.
-
-        Only migrations created before this one are adopted, so retrying an
-        older run cannot pull rows off a newer assessment.
-        """
-        current_created_at = (
-            select(MerchantMigration.created_at)
-            .where(MerchantMigration.id == migration_id)
-            .scalar_subquery()
-        )
-        await self.session.execute(
-            update(MerchantMigrationRecord)
-            .where(
-                MerchantMigrationRecord.organization_id == organization_id,
-                MerchantMigrationRecord.status != MerchantMigrationRecordStatus.pending,
-                MerchantMigrationRecord.merchant_migration_id.in_(
-                    select(MerchantMigration.id).where(
-                        MerchantMigration.organization_id == organization_id,
-                        MerchantMigration.created_at < current_created_at,
-                    )
-                ),
-            )
-            .execution_options(synchronize_session="fetch")
-            .values(merchant_migration_id=migration_id)
-        )
-
     async def upsert(
         self,
         merchant_migration: MerchantMigration,
@@ -715,20 +684,6 @@ class MerchantMigrationRecordRepository(
                     },
                     flush=True,
                 )
-            if existing.merchant_migration_id != merchant_migration.id:
-                created_at_by_id = await self._migration_created_at(organization.id)
-                existing_created_at = created_at_by_id.get(
-                    existing.merchant_migration_id
-                )
-                if (
-                    existing_created_at is not None
-                    and existing_created_at < merchant_migration.created_at
-                ):
-                    return await self.update(
-                        existing,
-                        update_dict={"merchant_migration_id": merchant_migration.id},
-                        flush=True,
-                    )
             return existing
         return await self.create(
             MerchantMigrationRecord(
@@ -740,16 +695,3 @@ class MerchantMigrationRecordRepository(
             ),
             flush=True,
         )
-
-    async def _migration_created_at(
-        self, organization_id: UUID
-    ) -> dict[UUID, datetime]:
-        if self._migration_created_at_cache is not None:
-            return self._migration_created_at_cache
-        result = await self.session.execute(
-            select(MerchantMigration.id, MerchantMigration.created_at).where(
-                MerchantMigration.organization_id == organization_id
-            )
-        )
-        self._migration_created_at_cache = dict(result.tuples().all())
-        return self._migration_created_at_cache

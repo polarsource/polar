@@ -475,11 +475,8 @@ class MerchantMigrationService:
         await self._build_adapter(migration)
 
         repository = MerchantMigrationRepository.from_session(session)
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        await record_repository.delete_pending(migration.id)
-        await record_repository.adopt_settled(
-            organization_id=migration.organization_id,
-            migration_id=migration.id,
+        await MerchantMigrationRecordRepository.from_session(session).delete_pending(
+            migration.id
         )
         await repository.update(
             migration,

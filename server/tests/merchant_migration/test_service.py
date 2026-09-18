@@ -687,47 +687,6 @@ class TestStartPrecheck:
         assert started.operation.status == MerchantMigrationOperationStatus.pending
         enqueue.assert_called_once()
 
-    @pytest.mark.auth
-    async def test_adopts_settled_rows_from_an_earlier_migration(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        earlier = await build_connected_migration(save_fixture, organization)
-        migration = await build_connected_migration(save_fixture, organization)
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        imported = await record_repository.upsert(
-            earlier,
-            organization,
-            CanonicalCustomer(
-                source_id="cus_1", email="a@example.com", name="A", country="US"
-            ),
-        )
-        await record_repository.update(
-            imported,
-            update_dict={"status": MerchantMigrationRecordStatus.imported},
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter",
-            return_value=_FakeAdapter(),
-        )
-        mocker.patch("polar.merchant_migration.service.enqueue_job")
-
-        await service.start_precheck(session, auth_subject, migration.id)
-
-        adopted = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.customer,
-            source_id="cus_1",
-        )
-        assert adopted is not None
-        assert adopted.merchant_migration_id == migration.id
-        assert adopted.status == MerchantMigrationRecordStatus.imported
-
 
 @pytest.mark.asyncio
 class TestExecutePrecheck:

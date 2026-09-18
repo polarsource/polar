@@ -49,8 +49,9 @@ def _fetch_hash_secrets(arn: str) -> tuple[dict[str, str], str | None]:
     secrets: dict[str, str] = {}
     current: str | None = None
 
-    versions = client.list_secret_version_ids(SecretId=arn, IncludeDeprecated=False)
-    for version in versions["Versions"]:
+    paginator = client.get_paginator("list_secret_version_ids")
+    pages = paginator.paginate(SecretId=arn, IncludeDeprecated=False)
+    for version in (v for page in pages for v in page["Versions"]):
         stages = set(version["VersionStages"])
         labels = stages - AWS_MANAGED_STAGES
         if len(labels) != 1:

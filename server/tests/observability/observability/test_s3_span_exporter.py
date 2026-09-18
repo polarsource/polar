@@ -101,11 +101,36 @@ def scrubbing_exporter() -> S3SpanExporter:
         return S3SpanExporter(
             bucket_name="unused",
             service_name="test",
-            scrub_patterns=[r"email", r"user\.?name", r"cookie"],
         )
 
 
 class TestScrubbing:
+    def test_redacts_urls(self, scrubbing_exporter: S3SpanExporter) -> None:
+        url = "https://api.polar.sh/v1/checkouts/client/opaqueCheckoutCredential?token=opaqueVerificationCredential"
+        attributes = {
+            "http.url": url,
+            "http.route": "/v1/checkouts/client/{client_secret}",
+        }
+        result = json.loads(
+            scrubbing_exporter._scrub_span_json(
+                json.dumps(
+                    {
+                        "attributes": attributes,
+                        "events": [{"attributes": attributes}],
+                        "links": [{"attributes": attributes}],
+                    }
+                )
+            )
+        )
+        assert url not in json.dumps(result)
+        for entry in [result, *result["events"], *result["links"]]:
+            assert entry["attributes"]["http.url"] == REDACTED
+            assert entry["attributes"]["http.route"] == attributes["http.route"]
+
+    def test_invalid_json_raises(self, scrubbing_exporter: S3SpanExporter) -> None:
+        with pytest.raises(json.JSONDecodeError):
+            scrubbing_exporter._scrub_span_json("not json")
+
     def test_scrubs_matching_attributes(
         self, scrubbing_exporter: S3SpanExporter
     ) -> None:
@@ -171,11 +196,3 @@ class TestScrubbing:
         result = json.loads(scrubbing_exporter._scrub_span_json(span_json))
         assert result["attributes"]["Email"] == REDACTED
         assert result["attributes"]["USERNAME"] == REDACTED
-
-    def test_no_scrubbing_without_patterns(self) -> None:
-        with patch("polar.observability.s3_span_exporter.boto3"):
-            exporter = S3SpanExporter(
-                bucket_name="unused",
-                service_name="test",
-            )
-        assert exporter._scrub_re is None

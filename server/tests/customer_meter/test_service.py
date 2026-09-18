@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -183,6 +184,77 @@ async def events_for_external_customer(
 
 @pytest.mark.asyncio
 class TestUpdateCustomerMeter:
+    async def test_tinybird_failure_does_not_advance_balance(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        events: list[Event],
+    ) -> None:
+        existing = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            activated_at=utc_now(),
+            consumed_units=Decimal(1),
+            credited_units=10,
+            balance=Decimal(9),
+            last_balanced_event=events[2],
+        )
+        await save_fixture(existing)
+        with (
+            patch(
+                "polar.customer_meter.service.TinybirdEventRepository.get_meter_usage",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("Tinybird unavailable"),
+            ),
+            pytest.raises(RuntimeError, match="Tinybird unavailable"),
+        ):
+            await customer_meter_service.update_customer_meter(
+                session, customer, meter, use_tinybird=True
+            )
+        assert existing.consumed_units == 1
+        assert existing.balance == 9
+        assert existing.last_balanced_event_id == events[2].id
+
+    @pytest.mark.parametrize("background", [False, True])
+    async def test_tinybird_only_for_background_updates(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        events: list[Event],
+        background: bool,
+    ) -> None:
+        with (
+            patch.object(settings, "CUSTOMER_METER_TINYBIRD_USAGE", True),
+            patch(
+                "polar.customer_meter.service.TinybirdEventRepository.get_meter_usage",
+                new_callable=AsyncMock,
+                return_value=7.0,
+            ) as tinybird_usage,
+        ):
+            if background:
+                await customer_meter_service.update_customer(session, customer)
+            else:
+                await customer_meter_service.update_customer_meter(
+                    session, customer, meter, activate_meter=True
+                )
+            result = await CustomerMeterRepository.from_session(
+                session
+            ).get_by_customer_and_meter(customer.id, meter.id)
+            assert result is not None
+            assert result.consumed_units == (7 if background else 20)
+            assert result.credited_units == 10
+            assert result.balance == (3 if background else -10)
+            assert result.last_balanced_event_id == events[5].id
+            if background:
+                tinybird_usage.assert_awaited_once_with(
+                    customer, meter, since=events[1].timestamp
+                )
+            else:
+                tinybird_usage.assert_not_called()
+
     async def test_no_matching_event_not_existing_customer_meter(
         self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> None:
@@ -1263,3 +1335,7 @@ class TestBulkEventProcessing:
         assert updated is True
         assert customer_meter.consumed_units == Decimal(event_count * tokens_per_event)
         assert customer_meter.balance == Decimal(-event_count * tokens_per_event)
+
+
+from polar.config import settings
+from polar.customer_meter.repository import CustomerMeterRepository

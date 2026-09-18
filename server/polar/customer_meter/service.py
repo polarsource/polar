@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.event.repository import EventRepository
+from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
@@ -107,7 +108,10 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, customer, meter
+                session,
+                customer,
+                meter,
+                use_tinybird=settings.CUSTOMER_METER_TINYBIRD_USAGE,
             )
             updated = updated or meter_updated
 
@@ -120,6 +124,8 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
+        *,
+        use_tinybird: bool = False,
     ) -> tuple[CustomerMeter | None, bool]:
         repository = CustomerMeterRepository.from_session(session)
         # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
@@ -170,8 +176,23 @@ class CustomerMeterService:
 
         event_repository = EventRepository.from_session(session)
 
-        with logfire.span("get_usage"):
-            usage_units = await self._get_usage_quantity(session, customer, meter)
+        use_tinybird = use_tinybird and not isinstance(
+            meter.aggregation, UniqueAggregation
+        )
+        with logfire.span(
+            "get_usage", backend="tinybird" if use_tinybird else "postgresql"
+        ):
+            if use_tinybird:
+                meter_reset_event = await event_repository.get_latest_meter_reset(
+                    customer, meter.id
+                )
+                usage_units = await TinybirdEventRepository().get_meter_usage(
+                    customer,
+                    meter,
+                    since=meter_reset_event.timestamp if meter_reset_event else None,
+                )
+            else:
+                usage_units = await self._get_usage_quantity(session, customer, meter)
 
         customer_meter.consumed_units = Decimal(usage_units)
 

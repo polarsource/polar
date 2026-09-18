@@ -119,6 +119,8 @@ class Settings(BaseSettings):
 
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
+    # Enable only after ingestion completeness and reset-boundary parity are verified.
+    CUSTOMER_METER_TINYBIRD_USAGE: bool = False
 
     SECRET: str = "super secret jwt secret"
     # The key set the LocalSigner signs with: a document, or a path to one.

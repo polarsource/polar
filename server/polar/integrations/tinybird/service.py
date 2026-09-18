@@ -22,6 +22,7 @@ from sqlalchemy import (
     String,
     Table,
     and_,
+    case,
     false,
     func,
     literal_column,
@@ -35,7 +36,11 @@ from sqlalchemy.sql.util import ClauseAdapter
 from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
-from polar.meter.aggregation import Aggregation, PropertyAggregation
+from polar.meter.aggregation import (
+    Aggregation,
+    CountAggregation,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
@@ -121,6 +126,7 @@ events_table = Table(
     Column("root_id", String),
     Column("event_type_id", String),
     Column("timestamp", DateTime),
+    Column("ingested_at", DateTime),
     Column("cost_amount", Float),
     Column("cost_currency", String),
     Column("llm_vendor", String),
@@ -172,6 +178,7 @@ class TinybirdEventTypeStats:
 
 
 DATASOURCE_EVENTS = "events_by_ingested_at"
+ingested_events_table = events_table.to_metadata(metadata, name=DATASOURCE_EVENTS)
 
 
 @dataclass
@@ -565,6 +572,61 @@ class TinybirdEventsQuery:
             return false()
         return events_table.c.organization_id.in_(self._organization_ids)
 
+    async def get_meter_usage(
+        self, aggregation: Aggregation, *, since: datetime | None = None
+    ) -> float:
+        conditions = [self._get_organization_filter(), *self._filters]
+        if since is not None:
+            conditions.append(
+                events_table.c.ingested_at >= since.astimezone(UTC).replace(tzinfo=None)
+            )
+
+        if isinstance(aggregation, CountAggregation):
+            value: Any = events_table.c.id
+            aggregate = func.count()
+        elif isinstance(aggregation, PropertyAggregation):
+            if aggregation.property in Event._filterable_fields:
+                allowed_type, _ = Event._filterable_fields[aggregation.property]
+                if allowed_type is not int:
+                    return 0.0
+                value = func.toFloat64(func.toUnixTimestamp(events_table.c.timestamp))
+            else:
+                value = DENORMALIZED_COLUMNS.get(aggregation.property)
+                if value is None:
+                    parts = aggregation.property.split(".")
+                    conditions.append(
+                        func.JSONType(events_table.c.user_metadata, *parts).in_(
+                            ("Int64", "UInt64", "Float64")
+                        )
+                    )
+                    value = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
+                else:
+                    conditions.append(value.is_not(None))
+            aggregate = getattr(func, f"{aggregation.func.value}OrNull")(
+                literal_column("value")
+            )
+        else:
+            raise ValueError("Unique meter aggregation requires PostgreSQL")
+
+        # Ingestion retries can duplicate events in the raw MergeTree datasource.
+        events = (
+            select(events_table.c.id, value.label("value"))
+            .where(*conditions)
+            .distinct()
+        )
+        events = ClauseAdapter(ingested_events_table, adapt_on_names=True).traverse(
+            events
+        )
+        default = 0 if isinstance(aggregation, CountAggregation) else 0.0
+        statement = select(
+            func.coalesce(aggregate, default).label("usage")
+        ).select_from(events.subquery())
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        if not rows:
+            raise ValueError("Tinybird returned no meter usage result")
+        return float(rows[0]["usage"])
+
     def filter_event_id(self, event_id: UUID) -> Self:
         self._filters.append(events_table.c.id == str(event_id))
         return self
@@ -645,6 +707,64 @@ class TinybirdEventsQuery:
     def filter_by_filter(self, f: Filter) -> Self:
         self._filters.append(self._translate_filter(f))
         return self
+
+    def filter_by_meter_filter(self, f: Filter) -> Self:
+        self._filters.append(self._translate_meter_filter(f))
+        return self
+
+    def _translate_meter_filter(self, f: Filter | FilterClause) -> Any:
+        if isinstance(f, Filter):
+            conjunction = and_ if f.conjunction == FilterConjunction.and_ else or_
+            return conjunction(
+                *[self._translate_meter_filter(clause) for clause in f.clauses]
+                or (true(),)
+            )
+        if f.property in Event._filterable_fields:
+            return self._translate_filter_clause(f)
+
+        column = DENORMALIZED_COLUMNS.get(f.property)
+        if column is not None:
+            if f.operator not in (FilterOperator.like, FilterOperator.not_like):
+                if isinstance(column.type, String):
+                    f = f.model_copy(update={"value": f._get_str_value()})
+                elif not isinstance(f.value, int):
+                    return false()
+                else:
+                    f = f.model_copy(update={"value": int(f.value)})
+            return and_(column.is_not(None), self._ch_comparison(column, f))
+
+        parts = f.property.split(".")
+        metadata = events_table.c.user_metadata
+        json_type = func.JSONType(metadata, *parts)
+        string_value = f._get_str_value()
+        string_clause = f.model_copy(update={"value": string_value})
+        string_column = func.JSONExtractString(metadata, *parts)
+        if f.operator in (FilterOperator.like, FilterOperator.not_like):
+            text = case(
+                (json_type == "String", string_column),
+                else_=func.JSONExtractRaw(metadata, *parts),
+            )
+            return and_(json_type != "Null", self._ch_comparison(text, string_clause))
+
+        return case(
+            (json_type == "String", self._ch_comparison(string_column, string_clause)),
+            (
+                json_type.in_(("Int64", "UInt64", "Float64")),
+                self._ch_comparison(
+                    func.JSONExtractFloat(metadata, *parts),
+                    f.model_copy(update={"value": int(f.value)}),
+                )
+                if isinstance(f.value, int)
+                else false(),
+            ),
+            (
+                json_type == "Bool",
+                self._ch_comparison(func.JSONExtractBool(metadata, *parts), f)
+                if isinstance(f.value, bool)
+                else false(),
+            ),
+            else_=false(),
+        )
 
     def filter_by_aggregation(self, aggregation: Aggregation) -> Self:
         if not isinstance(aggregation, PropertyAggregation):

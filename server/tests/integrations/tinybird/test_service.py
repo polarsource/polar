@@ -27,6 +27,11 @@ from polar.integrations.tinybird.service import (
     count_user_events_by_organization,
     events_table,
 )
+from polar.meter.aggregation import (
+    AggregationFunction,
+    CountAggregation,
+    PropertyAggregation,
+)
 from polar.meter.filter import (
     Filter,
     FilterClause,
@@ -39,6 +44,103 @@ from polar.worker import MAX_JOB_PAYLOAD_BYTES
 from tests.fixtures.tinybird import tinybird_available
 
 pytestmark = pytest.mark.xdist_group(name="tinybird")
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+async def test_meter_usage(tinybird_client: TinybirdClient) -> None:
+    organization_id, customer_id = uuid.uuid4(), uuid.uuid4()
+    external_id = str(uuid.uuid4())
+    reset = datetime(2026, 1, 2, tzinfo=UTC)
+    events = []
+    for index, value in enumerate((2, 6, "9", True, None)):
+        events.append(
+            _event_to_tinybird(
+                Event(
+                    id=uuid.uuid4(),
+                    organization_id=organization_id,
+                    customer_id=customer_id if index != 1 else None,
+                    external_customer_id=external_id if index == 1 else None,
+                    name="usage",
+                    source=EventSource.user,
+                    timestamp=reset - timedelta(days=1),
+                    ingested_at=reset,
+                    user_metadata={"usage": {"tokens": value}},
+                )
+            )
+        )
+    await tinybird_client.ingest(
+        DATASOURCE_EVENTS,
+        [
+            *events,
+            events[0],
+            {
+                **events[0],
+                "id": str(uuid.uuid4()),
+                "organization_id": str(uuid.uuid4()),
+            },
+            {**events[0], "id": str(uuid.uuid4()), "source": "system"},
+            {**events[0], "id": str(uuid.uuid4()), "customer_id": str(uuid.uuid4())},
+            {
+                **events[0],
+                "id": str(uuid.uuid4()),
+                "ingested_at": (reset - timedelta(seconds=1)).isoformat(),
+            },
+        ],
+    )
+    query = TinybirdEventsQuery((organization_id,))
+    query.filter_customer((customer_id,), (external_id,))
+    query.filter_source(EventSource.user)
+    query.filter_by_meter_filter(
+        Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value="usage")
+            ],
+        )
+    )
+    assert await query.get_meter_usage(CountAggregation(), since=reset) == 5
+    for function, expected in (
+        (AggregationFunction.sum, 8),
+        (AggregationFunction.min, 2),
+        (AggregationFunction.max, 6),
+        (AggregationFunction.avg, 4),
+    ):
+        assert (
+            await query.get_meter_usage(
+                PropertyAggregation.model_validate(
+                    {"func": function, "property": "usage.tokens"}
+                ),
+                since=reset,
+            )
+            == expected
+        )
+        assert (
+            await query.get_meter_usage(
+                PropertyAggregation.model_validate(
+                    {"func": function, "property": "usage.tokens"}
+                ),
+                since=reset + timedelta(seconds=1),
+            )
+            == 0
+        )
+    assert (
+        await query.get_meter_usage(
+            CountAggregation(), since=reset + timedelta(seconds=1)
+        )
+        == 0
+    )
+    query.filter_by_meter_filter(
+        Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(
+                    property="usage.tokens", operator=FilterOperator.ne, value=2
+                )
+            ],
+        )
+    )
+    assert await query.get_meter_usage(CountAggregation(), since=reset) == 2
 
 
 def create_test_event(

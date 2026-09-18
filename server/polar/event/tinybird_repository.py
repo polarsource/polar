@@ -13,13 +13,31 @@ from polar.integrations.tinybird.service import (
 )
 from polar.kit.metadata import MetadataQuery
 from polar.meter.filter import Filter
-from polar.models import Meter
+from polar.models import Customer, Meter
 from polar.models.event import EventSource
 
 type EventNameStats = tuple[str, EventSource, int, datetime, datetime]
 
 
 class TinybirdEventRepository:
+    async def get_meter_usage(
+        self,
+        customer: Customer,
+        meter: Meter,
+        *,
+        since: datetime | None = None,
+    ) -> float:
+        query = TinybirdEventsQuery((meter.organization_id,))
+        query.filter_customer(
+            customer_ids=(customer.id,),
+            external_customer_ids=(customer.external_id,)
+            if customer.external_id is not None
+            else (),
+        )
+        query.filter_source(EventSource.user)
+        query.filter_by_meter_filter(meter.filter)
+        return await query.get_meter_usage(meter.aggregation, since=since)
+
     async def get_name_stats(
         self,
         *,

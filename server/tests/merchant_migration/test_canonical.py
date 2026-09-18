@@ -50,6 +50,7 @@ class TestSerialize:
                     "pricing_scheme": "fixed",
                 }
             ],
+            "archived": False,
         }
         # the pricing_scheme is a plain string, not a StrEnum instance
         assert type(result["prices"][0]["pricing_scheme"]) is str

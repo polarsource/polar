@@ -77,13 +77,17 @@ class CanonicalProduct:
     # In Polar the recurring interval lives on the product and a product holds
     # several prices (one per currency), so a source product is grouped per
     # interval: one CanonicalProduct = one Polar product = (source product,
-    # interval), carrying its currency prices.
+    # interval), carrying its currency prices. Archived Stripe products use
+    # that same grouping. Inactive prices on a live Stripe product are a
+    # sibling catalog row (`:archived`) so they don't collide with sellable
+    # prices. Polar archives the row after create.
     source_id: str
     product_source_id: str
     name: str
     recurring_interval: str | None
     recurring_interval_count: int
     prices: list[CanonicalPrice]
+    archived: bool = False
 
     type = MerchantMigrationRecordType.product
 
@@ -208,6 +212,7 @@ def deserialize(
                     )
                     for price in data["prices"]
                 ],
+                archived=data.get("archived", False),
             )
         case MerchantMigrationRecordType.customer:
             return CanonicalCustomer(

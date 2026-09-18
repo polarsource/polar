@@ -108,7 +108,7 @@ _MISSING_EMAIL_REASON = (
 )
 _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
     "This subscription's price wasn't in the catalog Polar read from Stripe. "
-    "That usually means the price or its product is archived. It stays on the source."
+    "That usually means the product was deleted. It stays on the source."
 )
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."

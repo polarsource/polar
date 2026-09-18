@@ -16,11 +16,7 @@ class TestGetUsdBaseRates:
             new_callable=AsyncMock,
             return_value=MagicMock(
                 body=json.dumps(
-                    {
-                        "rates": {
-                            "eur": {"rate_details": {"base_rate": 1.14738}}
-                        }
-                    }
+                    {"rates": {"eur": {"rate_details": {"base_rate": 1.14738}}}}
                 )
             ),
         )

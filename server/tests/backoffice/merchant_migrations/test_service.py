@@ -6,6 +6,8 @@ from pytest_mock import MockerFixture
 from polar.backoffice.merchant_migrations.mrr import Money, MrrBreakdown
 from polar.backoffice.merchant_migrations.service import (
     USD_RATE_CACHE_TTL_SECONDS,
+)
+from polar.backoffice.merchant_migrations.service import (
     merchant_migrations as merchant_migrations_service,
 )
 from polar.redis import Redis

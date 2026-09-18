@@ -1,7 +1,7 @@
 """Rendering for the migrations backoffice: badges, progress readouts and the
 card-transfer checklist."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from fastapi import Request
 from tagflow import tag, text
@@ -95,7 +95,16 @@ def money(amount: Money) -> str:
     )
 
 
-def mrr_cell(breakdown: MrrBreakdown) -> None:
+def usd(amount: Money, rates: Mapping[str, float]) -> str:
+    if amount.is_zero:
+        return "—"
+    converted = amount.to_usd(rates)
+    if converted is None:
+        return money(amount)
+    return formatters.currency(converted, "usd")
+
+
+def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
     total = breakdown.total
     if total.is_zero:
         with tag.span(classes="text-base-content/40"):
@@ -104,17 +113,17 @@ def mrr_cell(breakdown: MrrBreakdown) -> None:
 
     with tag.div(classes="flex flex-col gap-1"):
         with tag.div(classes="whitespace-nowrap"):
-            text(f"{money(total)} /mo")
+            text(f"{usd(total, rates)} /mo")
         with tag.div(classes="text-xs text-base-content/60"):
-            parts = [f"{breakdown.migrated_percent}% on Polar"]
+            parts = [f"{breakdown.share_on_polar(rates)}% on Polar"]
             if not breakdown.to_move.is_zero:
-                parts.append(f"{money(breakdown.to_move)} to move")
+                parts.append(f"{usd(breakdown.to_move, rates)} to move")
             if not breakdown.staying.is_zero:
-                parts.append(f"{money(breakdown.staying)} staying")
+                parts.append(f"{usd(breakdown.staying, rates)} staying")
             text(" · ".join(parts))
 
 
-def mrr_table(breakdown: MrrBreakdown) -> None:
+def mrr_table(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
     """Where the revenue sits.
 
     MRR only: the record tallies cover customers and products too, and putting
@@ -140,12 +149,12 @@ def mrr_table(breakdown: MrrBreakdown) -> None:
                         with tag.td():
                             text(label)
                         with tag.td(classes="font-mono whitespace-nowrap"):
-                            text(money(amount))
+                            text(usd(amount, rates))
                 with tag.tr(classes="font-medium"):
                     with tag.td():
                         text("Total")
                     with tag.td(classes="font-mono whitespace-nowrap"):
-                        text(money(breakdown.total))
+                        text(usd(breakdown.total, rates))
 
 
 def records_table(records: RecordProgress) -> None:

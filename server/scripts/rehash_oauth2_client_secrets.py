@@ -50,10 +50,12 @@ def _stale_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
 
 
 def _rehash(client: OAuth2Client) -> None:
-    client.client_secret_hash = OAuth2Client.hash_secret(client.client_secret)
-    client.registration_access_token_hash = OAuth2Client.hash_secret(
-        client.registration_access_token
-    )
+    if client.client_secret_hash is not None:
+        client.client_secret_hash = OAuth2Client.hash_secret(client.client_secret)
+    if client.registration_access_token_hash is not None:
+        client.registration_access_token_hash = OAuth2Client.hash_secret(
+            client.registration_access_token
+        )
 
 
 async def _count_remaining(session: AsyncSession) -> int:

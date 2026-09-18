@@ -10,7 +10,6 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
 from polar.config import settings
-from polar.kit.crypto import get_token_hash, get_token_hash_candidates
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import count_subquery
 from polar.kit.sorting import Sorting
@@ -307,23 +306,20 @@ class RepositoryTokenHashProtocol[M](RepositoryProtocol[M], Protocol):
 
 
 class RepositoryTokenHashMixin[M]:
-    """Matches a token against every active secret, and rewrites a stale hit.
-
-    Credentials in use migrate themselves, like password re-hashing.
-    """
-
     token_hash_attribute: str
 
     def token_hash_clause(
-        self: RepositoryTokenHashProtocol[M], token: str
+        self: RepositoryTokenHashProtocol[M], candidates: dict[str | None, str]
     ) -> ColumnExpressionArgument[bool]:
         column: Mapped[str] = getattr(self.model, self.token_hash_attribute)
-        return column.in_(get_token_hash_candidates(token))
+        return column.in_(candidates.values())
 
     async def rehash_token(
-        self: RepositoryTokenHashProtocol[M], object: M, token: str
+        self: RepositoryTokenHashProtocol[M],
+        object: M,
+        candidates: dict[str | None, str],
     ) -> M:
-        current = get_token_hash(token)
+        current = candidates[settings.CURRENT_HASH_SECRET_ID]
         if getattr(object, self.token_hash_attribute) == current:
             return object
         return await self.update(

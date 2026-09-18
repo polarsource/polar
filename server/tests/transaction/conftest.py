@@ -15,7 +15,6 @@ from polar.models import (
     Pledge,
     Refund,
     Transaction,
-    User,
 )
 from polar.models.pledge import PledgeType
 from polar.models.transaction import PlatformFeeType, Processor, TransactionType
@@ -33,8 +32,6 @@ async def create_transaction(
     *,
     account: Account | None = None,
     payment_customer: Customer | None = None,
-    payment_organization: Organization | None = None,
-    payment_user: User | None = None,
     type: TransactionType = TransactionType.balance,
     amount: int = 1000,
     tax_amount: int = 0,
@@ -70,8 +67,6 @@ async def create_transaction(
         presentment_tax_amount=presentment_tax_amount,
         account=account,
         payment_customer=payment_customer,
-        payment_organization=payment_organization,
-        payment_user=payment_user,
         pledge=pledge,
         issue_reward=issue_reward,
         order=order,
@@ -172,34 +167,10 @@ async def account_transactions(
 
 
 @pytest_asyncio.fixture
-async def user_transactions(save_fixture: SaveFixture, user: User) -> list[Transaction]:
-    return [
-        await create_transaction(
-            save_fixture, type=TransactionType.payment, payment_user=user
-        ),
-    ]
-
-
-@pytest_asyncio.fixture
-async def organization_transactions(
-    save_fixture: SaveFixture, organization: Organization
-) -> list[Transaction]:
-    return [
-        await create_transaction(
-            save_fixture,
-            type=TransactionType.payment,
-            payment_organization=organization,
-        ),
-    ]
-
-
-@pytest_asyncio.fixture
 async def readable_user_transactions(
     account_transactions: list[Transaction],
-    user_transactions: list[Transaction],
-    organization_transactions: list[Transaction],
 ) -> list[Transaction]:
-    return [*account_transactions, *user_transactions, *organization_transactions]
+    return account_transactions
 
 
 @pytest_asyncio.fixture

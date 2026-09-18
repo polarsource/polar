@@ -46,8 +46,6 @@ class TransactionService(BaseTransactionService):
         type: TransactionType | None = None,
         account_id: uuid.UUID | None = None,
         payment_customer_id: uuid.UUID | None = None,
-        payment_organization_id: uuid.UUID | None = None,
-        payment_user_id: uuid.UUID | None = None,
         exclude_platform_fees: bool = False,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[TransactionSortProperty]] = (
@@ -79,12 +77,6 @@ class TransactionService(BaseTransactionService):
             statement = statement.where(
                 Transaction.payment_customer_id == payment_customer_id
             )
-        if payment_organization_id is not None:
-            statement = statement.where(
-                Transaction.payment_organization_id == payment_organization_id
-            )
-        if payment_user_id is not None:
-            statement = statement.where(Transaction.payment_user_id == payment_user_id)
         if exclude_platform_fees:
             statement = statement.where(Transaction.platform_fee_type.is_(None))
 
@@ -307,8 +299,6 @@ class TransactionService(BaseTransactionService):
                 or_(
                     User.id == auth_subject.subject.id,
                     Organization.id.in_(readable_org_ids),
-                    Transaction.payment_user_id == auth_subject.subject.id,
-                    Transaction.payment_organization_id.in_(readable_org_ids),
                 )
             )
         )

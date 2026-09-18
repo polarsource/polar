@@ -22,4 +22,3 @@ class Manifest(Schema):
     service_name: str
     logfire_enabled: bool
     s3_bucket: str | None
-    sentry_event_id: str | None

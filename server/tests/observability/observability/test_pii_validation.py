@@ -10,10 +10,8 @@ from uuid import uuid4
 import httpx
 import logfire
 import pytest
-import sentry_sdk
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pytest_mock import MockerFixture
-from sentry_sdk.transport import Transport
 
 from polar.logging import Production
 from polar.pii_validation.cases import (
@@ -26,14 +24,12 @@ from polar.pii_validation.cases import (
 from polar.pii_validation.readers import (
     RenderClient,
     S3Reader,
-    sentry_records,
 )
 from polar.pii_validation.schemas import (
     Manifest,
     ValidationRequest,
 )
 from polar.pii_validation.verification import verify_records
-from polar.sentry import configure_sentry
 from scripts.emit_pii_validation import emit
 from scripts.validate_pii import main, run
 
@@ -50,7 +46,6 @@ def manifest() -> Manifest:
         service_name="api",
         logfire_enabled=True,
         s3_bucket="logs",
-        sentry_event_id="b" * 32,
     )
 
 
@@ -108,13 +103,13 @@ class TestEmission:
         self, manifest: Manifest, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("RELEASE_VERSION", "c" * 40)
-        initialize = mocker.patch("scripts.emit_pii_validation.configure_sentry")
+        initialize = mocker.patch("scripts.emit_pii_validation.configure_logfire")
         with pytest.raises(RuntimeError, match="release mismatch"):
             emit(ValidationRequest(run_id=manifest.run_id, release=manifest.release))
         initialize.assert_not_called()
 
     @pytest.mark.parametrize("logging_pipeline", [(Production, True)], indirect=True)
-    def test_actual_logging_and_sentry_payloads(
+    def test_actual_logging_payloads(
         self,
         manifest: Manifest,
         logging_pipeline: LoggingPipeline,
@@ -131,9 +126,6 @@ class TestEmission:
             "scripts.emit_pii_validation.structlog.get_logger", return_value=logger
         )
         mocker.patch("scripts.emit_pii_validation.logfire.log", instance.log)
-        configure_sentry_mock = mocker.patch(
-            "scripts.emit_pii_validation.configure_sentry"
-        )
         configure_logfire_mock = mocker.patch(
             "scripts.emit_pii_validation.configure_logfire"
         )
@@ -144,34 +136,19 @@ class TestEmission:
             "scripts.emit_pii_validation.logfire.force_flush",
             side_effect=instance.force_flush,
         )
-        sentry_flush = mocker.spy(sentry_sdk, "flush")
-        init = mocker.patch("polar.sentry.sentry_sdk.init")
-        configure_sentry()
-        transport = mocker.Mock(spec=Transport)
-        options = dict(init.call_args.kwargs)
-        options.update(
-            dsn="https://public@example.com/1", integrations=[], transport=transport
+        emitted = emit(
+            ValidationRequest(run_id=manifest.run_id, release=manifest.release)
         )
-        with sentry_sdk.Client(**options) as client, sentry_sdk.new_scope() as scope:
-            scope.set_client(client)
-            emitted = emit(
-                ValidationRequest(run_id=manifest.run_id, release=manifest.release)
-            )
-        configure_sentry_mock.assert_called_once_with()
         configure_logfire_mock.assert_called_once_with("server")
         configure_logging_mock.assert_called_once_with(logfire=True)
         flush.assert_called_once_with(timeout_millis=30_000)
-        sentry_flush.assert_called_once_with(timeout=30)
         assert emitted.run_id == manifest.run_id
-        assert emitted.sentry_event_id is not None
         platform_records = [json.loads(line) for line in stream.getvalue().splitlines()]
         spans = [json.loads(span.to_json()) for span in exporter.get_finished_spans()]
-        event = transport.capture_envelope.call_args.args[0].get_event()
         assert (
             verify_records(platform_records, manifest, "render")["status"] == "passed"
         )
         assert verify_records(spans, manifest, "logfire")["status"] == "passed"
-        assert verify_records([event], manifest, "sentry")["status"] == "passed"
 
 
 class TestReaders:
@@ -218,18 +195,6 @@ class TestReaders:
             "spans/api/dt=2026-01-01/hour=00/",
         ]
 
-    def test_sentry_404_waits_but_permissions_fail(
-        self, mocker: MockerFixture, manifest: Manifest
-    ) -> None:
-        client = mocker.Mock(spec=httpx.Client)
-        client.get.return_value = httpx.Response(404)
-        assert sentry_records(client, "credential", "org", "project", manifest) == []
-        client.get.return_value = httpx.Response(
-            403, request=httpx.Request("GET", "https://sentry.io")
-        )
-        with pytest.raises(httpx.HTTPStatusError):
-            sentry_records(client, "credential", "org", "project", manifest)
-
     def test_s3_reads_stored_gzip_and_reuses_cache(
         self,
         mocker: MockerFixture,
@@ -273,13 +238,8 @@ class TestDeploymentValidation:
             "RENDER_API_TOKEN",
             "PII_VALIDATION_RENDER_OWNER_ID",
             "PII_VALIDATION_LOGFIRE_READ_TOKEN",
-            "PII_VALIDATION_SENTRY_READ_TOKEN",
-            "SENTRY_ORG",
-            "PII_VALIDATION_SENTRY_PROJECT",
         ):
             monkeypatch.setenv(key, "configured")
-        for record in stored_records:
-            record["breadcrumb"] = marker(manifest.run_id, "breadcrumb")
         render = mocker.Mock(spec=RenderClient)
         render.create_job.return_value = "job-123"
         render.request.return_value = {"status": "succeeded"}
@@ -295,13 +255,12 @@ class TestDeploymentValidation:
         mocker.patch(
             "scripts.validate_pii.logfire_records", return_value=stored_records
         )
-        mocker.patch("scripts.validate_pii.sentry_records", return_value=stored_records)
         mocker.patch("scripts.validate_pii.time.sleep")
         mocker.patch("scripts.validate_pii.time.monotonic", side_effect=count(step=10))
         request = ValidationRequest(run_id=manifest.run_id, release=manifest.release)
         report: dict[str, Any] = {"destinations": {}}
         assert run(request, "testing", "srv-api", report, 900)
-        assert len(report["destinations"]) == 4
+        assert set(report["destinations"]) == {"render", "logfire", "s3"}
         assert all(call.args[0] == "job-123" for call in render.logs.call_args_list)
         assert all(
             result["status"] == "passed" for result in report["destinations"].values()

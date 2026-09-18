@@ -19,7 +19,6 @@ from typing import Any
 
 import logfire
 import pytest
-import sentry_sdk
 import structlog
 from logfire.integrations.structlog import LogfireProcessor
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -32,14 +31,6 @@ from polar.logging import Development, Logger, Production
 type LoggingPipeline = tuple[
     Logger, logging.Logger, StringIO, InMemorySpanExporter | None
 ]
-
-
-@pytest.fixture(autouse=True)
-def isolated_sentry_scope() -> Iterator[None]:
-    with sentry_sdk.isolation_scope() as scope:
-        scope.clear()
-        sentry_sdk.get_current_scope().clear()
-        yield
 
 
 @pytest.fixture(

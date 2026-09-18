@@ -84,25 +84,6 @@ def logfire_records(
     return result["rows"]
 
 
-def sentry_records(
-    client: httpx.Client,
-    token: str,
-    organization: str,
-    project: str,
-    manifest: Manifest,
-) -> list[dict[str, Any]]:
-    if manifest.sentry_event_id is None:
-        raise RuntimeError("Sentry did not accept the canary event")
-    response = client.get(
-        f"https://sentry.io/api/0/projects/{organization}/{project}/events/{manifest.sentry_event_id}/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    if response.status_code == 404:
-        return []
-    response.raise_for_status()
-    return [response.json()]
-
-
 class S3Reader:
     def __init__(self) -> None:
         self.client = boto3.client(

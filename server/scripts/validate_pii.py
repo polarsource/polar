@@ -15,7 +15,6 @@ from polar.pii_validation.readers import (
     RenderClient,
     S3Reader,
     logfire_records,
-    sentry_records,
 )
 from polar.pii_validation.schemas import Manifest, ValidationRequest
 from polar.pii_validation.verification import DESTINATIONS, verify_records
@@ -33,19 +32,7 @@ def run(
     render_token = os.environ["RENDER_API_TOKEN"]
     render_owner = os.environ["PII_VALIDATION_RENDER_OWNER_ID"]
     logfire_token = os.environ["PII_VALIDATION_LOGFIRE_READ_TOKEN"]
-    sentry_token = os.environ["PII_VALIDATION_SENTRY_READ_TOKEN"]
-    sentry_org = os.environ["SENTRY_ORG"]
-    sentry_project = os.environ["PII_VALIDATION_SENTRY_PROJECT"]
-    if not all(
-        (
-            render_token,
-            render_owner,
-            logfire_token,
-            sentry_token,
-            sentry_org,
-            sentry_project,
-        )
-    ):
+    if not all((render_token, render_owner, logfire_token)):
         raise RuntimeError("Missing validation credentials")
     with (
         httpx.Client(timeout=30) as client,
@@ -87,7 +74,6 @@ def run(
             <= datetime.now(UTC) + timedelta(seconds=30)
             or not manifest.logfire_enabled
             or not manifest.s3_bucket
-            or not manifest.sentry_event_id
         ):
             raise RuntimeError(
                 "Emission manifest does not match the deployment or required destinations"
@@ -110,10 +96,6 @@ def run(
                         records = logfire_records(logfire, manifest)
                     case "s3":
                         records = s3.read(manifest)
-                    case "sentry":
-                        records = sentry_records(
-                            client, sentry_token, sentry_org, sentry_project, manifest
-                        )
                 result = verify_records(records, manifest, destination)
                 report["destinations"][destination] = result
                 if result["status"] == "failed":

@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import logfire
-import sentry_sdk
 import structlog
 
 from polar.config import settings
@@ -20,13 +19,11 @@ from polar.pii_validation.cases import (
     sensitive_text,
 )
 from polar.pii_validation.schemas import Manifest, ValidationRequest
-from polar.sentry import configure_sentry
 
 
 def emit(request: ValidationRequest) -> Manifest:
     if os.environ["RELEASE_VERSION"] != request.release:
         raise RuntimeError("One-off job release mismatch")
-    configure_sentry()
     configure_logfire("server")
     configure_logging(logfire=True)
     log: Logger = structlog.get_logger()
@@ -40,19 +37,10 @@ def emit(request: ValidationRequest) -> Manifest:
         logging.getLogger("polar.pii_validation").warning(
             "%s %s", marker(request.run_id, "stdlib"), text
         )
-        with sentry_sdk.new_scope() as scope:
-            scope.fingerprint = ["pii-validation"]
-            scope.set_tag("pii_validation_run_id", str(request.run_id))
-            scope.set_user({"id": safe_customer_id, "email": fields["email"]})
-            scope.set_context("pii_validation", fields)
-            scope.add_breadcrumb(
-                message=marker(request.run_id, "breadcrumb"), data=fields
-            )
-            try:
-                raise ValueError(f"{marker(request.run_id, 'exception')} {text}")
-            except ValueError as error:
-                log.exception(marker(request.run_id, "exception"))
-                sentry_event_id = sentry_sdk.capture_exception(error)
+        try:
+            raise ValueError(f"{marker(request.run_id, 'exception')} {text}")
+        except ValueError:
+            log.exception(marker(request.run_id, "exception"))
         logfire.log(
             "warn",
             marker(request.run_id, "logfire"),
@@ -61,7 +49,6 @@ def emit(request: ValidationRequest) -> Manifest:
 
     if not logfire.force_flush(timeout_millis=30_000):
         raise RuntimeError("Logfire/S3 flush did not complete")
-    sentry_sdk.flush(timeout=30)
     return Manifest(
         run_id=request.run_id,
         release=request.release,
@@ -72,7 +59,6 @@ def emit(request: ValidationRequest) -> Manifest:
         ),
         logfire_enabled=bool(settings.LOGFIRE_TOKEN),
         s3_bucket=settings.S3_LOGS_BUCKET_NAME,
-        sentry_event_id=sentry_event_id,
     )
 
 

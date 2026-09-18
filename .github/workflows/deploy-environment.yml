@@ -50,8 +50,6 @@ on:
         required: false
       PII_VALIDATION_LOGFIRE_READ_TOKEN:
         required: false
-      PII_VALIDATION_SENTRY_READ_TOKEN:
-        required: false
     outputs:
       frontend-deployment-url:
         description: "Frontend deployment URL"
@@ -145,9 +143,6 @@ jobs:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
           PII_VALIDATION_RENDER_OWNER_ID: ${{ vars.PII_VALIDATION_RENDER_OWNER_ID }}
           PII_VALIDATION_LOGFIRE_READ_TOKEN: ${{ secrets.PII_VALIDATION_LOGFIRE_READ_TOKEN }}
-          PII_VALIDATION_SENTRY_READ_TOKEN: ${{ secrets.PII_VALIDATION_SENTRY_READ_TOKEN }}
-          PII_VALIDATION_SENTRY_PROJECT: ${{ vars.PII_VALIDATION_SENTRY_PROJECT }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
         run: |
           uv run --frozen --no-group dev python -m scripts.validate_pii \
             --release "$GITHUB_SHA" \

@@ -11,8 +11,8 @@ from polar.pii_validation.cases import (
 )
 from polar.pii_validation.schemas import Manifest
 
-Destination = Literal["render", "logfire", "s3", "sentry"]
-DESTINATIONS: tuple[Destination, ...] = ("render", "logfire", "s3", "sentry")
+Destination = Literal["render", "logfire", "s3"]
+DESTINATIONS: tuple[Destination, ...] = ("render", "logfire", "s3")
 
 
 def verify_records(
@@ -24,13 +24,7 @@ def verify_records(
     leaked_fields = sorted(
         key for key, value in samples.items() if any(value in row for row in serialized)
     )
-    cases = (
-        ("exception", "breadcrumb")
-        if destination == "sentry"
-        else PLATFORM_CASES
-        if destination == "render"
-        else SPAN_CASES
-    )
+    cases = PLATFORM_CASES if destination == "render" else SPAN_CASES
     missing_cases = []
     invalid_cases = []
     for case in cases:

@@ -68,7 +68,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.1.0
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -90,7 +90,7 @@ jobs:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6.0.10
+      - uses: pnpm/action-setup@v6.1.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0

@@ -98,7 +98,6 @@ class DisputeTransactionService(BaseTransactionService):
                 joinedload(Transaction.payment_customer).joinedload(
                     Customer.organization
                 ),
-                joinedload(Transaction.payment_organization),
                 joinedload(Transaction.order),
             ),
         )

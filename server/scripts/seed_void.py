@@ -11,7 +11,9 @@ from polar.kit.db.postgres import create_async_sessionmaker
 from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.postgres import AsyncSession, create_async_engine
 from polar.void.development.service import (
+    ORGANIZATION_ID,
     ORGANIZATION_SLUG,
+    PO_BOT,
     DevelopmentSeedConflict,
 )
 from polar.void.development.service import development as development_service
@@ -35,10 +37,10 @@ def api_origin(value: str) -> str:
 
 
 async def seed_token(session: AsyncSession) -> tuple[UUID, str, bool]:
-    organization, created = await development_service.seed(session)
+    created = await development_service.seed_all(session)
     await ensure_void_cli_client(session)
-    token = await generate_void_token(session, str(organization.id), customers=True)
-    return organization.id, token, created
+    token = await generate_void_token(session, str(ORGANIZATION_ID), customers=True)
+    return ORGANIZATION_ID, token, created
 
 
 def write_environment(output: Path, token: str, api_url: str) -> None:
@@ -98,7 +100,7 @@ def main() -> None:
     except (ValueError, DevelopmentSeedConflict, OSError) as error:
         parser.error(str(error))
     print(
-        f"{'Created' if created else 'Reused'} {ORGANIZATION_SLUG}. Credentials written to {output} (expires in 24 hours)."
+        f"{'Created' if created else 'Reused'} {ORGANIZATION_SLUG} and {PO_BOT.slug}. Credentials written to {output} (expires in 24 hours)."
     )
 
 

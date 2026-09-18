@@ -42,7 +42,7 @@ export const TableSection = ({
   </Box>
 )
 
-const STATUS_COLOR: Record<
+export const SUBSCRIPTION_STATUS_COLOR: Record<
   SubscriptionRow['status'],
   'green' | 'red' | 'blue'
 > = { active: 'green', canceled: 'red', trialing: 'blue', revoked: 'red' }
@@ -61,7 +61,7 @@ const subscriptionColumns: DataTableColumnDef<SubscriptionRow>[] = [
     cell: ({ row: { original } }) => (
       <Status
         status={original.status}
-        color={STATUS_COLOR[original.status]}
+        color={SUBSCRIPTION_STATUS_COLOR[original.status]}
         size="small"
       />
     ),

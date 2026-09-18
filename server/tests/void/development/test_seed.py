@@ -27,6 +27,8 @@ from polar.void.development.service import (
     OPERATOR_EMAIL,
     ORGANIZATION_ID,
     ORGANIZATION_SLUG,
+    PO_BOT,
+    SEEDED_ORGANIZATIONS,
     DevelopmentSeedConflict,
 )
 from polar.void.development.service import development as development_service
@@ -76,6 +78,40 @@ class TestDevelopmentSeed:
                 select(func.count())
                 .select_from(UserOrganization)
                 .where(UserOrganization.organization_id == organization.id)
+            )
+            == 1
+        )
+
+    async def test_seed_all_adds_po_bot_operator(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        assert await development_service.seed_all(session)
+        for target in SEEDED_ORGANIZATIONS:
+            organization = await session.get(Organization, target.id)
+            assert organization is not None
+            assert organization.slug == target.slug
+            assert organization.account_id == target.account_id
+            assert organization.is_void_enabled
+            assert target.id.version == target.account_id.version == 4
+            user = await session.scalar(
+                select(User).where(User.email == target.operator_email)
+            )
+            assert user is not None
+            membership = await session.scalar(
+                select(UserOrganization).where(
+                    UserOrganization.user_id == user.id,
+                    UserOrganization.organization_id == organization.id,
+                )
+            )
+            assert membership is not None
+            assert membership.role == OrganizationRole.admin
+        assert not await development_service.seed_all(session)
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(UserOrganization)
+                .where(UserOrganization.organization_id == PO_BOT.id)
             )
             == 1
         )

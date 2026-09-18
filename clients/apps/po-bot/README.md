@@ -29,11 +29,12 @@ dev seed
 dev start
 ```
 
-The organization needs its own Polar organization with Void enabled, and a
-token for it, since an organization holds one deployed config. From `server/`:
+The Polar seed creates a dedicated `po-bot` organization with Void enabled.
+Sign in at http://127.0.0.1:3000 as `po-bot@polar.sh` (login code in the API
+pane) and pick `po-bot`. Then, from `server/`:
 
 ```bash
-uv run python -m scripts.generate_void_token <organization-uuid-or-slug> --customers
+uv run python -m scripts.generate_void_token po-bot --customers
 ```
 
 The organization's `void_enabled` feature flag must be set; see

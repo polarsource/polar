@@ -49,6 +49,7 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.redis import Redis
+from polar.void.development.service import SEEDED_ORGANIZATIONS, SEEDED_SLUGS
 from scripts.seed_polar_for_polar import BENEFITS as POLAR_SELF_BENEFITS
 from scripts.seed_polar_for_polar import PRODUCTS as POLAR_SELF_PRODUCTS
 from scripts.seeds_load import (
@@ -83,43 +84,53 @@ class TestSeedsLoad:
     ) -> None:
         assert await seed_void_organization(session)
         assert not await seed_void_organization(session)
-        organization = await session.scalar(
-            select(Organization).where(Organization.slug == "void-development")
-        )
-        assert organization is not None
-        assert organization.is_void_enabled
-        membership = await session.scalar(
-            select(UserOrganization).where(
-                UserOrganization.organization_id == organization.id
+        operators = {
+            target.slug: target.operator_email for target in SEEDED_ORGANIZATIONS
+        }
+        organizations = (
+            (
+                await session.execute(
+                    select(Organization).where(Organization.slug.in_(SEEDED_SLUGS))
+                )
             )
+            .scalars()
+            .all()
         )
-        assert membership is not None
-        assert membership.role == "admin"
-        assert (
-            await session.scalar(
-                select(User.email).where(User.id == membership.user_id)
+        assert {organization.slug for organization in organizations} == SEEDED_SLUGS
+        for organization in organizations:
+            assert organization.is_void_enabled
+            membership = await session.scalar(
+                select(UserOrganization).where(
+                    UserOrganization.organization_id == organization.id
+                )
             )
-            == "void@polar.sh"
-        )
-        for model in (
-            Customer,
-            Product,
-            Meter,
-            Event,
-            VoidBillingIdentity,
-            VoidMeter,
-            VoidProduct,
-            VoidReducer,
-            VoidSubscription,
-        ):
+            assert membership is not None
+            assert membership.role == "admin"
             assert (
                 await session.scalar(
-                    select(func.count())
-                    .select_from(model)
-                    .where(model.organization_id == organization.id)
+                    select(User.email).where(User.id == membership.user_id)
                 )
-                == 0
+                == operators[organization.slug]
             )
+            for model in (
+                Customer,
+                Product,
+                Meter,
+                Event,
+                VoidBillingIdentity,
+                VoidMeter,
+                VoidProduct,
+                VoidReducer,
+                VoidSubscription,
+            ):
+                assert (
+                    await session.scalar(
+                        select(func.count())
+                        .select_from(model)
+                        .where(model.organization_id == organization.id)
+                    )
+                    == 0
+                )
 
     async def test_single_organization_seed_compatibility(
         self,
@@ -234,20 +245,20 @@ class TestSeedsLoad:
 
         organizations = (await session.execute(select(Organization))).scalars().all()
         assert {organization.slug for organization in organizations} == (
-            EXPECTED_ORGANIZATION_SLUGS | {"void-development"}
+            EXPECTED_ORGANIZATION_SLUGS | SEEDED_SLUGS
         )
         assert all(
             organization.account_id is not None for organization in organizations
         )
         assert len({organization.account_id for organization in organizations}) == len(
-            EXPECTED_ORGANIZATION_SLUGS | {"void-development"}
+            EXPECTED_ORGANIZATION_SLUGS | SEEDED_SLUGS
         )
         assert all(
             organization.payout_account_id is not None
             for organization in organizations
-            if organization.slug != "void-development"
+            if organization.slug not in SEEDED_SLUGS
         )
-        assert await session.scalar(select(func.count(UserOrganization.user_id))) == 10
+        assert await session.scalar(select(func.count(UserOrganization.user_id))) == 11
         expected_product_count = 30 + len(POLAR_SELF_PRODUCTS)
         assert await session.scalar(select(func.count(Product.id))) == (
             expected_product_count
@@ -325,7 +336,7 @@ class TestSeedsLoad:
         assert polar_billing_customer_external_ids == {
             str(organization.id)
             for organization in organizations
-            if organization.slug not in {"polar", "void-development"}
+            if organization.slug not in {"polar"} | SEEDED_SLUGS
         }
         polar_benefit_metadata: dict[str, dict[str, Any]] = {
             description: metadata

@@ -36,7 +36,6 @@ import {
   useVoidIdentityUsage,
 } from './identityQueries'
 import { VoidIdentityActivities } from './VoidIdentityActivities'
-import { VoidIdentitySenses } from './VoidIdentitySenses'
 import {
   EntitlementsTable,
   EventsTable,
@@ -291,21 +290,6 @@ export const VoidIdentityPageLive = ({
 
         {activities && activities.by_activity.length > 0 ? (
           <VoidIdentityActivities mix={activities} costAsCurrency={false} />
-        ) : null}
-
-        {(snapshot?.senses?.length ?? 0) > 0 ? (
-          <VoidIdentitySenses
-            rows={(snapshot?.senses ?? []).map((sense) => ({
-              slug: sense.slug,
-              when: sense.when,
-              over:
-                sense.over.type === 'run'
-                  ? 'this run'
-                  : `last ${sense.over.amount} ${sense.over.unit}${sense.over.amount === 1 ? '' : 's'}`,
-              noul: sense.noul,
-              span_count: sense.span_count,
-            }))}
-          />
         ) : null}
 
         {root ? (

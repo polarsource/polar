@@ -99,7 +99,7 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.models.user import IdentityVerificationStatus, User
-from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.models.user_organization import UserOrganization
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
     WebhookEventType,
@@ -125,7 +125,6 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
-from polar.user_organization.repository import UserOrganizationRepository
 from polar.void.development.service import development as void_development_service
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
@@ -2379,22 +2378,8 @@ async def _simple_seed_is_complete(session: AsyncSession) -> bool:
 
 
 async def seed_void_organization(session: AsyncSession) -> bool:
-    organization, created = await void_development_service.seed(session)
+    created = await void_development_service.seed_all(session)
     await ensure_void_cli_client(session)
-    user, _ = await user_service.get_by_email_or_create(
-        session=session, email="void@polar.sh"
-    )
-    membership = await UserOrganizationRepository.from_session(
-        session
-    ).get_by_user_and_organization(user.id, organization.id)
-    if membership is None:
-        session.add(
-            UserOrganization(
-                user=user, organization=organization, role=OrganizationRole.admin
-            )
-        )
-        await session.flush()
-        return True
     return created
 
 

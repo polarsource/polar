@@ -22,6 +22,10 @@ days of events and three scenarios. Rebuild it with
 `uv run task void_seed_demo -- --reset`. The Void dashboard pages default to
 frontend fixtures; switch to live data from the version dropdown.
 
+`po-bot@polar.sh` owns a second Void-enabled organization, `po-bot`, used by
+the Po Bot sample app. It is left empty so you can deploy
+`clients/apps/po-bot/void.ts`.
+
 CLI against the local API, from `clients/`:
 
 ```sh

@@ -194,6 +194,10 @@ export const voidKeys = {
     organizationId,
     externalId,
   ],
+  subscriptions: (organizationId: string) => [
+    'void_subscriptions',
+    organizationId,
+  ],
   identitySubscriptions: (organizationId: string, externalId: string) => [
     'void_identity_subscriptions',
     organizationId,

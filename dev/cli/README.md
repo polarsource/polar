@@ -77,6 +77,9 @@ the usage to reach Tinybird and the meters. Rebuild the dataset from scratch wit
 cd server && uv run task void_seed_demo -- --reset
 ```
 
+`po-bot@polar.sh` owns a second Void-enabled organization, `po-bot`, left empty
+for the Po Bot sample app.
+
 The dashboard's Void pages default to frontend fixtures; switch to live data from
 the last item of the version dropdown.
 

@@ -79,15 +79,6 @@ export interface VoidActivityMix {
   by_activity: VoidActivityShare[]
 }
 
-export interface VoidSense {
-  slug: string
-  when: string
-  over: string
-  noul: number
-  span_count: number
-  identity_id: string
-}
-
 export interface VoidEvent {
   id: string
   name: string
@@ -108,5 +99,4 @@ export interface VoidData {
   subscriptions: VoidSubscription[]
   entitlements: VoidEntitlement[]
   activities: Record<string, VoidActivityMix>
-  senses: VoidSense[]
 }

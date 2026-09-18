@@ -167,6 +167,27 @@ class TestUpsert:
 
         assert restored.canonical["tax_behavior"] == "exclusive"
 
+    async def test_snapshot_omits_unset_tax_and_keeps_exclusive(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        await repository.upsert(migration, organization, canonical_subscription())
+        await repository.upsert(
+            migration,
+            organization,
+            canonical_subscription(
+                source_id="sub_2", tax_behavior=TaxBehavior.exclusive
+            ),
+        )
+
+        preserved = await repository.pending_subscription_tax_behaviors(migration.id)
+
+        assert preserved == {"sub_2": TaxBehavior.exclusive}
+
     async def test_is_idempotent_per_source(
         self,
         session: AsyncSession,

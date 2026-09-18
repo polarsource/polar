@@ -630,7 +630,9 @@ class MerchantMigrationRecordRepository(
         """Tax choices on pending subscriptions, keyed by source id.
 
         ``start_precheck`` deletes pending rows before extract; this snapshot is
-        what lets a rerun restore a merchant's exclusive pin.
+        what lets a rerun restore a merchant's exclusive pin. Pending
+        subscription rows are locked until that delete commits so a concurrent
+        tax PATCH cannot land between the snapshot and the wipe.
         """
         tax_behavior = MerchantMigrationRecord.canonical["tax_behavior"].astext
         statement = (
@@ -640,13 +642,13 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
                 MerchantMigrationRecord.type
                 == MerchantMigrationRecordType.subscription,
-                tax_behavior.is_not(None),
             )
             .with_only_columns(
                 MerchantMigrationRecord.source_id,
                 tax_behavior,
             )
             .order_by(None)
+            .with_for_update(of=MerchantMigrationRecord)
         )
         preserved: dict[str, TaxBehavior] = {}
         for source_id, raw in (await self.session.execute(statement)).all():

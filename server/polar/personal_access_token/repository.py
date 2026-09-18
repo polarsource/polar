@@ -1,6 +1,7 @@
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager
 
+from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.utils import utc_now
 from polar.models import PersonalAccessToken, User
@@ -16,11 +17,12 @@ class PersonalAccessTokenRepository(
     async def get_by_token(
         self, token: str, *, expired: bool = False
     ) -> PersonalAccessToken | None:
+        candidates = get_token_hash_candidates(token)
         statement = (
             self.get_base_statement()
             .join(PersonalAccessToken.user)
             .where(
-                self.token_hash_clause(token),
+                self.token_hash_clause(candidates),
                 ~PersonalAccessToken.is_deleted,
                 User.can_authenticate,
             )
@@ -36,4 +38,4 @@ class PersonalAccessTokenRepository(
         personal_access_token = await self.get_one_or_none(statement)
         if personal_access_token is None:
             return None
-        return await self.rehash_token(personal_access_token, token)
+        return await self.rehash_token(personal_access_token, candidates)

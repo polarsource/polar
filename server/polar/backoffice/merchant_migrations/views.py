@@ -1,7 +1,7 @@
 """Rendering for the migrations backoffice: badges, progress readouts and the
 card-transfer checklist."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from fastapi import Request
 from tagflow import tag, text
@@ -95,18 +95,41 @@ def money(amount: Money) -> str:
     )
 
 
-def mrr_cell(breakdown: MrrBreakdown) -> None:
+def usd_blend(amount: Money, rates: Mapping[str, float]) -> str | None:
+    """USD equivalent when the amount isn't already a single USD figure."""
+    if not amount.has_foreign_currency:
+        return None
+    usd = amount.to_usd(rates)
+    if usd is None:
+        return None
+    return formatters.currency(usd, "usd")
+
+
+def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float] | None = None) -> None:
+    rates = rates or {}
     total = breakdown.total
     if total.is_zero:
         with tag.span(classes="text-base-content/40"):
             text("No recurring revenue staged")
         return
 
+    blend = usd_blend(total, rates)
     with tag.div(classes="flex flex-col gap-1"):
-        with tag.div(classes="whitespace-nowrap"):
-            text(f"{money(total)} /mo")
+        headline = {
+            "classes": "whitespace-nowrap",
+            **(
+                {"title": "USD from Stripe FX Quotes, cached 24h"}
+                if blend is not None
+                else {}
+            ),
+        }
+        with tag.div(**headline):
+            text(f"{blend} /mo" if blend is not None else f"{money(total)} /mo")
+        if blend is not None:
+            with tag.div(classes="text-xs text-base-content/60"):
+                text(money(total))
         with tag.div(classes="text-xs text-base-content/60"):
-            parts = [f"{breakdown.migrated_percent}% on Polar"]
+            parts = [f"{breakdown.share_on_polar(rates)}% on Polar"]
             if not breakdown.to_move.is_zero:
                 parts.append(f"{money(breakdown.to_move)} to move")
             if not breakdown.staying.is_zero:
@@ -114,7 +137,9 @@ def mrr_cell(breakdown: MrrBreakdown) -> None:
             text(" · ".join(parts))
 
 
-def mrr_table(breakdown: MrrBreakdown) -> None:
+def mrr_table(
+    breakdown: MrrBreakdown, rates: Mapping[str, float] | None = None
+) -> None:
     """Where the revenue sits.
 
     MRR only: the record tallies cover customers and products too, and putting
@@ -145,7 +170,9 @@ def mrr_table(breakdown: MrrBreakdown) -> None:
                     with tag.td():
                         text("Total")
                     with tag.td(classes="font-mono whitespace-nowrap"):
-                        text(money(breakdown.total))
+                        total = money(breakdown.total)
+                        blend = usd_blend(breakdown.total, rates or {})
+                        text(f"{total} ≈ {blend}" if blend is not None else total)
 
 
 def records_table(records: RecordProgress) -> None:

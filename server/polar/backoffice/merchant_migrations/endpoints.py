@@ -36,6 +36,7 @@ from polar.postgres import (
     get_db_read_session,
     get_db_session,
 )
+from polar.redis import Redis, get_redis
 
 from .. import formatters
 from ..components import (
@@ -164,7 +165,10 @@ def _view_tabs(request: Request, rows: Sequence[Row], view: View) -> list[Tab]:
 
 
 def _render_table(
-    request: Request, rows: Sequence[Row], mrr_by_migration: dict[UUID, MrrBreakdown]
+    request: Request,
+    rows: Sequence[Row],
+    mrr_by_migration: dict[UUID, MrrBreakdown],
+    rates: dict[str, float],
 ) -> None:
     with tag.div(
         classes="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200"
@@ -207,7 +211,7 @@ def _render_table(
                         with tag.td():
                             views.step_cell(migration)
                         with tag.td():
-                            views.mrr_cell(mrr_by_migration[migration.id])
+                            views.mrr_cell(mrr_by_migration[migration.id], rates)
                         with tag.td():
                             views.attention_badge(row.attention)
                         with tag.td(classes="text-sm text-base-content/60"):
@@ -226,12 +230,14 @@ async def list_migrations(
     pagination: PaginationParamsQuery,
     view: Annotated[View, Query()] = View.active,
     session: AsyncReadSession = Depends(get_db_read_session),
+    redis: Redis = Depends(get_redis),
 ) -> None:
     rows = await _load_rows(session)
     matching = [row for row in rows if row.matches(view)]
     start = (pagination.page - 1) * pagination.limit
     page = matching[start : start + pagination.limit]
     mrr_by_migration = await _page_mrr(session, page)
+    rates = await mrr.usd_rates(redis, list(mrr_by_migration.values()))
 
     with layout(
         request,
@@ -243,7 +249,7 @@ async def list_migrations(
                 text("Migrations")
             with tab_nav(_view_tabs(request, rows, view)):
                 pass
-            _render_table(request, page, mrr_by_migration)
+            _render_table(request, page, mrr_by_migration, rates)
             with datatable.pagination(request, pagination, len(matching)):
                 pass
 
@@ -319,6 +325,7 @@ async def get_migration(
     request: Request,
     id: UUID4,
     session: AsyncReadSession = Depends(get_db_read_session),
+    redis: Redis = Depends(get_redis),
 ) -> None:
     migration = await _get_migration(session, id)
     record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -329,6 +336,7 @@ async def get_migration(
         await record_repository.list_subscription_canonicals([migration.id]),
         [migration.id],
     )[migration.id]
+    rates = await mrr.usd_rates(redis, [breakdown])
     triage = attention(migration, records.failed)
     current = current_pan_step(migration)
     failed = (
@@ -381,16 +389,19 @@ async def get_migration(
                     "Step", f"{position}/{total}", subtitle=STEP_LABELS[migration.step]
                 ):
                     pass
+                at_stake = views.usd_blend(breakdown.total, rates)
                 with metric_card(
                     "MRR at stake",
-                    views.money(breakdown.total),
-                    subtitle="per month",
+                    at_stake or views.money(breakdown.total),
+                    subtitle=(
+                        views.money(breakdown.total) if at_stake else "per month"
+                    ),
                 ):
                     pass
                 with metric_card(
                     "On Polar",
                     views.money(breakdown.on_polar),
-                    subtitle=f"{breakdown.migrated_percent}% of the migration",
+                    subtitle=f"{breakdown.share_on_polar(rates)}% of the migration",
                 ):
                     pass
                 with metric_card(
@@ -409,7 +420,7 @@ async def get_migration(
                 with tag.div(classes="flex flex-col gap-4"):
                     with tag.h2(classes="text-xl"):
                         text("Recurring revenue")
-                    views.mrr_table(breakdown)
+                    views.mrr_table(breakdown, rates)
                     with tag.h2(classes="text-xl"):
                         text("Records")
                     views.records_table(records)

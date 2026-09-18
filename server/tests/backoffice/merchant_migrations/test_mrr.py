@@ -1,7 +1,19 @@
 from typing import Any
+from unittest.mock import AsyncMock
 from uuid import UUID
 
-from polar.backoffice.merchant_migrations.mrr import Money, MrrBreakdown, breakdown
+import pytest
+from pytest_mock import MockerFixture
+from redis.exceptions import RedisError
+
+from polar.backoffice.merchant_migrations.mrr import (
+    USD_RATE_CACHE_TTL_SECONDS,
+    Money,
+    MrrBreakdown,
+    _usd_rate_cache_key,
+    breakdown,
+    usd_rates,
+)
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalPrice,
@@ -17,6 +29,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
+from polar.redis import Redis
 
 MIGRATION = MerchantMigration.generate_id()
 OTHER_MIGRATION = MerchantMigration.generate_id()
@@ -325,6 +338,123 @@ class TestMoney:
         assert Money({"usd": 0}).is_zero
         assert Money().is_zero
         assert not Money({"usd": 1}).is_zero
+
+    def test_to_usd_keeps_usd_and_converts_the_rest(self) -> None:
+        amount = Money({"usd": 16350, "eur": 11100})
+
+        assert amount.to_usd({"eur": 1.14738}) == 29086
+
+    def test_to_usd_returns_none_when_a_rate_is_missing(self) -> None:
+        assert Money({"usd": 100, "eur": 50}).to_usd({}) is None
+
+    def test_to_usd_ignores_zero_foreign_amounts(self) -> None:
+        assert Money({"usd": 100, "eur": 0}).to_usd({}) == 100
+
+    def test_share_on_polar_weights_by_usd_when_rates_exist(self) -> None:
+        breakdown = MrrBreakdown(
+            on_polar=Money({"usd": 1000}),
+            to_move=Money({"eur": 1000}),
+            staying=Money(),
+        )
+
+        assert breakdown.migrated_percent == 50
+        assert breakdown.share_on_polar({"eur": 2.0}) == 33
+
+    def test_share_on_polar_falls_back_without_a_rate(self) -> None:
+        breakdown = MrrBreakdown(
+            on_polar=Money({"usd": 1000}),
+            to_move=Money({"eur": 1000}),
+            staying=Money(),
+        )
+
+        assert breakdown.share_on_polar({}) == 50
+
+
+@pytest.mark.asyncio
+class TestUsdRates:
+    async def test_usd_only_does_not_hit_stripe_or_redis(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        fetch = mocker.patch(
+            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
+            new_callable=AsyncMock,
+        )
+        get = mocker.patch.object(redis, "get", new_callable=AsyncMock)
+
+        rates = await usd_rates(
+            redis, [MrrBreakdown(Money({"usd": 2900}), Money(), Money())]
+        )
+
+        assert rates == {}
+        fetch.assert_not_called()
+        get.assert_not_called()
+
+    async def test_cache_miss_fetches_and_stores_for_24h(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        mocker.patch(
+            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
+            new_callable=AsyncMock,
+            return_value={"eur": 1.14738},
+        )
+        breakdown = MrrBreakdown(Money({"eur": 11100}), Money(), Money())
+
+        rates = await usd_rates(redis, [breakdown])
+
+        assert rates == {"eur": 1.14738}
+        cached = await redis.get(_usd_rate_cache_key("eur"))
+        assert cached is not None
+        assert float(cached) == 1.14738
+        ttl = await redis.ttl(_usd_rate_cache_key("eur"))
+        assert 0 < ttl <= USD_RATE_CACHE_TTL_SECONDS
+
+    async def test_cache_hit_skips_stripe(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        await redis.set(_usd_rate_cache_key("eur"), "1.1")
+        fetch = mocker.patch(
+            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
+            new_callable=AsyncMock,
+        )
+        breakdown = MrrBreakdown(Money({"usd": 100, "eur": 50}), Money(), Money())
+
+        rates = await usd_rates(redis, [breakdown])
+
+        assert rates == {"eur": 1.1}
+        fetch.assert_not_called()
+
+    async def test_corrupt_cache_is_a_miss(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        await redis.set(_usd_rate_cache_key("eur"), "not-a-rate")
+        mocker.patch(
+            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
+            new_callable=AsyncMock,
+            return_value={"eur": 1.2},
+        )
+
+        rates = await usd_rates(
+            redis, [MrrBreakdown(Money({"eur": 100}), Money(), Money())]
+        )
+
+        assert rates == {"eur": 1.2}
+
+    async def test_redis_errors_still_return_fetched_rates(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        mocker.patch.object(redis, "get", side_effect=RedisError("down"))
+        mocker.patch.object(redis, "set", side_effect=RedisError("down"))
+        mocker.patch(
+            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
+            new_callable=AsyncMock,
+            return_value={"eur": 1.14738},
+        )
+
+        rates = await usd_rates(
+            redis, [MrrBreakdown(Money({"eur": 100}), Money(), Money())]
+        )
+
+        assert rates == {"eur": 1.14738}
 
 
 class TestCanonicalShape:

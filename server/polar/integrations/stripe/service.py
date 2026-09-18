@@ -1,6 +1,6 @@
 import json
 import uuid
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
 
@@ -56,6 +56,7 @@ instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
 
 STRIPE_ACCOUNT_SIGNALS_API_VERSION = "2026-08-26.preview"
+FX_QUOTES_API_VERSION = "2026-02-25.preview"
 stripe_risk_client = stripe_lib.StripeClient(
     settings.STRIPE_SECRET_KEY, http_client=stripe_http_client
 )
@@ -642,6 +643,39 @@ class StripeService:
             stripe_version=STRIPE_ACCOUNT_SIGNALS_API_VERSION,
         )
         return cast(dict[str, Any], json.loads(response.body))
+
+    async def get_usd_base_rates(self, currencies: Sequence[str]) -> dict[str, float]:
+        """Presentment→USD mid rates (`base_rate`) from Stripe FX Quotes.
+
+        `lock_duration=none` is the free unlocked quote. The endpoint is
+        preview-only, so this sends an explicit `.preview` Stripe-Version.
+        """
+        needed = sorted(
+            {currency.lower() for currency in currencies if currency.lower() != "usd"}
+        )
+        if not needed:
+            return {}
+        try:
+            response = await stripe_risk_client.raw_request_async(
+                "post",
+                "/v1/fx_quotes",
+                to_currency="usd",
+                from_currencies=needed,
+                lock_duration="none",
+                stripe_version=FX_QUOTES_API_VERSION,
+            )
+        except stripe_lib.StripeError as e:
+            log.warning("stripe.fx_quotes.failed", error=str(e))
+            return {}
+        quotes = json.loads(response.body).get("rates") or {}
+        rates: dict[str, float] = {}
+        for currency in needed:
+            quote = quotes.get(currency) or {}
+            details = quote.get("rate_details") or {}
+            rate = details.get("base_rate", quote.get("exchange_rate"))
+            if rate is not None:
+                rates[currency] = float(rate)
+        return rates
 
 
 stripe = StripeService()

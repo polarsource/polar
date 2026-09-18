@@ -8,11 +8,15 @@ subscriptions, so the same arithmetic covers revenue that has already landed and
 revenue that hasn't moved yet.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
+from redis.exceptions import RedisError
+
+from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.math import polar_round
 from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
@@ -21,6 +25,7 @@ from polar.merchant_migration.canonical import (
 )
 from polar.merchant_migration.repository import CanonicalRow
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+from polar.redis import Redis
 
 # Source subscriptions that are actually producing revenue. Matches Polar's own
 # billable statuses, so a trial counts as expected revenue and a canceled
@@ -68,6 +73,33 @@ class Money:
         """Currencies largest first, so the headline figure is the meaningful one."""
         return sorted(self.amounts.items(), key=lambda item: -item[1])
 
+    @property
+    def has_foreign_currency(self) -> bool:
+        return any(
+            currency.lower() != "usd" and amount
+            for currency, amount in self.amounts.items()
+        )
+
+    def to_usd(self, rates: Mapping[str, float]) -> int | None:
+        """Cents in USD, or None when a foreign currency has no rate.
+
+        Missing a rate is a hard stop: adding the leftover foreign amount to
+        the USD total would be the lie this type exists to avoid.
+        """
+        total = 0
+        for currency, amount in self.amounts.items():
+            if not amount:
+                continue
+            code = currency.lower()
+            if code == "usd":
+                total += amount
+                continue
+            rate = rates.get(code)
+            if rate is None:
+                return None
+            total += polar_round(amount * rate)
+        return total
+
 
 @dataclass(frozen=True)
 class MrrBreakdown:
@@ -96,6 +128,14 @@ class MrrBreakdown:
         if total == 0:
             return 0
         return round(100 * sum(self.on_polar.amounts.values()) / total)
+
+    def share_on_polar(self, rates: Mapping[str, float]) -> int:
+        """Prefer a USD-weighted share when every currency can be converted."""
+        total = self.total.to_usd(rates)
+        on_polar = self.on_polar.to_usd(rates)
+        if total and on_polar is not None:
+            return round(100 * on_polar / total)
+        return self.migrated_percent
 
 
 def _is_earning(canonical: dict[str, Any]) -> bool:
@@ -199,3 +239,58 @@ def breakdown(
         )
         for migration_id, bucket in buckets.items()
     }
+
+
+USD_RATE_CACHE_TTL_SECONDS = 24 * 60 * 60
+_USD_RATE_CACHE_PREFIX = "polar:fx:usd:v1"
+
+
+def _usd_rate_cache_key(currency: str) -> str:
+    return f"{_USD_RATE_CACHE_PREFIX}:{currency}"
+
+
+async def usd_rates(
+    redis: Redis, breakdowns: Sequence[MrrBreakdown]
+) -> dict[str, float]:
+    """Stripe FX Quotes `base_rate`s, cached 24h per currency."""
+    currencies = sorted(
+        {
+            currency.lower()
+            for breakdown in breakdowns
+            for currency, amount in breakdown.total.amounts.items()
+            if amount and currency.lower() != "usd"
+        }
+    )
+    if not currencies:
+        return {}
+
+    rates: dict[str, float] = {}
+    missing: list[str] = []
+    for currency in currencies:
+        try:
+            cached = await redis.get(_usd_rate_cache_key(currency))
+        except RedisError:
+            cached = None
+        if cached is None:
+            missing.append(currency)
+            continue
+        try:
+            rates[currency] = float(cached)
+        except TypeError, ValueError:
+            missing.append(currency)
+
+    if not missing:
+        return rates
+
+    fetched = await stripe_service.get_usd_base_rates(missing)
+    for currency, rate in fetched.items():
+        rates[currency] = rate
+        try:
+            await redis.set(
+                _usd_rate_cache_key(currency),
+                str(rate),
+                ex=USD_RATE_CACHE_TTL_SECONDS,
+            )
+        except RedisError:
+            pass
+    return rates

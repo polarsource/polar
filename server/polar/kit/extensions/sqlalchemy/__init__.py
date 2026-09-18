@@ -1,4 +1,4 @@
-from . import sql
+from . import sql, storage
 from .types import IntEnum, StringEnum
 
-__all__ = ["IntEnum", "StringEnum", "sql"]
+__all__ = ["IntEnum", "StringEnum", "sql", "storage"]

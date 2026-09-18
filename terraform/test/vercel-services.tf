@@ -414,11 +414,6 @@ module "vercel_services" {
 
   preview_deployments_disabled = true
 
-  git_provider_options = {
-    create_deployments = false
-    git_commit_status  = false
-  }
-
   resource_config = {
     function_default_regions = ["cle1"]
   }

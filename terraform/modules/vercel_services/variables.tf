@@ -48,21 +48,6 @@ variable "enable_production_feedback" {
   default     = null
 }
 
-variable "git_provider_options" {
-  description = "Vercel project Git provider options"
-  type = object({
-    create_deployments         = optional(bool)
-    git_commit_status          = optional(bool)
-    repository_dispatch_events = optional(bool)
-    require_verified_commits   = optional(bool)
-    consolidated_git_commit_status = optional(object({
-      enabled            = optional(bool)
-      propagate_failures = optional(bool)
-    }))
-  })
-  default = null
-}
-
 variable "environment_variables" {
   description = "Environment variables exposed to the services in the project. The map key is used as the Vercel key unless key is set explicitly."
   type = map(object({

@@ -3,8 +3,7 @@
 # server/pyproject.toml (see [tool.vercel] there).
 #
 # polar-test-services is the only Git-connected project using this file.
-# Auto-deploys are off until the test Alembic stamp is repaired; deploy
-# manually if you need a services environment.
+# Git auto-deploys (main and previews) are off for now.
 
 [git]
 deploymentEnabled = false

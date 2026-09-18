@@ -82,7 +82,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
 
         token = get_token_hash(token)
         statement = select(UserSession).where(
-            UserSession.token == token, UserSession.expires_at > utc_now()
+            UserSession.token_v2 == token, UserSession.expires_at > utc_now()
         )
         result = self.server.session.execute(statement)
         user_session: UserSession | None = result.unique().scalar_one_or_none()

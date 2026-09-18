@@ -41,7 +41,7 @@ class UserSessionRepository(
         self, token: str, *, expired: bool = False
     ) -> UserSession | None:
         statement = self.get_base_statement().where(
-            UserSession.token == get_token_hash(token)
+            UserSession.token_v2 == get_token_hash(token)
         )
         if not expired:
             statement = statement.where(UserSession.expires_at > utc_now())

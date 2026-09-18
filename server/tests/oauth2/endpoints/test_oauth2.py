@@ -1790,6 +1790,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1819,6 +1820,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1849,6 +1851,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1885,6 +1888,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1941,6 +1945,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -1986,6 +1991,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2033,6 +2039,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2082,6 +2089,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2135,6 +2143,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2168,6 +2177,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2224,6 +2234,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2265,6 +2276,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),
@@ -2320,6 +2332,7 @@ class TestOAuth2Token:
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,
+            token_v2=token_hash,
             user_agent="tests",
             user=user,
             scopes=set(Scope),

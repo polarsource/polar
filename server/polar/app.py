@@ -27,6 +27,7 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
     create_sync_sessionmaker,
 )
+from polar.kit.http import HSTSMiddleware
 from polar.kit.versioning import VERSION_HEADER, add_versioned_routers
 from polar.logfire import (
     configure_logfire,
@@ -38,7 +39,6 @@ from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.middlewares import (
     CacheControlMiddleware,
-    HSTSMiddleware,
     LogCorrelationIdMiddleware,
     MaxBodySizeMiddleware,
     OperationalErrorMiddleware,

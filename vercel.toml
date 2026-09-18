@@ -1,6 +1,13 @@
 # Polar on Vercel: the Next.js frontend and the FastAPI API deploy as two
 # services from this one config. The API service builds from
 # server/pyproject.toml (see [tool.vercel] there).
+#
+# polar-test-services is the only Git-connected project using this file.
+# Auto-deploys are off until the test Alembic stamp is repaired; deploy
+# manually if you need a services environment.
+
+[git]
+deploymentEnabled = false
 
 [services.web]
 root = "clients/apps/web"

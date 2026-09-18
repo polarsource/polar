@@ -415,7 +415,8 @@ module "vercel_services" {
   preview_deployments_disabled = true
 
   git_provider_options = {
-    git_commit_status = false
+    create_deployments = false
+    git_commit_status  = false
   }
 
   resource_config = {

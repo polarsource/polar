@@ -6,3 +6,246 @@
 #content-area {
   max-width: 48rem;
 }
+
+.migration-coexistence {
+  /* The child columns are percentages so their centres stay at 21% and 79% of
+     the tree at every width — the same x values the branch rails are drawn at. */
+  --migration-columns: 42% 16% 42%;
+  --migration-line: #d4d4d8;
+  --migration-dot: #71717a;
+  margin: 2rem 0;
+  padding: 1.5rem;
+  color: #18181b;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 1.25rem;
+}
+
+.migration-coexistence__tree {
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.migration-coexistence__node {
+  padding: 0.75rem 0.875rem;
+  background: #fafafa;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.875rem;
+}
+
+.migration-coexistence__node--app {
+  max-width: 14rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.migration-coexistence__node--stripe {
+  border-top: 2px solid #635bff;
+}
+
+.migration-coexistence__node--polar {
+  border-top: 2px solid #18181b;
+}
+
+.migration-coexistence__name {
+  display: block;
+  color: #18181b;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.migration-coexistence__note {
+  display: block;
+  margin-top: 0.125rem;
+  color: #71717a;
+  font-size: 0.75rem;
+}
+
+/* Rails and dots share one coordinate system, so the branch scales as a whole
+   rather than being rebuilt from element borders. */
+.migration-coexistence__branch {
+  display: block;
+  width: 100%;
+  aspect-ratio: 100 / 12;
+  overflow: visible;
+}
+
+.migration-coexistence__rail {
+  fill: none;
+  stroke: var(--migration-line);
+  stroke-dasharray: 4 4;
+  stroke-width: 1;
+}
+
+.migration-coexistence__dot {
+  fill: var(--migration-dot);
+}
+
+.migration-coexistence__children {
+  display: grid;
+  grid-template-columns: var(--migration-columns);
+}
+
+.migration-coexistence__caption {
+  max-width: 32rem;
+  margin: 1.25rem auto 0;
+  color: #52525b;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.migration-switch {
+  margin: 1.5rem 0;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 1rem;
+}
+
+.migration-switch__header,
+.migration-switch__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.migration-switch__header {
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border-bottom: 1px solid #e4e4e7;
+  color: #18181b;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.migration-switch__header span:nth-child(2) {
+  color: #71717a;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.migration-switch__header span:last-child {
+  text-align: right;
+}
+
+.migration-switch__row {
+  min-height: 4rem;
+  padding: 0.75rem 1rem;
+  color: #52525b;
+  font-size: 0.8125rem;
+}
+
+.migration-switch__row + .migration-switch__row {
+  border-top: 1px solid #f4f4f5;
+}
+
+.migration-switch__arrow {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0 auto;
+  place-items: center;
+  color: #52525b;
+  background: #f4f4f5;
+  border-radius: 999px;
+}
+
+.migration-switch__state--polar {
+  color: #18181b;
+  font-weight: 600;
+  text-align: right;
+}
+
+.dark .migration-coexistence {
+  --migration-line: #52525b;
+  --migration-dot: #a1a1aa;
+  color: #fafafa;
+  background: #131316;
+  border-color: #3f3f46;
+}
+
+.dark .migration-coexistence__node {
+  background: #18181b;
+  border-color: #3f3f46;
+}
+
+.dark .migration-coexistence__node--stripe {
+  border-top-color: #635bff;
+}
+
+.dark .migration-coexistence__node--polar {
+  border-top-color: #fafafa;
+}
+
+.dark .migration-coexistence__name {
+  color: #fafafa;
+}
+
+.dark .migration-coexistence__note,
+.dark .migration-coexistence__caption {
+  color: #a1a1aa;
+}
+
+.dark .migration-switch {
+  background: #131316;
+  border-color: #3f3f46;
+}
+
+.dark .migration-switch__header {
+  color: #fafafa;
+  background: #18181b;
+  border-bottom-color: #3f3f46;
+}
+
+.dark .migration-switch__header span:nth-child(2),
+.dark .migration-switch__row {
+  color: #a1a1aa;
+}
+
+.dark .migration-switch__row + .migration-switch__row {
+  border-top-color: #27272a;
+}
+
+.dark .migration-switch__arrow {
+  color: #d4d4d8;
+  background: #27272a;
+}
+
+.dark .migration-switch__state--polar {
+  color: #fafafa;
+}
+
+@media (max-width: 42rem) {
+  .migration-coexistence {
+    padding: 1.125rem;
+  }
+
+  .migration-coexistence__node--app {
+    max-width: none;
+  }
+
+  .migration-coexistence__caption {
+    font-size: 0.8125rem;
+  }
+
+  .migration-switch__header,
+  .migration-switch__row {
+    grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
+  }
+
+  .migration-switch__header,
+  .migration-switch__row {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .migration-coexistence__dot {
+    display: none;
+  }
+}

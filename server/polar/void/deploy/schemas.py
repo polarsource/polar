@@ -65,8 +65,12 @@ class DeployMeterSignal(BaseModel):
         pattern=KEY_PATTERN,
         description="Slug of the meter whose remaining balance the thresholds read.",
     )
-    enter_below: float = Field(gt=0, description="Active once remaining drops below this.")
-    exit_at_least: float = Field(description="Inactive once remaining is at least this.")
+    enter_below: float = Field(
+        gt=0, description="Active once remaining drops below this."
+    )
+    exit_at_least: float = Field(
+        description="Inactive once remaining is at least this."
+    )
 
     @model_validator(mode="after")
     def hysteresis(self) -> Self:

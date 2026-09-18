@@ -85,8 +85,6 @@ export interface IrActivity {
   slug: string
   event: string
   group_by: string
-  run_by?: string
-  taxonomy: string
 }
 export interface IrSignalWindow {
   amount: number
@@ -230,8 +228,6 @@ const compileActivity = (activity: ActivityDef): IrActivity => ({
   slug: activity.key,
   event: activity.event.name,
   group_by: activity.span,
-  ...(activity.run !== undefined && { run_by: activity.run }),
-  taxonomy: activity.taxonomy,
 })
 
 const compileSignal = (signal: SignalRef): IrSignal =>

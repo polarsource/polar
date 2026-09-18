@@ -747,8 +747,6 @@ export interface ActivityDef<Key extends string = string> {
   readonly key: Key
   readonly event: EventDef
   readonly span: string
-  readonly run?: string
-  readonly taxonomy: string
 }
 
 const SLUG = /^[a-z0-9][a-z0-9_-]*$/
@@ -761,10 +759,7 @@ export function activities<Key extends string = 'agent'>(options: {
   source: EventDef | PluginDef
   /** Metadata key that makes one span. Defaults to `call_id`. */
   span?: string
-  /** Metadata key that folds spans into one job. */
-  run?: string
   slug?: Key
-  taxonomy?: string
 }): ActivityDef<Key> {
   const key = (options.slug ?? 'agent') as Key
   if (!SLUG.test(key)) throw new Error('activities: invalid slug')
@@ -778,8 +773,6 @@ export function activities<Key extends string = 'agent'>(options: {
     key,
     event,
     span: options.span ?? 'call_id',
-    ...(options.run !== undefined && { run: options.run }),
-    taxonomy: options.taxonomy ?? 'polar.agent/v1',
   }
 }
 

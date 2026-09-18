@@ -8,7 +8,7 @@ from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 from polar.void.auth import VoidRead
 
-from .schemas import ActivityGroup, ActivityReport, ActivitySpan
+from .schemas import ActivityReport, ActivitySpan
 from .service import activity as activity_service
 
 router = APIRouter(prefix="/activities", tags=["activities"], include_in_schema=False)
@@ -20,7 +20,6 @@ async def list_activities(
     identity: Annotated[str | None, Query()] = None,
     start: AwareDatetime | None = None,
     end: AwareDatetime | None = None,
-    group: ActivityGroup = "run",
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ActivityReport:
     return await activity_service.report(
@@ -29,7 +28,6 @@ async def list_activities(
         identity=identity,
         start=start,
         end=end,
-        group=group,
     )
 
 

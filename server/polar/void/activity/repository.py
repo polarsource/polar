@@ -6,38 +6,7 @@ from sqlalchemy import Select, cast, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidActivity, VoidActivitySpan, VoidEvent
-
-
-class ActivityRepository(RepositoryBase[VoidActivity]):
-    model = VoidActivity
-
-    def scoped_statement(self, organization_id: UUID) -> Select[tuple[VoidActivity]]:
-        return self.get_base_statement().where(
-            VoidActivity.organization_id == organization_id,
-            VoidActivity.deleted_at.is_(None),
-        )
-
-    async def list(self, organization_id: UUID) -> Sequence[VoidActivity]:
-        return await self.get_all(
-            self.scoped_statement(organization_id).order_by(
-                VoidActivity.slug, VoidActivity.id
-            )
-        )
-
-    async def list_for_version(
-        self, organization_id: UUID, version_id: str
-    ) -> Sequence[VoidActivity]:
-        return await self.get_all(
-            self.scoped_statement(organization_id)
-            .where(VoidActivity.version_id == version_id)
-            .order_by(VoidActivity.slug, VoidActivity.id)
-        )
-
-    async def get(self, organization_id: UUID, id: UUID) -> VoidActivity | None:
-        return await self.get_one_or_none(
-            self.scoped_statement(organization_id).where(VoidActivity.id == id)
-        )
+from polar.models import VoidActivitySpan, VoidEvent
 
 
 class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
@@ -67,30 +36,19 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
         version_id: str,
         *,
         identity: str | None = None,
-        identities: Sequence[str] | None = None,
-        run_key: str | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
-        activity_id: UUID | None = None,
     ) -> Sequence[VoidActivitySpan]:
         statement = self.scoped_statement(organization_id).where(
             VoidActivitySpan.version_id == version_id
         )
-        if activity_id is not None:
-            statement = statement.where(VoidActivitySpan.activity_id == activity_id)
-        if identities is not None:
-            statement = statement.where(
-                VoidActivitySpan.external_identity_id.in_(list(identities))
-            )
-        elif identity is not None:
+        if identity is not None:
             statement = statement.where(
                 or_(
                     VoidActivitySpan.external_identity_id == identity,
                     VoidActivitySpan.external_root_id == identity,
                 )
             )
-        if run_key is not None:
-            statement = statement.where(VoidActivitySpan.run_key == run_key)
         if start is not None:
             statement = statement.where(VoidActivitySpan.last_event_at >= start)
         if end is not None:
@@ -99,6 +57,20 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
             statement.order_by(
                 VoidActivitySpan.last_event_at.desc(), VoidActivitySpan.id.desc()
             )
+        )
+
+    async def list_due(
+        self, now: datetime, *, limit: int
+    ) -> Sequence[VoidActivitySpan]:
+        return await self.get_all(
+            self.get_base_statement()
+            .where(
+                VoidActivitySpan.deleted_at.is_(None),
+                VoidActivitySpan.due_at.is_not(None),
+                VoidActivitySpan.due_at <= now,
+            )
+            .order_by(VoidActivitySpan.due_at, VoidActivitySpan.id)
+            .limit(limit)
         )
 
 
@@ -112,6 +84,8 @@ class ActivityEventRepository(RepositoryBase[VoidEvent]):
         group_by: str,
         span_key: str,
     ) -> Sequence[VoidEvent]:
+        """The events of one span. The containment test and the external id
+        are both indexed, so this stays a lookup as events accumulate."""
         metadata = cast(VoidEvent.payload["metadata"].as_string(), JSONB)
         return await self.get_all(
             select(VoidEvent)
@@ -119,7 +93,7 @@ class ActivityEventRepository(RepositoryBase[VoidEvent]):
                 VoidEvent.organization_id == organization_id,
                 VoidEvent.payload["name"].as_string() == event_name,
                 or_(
-                    metadata[group_by].as_string() == span_key,
+                    metadata.contains({group_by: span_key}),
                     VoidEvent.external_id == span_key,
                 ),
             )

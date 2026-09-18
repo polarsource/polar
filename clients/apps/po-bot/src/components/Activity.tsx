@@ -1,7 +1,7 @@
 'use client'
 
 import { pct, usd } from '@/format'
-import type { Mix } from '@/activity'
+import { TAXONOMY, type Mix } from '@/activity'
 import { Pill, Text, type PillColor } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Meter } from './Meter'
@@ -30,20 +30,12 @@ export const ActivityPill = ({ slug }: { slug: string }) => (
   </Pill>
 )
 
-export const MixSection = ({
-  title,
-  taxonomy,
-  mix,
-}: {
-  title: string
-  taxonomy: string
-  mix: Mix
-}) => (
+export const MixSection = ({ title, mix }: { title: string; mix: Mix }) => (
   <Box flexDirection="column" rowGap="s" width="100%">
     <SectionLabel
       aside={
         <Text variant="caption" color="muted" as="span">
-          Jev {taxonomy}
+          Jev {TAXONOMY}
         </Text>
       }
     >

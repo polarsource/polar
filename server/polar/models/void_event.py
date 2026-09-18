@@ -23,6 +23,12 @@ class VoidEvent(RecordModel):
             "timestamp",
         ),
         Index(
+            "ix_void_events_metadata",
+            text("((payload ->> 'metadata')::jsonb)"),
+            postgresql_using="gin",
+            postgresql_ops={"((payload ->> 'metadata')::jsonb)": "jsonb_path_ops"},
+        ),
+        Index(
             "ix_void_events_pending_delivery",
             "organization_id",
             "created_at",

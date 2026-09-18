@@ -15,7 +15,10 @@ import {
   usd,
 } from '@void/sdk/config'
 
-export const llmCompletion = event<{ input_tokens: number; output_tokens: number }>('llm.completion')
+export const llmCompletion = event<{
+  input_tokens: number
+  output_tokens: number
+}>('llm.completion')
 
 export const sandboxStopped = event<{ minutes: number }>('sandbox.stopped')
 
@@ -45,7 +48,9 @@ export const analytics = entitlement('analytics', { name: 'Usage analytics' })
 
 export const apiAccess = entitlement('api-access', { name: 'API access' })
 
-export const prioritySupport = entitlement('priority-support', { name: 'Priority support' })
+export const prioritySupport = entitlement('priority-support', {
+  name: 'Priority support',
+})
 
 export const sandbox = entitlement('sandbox', { name: 'Sandboxes' })
 
@@ -66,11 +71,7 @@ export const starter = product('starter', {
   name: 'Starter',
   description: 'Pay as you go for individuals.',
   price: recurring({ interval: 'month', amount: usd(19) }),
-  meters: [
-    inputTokens,
-    outputTokens,
-    toolCalls,
-  ],
+  meters: [inputTokens, outputTokens, toolCalls],
   entitlements: [apiAccess],
 })
 
@@ -88,5 +89,20 @@ export const team = product('team', {
 })
 
 export const config = defineConfig({
-  schema: { llmCompletion, sandboxStopped, toolCall, inputTokens, outputTokens, sandboxMinutes, toolCalls, analytics, apiAccess, prioritySupport, sandbox, scale, starter, team },
+  schema: {
+    llmCompletion,
+    sandboxStopped,
+    toolCall,
+    inputTokens,
+    outputTokens,
+    sandboxMinutes,
+    toolCalls,
+    analytics,
+    apiAccess,
+    prioritySupport,
+    sandbox,
+    scale,
+    starter,
+    team,
+  },
 })

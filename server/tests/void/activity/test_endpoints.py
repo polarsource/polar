@@ -4,8 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.models import Organization, VoidActivity, VoidActivitySpan
-from polar.void.activity.taxonomy import TAXONOMY
+from polar.models import Organization, VoidActivitySpan
 from tests.fixtures.database import SaveFixture
 from tests.void.conftest import VERSION, activate_version
 from tests.void.test_endpoints import TOKEN, create_token
@@ -27,26 +26,14 @@ class TestActivities:
         assert empty.status_code == 200
         assert empty.json()["by_activity"] == []
         await activate_version(save_fixture, organization)
-        definition = VoidActivity(
-            organization_id=organization.id,
-            slug="agent",
-            version_id=VERSION,
-            event_name="llm.completion",
-            group_by="call_id",
-            run_by="run_id",
-            taxonomy=TAXONOMY,
-        )
-        await save_fixture(definition)
         await save_fixture(
             VoidActivitySpan(
                 organization_id=organization.id,
-                activity_id=definition.id,
                 version_id=VERSION,
-                taxonomy=TAXONOMY,
                 span_key="call_1",
                 event_name="llm.completion",
+                group_by="call_id",
                 external_identity_id="actor",
-                run_key="run_1",
                 activity="implement",
                 activity_confidence=0.9,
                 waste=0.1,
@@ -64,9 +51,8 @@ class TestActivities:
         )
         assert listed.status_code == 200
         body = listed.json()
-        assert body["taxonomy"] == TAXONOMY
         assert body["by_activity"][0]["slug"] == "implement"
-        assert body["runs"][0]["run_key"] == "run_1"
+        assert "runs" not in body
         span = await void_client.get(f"{PATH}/spans/call_1", headers=HEADERS)
         assert span.status_code == 200
         assert span.json()["activity"] == "implement"

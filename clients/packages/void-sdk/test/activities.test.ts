@@ -20,11 +20,7 @@ it('compiles an opt-in classifier and leaves empty configs unchanged', () => {
   const labeled = defineConfig({
     schema: {
       completion,
-      agent: activities({
-        source: completion,
-        span: 'call_id',
-        run: 'run_id',
-      }),
+      agent: activities({ source: completion, span: 'call_id' }),
     },
   })
   const compiled = compile(labeled)
@@ -33,8 +29,6 @@ it('compiles an opt-in classifier and leaves empty configs unchanged', () => {
       slug: 'agent',
       event: 'llm.completion',
       group_by: 'call_id',
-      run_by: 'run_id',
-      taxonomy: 'polar.agent/v1',
     },
   ])
   assert.equal('activities' in compile(plain), false)
@@ -50,26 +44,27 @@ it('reads the completion event from an llm plugin', () => {
     capture: false,
   })
   const config = defineConfig({
-    schema: { ai, agent: activities({ source: ai, run: 'run_id' }) },
+    schema: { ai, agent: activities({ source: ai }) },
   })
   assert.equal(compile(config).activities?.[0]?.event, 'llm.completion')
 })
 
-it('pulls span and run, and omits the default span key', () => {
+it('pulls the span key and omits the default', () => {
   const completion = event('llm.completion')
-  const ir = compile(
-    defineConfig({
-      schema: {
-        completion,
-        agent: activities({ source: completion, run: 'trace_id' }),
-      },
-    }),
-  )
-  const source = toSource(ir)
-  assert.include(source, "run: 'trace_id'")
-  assert.notInclude(source, 'span:')
-  assert.notInclude(source, 'groupBy')
-  assert.notInclude(source, 'runBy')
+  const source = (span?: string) =>
+    toSource(
+      compile(
+        defineConfig({
+          schema: {
+            completion,
+            agent: activities({ source: completion, span }),
+          },
+        }),
+      ),
+    )
+  assert.notInclude(source(), 'span:')
+  assert.include(source('trace_id'), "span: 'trace_id'")
+  assert.notInclude(source('trace_id'), 'groupBy')
 })
 
 it('compiles semantic signals into the IR and the checksum', () => {

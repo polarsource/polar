@@ -149,7 +149,6 @@ export const useChatActivity = (identity?: string) => {
       agent: identity
         ? live.member.agents.find((agent) => agent.id === identity)
         : undefined,
-      taxonomy: live.activities.taxonomy,
     }
-  }, [identity, live.events, live.member, live.activities.taxonomy])
+  }, [identity, live.events, live.member])
 }

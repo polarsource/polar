@@ -66,7 +66,7 @@ export const pro = product('sdk_demo_pro', {
   ],
 })
 
-export const agent = activities({ source: ai, run: 'call_id' })
+export const agent = activities({ source: ai })
 
 // A semantic signal: Polar asks Jev about this meter's recent events and the
 // SDK latches the answer. The question never leaves the SDK.

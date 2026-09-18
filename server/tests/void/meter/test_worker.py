@@ -100,8 +100,9 @@ class TestWorkerRegistration:
             "events": timedelta(seconds=1),
             "reducers": timedelta(seconds=1),
             "meter-cycles": timedelta(minutes=5),
+            "activities": timedelta(seconds=1),
         }
-        assert client.create_schedule.await_count == 3
+        assert client.create_schedule.await_count == 4
         for call, (name, interval) in zip(
             client.create_schedule.await_args_list, expected.items(), strict=True
         ):
@@ -119,7 +120,7 @@ class TestWorkerRegistration:
         client = mocker.Mock()
         client.create_schedule = AsyncMock(side_effect=ScheduleAlreadyRunningError())
         await ensure_schedules(client)
-        assert client.create_schedule.await_count == 3
+        assert client.create_schedule.await_count == 4
 
     async def test_worker_registers_cycle_workflow_and_activity(
         self, mocker: MockerFixture

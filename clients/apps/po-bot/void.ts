@@ -53,7 +53,7 @@ export const team = product('po_bot_team', {
   meters: [included(ai.credits, 100_000, { limit: 'hard' })],
 })
 
-export const agent = activities({ source: ai, run: 'call_id' })
+export const agent = activities({ source: ai })
 
 /** Polar asks Jev about the agent's recent credit spend; the SDK latches the answer. */
 export const retryStorm = signal('retry-storm', {

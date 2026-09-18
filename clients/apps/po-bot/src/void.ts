@@ -66,11 +66,9 @@ export const completions = async (): Promise<readonly Wire.Event[]> => {
 }
 
 const EMPTY_ACTIVITIES: Wire.ActivityReport = {
-  taxonomy: 'polar.agent/v1',
   window: {},
   totals: { cost: 0, labeled_cost: 0, unlabeled_cost: 0, pending_cost: 0 },
   by_activity: [],
-  runs: [],
 }
 
 const withTimeout = <T>(promise: Promise<T>, ms: number) =>

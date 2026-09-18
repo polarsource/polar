@@ -1,0 +1,59 @@
+---
+title: "ADR-0011: Activity definitions live in the deployment; spans queue themselves"
+description: "Void activity classifiers are read from the deployed configuration, not a side table, and a span's own row is its debounced classification job."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-09-18
+</Info>
+
+## Context
+
+The first cut of Void activities stored each `activities()` definition in a
+`void_activities` table keyed by version, duplicating the entry already held in the
+deployment `configuration` that [ADR-0010](/engineering/decisions/0010-persist-signals-in-the-deployment)
+made the source of truth for every primitive. It also started one durable Temporal
+workflow per agent span to debounce a one-second wait before a single HTTP call, and
+carried columns nothing read: a configurable `taxonomy` the server only knew one value
+of, per-label probabilities, and a `run_by` grouping no client rendered.
+
+## Decision
+
+Read activity definitions from the active deployment's `configuration`, and make the
+span row the job: ingest sets `due_at`, a scheduled sweep classifies every span whose
+`due_at` has passed and clears it. Spans store only what the report and the classifier
+read.
+
+## Consequences
+
+- One table (`void_activity_spans`) instead of two, and no `activity_id` to keep in step
+  with a version. A span carries `event_name` and `group_by` so it can find its events
+  without a definition lookup.
+- Debounce and retry are two timestamps, not a workflow per span. A touch during
+  classification leaves the newer `due_at` in place, so the span comes round again; a
+  classifier outage pushes `due_at` back thirty seconds instead of failing the sweep.
+- `taxonomy`, `run_by` and `activity_probabilities` are gone from the SDK helper, the IR,
+  the wire schemas and the table. `polar.agent/v1` is a server constant until a second
+  vocabulary exists.
+- Events for a span are found through a GIN index on the parsed `metadata`, so the
+  lookup stays a lookup for any `group_by` key.
+- Trade-off accepted: classification latency is now the sweep interval plus the
+  debounce, not the debounce alone, and the sweep is serial per tick.
+
+## Alternatives considered
+
+- **Keep the definitions table and read the IR only for display**: two sources of truth
+  for one fact; the ADR-0010 rule is that the configuration is the definition.
+- **A keyed job queue outside Postgres**: the span row already has the identity and the
+  state hash the job needs; a second store adds a consistency problem to solve.
+
+## References
+
+- `server/polar/void/activity/service.py` (`touch_events`, `classify_due`),
+  `server/polar/void/activity/definitions.py`, `server/polar/void/activity/workflows.py`.
+- `server/migrations/versions/2026-09-18-0900_trim_void_activity_spans.py`.
+- SDK: `clients/packages/void-sdk/src/config/schema.ts` (`activities`).

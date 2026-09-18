@@ -214,9 +214,7 @@ class JudgeService:
                 "events": sorted(event.external_id for event, _ in matched),
             }
         )
-        question = state_hash(
-            {"when": when, "over": over.model_dump(mode="json")}
-        )
+        question = state_hash({"when": when, "over": over.model_dump(mode="json")})
         repository = JudgmentRepository.from_session(session)
         current = await repository.get(
             organization_id, version_id, identity_id, meter_slug, question

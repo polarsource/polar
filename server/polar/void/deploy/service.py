@@ -1,20 +1,18 @@
 import json
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from decimal import Decimal
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import VoidActivity
 from polar.models import VoidDeployment as Deployment
 from polar.models import VoidMeter as Meter
 from polar.models import VoidProduct as Product
 from polar.models import VoidReducer as Reducer
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.void.activity.schemas import ActivityCreate, DeployActivity
-from polar.void.activity.service import activity as activity_service
-from polar.void.activity.versions import activities_in_version
+from polar.void.activity.definitions import activities_of
+from polar.void.activity.schemas import DeployActivity
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import classify as entitlement_action
 from polar.void.entitlement.service import entitlement as entitlement_service
@@ -86,15 +84,6 @@ def _same_meter(
     )
 
 
-def _same_activity(wanted: DeployActivity, current: VoidActivity) -> bool:
-    return (
-        current.event_name == wanted.event
-        and current.group_by == wanted.group_by
-        and current.run_by == wanted.run_by
-        and current.taxonomy == wanted.taxonomy
-    )
-
-
 def _same_product(wanted: DeployProduct, current: Product) -> bool:
     """Definition equality across versions: meters compare by slug, since each
     version has its own meter rows."""
@@ -161,6 +150,47 @@ def _credits_create(meter_slug: str, reducer: str) -> ReducerCreate:
         ),
         aggregation=PropertyAggregation(func="sum", property="amount"),
     )
+
+
+def _plan_activities(
+    wanted: Sequence[DeployActivity], current: Mapping[str, DeployActivity]
+) -> list[DeployEntry]:
+    """Activity definitions live in the deployment configuration alone, so the
+    plan is a diff against the active configuration and applies nothing."""
+    entries: list[DeployEntry] = []
+    for item in wanted:
+        before = current.get(item.slug)
+        action: Action
+        if before is None:
+            action = "create"
+        elif before == item:
+            action = "unchanged"
+        else:
+            action = "replace"
+        entries.append(
+            DeployEntry(
+                reason=None,
+                price_preview=None,
+                kind="activity",
+                key=item.slug,
+                action=action,
+                id=None,
+            )
+        )
+    wanted_slugs = {item.slug for item in wanted}
+    for slug in current:
+        if slug not in wanted_slugs:
+            entries.append(
+                DeployEntry(
+                    reason=None,
+                    price_preview=None,
+                    kind="activity",
+                    key=slug,
+                    action="orphan",
+                    id=None,
+                )
+            )
+    return entries
 
 
 class DeployService:
@@ -333,9 +363,10 @@ class DeployService:
     ) -> Deploy:
         apply = not create_schema.dry_run
         version_id = create_schema.version_id
-        baseline_version_id = await organization_service.active_version(
+        baseline = await organization_service.active_deployment(
             session, organization_id
         )
+        baseline_version_id = baseline.version_id if baseline is not None else None
         current_reducers = _by_slug(
             await reducer_service.list(session, organization_id)
         )
@@ -534,12 +565,9 @@ class DeployService:
             apply,
             baseline_version_id,
         )
-        entries += await self._deploy_activities(
-            session,
-            organization_id,
-            create_schema,
-            apply,
-            baseline_version_id,
+        entries += _plan_activities(
+            create_schema.activities,
+            activities_of(baseline.configuration if baseline is not None else None),
         )
 
         if not apply:
@@ -676,70 +704,6 @@ class DeployService:
                     id=current_product.id,
                 )
             )
-        return entries
-
-    async def _deploy_activities(
-        self,
-        session: AsyncSession,
-        organization_id: uuid.UUID,
-        create_schema: DeployCreate,
-        apply: bool,
-        baseline_version_id: str | None,
-    ) -> list[DeployEntry]:
-        """Activity definitions belong to their version like meters."""
-        entries: list[DeployEntry] = []
-        all_activities = await activity_service.list(session, organization_id)
-        current_activities = activities_in_version(all_activities, baseline_version_id)
-        existing_activities = activities_in_version(
-            all_activities, create_schema.version_id
-        )
-        for wanted in create_schema.activities:
-            current = current_activities.get(wanted.slug)
-            existing = existing_activities.get(wanted.slug)
-            activity_id = existing.id if existing is not None else None
-            if existing is None and apply:
-                created = await activity_service.create(
-                    session,
-                    organization_id,
-                    ActivityCreate(
-                        version_id=create_schema.version_id,
-                        slug=wanted.slug,
-                        event_name=wanted.event,
-                        group_by=wanted.group_by,
-                        run_by=wanted.run_by,
-                        taxonomy=wanted.taxonomy,
-                    ),
-                )
-                activity_id = created.id
-            if current is None:
-                action: Action = "create"
-            elif _same_activity(wanted, current):
-                action = "unchanged"
-            else:
-                action = "replace"
-            entries.append(
-                DeployEntry(
-                    reason=None,
-                    price_preview=None,
-                    kind="activity",
-                    key=wanted.slug,
-                    action=action,
-                    id=activity_id,
-                )
-            )
-        wanted_slugs = {item.slug for item in create_schema.activities}
-        for slug, current in current_activities.items():
-            if slug not in wanted_slugs:
-                entries.append(
-                    DeployEntry(
-                        reason=None,
-                        price_preview=None,
-                        kind="activity",
-                        key=slug,
-                        action="orphan",
-                        id=current.id,
-                    )
-                )
         return entries
 
     @staticmethod

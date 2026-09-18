@@ -175,7 +175,7 @@ const Entry = ({ entry, scoped }: { entry: LogEvent; scoped: boolean }) => {
 export const EventLog = () => {
   const { agentId } = useParams<{ agentId?: string }>()
   const { tree, member, judgments } = useLive()
-  const { events, mix, agent, taxonomy } = useChatActivity(agentId)
+  const { events, mix, agent } = useChatActivity(agentId)
   const org = tree.org.standing
   const scoped = Boolean(agentId)
   const ids = scoped
@@ -206,7 +206,6 @@ export const EventLog = () => {
       <Box padding="m">
         <MixSection
           title={agent ? `${agent.name}'s chat` : "This member's chats"}
-          taxonomy={taxonomy}
           mix={mix}
         />
       </Box>

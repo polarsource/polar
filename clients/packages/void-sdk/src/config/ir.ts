@@ -53,8 +53,6 @@ export interface IrInput {
     readonly slug: string
     readonly event: string
     readonly group_by?: string
-    readonly run_by?: string | null
-    readonly taxonomy?: string
   }>
 }
 
@@ -163,14 +161,11 @@ export const normalizeIr = (input: IrInput): Ir => {
       ? {
           activities: input.activities
             .map(
-              (a) =>
-                withoutNulls({
-                  slug: a.slug,
-                  event: a.event,
-                  group_by: a.group_by ?? 'call_id',
-                  run_by: a.run_by ?? undefined,
-                  taxonomy: a.taxonomy ?? 'polar.agent/v1',
-                }) as IrActivity,
+              (a): IrActivity => ({
+                slug: a.slug,
+                event: a.event,
+                group_by: a.group_by ?? 'call_id',
+              }),
             )
             .sort(bySlug),
         }

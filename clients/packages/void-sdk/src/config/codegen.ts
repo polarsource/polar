@@ -419,12 +419,6 @@ export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
       ...(activity.group_by !== 'call_id'
         ? [`span: ${str(activity.group_by)}`]
         : []),
-      ...(activity.run_by !== undefined
-        ? [`run: ${str(activity.run_by)}`]
-        : []),
-      ...(activity.taxonomy !== 'polar.agent/v1'
-        ? [`taxonomy: ${str(activity.taxonomy)}`]
-        : []),
       ...(activity.slug !== 'agent' ? [`slug: ${str(activity.slug)}`] : []),
     ]
     define(

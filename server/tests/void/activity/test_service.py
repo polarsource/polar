@@ -1,172 +1,273 @@
 import json
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
-from temporalio.client import Client
 
 from polar.config import settings
-from polar.models import Organization, VoidActivity, VoidEvent
+from polar.kit.utils import utc_now
+from polar.models import Organization, VoidActivitySpan, VoidDeployment, VoidEvent
 from polar.postgres import AsyncSession
-from polar.void.activity.schemas import ActivityCreate
 from polar.void.activity.service import (
+    DEBOUNCE,
+    RETRY_BACKOFF,
     ActivityService,
     event_metadata,
     span_key_of,
     summarize_events,
 )
 from polar.void.activity.service import activity as activity_service
-from polar.void.activity.taxonomy import PENDING, TAXONOMY, UNLABELED
+from polar.void.activity.taxonomy import PENDING, UNLABELED
 from polar.void.activity.typesafe import Classification, TypeSafeError
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from tests.fixtures.database import SaveFixture
-from tests.void.conftest import VERSION, activate_version
+from tests.void.conftest import VERSION
 
 LABELED = Classification(
-    activity="implement",
-    confidence=0.91,
-    probabilities={"implement": 0.91, "plan": 0.09},
-    waste=0.1,
-    model="jev-latest",
+    activity="implement", confidence=0.91, waste=0.1, model="jev-latest"
 )
+RETRY = Classification(activity="retry", confidence=0.8, waste=0.2, model="jev-latest")
 
 
 class Fixed:
     def __init__(self, result: Classification) -> None:
         self.result = result
+        self.calls = 0
 
     async def classify(self, state: object) -> Classification:
+        self.calls += 1
         return self.result
+
+
+class Boom:
+    async def classify(self, state: object) -> Classification:
+        raise TypeSafeError("down")
 
 
 def completion(
     external_id: str,
     *,
     call_id: str = "call_1",
-    run_id: str | None = "run_1",
     cost: float = 0.02,
     step: int = 0,
     tools: list[str] | None = None,
     tool_errors: list[str] | None = None,
 ) -> EventCreate:
-    metadata: dict[str, object] = {
-        "call_id": call_id,
-        "model": "anthropic/claude-sonnet",
-        "input_tokens": 10,
-        "output_tokens": 4,
-        "cost": cost,
-        "step": step,
-        "finish_reason": "stop",
-        "tools": tools or [],
-        "tool_errors": tool_errors or [],
-        "has_text": not tools,
-    }
-    if run_id is not None:
-        metadata["run_id"] = run_id
     return EventCreate(
         external_id=external_id,
         name="llm.completion",
         timestamp=datetime(2026, 1, 1, tzinfo=UTC),
-        metadata=metadata,
+        metadata={
+            "call_id": call_id,
+            "model": "anthropic/claude-sonnet",
+            "input_tokens": 10,
+            "output_tokens": 4,
+            "cost": cost,
+            "step": step,
+            "finish_reason": "stop",
+            "tools": tools or [],
+            "tool_errors": tool_errors or [],
+            "has_text": not tools,
+        },
     )
 
 
-async def definition(
-    session: AsyncSession,
-    organization: Organization,
-    save_fixture: SaveFixture,
-) -> VoidActivity:
-    await activate_version(save_fixture, organization)
-    return await activity_service.create(
-        session,
-        organization.id,
-        ActivityCreate(
-            version_id=VERSION,
-            slug="agent",
-            event_name="llm.completion",
-            group_by="call_id",
-            run_by="run_id",
-            taxonomy=TAXONOMY,
-        ),
+async def deploy_classifier(
+    save_fixture: SaveFixture, organization: Organization
+) -> VoidDeployment:
+    """An active deployment whose configuration declares one classifier."""
+    deployment = VoidDeployment(
+        organization_id=organization.id,
+        checksum="test",
+        version_id=VERSION,
+        status="active",
+        entries=[],
+        configuration={
+            "activities": [
+                {"slug": "agent", "event": "llm.completion", "group_by": "call_id"}
+            ]
+        },
     )
+    await save_fixture(deployment)
+    return deployment
+
+
+async def ingest(
+    session: AsyncSession, organization: Organization, *events: EventCreate
+) -> list[VoidEvent]:
+    await event_service.ingest(session, organization.id, list(events), EventSource.user)
+    return list(
+        (
+            await session.execute(
+                select(VoidEvent).where(VoidEvent.organization_id == organization.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def touch(
+    session: AsyncSession, organization: Organization, *events: EventCreate
+) -> None:
+    await activity_service.touch_events(
+        session, await ingest(session, organization, *events)
+    )
+    await session.flush()
+
+
+async def span_row(
+    session: AsyncSession, organization_id: UUID, span_key: str
+) -> VoidActivitySpan | None:
+    return await session.scalar(
+        select(VoidActivitySpan).where(
+            VoidActivitySpan.organization_id == organization_id,
+            VoidActivitySpan.span_key == span_key,
+        )
+    )
+
+
+@pytest.fixture(autouse=True)
+def typesafe_key(mocker: MockerFixture) -> None:
+    mocker.patch.object(settings, "TYPESAFE_AI_KEY", "test-key")
 
 
 @pytest.mark.asyncio
-class TestClassify:
-    async def test_labels_a_span_and_skips_unchanged_state(
+class TestTouch:
+    async def test_seeds_a_pending_span_and_debounces_it(
         self,
         session: AsyncSession,
         organization: Organization,
         save_fixture: SaveFixture,
     ) -> None:
-        created = await definition(session, organization, save_fixture)
-        await event_service.ingest(
-            session,
-            organization.id,
-            [completion("e1"), completion("e2", cost=0.03)],
-            EventSource.user,
-        )
-        service = ActivityService(Fixed(LABELED))
-        first = await service.classify_span(
-            session, organization.id, created.id, "call_1"
-        )
-        assert first is not None
-        assert first.activity == "implement"
-        assert first.activity_confidence == 0.91
-        assert first.waste == 0.1
-        assert first.cost == pytest.approx(0.05)
-        assert first.input_tokens == 20
-        assert first.event_count == 2
-        assert first.run_key == "run_1"
-        classified_at = first.classified_at
-        second = await service.classify_span(
-            session, organization.id, created.id, "call_1"
-        )
-        assert second is first
-        assert second.classified_at == classified_at
-
-    async def test_below_threshold_is_unlabeled_and_errors_stay_pending(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        save_fixture: SaveFixture,
-    ) -> None:
-        created = await definition(session, organization, save_fixture)
-        await event_service.ingest(
-            session, organization.id, [completion("e1")], EventSource.user
-        )
-        unlabeled = await ActivityService(
-            Fixed(
-                Classification(
-                    activity="plan",
-                    confidence=0.4,
-                    probabilities={"plan": 0.4},
-                    waste=0,
-                    model="jev-latest",
-                )
-            )
-        ).classify_span(session, organization.id, created.id, "call_1")
-        assert unlabeled is not None
-        assert unlabeled.activity == UNLABELED
-
-        class Boom:
-            async def classify(self, state: object) -> Classification:
-                raise TypeSafeError("down")
-
-        await event_service.ingest(
-            session, organization.id, [completion("e2", cost=0.01)], EventSource.user
-        )
-        with pytest.raises(TypeSafeError):
-            await ActivityService(Boom()).classify_span(
-                session, organization.id, created.id, "call_1"
-            )
-        pending = await activity_service.get_span(session, organization.id, "call_1")
+        await deploy_classifier(save_fixture, organization)
+        before = utc_now()
+        await touch(session, organization, completion("e1"))
+        pending = await span_row(session, organization.id, "call_1")
         assert pending is not None
         assert pending.activity == PENDING
+        assert pending.group_by == "call_id"
+        assert pending.cost == pytest.approx(0.02)
+        assert pending.due_at is not None
+        assert pending.due_at >= before + DEBOUNCE
+        first_due = pending.due_at
+        await touch(session, organization, completion("e2"))
+        assert pending.due_at is not None
+        assert pending.due_at >= first_due
+        assert (
+            await session.scalar(
+                select(VoidActivitySpan.id).where(
+                    VoidActivitySpan.organization_id == organization.id
+                )
+            )
+            == pending.id
+        )
+
+    async def test_ignores_events_no_classifier_declares(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        deployment = await deploy_classifier(save_fixture, organization)
+        deployment.configuration = {}
+        await touch(session, organization, completion("e1"))
+        assert await span_row(session, organization.id, "call_1") is None
+
+    async def test_skips_without_typesafe_key(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch.object(settings, "TYPESAFE_AI_KEY", None)
+        await deploy_classifier(save_fixture, organization)
+        await touch(session, organization, completion("e1"))
+        assert await span_row(session, organization.id, "call_1") is None
+
+
+@pytest.mark.asyncio
+class TestSweep:
+    async def test_labels_due_spans_and_skips_unchanged_state(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        await deploy_classifier(save_fixture, organization)
+        await touch(
+            session, organization, completion("e1"), completion("e2", cost=0.03)
+        )
+        span = await span_row(session, organization.id, "call_1")
+        assert span is not None
+        span.due_at = utc_now() - timedelta(seconds=1)
+        await session.flush()
+        classifier = Fixed(LABELED)
+        service = ActivityService(classifier)
+        assert await service.classify_due(session) == 1
+        assert span.activity == "implement"
+        assert span.activity_confidence == 0.91
+        assert span.waste == 0.1
+        assert span.cost == pytest.approx(0.05)
+        assert span.input_tokens == 20
+        assert span.event_count == 2
+        assert span.due_at is None
+        classified_at = span.classified_at
+        span.due_at = utc_now() - timedelta(seconds=1)
+        await session.flush()
+        assert await service.classify_due(session) == 1
+        assert classifier.calls == 1
+        assert span.classified_at == classified_at
+        assert span.due_at is None
+
+    async def test_leaves_undue_spans_alone(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        await deploy_classifier(save_fixture, organization)
+        await touch(session, organization, completion("e1"))
+        classifier = Fixed(LABELED)
+        assert await ActivityService(classifier).classify_due(session) == 0
+        assert classifier.calls == 0
+
+    async def test_below_threshold_is_unlabeled(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        await deploy_classifier(save_fixture, organization)
+        await touch(session, organization, completion("e1"))
+        span = await span_row(session, organization.id, "call_1")
+        assert span is not None
+        await ActivityService(
+            Fixed(Classification("plan", confidence=0.4, waste=0, model="jev"))
+        ).classify_span(session, span)
+        assert span.activity == UNLABELED
+
+    async def test_classifier_outage_pushes_the_span_back(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        await deploy_classifier(save_fixture, organization)
+        await touch(session, organization, completion("e1"))
+        span = await span_row(session, organization.id, "call_1")
+        assert span is not None
+        span.due_at = utc_now() - timedelta(seconds=1)
+        await session.flush()
+        before = utc_now()
+        assert await ActivityService(Boom()).classify_due(session) == 1
+        assert span.activity == PENDING
+        assert span.due_at is not None
+        assert span.due_at >= before + RETRY_BACKOFF - timedelta(seconds=1)
 
     async def test_report_shares_and_retry_waste(
         self,
@@ -174,39 +275,27 @@ class TestClassify:
         organization: Organization,
         save_fixture: SaveFixture,
     ) -> None:
-        created = await definition(session, organization, save_fixture)
-        await event_service.ingest(
+        await deploy_classifier(save_fixture, organization)
+        await touch(
             session,
-            organization.id,
-            [
-                completion("ok", call_id="a", cost=0.08),
-                completion(
-                    "loop", call_id="b", cost=0.02, step=1, tools=["apply_patch"]
-                ),
-            ],
-            EventSource.user,
+            organization,
+            completion("ok", call_id="a", cost=0.08),
+            completion("loop", call_id="b", cost=0.02, step=1, tools=["apply_patch"]),
         )
-        await ActivityService(Fixed(LABELED)).classify_span(
-            session, organization.id, created.id, "a"
-        )
-        await ActivityService(
-            Fixed(
-                Classification(
-                    activity="retry",
-                    confidence=0.8,
-                    probabilities={"retry": 0.8},
-                    waste=0.2,
-                    model="jev-latest",
-                )
-            )
-        ).classify_span(session, organization.id, created.id, "b")
+        a = await span_row(session, organization.id, "a")
+        b = await span_row(session, organization.id, "b")
+        assert a is not None
+        assert b is not None
+        await ActivityService(Fixed(LABELED)).classify_span(session, a)
+        await ActivityService(Fixed(RETRY)).classify_span(session, b)
         report = await activity_service.report(session, organization.id)
         by_slug = {share.slug: share for share in report.by_activity}
         assert by_slug["implement"].share == pytest.approx(0.8)
         assert by_slug["retry"].waste_cost == pytest.approx(0.02)
         assert report.totals.labeled_cost == pytest.approx(0.10)
-        assert report.runs[0].run_key == "run_1"
-        assert report.runs[0].spans == 2
+        detail = await activity_service.get_span(session, organization.id, "a")
+        assert detail is not None
+        assert detail.event_ids == ["ok"]
 
 
 def test_summarize_rolls_up_tools_not_arguments() -> None:
@@ -275,65 +364,3 @@ def test_span_key_reads_stringified_metadata() -> None:
     assert event_metadata(payload)["call_id"] == "call_9"
     assert span_key_of(payload, "call_id") == "call_9"
     assert span_key_of({"external_id": "only", "metadata": "{}"}, "call_id") == "only"
-
-
-async def _events(session: AsyncSession, organization_id: UUID) -> list[VoidEvent]:
-    return list(
-        (
-            await session.execute(
-                select(VoidEvent).where(VoidEvent.organization_id == organization_id)
-            )
-        )
-        .scalars()
-        .all()
-    )
-
-
-@pytest.mark.asyncio
-async def test_touch_events_seeds_pending_and_starts_workflow(
-    session: AsyncSession,
-    organization: Organization,
-    save_fixture: SaveFixture,
-    mocker: MockerFixture,
-) -> None:
-    mocker.patch.object(settings, "TYPESAFE_AI_KEY", "test-key")
-    created = await definition(session, organization, save_fixture)
-    await event_service.ingest(
-        session, organization.id, [completion("e1")], EventSource.user
-    )
-    temporal = MagicMock(spec=Client)
-    temporal.start_workflow = AsyncMock()
-    await activity_service.touch_events(
-        session, temporal, await _events(session, organization.id)
-    )
-    await session.flush()
-    pending = await activity_service.get_span(session, organization.id, "call_1")
-    assert pending is not None
-    assert pending.activity == PENDING
-    assert pending.cost == pytest.approx(0.02)
-    temporal.start_workflow.assert_awaited_once()
-    assert temporal.start_workflow.call_args.kwargs["id"] == (
-        f"polar-void-activity-span-{organization.id}-{created.id}-call_1"
-    )
-
-
-@pytest.mark.asyncio
-async def test_touch_events_skips_without_typesafe_key(
-    session: AsyncSession,
-    organization: Organization,
-    save_fixture: SaveFixture,
-    mocker: MockerFixture,
-) -> None:
-    mocker.patch.object(settings, "TYPESAFE_AI_KEY", None)
-    await definition(session, organization, save_fixture)
-    await event_service.ingest(
-        session, organization.id, [completion("e1")], EventSource.user
-    )
-    temporal = MagicMock(spec=Client)
-    temporal.start_workflow = AsyncMock()
-    await activity_service.touch_events(
-        session, temporal, await _events(session, organization.id)
-    )
-    await session.flush()
-    assert await activity_service.get_span(session, organization.id, "call_1") is None
-    temporal.start_workflow.assert_not_awaited()

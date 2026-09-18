@@ -59,8 +59,14 @@ it('resolves Polar, sandbox, and loopback OAuth targets', async () => {
     webUrl: 'http://127.0.0.1:3101',
     clientId: CLIENT_IDS.local,
   })
-  assert.equal(canonicalLoopbackApiUrl('http://127.0.0.1:8001'), 'http://127.0.0.1:8000')
-  assert.equal(canonicalLoopbackApiUrl('https://api.polar.sh'), 'https://api.polar.sh')
+  assert.equal(
+    canonicalLoopbackApiUrl('http://127.0.0.1:8001'),
+    'http://127.0.0.1:8000',
+  )
+  assert.equal(
+    canonicalLoopbackApiUrl('https://api.polar.sh'),
+    'https://api.polar.sh',
+  )
   assert.equal(resolveClientId('https://example.invalid'), undefined)
   await assert.rejects(
     run(resolveOAuthTarget('https://example.invalid')),

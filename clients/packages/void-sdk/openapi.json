@@ -1388,20 +1388,6 @@
               ],
               "title": "End"
             }
-          },
-          {
-            "name": "group",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "run",
-                "span"
-              ],
-              "type": "string",
-              "default": "run",
-              "title": "Group"
-            }
           }
         ],
         "responses": {
@@ -4453,10 +4439,6 @@
     "schemas": {
       "ActivityReport": {
         "properties": {
-          "taxonomy": {
-            "type": "string",
-            "title": "Taxonomy"
-          },
           "window": {
             "$ref": "#/components/schemas/ActivityWindow"
           },
@@ -4469,55 +4451,15 @@
             },
             "type": "array",
             "title": "By Activity"
-          },
-          "runs": {
-            "items": {
-              "$ref": "#/components/schemas/ActivityRun"
-            },
-            "type": "array",
-            "title": "Runs"
           }
         },
         "type": "object",
         "required": [
-          "taxonomy",
           "window",
           "totals",
-          "by_activity",
-          "runs"
+          "by_activity"
         ],
         "title": "ActivityReport"
-      },
-      "ActivityRun": {
-        "properties": {
-          "run_key": {
-            "type": "string",
-            "title": "Run Key"
-          },
-          "cost": {
-            "type": "number",
-            "title": "Cost"
-          },
-          "by_activity": {
-            "items": {
-              "$ref": "#/components/schemas/ActivityShare"
-            },
-            "type": "array",
-            "title": "By Activity"
-          },
-          "spans": {
-            "type": "integer",
-            "title": "Spans"
-          }
-        },
-        "type": "object",
-        "required": [
-          "run_key",
-          "cost",
-          "by_activity",
-          "spans"
-        ],
-        "title": "ActivityRun"
       },
       "ActivityShare": {
         "properties": {
@@ -4622,17 +4564,6 @@
             ],
             "title": "External Identity Id"
           },
-          "run_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Run Key"
-          },
           "first_event_at": {
             "type": "string",
             "format": "date-time",
@@ -4684,7 +4615,6 @@
           "event_count",
           "event_name",
           "external_identity_id",
-          "run_key",
           "first_event_at",
           "last_event_at",
           "classified_at"
@@ -5449,26 +5379,6 @@
             "minLength": 1,
             "title": "Group By",
             "default": "call_id"
-          },
-          "run_by": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 128,
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Run By"
-          },
-          "taxonomy": {
-            "type": "string",
-            "maxLength": 64,
-            "minLength": 1,
-            "title": "Taxonomy",
-            "default": "polar.agent/v1"
           }
         },
         "type": "object",

@@ -13,7 +13,6 @@ __all__ = ["Classification", "Classifier", "TypeSafeClassifier", "TypeSafeError"
 class Classification:
     activity: str
     confidence: float
-    probabilities: dict[str, float]
     waste: float
     model: str
 
@@ -42,7 +41,6 @@ class TypeSafeClassifier(TypeSafe):
         return Classification(
             activity=activity["choice"],
             confidence=activity["confidence"],
-            probabilities=activity["probabilities"],
             waste=body["answers"]["waste"]["noul"],
             model=body.get("model") or TYPESAFE_MODEL,
         )

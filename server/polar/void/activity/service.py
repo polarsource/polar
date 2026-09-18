@@ -4,36 +4,26 @@ import hashlib
 import json
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from temporalio.client import Client
+import structlog
 
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.models import (
-    VoidActivity,
-    VoidActivitySpan,
-    VoidEvent,
-)
+from polar.models import VoidActivitySpan, VoidEvent
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.organization.service import organization as organization_service
-from polar.void.temporal import TASK_QUEUE
 
-from .repository import (
-    ActivityEventRepository,
-    ActivityRepository,
-    ActivitySpanRepository,
-)
+from .definitions import activities_of
+from .repository import ActivityEventRepository, ActivitySpanRepository
 from .schemas import (
-    ActivityCreate,
-    ActivityGroup,
     ActivityReport,
-    ActivityRun,
     ActivityShare,
     ActivityTotals,
     ActivityWindow,
+    DeployActivity,
 )
 from .schemas import (
     ActivitySpan as ActivitySpanSchema,
@@ -47,7 +37,11 @@ from .taxonomy import (
     UNLABELED,
 )
 from .typesafe import Classifier, TypeSafeClassifier, TypeSafeError
-from .workflows import ClassifySpanInput, ClassifySpanWorkflow
+
+log = structlog.get_logger()
+
+DEBOUNCE = timedelta(seconds=1)
+RETRY_BACKOFF = timedelta(seconds=30)
 
 _SPAN_METADATA = {
     "model",
@@ -198,37 +192,6 @@ class ActivityService:
     def __init__(self, classifier: Classifier | None = None) -> None:
         self.classifier = classifier or TypeSafeClassifier()
 
-    async def list(
-        self, session: AsyncReadSession, organization_id: UUID
-    ) -> Sequence[VoidActivity]:
-        return await ActivityRepository.from_session(session).list(organization_id)
-
-    async def list_for_version(
-        self, session: AsyncReadSession, organization_id: UUID, version_id: str
-    ) -> Sequence[VoidActivity]:
-        return await ActivityRepository.from_session(session).list_for_version(
-            organization_id, version_id
-        )
-
-    async def create(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        create_schema: ActivityCreate,
-    ) -> VoidActivity:
-        return await ActivityRepository.from_session(session).create(
-            VoidActivity(
-                slug=create_schema.slug,
-                version_id=create_schema.version_id,
-                event_name=create_schema.event_name,
-                group_by=create_schema.group_by,
-                run_by=create_schema.run_by,
-                taxonomy=create_schema.taxonomy,
-                organization_id=organization_id,
-            ),
-            flush=True,
-        )
-
     async def report(
         self,
         session: AsyncReadSession,
@@ -237,45 +200,17 @@ class ActivityService:
         identity: str | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
-        group: ActivityGroup = "run",
     ) -> ActivityReport:
         version_id = await organization_service.active_version(session, organization_id)
-        if version_id is None:
-            return ActivityReport(
-                taxonomy=TAXONOMY,
-                window=ActivityWindow(start=start, end=end),
-                totals=_totals([]),
-                by_activity=[],
-                runs=[],
+        spans: Sequence[VoidActivitySpan] = []
+        if version_id is not None:
+            spans = await ActivitySpanRepository.from_session(session).list_spans(
+                organization_id, version_id, identity=identity, start=start, end=end
             )
-        spans = await ActivitySpanRepository.from_session(session).list_spans(
-            organization_id,
-            version_id,
-            identity=identity,
-            start=start,
-            end=end,
-        )
-        runs: list[ActivityRun] = []
-        if group == "run":
-            by_run: dict[str, list[VoidActivitySpan]] = defaultdict(list)
-            for span in spans:
-                if span.run_key:
-                    by_run[span.run_key].append(span)
-            runs = [
-                ActivityRun(
-                    run_key=key,
-                    cost=sum(span.cost or 0 for span in bucket),
-                    by_activity=_shares(bucket),
-                    spans=len(bucket),
-                )
-                for key, bucket in sorted(by_run.items())
-            ]
         return ActivityReport(
-            taxonomy=TAXONOMY,
             window=ActivityWindow(start=start, end=end),
             totals=_totals(spans),
             by_activity=_shares(spans),
-            runs=runs,
         )
 
     async def get_span(
@@ -292,15 +227,9 @@ class ActivityService:
         )
         if span is None:
             return None
-        definition = await ActivityRepository.from_session(session).get(
-            organization_id, span.activity_id
+        events = await ActivityEventRepository.from_session(session).list_for_span(
+            organization_id, span.event_name, span.group_by, span_key
         )
-        event_ids: list[str] = []
-        if definition is not None:
-            events = await ActivityEventRepository.from_session(session).list_for_span(
-                organization_id, definition.event_name, definition.group_by, span_key
-            )
-            event_ids = [event.external_id for event in events]
         return ActivitySpanSchema(
             span_key=span.span_key,
             activity=span.activity,
@@ -312,175 +241,150 @@ class ActivityService:
             event_count=span.event_count,
             event_name=span.event_name,
             external_identity_id=span.external_identity_id,
-            run_key=span.run_key,
             first_event_at=span.first_event_at,
             last_event_at=span.last_event_at,
             classified_at=span.classified_at,
-            event_ids=event_ids,
+            event_ids=[event.external_id for event in events],
         )
 
     async def touch_events(
-        self,
-        session: AsyncSession,
-        temporal: Client,
-        events: Sequence[VoidEvent],
+        self, session: AsyncSession, events: Sequence[VoidEvent]
     ) -> None:
+        """Mark every span these events belong to as due for classification.
+        The span row is the job: its ``due_at`` debounces, the sweep drains."""
         if not settings.VOID_ACTIVITY_ENABLED:
             return
+        due_at = utc_now() + DEBOUNCE
         by_org: dict[UUID, list[VoidEvent]] = defaultdict(list)
         for event in events:
             by_org[event.organization_id].append(event)
+        repository = ActivitySpanRepository.from_session(session)
         for organization_id, org_events in by_org.items():
-            version_id = await organization_service.active_version(
+            deployment = await organization_service.active_deployment(
                 session, organization_id
             )
-            if version_id is None:
+            if deployment is None:
                 continue
-            definitions = await self.list_for_version(
-                session, organization_id, version_id
-            )
-            if not definitions:
+            by_name = {
+                definition.event: definition
+                for definition in activities_of(deployment.configuration).values()
+            }
+            if not by_name:
                 continue
-            by_name = {definition.event_name: definition for definition in definitions}
-            seen: set[tuple[UUID, str]] = set()
-            repository = ActivitySpanRepository.from_session(session)
+            seen: set[str] = set()
             for event in org_events:
                 name = event.payload.get("name")
-                if not isinstance(name, str):
-                    continue
-                definition = by_name.get(name)
+                definition = by_name.get(name) if isinstance(name, str) else None
                 if definition is None:
                     continue
                 key = span_key_of(event.payload, definition.group_by)
-                pair = (definition.id, key)
-                if pair in seen:
+                if key in seen:
                     continue
-                seen.add(pair)
-                await self._seed_pending(
-                    session, repository, definition, organization_id, key, event
+                seen.add(key)
+                current = await repository.get_span(
+                    organization_id, deployment.version_id, key
                 )
-                await temporal.start_workflow(
-                    ClassifySpanWorkflow.run,
-                    ClassifySpanInput(str(organization_id), str(definition.id), key),
-                    id=f"polar-void-activity-span-{organization_id}-{definition.id}-{key}",
-                    task_queue=TASK_QUEUE,
-                    start_signal="touch",
-                )
+                if current is None:
+                    current = self._pending_span(
+                        organization_id, deployment.version_id, definition, key, event
+                    )
+                    session.add(current)
+                current.due_at = due_at
 
-    async def _seed_pending(
-        self,
-        session: AsyncSession,
-        repository: ActivitySpanRepository,
-        definition: VoidActivity,
+    @staticmethod
+    def _pending_span(
         organization_id: UUID,
+        version_id: str,
+        definition: DeployActivity,
         span_key: str,
         event: VoidEvent,
-    ) -> None:
-        current = await repository.get_span(
-            organization_id, definition.version_id, span_key
-        )
-        if current is not None:
-            return
+    ) -> VoidActivitySpan:
         meta = event_metadata(event.payload)
         cost = meta.get("cost")
-        session.add(
-            VoidActivitySpan(
-                activity_id=definition.id,
-                version_id=definition.version_id,
-                taxonomy=definition.taxonomy,
-                span_key=span_key,
-                event_name=definition.event_name,
-                organization_id=organization_id,
-                external_identity_id=event.payload.get("external_identity_id"),
-                external_root_id=event.payload.get("external_root_id"),
-                first_event_at=event.timestamp,
-                last_event_at=event.timestamp,
-                state_hash="",
-                activity=PENDING,
-                cost=cost if isinstance(cost, int | float) else None,
-                input_tokens=int(meta.get("input_tokens") or 0),
-                output_tokens=int(meta.get("output_tokens") or 0),
-                event_count=1,
-            )
+        return VoidActivitySpan(
+            version_id=version_id,
+            span_key=span_key,
+            event_name=definition.event,
+            group_by=definition.group_by,
+            organization_id=organization_id,
+            external_identity_id=event.payload.get("external_identity_id"),
+            external_root_id=event.payload.get("external_root_id"),
+            first_event_at=event.timestamp,
+            last_event_at=event.timestamp,
+            state_hash="",
+            activity=PENDING,
+            cost=cost if isinstance(cost, int | float) else None,
+            input_tokens=int(meta.get("input_tokens") or 0),
+            output_tokens=int(meta.get("output_tokens") or 0),
+            event_count=1,
         )
 
-    async def classify_span(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        activity_id: UUID,
-        span_key: str,
-    ) -> VoidActivitySpan | None:
-        definition = await ActivityRepository.from_session(session).get(
-            organization_id, activity_id
+    async def classify_due(self, session: AsyncSession, *, limit: int = 50) -> int:
+        """One sweep: label every span whose debounce has elapsed. A failed
+        span is pushed back instead of failing the sweep; a span touched while
+        being labeled keeps its newer ``due_at`` and comes round again."""
+        now = utc_now()
+        due = await ActivitySpanRepository.from_session(session).list_due(
+            now, limit=limit
         )
-        if definition is None:
-            return None
+        for span in due:
+            seen = span.due_at
+            try:
+                await self.classify_span(session, span)
+            except TypeSafeError as error:
+                log.warning(
+                    "void.activity.classify_failed",
+                    span_key=span.span_key,
+                    error=str(error),
+                )
+                span.due_at = utc_now() + RETRY_BACKOFF
+                await session.flush()
+                continue
+            await session.refresh(span, attribute_names=["due_at"])
+            if span.due_at == seen:
+                span.due_at = None
+            await session.flush()
+        return len(due)
+
+    async def classify_span(
+        self, session: AsyncSession, span: VoidActivitySpan
+    ) -> VoidActivitySpan:
         events = await ActivityEventRepository.from_session(session).list_for_span(
-            organization_id, definition.event_name, definition.group_by, span_key
+            span.organization_id, span.event_name, span.group_by, span.span_key
         )
         if not events:
-            return None
+            return span
         state = summarize_events(events)
         digest = state_hash(state)
-        repository = ActivitySpanRepository.from_session(session)
-        current = await repository.get_span(
-            organization_id, definition.version_id, span_key
-        )
-        if (
-            current is not None
-            and current.state_hash == digest
-            and current.activity != PENDING
-        ):
-            return current
+        if span.state_hash == digest and span.activity != PENDING:
+            return span
         first, last = events[0], events[-1]
-        run_key = (
-            event_metadata(first.payload).get(definition.run_by)
-            if definition.run_by
-            else None
-        )
         totals = state["span"]
-        if current is None:
-            current = VoidActivitySpan(
-                activity_id=definition.id,
-                version_id=definition.version_id,
-                taxonomy=definition.taxonomy,
-                span_key=span_key,
-                event_name=definition.event_name,
-                organization_id=organization_id,
-                first_event_at=first.timestamp,
-                last_event_at=last.timestamp,
-                state_hash=digest,
-                activity=PENDING,
-            )
-            session.add(current)
-        current.external_identity_id = first.payload.get("external_identity_id")
-        current.external_root_id = first.payload.get("external_root_id")
-        current.run_key = run_key if isinstance(run_key, str) else None
-        current.cost = totals["cost"]
-        current.input_tokens = totals["input_tokens"]
-        current.output_tokens = totals["output_tokens"]
-        current.event_count = len(events)
-        current.first_event_at = first.timestamp
-        current.last_event_at = last.timestamp
-        current.state_hash = digest
+        span.external_identity_id = first.payload.get("external_identity_id")
+        span.external_root_id = first.payload.get("external_root_id")
+        span.cost = totals["cost"]
+        span.input_tokens = totals["input_tokens"]
+        span.output_tokens = totals["output_tokens"]
+        span.event_count = len(events)
+        span.first_event_at = first.timestamp
+        span.last_event_at = last.timestamp
+        span.state_hash = digest
         try:
             result = await self.classifier.classify(state)
         except TypeSafeError:
-            current.activity = PENDING
+            span.activity = PENDING
             await session.flush()
             raise
         if result.confidence >= CONFIDENCE_THRESHOLD:
-            current.activity = result.activity
+            span.activity = result.activity
         else:
-            current.activity = UNLABELED
-        current.activity_confidence = result.confidence
-        current.activity_probabilities = result.probabilities
-        current.waste = result.waste
-        current.model = result.model
-        current.classified_at = utc_now()
+            span.activity = UNLABELED
+        span.activity_confidence = result.confidence
+        span.waste = result.waste
+        span.model = result.model
+        span.classified_at = utc_now()
         await session.flush()
-        return current
+        return span
 
 
 activity = ActivityService()

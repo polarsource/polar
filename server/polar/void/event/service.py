@@ -155,7 +155,7 @@ class EventService:
             timestamps[event.organization_id].append(event.timestamp)
         for organization_id, values in timestamps.items():
             await reducer_service.touch_buckets(temporal, organization_id, values)
-        await activity_service.touch_events(session, temporal, pending)
+        await activity_service.touch_events(session, pending)
         await repository.mark_delivered(pending, utc_now())
         return len(pending)
 

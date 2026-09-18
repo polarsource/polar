@@ -30,7 +30,6 @@ from polar.models import (
     Customer,
     Organization,
     User,
-    VoidActivity,
     VoidActivitySpan,
     VoidBillingIdentity,
     VoidDeployment,
@@ -251,12 +250,7 @@ def configuration_v3() -> dict[str, Any]:
             )
             product["entitlements"].append("sandbox")
     config["activities"] = [
-        {
-            "slug": "agent",
-            "event": "llm.completion",
-            "group_by": "call_id",
-            "run_by": "call_id",
-        }
+        {"slug": "agent", "event": "llm.completion", "group_by": "call_id"}
     ]
     return config
 
@@ -344,7 +338,6 @@ class DemoSeeder:
             VoidReducerDependency,
             VoidReducerBucket,
             VoidActivitySpan,
-            VoidActivity,
             VoidProduct,
             VoidMeter,
             VoidDeployment,

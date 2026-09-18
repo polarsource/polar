@@ -96,8 +96,7 @@ def money(amount: Money) -> str:
 
 
 def usd_blend(amount: Money, rates: Mapping[str, float]) -> str | None:
-    """USD equivalent when the amount mixes currencies."""
-    if not amount.has_mixed_currency:
+    if not amount.has_foreign_currency:
         return None
     usd = amount.to_usd(rates)
     if usd is None:

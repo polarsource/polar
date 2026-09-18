@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 from uuid import UUID
 
-from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -25,9 +25,6 @@ def get_expires_at() -> datetime:
 class MemberSession(RecordModel):
     __tablename__ = "member_sessions"
 
-    token: Mapped[str | None] = mapped_column(
-        CHAR(64), unique=True, nullable=True, deferred=True
-    )
     token_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, String, Text, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -24,9 +24,6 @@ def get_expires_at() -> datetime:
 class UserSession(RecordModel):
     __tablename__ = "user_sessions"
 
-    token: Mapped[str | None] = mapped_column(
-        CHAR(64), unique=True, nullable=True, deferred=True
-    )
     token_v2: Mapped[str | None] = mapped_column(
         String(80), unique=True, nullable=True, default=None
     )

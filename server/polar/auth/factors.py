@@ -8,6 +8,11 @@ from reauth.authentication_session import AuthenticationSession
 from reauth.crypto import get_token_hash
 from reauth.factors import FactorBase
 from reauth.factors.backup_codes import (
+    AlreadyUsedBackupCodeException,
+    InvalidBackupCodeException,
+    NotEnrolledBackupCodesException,
+)
+from reauth.factors.backup_codes import (
     BackupCodesEnrollment as BackupCodesEnrollmentDataclass,
 )
 from reauth.factors.backup_codes import BackupCodesFactor as BackupCodesFactorBase
@@ -22,6 +27,7 @@ from polar.config import settings
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import ResourceNotFound
+from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import BackupCodesEnrollment, EmailOTP, TOTPEnrollment
@@ -220,6 +226,36 @@ class BackupCodesFactor(BackupCodesFactorBase):
         self.session = session
         super().__init__(hash_secret=settings.SECRET)
 
+    async def verify(
+        self, identity_id: typing.Any, code: str
+    ) -> BackupCodesEnrollmentDataclass:
+        enrollment = await self.get_enrollment(identity_id)
+        if enrollment is None:
+            raise NotEnrolledBackupCodesException()
+
+        candidates = get_token_hash_candidates(code)
+        stored = next(
+            (
+                candidate
+                for candidate in candidates.values()
+                if candidate in enrollment.codes_hashes
+            ),
+            None,
+        )
+        if stored is None:
+            raise InvalidBackupCodeException()
+        if stored in enrollment.used_codes_hashes:
+            raise AlreadyUsedBackupCodeException()
+
+        current = candidates[settings.CURRENT_HASH_SECRET_ID]
+        enrollment.codes_hashes = [
+            current if candidate == stored else candidate
+            for candidate in enrollment.codes_hashes
+        ]
+        enrollment.used_codes_hashes = [*enrollment.used_codes_hashes, current]
+        await self.update(enrollment)
+        return enrollment
+
     async def get_enrollment(
         self, identity_id: typing.Any
     ) -> BackupCodesEnrollmentDataclass | None:
@@ -247,6 +283,7 @@ class BackupCodesFactor(BackupCodesFactorBase):
             update(BackupCodesEnrollment)
             .where(BackupCodesEnrollment.id == backup_codes.id)
             .values(
+                codes_hashes=backup_codes.codes_hashes,
                 used_codes_hashes=backup_codes.used_codes_hashes,
             )
         )

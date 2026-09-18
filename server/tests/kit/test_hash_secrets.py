@@ -1,0 +1,94 @@
+from typing import Any
+from unittest.mock import MagicMock
+
+import pytest
+from pytest_mock import MockerFixture
+
+from polar.config import settings
+from polar.kit.hash_secrets import (
+    HashSecretsError,
+    _fetch_hash_secrets,
+    get_hash_secrets,
+)
+
+ARN = "arn:aws:secretsmanager:us-east-2:1:secret:polar-test-hash-secret"
+
+
+@pytest.fixture(autouse=True)
+def clear_cache() -> Any:
+    _fetch_hash_secrets.cache_clear()
+    yield
+    _fetch_hash_secrets.cache_clear()
+
+
+def stub_client(mocker: MockerFixture, versions: list[dict[str, Any]]) -> MagicMock:
+    client = MagicMock()
+    # One version per page, so a paginated listing is what the tests exercise.
+    client.get_paginator.return_value.paginate.return_value = [
+        {"Versions": [version]} for version in versions
+    ]
+    client.get_secret_value.side_effect = lambda SecretId, VersionId: {
+        "SecretString": f"secret-for-{VersionId}"
+    }
+    mocker.patch("polar.kit.hash_secrets._client", return_value=client)
+    return client
+
+
+def test_reads_the_settings_without_an_arn(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", None)
+    monkeypatch.setattr(settings, "HASH_SECRETS", {"k1": "local"})
+    monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "k1")
+
+    assert get_hash_secrets() == ({"k1": "local"}, "k1")
+
+
+def test_builds_the_set_from_the_versions(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    stub_client(
+        mocker,
+        [
+            {"VersionId": "v1", "VersionStages": ["k1", "AWSPREVIOUS"]},
+            {"VersionId": "v2", "VersionStages": ["k2", "AWSCURRENT"]},
+        ],
+    )
+
+    secrets, current = get_hash_secrets()
+
+    assert secrets == {"k1": "secret-for-v1", "k2": "secret-for-v2"}
+    assert current == "k2"
+
+
+def test_fetches_once_per_process(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    client = stub_client(
+        mocker, [{"VersionId": "v1", "VersionStages": ["k1", "AWSCURRENT"]}]
+    )
+
+    get_hash_secrets()
+    get_hash_secrets()
+
+    client.get_paginator.assert_called_once()
+
+
+def test_rejects_a_version_without_an_id(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    stub_client(mocker, [{"VersionId": "v1", "VersionStages": ["AWSCURRENT"]}])
+
+    with pytest.raises(HashSecretsError, match="custom staging labels"):
+        get_hash_secrets()
+
+
+def test_rejects_a_secret_with_no_current_version(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    stub_client(mocker, [{"VersionId": "v1", "VersionStages": ["k1", "AWSPREVIOUS"]}])
+
+    with pytest.raises(HashSecretsError, match="AWSCURRENT"):
+        get_hash_secrets()

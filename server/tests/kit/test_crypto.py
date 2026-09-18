@@ -13,7 +13,15 @@ def current_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "k2")
 
 
-def test_hash_is_a_bare_digest_without_a_current_secret() -> None:
+@pytest.fixture
+def no_current_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "HASH_SECRETS", {})
+    monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", None)
+
+
+def test_hash_is_a_bare_digest_without_a_current_secret(
+    no_current_secret: None,
+) -> None:
     hash = get_token_hash("polar_at_xxx")
     assert len(hash) == 64
     assert get_token_hash_candidates("polar_at_xxx") == [hash]
@@ -53,7 +61,7 @@ def test_a_hash_written_under_a_retired_secret_is_still_a_candidate(
 )
 def test_config_rejects_an_unusable_secret_id(secret_id: str) -> None:
     with pytest.raises(ValidationError):
-        Settings(HASH_SECRETS={secret_id: "secret"})
+        Settings(HASH_SECRETS={secret_id: "secret"}, CURRENT_HASH_SECRET_ID=None)
 
 
 def test_config_rejects_a_current_id_it_has_no_secret_for() -> None:

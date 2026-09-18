@@ -20811,63 +20811,6 @@ export interface components {
       /** @default text */
       format: components['schemas']['ColumnFormat']
     }
-    /** DeprecatedWebhookEndpointCreateWithSecret */
-    DeprecatedWebhookEndpointCreateWithSecret: {
-      /**
-       * Url
-       * Format: uri
-       * @description The URL where the webhook events will be sent.
-       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
-       */
-      url: string
-      /**
-       * Name
-       * @description An optional name for the webhook endpoint to help organize and identify it.
-       */
-      name?: string | null
-      /**
-       * Api Version
-       * @description The API version that'll be used in event payloads.
-       * @default 2026-04
-       * @enum {string}
-       */
-      api_version: '2026-04' | '2026-10'
-      /** @description The format of the webhook payload. */
-      format: components['schemas']['WebhookFormat']
-      /**
-       * Events
-       * @description The events that will trigger the webhook.
-       */
-      events: components['schemas']['WebhookEventType'][]
-      /**
-       * Organization Id
-       * @description The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
-    }
-    /** DeprecatedWebhookEndpointUpdateWithSecret */
-    DeprecatedWebhookEndpointUpdateWithSecret: {
-      /** Url */
-      url?: string | null
-      /**
-       * Name
-       * @description An optional name for the webhook endpoint to help organize and identify it.
-       */
-      name?: string | null
-      /**
-       * Api Version
-       * @description The API version that'll be used in event payloads.
-       */
-      api_version?: ('2026-04' | '2026-10') | null
-      format?: components['schemas']['WebhookFormat'] | null
-      /** Events */
-      events?: components['schemas']['WebhookEventType'][] | null
-      /**
-       * Enabled
-       * @description Whether the webhook endpoint is enabled.
-       */
-      enabled?: boolean | null
-    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -23939,6 +23882,13 @@ export interface components {
       customer_id: string
       customer: components['schemas']['LicenseKeyCustomer']
       /**
+       * Member Id
+       * @description The ID of the seat member holding this key, if any.
+       */
+      member_id?: string | null
+      /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
+      member?: components['schemas']['LicenseKeyMember'] | null
+      /**
        * Benefit Id
        * Format: uuid4
        * @description The benefit ID.
@@ -24062,6 +24012,13 @@ export interface components {
        */
       customer_id: string
       customer: components['schemas']['LicenseKeyCustomer']
+      /**
+       * Member Id
+       * @description The ID of the seat member holding this key, if any.
+       */
+      member_id?: string | null
+      /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
+      member?: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -38762,6 +38719,13 @@ export interface components {
       customer_id: string
       customer: components['schemas']['LicenseKeyCustomer']
       /**
+       * Member Id
+       * @description The ID of the seat member holding this key, if any.
+       */
+      member_id?: string | null
+      /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
+      member?: components['schemas']['LicenseKeyMember'] | null
+      /**
        * Benefit Id
        * Format: uuid4
        * @description The benefit ID.
@@ -39554,7 +39518,10 @@ export interface components {
        */
       readonly uses_standard_webhook_signature: boolean
     }
-    /** DeprecatedWebhookEndpointCreateWithSecret */
+    /**
+     * WebhookEndpointCreate
+     * @description Schema to create a webhook endpoint.
+     */
     WebhookEndpointCreate: {
       /**
        * Url
@@ -39588,7 +39555,10 @@ export interface components {
        */
       organization_id?: string | null
     }
-    /** DeprecatedWebhookEndpointUpdateWithSecret */
+    /**
+     * WebhookEndpointUpdate
+     * @description Schema to update a webhook endpoint.
+     */
     WebhookEndpointUpdate: {
       /** Url */
       url?: string | null
@@ -69909,12 +69879,6 @@ export const customerWalletSortPropertyValues: ReadonlyArray<
 export const dataTableBlockTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DataTableBlock']['type']
 > = ['data_table']
-export const deprecatedWebhookEndpointCreateWithSecretApi_versionValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DeprecatedWebhookEndpointCreateWithSecret']['api_version']
-> = ['2026-04', '2026-10']
-export const deprecatedWebhookEndpointUpdateWithSecretApi_versionAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DeprecatedWebhookEndpointUpdateWithSecret']['api_version']
-> = ['2026-04', '2026-10']
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']

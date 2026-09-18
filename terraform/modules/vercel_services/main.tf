@@ -7,6 +7,7 @@ resource "vercel_project" "this" {
   preview_deployments_disabled = var.preview_deployments_disabled
   enable_preview_feedback      = var.enable_preview_feedback
   enable_production_feedback   = var.enable_production_feedback
+  git_provider_options         = var.git_provider_options
 
   automatically_expose_system_environment_variables = true
 

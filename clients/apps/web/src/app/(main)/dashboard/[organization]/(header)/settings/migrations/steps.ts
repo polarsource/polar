@@ -75,6 +75,12 @@ export type MigrationPosition =
   | { kind: 'step'; index: number }
   | { kind: 'completed' }
 
+export function isMigrationLocked(
+  step: schemas['MerchantMigrationStep'] | undefined,
+): boolean {
+  return step === 'cleanup' || step === 'completed'
+}
+
 // Card-checklist keys after the last card step belong on Switch, even if the
 // backend still reports `copy_cards` for an in-progress migration.
 export function visibleMigrationStep(

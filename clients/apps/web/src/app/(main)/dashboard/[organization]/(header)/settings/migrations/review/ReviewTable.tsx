@@ -20,6 +20,7 @@ import {
   toggleAll,
   toggleRow,
 } from '../selection'
+import { isMigrationLocked } from '../steps'
 import { ReviewFilter } from './ReviewStatusTabs'
 import { ReviewTableView } from './ReviewTableView'
 
@@ -157,6 +158,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={refreshing || rerunPrecheck.isPending}
       refreshError={refreshError}
+      locked={isMigrationLocked(migration?.step)}
     />
   )
 }

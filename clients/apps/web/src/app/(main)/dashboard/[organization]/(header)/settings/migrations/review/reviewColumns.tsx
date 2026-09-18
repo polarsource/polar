@@ -13,6 +13,7 @@ interface ColumnContext {
   canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
+  selectable?: boolean
 }
 
 export function buildReviewColumns({
@@ -21,8 +22,9 @@ export function buildReviewColumns({
   canSelectAll,
   onToggle,
   onToggleAll,
+  selectable = true,
 }: ColumnContext): DataTableColumnDef<ReviewRow>[] {
-  return [
+  const columns: DataTableColumnDef<ReviewRow>[] = [
     {
       id: 'select',
       size: 44,
@@ -78,6 +80,9 @@ export function buildReviewColumns({
       cell: ({ row }) => <AmountCell row={row.original} />,
     },
   ]
+  return selectable
+    ? columns
+    : columns.filter((column) => column.id !== 'select')
 }
 
 function NameCell({ row }: { row: ReviewRow }) {

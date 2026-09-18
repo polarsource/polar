@@ -1,11 +1,11 @@
 'use client'
 
 import {
+  invalidateMigrationRecords,
   useMigrationRecords,
   useMigrationSwitch,
   useStartMigrationSwitch,
 } from '@/hooks/queries/merchantMigrations'
-import { getQueryClient } from '@/utils/api/query'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -28,7 +28,13 @@ const initialSwitchSelection: SelectionState = {
 const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
 
-export function SwitchPanel({ migrationId }: { migrationId: string }) {
+export function SwitchPanel({
+  migrationId,
+  locked = false,
+}: {
+  migrationId: string
+  locked?: boolean
+}) {
   const [filter, setFilter] = useState<SwitchFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -48,9 +54,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
   const wasRunning = useRef(false)
   useEffect(() => {
     if (wasRunning.current && !running) {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords', { id: migrationId }],
-      })
+      invalidateMigrationRecords(migrationId)
     }
     wasRunning.current = running
   }, [running, migrationId])
@@ -98,7 +102,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
   const switchableTotal = Math.max(0, report.total - report.moved)
   // Select-all sends `{}` (every imported subscription). Only safe on the All
   // tab — on a status tab it would bill rows the merchant isn't looking at.
-  const canSelectAll = filter === 'all' && switchableTotal > 0
+  const canSelectAll = !locked && filter === 'all' && switchableTotal > 0
   const switchCount = selectedCount(selection, switchableTotal)
 
   return (
@@ -132,6 +136,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
             'Something went wrong. Please try again.'
           : undefined
       }
+      locked={locked}
     />
   )
 }

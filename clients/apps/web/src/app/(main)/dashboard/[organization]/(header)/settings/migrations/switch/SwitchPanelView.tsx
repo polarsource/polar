@@ -39,6 +39,7 @@ interface Props {
   onSwitch: () => void
   switching: boolean
   switchError?: string
+  locked?: boolean
 }
 
 export function SwitchPanelView({
@@ -60,6 +61,7 @@ export function SwitchPanelView({
   onSwitch,
   switching,
   switchError,
+  locked = false,
 }: Props) {
   const [openRow, setOpenRow] = useState<SwitchRow | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -79,8 +81,9 @@ export function SwitchPanelView({
         canSelectAll,
         onToggle,
         onToggleAll,
+        selectable: !locked,
       }),
-    [canSelectAll, selection, onToggle, onToggleAll],
+    [canSelectAll, selection, onToggle, onToggleAll, locked],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -125,13 +128,15 @@ export function SwitchPanelView({
               onChange={onFilterChange}
             />
           </Box>
-          <Button
-            size="sm"
-            onClick={() => setConfirming(true)}
-            disabled={running || switchCount <= 0}
-          >
-            {buttonLabel}
-          </Button>
+          {locked ? null : (
+            <Button
+              size="sm"
+              onClick={() => setConfirming(true)}
+              disabled={running || switchCount <= 0}
+            >
+              {buttonLabel}
+            </Button>
+          )}
         </Box>
 
         {rows.length === 0 ? (
@@ -162,15 +167,17 @@ export function SwitchPanelView({
         )}
       </Box>
 
-      <ConfirmModal
-        isShown={confirming}
-        hide={() => setConfirming(false)}
-        title={`Switch ${numberFormat.format(switchCount)} subscriptions?`}
-        description={SWITCH_UNDONE_WARNING}
-        destructive
-        destructiveText={`Switch ${numberFormat.format(switchCount)} subscriptions`}
-        onConfirm={onSwitch}
-      />
+      {locked ? null : (
+        <ConfirmModal
+          isShown={confirming}
+          hide={() => setConfirming(false)}
+          title={`Switch ${numberFormat.format(switchCount)} subscriptions?`}
+          description={SWITCH_UNDONE_WARNING}
+          destructive
+          destructiveText={`Switch ${numberFormat.format(switchCount)} subscriptions`}
+          onConfirm={onSwitch}
+        />
+      )}
 
       <InlineModal
         isShown={openRow !== null}

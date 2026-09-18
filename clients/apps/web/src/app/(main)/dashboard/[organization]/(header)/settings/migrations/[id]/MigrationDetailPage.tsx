@@ -17,6 +17,7 @@ import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
 import {
   currentStepDef,
+  isMigrationLocked,
   MigrationStepDef,
   OWNER_LABELS,
   visibleMigrationStep,
@@ -184,14 +185,18 @@ function StepContent({
           />
         </Box>
       )
-    // The switch runs here, and stays reachable at cleanup so the merchant can
-    // switch the ones an earlier run left on Stripe.
+    // Cleanup and completed stay on this table so the merchant can review
+    // what moved; selection and switch are locked once the migration is done.
     case 'activate_subscriptions':
     case 'cleanup':
+    case 'completed':
       return (
         <Box flexDirection="column" rowGap="l">
           {def && <StepHeading def={def} />}
-          <SwitchPanel migrationId={migration.id} />
+          <SwitchPanel
+            migrationId={migration.id}
+            locked={isMigrationLocked(migration.step)}
+          />
         </Box>
       )
   }

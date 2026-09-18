@@ -215,7 +215,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         self, code: str, client: OAuth2Client
     ) -> OAuth2AuthorizationCode | None:
         statement = select(OAuth2AuthorizationCode).where(
-            OAuth2AuthorizationCode.code.in_(get_token_hash_candidates(code)),
+            OAuth2AuthorizationCode.code.in_(get_token_hash_candidates(code).values()),
             OAuth2AuthorizationCode.client_id == client.client_id,
             OAuth2AuthorizationCode.deleted_at.is_(None),
         )

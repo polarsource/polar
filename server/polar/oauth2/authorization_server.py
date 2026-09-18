@@ -263,7 +263,7 @@ class _QueryTokenMixin:
         token_string: str,
         token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
     ) -> OAuth2Token | None:
-        token_hashes = get_token_hash_candidates(token_string)
+        token_hashes = get_token_hash_candidates(token_string).values()
         statement = select(OAuth2Token)
         if token_type_hint == "access_token":
             statement = statement.where(OAuth2Token.access_token.in_(token_hashes))

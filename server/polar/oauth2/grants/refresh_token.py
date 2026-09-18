@@ -25,7 +25,9 @@ class RefreshTokenGrant(_RefreshTokenGrant):
 
     def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
         statement = select(OAuth2Token).where(
-            OAuth2Token.refresh_token.in_(get_token_hash_candidates(refresh_token))
+            OAuth2Token.refresh_token.in_(
+                get_token_hash_candidates(refresh_token).values()
+            )
         )
         result = self.server.session.execute(statement)
         token = result.unique().scalar_one_or_none()

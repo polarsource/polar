@@ -81,7 +81,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
             self.server.validate_requested_scope(scope)
 
         statement = select(UserSession).where(
-            UserSession.token.in_(get_token_hash_candidates(token)),
+            UserSession.token.in_(get_token_hash_candidates(token).values()),
             UserSession.expires_at > utc_now(),
         )
         result = self.server.session.execute(statement)

@@ -44139,8 +44139,6 @@ export interface operations {
         type?: components['schemas']['TransactionType'] | null
         account_id?: string | null
         payment_customer_id?: string | null
-        payment_organization_id?: string | null
-        payment_user_id?: string | null
         exclude_platform_fees?: boolean
         /** @description Page number, defaults to 1. */
         page?: number

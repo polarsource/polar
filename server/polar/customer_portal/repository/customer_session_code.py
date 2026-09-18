@@ -1,22 +1,26 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.kit.repository import RepositoryBase
+from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSessionCode
 
 
-class CustomerSessionCodeRepository(RepositoryBase[CustomerSessionCode]):
+class CustomerSessionCodeRepository(
+    RepositoryTokenHashMixin[CustomerSessionCode],
+    RepositoryBase[CustomerSessionCode],
+):
     model = CustomerSessionCode
+    token_hash_attribute = "code"
 
-    async def get_valid_by_code_hash_for_update(
-        self, code_hash: str
+    async def get_valid_by_code_for_update(
+        self, code: str
     ) -> CustomerSessionCode | None:
         statement = (
             select(CustomerSessionCode)
             .where(
                 CustomerSessionCode.expires_at > utc_now(),
-                CustomerSessionCode.code == code_hash,
+                self.token_hash_clause(code),
             )
             .options(
                 joinedload(CustomerSessionCode.customer).joinedload(

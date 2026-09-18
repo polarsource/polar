@@ -13,7 +13,6 @@ from dramatiq.middleware.asyncio import AsyncIO
 
 from polar.config import settings
 from polar.logging import Logger
-from polar.observability.pii import scrub_value
 
 log: Logger = structlog.get_logger()
 
@@ -186,8 +185,10 @@ class _EventLoopWatchdog(threading.Thread):
             asyncio_tasks=asyncio_tasks,
             thread_stacks=thread_stacks,
         )
+        # Also write it raw. The log field above gets scrubbed and cut
+        # short, and this dump is the whole point.
         try:
-            sys.stderr.write(f"{scrub_value(thread_stacks, key='thread_stacks')}\n")
+            sys.stderr.write(f"{thread_stacks}\n")
             sys.stderr.flush()
         except OSError, ValueError:
             pass

@@ -51,6 +51,7 @@ _SUBSCRIPTION_EXPAND = [
 
 class StripeExtractionPhase(StrEnum):
     prices = "prices"
+    inactive_prices = "inactive_prices"
     customers = "customers"
     subscriptions = "subscriptions"
 
@@ -153,7 +154,10 @@ class StripeAdapter:
         self, cursor: dict[str, Any] | None = None
     ) -> ExtractionPage:
         extraction_cursor = StripeExtractionCursor.model_validate(cursor or {})
-        if extraction_cursor.phase == StripeExtractionPhase.prices:
+        if extraction_cursor.phase in (
+            StripeExtractionPhase.prices,
+            StripeExtractionPhase.inactive_prices,
+        ):
             return await self._extract_price_page(extraction_cursor)
         if extraction_cursor.phase == StripeExtractionPhase.customers:
             return await self._extract_customer_page(extraction_cursor)
@@ -181,19 +185,26 @@ class StripeAdapter:
     async def _extract_price_page(
         self, cursor: StripeExtractionCursor
     ) -> ExtractionPage:
+        listing_active = cursor.phase == StripeExtractionPhase.prices
         params: stripe_lib.params.PriceListParams = {
             "limit": PAGE_SIZE,
             "expand": ["data.product", "data.currency_options"],
+            "active": listing_active,
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
         prices = await self._client.v1.prices.list_async(params=params)
         records = self._map_product_page(prices.data)
+        next_phase = (
+            StripeExtractionPhase.inactive_prices
+            if listing_active
+            else StripeExtractionPhase.customers
+        )
         return ExtractionPage(
             records,
             self._next_cursor(
-                StripeExtractionPhase.prices,
-                StripeExtractionPhase.customers,
+                cursor.phase,
+                next_phase,
                 prices.data,
                 prices.has_more,
             ),
@@ -206,13 +217,17 @@ class StripeAdapter:
         for price in prices:
             product = price.product
             # Deleted products have no catalog row; subscriptions on them stay
-            # on the source. Archived products and prices are returned here.
+            # on the source. Archived products and inactive prices are catalog
+            # rows. Inactive prices on a live product are a sibling so they
+            # don't collide with the sellable prices.
             if not isinstance(product, stripe_lib.Product) or product.get("deleted"):
                 continue
             recurring = price.recurring
             interval = recurring.interval if recurring else None
             interval_count = recurring.interval_count if recurring else 1
-            key = f"{product.id}:{interval}:{interval_count}"
+            key, archived = self._catalog_product_key(
+                product, interval, interval_count, price
+            )
             canonical = grouped.get(key)
             if canonical is None:
                 canonical = CanonicalProduct(
@@ -222,11 +237,25 @@ class StripeAdapter:
                     recurring_interval=interval,
                     recurring_interval_count=interval_count,
                     prices=[],
-                    archived=not bool(product.get("active")),
+                    archived=archived,
                 )
                 grouped[key] = canonical
             canonical.prices.extend(self._map_prices(price))
         return list(grouped.values())
+
+    def _catalog_product_key(
+        self,
+        product: stripe_lib.Product,
+        interval: str | None,
+        interval_count: int,
+        price: stripe_lib.Price,
+    ) -> tuple[str, bool]:
+        base = f"{product.id}:{interval}:{interval_count}"
+        if not bool(product.get("active")):
+            return base, True
+        if bool(price.get("active")):
+            return base, False
+        return f"{base}:archived", True
 
     async def _extract_customer_page(
         self, cursor: StripeExtractionCursor

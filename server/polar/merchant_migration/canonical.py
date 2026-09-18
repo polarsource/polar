@@ -78,7 +78,9 @@ class CanonicalProduct:
     # several prices (one per currency), so a source product is grouped per
     # interval: one CanonicalProduct = one Polar product = (source product,
     # interval), carrying its currency prices. Archived Stripe products use
-    # that same grouping; Polar archives them after create.
+    # that same grouping. Inactive prices on a live Stripe product are a
+    # sibling catalog row (`:archived`) so they don't collide with sellable
+    # prices. Polar archives the row after create.
     source_id: str
     product_source_id: str
     name: str

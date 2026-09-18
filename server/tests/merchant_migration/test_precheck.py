@@ -996,6 +996,34 @@ class TestClassifyCascade:
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].product_name == "Pro"
 
+    def test_archived_price_sibling_does_not_drop_live_product(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                source_id="prod_1:month:1",
+                prices=[build_price(source_id="price_1", amount=1000)],
+            ),
+            build_product(
+                source_id="prod_1:month:1:archived",
+                prices=[build_price(source_id="price_archived", amount=500)],
+                archived=True,
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_live"),
+            replace(
+                build_subscription(source_id="sub_legacy"),
+                price_source_id="price_archived",
+            ),
+        ]
+
+        products = classify_records(records, PrecheckEntity.products, "usd")
+        subscriptions = classify_records(records, PrecheckEntity.subscriptions, "usd")
+        by_sub = {item.source_id: item for item in subscriptions}
+
+        assert len(products) == 2
+        assert all(item.status == PrecheckRecordStatus.importable for item in products)
+        assert by_sub["sub_live"].status == PrecheckRecordStatus.importable
+        assert by_sub["sub_legacy"].status == PrecheckRecordStatus.importable
+
     def test_subscription_uses_currency_option_on_shared_price_id(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(

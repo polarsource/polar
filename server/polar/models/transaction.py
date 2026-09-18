@@ -216,11 +216,6 @@ class Transaction(RecordModel):
             postgresql_where="processor_fee_type IS NOT NULL",
         ),
         Index(
-            "ix_transactions_customer_id_not_null",
-            "customer_id",
-            postgresql_where="customer_id IS NOT NULL",
-        ),
-        Index(
             "ix_transactions_charge_id_not_null",
             "charge_id",
             postgresql_where="charge_id IS NOT NULL",
@@ -234,16 +229,6 @@ class Transaction(RecordModel):
             "ix_transactions_payment_customer_id_not_null",
             "payment_customer_id",
             postgresql_where="payment_customer_id IS NOT NULL",
-        ),
-        Index(
-            "ix_transactions_payment_organization_id_not_null",
-            "payment_organization_id",
-            postgresql_where="payment_organization_id IS NOT NULL",
-        ),
-        Index(
-            "ix_transactions_payment_user_id_not_null",
-            "payment_user_id",
-            postgresql_where="payment_user_id IS NOT NULL",
         ),
         Index(
             "ix_transactions_pledge_id_not_null",
@@ -369,10 +354,6 @@ class Transaction(RecordModel):
     with a set `account_id`.
     """
 
-    customer_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, deferred=True
-    )
-    """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the charge (payment) in the payment processor system."""
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -415,23 +396,6 @@ class Transaction(RecordModel):
     @declared_attr
     def payment_customer(cls) -> Mapped["Customer | None"]:
         return relationship("Customer", lazy="raise")
-
-    payment_organization_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("organizations.id", ondelete="set null"),
-        nullable=True,
-        deferred=True,
-    )
-    """ID of the `Organization` who made the payment."""
-
-    payment_user_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="set null"), nullable=True, deferred=True
-    )
-    """
-    ID of the `User` who made the payment.
-
-    Used for pledges. Orders and subscriptions should use `payment_customer_id`.
-    """
 
     pledge_id: Mapped[UUID | None] = mapped_column(
         Uuid,

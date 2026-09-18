@@ -88,7 +88,7 @@ Report to the user:
      - Use `optional(string, "<default>")` if you want a module-level default; otherwise plain `string`.
   2. **Wire the field into the matching `render_env_group` block in `terraform/modules/render_service/main.tf`** as `POLAR_${NAME_UPPER} = { value = var.<object>.<field> }`. Two backend groups exist:
      - `render_env_group "backend"` — applied to **every** environment.
-     - `render_env_group "backend_production"` — production-only values (e.g. `POLAR_BACKOFFICE_HOST`, `POLAR_PLAIN_TOKEN`). Put a var here when sandbox/test should not see it.
+     - `render_env_group "backend_production"` — production-only values (e.g. `POLAR_PLAIN_TOKEN`, ...). Put a var here when sandbox/test should not see it.
   3. **Pass the value in from each `terraform/${env}/render.tf`** module call, e.g. `backend_secrets = { ... ${field} = var.${name} ... }`. Sandbox and test won't have this line if the var is production-only.
   4. **Set the actual value in TFC** under the matching variable set (Production / Sandbox / Test).
   5. **If this is a `POLAR_*` env var, also add the field to the `Settings` class in `server/polar/config.py`** (Pydantic `BaseSettings` with `env_prefix="polar_"`; the env var name is `POLAR_<FIELD_NAME>`).

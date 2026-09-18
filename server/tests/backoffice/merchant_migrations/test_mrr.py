@@ -337,6 +337,9 @@ class TestMoney:
     def test_to_usd_returns_none_when_a_rate_is_missing(self) -> None:
         assert Money({"usd": 100, "eur": 50}).to_usd({}) is None
 
+    def test_to_usd_ignores_zero_foreign_amounts(self) -> None:
+        assert Money({"usd": 100, "eur": 0}).to_usd({}) == 100
+
     def test_share_on_polar_weights_by_usd_when_rates_exist(self) -> None:
         breakdown = MrrBreakdown(
             on_polar=Money({"usd": 1000}),
@@ -346,6 +349,15 @@ class TestMoney:
 
         assert breakdown.migrated_percent == 50
         assert breakdown.share_on_polar({"eur": 2.0}) == 33
+
+    def test_share_on_polar_falls_back_without_a_rate(self) -> None:
+        breakdown = MrrBreakdown(
+            on_polar=Money({"usd": 1000}),
+            to_move=Money({"eur": 1000}),
+            staying=Money(),
+        )
+
+        assert breakdown.share_on_polar({}) == 50
 
 
 class TestCanonicalShape:

@@ -2,6 +2,7 @@ import {
   createCheckout,
   createCustomPrice,
 } from '@polar-sh/checkout/test-utils'
+import type { schemas } from '@polar-sh/client'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -169,6 +170,31 @@ describe('Checkout page', () => {
       (await screen.findAllByText('Polar Penguin is in test mode')).length,
     ).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Get for free' })).toBeEnabled()
+    expect(
+      screen.queryByRole('link', { name: /find out why/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('links organization members to the reason for test mode', async () => {
+    renderCheckout({
+      checkout: freeProductCheckout(),
+      authenticatedUser: {
+        member_organizations: [{ id: 'org_1' }],
+      } as schemas['UserRead'],
+      paymentStatus: {
+        payment_ready: false,
+        organization_status: 'created',
+        onboarding_resubmission_requested_at: null,
+      },
+    })
+
+    const accountReviewLink = await screen.findByRole('link', {
+      name: /find out why/i,
+    })
+    expect(accountReviewLink).toHaveAttribute(
+      'href',
+      '/dashboard/polar-penguin/finance/account',
+    )
   })
 
   it('sends the customer to the portal login when no session comes back', async () => {

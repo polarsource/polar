@@ -2,6 +2,7 @@
 
 import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
+import { useAuth } from '@/hooks/auth'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
@@ -44,13 +45,21 @@ import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import { CheckoutOrderSummary } from './CheckoutOrderSummary'
 
 const PaymentNotReadyBanner = ({
+  organizationId,
   organizationStatus,
   organizationName,
+  organizationSlug,
 }: {
+  organizationId: string
   organizationStatus: string | undefined
   organizationName: string
+  organizationSlug: string
 }) => {
+  const { currentUser } = useAuth()
   const isTestMode = organizationStatus === 'created'
+  const isOrganizationMember = currentUser?.member_organizations?.some(
+    ({ id }) => id === organizationId,
+  )
 
   return (
     <Alert
@@ -61,9 +70,25 @@ const PaymentNotReadyBanner = ({
           : 'Payments are currently unavailable'
       }
       description={
-        isTestMode
-          ? `You can test checkout with free products or 100% discount orders.`
-          : `${organizationName} doesn't allow payments.`
+        isTestMode ? (
+          <>
+            <p>
+              You can test checkout with free products or 100% discount orders.
+            </p>
+            {isOrganizationMember && (
+              <p>
+                <Link
+                  href={`/dashboard/${organizationSlug}/finance/account`}
+                  className="font-medium underline hover:no-underline"
+                >
+                  Find out why?
+                </Link>
+              </p>
+            )}
+          </>
+        ) : (
+          `${organizationName} doesn't allow payments.`
+        )
       }
     />
   )
@@ -229,8 +254,10 @@ const Checkout = ({
       <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
         {shouldBlockCheckout && (
           <PaymentNotReadyBanner
+            organizationId={checkout.organization.id}
             organizationStatus={paymentStatus?.organization_status}
             organizationName={checkout.organization.name}
+            organizationSlug={checkout.organization.slug}
           />
         )}
         {hasProductCheckout(checkout) && (
@@ -363,8 +390,10 @@ const Checkout = ({
         <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
           {shouldBlockCheckout && (
             <PaymentNotReadyBanner
+              organizationId={checkout.organization.id}
               organizationStatus={paymentStatus?.organization_status}
               organizationName={checkout.organization.name}
+              organizationSlug={checkout.organization.slug}
             />
           )}
           <CheckoutForm

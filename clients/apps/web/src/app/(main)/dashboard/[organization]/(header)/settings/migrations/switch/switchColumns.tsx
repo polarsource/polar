@@ -1,11 +1,10 @@
 import { DataTableColumnDef, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
-import { importTaxLabel } from '../importTax'
 import { HeaderCheckState } from '../selection'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
-import { renewsLabel } from '../recordFormat'
+import { importTaxLabel, renewsLabel } from '../recordFormat'
 import {
   intervalAbbreviation,
   isSwitchable,

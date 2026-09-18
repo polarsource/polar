@@ -1,10 +1,9 @@
 import { DataTableColumnDef, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { importTaxLabel } from '../importTax'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
-import { renewsLabel } from '../recordFormat'
+import { importTaxLabel, renewsLabel } from '../recordFormat'
 import { isImported, isSelectable, ReviewRow, rowAmount } from './reviewRows'
 
 interface ColumnContext {

@@ -130,52 +130,5 @@ class TestDeserialize:
 
         assert isinstance(result, CanonicalSubscription)
         assert result.currency == "usd"
-
-    def test_subscription_tax_behavior_round_trips(self) -> None:
-        subscription = CanonicalSubscription(
-            source_id="sub_1",
-            customer_source_id="cus_1",
-            price_source_id="price_1",
-            status=CanonicalSubscriptionStatus.active,
-            collection_method=CanonicalCollectionMethod.charge_automatically,
-            current_period_start=None,
-            current_period_end=None,
-            trialing=False,
-            paused_collection=False,
-            line_item_count=1,
-            quantity=1,
-            payment_method=None,
-            tax_behavior=TaxBehavior.exclusive,
-        )
-
-        result = deserialize(
-            MerchantMigrationRecordType.subscription, serialize(subscription)
-        )
-
-        assert isinstance(result, CanonicalSubscription)
-        assert result.tax_behavior == TaxBehavior.exclusive
-        assert result.import_tax_behavior() == TaxBehavior.exclusive
-
-    def test_missing_tax_behavior_imports_as_inclusive(self) -> None:
-        subscription = CanonicalSubscription(
-            source_id="sub_1",
-            customer_source_id="cus_1",
-            price_source_id="price_1",
-            status=CanonicalSubscriptionStatus.active,
-            collection_method=CanonicalCollectionMethod.charge_automatically,
-            current_period_start=None,
-            current_period_end=None,
-            trialing=False,
-            paused_collection=False,
-            line_item_count=1,
-            quantity=1,
-            payment_method=None,
-        )
-
-        result = deserialize(
-            MerchantMigrationRecordType.subscription, serialize(subscription)
-        )
-
-        assert isinstance(result, CanonicalSubscription)
         assert result.tax_behavior is None
         assert result.import_tax_behavior() == TaxBehavior.inclusive

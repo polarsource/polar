@@ -627,13 +627,8 @@ class MerchantMigrationRecordRepository(
     async def pending_subscription_tax_behaviors(
         self, migration_id: UUID
     ) -> dict[str, TaxBehavior]:
-        """Tax choices on pending subscriptions, keyed by source id.
-
-        ``start_precheck`` deletes pending rows before extract; this snapshot is
-        what lets a rerun restore a merchant's exclusive pin. Pending
-        subscription rows are locked until that delete commits so a concurrent
-        tax PATCH cannot land between the snapshot and the wipe.
-        """
+        """Pending subscription tax pins, keyed by source id. Locked so a tax
+        PATCH cannot land between this snapshot and ``delete_pending``."""
         tax_behavior = MerchantMigrationRecord.canonical["tax_behavior"].astext
         statement = (
             self.get_base_statement()
@@ -676,21 +671,17 @@ class MerchantMigrationRecordRepository(
             record.tax_behavior is not None
         ):
             return record
+        preserved: TaxBehavior | None = None
         if (
             existing is not None
             and existing.status == MerchantMigrationRecordStatus.pending
         ):
-            current = deserialize(existing.type, existing.canonical)
-            if (
-                isinstance(current, CanonicalSubscription)
-                and current.tax_behavior is not None
-            ):
-                return replace(record, tax_behavior=current.tax_behavior)
-        if preserved_tax_behavior is not None:
+            preserved = parse_tax_behavior(existing.canonical.get("tax_behavior"))
+        if preserved is None and preserved_tax_behavior is not None:
             preserved = preserved_tax_behavior.get(record.source_id)
-            if preserved is not None:
-                return replace(record, tax_behavior=preserved)
-        return record
+        if preserved is None:
+            return record
+        return replace(record, tax_behavior=preserved)
 
     async def upsert(
         self,

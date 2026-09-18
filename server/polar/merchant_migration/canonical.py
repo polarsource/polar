@@ -135,9 +135,7 @@ class CanonicalSubscription:
     # doesn't say. Polar always computes its own, so a subscription that billed
     # tax-free on the source will start being taxed after the switch.
     automatic_tax: bool | None = None
-    # Polar tax treatment the merchant chose at review. None until they pick
-    # (or leave the inclusive default). Survives a precheck refresh; the
-    # extract never sets this.
+    # Merchant choice at review; extract never sets this. None → inclusive at import.
     tax_behavior: TaxBehavior | None = None
 
     type = MerchantMigrationRecordType.subscription
@@ -193,8 +191,8 @@ def _parse_datetime(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
 
 
-def parse_tax_behavior(value: str | None) -> TaxBehavior | None:
-    if not value:
+def parse_tax_behavior(value: object | None) -> TaxBehavior | None:
+    if not isinstance(value, str) or not value:
         return None
     try:
         return TaxBehavior(value)

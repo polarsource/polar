@@ -88,26 +88,20 @@ Before activating, we also decide each subscription's tax treatment and the cust
 
 ## Taxes
 
-Migrating billing to Polar changes who computes tax. Many merchants on other providers don't charge tax at all; once on Polar, tax applies, either added on top or absorbed, depending on the tax behavior. Two things must be decided per subscription at import: the **tax behavior** (inclusive/exclusive) and the **customer's tax country**.
+Migrating billing to Polar changes who computes tax. At review the merchant picks per subscription:
 
-### Tax behavior
+1. **Inclusive (default)** — the customer pays the listed price; Polar takes tax out of it. Pins `tax_behavior=inclusive` and `tax_exempted=false`.
+2. **Exclusive** — tax is added on top. Pins `tax_behavior=exclusive`.
 
-The merchant chooses per subscription at review, before Polar starts billing:
+Inclusive is the default regardless of Stripe `automatic_tax` (shown as information only). Without a pin, Polar would fall back to the org's `default_tax_behavior`; a `location` default is exclusive for `CA`/`IN`/`US` and would bill listed price plus tax.
 
-1. **Taxable, inclusive (default)** — the customer keeps paying the listed price. Polar takes VAT/sales tax out of it, so the merchant earns less. Pins `tax_behavior=inclusive` and `tax_exempted=false`.
-2. **Taxable, exclusive** — tax is added on top. The customer pays more than the listed price. Pins `tax_behavior=exclusive`.
+The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover, so a later org-default change does not move an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row.
 
-Inclusive is the default regardless of Stripe `automatic_tax`. Without a pin, Polar would fall back to the org's `default_tax_behavior`; a `location` default is exclusive for `CA`/`IN`/`US` and would bill those customers listed price plus tax. Pinning inclusive makes the absorb-tax outcome explicit, not an accident of the customer's country.
+B2B reverse-charge is not a third tax option: Polar already derives it from `Customer.tax_id`. Carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id`. Miss it and the customer gets re-taxed as B2C.
 
-Stripe `automatic_tax` is shown on the review row as information only; it does not pick Polar's behavior.
+`subscription.tax_exempted` is pinned `false` at import.
 
-The choice lives on the staged `CanonicalSubscription` (`canonical.tax_behavior` in the ledger JSONB) and is written onto Polar `Subscription.tax_behavior` at cutover. That overrides product/price and org defaults, so a later change to those defaults doesn't shift an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row.
-
-B2B reverse-charge is not a third tax option: Polar already derives it from `Customer.tax_id`. Carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id`; reverse charge then re-derives itself at the first Polar renewal. Miss it and the customer gets re-taxed as B2C. (Polar validates VAT ID format only, not VIES registry validity.)
-
-`subscription.tax_exempted` is pinned `false` at import. Pre-registration grandfathering (keep a subscription untaxed) is not a review choice yet.
-
-The change bites at the **first renewal on Polar**: inclusive lowers the merchant's net, exclusive raises the customer's charge (dunning/churn risk). US sales tax is typically exclusive; merchants who were adding tax on top should pick exclusive for those subscriptions.
+The change bites at the **first renewal on Polar**: inclusive lowers the merchant's net, exclusive raises the customer's charge. Merchants who were adding tax on top should pick exclusive.
 
 ### Customer country
 

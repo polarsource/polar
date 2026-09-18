@@ -41,6 +41,7 @@ export function SubscriptionFields({
       <Box flexDirection="column" rowGap="s">
         <Text color="muted">Tax after switch</Text>
         <ImportTaxPicker
+          key={row.record_id ?? row.source_id}
           migrationId={migrationId}
           recordId={row.record_id}
           taxBehavior={row.tax_behavior}

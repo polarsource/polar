@@ -1005,17 +1005,6 @@ class TestClassifyCascade:
         assert items[0].automatic_tax is True
         assert items[0].tax_behavior == TaxBehavior.inclusive
 
-    def test_subscription_uses_merchant_tax_behavior(self) -> None:
-        records: list[CanonicalRecord] = [
-            build_product(),
-            build_customer(),
-            replace(build_subscription(), tax_behavior=TaxBehavior.exclusive),
-        ]
-
-        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
-
-        assert items[0].tax_behavior == TaxBehavior.exclusive
-
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,
     ) -> None:

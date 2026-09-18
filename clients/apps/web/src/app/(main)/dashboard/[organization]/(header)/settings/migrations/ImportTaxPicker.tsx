@@ -5,14 +5,11 @@ import { schemas } from '@polar-sh/client'
 import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
-import {
-  IMPORT_TAX_OPTIONS,
-  importTaxBehavior,
-  importTaxHint,
-  importTaxLabel,
-  importTaxSaveError,
-  type ImportTaxBehavior,
-} from './importTax'
+
+const OPTIONS: { value: schemas['TaxBehavior']; label: string }[] = [
+  { value: 'inclusive', label: 'Inclusive' },
+  { value: 'exclusive', label: 'Exclusive' },
+]
 
 export function ImportTaxPicker({
   migrationId,
@@ -25,21 +22,22 @@ export function ImportTaxPicker({
   taxBehavior: schemas['TaxBehavior'] | null
   locked?: boolean
 }) {
-  const fallback = importTaxBehavior({ tax_behavior: taxBehavior })
-  const [optimistic, setOptimistic] = useState<{
-    recordId: string
-    value: ImportTaxBehavior
-  } | null>(null)
+  const [optimistic, setOptimistic] = useState<schemas['TaxBehavior'] | null>(
+    null,
+  )
   const update = useUpdateMigrationRecordTax(migrationId)
-  const value =
-    recordId && optimistic?.recordId === recordId ? optimistic.value : fallback
+  const value = optimistic ?? taxBehavior ?? 'inclusive'
+  const hint =
+    value === 'exclusive'
+      ? 'Tax is added on top of the listed price.'
+      : 'Customer pays the listed price. Polar takes tax out of it.'
 
   if (!recordId || locked) {
     return (
       <Box flexDirection="column" rowGap="xs">
-        <Text>{importTaxLabel({ tax_behavior: value })}</Text>
+        <Text>{value === 'exclusive' ? 'Exclusive' : 'Inclusive'}</Text>
         <Text variant="caption" color="muted">
-          {importTaxHint(value)}
+          {hint}
         </Text>
       </Box>
     )
@@ -49,28 +47,30 @@ export function ImportTaxPicker({
     <Box flexDirection="column" rowGap="s">
       <SegmentedControl
         size="sm"
-        options={IMPORT_TAX_OPTIONS}
+        options={OPTIONS}
         value={value}
         onChange={(next) => {
           if (update.isPending || next === value) {
             return
           }
           const previous = value
-          setOptimistic({ recordId, value: next })
+          setOptimistic(next)
           update.mutate(
             { recordId, taxBehavior: next },
             {
-              onError: () => setOptimistic({ recordId, value: previous }),
+              onError: () => setOptimistic(previous),
             },
           )
         }}
       />
       <Text variant="caption" color="muted">
-        {importTaxHint(value)}
+        {hint}
       </Text>
       {update.isError ? (
         <Text variant="caption" color="error">
-          {importTaxSaveError(update.error)}
+          {update.error instanceof Error && update.error.message
+            ? update.error.message
+            : "We couldn't save the tax setting."}
         </Text>
       ) : null}
     </Box>

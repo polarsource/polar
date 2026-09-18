@@ -134,6 +134,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
             self.id = self.generate_id()
         self.client_secret = client_secret  # pyright: ignore
         self.client_secret_hash = self.hash_secret(client_secret)
+        self.client_secret_hash_v2 = self.client_secret_hash
         self.client_secret_encrypted = await self.encrypt_client_secret(
             self.id, client_secret
         )
@@ -147,6 +148,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         self.registration_access_token_hash = self.hash_secret(
             registration_access_token
         )
+        self.registration_access_token_hash_v2 = self.registration_access_token_hash
         self.registration_access_token_encrypted = (
             await self.encrypt_registration_access_token(
                 self.id, registration_access_token
@@ -158,6 +160,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
             self.id = self.generate_id()
         self.client_secret = client_secret  # pyright: ignore
         self.client_secret_hash = self.hash_secret(client_secret)
+        self.client_secret_hash_v2 = self.client_secret_hash
         self.client_secret_encrypted = self.encrypt_client_secret_sync(
             self.id, client_secret
         )
@@ -171,6 +174,7 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         self.registration_access_token_hash = self.hash_secret(
             registration_access_token
         )
+        self.registration_access_token_hash_v2 = self.registration_access_token_hash
         self.registration_access_token_encrypted = (
             self.encrypt_registration_access_token_sync(
                 self.id, registration_access_token

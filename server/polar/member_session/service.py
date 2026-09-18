@@ -19,6 +19,7 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
         token, token_hash = generate_token_hash_pair(prefix=MEMBER_SESSION_TOKEN_PREFIX)
         member_session = MemberSession(
             token=token_hash,
+            token_v2=token_hash,
             member=member,
             return_url=str(return_url) if return_url else None,
         )

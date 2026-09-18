@@ -88,7 +88,7 @@ variable "backend_logo_dev_publishable_key" {
 }
 
 variable "backend_secret" {
-  description = "Backend Secret for production"
+  description = "Backend Secret for the test Vercel service"
   type        = string
   sensitive   = true
 }

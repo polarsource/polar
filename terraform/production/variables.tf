@@ -109,12 +109,6 @@ variable "backend_logo_dev_publishable_key_production" {
   sensitive   = true
 }
 
-variable "backend_secret_production" {
-  description = "Backend Secret for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_sentry_dsn_production" {
   description = "Sentry DSN for production"
   type        = string

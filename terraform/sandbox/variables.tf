@@ -94,12 +94,6 @@ variable "backend_logo_dev_publishable_key_sandbox" {
   sensitive   = true
 }
 
-variable "backend_secret_sandbox" {
-  description = "Backend Secret for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_sentry_dsn_sandbox" {
   description = "Sentry DSN for sandbox"
   type        = string

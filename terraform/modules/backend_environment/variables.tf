@@ -70,7 +70,6 @@ variable "backend_secrets" {
     resend_active_users_segment_id = optional(string, "")
     resend_webhook_secret          = optional(string, "")
     logo_dev_publishable_key       = optional(string, "")
-    secret                         = string
     sentry_dsn                     = string
     plain_request_signing_secret   = optional(string, "")
     plain_token                    = optional(string, "")

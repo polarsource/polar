@@ -1,7 +1,7 @@
 """merge deleted token hash widen revision
 
 Revision ID: 9985972c53ee
-Revises: bb1bfb443e9c, 9109c1ea52dc
+Revises: bb1bfb443e9c, f9d1169d7b94
 Create Date: 2026-09-18 06:54:59.545042
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9985972c53ee"
-down_revision = ("bb1bfb443e9c", "9109c1ea52dc")
+down_revision = ("bb1bfb443e9c", "f9d1169d7b94")
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

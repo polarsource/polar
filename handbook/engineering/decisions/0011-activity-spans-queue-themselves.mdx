@@ -36,9 +36,12 @@ read.
 - Debounce and retry are two timestamps, not a workflow per span. A touch during
   classification leaves the newer `due_at` in place, so the span comes round again; a
   classifier outage pushes `due_at` back thirty seconds instead of failing the sweep.
-- `taxonomy`, `run_by` and `activity_probabilities` are gone from the SDK helper, the IR,
-  the wire schemas and the table. `polar.agent/v1` is a server constant until a second
+- `taxonomy`, `run_by` and `activity_probabilities` are gone from the SDK, the IR, the
+  wire schemas and the table. `polar.agent/v1` is a server constant until a second
   vocabulary exists.
+- The SDK has no standalone `activities()` definition. Classification is `classify: true`
+  on the `llm()` plugin, because the taxonomy reads metadata only that plugin writes; the
+  plugin contributes the activity entry to the IR like any of its meters.
 - Events for a span are found through a GIN index on the parsed `metadata`, so the
   lookup stays a lookup for any `group_by` key.
 - Trade-off accepted: classification latency is now the sweep interval plus the
@@ -56,4 +59,4 @@ read.
 - `server/polar/void/activity/service.py` (`touch_events`, `classify_due`),
   `server/polar/void/activity/definitions.py`, `server/polar/void/activity/workflows.py`.
 - `server/migrations/versions/2026-09-18-0900_trim_void_activity_spans.py`.
-- SDK: `clients/packages/void-sdk/src/config/schema.ts` (`activities`).
+- SDK: `clients/packages/void-sdk/src/plugins/llm-core.ts` (`classify` on the `llm()` plugin; `classifier` in `src/config/schema.ts`).

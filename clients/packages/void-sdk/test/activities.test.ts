@@ -1,6 +1,5 @@
 import { assert, it } from '@effect/vitest'
 import {
-  activities,
   checksum,
   compile,
   defineConfig,
@@ -11,60 +10,49 @@ import {
   sum,
   toSource,
 } from '../src/config'
-import { llm, perToken } from '../src/plugins'
-import { usd } from '../src/config/schema'
+import { llm, perToken, type Billing } from '../src/plugins'
+import { usd, type ClassifyOptions } from '../src/config/schema'
 
-it('compiles an opt-in classifier and leaves empty configs unchanged', () => {
-  const completion = event('llm.completion')
-  const plain = defineConfig({ schema: { completion } })
-  const labeled = defineConfig({
-    schema: {
-      completion,
-      agent: activities({ source: completion, span: 'call_id' }),
-    },
+const MODELS = ['anthropic/claude-sonnet'] as const
+const BILLING = perToken({
+  'anthropic/claude-sonnet': { input: usd(1), output: usd(2) },
+  other: { input: usd(1), output: usd(2) },
+}) satisfies Billing<(typeof MODELS)[number]>
+const ai = (options: { classify?: ClassifyOptions } = {}) =>
+  llm({
+    key: 'po_bot',
+    models: MODELS,
+    billing: BILLING,
+    capture: false,
+    ...options,
   })
+
+it('compiles the llm plugin classifier and leaves other configs unchanged', () => {
+  const plain = defineConfig({ schema: { ai: ai() } })
+  const labeled = defineConfig({ schema: { ai: ai({ classify: true }) } })
   const compiled = compile(labeled)
   assert.deepEqual(compiled.activities, [
-    {
-      slug: 'agent',
-      event: 'llm.completion',
-      group_by: 'call_id',
-    },
+    { slug: 'po_bot', event: 'po_bot.completion', group_by: 'call_id' },
   ])
   assert.equal('activities' in compile(plain), false)
+  assert.notEqual(checksum(compiled), checksum(compile(plain)))
 })
 
-it('reads the completion event from an llm plugin', () => {
-  const ai = llm({
-    models: ['anthropic/claude-sonnet'],
-    billing: perToken({
-      'anthropic/claude-sonnet': { input: usd(1), output: usd(2) },
-      other: { input: usd(1), output: usd(2) },
-    }),
-    capture: false,
-  })
-  const config = defineConfig({
-    schema: { ai, agent: activities({ source: ai }) },
-  })
-  assert.equal(compile(config).activities?.[0]?.event, 'llm.completion')
+it('takes the span key from the classify options', () => {
+  const ir = compile(
+    defineConfig({ schema: { ai: ai({ classify: { span: 'trace_id' } }) } }),
+  )
+  assert.equal(ir.activities?.[0]?.group_by, 'trace_id')
+  const source = toSource(ir)
+  assert.include(source, "classify: { span: 'trace_id' }")
+  assert.notInclude(source, 'activities(')
 })
 
-it('pulls the span key and omits the default', () => {
-  const completion = event('llm.completion')
-  const source = (span?: string) =>
-    toSource(
-      compile(
-        defineConfig({
-          schema: {
-            completion,
-            agent: activities({ source: completion, span }),
-          },
-        }),
-      ),
-    )
-  assert.notInclude(source(), 'span:')
-  assert.include(source('trace_id'), "span: 'trace_id'")
-  assert.notInclude(source('trace_id'), 'groupBy')
+it('exposes the classifier on the plugin without a query', () => {
+  const plugin = ai({ classify: true })
+  assert.equal(plugin.activity?.kind, 'activity')
+  assert.equal(plugin.activity?.event, plugin.completion)
+  assert.equal(ai().activity, undefined)
 })
 
 it('compiles semantic signals into the IR and the checksum', () => {

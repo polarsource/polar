@@ -653,12 +653,6 @@ export const isMeterSignal = (ref: SignalRef): ref is MeterSignalRef =>
 export const isSemanticSignal = (ref: SignalRef): ref is SemanticSignalRef =>
   ref.definition.kind === 'semantic'
 
-export const isActivity = (value: unknown): value is ActivityDef =>
-  typeof value === 'object' &&
-  value !== null &&
-  'kind' in value &&
-  value.kind === 'activity'
-
 const SLUG_KEY = /^[a-z0-9][a-z0-9_-]{0,127}$/
 
 function meterSignal(key: string, options: MeterSignalOptions): MeterSignalRef {
@@ -751,29 +745,29 @@ export interface ActivityDef<Key extends string = string> {
 
 const SLUG = /^[a-z0-9][a-z0-9_-]*$/
 
+/** What a plugin asks for when it wants its completions classified. */
+export type ClassifyOptions =
+  | boolean
+  | {
+      /** Metadata key that makes one span. Defaults to `call_id`. */
+      readonly span?: string
+    }
+
 /**
- * Classify billed spans after ingest. Labels never move money.
- * `source: ai` uses the plugin's completion event.
+ * A plugin's classifier over the completion event it records. Polar labels
+ * each span after ingest; labels never move money. Not a standalone
+ * definition: the taxonomy reads the metadata only an `llm()` plugin writes.
  */
-export function activities<Key extends string = 'agent'>(options: {
-  source: EventDef | PluginDef
-  /** Metadata key that makes one span. Defaults to `call_id`. */
-  span?: string
-  slug?: Key
-}): ActivityDef<Key> {
-  const key = (options.slug ?? 'agent') as Key
-  if (!SLUG.test(key)) throw new Error('activities: invalid slug')
-  const source = options.source
-  const event = source.kind === 'event' ? source : source.schema.completion
-  if (event === undefined || event.kind !== 'event') {
-    throw new Error('activities: source has no event to classify')
-  }
-  return {
-    kind: 'activity',
-    key,
-    event,
-    span: options.span ?? 'call_id',
-  }
+export function classifier<Key extends string>(
+  key: Key,
+  event: EventDef,
+  options: ClassifyOptions,
+): ActivityDef<Key> | undefined {
+  if (options === false) return undefined
+  if (!SLUG.test(key)) throw new Error(`classify: invalid slug ${key}`)
+  const span = options === true ? undefined : options.span
+  if (span === '') throw new Error('classify: span must name a metadata key')
+  return { kind: 'activity', key, event, span: span ?? 'call_id' }
 }
 
 /** Every definition a plugin may contain; everything but a plugin itself. */

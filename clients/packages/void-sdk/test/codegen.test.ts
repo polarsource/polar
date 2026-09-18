@@ -122,10 +122,21 @@ describe('toSource', () => {
     'round-trips the %s config through generated TypeScript',
     async (name, config) => {
       const { ir, generated } = await roundTrip(name.replace(' ', '-'), config)
-      assert.deepEqual(generated, ir)
-      assert.equal(checksum(generated), checksum(ir))
+      // A classifier rides on its llm plugin, which generated source does
+      // not recover; the source carries a TODO for it instead.
+      const { activities: _activities, ...recoverable } = ir
+      assert.deepEqual(generated, recoverable)
+      assert.equal(checksum(generated), checksum(recoverable))
     },
   )
+
+  it('flags a classifier the plugin has to declare', () => {
+    const source = toSource(compile(exampleConfig as Config))
+    assert.match(
+      source,
+      /TODO: sdk_demo_llm classifies sdk_demo_llm.completion; set classify: true on the llm plugin/,
+    )
+  })
 
   it('flags a filter the define API cannot express', () => {
     const ir = compile(deploymentConfig)

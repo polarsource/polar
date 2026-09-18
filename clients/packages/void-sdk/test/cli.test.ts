@@ -12,7 +12,6 @@ import { ApiLive, VoidConfig } from '../src/api/index'
 import {
   checksum,
   compile,
-  activities,
   count,
   defineConfig,
   event,
@@ -501,9 +500,7 @@ layer(
       meters: ReadonlyArray<{ slug: string }>
       signals?: unknown
     }
-    expect(payload.activities).toMatchObject([
-      { slug: 'agent', event: 'ai_call', group_by: 'call_id' },
-    ])
+    assert.notProperty(payload, 'activities')
     expect(payload.meters.map((m) => m.slug)).toEqual(['tokens'])
     assert.notProperty(payload, 'senses')
     expect(payload.signals).toEqual([
@@ -532,7 +529,6 @@ layer(
   it.effect('deploys a semantic signal with its criterion', () =>
     Effect.gen(function* () {
       const completion = event<{ tokens: number }>('ai_call')
-      const agent = activities({ source: completion })
       const tokens = meter('tokens', {
         reducer: sum(completion, 'tokens'),
         price: { amount: 0 },
@@ -542,7 +538,6 @@ layer(
         defineConfig({
           schema: {
             completion,
-            agent,
             storm: signal('retry-storm', {
               meter: tokens,
               when: 'retries, not progress',

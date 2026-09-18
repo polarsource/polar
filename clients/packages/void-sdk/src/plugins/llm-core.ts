@@ -1,4 +1,5 @@
 import {
+  classifier,
   count,
   event,
   isMeter,
@@ -7,6 +8,8 @@ import {
   on,
   sum,
   usd,
+  type ActivityDef,
+  type ClassifyOptions,
   type EventDef,
   type Metadata,
   type MeterDef,
@@ -263,6 +266,8 @@ export type LlmSchema<
   >
   /** Cost of goods: the summed cost of every completion, never priced. */
   readonly cost: CompletionMeter<Extra>
+  /** Present when `classify` is on: Polar labels each call's spend after ingest. */
+  readonly activity?: ActivityDef
 } & {
   readonly [K in Models | 'other' as `${K}/input`]: TokenDefs<Extra, B>['input']
 } & {
@@ -537,6 +542,12 @@ export interface CoreOptions<Models extends string, B extends Billing<Models>> {
   readonly key: string
   /** List prices the cost-plus gate and cost fall back to after the merchant's own table. */
   readonly listPrices?: PriceSource
+  /**
+   * Ask Polar to label each call's completions by activity (plan, retrieve,
+   * implement, act, review, retry) after ingest. Labels explain spend and
+   * never move money. Off by default.
+   */
+  readonly classify?: ClassifyOptions
 }
 
 /** The core built for one plugin: its schema, and the runtime pieces the adapter assembles verbs from. */
@@ -571,6 +582,7 @@ export const buildCore = <
   billing,
   key,
   listPrices,
+  classify = false,
 }: CoreOptions<Models, B>): Core<Models, Extra, B> => {
   if (key === '') throw new Error(`${name}: empty key`)
   if ((names as readonly string[]).includes(OTHER))
@@ -625,6 +637,7 @@ export const buildCore = <
     where: whereOf(model),
   }))
 
+  const activity = classifier(key, completion, classify)
   const schema: Record<string, unknown> = {
     completion,
     completions: count(`${key}-completions`, completion),
@@ -632,6 +645,7 @@ export const buildCore = <
       reducer: sum(completion, 'cost'),
       price: usd(0),
     }),
+    ...(activity !== undefined && { activity }),
   }
   const defs: Record<string, Pair<unknown>> = {}
   const tablePrices =

@@ -9,7 +9,7 @@ import {
   type ToolSet,
 } from 'ai'
 import { plugin, type PluginClient, type PluginDef } from '../config/plugin'
-import type { Metadata, MeterDef } from '../config/schema'
+import type { ClassifyOptions, Metadata, MeterDef } from '../config/schema'
 import { VoidError } from '../errors'
 import type { MeterSnapshot } from '../runtime/snapshot'
 import {
@@ -151,6 +151,13 @@ export type LlmOptions<
    * to record only through wrapped models.
    */
   readonly capture?: false | CaptureOptions<Extra>
+  /**
+   * Ask Polar to label each call's completions by activity (plan, retrieve,
+   * implement, act, review, retry) after ingest, so spend can be explained
+   * per identity. Labels never move money. Pass `{ span }` when the metadata
+   * key that groups one call's steps is not `call_id`. Off by default.
+   */
+  readonly classify?: ClassifyOptions
 }
 
 /**
@@ -580,6 +587,7 @@ export const llm = <
     ),
   key = 'llm',
   capture,
+  classify,
 }: LlmOptions<Models, Extra, B>): PluginDef<
   'llm',
   LlmSchema<Models, Extra, B>,
@@ -604,6 +612,7 @@ export const llm = <
     billing,
     key,
     listPrices: gateway.prices,
+    ...(classify !== undefined && { classify }),
   })
   const canonical = canonicalizer(names, onUnknownModel)
 

@@ -1,5 +1,4 @@
 import {
-  activities,
   count,
   defineConfig,
   event,
@@ -44,6 +43,7 @@ export const ai = llm({
   }),
   key: 'sdk_demo_llm',
   capture: false,
+  classify: true,
 })
 
 // A prepaid pool the app debits at its own tariff. Grants come from `grant`
@@ -66,8 +66,6 @@ export const pro = product('sdk_demo_pro', {
   ],
 })
 
-export const agent = activities({ source: ai })
-
 // A semantic signal: Polar asks Jev about this meter's recent events and the
 // SDK latches the answer. The question never leaves the SDK.
 export const retryStorm = signal('retry-storm', {
@@ -86,7 +84,6 @@ export const config = defineConfig({
     ai,
     wallet,
     pro,
-    agent,
     retryStorm,
   },
 })

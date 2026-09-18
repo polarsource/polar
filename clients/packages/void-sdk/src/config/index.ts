@@ -1,5 +1,4 @@
 export {
-  activities,
   count,
   derive,
   entitlement,
@@ -31,6 +30,7 @@ export {
 export type {
   ActivityDef,
   Aggregation,
+  ClassifyOptions,
   AnyReducer,
   DerivedReducer,
   BillingInterval,

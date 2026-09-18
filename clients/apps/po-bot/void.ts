@@ -1,5 +1,4 @@
 import {
-  activities,
   included,
   product,
   recent,
@@ -44,6 +43,7 @@ export const ai = llm({
     round: 'up',
   }),
   capture: false,
+  classify: true,
 })
 
 export const team = product('po_bot_team', {
@@ -52,8 +52,6 @@ export const team = product('po_bot_team', {
   price: recurring({ interval: 'month', amount: usd(99) }),
   meters: [included(ai.credits, 100_000, { limit: 'hard' })],
 })
-
-export const agent = activities({ source: ai })
 
 /** Polar asks Jev about the agent's recent credit spend; the SDK latches the answer. */
 export const retryStorm = signal('retry-storm', {
@@ -65,6 +63,6 @@ export const retryStorm = signal('retry-storm', {
 })
 
 export const config = defineConfig({
-  schema: { ai, team, agent, retryStorm },
+  schema: { ai, team, retryStorm },
   eventStorage: [{ type: 'sqlite', connection: events }],
 })

@@ -16,7 +16,6 @@ export interface SourceOptions {
 }
 
 const HELPERS = [
-  'activities',
   'count',
   'defineConfig',
   'derive',
@@ -414,17 +413,14 @@ export const toSource = (ir: Ir, options: SourceOptions = {}): string => {
     )
   }
   for (const activity of ir.activities ?? []) {
-    const fields = [
-      `source: ${names.of('event', activity.event)}`,
-      ...(activity.group_by !== 'call_id'
-        ? [`span: ${str(activity.group_by)}`]
-        : []),
-      ...(activity.slug !== 'agent' ? [`slug: ${str(activity.slug)}`] : []),
-    ]
-    define(
-      'activity',
-      activity.slug,
-      `${e.use('activities')}({\n  ${fields.join(',\n  ')},\n})`,
+    // A classifier belongs to the llm plugin that records its event, and
+    // plugins are not recovered; leave the instruction instead.
+    const option =
+      activity.group_by === 'call_id'
+        ? 'classify: true'
+        : `classify: { span: ${str(activity.group_by)} }`
+    blocks.push(
+      `// TODO: ${activity.slug} classifies ${activity.event}; set ${option} on the llm plugin with key ${str(activity.slug)}.`,
     )
   }
   for (const signal of ir.signals ?? []) {

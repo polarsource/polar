@@ -210,8 +210,12 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     )
     provider = instance.config.get_tracer_provider().provider
     assert isinstance(provider, TracerProvider)
-    # Additional processors run after Logfire's scrubber. Keep the root identity
-    # for cached tracers, but wrap its children to redact before Logfire runs.
+    # Logfire's scrubber exempts http.url and exception.message and misses values
+    # like emails in "detail" or card numbers in "payment_detail". Its callback
+    # only runs on matches, so it cannot enforce our full redaction policy.
+    # Wrap all downstream processors so every exporter receives sanitized spans;
+    # an additional processor alone cannot replace what other processors receive.
+    # Keep the root object because cached tracers still reference it.
     root_processor = provider._active_span_processor
     root_processor._span_processors = (
         PiiSpanProcessor(*root_processor._span_processors),

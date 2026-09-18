@@ -9,8 +9,23 @@ permissions:
   contents: read
 
 jobs:
+  preflight:
+    name: Check credentials
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check Terraform Cloud token
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: |
+          if [ -z "$TF_TOKEN_app_terraform_io" ]; then
+            echo "::error::Set the TF_API_TOKEN Actions secret to a Terraform Cloud token with plan access to all checked workspaces."
+            exit 1
+          fi
+
   plan:
     name: ${{ matrix.workspace }}
+    needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -46,15 +61,29 @@ jobs:
           terraform plan -input=false -detailed-exitcode
           code=$?
           set -e
-          if [ "$code" -eq 2 ]; then
-            echo "FAILURE_REASON=The deployed configuration no longer matches the Terraform code in main." >> "$GITHUB_ENV"
-            echo "::error::terraform/${{ matrix.workspace }} has drifted"
-            exit 1
-          fi
+          case "$code" in
+            0)
+              echo "### ${{ matrix.workspace }}: No changes" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            2)
+              echo "### ${{ matrix.workspace }}: Terraform reported changes" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::terraform/${{ matrix.workspace }} has pending changes; review the plan."
+              exit 1
+              ;;
+            *)
+              echo "### ${{ matrix.workspace }}: The plan could not complete" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+          esac
           exit "$code"
 
+  notify:
+    name: Report drift check failure
+    needs: [preflight, plan]
+    if: ${{ always() && (needs.preflight.result == 'failure' || needs.plan.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
       - name: Notify Slack on failure
-        if: failure()
         uses: slackapi/slack-github-action@v4.0.0
         with:
           method: chat.postMessage
@@ -63,13 +92,13 @@ jobs:
           payload: |
             {
               "channel": "C093CJXJXPT",
-              "text": "Terraform drift check failed for ${{ matrix.workspace }}",
+              "text": "Terraform drift check needs attention",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *Terraform drift check failed for ${{ matrix.workspace }}*\n${{ env.FAILURE_REASON || 'The plan failed before it could reach a verdict.' }}\nInfrastructure should only change through Terraform, so this is worth a look.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                    "text": ":warning: *Terraform drift check needs attention*\n${{ needs.preflight.result == 'failure' && 'Credential preflight failed. Check the TF_API_TOKEN Actions secret. No workspaces were checked.' || 'One or more workspaces reported pending changes or could not be checked. Review the failed workspace jobs for details.' }}\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
                   }
                 }
               ]

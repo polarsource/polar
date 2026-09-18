@@ -26,17 +26,6 @@ export const useCreateNotificationRecipient = () => {
   })
 }
 
-export const useListNotificationRecipients = () => {
-  const { polar } = usePolarClient()
-
-  return useQuery({
-    queryKey: ['notification_recipients'],
-    queryFn: async () => {
-      return unwrap(polar.GET('/v1/notifications/recipients'))
-    },
-  })
-}
-
 export const useGetNotificationRecipient = (
   expoPushToken: string | undefined,
 ) => {

@@ -29,6 +29,14 @@ module "jwks_signing_key" {
   current_generation = "2026-09"
 }
 
+module "hash_secret" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/hash_secret"
+
+  environment = "test"
+  role_name   = module.secrets_kms[0].role_name
+}
+
 module "redis" {
   count  = local.test_enabled ? 1 : 0
   source = "../modules/aws_redis"

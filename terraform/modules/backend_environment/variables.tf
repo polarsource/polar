@@ -117,6 +117,11 @@ variable "aws_kms_config" {
   })
 }
 
+variable "hash_secret_arn" {
+  description = "Secrets Manager secret holding the token hashing secrets, one per version."
+  type        = string
+}
+
 variable "worker_sqs_config" {
   type = object({
     enabled      = string

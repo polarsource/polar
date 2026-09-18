@@ -138,6 +138,7 @@ module "backend_environment" {
     jwks_published_key_ids = one(module.jwks_signing_key[*].published_key_arns)
     role_arn               = one(module.secrets_kms[*].role_arn)
   }
+  hash_secret_arn = one(module.hash_secret[*].secret_arn)
   worker_sqs_config = {
     enabled      = "true"
     actors       = var.worker_sqs_actors

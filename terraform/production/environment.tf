@@ -76,7 +76,6 @@ locals {
     resend_webhook_secret          = var.backend_resend_webhook_secret
     firecrawl_api_key              = var.firecrawl_api_key
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_production
-    secret                         = var.backend_secret_production
     sentry_dsn                     = var.backend_sentry_dsn_production
     plain_request_signing_secret   = var.backend_plain_request_signing_secret_production
     plain_token                    = var.backend_plain_token_production

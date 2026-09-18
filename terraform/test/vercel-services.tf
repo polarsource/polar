@@ -156,6 +156,8 @@ locals {
       value     = "notifications.test.polar.sh"
       sensitive = false
     }
+    # This service reaches AWS with static keys, not the assumed role the
+    # hash_secret module grants, so it stays on the environment variable.
     POLAR_SECRET = {
       value = var.backend_secret
     }

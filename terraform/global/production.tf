@@ -197,18 +197,6 @@ resource "tfe_variable" "backend_logo_dev_publishable_key_production" {
   }
 }
 
-resource "tfe_variable" "backend_secret_production" {
-  key             = "backend_secret_production"
-  category        = "terraform"
-  description     = "Backend Secret for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "backend_sentry_dsn_production" {
   key             = "backend_sentry_dsn_production"
   category        = "terraform"

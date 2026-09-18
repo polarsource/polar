@@ -59,7 +59,6 @@ locals {
       POLAR_RESEND_API_KEY        = var.backend_secrets.resend_api_key
       POLAR_RESEND_WEBHOOK_SECRET = var.backend_secrets.resend_webhook_secret
       POLAR_FIRECRAWL_API_KEY     = var.backend_secrets.firecrawl_api_key
-      POLAR_SECRET                = var.backend_secrets.secret
       POLAR_SENTRY_DSN            = var.backend_secrets.sentry_dsn
       POLAR_NUMERAL_API_KEY       = var.backend_secrets.numeral_api_key
       POLAR_TURNSTILE_SECRET      = var.backend_secrets.turnstile_secret

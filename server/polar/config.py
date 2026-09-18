@@ -18,6 +18,10 @@ from sqlalchemy import URL
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
 
+# A token hash reads `<secret_id>$<digest>`. The digest is 64 characters
+HASH_SEPARATOR = "$"
+MAX_HASH_SECRET_ID_LENGTH = 15
+
 DEVELOPMENT_JWKS = json.dumps(
     {
         "keys": [
@@ -121,6 +125,8 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
     SECRET: str = "super secret jwt secret"
+    HASH_SECRETS: dict[str, str] = {}
+    CURRENT_HASH_SECRET_ID: str | None = None
     # The key set the LocalSigner signs with: a document, or a path to one.
     LOCAL_JWKS: str = DEVELOPMENT_JWKS
     LOCAL_JWK_KID: str = "polar_dev"
@@ -719,6 +725,29 @@ class Settings(BaseSettings):
         sslmode = parse_qs(url.query).get("sslmode", [None])[0]
         if sslmode is not None:
             self.POSTGRES_SSL = sslmode != "disable"
+        return self
+
+    @model_validator(mode="after")
+    def check_hash_secrets(self) -> "Settings":
+        for secret_id in self.HASH_SECRETS:
+            if not 0 < len(secret_id) <= MAX_HASH_SECRET_ID_LENGTH:
+                raise ValueError(
+                    f"HASH_SECRETS id {secret_id!r} must be 1 to "
+                    f"{MAX_HASH_SECRET_ID_LENGTH} characters"
+                )
+            if HASH_SEPARATOR in secret_id:
+                raise ValueError(
+                    f"HASH_SECRETS id {secret_id!r} must not contain {HASH_SEPARATOR!r}"
+                )
+
+        if (
+            self.CURRENT_HASH_SECRET_ID is not None
+            and self.CURRENT_HASH_SECRET_ID not in self.HASH_SECRETS
+        ):
+            raise ValueError(
+                f"CURRENT_HASH_SECRET_ID {self.CURRENT_HASH_SECRET_ID!r} "
+                "is not in HASH_SECRETS"
+            )
         return self
 
     def _build_postgres_dsn(

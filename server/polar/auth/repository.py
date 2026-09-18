@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import delete
 
+from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.repository.base import RepositoryIDMixin
 from polar.kit.utils import utc_now
@@ -42,10 +43,11 @@ class UserSessionRepository(
     async def get_by_token(
         self, token: str, *, expired: bool = False
     ) -> UserSession | None:
-        statement = self.get_base_statement().where(self.token_hash_clause(token))
+        candidates = get_token_hash_candidates(token)
+        statement = self.get_base_statement().where(self.token_hash_clause(candidates))
         if not expired:
             statement = statement.where(UserSession.expires_at > utc_now())
         user_session = await self.get_one_or_none(statement)
         if user_session is None:
             return None
-        return await self.rehash_token(user_session, token)
+        return await self.rehash_token(user_session, candidates)

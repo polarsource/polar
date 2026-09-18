@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSessionCode
@@ -20,7 +21,7 @@ class CustomerSessionCodeRepository(
             select(CustomerSessionCode)
             .where(
                 CustomerSessionCode.expires_at > utc_now(),
-                self.token_hash_clause(code),
+                self.token_hash_clause(get_token_hash_candidates(code)),
             )
             .options(
                 joinedload(CustomerSessionCode.customer).joinedload(

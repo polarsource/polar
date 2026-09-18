@@ -263,7 +263,11 @@ class TestReaders:
 
 class TestDeploymentValidation:
     def test_successful_round_trip_and_manifest_checks(
-        self, manifest: Manifest, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+        self,
+        manifest: Manifest,
+        stored_records: list[dict[str, Any]],
+        mocker: MockerFixture,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         for key in (
             "RENDER_API_TOKEN",
@@ -274,30 +278,24 @@ class TestDeploymentValidation:
             "PII_VALIDATION_SENTRY_PROJECT",
         ):
             monkeypatch.setenv(key, "configured")
-        records = [
-            {
-                "message": marker(manifest.run_id, case),
-                "email": "[Redacted]",
-                "customer_id": customer_id(manifest.run_id),
-                "exception_type": "ValueError",
-                "breadcrumb": marker(manifest.run_id, "breadcrumb"),
-            }
-            for case in SPAN_CASES
-        ]
+        for record in stored_records:
+            record["breadcrumb"] = marker(manifest.run_id, "breadcrumb")
         render = mocker.Mock(spec=RenderClient)
         render.create_job.return_value = "job-123"
         render.request.return_value = {"status": "succeeded"}
         render.logs.side_effect = lambda resource, start, text: (
             [{"message": MANIFEST_PREFIX + manifest.model_dump_json()}]
             if text == MANIFEST_PREFIX.strip()
-            else records
+            else stored_records
         )
         mocker.patch("scripts.validate_pii.RenderClient", return_value=render)
         mocker.patch("scripts.validate_pii.LogfireQueryClient")
         s3 = mocker.patch("scripts.validate_pii.S3Reader").return_value
-        s3.read.return_value = records
-        mocker.patch("scripts.validate_pii.logfire_records", return_value=records)
-        mocker.patch("scripts.validate_pii.sentry_records", return_value=records)
+        s3.read.return_value = stored_records
+        mocker.patch(
+            "scripts.validate_pii.logfire_records", return_value=stored_records
+        )
+        mocker.patch("scripts.validate_pii.sentry_records", return_value=stored_records)
         mocker.patch("scripts.validate_pii.time.sleep")
         mocker.patch("scripts.validate_pii.time.monotonic", side_effect=count(step=10))
         request = ValidationRequest(run_id=manifest.run_id, release=manifest.release)

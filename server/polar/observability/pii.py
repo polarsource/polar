@@ -42,6 +42,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import re2
+from stdnum import luhn
 
 REDACTED = "[Redacted]"
 
@@ -190,25 +191,11 @@ def _scrub_values_only(value: Any) -> Any:
     return value
 
 
-def _luhn_valid(digits: str) -> bool:
-    total = 0
-    alternate = False
-    for char in reversed(digits):
-        number = ord(char) - 48
-        if alternate:
-            number *= 2
-            if number > 9:
-                number -= 9
-        total += number
-        alternate = not alternate
-    return total % 10 == 0
-
-
 def _replace_pan(match: Any) -> str:
     if match.group("uuid") is not None:
         return match.group(0)
     digits = match.group(0).replace(" ", "").replace("-", "")
-    if 13 <= len(digits) <= 19 and _luhn_valid(digits):
+    if 13 <= len(digits) <= 19 and luhn.is_valid(digits):
         return REDACTED
     return match.group(0)
 

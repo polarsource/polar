@@ -20,6 +20,7 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useVoidDeploys } from './api'
+import { withKeptParams } from './searchParams'
 import { useVoidDataSource } from './dataSource'
 import { useVoidProducts } from './productQueries'
 import {
@@ -51,14 +52,7 @@ export const VoidProductListSidebar = () => {
   const listBase = `${base}/definition/products`
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const withQuerystring = (href: string) => {
-    const kept = new URLSearchParams()
-    for (const [key, value] of searchParams.entries()) {
-      if (['query', 'filter', 'sorting'].includes(key)) kept.append(key, value)
-    }
-    const qs = kept.toString()
-    return qs ? `${href}?${qs}` : href
-  }
+  const withQuerystring = withKeptParams(searchParams, ['query', 'filter', 'sorting'])
   const selectedId = pathname.startsWith(`${listBase}/`)
     ? pathname.slice(listBase.length + 1)
     : null

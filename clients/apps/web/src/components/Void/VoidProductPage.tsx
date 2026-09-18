@@ -1,6 +1,5 @@
 'use client'
 
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
@@ -28,6 +27,7 @@ import {
   VoidProductMeter,
 } from './products'
 import { TableSection } from './VoidIdentityTables'
+import { VoidDetailShell } from './VoidShell'
 
 const LIMIT_COLOR: Record<string, 'red' | 'blue' | 'green'> = {
   hard: 'red',
@@ -114,9 +114,9 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
 
   if (live && query.isLoading) {
     return (
-      <ProductShell title="Product">
+      <VoidDetailShell title="Product">
         <Box height={128} borderRadius="m" backgroundColor="background-card" />
-      </ProductShell>
+      </VoidDetailShell>
     )
   }
 
@@ -127,7 +127,7 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
 
   if (live && query.error && !notFound) {
     return (
-      <ProductShell title="Product">
+      <VoidDetailShell title="Product">
         <Box
           borderRadius="m"
           backgroundColor="background-warning"
@@ -138,19 +138,19 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
         >
           <Text>{query.error.message}</Text>
         </Box>
-      </ProductShell>
+      </VoidDetailShell>
     )
   }
 
   if (!product || notFound) {
     return (
-      <ProductShell title="Product">
+      <VoidDetailShell title="Product">
         <EmptyState
           icon={<HiveOutlined fontSize="inherit" />}
           title="Unknown product"
           description="No product with this id exists in the current catalog."
         />
-      </ProductShell>
+      </VoidDetailShell>
     )
   }
 
@@ -160,7 +160,7 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
   const billing = product.price.type === 'recurring' ? 'Recurring' : 'One-time'
 
   return (
-    <ProductShell
+    <VoidDetailShell
       title={product.name}
       caption={[product.slug, billing, version].join(' · ')}
     >
@@ -222,29 +222,6 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
           )}
         </TableSection>
       </Box>
-    </ProductShell>
+    </VoidDetailShell>
   )
 }
-
-const ProductShell = ({
-  title,
-  caption,
-  children,
-}: {
-  title: string
-  caption?: string
-  children: React.ReactNode
-}) => (
-  <MasterDetailLayoutContent
-    header={
-      <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xs" as="h1">
-          {title}
-        </Text>
-        {caption ? <Text color="muted">{caption}</Text> : null}
-      </Box>
-    }
-  >
-    {children}
-  </MasterDetailLayoutContent>
-)

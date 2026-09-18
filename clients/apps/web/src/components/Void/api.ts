@@ -58,12 +58,38 @@ export interface VoidConfigMeter {
   currency: string
 }
 
+export interface VoidConfigSignalWindow {
+  amount: number
+  unit: 'minute' | 'hour' | 'day'
+}
+
+export interface VoidConfigMeterSignal {
+  slug: string
+  kind: 'meter'
+  meter: string
+  enter_below: number
+  exit_at_least: number
+}
+
+export interface VoidConfigSemanticSignal {
+  slug: string
+  kind: 'semantic'
+  meter: string
+  when: string
+  over: VoidConfigSignalWindow
+  enter_above: number
+  exit_below: number
+}
+
+export type VoidConfigSignal = VoidConfigMeterSignal | VoidConfigSemanticSignal
+
 export interface VoidConfiguration {
   checksum: string
   reducers: unknown[]
   meters: VoidConfigMeter[]
   entitlements: unknown[]
   products: VoidConfigProduct[]
+  signals: VoidConfigSignal[]
 }
 
 export interface VoidProductPatch {
@@ -150,6 +176,11 @@ export const voidSearch = (params: Record<string, string | undefined>) => {
 
 export const voidKeys = {
   deploys: (organizationId: string) => ['void_deploys', organizationId],
+  deployConfiguration: (organizationId: string, deploymentId: string) => [
+    'void_deploy_configuration',
+    organizationId,
+    deploymentId,
+  ],
   scenarios: (organizationId: string) => ['void_scenarios', organizationId],
   identities: (organizationId: string) => ['void_identities', organizationId],
   identity: (organizationId: string, externalId: string) => [
@@ -203,6 +234,33 @@ export const useVoidDeploys = (
     retry: false,
     ...options,
   })
+
+export const useVoidDeployConfiguration = (
+  organizationId: string,
+  deploymentId: string,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: voidKeys.deployConfiguration(organizationId, deploymentId),
+    queryFn: () =>
+      voidRequest<VoidConfiguration>(
+        organizationId,
+        `/deploys/${encodeURIComponent(deploymentId)}/configuration`,
+      ),
+    retry: false,
+    enabled: enabled && deploymentId !== '',
+  })
+
+/** The active deployment, optionally only if its configuration is stored. */
+export const activeDeploy = (
+  deploys: VoidDeploy[],
+  { withConfiguration = false } = {},
+): VoidDeploy | undefined =>
+  deploys.find(
+    (deploy) =>
+      deploy.status === 'active' &&
+      (!withConfiguration || deploy.has_configuration),
+  )
 
 export const useVoidScenarios = (
   organizationId: string,

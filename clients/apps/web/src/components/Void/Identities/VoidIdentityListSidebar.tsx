@@ -19,6 +19,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { withKeptParams } from '../searchParams'
 import { useVoidDataSource } from '../dataSource'
 import { buildTree, identityHref, identityIdFromPath } from '../identities'
 import {
@@ -56,14 +57,7 @@ export const VoidIdentityListSidebar = () => {
   const base = `${root}/identities`
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const withQuerystring = (href: string) => {
-    const kept = new URLSearchParams()
-    for (const [key, value] of searchParams.entries()) {
-      if (['query', 'filter', 'sorting'].includes(key)) kept.append(key, value)
-    }
-    const qs = kept.toString()
-    return qs ? `${href}?${qs}` : href
-  }
+  const withQuerystring = withKeptParams(searchParams, ['query', 'filter', 'sorting'])
   const selectedId = pathname.startsWith(`${base}/`)
     ? identityIdFromPath(pathname.slice(base.length + 1))
     : null

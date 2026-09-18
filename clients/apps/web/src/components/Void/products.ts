@@ -1,5 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { VoidDeploy, VoidMeterTerms, VoidPrice } from './api'
+import { VoidDeploy, VoidMeterTerms, VoidPrice, activeDeploy } from './api'
 
 export interface VoidProductMeter {
   id: string
@@ -69,7 +69,7 @@ export const productsOfActive = (
   products: VoidProduct[],
   deploys: VoidDeploy[],
 ): VoidProduct[] => {
-  const active = deploys.find((deploy) => deploy.status === 'active')
+  const active = activeDeploy(deploys)
   if (!active) return products
   return products.filter((product) => product.version_id === active.version_id)
 }

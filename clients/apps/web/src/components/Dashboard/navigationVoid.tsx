@@ -6,6 +6,7 @@ import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
 import FunctionsOutlined from '@mui/icons-material/FunctionsOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
+import SensorsOutlined from '@mui/icons-material/SensorsOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import SignalCellularAltOutlined from '@mui/icons-material/SignalCellularAltOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
@@ -59,6 +60,11 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
           title: 'Meters',
           link: `${base}/definition/meters`,
           icon: <DonutLargeOutlined fontSize="inherit" />,
+        },
+        {
+          title: 'Signals',
+          link: `${base}/definition/signals`,
+          icon: <SensorsOutlined fontSize="inherit" />,
         },
         {
           title: 'Simulate',

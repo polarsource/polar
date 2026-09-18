@@ -16,7 +16,10 @@ export const SERIES_LABEL: Record<SeriesKey, string> = {
   expected: 'Risk-adjusted',
 }
 
-export const useSeriesColors = (): Record<SeriesKey, string> => {
+export const useSeriesColors = (): Record<
+  SeriesKey | 'reference',
+  string
+> => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   return useMemo(
@@ -24,6 +27,8 @@ export const useSeriesColors = (): Record<SeriesKey, string> => {
       baseline: isDark ? '#4b4c56' : '#c4c6cf',
       scenario: '#2563eb',
       expected: '#14b8a6',
+      /** Threshold and annotation lines that need to stay legible. */
+      reference: isDark ? '#8b8d97' : '#6b7280',
     }),
     [isDark],
   )

@@ -6,6 +6,19 @@ import { Delta } from './Delta'
 import { usd } from './format'
 import { SERIES_LABEL, SeriesKey, useSeriesColors } from './ScenarioChart'
 
+export const LegendSwatch = ({ color }: { color: string }) => (
+  <span
+    aria-hidden="true"
+    style={{
+      width: 8,
+      height: 8,
+      borderRadius: 9999,
+      backgroundColor: color,
+      display: 'inline-block',
+    }}
+  />
+)
+
 interface SeriesLegendProps {
   values: Partial<Record<SeriesKey, number>>
   /** Deltas are shown against this series. */
@@ -31,16 +44,7 @@ export const SeriesLegend = ({
         return (
           <Box key={key} flexDirection="column" rowGap="xs">
             <Box alignItems="center" columnGap="s">
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 9999,
-                  backgroundColor: colors[key],
-                  display: 'inline-block',
-                }}
-              />
+              <LegendSwatch color={colors[key]} />
               <Text color="muted" variant="caption">
                 {SERIES_LABEL[key]}
               </Text>

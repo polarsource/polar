@@ -56,6 +56,13 @@ const MinHeightBar = (props: {
   )
 }
 
+/** A labelled horizontal threshold drawn across a line chart. */
+export interface GenericChartReferenceLine {
+  y: number
+  label: string
+  color: string
+}
+
 export interface GenericChartSeries {
   key: string
   label: string
@@ -82,6 +89,7 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   simple?: boolean
   ticks?: AxisTick[]
   activeCursorIndex?: number | null
+  referenceLines?: GenericChartReferenceLine[]
 }
 
 export const GenericChart = <T extends Record<string, unknown>>({
@@ -102,6 +110,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
   simple = false,
   ticks: customTicks,
   activeCursorIndex,
+  referenceLines = [],
 }: GenericChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -389,7 +398,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       )
     }
 
-    if (series.length > 1) {
+    if (series.length > 1 || referenceLines.length > 0) {
       return (
         <LineChart {...commonProps}>
           {grid}
@@ -397,6 +406,21 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {referenceLines.map((line) => (
+            <ReferenceLine
+              key={line.label}
+              y={line.y}
+              stroke={line.color}
+              strokeDasharray="4 4"
+              ifOverflow="extendDomain"
+              label={{
+                value: line.label,
+                position: 'insideTopRight',
+                fill: line.color,
+                fontSize: 11,
+              }}
+            />
+          ))}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -487,6 +511,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     hasDecimalValues,
     gradientInfo,
     activeSeries,
+    referenceLines,
     handleLegendClick,
     handleMouseMove,
     handleMouseLeave,

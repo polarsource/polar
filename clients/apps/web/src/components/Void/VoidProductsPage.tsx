@@ -1,12 +1,11 @@
 'use client'
 
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { DataTable, DataTableColumnDef, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { ReactNode, useContext, useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import { useVoidDeploys, versionLabel, versionLabels } from './api'
 import { useVoidDataSource } from './dataSource'
 import { useVoidProducts } from './productQueries'
@@ -17,6 +16,7 @@ import {
   productsOfActive,
   VoidProduct,
 } from './products'
+import { VoidDetailShell } from './VoidShell'
 
 const productColumns: DataTableColumnDef<VoidProduct>[] = [
   {
@@ -100,7 +100,7 @@ export const VoidProductsPage = () => {
   const error = live ? productsQuery.error : null
 
   return (
-    <ProductsLayout>
+    <VoidDetailShell title="Products">
       {loading ? (
         <Box height={128} borderRadius="m" backgroundColor="background-card" />
       ) : error ? (
@@ -166,18 +166,6 @@ export const VoidProductsPage = () => {
           )}
         </Box>
       )}
-    </ProductsLayout>
+    </VoidDetailShell>
   )
 }
-
-const ProductsLayout = ({ children }: { children: ReactNode }) => (
-  <MasterDetailLayoutContent
-    header={
-      <Text variant="heading-xs" as="h1">
-        Products
-      </Text>
-    }
-  >
-    {children}
-  </MasterDetailLayoutContent>
-)

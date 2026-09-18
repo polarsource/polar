@@ -369,6 +369,27 @@ resource "aws_s3_bucket" "logs" {
   bucket = "${local.full_name_prefix}-logs"
 }
 
+resource "aws_s3_bucket_versioning" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "logs" {
+  count = var.environment == "test" ? 0 : 1
+
+  bucket = aws_s3_bucket_versioning.logs.id
+
+  rule {
+    default_retention {
+      mode  = "GOVERNANCE"
+      years = 7
+    }
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
   bucket = aws_s3_bucket.logs.id
 

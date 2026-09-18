@@ -125,9 +125,6 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
     SECRET: str = "super secret jwt secret"
-    # Token hashing. SECRET hashes the short-lived reauth columns, and every
-    # bare digest belongs to it. Naming a current id moves new hashes onto
-    # that secret; the others stay readable until their tail is gone.
     HASH_SECRETS: dict[str, str] = {}
     CURRENT_HASH_SECRET_ID: str | None = None
     # The key set the LocalSigner signs with: a document, or a path to one.
@@ -732,7 +729,6 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def check_hash_secrets(self) -> "Settings":
-        """A bad id would only surface as an unreadable hash in production."""
         for secret_id in self.HASH_SECRETS:
             if not 0 < len(secret_id) <= MAX_HASH_SECRET_ID_LENGTH:
                 raise ValueError(

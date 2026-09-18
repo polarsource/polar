@@ -40,9 +40,6 @@ def get_token_hash(token: str) -> str:
     """HMAC-SHA256 of a token under the current secret. Only the hash is stored.
 
     Without a current secret, the hash is a bare digest under SECRET.
-
-    reauth hashes its own columns with its own copy of this, taking the secret
-    as an argument: it cannot read `polar.config`.
     """
     secret_id = settings.CURRENT_HASH_SECRET_ID
     if secret_id is None:
@@ -51,19 +48,18 @@ def get_token_hash(token: str) -> str:
     return f"{secret_id}{HASH_SEPARATOR}{digest}"
 
 
-def get_token_hash_candidates(token: str) -> list[str]:
-    """Every hash `token` could be stored as, the current one first.
+def get_token_hash_candidates(token: str) -> dict[str | None, str]:
+    """Every hash `token` could be stored as, keyed by secret id.
 
     A credential keeps its original hash until a lookup rewrites it, so a
-    match has to try them all.
+    match has to try them all. `None` keys the bare digest under SECRET.
     """
-    current = get_token_hash(token)
-    others = [
-        f"{secret_id}{HASH_SEPARATOR}{_digest(token, secret)}"
+    candidates: dict[str | None, str] = {
+        secret_id: f"{secret_id}{HASH_SEPARATOR}{_digest(token, secret)}"
         for secret_id, secret in settings.HASH_SECRETS.items()
-    ]
-    others.append(_digest(token, settings.SECRET))
-    return [current, *(other for other in others if other != current)]
+    }
+    candidates[None] = _digest(token, settings.SECRET)
+    return candidates
 
 
 def generate_token_hash_pair(*, prefix: str = "") -> tuple[str, str]:

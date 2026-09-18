@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from polar.config import Settings, settings
+from polar.config import HASH_SEPARATOR, Settings, settings
 from polar.kit.crypto import get_token_hash, get_token_hash_candidates
 
 SECRETS = {"k1": "first secret", "k2": "second secret"}
@@ -24,7 +24,7 @@ def test_hash_is_a_bare_digest_without_a_current_secret(
 ) -> None:
     hash = get_token_hash("polar_at_xxx")
     assert len(hash) == 64
-    assert get_token_hash_candidates("polar_at_xxx") == [hash]
+    assert get_token_hash_candidates("polar_at_xxx") == {None: hash}
 
 
 def test_hash_carries_the_current_secret_id(current_secret: None) -> None:
@@ -38,10 +38,10 @@ def test_candidates_cover_every_secret_and_the_legacy_form(
     current_secret: None,
 ) -> None:
     candidates = get_token_hash_candidates("polar_at_xxx")
-    assert candidates[0] == get_token_hash("polar_at_xxx")
-    assert len(candidates) == 3
-    assert sum(1 for c in candidates if c.startswith("k1$")) == 1
-    assert sum(1 for c in candidates if "$" not in c) == 1
+    assert candidates.keys() == {"k1", "k2", None}
+    assert candidates["k2"] == get_token_hash("polar_at_xxx")
+    assert candidates["k1"].startswith("k1$")
+    assert HASH_SEPARATOR not in candidates[None]
 
 
 def test_a_hash_written_under_a_retired_secret_is_still_a_candidate(
@@ -53,7 +53,7 @@ def test_a_hash_written_under_a_retired_secret_is_still_a_candidate(
 
     monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "k2")
     assert stored != get_token_hash("polar_at_xxx")
-    assert stored in get_token_hash_candidates("polar_at_xxx")
+    assert stored == get_token_hash_candidates("polar_at_xxx")["k1"]
 
 
 @pytest.mark.parametrize(

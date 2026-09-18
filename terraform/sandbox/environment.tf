@@ -34,7 +34,6 @@ locals {
     resend_webhook_secret          = var.backend_resend_webhook_secret
     firecrawl_api_key              = var.firecrawl_api_key
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_sandbox
-    secret                         = var.backend_secret_sandbox
     sentry_dsn                     = var.backend_sentry_dsn_sandbox
     numeral_api_key                = var.numeral_api_key_sandbox
     turnstile_secret               = var.turnstile_secret

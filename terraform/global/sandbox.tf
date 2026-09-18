@@ -173,18 +173,6 @@ resource "tfe_variable" "backend_logo_dev_publishable_key_sandbox" {
   }
 }
 
-resource "tfe_variable" "backend_secret_sandbox" {
-  key             = "backend_secret_sandbox"
-  category        = "terraform"
-  description     = "Backend Secret for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "backend_sentry_dsn_sandbox" {
   key             = "backend_sentry_dsn_sandbox"
   category        = "terraform"

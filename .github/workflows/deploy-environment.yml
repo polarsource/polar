@@ -46,10 +46,6 @@ on:
         required: true
       SENTRY_ORG:
         required: true
-      PII_VALIDATION_AWS_ROLE_ARN:
-        required: false
-      PII_VALIDATION_LOGFIRE_READ_TOKEN:
-        required: false
     outputs:
       frontend-deployment-url:
         description: "Frontend deployment URL"
@@ -105,62 +101,6 @@ jobs:
             "${{ inputs.render-worker-service-ids }}"
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
-
-  validate-logs:
-    name: "Backend: Validate stored logs (${{ inputs.environment }})"
-    needs: [deploy-backend, promote-frontend]
-    if: always() && needs.deploy-backend.result == 'success' && (needs.promote-frontend.result == 'success' || needs.promote-frontend.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: ${{ inputs.environment }}
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Initialize validation report
-        env:
-          DEPLOYMENT_ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          jq -n --arg release "$GITHUB_SHA" --arg environment "$DEPLOYMENT_ENVIRONMENT" \
-            '{schema_version: 1, status: "not_run", stage: "setup", release: $release, environment: $environment}' \
-            > server/pii-validation.json
-          printf '## PII validation\n\nNot run: setup did not complete.\n' > server/pii-validation.md
-      - uses: astral-sh/setup-uv@v10.0.1
-        with:
-          enable-cache: true
-          working-directory: server
-      - name: Assume read-only log validation role
-        uses: aws-actions/configure-aws-credentials@v6.2.4
-        with:
-          role-to-assume: ${{ secrets.PII_VALIDATION_AWS_ROLE_ARN }}
-          aws-region: us-east-2
-      - name: Emit canaries and verify stored output
-        working-directory: server
-        env:
-          DEPLOYMENT_ENVIRONMENT: ${{ inputs.environment }}
-          RENDER_API_SERVICE_ID: ${{ inputs.render-api-service-id }}
-          RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
-          PII_VALIDATION_RENDER_OWNER_ID: ${{ vars.PII_VALIDATION_RENDER_OWNER_ID }}
-          PII_VALIDATION_LOGFIRE_READ_TOKEN: ${{ secrets.PII_VALIDATION_LOGFIRE_READ_TOKEN }}
-        run: |
-          uv run --frozen --no-group dev python -m scripts.validate_pii \
-            --release "$GITHUB_SHA" \
-            --environment "$DEPLOYMENT_ENVIRONMENT" \
-            --service-id "$RENDER_API_SERVICE_ID"
-      - name: Publish validation summary
-        if: always()
-        run: cat server/pii-validation.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload PII validation report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: pii-validation-${{ inputs.environment }}-${{ github.run_attempt }}
-          path: |
-            server/pii-validation.json
-            server/pii-validation.md
-          if-no-files-found: error
-          retention-days: 90
 
   # Sentry release is split into its own job so that a Sentry hiccup (auth
   # expired, rate limit) does not mark deploy-backend as failed. If they

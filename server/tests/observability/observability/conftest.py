@@ -57,7 +57,7 @@ def logging_pipeline(
     stream = StringIO()
     handler = logging.StreamHandler(stream)
     handler.setFormatter(formatter_type(**formatter_config))
-    stdlib_logger = logging.getLogger("polar.pii_validation")
+    stdlib_logger = logging.getLogger("pii-test")
     mocker.patch.object(stdlib_logger, "handlers", [handler])
     mocker.patch.object(stdlib_logger, "level", logging.DEBUG)
     mocker.patch.object(stdlib_logger, "disabled", False)

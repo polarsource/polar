@@ -14,9 +14,9 @@ from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import VoidActivitySpan, VoidEvent
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.void.deploy.schemas import DeployConfiguration
 from polar.void.organization.service import organization as organization_service
 
-from .definitions import activities_of
 from .repository import ActivityEventRepository, ActivitySpanRepository
 from .schemas import (
     ActivityReport,
@@ -42,6 +42,7 @@ log = structlog.get_logger()
 
 DEBOUNCE = timedelta(seconds=1)
 RETRY_BACKOFF = timedelta(seconds=30)
+SWEEP_BATCH = 50
 
 _SPAN_METADATA = {
     "model",
@@ -267,23 +268,28 @@ class ActivityService:
                 continue
             by_name = {
                 definition.event: definition
-                for definition in activities_of(deployment.configuration).values()
+                for definition in DeployConfiguration.of(deployment).activities
             }
             if not by_name:
                 continue
-            seen: set[str] = set()
+            touched: dict[str, tuple[DeployActivity, VoidEvent]] = {}
             for event in org_events:
                 name = event.payload.get("name")
                 definition = by_name.get(name) if isinstance(name, str) else None
                 if definition is None:
                     continue
                 key = span_key_of(event.payload, definition.group_by)
-                if key in seen:
-                    continue
-                seen.add(key)
-                current = await repository.get_span(
-                    organization_id, deployment.version_id, key
+                touched.setdefault(key, (definition, event))
+            if not touched:
+                continue
+            existing = {
+                span.span_key: span
+                for span in await repository.get_spans(
+                    organization_id, deployment.version_id, list(touched)
                 )
+            }
+            for key, (definition, event) in touched.items():
+                current = existing.get(key)
                 if current is None:
                     current = self._pending_span(
                         organization_id, deployment.version_id, definition, key, event
@@ -319,16 +325,15 @@ class ActivityService:
             event_count=1,
         )
 
-    async def classify_due(self, session: AsyncSession, *, limit: int = 50) -> int:
+    async def classify_due(self, session: AsyncSession) -> int:
         """One sweep: label every span whose debounce has elapsed. A failed
         span is pushed back instead of failing the sweep; a span touched while
         being labeled keeps its newer ``due_at`` and comes round again."""
-        now = utc_now()
-        due = await ActivitySpanRepository.from_session(session).list_due(
-            now, limit=limit
-        )
+        repository = ActivitySpanRepository.from_session(session)
+        due = await repository.list_due(utc_now(), limit=SWEEP_BATCH)
         for span in due:
             seen = span.due_at
+            assert seen is not None
             try:
                 await self.classify_span(session, span)
             except TypeSafeError as error:
@@ -338,26 +343,23 @@ class ActivityService:
                     error=str(error),
                 )
                 span.due_at = utc_now() + RETRY_BACKOFF
-                await session.flush()
                 continue
-            await session.refresh(span, attribute_names=["due_at"])
-            if span.due_at == seen:
-                span.due_at = None
-            await session.flush()
+            await repository.clear_due(span, seen)
+        await session.flush()
         return len(due)
 
     async def classify_span(
         self, session: AsyncSession, span: VoidActivitySpan
-    ) -> VoidActivitySpan:
+    ) -> None:
         events = await ActivityEventRepository.from_session(session).list_for_span(
             span.organization_id, span.event_name, span.group_by, span.span_key
         )
         if not events:
-            return span
+            return
         state = summarize_events(events)
         digest = state_hash(state)
         if span.state_hash == digest and span.activity != PENDING:
-            return span
+            return
         first, last = events[0], events[-1]
         totals = state["span"]
         span.external_identity_id = first.payload.get("external_identity_id")
@@ -384,7 +386,6 @@ class ActivityService:
         span.model = result.model
         span.classified_at = utc_now()
         await session.flush()
-        return span
 
 
 activity = ActivityService()

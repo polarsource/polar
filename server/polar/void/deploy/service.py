@@ -11,7 +11,6 @@ from polar.models import VoidProduct as Product
 from polar.models import VoidReducer as Reducer
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.void.activity.definitions import activities_of
 from polar.void.activity.schemas import DeployActivity
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import classify as entitlement_action
@@ -567,7 +566,7 @@ class DeployService:
         )
         entries += _plan_activities(
             create_schema.activities,
-            activities_of(baseline.configuration if baseline is not None else None),
+            {a.slug: a for a in DeployConfiguration.of(baseline).activities},
         )
 
         if not apply:

@@ -653,7 +653,7 @@ export const isMeterSignal = (ref: SignalRef): ref is MeterSignalRef =>
 export const isSemanticSignal = (ref: SignalRef): ref is SemanticSignalRef =>
   ref.definition.kind === 'semantic'
 
-const SLUG_KEY = /^[a-z0-9][a-z0-9_-]{0,127}$/
+export const SLUG_KEY = /^[a-z0-9][a-z0-9_-]{0,127}$/
 
 function meterSignal(key: string, options: MeterSignalOptions): MeterSignalRef {
   if (options.field !== 'remaining') {
@@ -736,39 +736,20 @@ export function signal(key: string, options: SignalOptions): SignalRef {
     : meterSignal(key, options)
 }
 
-export interface ActivityDef<Key extends string = string> {
+export interface ActivityDef {
   readonly kind: 'activity'
-  readonly key: Key
+  readonly key: string
   readonly event: EventDef
   readonly span: string
 }
 
-const SLUG = /^[a-z0-9][a-z0-9_-]*$/
-
-/** What a plugin asks for when it wants its completions classified. */
+/** What an `llm()` plugin asks for when it wants its completions classified. */
 export type ClassifyOptions =
   | boolean
   | {
       /** Metadata key that makes one span. Defaults to `call_id`. */
       readonly span?: string
     }
-
-/**
- * A plugin's classifier over the completion event it records. Polar labels
- * each span after ingest; labels never move money. Not a standalone
- * definition: the taxonomy reads the metadata only an `llm()` plugin writes.
- */
-export function classifier<Key extends string>(
-  key: Key,
-  event: EventDef,
-  options: ClassifyOptions,
-): ActivityDef<Key> | undefined {
-  if (options === false) return undefined
-  if (!SLUG.test(key)) throw new Error(`classify: invalid slug ${key}`)
-  const span = options === true ? undefined : options.span
-  if (span === '') throw new Error('classify: span must name a metadata key')
-  return { kind: 'activity', key, event, span: span ?? 'call_id' }
-}
 
 /** Every definition a plugin may contain; everything but a plugin itself. */
 export type LeafDefinition =

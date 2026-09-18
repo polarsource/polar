@@ -10,6 +10,7 @@ from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import Organization, VoidActivitySpan, VoidDeployment, VoidEvent
 from polar.postgres import AsyncSession
+from polar.void.activity.repository import ActivitySpanRepository
 from polar.void.activity.service import (
     DEBOUNCE,
     RETRY_BACKOFF,
@@ -24,7 +25,7 @@ from polar.void.activity.typesafe import Classification, TypeSafeError
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from tests.fixtures.database import SaveFixture
-from tests.void.conftest import VERSION
+from tests.void.conftest import VERSION, activate_version
 
 LABELED = Classification(
     activity="implement", confidence=0.91, waste=0.1, model="jev-latest"
@@ -79,20 +80,15 @@ async def deploy_classifier(
     save_fixture: SaveFixture, organization: Organization
 ) -> VoidDeployment:
     """An active deployment whose configuration declares one classifier."""
-    deployment = VoidDeployment(
-        organization_id=organization.id,
-        checksum="test",
-        version_id=VERSION,
-        status="active",
-        entries=[],
+    return await activate_version(
+        save_fixture,
+        organization,
         configuration={
             "activities": [
                 {"slug": "agent", "event": "llm.completion", "group_by": "call_id"}
             ]
         },
     )
-    await save_fixture(deployment)
-    return deployment
 
 
 async def ingest(
@@ -122,11 +118,8 @@ async def touch(
 async def span_row(
     session: AsyncSession, organization_id: UUID, span_key: str
 ) -> VoidActivitySpan | None:
-    return await session.scalar(
-        select(VoidActivitySpan).where(
-            VoidActivitySpan.organization_id == organization_id,
-            VoidActivitySpan.span_key == span_key,
-        )
+    return await ActivitySpanRepository.from_session(session).get_span(
+        organization_id, VERSION, span_key
     )
 
 

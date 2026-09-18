@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -19,7 +20,10 @@ VERSION = "a" * 64
 
 
 async def activate_version(
-    save_fixture: SaveFixture, organization: Organization, version_id: str = VERSION
+    save_fixture: SaveFixture,
+    organization: Organization,
+    version_id: str = VERSION,
+    configuration: dict[str, Any] | None = None,
 ) -> VoidDeployment:
     """An active deployment row for a version whose rows tests create directly."""
     deployment = VoidDeployment(
@@ -28,6 +32,7 @@ async def activate_version(
         version_id=version_id,
         status="active",
         entries=[],
+        configuration=configuration,
     )
     await save_fixture(deployment)
     return deployment

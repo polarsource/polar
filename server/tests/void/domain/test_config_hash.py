@@ -76,17 +76,7 @@ def test_empty_activities_do_not_change_the_hash() -> None:
     )
     assert labeled.version_id != baseline.version_id
     assert (
-        config(
-            activities=[
-                {
-                    "slug": "agent",
-                    "event": "llm.completion",
-                    "group_by": "call_id",
-                    "run_by": None,
-                    "taxonomy": "polar.agent/v1",
-                }
-            ]
-        ).version_id
+        config(activities=[{"slug": "agent", "event": "llm.completion"}]).version_id
         == labeled.version_id
     )
 

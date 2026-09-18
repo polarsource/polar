@@ -1,5 +1,5 @@
 import {
-  classifier,
+  SLUG_KEY,
   count,
   event,
   isMeter,
@@ -566,6 +566,24 @@ export interface Core<
   snapshot(
     meters: Readonly<Record<string, MeterSnapshot>>,
   ): LlmSnapshot<Models, B>
+}
+
+/**
+ * The plugin's classifier over the completion event it records. Polar labels
+ * each span after ingest; labels never move money. The taxonomy reads the
+ * metadata only this plugin writes, so there is no standalone definition.
+ */
+const classifier = (
+  key: string,
+  event: EventDef,
+  options: ClassifyOptions,
+): ActivityDef | undefined => {
+  if (options === false) return undefined
+  if (!SLUG_KEY.test(key))
+    throw new Error(`classify: key ${key} is not a valid slug`)
+  const span = options === true ? undefined : options.span
+  if (span === '') throw new Error('classify: span must name a metadata key')
+  return { kind: 'activity', key, event, span: span ?? 'call_id' }
 }
 
 /**

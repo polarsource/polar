@@ -5,7 +5,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from polar.models.void_deployment import VoidDeploymentStatus
+from polar.models.void_deployment import VoidDeployment, VoidDeploymentStatus
 from polar.void.activity.schemas import DeployActivity
 from polar.void.entitlement.schemas import SLUG_PATTERN as KEY_PATTERN
 from polar.void.judge.schemas import JudgeWindow
@@ -133,6 +133,13 @@ class DeployConfiguration(BaseModel):
     products: list[DeployProduct] = []
     activities: list[DeployActivity] = []
     signals: list[DeploySignal] = []
+
+    @classmethod
+    def of(cls, deployment: "VoidDeployment | None") -> "DeployConfiguration":
+        """A deployment's stored configuration; empty without one."""
+        if deployment is None or deployment.configuration is None:
+            return cls()
+        return cls.model_validate(deployment.configuration)
 
 
 class DeployCreate(DeployConfiguration):

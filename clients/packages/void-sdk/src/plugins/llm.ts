@@ -612,7 +612,7 @@ export const llm = <
     billing,
     key,
     listPrices: gateway.prices,
-    ...(classify !== undefined && { classify }),
+    classify,
   })
   const canonical = canonicalizer(names, onUnknownModel)
 

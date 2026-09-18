@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, cast, or_, select
+from sqlalchemy import Select, cast, or_, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.repository import RepositoryBase
@@ -27,6 +27,16 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
             self.scoped_statement(organization_id).where(
                 VoidActivitySpan.version_id == version_id,
                 VoidActivitySpan.span_key == span_key,
+            )
+        )
+
+    async def get_spans(
+        self, organization_id: UUID, version_id: str, span_keys: Sequence[str]
+    ) -> Sequence[VoidActivitySpan]:
+        return await self.get_all(
+            self.scoped_statement(organization_id).where(
+                VoidActivitySpan.version_id == version_id,
+                VoidActivitySpan.span_key.in_(span_keys),
             )
         )
 
@@ -72,6 +82,15 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
             .order_by(VoidActivitySpan.due_at, VoidActivitySpan.id)
             .limit(limit)
         )
+
+    async def clear_due(self, span: VoidActivitySpan, seen: datetime) -> None:
+        """Clear the debounce unless a touch moved it while we were labeling."""
+        await self.session.execute(
+            update(VoidActivitySpan)
+            .where(VoidActivitySpan.id == span.id, VoidActivitySpan.due_at == seen)
+            .values(due_at=None)
+        )
+        await self.session.refresh(span, attribute_names=["due_at"])
 
 
 class ActivityEventRepository(RepositoryBase[VoidEvent]):

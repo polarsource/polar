@@ -208,6 +208,71 @@ class Transaction(RecordModel):
     __tablename__ = "transactions"
     __table_args__ = (
         Index(
+            "ix_transactions_tax_country_not_null",
+            "tax_country",
+            postgresql_where="tax_country IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_processor_fee_type_not_null",
+            "processor_fee_type",
+            postgresql_where="processor_fee_type IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_customer_id_not_null",
+            "customer_id",
+            postgresql_where="customer_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_charge_id_not_null",
+            "charge_id",
+            postgresql_where="charge_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_fee_balance_transaction_id_not_null",
+            "fee_balance_transaction_id",
+            postgresql_where="fee_balance_transaction_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_payment_customer_id_not_null",
+            "payment_customer_id",
+            postgresql_where="payment_customer_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_payment_organization_id_not_null",
+            "payment_organization_id",
+            postgresql_where="payment_organization_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_payment_user_id_not_null",
+            "payment_user_id",
+            postgresql_where="payment_user_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_pledge_id_not_null",
+            "pledge_id",
+            postgresql_where="pledge_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_issue_reward_id_not_null",
+            "issue_reward_id",
+            postgresql_where="issue_reward_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_refund_id_not_null",
+            "refund_id",
+            postgresql_where="refund_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_dispute_id_not_null",
+            "dispute_id",
+            postgresql_where="dispute_id IS NOT NULL",
+        ),
+        Index(
+            "ix_transactions_payout_id_not_null",
+            "payout_id",
+            postgresql_where="payout_id IS NOT NULL",
+        ),
+        Index(
             "ix_transactions_account_type_amount",
             "account_id",
             "type",
@@ -227,6 +292,16 @@ class Transaction(RecordModel):
             unique=True,
             postgresql_where="type = 'dispute'",
         ),
+        {
+            "postgresql_with": {
+                "autovacuum_vacuum_threshold": 1000,
+                "autovacuum_vacuum_scale_factor": 0.005,
+                "autovacuum_vacuum_insert_threshold": 1000,
+                "autovacuum_vacuum_insert_scale_factor": 0.005,
+                "autovacuum_analyze_threshold": 1000,
+                "autovacuum_analyze_scale_factor": 0.01,
+            }
+        },
     )
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)
@@ -244,7 +319,7 @@ class Transaction(RecordModel):
     """Amount in cents of this transaction from user's account perspective."""
     tax_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     """Amount of tax collected by Polar for this payment."""
-    tax_country: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
+    tax_country: Mapped[str] = mapped_column(String(2), nullable=True)
     """Country for which Polar collected the tax."""
     tax_state: Mapped[str] = mapped_column(String(2), nullable=True)
     """State for which Polar collected the tax."""
@@ -272,7 +347,7 @@ class Transaction(RecordModel):
     """ID of the tax transaction in the tax processor system."""
 
     processor_fee_type: Mapped[ProcessorFeeType | None] = mapped_column(
-        String, nullable=True, index=True
+        String, nullable=True
     )
     """
     Type of processor fee. Only applies to transactions of type `TransactionType.processor_fee`.
@@ -296,16 +371,16 @@ class Transaction(RecordModel):
     with a set `account_id`.
     """
 
-    customer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    customer_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the customer in the payment processor system."""
-    charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    charge_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the charge (payment) in the payment processor system."""
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the transfer in the payment processor system."""
     transfer_reversal_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the transfer reversal in the payment processor system."""
     fee_balance_transaction_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True
+        String, nullable=True
     )
     """ID of the fee's balance transaction in the payment processor system."""
 
@@ -334,7 +409,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("customers.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """ID of the `Customer` who made the payment."""
 
@@ -346,7 +420,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("organizations.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """ID of the `Organization` who made the payment."""
 
@@ -358,7 +431,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("users.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """
     ID of the `User` who made the payment.
@@ -374,7 +446,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("pledges.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """ID of the `Pledge` related to this transaction."""
 
@@ -398,7 +469,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("issue_rewards.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """ID of the `IssueReward` related to this transaction."""
 
@@ -432,7 +502,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("refunds.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """ID of the `Refund` related to this transaction."""
 
@@ -444,7 +513,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("disputes.id", ondelete="set null"),
         nullable=True,
-        index=True,
     )
     """ID of the `Dispute` related to this transaction."""
 
@@ -453,7 +521,7 @@ class Transaction(RecordModel):
         return relationship("Dispute", lazy="raise")
 
     payout_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("payouts.id"), nullable=True, index=True
+        Uuid, ForeignKey("payouts.id"), nullable=True
     )
     """ID of the `Payout` related to this transaction."""
 

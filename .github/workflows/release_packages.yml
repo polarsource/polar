@@ -41,8 +41,10 @@ jobs:
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        # Pin to last known working version (see: https://github.com/changesets/action/issues/501)
-        uses: changesets/action@v2.1.1
+        # Stay on action v1 while clients still use @changesets/cli v2.
+        # v2 of this action requires CLI v3 and dropped the `publish`/`cwd` inputs
+        # (see https://github.com/changesets/action/issues/501).
+        uses: changesets/action@v1.9.0
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release-packages
@@ -50,3 +52,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS: "https://polar.sh,https://sandbox.polar.sh"
+
+      - name: Release summary
+        if: always() && steps.changesets.outcome != 'skipped'
+        run: |
+          {
+            echo "## Release packages"
+            echo "- Changesets present: \`${{ steps.changesets.outputs.hasChangesets }}\`"
+            echo "- Published: \`${{ steps.changesets.outputs.published }}\`"
+            echo "- Version PR: \`${{ steps.changesets.outputs.pullRequestNumber }}\`"
+            echo "- Published packages: \`${{ steps.changesets.outputs.publishedPackages }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

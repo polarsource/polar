@@ -1,7 +1,7 @@
 """enforce user_sessions.token_v2 not null
 
 Revision ID: c4a7b74d2f73
-Revises: f9d1169d7b94
+Revises: 98076b0fbfe3
 Create Date: 2026-09-18 09:19:00.440828
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c4a7b74d2f73"
-down_revision = "f9d1169d7b94"
+down_revision = "98076b0fbfe3"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

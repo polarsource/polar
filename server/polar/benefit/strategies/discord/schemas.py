@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
 from polar.models.benefit import BenefitType
@@ -23,6 +24,13 @@ class BenefitDiscordProperties(Schema):
     kick_member: bool = Field(
         ...,
         description="Whether to kick the member from the Discord server on revocation.",
+    )
+    guild_token: SkipJsonSchema[str] = Field(
+        default="deprecated",
+        description=(
+            "Deprecated and unused. Kept only so older SDKs pinned to specs "
+            "that require this field don't reject the response. Use `guild_id`."
+        ),
     )
 
 

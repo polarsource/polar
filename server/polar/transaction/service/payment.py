@@ -94,7 +94,6 @@ class PaymentTransactionService(BaseTransactionService):
             presentment_amount=charge.amount - tax_amount,
             presentment_tax_amount=tax_amount,
             exchange_rate=exchange_rate,
-            customer_id=get_expandable_id(charge.customer) if charge.customer else None,
             charge_id=charge.id,
             risk_level=risk.get("risk_level"),
             risk_score=risk.get("risk_score"),
@@ -103,8 +102,6 @@ class PaymentTransactionService(BaseTransactionService):
             payment_customer=None,
             # Legacy fields for pledges
             pledge=None,
-            payment_organization=None,
-            payment_user=None,
         )
 
         session.add(transaction)

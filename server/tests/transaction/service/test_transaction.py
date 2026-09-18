@@ -5,7 +5,7 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
-from polar.models import Account, Organization, Transaction, User, UserOrganization
+from polar.models import Account, Transaction, User, UserOrganization
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
@@ -113,62 +113,6 @@ class TestSearch:
 
         for result in results:
             assert result.id in account_transactions_id
-
-    @pytest.mark.auth
-    async def test_filter_payment_user(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        user: User,
-        user_organization: UserOrganization,
-        user_transactions: list[Transaction],
-        all_transactions: list[Transaction],
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await transaction_service.search(
-            session,
-            auth_subject,
-            payment_user_id=user.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert count == len(user_transactions)
-        assert len(results) == len(user_transactions)
-
-        user_transactions_id = [t.id for t in user_transactions]
-
-        for result in results:
-            assert result.id in user_transactions_id
-
-    @pytest.mark.auth
-    async def test_filter_payment_organization(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-        organization_transactions: list[Transaction],
-        all_transactions: list[Transaction],
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await transaction_service.search(
-            session,
-            auth_subject,
-            payment_organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert count == len(organization_transactions)
-        assert len(results) == len(organization_transactions)
-
-        organization_transactions_id = [t.id for t in organization_transactions]
-
-        for result in results:
-            assert result.id in organization_transactions_id
 
 
 @pytest.mark.asyncio

@@ -146,9 +146,7 @@ class TestCreatePayment:
         )
 
         assert transaction.type == TransactionType.payment
-        assert transaction.customer_id == stripe_charge.customer
         assert transaction.payment_customer is None
-        assert transaction.payment_organization is None
         assert transaction.risk_level == risk_level
         assert transaction.risk_score == risk_score
 

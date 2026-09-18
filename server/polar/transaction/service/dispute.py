@@ -98,7 +98,6 @@ class DisputeTransactionService(BaseTransactionService):
                 joinedload(Transaction.payment_customer).joinedload(
                     Customer.organization
                 ),
-                joinedload(Transaction.payment_organization),
                 joinedload(Transaction.order),
             ),
         )
@@ -120,11 +119,8 @@ class DisputeTransactionService(BaseTransactionService):
             presentment_tax_amount=-dispute.tax_amount,
             exchange_rate=exchange_rate,
             dispute=dispute,
-            customer_id=payment_transaction.customer_id,
             charge_id=payment_transaction.charge_id,
             payment_customer_id=payment_transaction.payment_customer_id,
-            payment_organization_id=payment_transaction.payment_organization_id,
-            payment_user_id=payment_transaction.payment_user_id,
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
             order_id=payment_transaction.order_id,
@@ -167,12 +163,9 @@ class DisputeTransactionService(BaseTransactionService):
                 presentment_amount=dispute.amount,
                 presentment_tax_amount=dispute.tax_amount,
                 exchange_rate=exchange_rate,
-                customer_id=payment_transaction.customer_id,
                 charge_id=payment_transaction.charge_id,
                 dispute=dispute,
                 payment_customer_id=payment_transaction.payment_customer_id,
-                payment_organization_id=payment_transaction.payment_organization_id,
-                payment_user_id=payment_transaction.payment_user_id,
                 pledge_id=payment_transaction.pledge_id,
                 issue_reward_id=payment_transaction.issue_reward_id,
                 order_id=payment_transaction.order_id,

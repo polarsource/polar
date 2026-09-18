@@ -24,11 +24,9 @@ if TYPE_CHECKING:
         Dispute,
         IssueReward,
         Order,
-        Organization,
         Payout,
         Pledge,
         Refund,
-        User,
     )
 
 
@@ -371,7 +369,9 @@ class Transaction(RecordModel):
     with a set `account_id`.
     """
 
-    customer_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    customer_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, deferred=True
+    )
     """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True)
     """ID of the charge (payment) in the payment processor system."""
@@ -420,27 +420,18 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("organizations.id", ondelete="set null"),
         nullable=True,
+        deferred=True,
     )
     """ID of the `Organization` who made the payment."""
 
-    @declared_attr
-    def payment_organization(cls) -> Mapped["Organization | None"]:
-        return relationship("Organization", lazy="raise")
-
     payment_user_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("users.id", ondelete="set null"),
-        nullable=True,
+        Uuid, ForeignKey("users.id", ondelete="set null"), nullable=True, deferred=True
     )
     """
     ID of the `User` who made the payment.
 
     Used for pledges. Orders and subscriptions should use `payment_customer_id`.
     """
-
-    @declared_attr
-    def payment_user(cls) -> Mapped["User | None"]:
-        return relationship("User", lazy="raise")
 
     pledge_id: Mapped[UUID | None] = mapped_column(
         Uuid,

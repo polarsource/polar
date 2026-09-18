@@ -40,7 +40,10 @@ class MerchantMigrationsService:
             if cached is None:
                 missing.append(currency)
                 continue
-            rates[currency] = float(cached)
+            try:
+                rates[currency] = float(cached)
+            except TypeError, ValueError:
+                missing.append(currency)
 
         if not missing:
             return rates

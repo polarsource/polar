@@ -54,6 +54,7 @@ from ..toast import add_toast
 from . import mrr, views
 from .forms import AnnotatePanStepForm
 from .mrr import MrrBreakdown
+from .service import merchant_migrations
 from .status import (
     INPUT_LABELS,
     METHOD_LABELS,
@@ -237,7 +238,7 @@ async def list_migrations(
     start = (pagination.page - 1) * pagination.limit
     page = matching[start : start + pagination.limit]
     mrr_by_migration = await _page_mrr(session, page)
-    rates = await mrr.usd_rates(redis, list(mrr_by_migration.values()))
+    rates = await merchant_migrations.usd_rates(redis, list(mrr_by_migration.values()))
 
     with layout(
         request,
@@ -336,7 +337,7 @@ async def get_migration(
         await record_repository.list_subscription_canonicals([migration.id]),
         [migration.id],
     )[migration.id]
-    rates = await mrr.usd_rates(redis, [breakdown])
+    rates = await merchant_migrations.usd_rates(redis, [breakdown])
     triage = attention(migration, records.failed)
     current = current_pan_step(migration)
     failed = (

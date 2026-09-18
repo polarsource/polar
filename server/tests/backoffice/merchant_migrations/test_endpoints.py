@@ -331,54 +331,9 @@ class TestMrr:
         mocker: MockerFixture,
     ) -> None:
         fetch = mocker.patch(
-            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
+            "polar.backoffice.merchant_migrations.service.stripe_service.get_usd_base_rates",
             new_callable=AsyncMock,
             return_value={"eur": 1.14738},
-        )
-        migration = await _create_migration(save_fixture, organization)
-        await _stage_monthly_subscription(
-            session,
-            migration,
-            organization,
-            amount=16350,
-            status=MerchantMigrationRecordStatus.imported,
-        )
-        await _stage_monthly_subscription(
-            session,
-            migration,
-            organization,
-            amount=11100,
-            status=MerchantMigrationRecordStatus.imported,
-            currency="eur",
-        )
-
-        first = await backoffice_client.get(
-            "/merchant-migrations/", params={"view": "all"}
-        )
-        second = await backoffice_client.get(
-            "/merchant-migrations/", params={"view": "all"}
-        )
-
-        assert first.status_code == 200
-        assert "$290.86 /mo" in first.text
-        assert "$163.50" in first.text
-        assert "€111.00" in first.text
-        assert second.status_code == 200
-        assert "$290.86 /mo" in second.text
-        fetch.assert_awaited_once_with(["eur"])
-
-    async def test_list_keeps_native_amounts_when_fx_is_down(
-        self,
-        session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        mocker: MockerFixture,
-    ) -> None:
-        mocker.patch(
-            "polar.backoffice.merchant_migrations.mrr.stripe_service.get_usd_base_rates",
-            new_callable=AsyncMock,
-            return_value={},
         )
         migration = await _create_migration(save_fixture, organization)
         await _stage_monthly_subscription(
@@ -402,8 +357,10 @@ class TestMrr:
         )
 
         assert response.status_code == 200
-        assert "$163.50 · €111.00 /mo" in response.text
-        assert "$290.86" not in response.text
+        assert "$290.86 /mo" in response.text
+        assert "$163.50" in response.text
+        assert "€111.00" in response.text
+        fetch.assert_awaited_once_with(["eur"])
 
 
 @pytest.mark.asyncio

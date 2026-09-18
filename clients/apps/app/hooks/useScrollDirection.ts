@@ -1,10 +1,9 @@
-import { SharedValue, useSharedValue } from 'react-native-reanimated'
+import { useSharedValue } from 'react-native-reanimated'
 import { ReanimatedScrollEvent } from 'react-native-reanimated/lib/typescript/hook/commonTypes'
 
 export type ScrollDirection = 'to-top' | 'to-bottom' | 'idle'
-export type ScrollDirectionValue = SharedValue<ScrollDirection>
 
-export const useScrollDirection = (param?: 'include-negative') => {
+export const useScrollDirection = () => {
   const scrollDirection = useSharedValue<ScrollDirection>('idle')
   const prevOffsetY = useSharedValue(0)
   const offsetYAnchorOnBeginDrag = useSharedValue(0)
@@ -21,12 +20,8 @@ export const useScrollDirection = (param?: 'include-negative') => {
 
     const offsetY = typeof e === 'number' ? e : e.contentOffset.y
 
-    const positiveOffsetY =
-      param === 'include-negative' ? offsetY : Math.max(offsetY, 0)
-    const positivePrevOffsetY =
-      param === 'include-negative'
-        ? prevOffsetY.get()
-        : Math.max(prevOffsetY.get(), 0)
+    const positiveOffsetY = Math.max(offsetY, 0)
+    const positivePrevOffsetY = Math.max(prevOffsetY.get(), 0)
 
     if (
       positivePrevOffsetY - positiveOffsetY < 0 &&

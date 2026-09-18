@@ -414,12 +414,6 @@ module "vercel_services" {
 
   preview_deployments_disabled = true
 
-  # Experimental Vercel services stack. Render remains the test source of truth,
-  # so a failed deploy here should not paint every main commit red.
-  git_provider_options = {
-    git_commit_status = false
-  }
-
   resource_config = {
     function_default_regions = ["cle1"]
   }

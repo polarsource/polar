@@ -59,13 +59,7 @@ log: Logger = structlog.get_logger()
 RENEWAL_SAFETY_WINDOW = timedelta(hours=24)
 
 MIGRATABLE_SOURCE_STATUSES = frozenset(
-    {
-        CanonicalSubscriptionStatus.active,
-        CanonicalSubscriptionStatus.trialing,
-        CanonicalSubscriptionStatus.past_due,
-        CanonicalSubscriptionStatus.unpaid,
-        CanonicalSubscriptionStatus.paused,
-    }
+    {CanonicalSubscriptionStatus.active, CanonicalSubscriptionStatus.trialing}
 )
 
 _MINIMUM_PERIOD = timedelta(days=1)

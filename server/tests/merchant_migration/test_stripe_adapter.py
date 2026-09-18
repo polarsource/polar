@@ -422,7 +422,6 @@ class TestExtractProducts:
         }
         client.v1.prices.list_async.assert_awaited_once_with(
             params={
-                "active": True,
                 "limit": 100,
                 "expand": ["data.product", "data.currency_options"],
                 "starting_after": "price_1",
@@ -442,11 +441,63 @@ class TestExtractProducts:
             "starting_after": None,
         }
 
-    async def test_inactive_catalog_product_is_not_extracted(
+    async def test_archived_catalog_product_is_extracted(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
-        _listed_prices(mocker, client, _stripe_price(product_active=False))
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(
+                id="price_archived",
+                product_id="prod_archived",
+                product_active=False,
+                price_active=False,
+                product_name="Legacy",
+                currency_options={"eur": {"unit_amount": 900}},
+            ),
+        )
+
+        products = await _extracted_products(adapter)
+
+        assert len(products) == 1
+        assert products[0].product_source_id == "prod_archived"
+        assert products[0].source_id == "prod_archived:month:1"
+        assert products[0].archived is True
+        assert products[0].name == "Legacy"
+        assert {(p.source_id, p.currency, p.amount) for p in products[0].prices} == {
+            ("price_archived", "usd", 1000),
+            ("price_archived", "eur", 900),
+        }
+
+    async def test_archived_price_on_live_product_stays_on_the_catalog_product(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(),
+            _stripe_price(id="price_archived", price_active=False, unit_amount=500),
+        )
+
+        products = await _extracted_products(adapter)
+
+        assert len(products) == 1
+        assert products[0].source_id == "prod_1:month:1"
+        assert products[0].archived is False
+        assert {(p.source_id, p.amount) for p in products[0].prices} == {
+            ("price_1", 1000),
+            ("price_archived", 500),
+        }
+
+    async def test_deleted_catalog_product_is_not_extracted(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        price = _stripe_price(product_id="prod_deleted")
+        price["product"]["deleted"] = True
+        _listed_prices(mocker, client, price)
 
         products = await _extracted_products(adapter)
 
@@ -524,59 +575,6 @@ class TestExtractPages:
 
         assert len(page.records) == 1
         assert page.next_cursor is None
-
-    async def test_subscription_on_archived_price_stages_the_product(
-        self, mocker: MockerFixture
-    ) -> None:
-        adapter, client = _adapter(mocker)
-        price = _stripe_price(
-            id="price_archived",
-            product_id="prod_archived",
-            price_active=False,
-            product_name="Legacy",
-            currency_options={"eur": {"unit_amount": 900}},
-        )
-        items = [
-            {
-                "price": price,
-                "quantity": 1,
-                "current_period_start": 1_700_000_000,
-                "current_period_end": 1_702_000_000,
-            }
-        ]
-        client.v1.subscriptions.list_async = mocker.AsyncMock(
-            return_value=mocker.MagicMock(
-                data=[
-                    _stripe_subscription(items=items),
-                    _stripe_subscription(id="sub_2", items=items),
-                ],
-                has_more=False,
-            )
-        )
-
-        page = await adapter.extract_page({"phase": "subscriptions"})
-
-        products = [
-            record for record in page.records if isinstance(record, CanonicalProduct)
-        ]
-        subscriptions = [
-            record
-            for record in page.records
-            if isinstance(record, CanonicalSubscription)
-        ]
-        assert len(products) == 1
-        assert products[0].product_source_id == "prod_archived"
-        assert products[0].source_id == "prod_archived:month:1:price_archived"
-        assert products[0].archived is True
-        assert products[0].name == "Legacy"
-        assert {(p.source_id, p.currency, p.amount) for p in products[0].prices} == {
-            ("price_archived", "usd", 1000),
-            ("price_archived", "eur", 900),
-        }
-        assert len(subscriptions) == 2
-        assert {sub.price_source_id for sub in subscriptions} == {"price_archived"}
-        _, kwargs = client.v1.subscriptions.list_async.call_args
-        assert "data.items.data.price.product" in kwargs["params"]["expand"]
 
     async def test_live_subscription_does_not_stage_a_catalog_product(
         self, mocker: MockerFixture

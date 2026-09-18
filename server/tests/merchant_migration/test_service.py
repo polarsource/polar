@@ -1316,7 +1316,7 @@ class TestImportCatalog:
         assert updated.step == MerchantMigrationStep.create_catalog
 
     @pytest.mark.auth
-    async def test_imports_archived_price_as_subscription_dependency(
+    async def test_imports_archived_catalog_product_as_subscription_dependency(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1328,9 +1328,9 @@ class TestImportCatalog:
         records: list[CanonicalRecord] = [
             *_importable_catalog(),
             CanonicalProduct(
-                source_id="prod_1:month:1:price_archived",
-                product_source_id="prod_1",
-                name="Pro",
+                source_id="prod_archived:month:1",
+                product_source_id="prod_archived",
+                name="Legacy",
                 recurring_interval="month",
                 recurring_interval_count=1,
                 prices=[

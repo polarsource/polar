@@ -8,6 +8,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxBehavior
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -232,6 +233,29 @@ class TestRun:
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["provider"] == "stripe"
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
+        assert subscription.tax_behavior == TaxBehavior.inclusive
+        assert subscription.tax_exempted is False
+
+    async def test_pins_exclusive_tax_when_merchant_chose_it(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        pending_record.canonical = serialize(
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
+        )
+        await save_fixture(pending_record)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.tax_behavior == TaxBehavior.exclusive
+        assert subscription.tax_exempted is False
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,

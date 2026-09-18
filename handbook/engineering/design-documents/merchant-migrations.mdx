@@ -92,21 +92,22 @@ Migrating billing to Polar changes who computes tax. Many merchants on other pro
 
 ### Tax behavior
 
-We mirror the source's tax treatment per subscription so the customer's total doesn't jump. Each subscription falls into one of these buckets:
+The merchant chooses per subscription at review, before Polar starts billing:
 
-- **Charges tax on top (exclusive):** import as exclusive, Polar keeps adding tax on top.
-- **Tax included in the price (inclusive):** import as inclusive, keeping the customer's current total.
-- **B2B reverse-charge / exempt:** the customer paid no tax because they're a VAT-registered business in another EU country (reverse charge) or are otherwise exempt, not because anyone absorbed it. Polar already supports reverse charge: it's not a stored flag but emergent from `Customer.tax_id` — Stripe Tax returns zero tax with `taxability_reason = reverse_charge` whenever a valid VAT ID from a different country is present. So the import action is just to **carry the source's VAT ID (Stripe `customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id`**; reverse charge then re-derives itself at the first Polar renewal. Miss it and the customer gets re-taxed as B2C — a real new charge. (Note: Polar validates VAT ID format only, not VIES registry validity.)
-- **No tax at all (merchant never charged it):** import as inclusive, keeping the customer's current total, so the merchant absorbs the tax on their end. This one is a **silent revenue cliff**: as merchant of record Polar is broadly tax-registered, so tax gets carved *out* of a price the merchant used to keep in full (a €10 sub at 20% VAT nets ~€8.33). We should surface the per-merchant impact and make this an explicit merchant opt-in, not a silent default.
+1. **Taxable, inclusive (default)** — the customer keeps paying the listed price. Polar takes VAT/sales tax out of it, so the merchant earns less. Pins `tax_behavior=inclusive` and `tax_exempted=false`.
+2. **Taxable, exclusive** — tax is added on top. The customer pays more than the listed price. Pins `tax_behavior=exclusive`.
 
-Polar stores the resolved behavior on the subscription's `tax_behavior` (`inclusive`/`exclusive`), which overrides the product/price and org defaults, so a later change to those defaults doesn't shift an already-migrated subscription. (For reference, the org `location` default resolves to exclusive for `CA`/`IN`/`US` and inclusive elsewhere; we set the value explicitly rather than relying on it.)
+Inclusive is the default regardless of Stripe `automatic_tax`. Without a pin, Polar would fall back to the org's `default_tax_behavior`; a `location` default is exclusive for `CA`/`IN`/`US` and would bill those customers listed price plus tax. Pinning inclusive makes the absorb-tax outcome explicit, not an accident of the customer's country.
 
-Two caveats:
+Stripe `automatic_tax` is shown on the review row as information only; it does not pick Polar's behavior.
 
-- **Inclusive/exclusive is an EU/VAT frame.** US sales tax is effectively always exclusive (added at checkout, destination-based with per-state nexus), so US customers should import as exclusive where there's nexus, not "inclusive, merchant absorbs".
-- **Pre-registration grandfathering.** Customers who subscribed before the merchant was tax-registered may need to stay untaxed rather than be retroactively taxed. Polar already has `subscription.tax_exempted` for exactly this; decide the policy per migration.
+The choice lives on the staged `CanonicalSubscription` (`canonical.tax_behavior` in the ledger JSONB) and is written onto Polar `Subscription.tax_behavior` at cutover. That overrides product/price and org defaults, so a later change to those defaults doesn't shift an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row.
 
-Whatever the bucket, the change bites at the **first renewal on Polar**: an inclusive import lowers the merchant's net, an exclusive import raises the customer's charge (dunning/churn risk). Decide per bucket whether and how the customer is notified.
+B2B reverse-charge is not a third tax option: Polar already derives it from `Customer.tax_id`. Carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id`; reverse charge then re-derives itself at the first Polar renewal. Miss it and the customer gets re-taxed as B2C. (Polar validates VAT ID format only, not VIES registry validity.)
+
+`subscription.tax_exempted` is pinned `false` at import. Pre-registration grandfathering (keep a subscription untaxed) is not a review choice yet.
+
+The change bites at the **first renewal on Polar**: inclusive lowers the merchant's net, exclusive raises the customer's charge (dunning/churn risk). US sales tax is typically exclusive; merchants who were adding tax on top should pick exclusive for those subscriptions.
 
 ### Customer country
 
@@ -291,7 +292,7 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 | `sub_…` | `user_metadata['provider']` + `user_metadata['provider_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
 | `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2026-01-28.clover`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
 | `trial_*`, `cancel_at_period_end`, `default_payment_method` | same fields | |
-| tax behavior (`default_tax_rates` / inclusive / none) | `subscription.tax_behavior` (+ `tax_exempted`) | set explicitly per source bucket at import (see *Taxes*). |
+| tax behavior (`default_tax_rates` / inclusive / none) | `subscription.tax_behavior` (+ `tax_exempted`) | merchant choice at review, default inclusive (see *Taxes*). `automatic_tax` is display-only. |
 | `discounts[]` (Coupon) | single `Discount` | not reliably on the sub object (came back empty on clover even when expanded). To be confirmed during implementation. |
 | `pm_…` (card) | `PaymentMethod` (`processor_id`) | copied via PAN copy; new `pm_…` id, same underlying card. |
 | Cards, ACH, SEPA `PaymentMethod` | `PaymentMethod` | copyable by PAN copy. |

@@ -124,6 +124,8 @@ async def create_imported_subscription(
             "provider": provider,
             "provider_subscription_id": subscription.source_id,
         },
+        tax_behavior=subscription.import_tax_behavior(),
+        tax_exempted=False,
     )
 
 

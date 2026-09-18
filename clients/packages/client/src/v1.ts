@@ -5551,6 +5551,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/records/{record_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Merchant Migration Record Tax
+     * @description **Scopes**: `organizations:write`
+     */
+    patch: operations['merchant-migrations:update_record']
+    trace?: never
+  }
   '/v1/email-update/request': {
     parameters: {
       query?: never
@@ -25189,6 +25209,8 @@ export interface components {
        * @description Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say.
        */
       automatic_tax: boolean | null
+      /** @description How Polar taxes this subscription after the switch: `inclusive` (customer pays the listed price; Polar takes tax out of it) or `exclusive` (tax added on top). Inclusive is the import default. None for non-subscription rows. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
       /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
@@ -25231,6 +25253,17 @@ export interface components {
        * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
        */
       dependencies_imported: boolean | null
+    }
+    /** MerchantMigrationRecordNotFound */
+    MerchantMigrationRecordNotFound: {
+      /**
+       * Error
+       * @example MerchantMigrationRecordNotFound
+       * @constant
+       */
+      error: 'MerchantMigrationRecordNotFound'
+      /** Detail */
+      detail: string
     }
     /**
      * MerchantMigrationRecordStatus
@@ -25295,6 +25328,11 @@ export interface components {
        * @description How many subscriptions an import would still prepare: importable by the pre-check, pending in the ledger, and not already backed by an imported customer and product. Zero for other entities.
        */
       selectable: number
+    }
+    /** MerchantMigrationRecordUpdate */
+    MerchantMigrationRecordUpdate: {
+      /** @description How Polar taxes this subscription after the switch. Inclusive keeps the listed price (Polar takes tax out of it). Exclusive adds tax on top. */
+      tax_behavior: components['schemas']['TaxBehavior']
     }
     /**
      * MerchantMigrationSourcePlatform
@@ -33609,6 +33647,28 @@ export interface components {
       totals?: {
         [key: string]: string
       }
+    }
+    /** RecordNotSubscription */
+    RecordNotSubscription: {
+      /**
+       * Error
+       * @example RecordNotSubscription
+       * @constant
+       */
+      error: 'RecordNotSubscription'
+      /** Detail */
+      detail: string
+    }
+    /** RecordTaxLocked */
+    RecordTaxLocked: {
+      /**
+       * Error
+       * @example RecordTaxLocked
+       * @constant
+       */
+      error: 'RecordTaxLocked'
+      /** Detail */
+      detail: string
     }
     /**
      * RecurringInterval
@@ -56727,6 +56787,80 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:update_record': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+        record_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationRecordUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationRecordUpdate']
+        }
+      }
+      /** @description Tax can only be set on a subscription. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecordNotSubscription']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration or record not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['MerchantMigrationNotFound']
+            | components['schemas']['MerchantMigrationRecordNotFound']
+        }
+      }
+      /** @description The subscription has already switched to Polar. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecordTaxLocked']
         }
       }
       /** @description Validation Error */

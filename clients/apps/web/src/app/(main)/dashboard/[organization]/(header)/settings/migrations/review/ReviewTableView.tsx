@@ -28,6 +28,7 @@ import { ReviewRow } from './reviewRows'
 const numberFormat = new Intl.NumberFormat('en-US')
 
 interface Props {
+  migrationId: string
   filter: ReviewFilter
   onFilterChange: (filter: ReviewFilter) => void
   counts: Record<CountEntity, EntityCount>
@@ -51,6 +52,7 @@ interface Props {
 }
 
 export function ReviewTableView({
+  migrationId,
   filter,
   onFilterChange,
   counts,
@@ -192,7 +194,9 @@ export function ReviewTableView({
 
         <Text variant="caption" color="muted">
           Preparing a subscription brings its customer and product to Polar.
-          Polar starts billing only when you switch.
+          Polar starts billing only when you switch. Tax is inclusive by
+          default — the customer keeps paying the listed price. Open a row to
+          add tax on top instead.
         </Text>
 
         {rows.length === 0 ? (
@@ -230,7 +234,11 @@ export function ReviewTableView({
         hide={() => setOpenRow(null)}
         modalContent={
           openRow ? (
-            <ReviewRecordModal row={openRow} onClose={() => setOpenRow(null)} />
+            <ReviewRecordModal
+              row={openRow}
+              migrationId={migrationId}
+              onClose={() => setOpenRow(null)}
+            />
           ) : (
             <Box />
           )

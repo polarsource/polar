@@ -1,6 +1,7 @@
 import { DataTableColumnDef, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
+import { importTaxLabel } from '../importTax'
 import { HeaderCheckState } from '../selection'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
@@ -69,6 +70,14 @@ export function buildSwitchColumns({
         </Box>
       ),
       cell: ({ row }) => <PlanCell row={row.original} />,
+    },
+    {
+      id: 'tax',
+      size: 120,
+      header: 'Tax',
+      cell: ({ row }) => (
+        <Text color="muted">{importTaxLabel(row.original)}</Text>
+      ),
     },
     {
       id: 'renews',

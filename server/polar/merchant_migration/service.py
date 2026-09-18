@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from dataclasses import replace
 from datetime import datetime
 from typing import NamedTuple, TypedDict
 from uuid import UUID
@@ -11,6 +12,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.enums import TaxBehavior
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -91,6 +93,7 @@ from .schemas import (
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
+    MerchantMigrationRecordUpdate,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -226,6 +229,25 @@ class CutoverNotStarted(MerchantMigrationError):
         super().__init__(
             "Reach the switch step in the card transfer before switching "
             "subscriptions over.",
+            409,
+        )
+
+
+class MerchantMigrationRecordNotFound(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("Merchant migration record not found.", 404)
+
+
+class RecordNotSubscription(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("Tax can only be set on a subscription.", 400)
+
+
+class RecordTaxLocked(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This subscription has already switched to Polar, so its tax "
+            "treatment can't be changed here.",
             409,
         )
 
@@ -1407,6 +1429,34 @@ class MerchantMigrationService:
         if organization is None:
             raise MerchantMigrationNotFound()
         return organization
+
+    async def update_record_tax_behavior(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        record_id: UUID,
+        tax_behavior: TaxBehavior,
+    ) -> MerchantMigrationRecordUpdate:
+        """Pin how Polar taxes this subscription after the switch."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await repository.get_by_id(record_id)
+        if record is None or record.merchant_migration_id != migration.id:
+            raise MerchantMigrationRecordNotFound()
+        if record.type != MerchantMigrationRecordType.subscription:
+            raise RecordNotSubscription()
+        if record.cutover_status == MerchantMigrationCutoverStatus.moved:
+            raise RecordTaxLocked()
+        try:
+            staged = deserialize(record.type, record.canonical)
+        except (KeyError, TypeError, ValueError):
+            raise MerchantMigrationRecordNotFound() from None
+        if not isinstance(staged, CanonicalSubscription):
+            raise RecordNotSubscription()
+        staged = replace(staged, tax_behavior=tax_behavior)
+        await repository.update(record, update_dict={"canonical": serialize(staged)})
+        return MerchantMigrationRecordUpdate(tax_behavior=tax_behavior)
 
     async def list_records(
         self,

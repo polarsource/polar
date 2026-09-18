@@ -37,6 +37,7 @@ from .schemas import (
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
+    MerchantMigrationRecordUpdate,
     PanTransferChecklist,
     PanTransferStepComplete,
     PrecheckEntity,
@@ -50,8 +51,11 @@ from .service import (
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
+    MerchantMigrationRecordNotFound,
     MigrationOperationInProgress,
     MissingStripeScopes,
+    RecordNotSubscription,
+    RecordTaxLocked,
     SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
@@ -493,3 +497,43 @@ async def records(
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)
+
+
+@router.patch(
+    "/{id}/records/{record_id}",
+    response_model=MerchantMigrationRecordUpdate,
+    summary="Update Merchant Migration Record Tax",
+    responses={
+        400: {
+            "description": "Tax can only be set on a subscription.",
+            "model": RecordNotSubscription.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration or record not found.",
+            "model": MerchantMigrationNotFound.schema()
+            | MerchantMigrationRecordNotFound.schema(),
+        },
+        409: {
+            "description": "The subscription has already switched to Polar.",
+            "model": RecordTaxLocked.schema(),
+        },
+    },
+)
+async def update_record(
+    id: UUID4,
+    record_id: UUID4,
+    record_update: MerchantMigrationRecordUpdate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationRecordUpdate:
+    return await merchant_migration_service.update_record_tax_behavior(
+        session,
+        auth_subject,
+        id,
+        record_id,
+        record_update.tax_behavior,
+    )

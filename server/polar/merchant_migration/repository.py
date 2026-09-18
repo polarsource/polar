@@ -34,6 +34,7 @@ from polar.models.merchant_migration_record import (
 from .canonical import (
     CanonicalProduct,
     CanonicalRecord,
+    CanonicalSubscription,
     canonical_price_key,
     deserialize,
     serialize,
@@ -648,6 +649,14 @@ class MerchantMigrationRecordRepository(
         canonical = serialize(record)
         if existing is not None:
             if existing.status == MerchantMigrationRecordStatus.pending:
+                if isinstance(record, CanonicalSubscription):
+                    current = deserialize(existing.type, existing.canonical)
+                    if (
+                        isinstance(current, CanonicalSubscription)
+                        and current.tax_behavior is not None
+                    ):
+                        record = replace(record, tax_behavior=current.tax_behavior)
+                        canonical = serialize(record)
                 if (
                     merge_product_prices
                     and existing.merchant_migration_id == merchant_migration.id

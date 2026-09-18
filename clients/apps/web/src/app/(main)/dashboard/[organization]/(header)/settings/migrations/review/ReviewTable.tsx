@@ -126,6 +126,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
 
   return (
     <ReviewTableView
+      migrationId={migrationId}
       filter={filter}
       onFilterChange={onFilterChange}
       counts={counts}

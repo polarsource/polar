@@ -15,8 +15,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
+from starlette.testclient import TestClient
 
 import polar.worker._health as health_module
+from polar.config import Environment, settings
 from polar.worker._health import (
     HealthMiddleware,
     _create_lifespan,
@@ -294,6 +296,25 @@ class TestCreateApp:
             if isinstance(route, Route)
         }
         assert paths == {"/"}
+
+    def _get_headers(self, mocker: MockerFixture) -> dict[str, str]:
+        mocker.patch.object(
+            async_redis.Redis,
+            "from_url",
+            return_value=MagicMock(ping=AsyncMock(), close=AsyncMock()),
+        )
+        with TestClient(create_app(database=False)) as client:
+            return dict(client.get("/").headers)
+
+    def test_hsts_outside_development_and_testing(self, mocker: MockerFixture) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
+        headers = self._get_headers(mocker)
+        assert headers["strict-transport-security"] == (
+            "max-age=63072000; includeSubDomains"
+        )
+
+    def test_no_hsts_in_testing(self, mocker: MockerFixture) -> None:
+        assert "strict-transport-security" not in self._get_headers(mocker)
 
 
 @pytest.mark.asyncio

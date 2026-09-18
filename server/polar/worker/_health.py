@@ -22,6 +22,7 @@ from starlette.routing import Route
 from polar.config import settings
 from polar.external_event.repository import ExternalEventRepository
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
+from polar.kit.http import HSTSMiddleware
 from polar.kit.utils import utc_now
 from polar.logfire import configure_logfire
 from polar.logging import Logger
@@ -168,11 +169,14 @@ def create_app(*, database: bool = True) -> Starlette:
             Route("/webhooks", webhooks, methods=["GET"]),
             Route("/unhandled-external-events", external_events, methods=["GET"]),
         ]
-    return Starlette(
+    app = Starlette(
         routes=routes,
         lifespan=_create_lifespan(database=database),
         exception_handlers={Exception: handle_server_error},
     )
+    if not settings.is_development() and not settings.is_testing():
+        app.add_middleware(HSTSMiddleware)
+    return app
 
 
 def _run_server(*, database: bool) -> int:

@@ -10,6 +10,8 @@ import httpx
 from fastapi import Depends, Query, Request
 from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
 from safe_redirect_url import url_has_allowed_host_and_scheme
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.config import settings
 
@@ -236,3 +238,24 @@ def get_ip_address(request: Request) -> str | None:
         return request.client.host
 
     return None
+
+
+class HSTSMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                message.setdefault("headers", [])
+                headers = MutableHeaders(scope=message)
+                headers["Strict-Transport-Security"] = (
+                    "max-age=63072000; includeSubDomains"
+                )
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)

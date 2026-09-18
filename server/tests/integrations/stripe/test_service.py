@@ -18,10 +18,7 @@ class TestGetUsdBaseRates:
                 body=json.dumps(
                     {
                         "rates": {
-                            "eur": {
-                                "exchange_rate": 1.12443,
-                                "rate_details": {"base_rate": 1.14738},
-                            }
+                            "eur": {"rate_details": {"base_rate": 1.14738}}
                         }
                     }
                 )

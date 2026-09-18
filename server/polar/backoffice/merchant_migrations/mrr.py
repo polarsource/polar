@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
+from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.math import polar_round
 from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
@@ -77,12 +78,8 @@ class Money:
         )
 
     def to_usd(self, rates: Mapping[str, float]) -> int | None:
-        """Cents in USD, or None when a foreign currency has no rate.
-
-        Missing a rate is a hard stop: adding the leftover foreign amount to
-        the USD total would be the lie this type exists to avoid.
-        """
         total = 0
+        usd_factor = get_currency_decimal_factor("usd")
         for currency, amount in self.amounts.items():
             if not amount:
                 continue
@@ -93,7 +90,9 @@ class Money:
             rate = rates.get(code)
             if rate is None:
                 return None
-            total += polar_round(amount * rate)
+            total += polar_round(
+                amount * rate * usd_factor / get_currency_decimal_factor(code)
+            )
         return total
 
 

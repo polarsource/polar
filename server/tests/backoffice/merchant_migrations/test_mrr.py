@@ -331,6 +331,9 @@ class TestMoney:
 
         assert amount.to_usd({"eur": 1.14738}) == 29086
 
+    def test_to_usd_scales_zero_decimal_currencies(self) -> None:
+        assert Money({"jpy": 11100}).to_usd({"jpy": 0.0067}) == 7437
+
     def test_to_usd_returns_none_when_a_rate_is_missing(self) -> None:
         assert Money({"usd": 100, "eur": 50}).to_usd({}) is None
 

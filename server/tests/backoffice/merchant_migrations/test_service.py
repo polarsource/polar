@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from polar.backoffice.merchant_migrations.mrr import Money, MrrBreakdown
 from polar.backoffice.merchant_migrations.service import (
     USD_RATE_CACHE_TTL_SECONDS,
-    merchant_migrations,
+    merchant_migrations as merchant_migrations_service,
 )
 from polar.redis import Redis
 
@@ -21,8 +21,8 @@ class TestUsdRates:
         )
         breakdowns = [MrrBreakdown(Money({"eur": 11100}), Money(), Money())]
 
-        rates = await merchant_migrations.usd_rates(redis, breakdowns)
-        cached = await merchant_migrations.usd_rates(redis, breakdowns)
+        rates = await merchant_migrations_service.usd_rates(redis, breakdowns)
+        cached = await merchant_migrations_service.usd_rates(redis, breakdowns)
 
         assert rates == {"eur": 1.14738}
         assert cached == rates

@@ -671,8 +671,7 @@ class StripeService:
         rates: dict[str, float] = {}
         for currency in needed:
             quote = quotes.get(currency) or {}
-            details = quote.get("rate_details") or {}
-            rate = details.get("base_rate", quote.get("exchange_rate"))
+            rate = (quote.get("rate_details") or {}).get("base_rate")
             if rate is not None:
                 rates[currency] = float(rate)
         return rates

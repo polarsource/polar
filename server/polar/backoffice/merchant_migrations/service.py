@@ -19,7 +19,6 @@ class MerchantMigrationsService:
     async def usd_rates(
         self, redis: Redis, breakdowns: Sequence[MrrBreakdown]
     ) -> dict[str, float]:
-        """Stripe FX Quotes `base_rate`s, cached 24h per currency."""
         currencies = sorted(
             {
                 currency.lower()
@@ -41,10 +40,7 @@ class MerchantMigrationsService:
             if cached is None:
                 missing.append(currency)
                 continue
-            try:
-                rates[currency] = float(cached)
-            except TypeError, ValueError:
-                missing.append(currency)
+            rates[currency] = float(cached)
 
         if not missing:
             return rates

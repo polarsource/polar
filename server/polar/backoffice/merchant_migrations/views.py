@@ -105,8 +105,7 @@ def usd_blend(amount: Money, rates: Mapping[str, float]) -> str | None:
     return formatters.currency(usd, "usd")
 
 
-def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float] | None = None) -> None:
-    rates = rates or {}
+def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
     total = breakdown.total
     if total.is_zero:
         with tag.span(classes="text-base-content/40"):
@@ -129,9 +128,7 @@ def mrr_cell(breakdown: MrrBreakdown, rates: Mapping[str, float] | None = None) 
             text(" · ".join(parts))
 
 
-def mrr_table(
-    breakdown: MrrBreakdown, rates: Mapping[str, float] | None = None
-) -> None:
+def mrr_table(breakdown: MrrBreakdown, rates: Mapping[str, float]) -> None:
     """Where the revenue sits.
 
     MRR only: the record tallies cover customers and products too, and putting
@@ -163,7 +160,7 @@ def mrr_table(
                         text("Total")
                     with tag.td(classes="font-mono whitespace-nowrap"):
                         total = money(breakdown.total)
-                        blend = usd_blend(breakdown.total, rates or {})
+                        blend = usd_blend(breakdown.total, rates)
                         text(f"{total} ≈ {blend}" if blend is not None else total)
 
 

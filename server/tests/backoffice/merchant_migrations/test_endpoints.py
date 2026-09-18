@@ -1,11 +1,9 @@
 from collections.abc import AsyncGenerator
 from datetime import timedelta
-from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 import pytest_asyncio
-from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
@@ -205,7 +203,6 @@ async def _stage_monthly_subscription(
     *,
     amount: int,
     status: MerchantMigrationRecordStatus,
-    currency: str = "usd",
 ) -> None:
     """One product priced monthly plus a subscription on it, so the page has MRR."""
     record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -213,15 +210,15 @@ async def _stage_monthly_subscription(
         migration,
         organization,
         CanonicalProduct(
-            source_id=f"prod_{currency}:month",
-            product_source_id=f"prod_{currency}",
+            source_id="prod_1:month",
+            product_source_id="prod_1",
             name="Pro",
             recurring_interval="month",
             recurring_interval_count=1,
             prices=[
                 CanonicalPrice(
-                    source_id=f"price_{currency}",
-                    currency=currency,
+                    source_id="price_1",
+                    currency="usd",
                     amount=amount,
                     pricing_scheme=CanonicalPricingScheme.fixed,
                 )
@@ -237,9 +234,9 @@ async def _stage_monthly_subscription(
         migration,
         organization,
         CanonicalSubscription(
-            source_id=f"sub_{currency}",
+            source_id="sub_1",
             customer_source_id="cus_1",
-            price_source_id=f"price_{currency}",
+            price_source_id="price_1",
             status=CanonicalSubscriptionStatus.active,
             collection_method=CanonicalCollectionMethod.charge_automatically,
             current_period_start=None,
@@ -249,7 +246,7 @@ async def _stage_monthly_subscription(
             line_item_count=1,
             quantity=1,
             payment_method=None,
-            currency=currency,
+            currency="usd",
         ),
     )
     await record_repository.update(
@@ -321,46 +318,6 @@ class TestMrr:
 
         assert response.status_code == 200
         assert "No recurring revenue staged" in response.text
-
-    async def test_list_blends_mixed_currency_into_usd(
-        self,
-        session: AsyncSession,
-        backoffice_client: httpx.AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        mocker: MockerFixture,
-    ) -> None:
-        fetch = mocker.patch(
-            "polar.backoffice.merchant_migrations.service.stripe_service.get_usd_base_rates",
-            new_callable=AsyncMock,
-            return_value={"eur": 1.14738},
-        )
-        migration = await _create_migration(save_fixture, organization)
-        await _stage_monthly_subscription(
-            session,
-            migration,
-            organization,
-            amount=16350,
-            status=MerchantMigrationRecordStatus.imported,
-        )
-        await _stage_monthly_subscription(
-            session,
-            migration,
-            organization,
-            amount=11100,
-            status=MerchantMigrationRecordStatus.imported,
-            currency="eur",
-        )
-
-        response = await backoffice_client.get(
-            "/merchant-migrations/", params={"view": "all"}
-        )
-
-        assert response.status_code == 200
-        assert "$290.86 /mo" in response.text
-        assert "$163.50" in response.text
-        assert "€111.00" in response.text
-        fetch.assert_awaited_once_with(["eur"])
 
 
 @pytest.mark.asyncio

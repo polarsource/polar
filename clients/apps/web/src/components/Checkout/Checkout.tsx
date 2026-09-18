@@ -1,10 +1,8 @@
 'use client'
 
-import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
-import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
 import {
@@ -96,16 +94,8 @@ const Checkout = ({
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
-  const isMobileViewport = useIsMobileViewport()
-  const collapsibleOrderSummary =
-    hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
-  const { isTreatment: collapsedOrderSummaryExperiment } = useExperiment(
-    'checkout_collapsed_order_summary',
-    { trackExposure: !embed && isMobileViewport && collapsibleOrderSummary },
-  )
-
   const collapsedOrderSummary =
-    collapsibleOrderSummary && collapsedOrderSummaryExperiment
+    hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {

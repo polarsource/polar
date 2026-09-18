@@ -83,7 +83,6 @@ class TestSentryCapture:
         assert options["before_breadcrumb"] is before_breadcrumb
         assert options["send_default_pii"] is False
         assert options["include_local_variables"] is False
-        assert options["max_request_body_size"] == "never"
         assert options["traces_sample_rate"] is None
         transport = mocker.Mock(spec=Transport)
         options.update(
@@ -92,6 +91,7 @@ class TestSentryCapture:
         private_name = "PII_CANARY_PERSON"
         url = "https://api.polar.sh/verify?token=opaqueCredential"
         with sentry_sdk.Client(**options) as client, sentry_sdk.new_scope() as scope:
+            assert client.options["max_request_body_size"] == "medium"
             scope.set_client(client)
             scope.set_user({"id": "user-123", "email": "alice@example.com"})
             scope.add_breadcrumb(

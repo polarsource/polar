@@ -85,7 +85,6 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
         before_breadcrumb=before_breadcrumb,
         send_default_pii=False,
         include_local_variables=False,
-        max_request_body_size="never",
         integrations=[
             AtexitIntegration(),
             ExcepthookIntegration(),

@@ -72,6 +72,107 @@ export const walk = <T extends IdentityRef>(
   node: IdentityNode<T>,
 ): IdentityNode<T>[] => [node, ...node.children.flatMap(walk)]
 
+export type IdentityListFilter =
+  | 'all'
+  | 'customer'
+  | 'human'
+  | 'agent'
+  | 'service'
+
+type ListedIdentity = IdentityRef & {
+  name: string
+  kind: string
+  created_at: string
+}
+
+export const identityMatches = (
+  identity: ListedIdentity,
+  filter: IdentityListFilter,
+  needle: string,
+): boolean => {
+  const kindOk =
+    filter === 'all' ||
+    (filter === 'customer'
+      ? identity.parent_id === null
+      : identity.kind === filter)
+  if (!kindOk) return false
+  if (!needle) return true
+  return `${identity.name} ${identity.kind}`.toLowerCase().includes(needle)
+}
+
+export const pruneIdentityForest = <T extends IdentityRef>(
+  nodes: IdentityNode<T>[],
+  keep: (node: IdentityNode<T>) => boolean,
+): IdentityNode<T>[] => {
+  const visit = (node: IdentityNode<T>): IdentityNode<T> | null => {
+    const children = node.children.flatMap((child) => {
+      const next = visit(child)
+      return next ? [next] : []
+    })
+    if (!keep(node) && children.length === 0) return null
+    return { ...node, children }
+  }
+  return nodes.flatMap((node) => {
+    const next = visit(node)
+    return next ? [next] : []
+  })
+}
+
+export const sortIdentityForest = <T extends ListedIdentity>(
+  nodes: IdentityNode<T>[],
+  rootOrder: 'newest' | 'oldest',
+): IdentityNode<T>[] => {
+  const byName = (a: IdentityNode<T>, b: IdentityNode<T>) =>
+    a.identity.name.localeCompare(b.identity.name)
+  const byCreated = (a: IdentityNode<T>, b: IdentityNode<T>) => {
+    const diff =
+      new Date(b.identity.created_at).getTime() -
+      new Date(a.identity.created_at).getTime()
+    return rootOrder === 'newest' ? diff : -diff
+  }
+  const sortLevel = (
+    list: IdentityNode<T>[],
+    compare: (a: IdentityNode<T>, b: IdentityNode<T>) => number,
+  ): IdentityNode<T>[] =>
+    list
+      .map((node) => ({ ...node, children: sortLevel(node.children, byName) }))
+      .toSorted(compare)
+  return sortLevel(nodes, byCreated)
+}
+
+export const visibleIdentityForest = <T extends ListedIdentity>(
+  tree: IdentityTree<T>,
+  filter: IdentityListFilter,
+  needle: string,
+  sorting: 'newest' | 'oldest',
+): IdentityNode<T>[] =>
+  sortIdentityForest(
+    pruneIdentityForest(tree.roots, (node) =>
+      identityMatches(node.identity, filter, needle),
+    ),
+    sorting,
+  )
+
+export const autoExpandedIdentityIds = <T extends IdentityRef>(
+  tree: IdentityTree<T>,
+  selectedId: string | null,
+  forest: IdentityNode<T>[],
+  expandVisibleBranches: boolean,
+): Set<string> => {
+  const ids = new Set<string>()
+  if (selectedId) {
+    for (const item of chainOf(tree, selectedId)) ids.add(item.id)
+  }
+  if (expandVisibleBranches) {
+    const visit = (node: IdentityNode<T>) => {
+      if (node.children.length > 0) ids.add(node.identity.id)
+      for (const child of node.children) visit(child)
+    }
+    for (const root of forest) visit(root)
+  }
+  return ids
+}
+
 export const rollup = <T extends IdentityRef>(
   tree: IdentityTree<T>,
   own: Record<string, number>,

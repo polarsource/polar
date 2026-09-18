@@ -6,7 +6,7 @@ import ArrowUpward from '@mui/icons-material/ArrowUpward'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import FilterList from '@mui/icons-material/FilterList'
 import Search from '@mui/icons-material/Search'
-import { Avatar, Button, Input, Text } from '@polar-sh/orbit'
+import { Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
@@ -17,18 +17,22 @@ import {
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useContext, useMemo } from 'react'
+import { useCallback, useContext, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { withKeptParams } from '../searchParams'
 import { useVoidDataSource } from '../dataSource'
-import { buildTree, identityHref, identityIdFromPath } from '../identities'
 import {
-  composeIdentities,
-  toLiveIdentity,
-  VoidLiveIdentity,
-} from '../identityLive'
+  autoExpandedIdentityIds,
+  buildTree,
+  identityHref,
+  identityIdFromPath,
+  IdentityListFilter,
+  visibleIdentityForest,
+} from '../identities'
+import { composeIdentities, toLiveIdentity } from '../identityLive'
 import { useVoidCustomers, useVoidIdentities } from '../identityQueries'
 import { getVoidData } from '../mock'
+import { VoidIdentitySidebarNode } from './VoidIdentitySidebarNode'
 
 const FILTERS = ['all', 'customer', 'human', 'agent', 'service'] as const
 type Filter = (typeof FILTERS)[number]
@@ -43,12 +47,6 @@ const FILTER_LABELS: Record<Filter, string> = {
 
 const LIVE_FILTERS: Filter[] = ['all', 'customer', 'agent', 'service']
 
-const matches = (identity: VoidLiveIdentity, filter: Filter) =>
-  filter === 'all' ||
-  (filter === 'customer'
-    ? identity.parent_id === null
-    : identity.kind === filter)
-
 export const VoidIdentityListSidebar = () => {
   const { organization } = useContext(OrganizationContext)
   const source = useVoidDataSource()
@@ -57,7 +55,11 @@ export const VoidIdentityListSidebar = () => {
   const base = `${root}/identities`
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const withQuerystring = withKeptParams(searchParams, ['query', 'filter', 'sorting'])
+  const withQuerystring = withKeptParams(searchParams, [
+    'query',
+    'filter',
+    'sorting',
+  ])
   const selectedId = pathname.startsWith(`${base}/`)
     ? identityIdFromPath(pathname.slice(base.length + 1))
     : null
@@ -71,6 +73,7 @@ export const VoidIdentityListSidebar = () => {
     'sorting',
     parseAsStringLiteral(['newest', 'oldest'] as const).withDefault('newest'),
   )
+  const [opened, setOpened] = useState<Record<string, boolean>>({})
 
   const liveIdentities = useVoidIdentities(organization.id, { enabled: live })
   const liveCustomers = useVoidCustomers(organization.id, { enabled: live })
@@ -84,39 +87,66 @@ export const VoidIdentityListSidebar = () => {
   const tree = useMemo(() => buildTree(identities), [identities])
   const needle = (query ?? '').trim().toLowerCase()
   const filterOptions = live ? LIVE_FILTERS : FILTERS
+  const expandVisibleBranches = Boolean(needle) || filter !== 'all'
 
-  const visible = useMemo(
+  const forest = useMemo(
     () =>
-      identities
-        .filter((identity) => matches(identity, filter))
-        .filter(
-          (identity) =>
-            !needle ||
-            `${identity.name} ${identity.kind}`.toLowerCase().includes(needle),
-        )
-        .sort((a, b) => {
-          const diff =
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          return sorting === 'newest' ? diff : -diff
-        }),
-    [identities, filter, needle, sorting],
+      visibleIdentityForest(
+        tree,
+        filter as IdentityListFilter,
+        needle,
+        sorting,
+      ),
+    [tree, filter, needle, sorting],
   )
 
-  const secondary = (identity: VoidLiveIdentity) => {
-    const parent = identity.parent_id
-      ? tree.byId.get(identity.parent_id)?.identity.name
-      : null
-    return parent ? `${identity.kind} · ${parent}` : identity.kind
-  }
+  const autoExpanded = useMemo(
+    () =>
+      autoExpandedIdentityIds(tree, selectedId, forest, expandVisibleBranches),
+    [tree, selectedId, forest, expandVisibleBranches],
+  )
+
+  const expandedIds = useMemo(() => {
+    const ids = new Set(autoExpanded)
+    for (const [id, open] of Object.entries(opened)) {
+      if (open) ids.add(id)
+    }
+    return ids
+  }, [autoExpanded, opened])
+
+  const hrefFor = useCallback(
+    (id: string) => withQuerystring(identityHref(root, id)),
+    [withQuerystring, root],
+  )
+
+  const toggleExpanded = useCallback((id: string) => {
+    setOpened((current) => {
+      if (current[id]) {
+        const next = { ...current }
+        delete next[id]
+        return next
+      }
+      return { ...current, [id]: true }
+    })
+  }, [])
 
   const liveError = liveIdentities.error
   const liveLoading = live && liveIdentities.isLoading
 
   return (
-    <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
-      <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
+    <Box flexDirection="column" height="100%" overflow="hidden">
+      <Box
+        alignItems="center"
+        justifyContent="between"
+        columnGap="l"
+        paddingHorizontal="l"
+        paddingVertical="l"
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
         <Link href={withQuerystring(base)}>Identities</Link>
-        <div className="flex flex-row items-center gap-4">
+        <Box alignItems="center" columnGap="l">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" className="h-6 w-6" variant="ghost">
@@ -154,23 +184,39 @@ export const VoidIdentityListSidebar = () => {
               <ArrowDownward fontSize="small" />
             )}
           </Button>
-        </div>
-      </div>
-      <div className="flex flex-row items-center gap-3 px-4 py-2">
-        <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+        </Box>
+      </Box>
+      <Box
+        alignItems="center"
+        columnGap="m"
+        paddingHorizontal="l"
+        paddingVertical="s"
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        <Box
+          height={32}
+          width={32}
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="full"
+          backgroundColor="background-secondary"
+          flexShrink={0}
+        >
           <Search
             fontSize="inherit"
             className="dark:text-polar-500 text-gray-500"
           />
-        </div>
+        </Box>
         <Input
           className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
           placeholder="Search identities"
           value={query ?? ''}
           onChange={(event) => setQuery(event.target.value || null)}
         />
-      </div>
-      <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
+      </Box>
+      <Box flexDirection="column" flexGrow={1} overflowY="auto" minHeight={0}>
         {liveLoading ? (
           <Box padding="l">
             <Text color="muted" variant="caption">
@@ -183,47 +229,32 @@ export const VoidIdentityListSidebar = () => {
               {liveError.message}
             </Text>
           </Box>
+        ) : forest.length === 0 ? (
+          <Box padding="l">
+            <Text color="muted" variant="caption">
+              {live ? 'No identities' : 'No identities match'}
+            </Text>
+          </Box>
         ) : (
-          <>
-            {visible.map((identity) => (
-              <Link
-                key={identity.id}
-                href={withQuerystring(identityHref(root, identity.id))}
-                className={twMerge(
-                  'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-                  selectedId === identity.id && 'dark:bg-polar-800 bg-gray-100',
-                )}
-              >
-                <Box
-                  alignItems="center"
-                  columnGap="m"
-                  paddingHorizontal="l"
-                  paddingVertical="m"
-                >
-                  <Avatar
-                    className="h-8 w-8"
-                    avatar_url={null}
-                    name={identity.name}
-                  />
-                  <Box flexDirection="column" minWidth={0}>
-                    <Text truncate>{identity.name}</Text>
-                    <Text truncate color="muted" variant="caption">
-                      {secondary(identity)}
-                    </Text>
-                  </Box>
-                </Box>
-              </Link>
-            ))}
-            {visible.length === 0 ? (
-              <Box padding="l">
-                <Text color="muted" variant="caption">
-                  {live ? 'No identities' : 'No identities match'}
-                </Text>
-              </Box>
-            ) : null}
-          </>
+          forest.map((node) => (
+            <Box
+              key={node.identity.id}
+              flexDirection="column"
+              borderBottomWidth={1}
+              borderStyle="solid"
+              borderColor="border-secondary"
+            >
+              <VoidIdentitySidebarNode
+                node={node}
+                selectedId={selectedId}
+                hrefFor={hrefFor}
+                expandedIds={expandedIds}
+                onToggle={toggleExpanded}
+              />
+            </Box>
+          ))
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

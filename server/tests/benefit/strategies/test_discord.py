@@ -4,7 +4,10 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.benefit.strategies import BenefitPropertiesValidationError
-from polar.benefit.strategies.discord.schemas import BenefitDiscordCreateProperties
+from polar.benefit.strategies.discord.schemas import (
+    BenefitDiscordCreateProperties,
+    BenefitDiscordProperties,
+)
 from polar.benefit.strategies.discord.service import BenefitDiscordService
 from polar.integrations.discord.schemas import DiscordGuild, DiscordGuildRole
 from polar.models import DiscordGuildConnection, Organization, User, UserOrganization
@@ -129,3 +132,15 @@ class TestCreateProperties:
             BenefitDiscordCreateProperties.model_validate(
                 {"role_id": ROLE_ID, "kick_member": False}
             )
+
+
+class TestReadProperties:
+    def test_guild_token_backward_compatibility(self) -> None:
+        properties = BenefitDiscordProperties(
+            guild_id=GUILD_ID, role_id=ROLE_ID, kick_member=False
+        )
+
+        dumped = properties.model_dump(mode="json")
+
+        assert dumped["guild_id"] == GUILD_ID
+        assert dumped["guild_token"] == "deprecated"

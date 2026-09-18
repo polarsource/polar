@@ -1,14 +1,17 @@
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager
 
-from polar.kit.crypto import get_token_hash
-from polar.kit.repository import RepositoryBase
+from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.utils import utc_now
 from polar.models import PersonalAccessToken, User
 
 
-class PersonalAccessTokenRepository(RepositoryBase[PersonalAccessToken]):
+class PersonalAccessTokenRepository(
+    RepositoryTokenHashMixin[PersonalAccessToken],
+    RepositoryBase[PersonalAccessToken],
+):
     model = PersonalAccessToken
+    token_hash_attribute = "token"
 
     async def get_by_token(
         self, token: str, *, expired: bool = False
@@ -17,7 +20,7 @@ class PersonalAccessTokenRepository(RepositoryBase[PersonalAccessToken]):
             self.get_base_statement()
             .join(PersonalAccessToken.user)
             .where(
-                PersonalAccessToken.token == get_token_hash(token),
+                self.token_hash_clause(token),
                 ~PersonalAccessToken.is_deleted,
                 User.can_authenticate,
             )
@@ -30,4 +33,7 @@ class PersonalAccessTokenRepository(RepositoryBase[PersonalAccessToken]):
                     PersonalAccessToken.expires_at > utc_now(),
                 )
             )
-        return await self.get_one_or_none(statement)
+        personal_access_token = await self.get_one_or_none(statement)
+        if personal_access_token is None:
+            return None
+        return await self.rehash_token(personal_access_token, token)

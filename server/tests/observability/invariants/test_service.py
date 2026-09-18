@@ -52,12 +52,12 @@ async def test_runs_invariant_within_its_environments(
     session: AsyncSession, mocker: MockerFixture
 ) -> None:
     mocker.patch.object(settings, "ENV", Environment.production)
-    mocker.patch.object(invariant_service._slack, "chat_post_message")
     check_spy = mocker.spy(_ProductionOnlyInvariant, "check")
 
-    await invariant_service.check(session, _ProductionOnlyInvariant)
+    error = await invariant_service.check(session, _ProductionOnlyInvariant)
 
     check_spy.assert_called_once()
+    assert isinstance(error, InvariantError)
 
 
 @pytest.mark.asyncio
@@ -65,12 +65,12 @@ async def test_runs_invariant_with_no_environment_restriction(
     session: AsyncSession, mocker: MockerFixture
 ) -> None:
     mocker.patch.object(settings, "ENV", Environment.sandbox)
-    mocker.patch.object(invariant_service._slack, "chat_post_message")
     check_spy = mocker.spy(_AllEnvironmentsInvariant, "check")
 
-    await invariant_service.check(session, _AllEnvironmentsInvariant)
+    error = await invariant_service.check(session, _AllEnvironmentsInvariant)
 
     check_spy.assert_called_once()
+    assert isinstance(error, InvariantError)
 
 
 @pytest.mark.asyncio
@@ -84,7 +84,9 @@ async def test_notifies_when_context_is_not_natively_serializable(
         invariant_service._slack, "chat_post_message"
     )
 
-    await invariant_service.check(session, _DecimalContextInvariant)
+    error = await invariant_service.check(session, _DecimalContextInvariant)
+    assert error is not None
+    await invariant_service.notify(error)
 
     post_message_mock.assert_called_once()
     assert "1234" in str(post_message_mock.call_args.kwargs["blocks"])

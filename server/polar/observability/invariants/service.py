@@ -69,7 +69,7 @@ class InvariantService:
 
     async def check(
         self, session: AsyncReadSession, invariant_cls: type[Invariant]
-    ) -> None:
+    ) -> InvariantError | None:
         if (
             invariant_cls.ENVIRONMENTS is not None
             and settings.ENV not in invariant_cls.ENVIRONMENTS
@@ -79,7 +79,7 @@ class InvariantService:
                 invariant=invariant_cls.__name__,
                 environment=settings.ENV,
             )
-            return
+            return None
 
         log.debug("Checking invariant", invariant=invariant_cls.__name__)
         invariant = invariant_cls(session)
@@ -92,20 +92,24 @@ class InvariantService:
                 message=e.message,
                 context=e.context,
             )
-            if not settings.SLACK_BOT_TOKEN or not settings.SLACK_CHANNEL:
-                log.warning(
-                    "Slack bot token or channel not configured, "
-                    "cannot send invariant failure notification"
-                )
-                return
-            payload = _format_invariant_failure_payload(e)
-            await self._slack.chat_post_message(
-                bot_token=settings.SLACK_BOT_TOKEN,
-                channel=settings.SLACK_CHANNEL,
-                **payload,
-            )
+            return e
         else:
             log.debug("Invariant check passed", invariant=invariant_cls.__name__)
+            return None
+
+    async def notify(self, error: InvariantError) -> None:
+        if not settings.SLACK_BOT_TOKEN or not settings.SLACK_CHANNEL:
+            log.warning(
+                "Slack bot token or channel not configured, "
+                "cannot send invariant failure notification"
+            )
+            return
+        payload = _format_invariant_failure_payload(error)
+        await self._slack.chat_post_message(
+            bot_token=settings.SLACK_BOT_TOKEN,
+            channel=settings.SLACK_CHANNEL,
+            **payload,
+        )
 
 
 invariant = InvariantService()

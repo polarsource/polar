@@ -95,6 +95,71 @@
   text-align: center;
 }
 
+.migration-switch {
+  margin: 1.5rem 0;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 1rem;
+}
+
+.migration-switch__header,
+.migration-switch__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.migration-switch__header {
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border-bottom: 1px solid #e4e4e7;
+  color: #18181b;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.migration-switch__header span:nth-child(2) {
+  color: #71717a;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.migration-switch__header span:last-child {
+  text-align: right;
+}
+
+.migration-switch__row {
+  min-height: 4rem;
+  padding: 0.75rem 1rem;
+  color: #52525b;
+  font-size: 0.8125rem;
+}
+
+.migration-switch__row + .migration-switch__row {
+  border-top: 1px solid #f4f4f5;
+}
+
+.migration-switch__arrow {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0 auto;
+  place-items: center;
+  color: #52525b;
+  background: #f4f4f5;
+  border-radius: 999px;
+}
+
+.migration-switch__state--polar {
+  color: #18181b;
+  font-weight: 600;
+  text-align: right;
+}
+
 .dark .migration-coexistence {
   --migration-line: #52525b;
   --migration-dot: #a1a1aa;
@@ -125,6 +190,35 @@
   color: #a1a1aa;
 }
 
+.dark .migration-switch {
+  background: #131316;
+  border-color: #3f3f46;
+}
+
+.dark .migration-switch__header {
+  color: #fafafa;
+  background: #18181b;
+  border-bottom-color: #3f3f46;
+}
+
+.dark .migration-switch__header span:nth-child(2),
+.dark .migration-switch__row {
+  color: #a1a1aa;
+}
+
+.dark .migration-switch__row + .migration-switch__row {
+  border-top-color: #27272a;
+}
+
+.dark .migration-switch__arrow {
+  color: #d4d4d8;
+  background: #27272a;
+}
+
+.dark .migration-switch__state--polar {
+  color: #fafafa;
+}
+
 @media (max-width: 42rem) {
   .migration-coexistence {
     padding: 1.125rem;
@@ -136,6 +230,17 @@
 
   .migration-coexistence__caption {
     font-size: 0.8125rem;
+  }
+
+  .migration-switch__header,
+  .migration-switch__row {
+    grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
+  }
+
+  .migration-switch__header,
+  .migration-switch__row {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
   }
 }
 

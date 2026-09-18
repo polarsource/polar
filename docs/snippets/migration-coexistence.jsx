@@ -84,3 +84,32 @@ export const MigrationCoexistence = () => {
     </section>
   );
 };
+
+export const MigrationSwitch = () => {
+  const changes = [
+    ["Renews on Stripe", "Renews on Polar"],
+    ["Paid period already paid", "Same period kept"],
+    ["Cards verified on Polar", "Those cards used on next renewal"],
+  ];
+
+  return (
+    <section className="migration-switch" aria-label="What changes when a subscription switches">
+      <div className="migration-switch__header" aria-hidden="true">
+        <span>Stripe</span>
+        <span>Switch</span>
+        <span>Polar</span>
+      </div>
+      <div className="migration-switch__rows">
+        {changes.map(([before, after]) => (
+          <div className="migration-switch__row" key={before}>
+            <span className="migration-switch__state">{before}</span>
+            <span className="migration-switch__arrow" aria-hidden="true">
+              →
+            </span>
+            <span className="migration-switch__state migration-switch__state--polar">{after}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};

@@ -7,7 +7,6 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.config import settings
 from polar.customer_portal.endpoints.oauth_accounts import OAUTH_CLIENTS
 from polar.kit import jwt
 from polar.models import (
@@ -82,9 +81,7 @@ class TestAuthorize:
         assert response.status_code == 200
 
         state = _extract_state(response.json()["url"])
-        decoded = await jwt.decode(
-            token=state, secret=settings.SECRET, type="customer_oauth"
-        )
+        decoded = await jwt.decode(token=state, type="customer_oauth")
         assert decoded["customer_id"] == str(customer.id)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
@@ -97,9 +94,7 @@ class TestAuthorize:
         )
         assert response.status_code == 200
         state = _extract_state(response.json()["url"])
-        decoded = await jwt.decode(
-            token=state, secret=settings.SECRET, type="customer_oauth"
-        )
+        decoded = await jwt.decode(token=state, type="customer_oauth")
         assert decoded["customer_id"] == str(customer.id)
 
     @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
@@ -123,9 +118,7 @@ class TestAuthorize:
         assert response.status_code == 200
 
         state = _extract_state(response.json()["url"])
-        decoded = await jwt.decode(
-            token=state, secret=settings.SECRET, type="customer_oauth"
-        )
+        decoded = await jwt.decode(token=state, type="customer_oauth")
         assert decoded["customer_id"] != str(attacker_customer.id)
         assert "member_id" in decoded
 

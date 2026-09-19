@@ -5,11 +5,12 @@ from sqlalchemy import Select, or_, update
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.types import AccessibleOrganizationID
-from polar.kit.crypto import get_token_hash
+from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositoryTokenHashMixin,
 )
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationAccessToken
@@ -19,18 +20,21 @@ from polar.postgres import sql
 class OrganizationAccessTokenRepository(
     RepositorySoftDeletionIDMixin[OrganizationAccessToken, UUID],
     RepositorySoftDeletionMixin[OrganizationAccessToken],
+    RepositoryTokenHashMixin[OrganizationAccessToken],
     RepositoryBase[OrganizationAccessToken],
 ):
     model = OrganizationAccessToken
+    token_hash_attribute = "token"
 
     async def get_by_token(
         self, token: str, *, expired: bool = False
     ) -> OrganizationAccessToken | None:
+        candidates = get_token_hash_candidates(token)
         statement = (
             self.get_base_statement()
             .join(OrganizationAccessToken.organization)
             .where(
-                OrganizationAccessToken.token == get_token_hash(token),
+                self.token_hash_clause(candidates),
                 Organization.can_authenticate,
             )
             .options(contains_eager(OrganizationAccessToken.organization))
@@ -42,7 +46,10 @@ class OrganizationAccessTokenRepository(
                     OrganizationAccessToken.expires_at > utc_now(),
                 )
             )
-        return await self.get_one_or_none(statement)
+        organization_access_token = await self.get_one_or_none(statement)
+        if organization_access_token is None:
+            return None
+        return await self.rehash_token(organization_access_token, candidates)
 
     async def record_usage(self, id: UUID, last_used_at: datetime) -> None:
         statement = (

@@ -5,18 +5,22 @@ from sqlalchemy import delete, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.enums import TokenType
-from polar.kit.crypto import get_token_hash
-from polar.kit.repository import RepositoryBase
+from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.models import OAuth2AuthorizationCode, OAuth2Token, OAuth2TokenOrganization
 
 
-class OAuth2TokenRepository(RepositoryBase[OAuth2Token]):
+class OAuth2TokenRepository(
+    RepositoryTokenHashMixin[OAuth2Token],
+    RepositoryBase[OAuth2Token],
+):
     model = OAuth2Token
+    token_hash_attribute = "access_token"
 
     async def get_by_access_token(self, access_token: str) -> OAuth2Token | None:
         statement = (
             self.get_base_statement()
-            .where(OAuth2Token.access_token == get_token_hash(access_token))
+            .where(self.token_hash_clause(get_token_hash_candidates(access_token)))
             .options(joinedload(OAuth2Token.client))
         )
         return await self.get_one_or_none(statement)
@@ -29,13 +33,12 @@ class OAuth2TokenRepository(RepositoryBase[OAuth2Token]):
             joinedload(OAuth2Token.organization),
             joinedload(OAuth2Token.client),
         )
+        candidates = get_token_hash_candidates(token)
         if token_type == TokenType.access_token:
-            statement = statement.where(
-                OAuth2Token.access_token == get_token_hash(token)
-            )
+            statement = statement.where(self.token_hash_clause(candidates))
         elif token_type == TokenType.refresh_token:
             statement = statement.where(
-                OAuth2Token.refresh_token == get_token_hash(token)
+                self.token_hash_clause(candidates, attribute="refresh_token")
             )
         else:
             raise ValueError(f"Unsupported token type: {token_type}")
@@ -74,11 +77,15 @@ class OAuth2TokenRepository(RepositoryBase[OAuth2Token]):
         await self.session.execute(statement)
 
 
-class OAuth2AuthorizationCodeRepository(RepositoryBase[OAuth2AuthorizationCode]):
+class OAuth2AuthorizationCodeRepository(
+    RepositoryTokenHashMixin[OAuth2AuthorizationCode],
+    RepositoryBase[OAuth2AuthorizationCode],
+):
     model = OAuth2AuthorizationCode
+    token_hash_attribute = "code"
 
     async def get_by_code(self, code: str) -> OAuth2AuthorizationCode | None:
         statement = self.get_base_statement().where(
-            OAuth2AuthorizationCode.code == get_token_hash(code)
+            self.token_hash_clause(get_token_hash_candidates(code))
         )
         return await self.get_one_or_none(statement)

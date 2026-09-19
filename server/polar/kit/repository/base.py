@@ -309,9 +309,14 @@ class RepositoryTokenHashMixin[M]:
     token_hash_attribute: str
 
     def token_hash_clause(
-        self: RepositoryTokenHashProtocol[M], candidates: dict[str | None, str]
+        self: RepositoryTokenHashProtocol[M],
+        candidates: dict[str | None, str],
+        *,
+        attribute: str | None = None,
     ) -> ColumnExpressionArgument[bool]:
-        column: Mapped[str] = getattr(self.model, self.token_hash_attribute)
+        column: Mapped[str] = getattr(
+            self.model, attribute or self.token_hash_attribute
+        )
         return column.in_(candidates.values())
 
     async def rehash_token(

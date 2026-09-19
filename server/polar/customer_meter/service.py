@@ -300,6 +300,8 @@ class CustomerMeterService:
         meter_reset_event: Event | None,
         by_external_id: bool = False,
         cutoff: datetime | None = None,
+        *,
+        include_system_events: bool = True,
     ) -> Select[tuple[Event]]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
@@ -321,7 +323,7 @@ class CustomerMeterService:
         if cutoff is not None:
             statement = statement.where(Event.timestamp < cutoff)
 
-        if by_external_id:
+        if by_external_id or not include_system_events:
             statement = statement.where(event_repository.get_meter_clause(meter))
         else:
             statement = statement.where(
@@ -387,10 +389,13 @@ class CustomerMeterService:
             meter_reset_event,
             by_external_id=False,
             cutoff=cutoff,
+            include_system_events=False,
         ).where(Event.source == EventSource.user)
 
         if customer.external_id is None:
-            result = await session.scalar(by_customer_id.with_only_columns(agg_column))
+            result = await session.scalar(
+                by_customer_id.with_only_columns(agg_column, maintain_column_froms=True)
+            )
             return result or 0.0
 
         by_external_id = self._build_events_statement(
@@ -400,15 +405,16 @@ class CustomerMeterService:
             meter_reset_event,
             by_external_id=True,
             cutoff=cutoff,
+            include_system_events=False,
         ).where(Event.source == EventSource.user)
 
         if meter.aggregation.is_summable():
             union_subquery = union_all(
                 by_customer_id.with_only_columns(
-                    meter.aggregation.get_sql_column(Event).label("value")
+                    agg_column.label("value"), maintain_column_froms=True
                 ),
                 by_external_id.with_only_columns(
-                    meter.aggregation.get_sql_column(Event).label("value")
+                    agg_column.label("value"), maintain_column_froms=True
                 ),
             ).subquery()
 

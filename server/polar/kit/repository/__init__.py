@@ -5,6 +5,7 @@ from .base import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
     RepositorySortingMixin,
+    RepositoryTokenHashMixin,
     SortingClause,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "RepositorySoftDeletionIDMixin",
     "RepositorySoftDeletionMixin",
     "RepositorySortingMixin",
+    "RepositoryTokenHashMixin",
     "SortingClause",
 ]

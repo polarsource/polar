@@ -31,9 +31,9 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "Optional Amazon Linux 2023 standard AMI ID. Defaults to the latest x86_64 AMI."
+  description = "Amazon Linux 2023 standard x86_64 AMI ID in us-east-2. Set to null to track the latest."
   type        = string
-  default     = null
+  default     = "ami-08be4b1b8afa29958"
 }
 
 variable "associate_public_ip_address" {

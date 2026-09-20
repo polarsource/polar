@@ -42,6 +42,14 @@ jobs:
     env:
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_IN_AUTOMATION: "true"
+    outputs:
+      global: ${{ steps.plan.outputs.global }}
+      identity: ${{ steps.plan.outputs.identity }}
+      organization: ${{ steps.plan.outputs.organization }}
+      production: ${{ steps.plan.outputs.production }}
+      sandbox: ${{ steps.plan.outputs.sandbox }}
+      security: ${{ steps.plan.outputs.security }}
+      test: ${{ steps.plan.outputs.test }}
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -55,6 +63,7 @@ jobs:
         run: terraform init -input=false
 
       - name: Terraform Plan
+        id: plan
         working-directory: terraform/${{ matrix.workspace }}
         run: |
           set +e
@@ -68,10 +77,12 @@ jobs:
             2)
               echo "### ${{ matrix.workspace }}: Terraform reported changes" >> "$GITHUB_STEP_SUMMARY"
               echo "::error::terraform/${{ matrix.workspace }} has pending changes; review the plan."
+              echo "${{ matrix.workspace }}=\`${{ matrix.workspace }}\` (drift)" >> "$GITHUB_OUTPUT"
               exit 1
               ;;
             *)
               echo "### ${{ matrix.workspace }}: The plan could not complete" >> "$GITHUB_STEP_SUMMARY"
+              echo "${{ matrix.workspace }}=\`${{ matrix.workspace }}\` (plan failed)" >> "$GITHUB_OUTPUT"
               ;;
           esac
           exit "$code"
@@ -83,6 +94,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: List failed workspaces
+        id: failed
+        env:
+          PLAN_OUTPUTS: ${{ toJSON(needs.plan.outputs) }}
+        run: echo "list=$(jq -r '[.[] | select(. != "")] | join(", ")' <<< "$PLAN_OUTPUTS")" >> "$GITHUB_OUTPUT"
+
       - name: Notify Slack on failure
         uses: slackapi/slack-github-action@v4.0.0
         with:
@@ -98,7 +115,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *Terraform drift check needs attention*\n${{ needs.preflight.result == 'failure' && 'Credential preflight failed. Check the TF_API_TOKEN Actions secret. No workspaces were checked.' || 'One or more workspaces reported pending changes or could not be checked. Review the failed workspace jobs for details.' }}\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                    "text": ":warning: *Terraform drift check needs attention*\n${{ needs.preflight.result == 'failure' && 'Credential preflight failed. Check the TF_API_TOKEN Actions secret. No workspaces were checked.' || format('Workspaces with pending changes or a failed plan: {0}. Review the failed workspace jobs for details.', steps.failed.outputs.list || 'none reported, a job may have timed out') }}\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
                   }
                 }
               ]

@@ -384,15 +384,6 @@ resource "cloudflare_dns_record" "worker" {
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "notifications_mail" {
-  zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "mail.notifications.polar.sh"
-  type    = "CNAME"
-  content = "send.forge.rmta.net"
-  proxied = false
-  ttl     = 1
-}
-
 output "private_backoffice_service_id" {
   value = module.production.private_backoffice_service_id
 }

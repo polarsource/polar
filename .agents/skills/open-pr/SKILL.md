@@ -14,6 +14,9 @@ Open or update a **draft** pull request. Do not mark it ready for review.
 This is not a bug hunt and not a security review. `/code-review`, `/security-review`,
 and `/simplify` do those. Do not run Cursor `/review` here.
 
+Address every review comment by default (Polar, cubic CLI, cubic GitHub, humans).
+Fix, commit, push, rerun that step. Dispute only when the comment is factually wrong.
+
 ## 1. Preconditions
 
 - Working tree committed. Branch pushed. `git fetch origin main`.
@@ -29,9 +32,7 @@ If lint or tests fail, stop. Do not review or open a PR.
 
 Read `.agents/skills/polar-code-review/SKILL.md` and follow it exactly.
 
-- Any 🔴: fix, commit, push, and rerun this step. Do not continue.
-- 🟠: judgement call — say which way you lean. Continue only if you would still ship a draft.
-- 🟡: expected; do not block on questions alone.
+Address every finding (🔴, 🟠, 🟡, 🧹). Then rerun this step.
 
 ## 3. Cubic CLI review
 
@@ -43,10 +44,8 @@ Otherwise:
 cubic review --base origin/main --json
 ```
 
-- Fix validated findings, commit, push, then rerun cubic.
-- If the diff changed, rerun step 2 before opening the PR.
-- Repeat until the local review is clean or only disputed issues remain.
-- `cubic review` exits 1 when it reports findings; that is work to do, not a skip.
+Address every finding. If the diff changed, rerun step 2. Repeat until clean or
+only disputed issues remain. Exit code 1 means work to do, not a skip.
 
 ## 4. Open the draft
 
@@ -55,5 +54,19 @@ Create or update a **draft** PR.
 - GitHub CLI: `gh pr create --draft`, or update the existing PR
 - Cursor cloud: `ManagePullRequest` with `draft: true`
 
-After the PR exists, Cubic's GitHub review may find issues the CLI missed. Fix those
-on the same PR.
+After the PR exists, pull review comments and address them the same way.
+
+## 5. Reply
+
+Exactly this. Nothing else.
+
+```
+Done
+<summary>
+<summary>
+PR link: <url>
+```
+
+`Failed` instead of `Done` if you stopped (lint, tests, or an unfixed comment).
+Two-line summary of what shipped or why it failed. Omit the PR line only if no
+PR exists.

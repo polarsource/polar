@@ -179,10 +179,10 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                     region_name=settings.AWS_REGION,
                     scrub_patterns=[
                         r"email",
-                        r"user\.?name",
-                        r"full\.?name",
-                        r"first\.?name",
-                        r"last\.?name",
+                        r"user[._]?name",
+                        r"full[._]?name",
+                        r"first[._]?name",
+                        r"last[._]?name",
                         r"phone",
                         r"address",
                         r"ip_?address",
@@ -216,7 +216,15 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
-        scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
+        scrubbing=logfire.ScrubbingOptions(
+            callback=_scrubbing_callback,
+            # Logfire's defaults cover secrets, keys and credentials, but not
+            # access and refresh tokens.
+            extra_patterns=[
+                r"access_?token",
+                r"refresh_?token",
+            ],
+        ),
         additional_span_processors=additional_span_processors or None,
     )
 

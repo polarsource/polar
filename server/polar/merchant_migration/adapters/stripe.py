@@ -13,6 +13,7 @@ import stripe as stripe_lib
 from polar.enums import TaxBehavior
 from polar.kit.address import Address
 from polar.kit.schemas import Schema
+from polar.tax.tax_id import TaxID, TaxIDFormat, from_stripe_tax_id
 
 from ..canonical import (
     CanonicalAccount,
@@ -373,7 +374,10 @@ class StripeAdapter:
     ) -> ExtractionPage:
         params: stripe_lib.params.CustomerListParams = {
             "limit": PAGE_SIZE,
-            "expand": ["data.invoice_settings.default_payment_method"],
+            "expand": [
+                "data.invoice_settings.default_payment_method",
+                "data.tax_ids",
+            ],
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
@@ -723,6 +727,7 @@ class StripeAdapter:
             country=country,
             country_hint=None if country else self._customer_country_hint(customer),
             billing_address=billing_address,
+            tax_id=self._map_tax_id(customer),
         )
 
     def _customer_country_hint(self, customer: stripe_lib.Customer) -> str | None:
@@ -761,6 +766,27 @@ class StripeAdapter:
         billing_country = source.get("address_country") or address.get("country")
         card = source.get("card") or {}
         return billing_country, source.get("country") or card.get("country")
+
+    def _map_tax_id(self, customer: stripe_lib.Customer) -> TaxID | None:
+        mapped: list[TaxID] = []
+        for item in self._stripe_tax_ids(customer):
+            tax_id = from_stripe_tax_id(item.get("type") or "", item.get("value"))
+            if tax_id is not None:
+                mapped.append(tax_id)
+        if not mapped:
+            return None
+        for tax_id in mapped:
+            if tax_id[1] is TaxIDFormat.eu_vat:
+                return tax_id
+        return mapped[0]
+
+    def _stripe_tax_ids(self, customer: stripe_lib.Customer) -> Sequence[Any]:
+        tax_ids = customer.get("tax_ids")
+        if tax_ids is None:
+            return []
+        if isinstance(tax_ids, list):
+            return tax_ids
+        return tax_ids.get("data") or []
 
     def _resolve_payment_method(
         self, subscription: stripe_lib.Subscription

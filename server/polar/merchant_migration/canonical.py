@@ -15,6 +15,7 @@ from polar.enums import TaxBehavior
 from polar.kit.address import Address
 from polar.kit.currency import PresentmentCurrency
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
+from polar.tax.tax_id import TaxID, TaxIDFormat
 
 
 class CanonicalPricingScheme(StrEnum):
@@ -114,6 +115,7 @@ class CanonicalCustomer:
     # review UI can disclose its provenance.
     country_hint: str | None = None
     billing_address: Address | None = None
+    tax_id: TaxID | None = None
 
     type = MerchantMigrationRecordType.customer
 
@@ -383,6 +385,7 @@ def deserialize(
             )
         case MerchantMigrationRecordType.customer:
             billing_address = data.get("billing_address")
+            tax_id_data = data.get("tax_id")
             return CanonicalCustomer(
                 source_id=data["source_id"],
                 email=data["email"],
@@ -392,6 +395,11 @@ def deserialize(
                 billing_address=(
                     Address.model_validate(billing_address)
                     if billing_address is not None
+                    else None
+                ),
+                tax_id=(
+                    (tax_id_data[0], TaxIDFormat(tax_id_data[1]))
+                    if tax_id_data
                     else None
                 ),
             )

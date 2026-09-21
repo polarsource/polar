@@ -12,6 +12,7 @@ from polar.merchant_migration.adapters.stripe import (
     StripeMissingScope,
 )
 from polar.merchant_migration.canonical import (
+    CanonicalCustomer,
     CanonicalDiscount,
     CanonicalDiscountType,
     CanonicalPaymentMethod,
@@ -21,6 +22,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from polar.tax.tax_id import TaxIDFormat
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -592,10 +594,69 @@ class TestExtractPages:
         client.v1.customers.list_async.assert_awaited_once_with(
             params={
                 "limit": 100,
-                "expand": ["data.invoice_settings.default_payment_method"],
+                "expand": [
+                    "data.invoice_settings.default_payment_method",
+                    "data.tax_ids",
+                ],
                 "starting_after": "cus_1",
             }
         )
+
+    async def test_copies_vat_id_onto_canonical_customer(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_vat",
+                "email": "b2b@example.com",
+                "name": "B2B",
+                "address": {"country": "FR"},
+                "tax_ids": {
+                    "object": "list",
+                    "data": [
+                        {
+                            "id": "txi_1",
+                            "object": "tax_id",
+                            "type": "eu_vat",
+                            "value": "FR61954506077",
+                        }
+                    ],
+                    "has_more": False,
+                },
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "customers"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalCustomer)
+        assert record.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    async def test_no_tax_ids_maps_to_none(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_2",
+                "email": "customer@example.com",
+                "name": "Customer",
+                "address": {"country": "US"},
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "customers"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalCustomer)
+        assert record.tax_id is None
 
     async def test_skipped_subscription_still_advances_the_page_cursor(
         self, mocker: MockerFixture

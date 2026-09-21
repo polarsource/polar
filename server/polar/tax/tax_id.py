@@ -563,6 +563,18 @@ def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
     }
 
 
+def from_stripe_tax_id(tax_id_type: str, value: str | None) -> TaxID | None:
+    if not value:
+        return None
+    try:
+        parsed_type = TaxIDFormat(tax_id_type)
+    except ValueError:
+        return None
+    if not parsed_type.is_stripe_supported():
+        return None
+    return (value, parsed_type)
+
+
 class TaxIDType(TypeDecorator[Any]):
     impl = JSONB(none_as_null=True)
     cache_ok = True
@@ -587,6 +599,7 @@ __all__ = [
     "TaxIDFormat",
     "TaxIDType",
     "UnsupportedTaxIDFormat",
+    "from_stripe_tax_id",
     "to_stripe_tax_id",
     "validate_tax_id",
 ]

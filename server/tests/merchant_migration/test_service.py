@@ -102,6 +102,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
@@ -1369,11 +1370,65 @@ class TestImportCatalog:
         assert customer.stripe_customer_id == "cus_1"
         assert customer.billing_address is not None
         assert customer.billing_address.country == "US"
+        assert customer.tax_id is None
 
         migration_repository = MerchantMigrationRepository.from_session(session)
         updated = await migration_repository.get_by_id(migration.id)
         assert updated is not None
         assert updated.step == MerchantMigrationStep.create_catalog
+
+    @pytest.mark.auth
+    async def test_copies_tax_id_onto_polar_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            *_catalog(),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="FR",
+                tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+            ),
+            CanonicalSubscription(
+                source_id="sub_1",
+                customer_source_id="cus_1",
+                price_source_id="price_1",
+                status=CanonicalSubscriptionStatus.active,
+                collection_method=CanonicalCollectionMethod.charge_automatically,
+                current_period_start=None,
+                current_period_end=None,
+                trialing=False,
+                paused_collection=False,
+                line_item_count=1,
+                quantity=1,
+                payment_method=None,
+                currency="usd",
+            ),
+        ]
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_email_and_organization(
+            "alice@example.com", organization.id
+        )
+        assert customer is not None
+        assert customer.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
 
     @pytest.mark.auth
     async def test_imports_archived_catalog_product_as_subscription_dependency(

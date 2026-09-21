@@ -460,6 +460,7 @@ class CatalogImporter:
             name=customer.name,
             billing_address=self._billing_address(customer, country_fallback),
             stripe_customer_id=stripe_customer_id,
+            tax_id=customer.tax_id,
         )
         return ImportedCustomer(customer=polar_customer)
 

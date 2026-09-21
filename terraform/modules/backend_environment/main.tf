@@ -115,6 +115,7 @@ locals {
     POLAR_AWS_KMS_KEY_ID                 = var.aws_kms_config.key_id
     POLAR_AWS_JWKS_KMS_KEY_ID            = var.aws_kms_config.jwks_key_id
     POLAR_AWS_JWKS_KMS_PUBLISHED_KEY_IDS = jsonencode(var.aws_kms_config.jwks_published_key_ids)
+    POLAR_AWS_HASH_SECRET_ARN            = var.hash_secret_arn
   }
 
   secrets_kms_render_environment_variables = {

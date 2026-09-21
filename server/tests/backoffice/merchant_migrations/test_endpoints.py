@@ -34,18 +34,20 @@ from polar.models.merchant_migration import (
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.redis import Redis, get_redis
 from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import pan_step_required_inputs
 
 
 @pytest_asyncio.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
+    session: AsyncSession, user: User, redis: Redis
 ) -> AsyncGenerator[httpx.AsyncClient]:
     user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
     backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_redis] = lambda: redis
     try:
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=backoffice_app),
@@ -56,6 +58,7 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_db_session, None)
         backoffice_app.dependency_overrides.pop(get_db_read_session, None)
         backoffice_app.dependency_overrides.pop(get_admin, None)
+        backoffice_app.dependency_overrides.pop(get_redis, None)
 
 
 async def _create_migration(

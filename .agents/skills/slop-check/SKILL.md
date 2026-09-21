@@ -20,7 +20,10 @@ Calibration, from real reviews:
 > "Verbosy LLM comment" · "Meaningless slop comment imho, let's drop" · "That's typical of
 > Claude, it puts those private helper functions everywhere!" · "Lol, LLM was zealous here" ·
 > "This feels like a new thing that Claude always wants to throw in" · "Overengineering IMO,
-> that case would be at most rare"
+> that case would be at most rare" · "Remove all the lengthy tests you added and the unrelated
+> change on tsconfig.json" · "@copilot Please remove all tests" · "Drop this entire test
+> file" · "The LLM looks over-confident it's a problem" · "I'd remove this changelog entry.
+> It's very Claude-y" · "I don't think this internal rationale should make it into docs."
 
 ## Scope
 
@@ -62,6 +65,24 @@ flushing is only for data that must be visible before the request ends.
 import, method with no caller, `getattr` where attribute access works, a wrapper that only
 forwards.
 
+**8. Tests that dwarf the change.** On small agent PRs the team asks to drop the tests,
+not polish them. Flag a new test module whose size far exceeds the production hunk, a
+dashboard component test under `apps/web` (those files are generally not unit-tested),
+or lengthy SDK-generator tests next to a one-line fix. (#14205, #14204, #14199, #14116,
+#13917)
+
+**9. Out-of-scope scaffolding.** Unrelated `tsconfig.json`, generator `README.md`, or
+lockfile noise in a behavioural PR. Revert it. (#14205, #14185, #14171)
+
+**10. Speculative rarity.** A guard, polyfill, or compatibility branch for a state a
+completed backfill already eliminated, or a browser API supported since 2023 (`toSorted`,
+IE11 `X-Frame-Options`). Ask for a production row count or caniuse evidence; without it,
+delete. (#14179, #14106, #14120, #14234)
+
+**11. Docs slop.** User-facing docs and changelogs that explain internal rationale, launch
+ceremony, or a Claude-y "we're excited to announce". Strip it. Endpoint OpenAPI
+descriptions stay with check 1. (#14064)
+
 ## Do not flag
 
 Two ways this check goes wrong, both worse than the slop itself.
@@ -69,8 +90,9 @@ Two ways this check goes wrong, both worse than the slop itself.
 - **Domain comments.** A comment explaining why a lock is released only on the webhook path,
   or why a status maps to Stripe's `lost`, is exactly what the team wants. The test is whether
   the sentence carries information the code cannot.
-- **Real coverage.** Only flag a test that duplicates another test *in this diff*, or that
-  asserts nothing. Cutting coverage to hit a "fewer tests" target is a worse outcome.
+- **Real coverage.** Only flag a test that duplicates another test *in this diff*, that
+  asserts nothing, or that dwarfs a one-line agent fix (check 8). Cutting genuine service
+  coverage to hit a "fewer tests" target is a worse outcome.
 
 ## Output
 

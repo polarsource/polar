@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -86,6 +86,47 @@ class CheckoutRepository(
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())
+
+    async def anonymize_customer_pii(
+        self, customer_id: UUID, organization_id: UUID, email: str | None
+    ) -> None:
+        """Erase the customer PII copied onto checkouts, for GDPR erasure.
+
+        Checkouts snapshot the customer details at checkout time, independently
+        of the `customers` row. Orders keep their own snapshot of everything the
+        tax records need (billing name, address, tax ID and tax breakdown), so
+        the copy here can be erased outright rather than pseudonymized.
+
+        Guest checkouts that were never confirmed have no `customer_id`, so they
+        are matched on the email within the same organization as well.
+        Soft-deleted checkouts are included: the PII is still in the table.
+        """
+        where_clauses = [Checkout.customer_id == customer_id]
+        if email is not None:
+            where_clauses.append(
+                and_(
+                    Checkout.customer_id.is_(None),
+                    func.lower(Checkout.customer_email) == email.lower(),
+                )
+            )
+
+        statement = (
+            update(Checkout)
+            .where(
+                Checkout.organization_id == organization_id,
+                or_(*where_clauses),
+            )
+            .values(
+                customer_name=None,
+                customer_email=None,
+                _customer_ip_address=None,
+                customer_billing_name=None,
+                customer_billing_address=None,
+                customer_tax_id=None,
+                customer_metadata={},
+            )
+        )
+        await self.session.execute(statement)
 
     async def list_embed_origins(
         self, organization_id: UUID, *, since: datetime

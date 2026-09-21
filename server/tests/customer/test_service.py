@@ -16,7 +16,14 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
-from polar.models import Customer, Organization, User, UserOrganization
+from polar.models import (
+    Checkout,
+    Customer,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.customer import CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
@@ -25,7 +32,11 @@ from polar.redis import Redis
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_member
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_customer,
+    create_member,
+)
 
 
 @pytest.mark.asyncio
@@ -1569,6 +1580,35 @@ class TestDelete:
         assert len(active_members) == 0
 
 
+async def _checkout_with_customer_pii(
+    save_fixture: SaveFixture,
+    product: Product,
+    *,
+    customer: Customer | None = None,
+    customer_email: str = "buyer@example.com",
+) -> Checkout:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product],
+        customer=customer,
+        customer_metadata={"phone": "+3312345678"},
+    )
+    checkout.customer_email = customer_email
+    checkout.customer_name = "John Doe"
+    checkout.customer_ip_address = "127.0.0.1"
+    checkout.customer_billing_name = "John Doe"
+    checkout.customer_billing_address = Address(
+        line1="123 Main St",
+        city="San Francisco",
+        state="CA",
+        postal_code="94102",
+        country=CountryAlpha2("US"),
+    )
+    checkout.customer_tax_id = ("DE123456789", TaxIDFormat.eu_vat)
+    await save_fixture(checkout)
+    return checkout
+
+
 @pytest.mark.asyncio
 class TestAnonymize:
     async def test_individual_customer(
@@ -1751,6 +1791,88 @@ class TestAnonymize:
         assert anonymized._billing_name is not None
         assert len(anonymized._billing_name) == 64
         assert anonymized._billing_name != "Business Billing Name"
+
+    async def test_erases_checkout_pii(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Checkouts snapshot the customer PII independently and must be erased."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="checkout@example.com",
+            name="John Doe",
+        )
+        checkout = await _checkout_with_customer_pii(
+            save_fixture, product, customer=customer
+        )
+
+        await customer_service.anonymize(session, customer)
+        await session.refresh(checkout)
+
+        assert checkout.customer_email is None
+        assert checkout.customer_name is None
+        assert checkout.customer_ip_address is None
+        assert checkout.customer_billing_name is None
+        assert checkout.customer_billing_address is None
+        assert checkout.customer_tax_id is None
+        assert checkout.customer_metadata == {}
+
+        # The link to the customer is kept: only the PII copy is erased
+        assert checkout.customer_id == customer.id
+
+    async def test_erases_guest_checkout_pii(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Checkouts never confirmed have no customer_id, only the email."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="guest@example.com",
+        )
+        checkout = await _checkout_with_customer_pii(
+            save_fixture, product, customer_email="GUEST@example.com"
+        )
+
+        await customer_service.anonymize(session, customer)
+        await session.refresh(checkout)
+
+        assert checkout.customer_email is None
+        assert checkout.customer_ip_address is None
+
+    async def test_leaves_other_customers_checkouts_alone(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="erased@example.com",
+        )
+        other_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="kept@example.com",
+        )
+        other_checkout = await _checkout_with_customer_pii(
+            save_fixture, product, customer=other_customer
+        )
+
+        await customer_service.anonymize(session, customer)
+        await session.refresh(other_checkout)
+
+        assert other_checkout.customer_email == "buyer@example.com"
+        assert other_checkout.customer_ip_address == "127.0.0.1"
 
     async def test_already_deleted_customer(
         self,

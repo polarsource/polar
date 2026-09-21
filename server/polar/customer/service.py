@@ -16,6 +16,7 @@ from polar.authz.service import (
     get_accessible_org_ids,
 )
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_session.service import customer_session as customer_session_service
@@ -693,6 +694,7 @@ class CustomerService:
         - Preserving external_id and tax_id for legal/tax reasons
         - Preserving name for businesses (identified by having tax_id)
         - Keeping order and subscription records intact (invoices are immutable)
+        - Erasing the PII that checkouts snapshot independently of this row
 
         This only scrubs PII; it does not delete the customer. Callers wanting
         both use `delete(..., anonymize=True)`, which anonymizes and then
@@ -703,6 +705,10 @@ class CustomerService:
         """
         if self._is_anonymized(customer):
             return customer
+
+        await CheckoutRepository.from_session(session).anonymize_customer_pii(
+            customer.id, customer.organization_id, customer.email
+        )
 
         repository = CustomerRepository.from_session(session)
         update_dict: dict[str, Any] = {}

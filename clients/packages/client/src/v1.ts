@@ -8516,6 +8516,17 @@ export interface components {
       /** Code */
       code: string
     }
+    /** BadRequest */
+    BadRequest: {
+      /**
+       * Error
+       * @example BadRequest
+       * @constant
+       */
+      error: 'BadRequest'
+      /** Detail */
+      detail: string
+    }
     /**
      * BalanceCreditOrderEvent
      * @description An event created by Polar when an order is paid via customer balance.
@@ -23091,6 +23102,65 @@ export interface components {
       /** Repository Name */
       repository_name: string
     }
+    /** GrantedLicenseKey */
+    GrantedLicenseKey: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      customer: components['schemas']['LicenseKeyCustomer']
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The benefit ID.
+       */
+      benefit_id: string
+      /** Key */
+      key: string
+      /** Display Key */
+      display_key: string
+      /**
+       * Status
+       * @constant
+       */
+      status: 'granted'
+      /** Limit Activations */
+      limit_activations: number | null
+      /** Usage */
+      usage: number
+      /** Limit Usage */
+      limit_usage: number | null
+      /** Validations */
+      validations: number
+      /** Last Validated At */
+      last_validated_at: string | null
+      /** Expires At */
+      expires_at: string | null
+    }
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -23697,6 +23767,34 @@ export interface components {
       created_at: string
       /** Modified At */
       modified_at: string | null
+    }
+    /** LicenseKeyActivationCreated */
+    LicenseKeyActivationCreated: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * License Key Id
+       * Format: uuid4
+       */
+      license_key_id: string
+      /** Label */
+      label: string
+      /** Meta */
+      meta: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Created At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /** Modified At */
+      modified_at: string | null
+      license_key: components['schemas']['GrantedLicenseKey']
     }
     /** LicenseKeyActivationRead */
     LicenseKeyActivationRead: {
@@ -33881,6 +33979,65 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** RotatedLicenseKey */
+    RotatedLicenseKey: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      customer: components['schemas']['LicenseKeyCustomer']
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The benefit ID.
+       */
+      benefit_id: string
+      /** Key */
+      key: string
+      /** Display Key */
+      display_key: string
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'granted' | 'disabled'
+      /** Limit Activations */
+      limit_activations: number | null
+      /** Usage */
+      usage: number
+      /** Limit Usage */
+      limit_usage: number | null
+      /** Validations */
+      validations: number
+      /** Last Validated At */
+      last_validated_at: string | null
+      /** Expires At */
+      expires_at: string | null
+    }
     /** S3DownloadURL */
     S3DownloadURL: {
       /** Url */
@@ -38735,7 +38892,11 @@ export interface components {
       key: string
       /** Display Key */
       display_key: string
-      status: components['schemas']['LicenseKeyStatus']
+      /**
+       * Status
+       * @constant
+       */
+      status: 'granted'
       /** Limit Activations */
       limit_activations: number | null
       /** Usage */
@@ -50743,7 +50904,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['LicenseKeyRead']
+          'application/json': components['schemas']['RotatedLicenseKey']
         }
       }
       /** @description License key cannot be rotated in its current status. Allowed statuses: disabled, granted. */
@@ -50814,7 +50975,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description License key not found. */
+      /** @description License key or activation not found, or activation does not belong to the license key. */
       404: {
         headers: {
           [name: string]: unknown
@@ -50856,7 +51017,16 @@ export interface operations {
           'application/json': components['schemas']['ValidatedLicenseKey']
         }
       }
-      /** @description License key not found. */
+      /** @description The requested usage increment exceeds the license key's remaining usage allowance. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BadRequest']
+        }
+      }
+      /** @description License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match. */
       404: {
         headers: {
           [name: string]: unknown
@@ -50895,10 +51065,10 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['LicenseKeyActivationRead']
+          'application/json': components['schemas']['LicenseKeyActivationCreated']
         }
       }
-      /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
+      /** @description License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations. */
       403: {
         headers: {
           [name: string]: unknown
@@ -50947,7 +51117,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description License key not found. */
+      /** @description License key or activation not found, or activation does not belong to the license key. */
       404: {
         headers: {
           [name: string]: unknown
@@ -54224,7 +54394,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['LicenseKeyRead']
+          'application/json': components['schemas']['RotatedLicenseKey']
         }
       }
       /** @description License key cannot be rotated in its current status. Allowed statuses: disabled, granted. */
@@ -54287,7 +54457,16 @@ export interface operations {
           'application/json': components['schemas']['ValidatedLicenseKey']
         }
       }
-      /** @description License key not found. */
+      /** @description The requested usage increment exceeds the license key's remaining usage allowance. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BadRequest']
+        }
+      }
+      /** @description License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match. */
       404: {
         headers: {
           [name: string]: unknown
@@ -54326,10 +54505,10 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['LicenseKeyActivationRead']
+          'application/json': components['schemas']['LicenseKeyActivationCreated']
         }
       }
-      /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
+      /** @description License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations. */
       403: {
         headers: {
           [name: string]: unknown
@@ -54378,7 +54557,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description License key not found. */
+      /** @description License key or activation not found, or activation does not belong to the license key. */
       404: {
         headers: {
           [name: string]: unknown
@@ -71954,6 +72133,9 @@ export const reviewAppealSupportCaseListItemTypeValues: ReadonlyArray<
 export const reviewAppealSupportCaseMessageCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseMessageCreate']['type']
 > = ['review_appeal']
+export const rotatedLicenseKeyStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RotatedLicenseKey']['status']
+> = ['granted', 'disabled']
 export const sSOFactorTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SSOFactor']['type']
 > = ['sso']

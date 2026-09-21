@@ -12,7 +12,7 @@ from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeyExpirationProperties,
 )
 from polar.customer.schemas.customer import CustomerBase
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.metadata import (
     MAXIMUM_KEYS,
     METADATA_DESCRIPTION,
@@ -34,6 +34,24 @@ NotFoundResponse = {
     "model": ResourceNotFound.schema(),
 }
 
+ActivationNotFoundResponse = {
+    "description": "License key or activation not found, or activation does not belong to the license key.",
+    "model": ResourceNotFound.schema(),
+}
+
+ValidationBadRequestResponse = {
+    "description": "The requested usage increment exceeds the license key's remaining usage allowance.",
+    "model": BadRequest.schema(),
+}
+
+ValidationNotFoundResponse = {
+    "description": (
+        "License key not found, revoked, disabled, or expired, "
+        "or the supplied activation, conditions, benefit, or customer do not match."
+    ),
+    "model": ResourceNotFound.schema(),
+}
+
 UnauthorizedResponse = {
     "description": "Not authorized to manage license key.",
     "model": Unauthorized.schema(),
@@ -41,7 +59,7 @@ UnauthorizedResponse = {
 
 
 ActivationNotPermitted = {
-    "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
+    "description": "License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations.",
     "model": NotPermitted.schema(),
 }
 
@@ -196,12 +214,24 @@ class LicenseKeyWithActivations(LicenseKeyRead):
     activations: list[LicenseKeyActivationBase]
 
 
-class ValidatedLicenseKey(LicenseKeyRead):
+class GrantedLicenseKey(LicenseKeyRead):
+    status: Literal[LicenseKeyStatus.granted]
+
+
+class RotatedLicenseKey(LicenseKeyRead):
+    status: Literal[LicenseKeyStatus.granted, LicenseKeyStatus.disabled]
+
+
+class ValidatedLicenseKey(GrantedLicenseKey):
     activation: LicenseKeyActivationBase | None = None
 
 
 class LicenseKeyActivationRead(LicenseKeyActivationBase):
     license_key: LicenseKeyRead
+
+
+class LicenseKeyActivationCreated(LicenseKeyActivationRead):
+    license_key: GrantedLicenseKey
 
 
 class LicenseKeyUpdate(Schema):

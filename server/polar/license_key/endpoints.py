@@ -21,8 +21,10 @@ from polar.routing import APIRouter
 from . import auth
 from .repository import LicenseKeyRepository
 from .schemas import (
+    ActivationNotFoundResponse,
     ActivationNotPermitted,
     LicenseKeyActivate,
+    LicenseKeyActivationCreated,
     LicenseKeyActivationRead,
     LicenseKeyDeactivate,
     LicenseKeyRead,
@@ -30,8 +32,11 @@ from .schemas import (
     LicenseKeyValidate,
     LicenseKeyWithActivations,
     NotFoundResponse,
+    RotatedLicenseKey,
     UnauthorizedResponse,
     ValidatedLicenseKey,
+    ValidationBadRequestResponse,
+    ValidationNotFoundResponse,
 )
 from .service import ROTATABLE_STATUSES, RotateNotPermitted
 from .service import license_key as license_key_service
@@ -144,7 +149,7 @@ async def update(
 @router.post(
     "/{id}/rotate",
     summary="Rotate License Key",
-    response_model=LicenseKeyRead,
+    response_model=RotatedLicenseKey,
     tags=[APITag.mcp, APITag.cli],
     responses={
         400: RotateNotPermittedResponse,
@@ -180,7 +185,7 @@ async def rotate(
     tags=[APITag.mcp, APITag.cli],
     responses={
         401: UnauthorizedResponse,
-        404: NotFoundResponse,
+        404: ActivationNotFoundResponse,
     },
 )
 async def get_activation(
@@ -207,7 +212,8 @@ async def get_activation(
     summary="Validate License Key",
     response_model=ValidatedLicenseKey,
     responses={
-        404: NotFoundResponse,
+        400: ValidationBadRequestResponse,
+        404: ValidationNotFoundResponse,
     },
 )
 async def validate(
@@ -236,7 +242,7 @@ async def validate(
 @router.post(
     "/activate",
     summary="Activate License Key",
-    response_model=LicenseKeyActivationRead,
+    response_model=LicenseKeyActivationCreated,
     responses={
         403: ActivationNotPermitted,
         404: NotFoundResponse,
@@ -271,7 +277,7 @@ async def activate(
     status_code=204,
     responses={
         204: {"description": "License key activation deactivated."},
-        404: NotFoundResponse,
+        404: ActivationNotFoundResponse,
     },
 )
 async def deactivate(

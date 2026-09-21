@@ -92,7 +92,7 @@ async def email_send(
 
 @actor(
     actor_name="email_log.delete_expired",
-    cron_trigger=CronTrigger(hour=3, minute=30),
+    cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

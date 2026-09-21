@@ -243,12 +243,10 @@ class CustomerSessionService:
     async def authenticate(
         self, session: AsyncSession, code: str
     ) -> tuple[str, CustomerSession | MemberSession]:
-        code_hash = get_token_hash(code)
-
         code_repository = CustomerSessionCodeRepository.from_session(session)
         try:
-            customer_session_code = (
-                await code_repository.get_valid_by_code_hash_for_update(code_hash)
+            customer_session_code = await code_repository.get_valid_by_code_for_update(
+                code
             )
         except DBAPIError as e:
             if is_lock_not_available_error(e):

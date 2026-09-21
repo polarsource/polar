@@ -4,8 +4,11 @@ from polar.backoffice.merchant_migrations.status import (
     PAN_STEP_LABELS,
     AttentionLevel,
     attention,
+    is_finished,
     progress,
     step_inputs,
+    step_position,
+    visible_step,
 )
 from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
@@ -66,6 +69,27 @@ def _advance_to(key: str) -> list[PanTransferStep]:
             actor=actor,
             inputs=pan_step_required_inputs(template),
         )
+
+
+def _finish_all() -> list[PanTransferStep]:
+    steps = pan_transfer.build(PanTransferMethod.pan_copy)
+    while pan_transfer.current(steps) is not None:
+        current = pan_transfer.current(steps)
+        assert current is not None
+        actor = (
+            PanStepActor.system
+            if current.owner == PanStepOwner.polar_app
+            else PanStepActor.ops
+        )
+        template = pan_transfer._template(PanTransferMethod.pan_copy, current.key)
+        steps = pan_transfer.complete(
+            PanTransferMethod.pan_copy,
+            steps,
+            current.key,
+            actor=actor,
+            inputs=pan_step_required_inputs(template),
+        )
+    return steps
 
 
 class TestAttention:
@@ -145,31 +169,44 @@ class TestAttention:
         result = attention(migration, NO_FAILURES)
 
         assert result.level == AttentionLevel.done
+        assert not result.needs_ops
+
+    def test_cleanup_migration_is_done(self) -> None:
+        migration = _migration(step=MerchantMigrationStep.cleanup, steps=_finish_all())
+
+        result = attention(migration, NO_FAILURES)
+
+        assert result.level == AttentionLevel.done
+        assert result.label == "Done"
+        assert not result.needs_ops
 
     def test_finished_checklist_on_an_open_migration_needs_closing_out(self) -> None:
-        steps = pan_transfer.build(PanTransferMethod.pan_copy)
-        while pan_transfer.current(steps) is not None:
-            current = pan_transfer.current(steps)
-            assert current is not None
-            actor = (
-                PanStepActor.system
-                if current.owner == PanStepOwner.polar_app
-                else PanStepActor.ops
-            )
-            template = pan_transfer._template(PanTransferMethod.pan_copy, current.key)
-            steps = pan_transfer.complete(
-                PanTransferMethod.pan_copy,
-                steps,
-                current.key,
-                actor=actor,
-                inputs=pan_step_required_inputs(template),
-            )
-        migration = _migration(step=MerchantMigrationStep.copy_cards, steps=steps)
+        migration = _migration(
+            step=MerchantMigrationStep.copy_cards, steps=_finish_all()
+        )
 
         result = attention(migration, NO_FAILURES)
 
         assert result.level == AttentionLevel.ops_action
         assert "close the migration out" in result.detail
+
+
+class TestFinished:
+    def test_cleanup_and_completed_count_as_finished(self) -> None:
+        assert is_finished(_migration(step=MerchantMigrationStep.cleanup))
+        assert is_finished(_migration(step=MerchantMigrationStep.completed))
+
+    def test_an_in_progress_step_is_not_finished(self) -> None:
+        assert not is_finished(_migration(step=MerchantMigrationStep.copy_cards))
+
+    def test_cleanup_displays_as_completed(self) -> None:
+        assert (
+            visible_step(MerchantMigrationStep.cleanup)
+            == MerchantMigrationStep.completed
+        )
+        assert step_position(MerchantMigrationStep.cleanup) == step_position(
+            MerchantMigrationStep.completed
+        )
 
 
 class TestStaleness:

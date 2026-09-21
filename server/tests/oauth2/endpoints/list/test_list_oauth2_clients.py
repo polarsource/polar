@@ -12,8 +12,6 @@ from tests.fixtures.database import SaveFixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
-        client_secret="polar_cs_123",
-        registration_access_token="polar_crt_123",
         user=user,
     )
     oauth2_client.set_client_metadata(
@@ -67,8 +65,6 @@ class TestListOAuth2Clients:
     ) -> None:
         oauth2_client = OAuth2Client(
             client_id="polar_ci_123",
-            client_secret="polar_cs_123",
-            registration_access_token="polar_crt_123",
             user=user,
         )
         oauth2_client.set_client_metadata(

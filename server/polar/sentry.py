@@ -83,5 +83,5 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
 def set_sentry_user(auth_subject: AuthSubject[Subject]) -> None:
     if is_user(auth_subject):
         user = auth_subject.subject
-        sentry_sdk.set_user({"id": str(user.id), "email": user.email})
+        sentry_sdk.set_user({"id": str(user.id)})
         sentry_sdk.set_tag(POSTHOG_ID_TAG, user.posthog_distinct_id)

@@ -40,7 +40,6 @@ export const useAuth = (): {
     if (currentUser) {
       Sentry.setUser({
         id: currentUser.id,
-        email: currentUser.email,
       })
 
       posthog.identify(currentUser)

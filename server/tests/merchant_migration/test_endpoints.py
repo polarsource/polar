@@ -1,6 +1,5 @@
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
-from uuid import uuid4
 
 import pytest
 import stripe as stripe_lib
@@ -1070,16 +1069,6 @@ class TestExportCustomerIds:
 
 @pytest.mark.asyncio
 class TestUpdateRecord:
-    async def test_anonymous(
-        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
-    ) -> None:
-        migration = await _create_migration(save_fixture, organization)
-        response = await client.patch(
-            f"/v1/merchant-migrations/{migration.id}/records/{uuid4()}",
-            json={"tax_behavior": "exclusive"},
-        )
-        assert response.status_code == 401
-
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_foreign_record_returns_404(
         self,

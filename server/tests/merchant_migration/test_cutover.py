@@ -211,7 +211,19 @@ def cutover(
 
 @pytest.mark.asyncio
 class TestRun:
-    @pytest.mark.parametrize("tax", [TaxBehavior.inclusive, TaxBehavior.exclusive])
+    @pytest.mark.parametrize(
+        ("canonical_kwargs", "tax"),
+        [
+            ({"tax_behavior": TaxBehavior.inclusive}, TaxBehavior.inclusive),
+            (
+                {
+                    "automatic_tax": True,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.exclusive,
+            ),
+        ],
+    )
     async def test_creates_activates_and_stops_pending_subscription(
         self,
         mocker: MockerFixture,
@@ -220,9 +232,10 @@ class TestRun:
         cutover: RunCutover,
         pending_record: MerchantMigrationRecord,
         imported_customer: Customer,
+        canonical_kwargs: dict[str, Any],
         tax: TaxBehavior,
     ) -> None:
-        pending_record.canonical = serialize(canonical_subscription(tax_behavior=tax))
+        pending_record.canonical = serialize(canonical_subscription(**canonical_kwargs))
         await save_fixture(pending_record)
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
         adapter = _source()
@@ -239,30 +252,6 @@ class TestRun:
         assert subscription.user_metadata["provider"] == "stripe"
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
         assert subscription.tax_behavior == tax
-        assert subscription.tax_exempted is False
-
-    async def test_pins_exclusive_from_source_price_when_unpinned(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        cutover: RunCutover,
-        pending_record: MerchantMigrationRecord,
-    ) -> None:
-        pending_record.canonical = serialize(
-            canonical_subscription(
-                automatic_tax=True,
-                price_tax_behavior=TaxBehavior.exclusive,
-            )
-        )
-        await save_fixture(pending_record)
-        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
-
-        outcome = await cutover(_source())
-
-        assert outcome.status == MerchantMigrationCutoverStatus.moved
-        subscription = await _created(session, pending_record)
-        assert subscription.tax_behavior == TaxBehavior.exclusive
         assert subscription.tax_exempted is False
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(

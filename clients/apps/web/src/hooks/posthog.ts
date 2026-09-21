@@ -96,9 +96,7 @@ export const usePostHog = (): PolarHog => {
       const posthogId = `user:${user.id}`
 
       if (posthog.get_distinct_id() !== posthogId) {
-        posthog.identify(posthogId, {
-          email: user.email,
-        })
+        posthog.identify(posthogId)
       }
     },
     [posthog],

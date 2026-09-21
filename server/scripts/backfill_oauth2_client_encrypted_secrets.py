@@ -11,6 +11,7 @@ Dry-run by default (counts rows only). Pass --execute to write:
 """
 
 import asyncio
+from uuid import UUID
 
 import typer
 from rich.progress import (
@@ -19,7 +20,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-from sqlalchemy import Select, func, select
+from sqlalchemy import ColumnElement, Select, func, or_, select
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -31,25 +32,31 @@ from .helper import configure_script_logging, typer_async
 cli = typer.Typer()
 
 
-def _hash_null_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
-    return (
-        select(OAuth2Client)
-        .where(OAuth2Client.client_secret_hash.is_(None))
-        .limit(batch_size)
-        .with_for_update(skip_locked=True)
+def _needs_backfill() -> ColumnElement[bool]:
+    """A row still to backfill: any hash or ciphertext column is NULL. Both
+    plaintext secrets are non-nullable, so a missing derived column is the only
+    thing that qualifies a row."""
+    return or_(
+        OAuth2Client.client_secret_hash.is_(None),
+        OAuth2Client.client_secret_encrypted.is_(None),
+        OAuth2Client.registration_access_token_hash.is_(None),
+        OAuth2Client.registration_access_token_encrypted.is_(None),
     )
 
 
-def _registration_token_only_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
-    return (
+def _batch(after: UUID | None, batch_size: int) -> Select[tuple[OAuth2Client]]:
+    """Walk the primary key forward. Filtering alone makes every batch rescan
+    the rows the previous ones filled, and the scan grows with the run."""
+    statement = (
         select(OAuth2Client)
-        .where(
-            OAuth2Client.client_secret_hash.is_not(None),
-            OAuth2Client.registration_access_token_hash.is_(None),
-        )
+        .where(_needs_backfill())
+        .order_by(OAuth2Client.id)
         .limit(batch_size)
         .with_for_update(skip_locked=True)
     )
+    if after is not None:
+        statement = statement.where(OAuth2Client.id > after)
+    return statement
 
 
 async def _fill_secrets(client: OAuth2Client) -> None:
@@ -72,26 +79,12 @@ async def _fill_secrets(client: OAuth2Client) -> None:
 
 
 async def _count_remaining(session: AsyncSession) -> int:
-    hash_null = (
+    return (
         await session.scalar(
-            select(func.count())
-            .select_from(OAuth2Client)
-            .where(OAuth2Client.client_secret_hash.is_(None))
+            select(func.count()).select_from(OAuth2Client).where(_needs_backfill())
         )
         or 0
     )
-    registration_only = (
-        await session.scalar(
-            select(func.count())
-            .select_from(OAuth2Client)
-            .where(
-                OAuth2Client.client_secret_hash.is_not(None),
-                OAuth2Client.registration_access_token_hash.is_(None),
-            )
-        )
-        or 0
-    )
-    return hash_null + registration_only
 
 
 async def run_backfill(
@@ -105,9 +98,8 @@ async def run_backfill(
     step for OAuth2Client; see the design document, Appendix C).
 
     Encryption calls the key provider once per secret, so this loops in Python
-    rather than a set-based SQL update. Each backfilled secret fills its hash
-    and ciphertext columns, so the row falls out of the predicate; the loop
-    terminates and reruns are safe.
+    rather than a set-based SQL update. The cursor only moves forward, so the
+    loop terminates; a backfilled row no longer matches, so reruns are safe.
     """
     engine = None
     own_session = False
@@ -142,14 +134,10 @@ async def run_backfill(
         ) as progress:
             task = progress.add_task("[cyan]Batch 0: 0 rows encrypted", total=None)
 
+            after: UUID | None = None
             while True:
-                result = await session.execute(_hash_null_batch(batch_size))
+                result = await session.execute(_batch(after, batch_size))
                 clients = list(result.scalars().all())
-                if not clients:
-                    result = await session.execute(
-                        _registration_token_only_batch(batch_size)
-                    )
-                    clients = list(result.scalars().all())
 
                 if not clients:
                     remaining = await _count_remaining(session)
@@ -173,6 +161,7 @@ async def run_backfill(
                 for client in clients:
                     await _fill_secrets(client)
 
+                after = clients[-1].id
                 await session.commit()
                 session.expunge_all()
 

@@ -46,28 +46,29 @@ def unalias_email(email: str) -> str:
     return f"{parsed.local_part.split('+', 1)[0]}@{parsed.domain}"
 
 
-# Domains that deliver to the same mailbox, as (canonical, alternates).
-_DOMAIN_ALIASES: list[tuple[str, list[str]]] = [
-    ("gmail.com", ["googlemail.com"]),
-]
+# Alternate domains that deliver to the same mailbox as their canonical one.
+_DOMAIN_ALIASES = {"googlemail.com": "gmail.com"}
 
-_CANONICAL_DOMAINS = {
-    alternate: canonical
-    for canonical, alternates in _DOMAIN_ALIASES
-    for alternate in alternates
+# Characters the provider ignores in the local part, keyed by canonical domain
+# since aliases are resolved first. Proton treats periods, hyphens and
+# underscores alike; Proton's four domains are separate mailboxes, not aliases.
+_TRANSPARENT_LOCAL_PART_CHARS = {
+    "gmail.com": ".",
+    "proton.me": ".-_",
+    "protonmail.com": ".-_",
+    "protonmail.ch": ".-_",
+    "pm.me": ".-_",
 }
-
-# Keyed by canonical domain — aliases are resolved before this is consulted.
-_DOTLESS_LOCAL_PART_DOMAINS = {"gmail.com"}
 
 
 def normalize_email(email: str) -> str:
     """Reduce an email address to the mailbox it actually delivers to.
 
-    On top of `unalias_email`, the local part is lowercased and Google's own
-    addressing rules are applied: `googlemail.com` is an alias of `gmail.com`,
-    and Gmail ignores dots in the local part. So `Pieter.Smith+123@googlemail.com`
-    and `pietersmith@gmail.com` are the same mailbox and both normalize to the
+    On top of `unalias_email`, the local part is lowercased and each provider's
+    own addressing rules are applied: `googlemail.com` is an alias of
+    `gmail.com`, Gmail ignores dots in the local part, and Proton ignores dots,
+    hyphens and underscores. So `Pieter.Smith+123@googlemail.com` and
+    `pietersmith@gmail.com` are the same mailbox and both normalize to the
     latter. The domain is lowercased by `validate_email_syntax`.
 
     Used as an identity key for abuse checks, where an address a customer can
@@ -75,10 +76,10 @@ def normalize_email(email: str) -> str:
     """
     parsed = validate_email_syntax(email)
     local_part = parsed.local_part.split("+", 1)[0].lower()
-    domain = _CANONICAL_DOMAINS.get(parsed.domain, parsed.domain)
+    domain = _DOMAIN_ALIASES.get(parsed.domain, parsed.domain)
 
-    if domain in _DOTLESS_LOCAL_PART_DOMAINS:
-        local_part = local_part.replace(".", "")
+    transparent = _TRANSPARENT_LOCAL_PART_CHARS.get(domain, "")
+    local_part = local_part.translate(str.maketrans("", "", transparent))
 
     return f"{local_part}@{domain}"
 

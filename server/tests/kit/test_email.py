@@ -42,6 +42,23 @@ class TestNormalizeEmail:
             "pietersmith@gmail.com"
         )
 
+    def test_strips_transparent_characters_for_proton(self) -> None:
+        assert (
+            normalize_email("pieter.smith_x-y@proton.me") == "pietersmithxy@proton.me"
+        )
+
+    def test_strips_transparent_characters_for_every_proton_domain(self) -> None:
+        for domain in ("proton.me", "protonmail.com", "protonmail.ch", "pm.me"):
+            assert normalize_email(f"pieter.smith@{domain}") == f"pietersmith@{domain}"
+
+    def test_keeps_proton_domains_distinct(self) -> None:
+        assert normalize_email("pieter@protonmail.com") != normalize_email(
+            "pieter@proton.me"
+        )
+
+    def test_keeps_hyphens_and_underscores_outside_proton(self) -> None:
+        assert normalize_email("pieter_s-x@gmail.com") == "pieter_s-x@gmail.com"
+
     def test_invalid_email_raises(self) -> None:
         with pytest.raises(EmailNotValidError):
             normalize_email("not-an-email")

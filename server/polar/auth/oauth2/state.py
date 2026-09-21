@@ -12,6 +12,7 @@ from sqlalchemy import delete, select
 
 from polar.config import settings
 from polar.kit.crypto import get_legacy_secret
+from polar.kit.utils import utc_now
 from polar.models import OAuth2State
 from polar.postgres import AsyncSession, get_db_session
 
@@ -57,6 +58,13 @@ class OAuth2StateService(OAuth2StateServiceBase):
 
     async def delete(self, oauth2_state: OAuth2StateDataclass) -> None:
         statement = delete(OAuth2State).where(OAuth2State.id == oauth2_state.id)
+        await self.session.execute(statement)
+        await self.session.flush()
+
+    async def delete_expired(self) -> None:
+        statement = delete(OAuth2State).where(
+            OAuth2State.expires_at < int(utc_now().timestamp())
+        )
         await self.session.execute(statement)
         await self.session.flush()
 

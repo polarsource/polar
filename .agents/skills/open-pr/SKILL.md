@@ -24,7 +24,25 @@ Fix, commit, push, rerun that step. Dispute only when the comment is factually w
   - Backend: `cd server && uv run task lint && uv run task lint_types && uv run task test_fast`
   - Frontend: `clients/AGENTS.md` (`pnpm lint`, `pnpm typecheck`, scoped tests)
 - PR body: no PII, stats, or org information. PRs are public.
-- Body from `.github/pull_request_template.md`. Mark Summary `(LLM generated)`. Title from the user or the diff.
+- Title from the user or the diff. Body:
+
+```
+# Summary
+
+👇 LLM generated
+
+<what this PR does>
+
+## What
+
+## Why
+
+## How
+
+## Checklist
+```
+
+Fill the headings from `.github/pull_request_template.md`.
 
 If lint or tests fail, stop. Do not review or open a PR.
 

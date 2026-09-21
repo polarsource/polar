@@ -3,7 +3,6 @@ from polar.kit.anonymization import (
     anonymize_address_for_deletion,
     anonymize_email_for_deletion,
     anonymize_for_deletion,
-    anonymize_metadata_for_deletion,
 )
 from polar.models import Customer
 from polar.postgres import AsyncSession
@@ -26,6 +25,10 @@ async def anonymize_customer_checkouts(
     `created_at`, so they match the ones written on the customer row. The
     exceptions are the two fields that cannot hold a hash and stay valid: the IP
     address is typed as an IP, and an address needs a real country.
+
+    `customer_metadata` is left alone. It is merged into the customer's
+    `user_metadata` on confirmation, which `customer.anonymize` retains, so
+    scrubbing it here would only make the two copies disagree.
 
     Lives outside `service.py` because `customer.service` imports this, and
     `checkout.service` imports back into that module's dependents.
@@ -61,7 +64,4 @@ async def anonymize_customer_checkouts(
             )
         if checkout.customer_ip_address is not None:
             checkout.customer_ip_address = ANONYMIZED_IP_ADDRESS
-        checkout.customer_metadata = anonymize_metadata_for_deletion(
-            checkout.customer_metadata, created_at
-        )
         session.add(checkout)

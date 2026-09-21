@@ -1849,9 +1849,8 @@ class TestAnonymize:
         # An IP can't hold a hash and stay valid, so it becomes the sentinel
         assert checkout.customer_ip_address == "0.0.0.0"
 
-        # Metadata keys are kept, values hashed
-        assert list(checkout.customer_metadata) == ["phone"]
-        assert checkout.customer_metadata["phone"] != "+3312345678"
+        # Metadata is retained, matching the customer's own user_metadata
+        assert checkout.customer_metadata == {"phone": "+3312345678"}
 
         # The link to the customer is kept: only the PII copy is scrubbed
         assert checkout.customer_id == customer.id

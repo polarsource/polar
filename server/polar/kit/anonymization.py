@@ -1,6 +1,5 @@
 import hashlib
 from datetime import datetime
-from typing import Any
 
 from polar.kit.address import Address
 
@@ -39,16 +38,6 @@ def anonymize_address_for_deletion(address: Address, created_at: datetime) -> Ad
         state=address.state,
         country=address.country,
     )
-
-
-def anonymize_metadata_for_deletion(
-    metadata: dict[str, Any], created_at: datetime
-) -> dict[str, Any]:
-    """Hash metadata values, keeping the keys the merchant set."""
-    return {
-        key: anonymize_for_deletion(str(value), created_at)
-        for key, value in metadata.items()
-    }
 
 
 def _anonymize_optional(value: str | None, created_at: datetime) -> str | None:

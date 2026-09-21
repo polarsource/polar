@@ -9,7 +9,6 @@ from polar.kit.anonymization import (
     anonymize_address_for_deletion,
     anonymize_email_for_deletion,
     anonymize_for_deletion,
-    anonymize_metadata_for_deletion,
 )
 
 
@@ -95,20 +94,6 @@ class TestAnonymizeAddressForDeletion:
         assert result.city is None
         assert result.postal_code is None
         assert result.state is None
-
-
-class TestAnonymizeMetadataForDeletion:
-    def test_keeps_keys_and_hashes_values(self) -> None:
-        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
-
-        result = anonymize_metadata_for_deletion(
-            {"phone": "+3312345678", "seats": 3}, created_at
-        )
-
-        assert result == {
-            "phone": anonymize_for_deletion("+3312345678", created_at),
-            "seats": anonymize_for_deletion("3", created_at),
-        }
 
 
 class TestAnonymizedIPAddress:

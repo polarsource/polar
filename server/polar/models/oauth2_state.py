@@ -19,7 +19,7 @@ class OAuth2State(RecordModel):
     nonce: Mapped[str | None] = mapped_column(String(), nullable=True)
     redirect_uri: Mapped[str] = mapped_column(String(), nullable=False)
     scope: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
-    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     context: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
 
     identity_id: Mapped[UUID | None] = mapped_column(

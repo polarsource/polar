@@ -1523,7 +1523,14 @@ class MerchantMigrationService:
             existing_product_names = await ProductRepository.from_session(
                 session
             ).get_active_names_by_organization(migration.organization_id)
-        existing_customers = await self._existing_polar_customers(session, migration)
+        existing_customers: dict[str, tuple[UUID, str | None]] = {}
+        if (
+            PrecheckEntity.subscriptions in entities
+            or PrecheckEntity.customers in entities
+        ):
+            existing_customers = await self._existing_polar_customers(
+                session, migration
+            )
 
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:

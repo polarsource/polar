@@ -413,7 +413,6 @@ class CatalogImporter:
                     skip=Reason(
                         "customer_stripe_id_conflict",
                         CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-                        polar_customer_id=existing.id,
                     )
                 )
             # Reconcile the source id so the PAN-copied card lands on the same

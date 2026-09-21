@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { type ReviewRow } from './reviewRows'
 import { reviewStatus } from './reviewStatus'
+import type { ReviewRow } from './reviewRows'
 
 const baseRow = {
   record_id: 'rec_1',

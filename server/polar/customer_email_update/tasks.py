@@ -5,7 +5,7 @@ from .service import customer_email_update as customer_email_update_service
 
 @actor(
     actor_name="customer_email_update.delete_expired",
-    cron_trigger=CronTrigger.from_crontab("30 4 * * *"),
+    cron_trigger=CronTrigger(hour=4, minute=30),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

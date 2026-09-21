@@ -5,7 +5,7 @@ from .service.oauth2_token import oauth2_token as oauth2_token_service
 
 @actor(
     actor_name="oauth2_token.delete_expired",
-    cron_trigger=CronTrigger.from_crontab("26 4 * * *"),
+    cron_trigger=CronTrigger(hour=4, minute=26),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

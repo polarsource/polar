@@ -10,16 +10,18 @@ registered as a job and enqueued on its schedule:
 ```python
 @actor(
     actor_name="external_event.prune",
-    cron_trigger=CronTrigger.from_crontab("38 4 * * *"),
+    cron_trigger=CronTrigger(hour=4, minute=38),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
 async def external_event_prune() -> None: ...
 ```
 
-Read every time on this page as UTC. APScheduler resolves a `CronTrigger` against the process
-timezone and we pin it nowhere, so "UTC" holds because the worker container has no `TZ` set,
-not because the scheduler enforces it. Locally, the same triggers fire in your own timezone.
+Every time on this page is UTC, and enforced as such. APScheduler resolves an unspecified
+trigger timezone to the machine's local one, so `polar.worker` exports a `CronTrigger` that
+defaults to UTC and the scheduler itself is constructed with `timezone=datetime.UTC`. Import
+`CronTrigger` from `polar.worker`, never from `apscheduler` — that is what makes the guarantee
+hold rather than relying on the container having no `TZ` set.
 
 This page is the registry of those jobs. It is the source of truth for "what runs when", so a
 PR that adds, moves or removes a scheduled job updates the table in the same PR.
@@ -31,8 +33,8 @@ slot, four minutes apart — see
 [ADR-0013](/engineering/decisions/0013-daily-maintenance-window).
 
 **Adding a daily job:** take the free slot below, declare it as
-`CronTrigger.from_crontab("<minute> 4 * * *")`, and add its row here. Two daily jobs never
-share a minute.
+`CronTrigger(hour=4, minute=<minute>)`, and add its row here. Two daily jobs never share a
+minute.
 
 | Slot (UTC) | Actor | Module | What it does |
 |---|---|---|---|

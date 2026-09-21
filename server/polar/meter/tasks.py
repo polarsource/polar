@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
@@ -11,7 +10,13 @@ from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Event, Meter, MeterEvent
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    enqueue_job,
+)
 
 
 class MeterTaskError(PolarTaskError): ...

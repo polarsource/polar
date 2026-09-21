@@ -25,8 +25,8 @@ not by a wide margin, but consistently the trough.
 ## Decision
 
 Daily scheduled tasks run in a **maintenance window between 04:00 and 05:00 UTC**, staggered
-one job per slot, four minutes apart. Declare them with
-`CronTrigger.from_crontab("<minute> 4 * * *")`.
+one job per slot, four minutes apart. Declare them with `CronTrigger(hour=4, minute=<minute>)`,
+imported from `polar.worker`.
 
 When you add a daily task, take the next free slot, and add a row for it to
 [Scheduled jobs](/engineering/backend-development/scheduled-jobs). No two daily jobs share a
@@ -56,6 +56,10 @@ running them frequently.
   liveness check, not a slot.
 - A slot is a start time, not an exclusive lease: a long job can overlap the next one. That is
   fine for the pruning work we run today.
+- "UTC" is enforced rather than assumed. APScheduler resolves an unspecified trigger timezone to
+  the machine's, so `polar.worker` exports a `CronTrigger` subclass defaulting to UTC and the
+  scheduler is built with `timezone=datetime.UTC`. A task importing `CronTrigger` straight from
+  `apscheduler` opts back out of that, which is why declarations go through `polar.worker`.
 
 ## Alternatives considered
 

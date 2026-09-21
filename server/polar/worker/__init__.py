@@ -4,7 +4,6 @@ from collections.abc import Awaitable, Callable
 from typing import Any, ParamSpec
 
 import dramatiq
-from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
 from dramatiq import middleware
 
@@ -14,6 +13,7 @@ from polar.config import settings
 from polar.observability import metrics as _prometheus_metrics
 
 from ._broker import get_broker
+from ._cron import CronTrigger
 from ._encoder import JSONEncoder
 from ._enqueue import (
     BulkJobDelayCalculator,

@@ -23,6 +23,7 @@ jobs:
       server: ${{ steps.filter.outputs.server }}
       emails: ${{ steps.filter.outputs.emails }}
       migrations: ${{ steps.filter.outputs.migrations }}
+      migration_heads: ${{ steps.filter.outputs.migration_heads }}
       tinybird: ${{ steps.filter.outputs.tinybird }}
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
@@ -40,6 +41,9 @@ jobs:
               - '.github/workflows/test_server.yaml'
             migrations:
               - 'server/migrations/versions/**'
+            migration_heads:
+              - 'server/migrations/versions/**'
+              - 'server/scripts/check_migrations.py'
             tinybird:
               - 'server/tinybird/**'
 
@@ -228,6 +232,41 @@ jobs:
       - name: Fail check
         if: steps.check.outputs.has_disallowed == 'true'
         run: exit 1
+
+  migration-heads:
+    name: "Server: Migration heads"
+    needs: changes
+    if: >-
+      needs.changes.outputs.migration_heads == 'true' &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Fetch base commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: git fetch --depth=1 origin "$BASE_SHA"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --frozen --no-dev
+
+      - name: Check Alembic heads and migration filenames
+        working-directory: ./server
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
     name: "Server: Tests 🐍 (${{ matrix.shard }}/4)"

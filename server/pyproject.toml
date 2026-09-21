@@ -124,6 +124,7 @@ lint_types = { cmd = "mypy --num-workers 2 polar scripts tests", help = "run myp
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
+check_migrations = { cmd = "python -m scripts.check_migrations", help = "check new migrations have a single head and a later filename" }
 tb_deploy = { cmd = "python -m scripts.tinybird", help = "deploy tinybird datasources" }
 preview = { cmd = "python -m scripts.preview", help = "manage preview environments" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }

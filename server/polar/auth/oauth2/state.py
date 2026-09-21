@@ -11,6 +11,7 @@ from reauth.factors.oauth2.state import (
 from sqlalchemy import delete, select
 
 from polar.config import settings
+from polar.kit.crypto import get_legacy_secret
 from polar.models import OAuth2State
 from polar.postgres import AsyncSession, get_db_session
 
@@ -21,7 +22,7 @@ class OAuth2StateService(OAuth2StateServiceBase):
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         super().__init__(
-            hash_secret=settings.SECRET,
+            hash_secret=get_legacy_secret(),
             token_prefix=TOKEN_PREFIX,
             lifetime=settings.OAUTH2_SESSION_STATE_TTL,
         )

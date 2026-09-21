@@ -12,6 +12,7 @@ from polar.auth.scope import Scope
 from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.hash_secrets import HashSecrets
 from polar.kit.utils import utc_now
 from polar.models import AuthenticationSession, EmailOTP, User, UserSession
 from polar.postgres import AsyncSession
@@ -160,7 +161,10 @@ class TestUserSessionRepositoryGetByToken:
         CURRENT_HASH_SECRET_ID stays unset. Reading the setting here would
         rewrite every hit to the bare legacy digest."""
         secrets = {"k1": "retired", "k2": "current"}
-        mocker.patch("polar.kit.crypto.get_hash_secrets", return_value=(secrets, "k1"))
+        mocker.patch(
+            "polar.kit.crypto.get_hash_secrets",
+            return_value=HashSecrets(secrets, "k1", "legacy"),
+        )
         token = generate_token(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=get_token_hash(token),
@@ -171,7 +175,10 @@ class TestUserSessionRepositoryGetByToken:
         )
         await save_fixture(user_session)
 
-        mocker.patch("polar.kit.crypto.get_hash_secrets", return_value=(secrets, "k2"))
+        mocker.patch(
+            "polar.kit.crypto.get_hash_secrets",
+            return_value=HashSecrets(secrets, "k2", "legacy"),
+        )
         repository = UserSessionRepository.from_session(session)
         found = await repository.get_by_token(token)
 

@@ -45,7 +45,7 @@ def test_reads_the_settings_without_an_arn(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(settings, "HASH_SECRETS", {"k1": "local"})
     monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "k1")
 
-    assert get_hash_secrets() == ({"k1": "local"}, "k1")
+    assert get_hash_secrets() == ({"k1": "local"}, "k1", settings.SECRET)
 
 
 def test_builds_the_set_from_the_versions(
@@ -55,15 +55,16 @@ def test_builds_the_set_from_the_versions(
     stub_client(
         mocker,
         [
-            {"VersionId": "v1", "VersionStages": ["k1", "AWSPREVIOUS"]},
+            {"VersionId": "v1", "VersionStages": ["k1", "LEGACY", "AWSPREVIOUS"]},
             {"VersionId": "v2", "VersionStages": ["k2", "AWSCURRENT"]},
         ],
     )
 
-    secrets, current = get_hash_secrets()
+    hash_secrets = get_hash_secrets()
 
-    assert secrets == {"k1": "secret-for-v1", "k2": "secret-for-v2"}
-    assert current == "k2"
+    assert hash_secrets.secrets == {"k1": "secret-for-v1", "k2": "secret-for-v2"}
+    assert hash_secrets.current_id == "k2"
+    assert hash_secrets.legacy == "secret-for-v1"
 
 
 def test_fetches_once_per_process(
@@ -71,7 +72,8 @@ def test_fetches_once_per_process(
 ) -> None:
     monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
     client = stub_client(
-        mocker, [{"VersionId": "v1", "VersionStages": ["k1", "AWSCURRENT"]}]
+        mocker,
+        [{"VersionId": "v1", "VersionStages": ["k1", "LEGACY", "AWSCURRENT"]}],
     )
 
     get_hash_secrets()
@@ -84,7 +86,9 @@ def test_rejects_a_version_without_an_id(
     mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
-    stub_client(mocker, [{"VersionId": "v1", "VersionStages": ["AWSCURRENT"]}])
+    stub_client(
+        mocker, [{"VersionId": "v1", "VersionStages": ["LEGACY", "AWSCURRENT"]}]
+    )
 
     with pytest.raises(HashSecretsError, match="custom staging labels"):
         get_hash_secrets()
@@ -94,7 +98,19 @@ def test_rejects_a_secret_with_no_current_version(
     mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
-    stub_client(mocker, [{"VersionId": "v1", "VersionStages": ["k1", "AWSPREVIOUS"]}])
+    stub_client(
+        mocker, [{"VersionId": "v1", "VersionStages": ["k1", "LEGACY", "AWSPREVIOUS"]}]
+    )
 
     with pytest.raises(HashSecretsError, match="AWSCURRENT"):
         get_hash_secrets()
+
+
+def test_falls_back_to_the_settings_secret_without_a_legacy_version(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    monkeypatch.setattr(settings, "SECRET", "from-the-environment")
+    stub_client(mocker, [{"VersionId": "v1", "VersionStages": ["k1", "AWSCURRENT"]}])
+
+    assert get_hash_secrets().legacy == "from-the-environment"

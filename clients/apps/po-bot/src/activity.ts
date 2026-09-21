@@ -1,5 +1,5 @@
 import type { Wire } from '@void/sdk'
-import type { LogEvent } from './live'
+import type { LogEvent } from './channels'
 
 /** The label vocabulary Polar asks Jev to pick from. */
 export const TAXONOMY = 'polar.agent/v1'

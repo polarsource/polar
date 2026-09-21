@@ -1,16 +1,16 @@
 'use client'
 
-import type { Member } from '@/db/schema'
+import { useMembers } from '@/hooks/queries'
+import { Avatar } from '@polar-sh/orbit/Avatar'
 import {
-  Avatar,
   Select,
   SelectContent,
   SelectItem,
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-  Text,
-} from '@polar-sh/orbit'
+} from '@polar-sh/orbit/Select'
+import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
 import { Building2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -22,14 +22,9 @@ const ORGANIZATION = '__organization'
  * with an avatar that opens the list. The organization overview is the last
  * entry, so the sidebar needs no separate back button.
  */
-export const MemberSwitcher = ({
-  members,
-  current,
-}: {
-  members: readonly Member[]
-  current: string
-}) => {
+export const MemberSwitcher = ({ current }: { current: string }) => {
   const router = useRouter()
+  const members = useMembers()
   const me = members.find((member) => member.id === current)
   return (
     <Select

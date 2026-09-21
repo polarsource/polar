@@ -23,7 +23,10 @@ CLIENT_IDS: dict[Environment, str] = {
 }
 
 REDIRECT_URI = "http://127.0.0.1:3334/oauth/callback"
-SCOPES = "openid profile organizations:read void:read void:write"
+SCOPES = (
+    "openid profile organizations:read void:read void:write "
+    "customers:read customers:write"
+)
 
 
 def client_metadata() -> dict[str, object]:

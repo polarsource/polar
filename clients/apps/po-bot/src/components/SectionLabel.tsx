@@ -1,4 +1,4 @@
-import { Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
 
 /** A muted heading over a section of a pane, with an optional right-hand note. */

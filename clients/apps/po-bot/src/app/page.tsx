@@ -1,24 +1,35 @@
-import { createMember } from '@/actions'
+'use client'
+
+import { CreditBar } from '@/components/CreditBar'
 import { Surface } from '@/components/Card'
 import { PoBotLogo } from '@/components/PoBotLogo'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { CreditBar } from '@/components/CreditBar'
-import { db } from '@/db'
-import { members } from '@/db/schema'
-import { ORG, credits } from '@/void'
-import { Avatar, Button, Grid, Input, Text } from '@polar-sh/orbit'
+import { LiveStream, useTree } from '@/hooks/live'
+import { useCreateMember, useMembers } from '@/hooks/queries'
+import { Avatar } from '@polar-sh/orbit/Avatar'
 import { Box } from '@polar-sh/orbit/Box'
+import { Button } from '@polar-sh/orbit/Button'
+import { Grid } from '@polar-sh/orbit/Grid'
+import { Input } from '@polar-sh/orbit/Input'
+import { Text } from '@polar-sh/orbit/Text'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
-
 /** Pick who you are. The org's pool is shared; each member has their own cap on it. */
-export default async function Home() {
-  const rows = await db.select().from(members)
-  const [org, ...each] = await Promise.all([
-    credits(ORG),
-    ...rows.map((member) => credits(member.id)),
-  ])
+export default function Home() {
+  const rows = useMembers()
+  const tree = useTree()
+  const createMember = useCreateMember()
+  const org = tree.org.standing
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = event.currentTarget
+    const data = new FormData(form)
+    const name = String(data.get('name') ?? '').trim()
+    const cap = Number(data.get('cap'))
+    if (!name || !(cap > 0)) return
+    createMember.mutate({ name, cap }, { onSuccess: () => form.reset() })
+  }
 
   return (
     <Box
@@ -31,6 +42,7 @@ export default async function Home() {
       paddingHorizontal="xl"
       paddingVertical="4xl"
     >
+      <LiveStream />
       <Box as="header" alignItems="center" justifyContent="between">
         <PoBotLogo />
         <ThemeToggle />
@@ -44,7 +56,9 @@ export default async function Home() {
           One organization on the Po Bot Team plan. Every member and every agent
           spends from this pool.
         </Text>
-        <CreditBar credits={org} limit={org.credits} />
+        {org.credits > 0 ? (
+          <CreditBar credits={org} limit={org.credits} />
+        ) : null}
       </Box>
 
       <Box as="section" flexDirection="column" rowGap="m">
@@ -55,11 +69,11 @@ export default async function Home() {
           <Text color="muted">No members yet. Add the first one below.</Text>
         )}
         <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap="m">
-          {rows.map((member, i) => (
+          {rows.map((member) => (
             <Link
               key={member.id}
               href={`/members/${member.id}`}
-              style={{ display: 'contents' }}
+              style={{ color: 'inherit', textDecoration: 'none' }}
             >
               <Surface
                 flexDirection="column"
@@ -80,7 +94,7 @@ export default async function Home() {
                     {member.name}
                   </Text>
                 </Box>
-                <CreditBar credits={each[i]} limit={member.cap} />
+                <CreditBar credits={member.standing} limit={member.cap} />
               </Surface>
             </Link>
           ))}
@@ -91,7 +105,7 @@ export default async function Home() {
         <Text variant="label" color="muted" as="h2">
           Add member
         </Text>
-        <Box as="form" action={createMember} alignItems="end" columnGap="s">
+        <Box as="form" onSubmit={onSubmit} alignItems="end" columnGap="s">
           <Box
             as="label"
             display="flex"
@@ -122,7 +136,9 @@ export default async function Home() {
               required
             />
           </Box>
-          <Button type="submit">Add member</Button>
+          <Button type="submit" loading={createMember.isPending}>
+            Add member
+          </Button>
         </Box>
       </Box>
     </Box>

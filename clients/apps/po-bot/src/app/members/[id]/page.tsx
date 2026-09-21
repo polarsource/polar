@@ -1,5 +1,5 @@
 import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit/Text'
 
 export default function MemberPage() {
   return (

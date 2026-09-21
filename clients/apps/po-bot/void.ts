@@ -1,11 +1,4 @@
-import {
-  included,
-  product,
-  recent,
-  recurring,
-  signal,
-  usd,
-} from '@void/sdk'
+import { included, product, recent, recurring, signal, usd } from '@void/sdk'
 import { defineConfig } from '@void/sdk/config'
 import {
   inCredits,
@@ -14,14 +7,10 @@ import {
   perThousand,
   vercelGateway,
 } from '@void/sdk/plugins'
+import { MODELS } from './src/constants'
 import { events } from './src/db/events'
 
-export const MODELS = [
-  'anthropic/claude-sonnet-5',
-  'anthropic/claude-haiku-4-5',
-  'openai/gpt-5',
-  'openai/gpt-5-mini',
-] as const
+export { MODELS }
 
 export const CHEAPER: Record<string, string> = {
   'anthropic/claude-sonnet-5': 'anthropic/claude-haiku-4-5',

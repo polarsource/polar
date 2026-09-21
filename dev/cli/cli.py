@@ -161,7 +161,7 @@ def _track_up_step(step: str, started_at: float, success: bool, clean: bool) -> 
 @app.command()
 def up(
     void: Annotated[
-        bool, typer.Option("--void", help="Also configure local Void services and seed data")
+        bool, typer.Option("--void", help="Also configure local Void services")
     ] = False,
     clean: Annotated[
         bool, typer.Option("--clean", help="Force re-run all steps")

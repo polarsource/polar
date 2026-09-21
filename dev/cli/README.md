@@ -32,7 +32,7 @@ To disable analytics, set either environment variable:
 
 ```bash
 dev up                  # Full setup: install deps, start infra, run migrations
-dev up --void           # Also configure Void infrastructure, resources, and seed data
+dev up --void           # Also configure Void infrastructure and write .env.void
 dev up --clean          # Clean setup (re-runs all steps)
 dev down                # Stop all infrastructure
 dev down --volumes      # Stop and remove all data
@@ -66,9 +66,17 @@ dev seed
 dev start
 ```
 
+`dev up --void` starts Tinybird and Temporal and writes `server/.env.void`. It
+does not seed. `dev seed` creates `void-development` and `po-bot` on
+`void@polar.sh`. Fill the demo dataset afterwards:
+
+```bash
+cd server && uv run task void_seed_demo
+```
+
 Sign in at http://127.0.0.1:3000 with `void@polar.sh`. Get the login code from
-the API pane. Select `void-development`, which has Void enabled and carries a demo
-dataset: four configuration versions (v3 active, v4 a promoted draft), twelve
+the API pane. Select `void-development`, which has Void enabled and, after the
+demo seed, four configuration versions (v3 active, v4 a promoted draft), twelve
 customers with agent and service identities, subscriptions on three plans, thirty
 days of usage events and three pricing scenarios. `dev void` must be running for
 the usage to reach Tinybird and the meters. Rebuild the dataset from scratch with:
@@ -77,8 +85,8 @@ the usage to reach Tinybird and the meters. Rebuild the dataset from scratch wit
 cd server && uv run task void_seed_demo -- --reset
 ```
 
-`po-bot@polar.sh` owns a second Void-enabled organization, `po-bot`, left empty
-for the Po Bot sample app.
+The same account also owns `po-bot`, a second Void-enabled organization left
+empty for the Po Bot sample app.
 
 The dashboard's Void pages default to frontend fixtures; switch to live data from
 the last item of the version dropdown.
@@ -91,7 +99,7 @@ source ../server/.env.void
 pnpm --filter @void/sdk void login
 ```
 
-Rerun `dev up --void` and source the file again when the token expires after 24 hours.
+Refresh the 24-hour SDK token with `cd server && uv run task void_seed --output .env.void`, then source the file again.
 
 | Service | Port |
 | --- | --- |

@@ -1,39 +1,29 @@
+'use client'
+
 import { AgentList } from '@/components/AgentList'
 import { Divider, Surface } from '@/components/Card'
 import { CreditBar } from '@/components/CreditBar'
 import { EventLog } from '@/components/EventLog'
 import { Hierarchy } from '@/components/Hierarchy'
-import { LiveProvider } from '@/components/Live'
 import { MemberSwitcher } from '@/components/MemberSwitcher'
 import { NewAgentForm } from '@/components/NewAgentForm'
 import { PoBotLogo } from '@/components/PoBotLogo'
-import { SectionLabel } from '@/components/SectionLabel'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Workspace } from '@/components/Workspace'
-import { db } from '@/db'
-import { agents, members } from '@/db/schema'
-import { frame } from '@/live'
+import { LiveStream, useMemberNode, useTreeLoaded } from '@/hooks/live'
 import { Box } from '@polar-sh/orbit/Box'
-import { eq } from 'drizzle-orm'
-import { notFound } from 'next/navigation'
+import { notFound, useParams } from 'next/navigation'
+import type { ReactNode } from 'react'
 
-export const dynamic = 'force-dynamic'
-
-export default async function MemberLayout({
-  children,
-  params,
-}: LayoutProps<'/members/[id]'>) {
-  const { id } = await params
-  const [member] = await db.select().from(members).where(eq(members.id, id))
-  if (!member) notFound()
-  const [all, owned, initial] = await Promise.all([
-    db.select().from(members),
-    db.select().from(agents).where(eq(agents.memberId, id)),
-    frame(),
-  ])
+export default function MemberLayout({ children }: { children: ReactNode }) {
+  const { id } = useParams<{ id: string }>()
+  const member = useMemberNode(id)
+  const loaded = useTreeLoaded()
+  if (loaded && !member.name) notFound()
 
   return (
-    <LiveProvider memberId={id} initial={initial}>
+    <>
+      <LiveStream />
       <Workspace
         sidebar={
           <>
@@ -46,19 +36,12 @@ export default async function MemberLayout({
               <PoBotLogo />
               <ThemeToggle />
             </Box>
-            <Surface flexDirection="column" rowGap="s" padding="xs">
-              <MemberSwitcher members={all} current={id} />
-              <Box paddingHorizontal="xs" paddingBottom="xs" width="100%">
-                <CreditBar limit={member.cap} />
-              </Box>
+            <Surface flexDirection="column" rowGap="s" padding="s">
+              <MemberSwitcher current={id} />
+              <CreditBar limit={member.cap} />
             </Surface>
             <Divider />
-            <Box flexDirection="column" rowGap="xs" minHeight={72} flex={1}>
-              <SectionLabel>Agents</SectionLabel>
-              <Box minHeight={0} flex={1} overflowY="auto">
-                <AgentList agents={owned} />
-              </Box>
-            </Box>
+            <AgentList />
             <NewAgentForm memberId={id} />
           </>
         }
@@ -66,6 +49,6 @@ export default async function MemberLayout({
         panel={<EventLog />}
         bottom={<Hierarchy />}
       />
-    </LiveProvider>
+    </>
   )
 }

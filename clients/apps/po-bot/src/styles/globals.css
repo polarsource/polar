@@ -367,6 +367,22 @@
   opacity: 0;
   animation: flash 0.6s ease-out forwards;
 }
+/* An agent with a model call in flight breathes until its completion lands. */
+.node-busy {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 35%, transparent);
+  }
+}
+.meter-fill {
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 @keyframes flash {
   0% {
     opacity: 1;

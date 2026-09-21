@@ -16,6 +16,8 @@ const SCOPES = [
   'organizations:read',
   'void:read',
   'void:write',
+  'customers:read',
+  'customers:write',
 ]
 
 export const CLIENT_IDS = {

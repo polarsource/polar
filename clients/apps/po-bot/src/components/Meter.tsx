@@ -2,7 +2,7 @@ import { Box } from '@polar-sh/orbit/Box'
 
 /**
  * A thin bar for usage against a limit. Turns red once nothing is left,
- * which is when the gate starts denying calls.
+ * which is when the gate starts denying calls. Only the width animates.
  */
 export const Meter = ({
   share,
@@ -21,12 +21,11 @@ export const Meter = ({
     overflow="hidden"
   >
     <Box
+      className="meter-fill"
       height="100%"
       width={`${share}%`}
       borderRadius="full"
       backgroundColor="background-inverse"
-      transitionProperty="all"
-      transitionDuration="slow"
       style={spent ? { backgroundColor: 'var(--destructive)' } : undefined}
     />
   </Box>

@@ -742,3 +742,42 @@ export const balanceLocally = Effect.fn('Scope.balanceLocally')(function* (
     catch: storageError,
   })
 })
+
+/**
+ * Balances for several identities of one tree from a single snapshot: the
+ * scope's own reconciliation load, then one fold per requested identity.
+ * Identities outside the scope's tree are left out of the result.
+ */
+export const balancesLocally = Effect.fn('Scope.balancesLocally')(function* (
+  config: Config,
+  ref: MeterDef,
+  id: string,
+  ids: readonly string[],
+) {
+  const { snapshot, events, now, storageError, effectiveConfig } =
+    yield* loadReconciliation(config, ref, id)
+  const known = new Set(snapshot.identities.map((i) => i.external_id))
+  return yield* Effect.try({
+    try: () =>
+      new Map(
+        ids
+          .filter((each) => known.has(each))
+          .map(
+            (each) =>
+              [
+                each,
+                reconcile(
+                  effectiveConfig,
+                  ref,
+                  snapshot,
+                  each,
+                  events,
+                  now,
+                  'balance',
+                ),
+              ] as const,
+          ),
+      ),
+    catch: storageError,
+  })
+})

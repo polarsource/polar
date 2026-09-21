@@ -82,11 +82,13 @@ class TestDevelopmentSeed:
             == 1
         )
 
-    async def test_seed_all_adds_po_bot_operator(
+    async def test_seed_all_adds_operator_to_both_organizations(
         self,
         session: AsyncSession,
     ) -> None:
         assert await development_service.seed_all(session)
+        user = await session.scalar(select(User).where(User.email == OPERATOR_EMAIL))
+        assert user is not None
         for target in SEEDED_ORGANIZATIONS:
             organization = await session.get(Organization, target.id)
             assert organization is not None
@@ -94,10 +96,6 @@ class TestDevelopmentSeed:
             assert organization.account_id == target.account_id
             assert organization.is_void_enabled
             assert target.id.version == target.account_id.version == 4
-            user = await session.scalar(
-                select(User).where(User.email == target.operator_email)
-            )
-            assert user is not None
             membership = await session.scalar(
                 select(UserOrganization).where(
                     UserOrganization.user_id == user.id,
@@ -106,6 +104,7 @@ class TestDevelopmentSeed:
             )
             assert membership is not None
             assert membership.role == OrganizationRole.admin
+        assert await session.scalar(select(func.count()).select_from(User)) == 1
         assert not await development_service.seed_all(session)
         assert (
             await session.scalar(
@@ -179,6 +178,7 @@ class TestDevelopmentSeed:
         assert client.token_endpoint_auth_method == "none"
         assert client.default_sub_type.value == "organization"
         assert "void:write" in client.client_metadata["scope"]
+        assert "customers:write" in client.client_metadata["scope"]
         again, created = await ensure_client(session)
         assert again.id == client.id
         assert created is False
@@ -253,15 +253,32 @@ class TestCredentialFile:
         output.chmod(0o644)
         write_environment(output, "new'secret$", "http://127.0.0.1:9001")
         assert S_IMODE(output.stat().st_mode) == 0o600
-        values = dict(
+        assert dict(
             shlex.split(line)[1].split("=", 1)
             for line in output.read_text().splitlines()
-        )
-        assert values == {
+        ) == {
             "VOID_TOKEN": "new'secret$",
             "VOID_API_URL": "http://127.0.0.1:9001",
         }
         assert list(output.parent.iterdir()) == [output]
+
+    def test_preserves_existing_environment_keys(self, tmp_path: Path) -> None:
+        output = tmp_path / ".env.void"
+        output.write_text(
+            "export VOID_TOKEN='stale'\n"
+            "export POLAR_VOID_TINYBIRD_API_TOKEN='tinybird-token'\n"
+            "export POLAR_VOID_TEMPORAL_ADDRESS='localhost:7233'\n"
+        )
+        write_environment(output, "new'secret$", "http://127.0.0.1:9001")
+        assert dict(
+            shlex.split(line)[1].split("=", 1)
+            for line in output.read_text().splitlines()
+        ) == {
+            "VOID_TOKEN": "new'secret$",
+            "POLAR_VOID_TINYBIRD_API_TOKEN": "tinybird-token",
+            "POLAR_VOID_TEMPORAL_ADDRESS": "localhost:7233",
+            "VOID_API_URL": "http://127.0.0.1:9001",
+        }
 
     def test_api_url_is_an_origin(self) -> None:
         assert api_origin("http://localhost:8000/") == "http://localhost:8000"

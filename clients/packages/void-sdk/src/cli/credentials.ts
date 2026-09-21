@@ -197,36 +197,50 @@ export const apiFrom = (credentials: Credentials) =>
     organizationId: credentials.organizationId,
   })
 
+const present = (value: string | undefined) => {
+  const trimmed = value?.trim()
+  return trimmed === undefined || trimmed === '' ? undefined : trimmed
+}
+
 export const resolveCredentials = Effect.fn('cli.resolveCredentials')(
   function* (
     apiUrl: string | undefined,
     token: Redacted.Redacted<string> | undefined,
     profile?: string,
   ): Effect.fn.Return<Credentials, CredentialsError> {
-    if (token !== undefined && Redacted.value(token).trim() === '')
-      return yield* new CredentialsError({
-        message: 'An organization access token is required.',
-      })
-    if (profile !== undefined && (apiUrl !== undefined || token !== undefined))
+    const providedUrl = present(apiUrl)
+    const providedToken =
+      token !== undefined && present(Redacted.value(token)) !== undefined
+        ? token
+        : undefined
+    if (
+      profile !== undefined &&
+      (providedUrl !== undefined || providedToken !== undefined)
+    )
       return yield* new CredentialsError({
         message:
           '--profile cannot be combined with --api-url, --token, VOID_API_URL or VOID_TOKEN. Unset credential overrides to use a saved profile.',
       })
-    if (apiUrl !== undefined && token !== undefined)
-      return { apiUrl: yield* normalizeApiUrl(apiUrl), token }
+    if (providedUrl !== undefined && providedToken !== undefined)
+      return {
+        apiUrl: yield* normalizeApiUrl(providedUrl),
+        token: providedToken,
+      }
     const saved = yield* readLogin(profile)
     const target =
-      apiUrl === undefined ? saved?.apiUrl : yield* normalizeApiUrl(apiUrl)
+      providedUrl === undefined
+        ? saved?.apiUrl
+        : yield* normalizeApiUrl(providedUrl)
     if (target === undefined)
       return yield* new CredentialsError({
         message:
           'No server URL. Run void login, void switch, or set VOID_API_URL.',
       })
     const selectedToken =
-      token ?? (saved?.apiUrl === target ? saved.token : undefined)
+      providedToken ?? (saved?.apiUrl === target ? saved.token : undefined)
     if (
       selectedToken === undefined ||
-      Redacted.value(selectedToken).trim() === ''
+      present(Redacted.value(selectedToken)) === undefined
     )
       return yield* new CredentialsError({
         message: 'No token for this server. Run void login or set VOID_TOKEN.',
@@ -234,7 +248,7 @@ export const resolveCredentials = Effect.fn('cli.resolveCredentials')(
     let credentials: Credentials = {
       apiUrl: target,
       token: selectedToken,
-      ...(token === undefined && saved
+      ...(providedToken === undefined && saved
         ? {
             profile: saved.profile,
             organizationId: saved.organizationId,
@@ -244,7 +258,7 @@ export const resolveCredentials = Effect.fn('cli.resolveCredentials')(
         : {}),
     }
     if (
-      token === undefined &&
+      providedToken === undefined &&
       credentials.refreshToken &&
       credentials.expiresAt !== undefined &&
       credentials.expiresAt <= Date.now() + 30_000
@@ -271,3 +285,25 @@ export const resolveCredentials = Effect.fn('cli.resolveCredentials')(
     return credentials
   },
 )
+
+/**
+ * Env credentials when VOID_TOKEN is set, otherwise the active `void login`
+ * profile. Empty VOID_* values are unset. VOID_API_URL alone does not hide a
+ * saved login, so a copied `.env` can keep a server URL for CI without
+ * overriding `void login`.
+ */
+export const voidOptionsFromLogin = () => {
+  const token = present(process.env.VOID_TOKEN)
+  return Effect.runPromise(
+    resolveCredentials(
+      token === undefined ? undefined : present(process.env.VOID_API_URL),
+      token === undefined ? undefined : Redacted.make(token),
+    ).pipe(
+      Effect.map((credentials) => ({
+        apiUrl: credentials.apiUrl,
+        token: Redacted.value(credentials.token),
+        organizationId: credentials.organizationId,
+      })),
+    ),
+  )
+}

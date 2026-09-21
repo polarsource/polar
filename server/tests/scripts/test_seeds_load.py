@@ -49,7 +49,7 @@ from polar.models import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.redis import Redis
-from polar.void.development.service import SEEDED_ORGANIZATIONS, SEEDED_SLUGS
+from polar.void.development.service import OPERATOR_EMAIL, SEEDED_SLUGS
 from scripts.seed_polar_for_polar import BENEFITS as POLAR_SELF_BENEFITS
 from scripts.seed_polar_for_polar import PRODUCTS as POLAR_SELF_PRODUCTS
 from scripts.seeds_load import (
@@ -84,9 +84,6 @@ class TestSeedsLoad:
     ) -> None:
         assert await seed_void_organization(session)
         assert not await seed_void_organization(session)
-        operators = {
-            target.slug: target.operator_email for target in SEEDED_ORGANIZATIONS
-        }
         organizations = (
             (
                 await session.execute(
@@ -110,7 +107,7 @@ class TestSeedsLoad:
                 await session.scalar(
                     select(User.email).where(User.id == membership.user_id)
                 )
-                == operators[organization.slug]
+                == OPERATOR_EMAIL
             )
             for model in (
                 Customer,

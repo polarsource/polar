@@ -1,15 +1,21 @@
 'use client'
 
 import { n, pct, time, usd } from '@/format'
-import type { LogEvent } from '@/live'
+import type { LogEvent } from '@/channels'
 import type { AgentJudgment } from '@/void'
-import { Grid, Text } from '@polar-sh/orbit'
+import { Grid } from '@polar-sh/orbit/Grid'
+import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from 'lucide-react'
 import { useParams } from 'next/navigation'
+import {
+  useChatActivity,
+  useJudgments,
+  useMemberNode,
+  useTree,
+} from '@/hooks/live'
 import { ActivityPill, MixSection } from './Activity'
 import { Divider } from './Card'
-import { useChatActivity, useLive } from './Live'
 import { Meter } from './Meter'
 import { SectionLabel } from './SectionLabel'
 
@@ -173,8 +179,13 @@ const Entry = ({ entry, scoped }: { entry: LogEvent; scoped: boolean }) => {
  * member and the org; Jev's labels land after ingest and do not move money.
  */
 export const EventLog = () => {
-  const { agentId } = useParams<{ agentId?: string }>()
-  const { tree, member, judgments } = useLive()
+  const { id: memberId, agentId } = useParams<{
+    id: string
+    agentId?: string
+  }>()
+  const tree = useTree()
+  const member = useMemberNode(memberId)
+  const judgments = useJudgments()
   const { events, mix, agent } = useChatActivity(agentId)
   const org = tree.org.standing
   const scoped = Boolean(agentId)

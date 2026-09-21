@@ -41,8 +41,9 @@ source ../server/.env.void
 pnpm --filter @void/sdk void login
 ```
 
-Rerun setup and source the file again to refresh the 24-hour token, or skip
-the env file and run `void login --api-url http://127.0.0.1:8000` to sign in
+Rerun `cd server && uv run task void_seed --output .env.void` and source the file
+again to refresh the 24-hour token, or skip the env file and run
+`void login --api-url http://127.0.0.1:8000` to sign in
 with the browser.
 Use the [isolated smoke-test runner](../../../server/polar/void/README.md#standalone-development-and-smoke-test)
 to keep this organization empty.
@@ -98,7 +99,9 @@ pnpm --filter @void/sdk void logout
 Identity reads require `void:read` or `void:write`. Creating an identity requires
 `void:write`. Customer reads also require `customers:read` or `customers:write`;
 creating a customer binding requires both `void:write` and `customers:write`.
-`actor.customer()` uses both identity and customer reads.
+`actor.customer()` uses both identity and customer reads. `void login` requests
+those customer scopes so local tools can bind a Polar customer without minting
+an organization access token.
 
 To include customer access in a local development token, add `--customers`:
 
@@ -239,24 +242,21 @@ Profiles are stored at `$XDG_CONFIG_HOME/void/credentials.json`, or `~/.config/v
 
 `void logout` removes the active profile, `void logout --profile <name>` removes one profile, and `void logout --all` removes the file. Removing the active profile leaves no active selection; it does not silently select another organization. Logout does not revoke tokens or change environment variables.
 
-Applications provide their own credentials to `createVoid`:
+Applications provide credentials to `createVoid`. Local tools can reuse the
+active `void login` profile with `voidOptionsFromLogin()`. A `VOID_TOKEN` in
+the environment wins; empty values and `VOID_API_URL` alone are ignored so a
+copied `.env` does not hide the saved login.
 
 ```ts
-import { createVoid } from '@void/sdk'
+import { createVoid, voidOptionsFromLogin } from '@void/sdk'
 import { config } from './void'
 
-const client = createVoid(config, {
-  apiUrl: process.env.VOID_API_URL!,
-  token: process.env.VOID_TOKEN!,
-})
+const client = createVoid(config, await voidOptionsFromLogin())
 
 await client.api.customers.get(customerId)
-await client.as(customerId).meters.tokens.check({ estimate: 100 })
 ```
 
 Organization operations under `client.api` and identity operations under `client.as(id)` use the same credentials. `createVoid` is the public client entry point.
-
-Applications supply their own runtime token. The SDK does not read a developer's saved CLI login.
 
 ## Configuration deployment
 
@@ -652,6 +652,15 @@ ancestor limits or need an estimate. It does not write events or reserve credits
 await actor.meters.credits.balance() // includes local events
 await actor.meters.credits.balance({ reconcile: false }) // remote only
 await actor.meters.credits.balance(new Date(timestamp)) // historical, remote only
+```
+
+For several identities of one tree, `balances(ids)` loads the snapshot once and
+folds each identity from it, so a dashboard over a whole tree costs one read
+instead of one per node; identities outside the tree are left out.
+
+```ts
+const standings = await root.meters.credits.balances([root.id, ...agentIds])
+standings.get(agentId)?.remaining
 ```
 
 `balance({ at })` also reads a historical remote balance. Combining `at` with

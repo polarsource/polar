@@ -2,7 +2,8 @@
 
 import { pct, usd } from '@/format'
 import { TAXONOMY, type Mix } from '@/activity'
-import { Pill, Text, type PillColor } from '@polar-sh/orbit'
+import { Pill, type PillColor } from '@polar-sh/orbit/Pill'
+import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
 import { Meter } from './Meter'
 import { SectionLabel } from './SectionLabel'

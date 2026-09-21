@@ -44,7 +44,10 @@ def deploy(local: bool = False, shared: bool = False) -> None:
                     if path.suffix in {".datasource", ".pipe"}
                 ],
             )
-            response.raise_for_status()
+            if not response.is_success:
+                raise RuntimeError(
+                    f"Void Tinybird build failed: {response.status_code} {response.text}"
+                )
             result = response.json()
             if result.get("result") == "failed" or result.get("errors"):
                 raise RuntimeError(f"Void Tinybird build failed: {result}")

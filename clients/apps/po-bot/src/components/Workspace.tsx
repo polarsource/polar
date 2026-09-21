@@ -91,7 +91,8 @@ export const Workspace = ({
       height="100%"
       gap="s"
       padding="s"
-      gridTemplateColumns={`248px minmax(0,1fr) ${width}px`}
+      gridTemplateColumns={`320px minmax(0,1fr) ${width}px`}
+      gridTemplateRows="minmax(0,1fr)"
       userSelect={dragging ? 'none' : 'auto'}
       style={dragging ? { cursor: CURSOR[dragging] } : undefined}
     >

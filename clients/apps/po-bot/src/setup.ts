@@ -1,11 +1,12 @@
 import { VoidHttpError } from '@void/sdk'
-import { ORG, void_ } from './void'
+import { ORG, ensureAppIdentities, getVoid } from './void'
 
 /**
  * Run after `void deploy`: the organization becomes a root identity, a
  * paying customer, and a subscriber to the team plan. Safe to run again.
  */
 const main = async () => {
+  const void_ = await getVoid()
   const org = await void_.root(ORG)
 
   try {
@@ -23,6 +24,7 @@ const main = async () => {
   if (active.length === 0) await org.products.team.subscribe()
 
   console.log(`${ORG} is subscribed to Po Bot Team`)
+  await ensureAppIdentities()
   await void_.dispose()
 }
 

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, it, vi } from 'vitest'
 import { Effect } from 'effect'
 import { defineConfig } from '../src/config/config'
 import { run } from '../src/cli/index'
-import { forgetLogin } from '../src/cli/credentials'
+import { forgetLogin, voidOptionsFromLogin } from '../src/cli/credentials'
 
 let directory: string
 let file: string
@@ -116,6 +116,28 @@ it('login validates and saves private credentials; plan and deploy revalidate an
   const output = vi.mocked(console.log).mock.calls.flat().join('\n')
   assert.ok(output.includes('First (first)  http://void'))
   assert.ok(!output.includes('first-secret'))
+})
+
+it('empty VOID_TOKEN does not override saved login', async () => {
+  await login()
+  vi.stubEnv('VOID_TOKEN', '')
+  vi.stubEnv('VOID_API_URL', 'http://void')
+  await run(['plan', '--config', 'void.ts'], load)
+  assert.equal(
+    requests.at(-1)?.headers.get('authorization'),
+    'Bearer first-secret',
+  )
+  assert.equal(requests.at(-1)?.headers.get('polar-organization-id'), 'org-1')
+})
+
+it('voidOptionsFromLogin uses saved login when VOID_API_URL is set without VOID_TOKEN', async () => {
+  await login()
+  vi.stubEnv('VOID_API_URL', 'http://other')
+  vi.stubEnv('VOID_TOKEN', '')
+  const options = await voidOptionsFromLogin()
+  assert.equal(options.apiUrl, 'http://void')
+  assert.equal(options.token, 'first-secret')
+  assert.equal(options.organizationId, first.id)
 })
 
 it('environment credentials override saved login and flags override environment credentials', async () => {
@@ -286,7 +308,7 @@ it('invalid URLs and empty explicit tokens fail before any request', async () =>
       ],
       load,
     ),
-    /access token is required/,
+    /No token for this server/,
   )
   assert.equal(requests.length, 0)
   await assert.rejects(readFile(file), { code: 'ENOENT' })

@@ -16,21 +16,15 @@ import void_local
 
 
 class VoidSetupTest(unittest.TestCase):
-    def test_setup_saves_shared_configuration_without_launching_worker(self):
-        calls = []
+    def test_setup_saves_shared_configuration_without_seeding(self):
         with tempfile.TemporaryDirectory() as directory:
             env_file = Path(directory) / ".env.void"
-
-            def run_command(command, **kwargs):
-                calls.append(command)
-                if "void_seed" in command:
-                    env_file.write_text("export VOID_TOKEN='local-token'\n")
-                    env_file.chmod(0o600)
-                return CompletedProcess(command, 0)
+            env_file.write_text("export VOID_TOKEN='keep-me'\n")
+            env_file.chmod(0o600)
 
             with (
                 patch.object(void_local, "ENV_FILE", env_file),
-                patch.object(void_local, "run_command", side_effect=run_command),
+                patch.object(void_local, "run_command") as run_command,
                 patch.object(
                     void_local,
                     "ports",
@@ -48,19 +42,14 @@ class VoidSetupTest(unittest.TestCase):
                 self.assertTrue(void_local.setup())
                 values = void_local.environment()
 
-            self.assertEqual(values["VOID_TOKEN"], "local-token")
+            run_command.assert_not_called()
+            self.assertEqual(values["VOID_TOKEN"], "keep-me")
             self.assertEqual(values["POLAR_VOID_TINYBIRD_API_TOKEN"], "tinybird-token")
             self.assertEqual(
                 values["POLAR_VOID_TINYBIRD_API_URL"], "http://localhost:7181"
             )
             self.assertEqual(values["POLAR_VOID_TEMPORAL_ADDRESS"], "localhost:7233")
             self.assertEqual(env_file.stat().st_mode & 0o777, 0o600)
-        self.assertFalse(any("void_worker" in command for command in calls))
-        self.assertFalse(any(command[0] == "docker" for command in calls))
-        self.assertLess(
-            next(i for i, command in enumerate(calls) if "void_tb_deploy" in command),
-            next(i for i, command in enumerate(calls) if "void_seed" in command),
-        )
 
     def test_infrastructure_failure_is_reported(self):
         with patch.object(

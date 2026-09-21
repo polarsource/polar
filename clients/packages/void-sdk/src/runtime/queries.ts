@@ -32,7 +32,11 @@ import {
 import { VoidError } from '../errors'
 import { Resolver } from './resolve'
 import type { Background } from './background'
-import { balanceLocally, checkLocally } from '../storage/reconcile'
+import {
+  balanceLocally,
+  balancesLocally,
+  checkLocally,
+} from '../storage/reconcile'
 import type { SignalRef } from '../config/schema'
 import type { SignalQuery } from './signals'
 
@@ -138,6 +142,14 @@ export interface RecordQuery<R extends RecordReducer> {
 export interface MeterQuery extends ScalarQuery {
   check(options: { readonly estimate: number }): Promise<CheckResult>
   balance(options?: Date | BalanceOptions): Promise<BalanceResult>
+  /**
+   * Current balances for several identities of this identity's tree, keyed
+   * by external id. With local event storage this loads the tree's snapshot
+   * once and folds each identity from it, instead of one load per identity;
+   * identities outside the tree are left out. Without storage it reads each
+   * balance remotely.
+   */
+  balances(ids: readonly string[]): Promise<ReadonlyMap<string, BalanceResult>>
 }
 export interface SubscribeOptions {
   /** Anchor for every boundary. Defaults to now; the past is allowed, the future is not. */
@@ -404,25 +416,15 @@ export function makeQueries<M extends SchemaModule>(
       } satisfies CheckResult
     })
 
-    const balance = Effect.fn('Scope.balance')(function* (
+    const remoteBalance = Effect.fn('Scope.remoteBalance')(function* (
       ref: MeterDef,
-      options: Date | BalanceOptions = {},
+      target: string,
+      at?: Date,
     ) {
-      const { at, reconcile } =
-        options instanceof Date ? { at: options } : options
-      if (at && reconcile === true) {
-        return yield* new VoidError({
-          reason: 'invalid_argument',
-          message: 'balance: historical balances cannot reconcile local events',
-        })
-      }
-      if (!at && reconcile !== false && config.eventStorage.length > 0) {
-        return yield* balanceLocally(config, ref, id)
-      }
       const api = yield* Api
       const result = yield* api.metersBalance(yield* meterId(ref), {
         params: {
-          external_identity_id: id,
+          external_identity_id: target,
           ...(at && { at: at.toISOString() }),
         },
       })
@@ -447,6 +449,38 @@ export function makeQueries<M extends SchemaModule>(
               }
             : null,
       } satisfies BalanceResult
+    })
+
+    const balance = Effect.fn('Scope.balance')(function* (
+      ref: MeterDef,
+      options: Date | BalanceOptions = {},
+    ) {
+      const { at, reconcile } =
+        options instanceof Date ? { at: options } : options
+      if (at && reconcile === true) {
+        return yield* new VoidError({
+          reason: 'invalid_argument',
+          message: 'balance: historical balances cannot reconcile local events',
+        })
+      }
+      if (!at && reconcile !== false && config.eventStorage.length > 0) {
+        return yield* balanceLocally(config, ref, id)
+      }
+      return yield* remoteBalance(ref, id, at)
+    })
+
+    const balances = Effect.fn('Scope.balances')(function* (
+      ref: MeterDef,
+      ids: readonly string[],
+    ) {
+      if (config.eventStorage.length > 0) {
+        return yield* balancesLocally(config, ref, id, ids)
+      }
+      const results = yield* Effect.all(
+        ids.map((each) => remoteBalance(ref, each)),
+        { concurrency: 'unbounded' },
+      )
+      return new Map(ids.map((each, i) => [each, results[i]!] as const))
     })
 
     const usage = Effect.fn('Scope.usage')(function* (
@@ -555,6 +589,7 @@ export function makeQueries<M extends SchemaModule>(
               ...scalar(definition.reducer),
               check: (options) => run(check(definition, options)),
               balance: (at) => run(balance(definition, at)),
+              balances: (ids) => run(balances(definition, ids)),
             },
           ])
           break

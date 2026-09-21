@@ -1,5 +1,6 @@
 export * from './config/index'
 export { createVoid } from './runtime/client'
+export { CredentialsError, voidOptionsFromLogin } from './cli/credentials'
 export type { Middleware, PromiseClient, Scope, Void } from './runtime/client'
 export type { VoidOptions } from './api/layers'
 export type {

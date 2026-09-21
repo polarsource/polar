@@ -9,20 +9,21 @@ dashboard experiment with pricing on the side. The SDK and CLI live in
 ## Local development
 
 ```sh
-dev up --void     # infra incl. Tinybird and Temporal, migrations, seed
-dev seed
+dev up --void     # infra incl. Tinybird and Temporal, migrations
+dev seed          # sample orgs including void-development and po-bot
+uv run task void_seed_demo  # optional demo dataset on void-development
 dev start         # api, worker, web
 dev void          # the Void Temporal worker; needed for usage to fold
 ```
 
 Sign in at http://127.0.0.1:3000 as `void@polar.sh` (login code in the API pane)
-and pick `void-development`. It carries a demo dataset: four versions, twelve
-customers with agent and service identities, subscriptions on three plans, thirty
-days of events and three scenarios. Rebuild it with
+and pick `void-development`. After `void_seed_demo` it carries a demo dataset:
+four versions, twelve customers with agent and service identities, subscriptions
+on three plans, thirty days of events and three scenarios. Rebuild it with
 `uv run task void_seed_demo -- --reset`. The Void dashboard pages default to
 frontend fixtures; switch to live data from the version dropdown.
 
-`po-bot@polar.sh` owns a second Void-enabled organization, `po-bot`, used by
+The same account also owns `po-bot`, a second Void-enabled organization used by
 the Po Bot sample app. It is left empty so you can deploy
 `clients/apps/po-bot/void.ts`.
 

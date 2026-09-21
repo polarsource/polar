@@ -1,10 +1,11 @@
 'use client'
 
-import { ThemeProvider } from 'next-themes'
+import { getQueryClient } from '@/query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
 export const Providers = ({ children }: { children: ReactNode }) => (
-  <ThemeProvider defaultTheme="system" enableSystem attribute="class">
+  <QueryClientProvider client={getQueryClient()}>
     {children}
-  </ThemeProvider>
+  </QueryClientProvider>
 )

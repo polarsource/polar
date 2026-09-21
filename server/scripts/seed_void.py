@@ -7,6 +7,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
+from dotenv import dotenv_values
+
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.oauth2.void_cli_client import ensure_client as ensure_void_cli_client
 from polar.postgres import AsyncSession, create_async_engine
@@ -44,7 +46,17 @@ async def seed_token(session: AsyncSession) -> tuple[UUID, str, bool]:
 
 
 def write_environment(output: Path, token: str, api_url: str) -> None:
+    existing = (
+        {
+            key: value
+            for key, value in dotenv_values(output, interpolate=False).items()
+            if value is not None
+        }
+        if output.exists()
+        else {}
+    )
     values = {
+        **existing,
         "VOID_TOKEN": token,
         "VOID_API_URL": api_url,
     }

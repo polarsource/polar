@@ -487,6 +487,104 @@ it.each(['a'.repeat(64), 'c'.repeat(64)])(
     }
   },
 )
+it('balances folds every identity of the tree from one snapshot load', async () => {
+  const state = snapshot()
+  state.identities.push({
+    entitlements: { features: null, meters: null },
+    external_id: 'child',
+    parent_external_id: 'root',
+  })
+  state.meters[0].holders.push({
+    credit_base: null,
+    usage_base: null,
+    entitlement: null,
+    entitlement_usage_base: 0,
+    external_identity_id: 'child',
+    balance: {
+      at: null,
+      subscription: null,
+      boundary: null,
+      boundaries: [],
+      cycles: {},
+      credits: 0,
+      usage: 0,
+      remaining: 0,
+      overage: 0,
+    },
+    base: {
+      subscription: null,
+      boundary: null,
+      boundaries: [],
+      cycles: {},
+      credits: 0,
+      usage: 0,
+      at: '1970-01-01T00:00:00.000Z',
+      remaining: 0,
+      overage: 0,
+    },
+    is_holder: false,
+    events: [],
+  })
+  const db = new DatabaseSync(':memory:')
+  persistSQLiteEvents(db, 'org', [
+    local('processed', 'use', 20),
+    local('child-use', 'use', 10, 'child'),
+  ])
+  const requests: string[] = []
+  const client = createVoid(
+    defineConfig({
+      schema: config.schema,
+      eventStorage: [{ type: 'sqlite', connection: db }],
+    }),
+    {
+      apiUrl: 'http://void',
+      token: 'token',
+      fetch: async (input, init) => {
+        const url = new URL(new Request(input, init).url)
+        requests.push(url.pathname)
+        if (url.pathname === '/v1/void/organizations/current')
+          return Response.json({
+            id: 'org',
+            name: 'Org',
+            slug: 'org',
+            created_at: at,
+            active_deployment_id: 'deployment',
+            active_version_id: 'a'.repeat(64),
+            can_activate: true,
+          })
+        if (url.pathname === '/v1/void/identities/root')
+          return Response.json({
+            entitlements: { features: null, meters: null },
+            id: 'root',
+            external_id: 'root',
+            parent_external_id: null,
+            metadata: {},
+            created_at: at,
+            chain: ['root'],
+            children: [],
+          })
+        if (url.pathname === '/v1/void/customers/root/state')
+          return Response.json(state)
+        throw new Error(`Unexpected request ${url.pathname}`)
+      },
+    },
+  )
+  try {
+    const meter = client.as('root').meters.credits
+    await meter.balance()
+    const one = requests.splice(0).length
+    const balances = await meter.balances(['root', 'child', 'stranger'])
+    expect([...balances.keys()]).toEqual(['root', 'child'])
+    expect(balances.get('root')).toMatchObject({ usage: 30, remaining: 70 })
+    expect(balances.get('child')).toMatchObject({ usage: 10, remaining: 70 })
+    // Three identities cost exactly what one balance read costs.
+    expect(requests).toHaveLength(one)
+  } finally {
+    await client.dispose()
+    db.close()
+  }
+})
+
 it('merges pending purchases and usage without counting processed events twice', () => {
   expect(
     check(snapshot(), [

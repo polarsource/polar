@@ -83,18 +83,11 @@ def setup() -> bool:
                 return False
             time.sleep(1)
 
-    for command in (
-        ["uv", "run", "task", "void_tb_deploy", "--local", "--shared"],
-        ["uv", "run", "task", "void_seed", "--output", str(ENV_FILE)],
-        ["uv", "run", "task", "void_seed_demo"],
-    ):
-        result = run_command(command, cwd=SERVER_DIR, env=values)
-        if result is None or result.returncode != 0:
-            return False
-
+    ENV_FILE.touch(mode=0o600, exist_ok=True)
     for key, value in values.items():
         set_key(ENV_FILE, key, value, export=True)
+    ENV_FILE.chmod(0o600)
     console.print(
-        "[green]Void configured.[/green] Run [bold]dev api[/bold] and [bold]dev void[/bold]."
+        "[green]Void configured.[/green] Run [bold]dev seed[/bold], [bold]dev api[/bold], and [bold]dev void[/bold]."
     )
     return True

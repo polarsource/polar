@@ -1,19 +1,22 @@
 'use client'
 
 import { n, shortModel } from '@/format'
+import { useBusy, usePulses, useTree, type Pulse } from '@/hooks/live'
+import type { Tree } from '@/channels'
 import type { Standing } from '@/void'
-import { Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
-import { useLive, type Pulse } from './Live'
+import { useParams } from 'next/navigation'
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Meter } from './Meter'
 
 /**
  * The identity tree: the organization on top, its members below, their
  * agents at the bottom. Each node shows what it has spent against what limits
- * it. When a completion lands, a dot leaves the agent and climbs to the member
- * and on to the org, lighting each node up as the credits fold into it.
+ * it. An agent with a call in flight breathes; when its completion lands, a
+ * dot leaves the agent and climbs to the member and on to the org, lighting
+ * each node up as the credits fold into it.
  */
 
 const NODE = { w: 156, h: 54 }
@@ -27,6 +30,16 @@ interface Placed {
   readonly x: number
   readonly y: number
 }
+interface Band {
+  readonly member: Placed
+  readonly agents: readonly Placed[]
+}
+interface Layout {
+  readonly canvas: number
+  readonly org: Placed
+  readonly bands: readonly Band[]
+  readonly at: ReadonlyMap<string, Placed>
+}
 
 /** Cubic from the top of a child to the bottom of its parent. */
 const edge = (child: Placed, parent: Placed) => {
@@ -38,28 +51,14 @@ const edge = (child: Placed, parent: Placed) => {
   return `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`
 }
 
-export const Hierarchy = () => {
-  const { tree, memberId, pulses } = useLive()
-  const scroller = useRef<HTMLElement>(null)
-  const [width, setWidth] = useState(0)
-
-  useEffect(() => {
-    const element = scroller.current
-    if (!element) return
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setWidth(entry.contentRect.width)
-    })
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
-
-  // Every member gets a band as wide as its agents need; agents spread across it.
+/** Every member gets a band as wide as its agents need; agents spread across it. */
+const place = (tree: Tree, width: number): Layout => {
   const slots = tree.members.reduce(
     (sum, member) => sum + Math.max(1, member.agents.length),
     0,
   )
   const canvas = Math.max(width, slots * (NODE.w + 12))
-  const bands: { member: Placed; agents: Placed[] }[] = []
+  const bands: Band[] = []
   let x0 = 0
   for (const member of tree.members) {
     const band = (canvas * Math.max(1, member.agents.length)) / slots
@@ -81,20 +80,65 @@ export const Hierarchy = () => {
       ...agents.map((agent) => [agent.id, agent] as const),
     ]),
   ])
+  return { canvas, org, bands, at }
+}
 
-  /** A pulse touches an identity at leg 0 (its agent), 1 (member) or 2 (org). */
-  const arrivals = (id: string) =>
-    pulses.flatMap((pulse) => {
-      const leg =
-        id === pulse.agentId
-          ? 0
-          : id === pulse.memberId
-            ? 1
-            : id === org.id
-              ? 2
-              : null
-      return leg === null ? [] : [{ pulse, delay: pulse.delay + leg * LEG_S }]
+interface Arrival {
+  readonly pulse: Pulse
+  readonly delay: number
+}
+
+/** A pulse touches its agent at leg 0, the member at leg 1, the org at leg 2. */
+const arrivalsOf = (pulses: readonly Pulse[], orgId: string) => {
+  const byId = new Map<string, Arrival[]>()
+  const add = (id: string, arrival: Arrival) => {
+    const list = byId.get(id) ?? []
+    list.push(arrival)
+    byId.set(id, list)
+  }
+  for (const pulse of pulses) {
+    add(pulse.agentId, { pulse, delay: 0 })
+    add(pulse.memberId, { pulse, delay: LEG_S })
+    add(orgId, { pulse, delay: 2 * LEG_S })
+  }
+  return byId
+}
+
+const NONE: readonly Arrival[] = []
+
+export const Hierarchy = () => {
+  const { id: memberId } = useParams<{ id: string }>()
+  const tree = useTree()
+  const pulses = usePulses()
+  const busy = useBusy()
+  const scroller = useRef<HTMLElement>(null)
+  const [width, setWidth] = useState(0)
+
+  useLayoutEffect(() => {
+    const element = scroller.current
+    if (!element) return
+    setWidth(element.clientWidth)
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWidth(entry.contentRect.width)
     })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  // Standings change every beat; the layout only when the shape or width does.
+  const shape = tree.members
+    .map((member) => `${member.id}:${member.agents.map((a) => a.id).join(',')}`)
+    .join('|')
+  const layout = useMemo(
+    () => place(tree, width),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shape, width, tree.org.id],
+  )
+  const arrivals = useMemo(
+    () => arrivalsOf(pulses, tree.org.id),
+    [pulses, tree.org.id],
+  )
+  const { canvas, org, bands, at } = layout
 
   return (
     <Box ref={scroller} height="100%" width="100%" overflow="auto">
@@ -131,8 +175,8 @@ export const Hierarchy = () => {
             if (!agent || !member) return null
             return (
               <Box key={pulse.id} display="contents">
-                <Dot path={edge(agent, member)} delay={pulse.delay} />
-                <Dot path={edge(member, org)} delay={pulse.delay + LEG_S} />
+                <Dot path={edge(agent, member)} delay={0} />
+                <Dot path={edge(member, org)} delay={LEG_S} />
               </Box>
             )
           })}
@@ -143,7 +187,7 @@ export const Hierarchy = () => {
             subtitle="organization"
             standing={tree.org.standing}
             limit={tree.org.standing.credits}
-            arrivals={arrivals(org.id)}
+            arrivals={arrivals.get(org.id) ?? NONE}
             wide
           />
           {tree.members.map((member, m) => (
@@ -156,7 +200,7 @@ export const Hierarchy = () => {
               standing={member.standing}
               limit={member.cap}
               current={member.id === memberId}
-              arrivals={arrivals(member.id)}
+              arrivals={arrivals.get(member.id) ?? NONE}
             />
           ))}
           {tree.members.flatMap((member, m) =>
@@ -170,7 +214,8 @@ export const Hierarchy = () => {
                 standing={agent.standing}
                 limit={member.cap}
                 current={member.id === memberId}
-                arrivals={arrivals(agent.id)}
+                busy={busy.has(agent.id)}
+                arrivals={arrivals.get(agent.id) ?? NONE}
               />
             )),
           )}
@@ -201,7 +246,7 @@ const Dot = ({ path, delay }: { path: string; delay: number }) => (
   />
 )
 
-const Node = ({
+const Node = memo(function Node({
   placed,
   href,
   title,
@@ -210,6 +255,7 @@ const Node = ({
   limit,
   current = false,
   wide = false,
+  busy = false,
   arrivals,
 }: {
   placed: Placed
@@ -220,13 +266,15 @@ const Node = ({
   limit: number
   current?: boolean
   wide?: boolean
-  arrivals: readonly { pulse: Pulse; delay: number }[]
-}) => {
+  busy?: boolean
+  arrivals: readonly Arrival[]
+}) {
   const width = wide ? NODE.w + 40 : NODE.w
   const spent = standing.remaining === 0
   const share = limit > 0 ? Math.min(100, (standing.usage / limit) * 100) : 0
   const body = (
     <Box
+      className={busy ? 'node-busy' : undefined}
       position="absolute"
       flexDirection="column"
       rowGap="xs"
@@ -265,7 +313,7 @@ const Node = ({
           truncate
           style={{ maxWidth: '55%' }}
         >
-          {subtitle}
+          {busy ? 'thinking' : subtitle}
         </Text>
       </Box>
       <Box justifyContent="between" columnGap="s">
@@ -317,10 +365,13 @@ const Node = ({
     </Box>
   )
   return href ? (
-    <Link href={href} style={{ display: 'contents' }}>
+    <Link
+      href={href}
+      style={{ color: 'inherit', display: 'contents', textDecoration: 'none' }}
+    >
       {body}
     </Link>
   ) : (
     body
   )
-}
+})

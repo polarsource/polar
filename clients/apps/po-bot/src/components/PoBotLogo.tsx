@@ -1,4 +1,4 @@
-import { Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 

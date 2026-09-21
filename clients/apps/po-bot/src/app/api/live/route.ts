@@ -1,29 +1,55 @@
-import { frame } from '@/live'
+import { subscribe } from '@/live'
 
-const POLL_MS = 2000
+export const dynamic = 'force-dynamic'
+
 const encoder = new TextEncoder()
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const HEARTBEAT_MS = 15_000
 
-/** Server-sent events: one frame of the whole organization every couple of seconds. */
-export const GET = async (request: Request) => {
+/**
+ * Server-sent events. Each channel of the organization's state arrives as
+ * its own named event when it changes; `live` events carry what this
+ * process just saw happen. One loop feeds every connection.
+ */
+export const GET = (request: Request) => {
+  let unsubscribe = () => {}
+  let heartbeat: ReturnType<typeof setInterval> | undefined
   const stream = new ReadableStream({
-    async start(controller) {
-      while (!request.signal.aborted) {
+    start(controller) {
+      const send = (chunk: string) => {
         try {
-          const data = JSON.stringify(await frame())
-          controller.enqueue(encoder.encode(`data: ${data}\n\n`))
-        } catch (error) {
-          console.error(error)
+          controller.enqueue(encoder.encode(chunk))
+        } catch {
+          // The client is gone; the abort handler below cleans up.
         }
-        await sleep(POLL_MS)
       }
-      controller.close()
+      unsubscribe = subscribe((name, json) =>
+        send(`event: ${name}\ndata: ${json}\n\n`),
+      )
+      heartbeat = setInterval(() => send(': keep-alive\n\n'), HEARTBEAT_MS)
+      request.signal.addEventListener(
+        'abort',
+        () => {
+          unsubscribe()
+          clearInterval(heartbeat)
+          try {
+            controller.close()
+          } catch {
+            // Already closed.
+          }
+        },
+        { once: true },
+      )
+    },
+    cancel() {
+      unsubscribe()
+      clearInterval(heartbeat)
     },
   })
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
     },
   })
 }

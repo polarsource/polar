@@ -21,12 +21,12 @@
     "@libsql/client": "^0.18.0",
     "@polar-sh/orbit": "workspace:*",
     "@stylexjs/stylex": "catalog:",
+    "@tanstack/react-query": "^5.99.0",
     "@void/sdk": "workspace:*",
     "ai": "7.0.94",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "catalog:",
     "next": "^16.2.6",
-    "next-themes": "catalog:",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "zod": "^4.4.3"

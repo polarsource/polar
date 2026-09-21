@@ -1,11 +1,11 @@
 'use client'
 
 import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit/Text'
 import { n } from '@/format'
+import { useMemberNode } from '@/hooks/live'
 import type { Standing } from '@/void'
-import { useContext } from 'react'
-import { LiveContext } from './Live'
+import { useParams } from 'next/navigation'
 import { Meter } from './Meter'
 
 /**
@@ -19,8 +19,9 @@ export const CreditBar = ({
   credits?: Standing
   limit: number
 }) => {
-  const live = useContext(LiveContext)
-  const shown = credits ?? live?.member.standing
+  const { id } = useParams<{ id?: string }>()
+  const member = useMemberNode(id ?? '')
+  const shown = credits ?? member.standing
   if (!shown) return null
   const spent = shown.remaining === 0
   const share = Math.min(100, (shown.usage / limit) * 100)

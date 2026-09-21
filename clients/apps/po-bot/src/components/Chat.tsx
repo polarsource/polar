@@ -1,8 +1,12 @@
 'use client'
 
 import type { Agent } from '@/db/schema'
+import { useAgent, useMessages } from '@/hooks/queries'
 import { useChat } from '@ai-sdk/react'
-import { Avatar, Button, Text, TextArea } from '@polar-sh/orbit'
+import { Avatar } from '@polar-sh/orbit/Avatar'
+import { Button } from '@polar-sh/orbit/Button'
+import { Text } from '@polar-sh/orbit/Text'
+import { TextArea } from '@polar-sh/orbit/TextArea'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DefaultChatTransport,
@@ -11,7 +15,8 @@ import {
   type UIMessage,
 } from 'ai'
 import { ArrowUp } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { notFound } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const text = (message: UIMessage) =>
   message.parts
@@ -40,8 +45,20 @@ const hasParts = (message: UIMessage) =>
     (part) => (part.type === 'text' && part.text) || isToolUIPart(part),
   )
 
+/** Loads the agent and its thread, then hands both to the chat once ready. */
+export const Chat = ({ agentId }: { agentId: string }) => {
+  const { data: agent, isLoading: loadingAgent } = useAgent(agentId)
+  const { data: initialMessages, isLoading: loadingThread } =
+    useMessages(agentId)
+
+  if (!loadingAgent && !agent) notFound()
+  if (!agent || loadingThread || !initialMessages) return <Box height="100%" />
+
+  return <ChatThread agent={agent} initialMessages={initialMessages} />
+}
+
 /** Plain AI SDK chat. The route only needs the newest message; it keeps the thread. */
-export const Chat = ({
+const ChatThread = ({
   agent,
   initialMessages,
 }: {
@@ -65,6 +82,12 @@ export const Chat = ({
     transport,
   })
   const busy = status === 'submitted' || status === 'streaming'
+  const thread = useRef<HTMLOListElement>(null)
+
+  // Keep the newest text in view while it streams in.
+  useEffect(() => {
+    thread.current?.scrollTo({ top: thread.current.scrollHeight })
+  }, [messages])
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -103,6 +126,7 @@ export const Chat = ({
 
       <Box
         as="ol"
+        ref={thread}
         flex={1}
         flexDirection="column"
         rowGap="s"

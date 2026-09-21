@@ -19,7 +19,6 @@ class SeededOrganization:
     slug: str
     name: str
     account_id: UUID
-    operator_email: str
     invoice_prefix: str
 
 
@@ -28,7 +27,6 @@ VOID_DEVELOPMENT = SeededOrganization(
     slug="void-development",
     name="Void development",
     account_id=UUID("b7ee8011-c378-4e35-83c1-bc45e9b1ca8a"),
-    operator_email="void@polar.sh",
     invoice_prefix="VOIDDEV",
 )
 
@@ -37,7 +35,6 @@ PO_BOT = SeededOrganization(
     slug="po-bot",
     name="Po Bot",
     account_id=UUID("f4f352f6-a336-465c-ab48-e2a8415aa9a1"),
-    operator_email="po-bot@polar.sh",
     invoice_prefix="POBOT",
 )
 
@@ -47,7 +44,7 @@ SEEDED_SLUGS = frozenset(organization.slug for organization in SEEDED_ORGANIZATI
 ORGANIZATION_SLUG = VOID_DEVELOPMENT.slug
 ORGANIZATION_ID = VOID_DEVELOPMENT.id
 ACCOUNT_ID = VOID_DEVELOPMENT.account_id
-OPERATOR_EMAIL = VOID_DEVELOPMENT.operator_email
+OPERATOR_EMAIL = "void@polar.sh"
 
 
 class DevelopmentSeedConflict(PolarError):
@@ -91,9 +88,7 @@ class DevelopmentService:
                 "void_enabled": True,
             }
             await session.flush()
-            await self.ensure_operator(
-                session, organization, email=target.operator_email
-            )
+            await self.ensure_operator(session, organization)
             return organization, False
         if account is not None:
             raise DevelopmentSeedConflict()
@@ -110,7 +105,7 @@ class DevelopmentService:
             feature_settings={"void_enabled": True},
         )
         await repository.create(organization, flush=True)
-        await self.ensure_operator(session, organization, email=target.operator_email)
+        await self.ensure_operator(session, organization)
         return organization, True
 
     async def seed_all(self, session: AsyncSession) -> bool:
@@ -124,10 +119,9 @@ class DevelopmentService:
         self,
         session: AsyncSession,
         organization: Organization,
-        email: str = OPERATOR_EMAIL,
     ) -> User:
         user, _ = await user_service.get_by_email_or_create(
-            session=session, email=email
+            session=session, email=OPERATOR_EMAIL
         )
         repository = UserOrganizationRepository.from_session(session)
         membership = await repository.get_by_user_and_organization(

@@ -25,8 +25,8 @@ Claude Code, or `$open-pr` in Codex.
 ## 1. Preconditions
 
 - Working tree committed. Branch pushed.
-- Lint, type-check, and the tests that cover the change pass:
-  - Backend: `cd server && uv run task lint && uv run task lint_types`, plus scoped pytest
+- Lint, type-check, and tests pass:
+  - Backend: `cd server && uv run task lint && uv run task lint_types && uv run task test_fast`
   - Frontend: `clients/AGENTS.md` (`pnpm lint`, `pnpm typecheck`, scoped tests)
 - PR body: no PII, stats, or org information. PRs are public.
 - Use `.github/pull_request_template.md` when creating the body.

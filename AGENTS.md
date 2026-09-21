@@ -15,8 +15,8 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Do not create GitHub pull requests unless the user explicitly asks. Commit and
   push the branch as needed; leave opening the PR to the user. When you do open
   a PR (including drafts), follow the `open-pr` skill (`/open-pr` or `$open-pr`):
-  lint and tests, then `polar-code-review`, then cubic CLI, then a draft PR. Do
-  not mark it ready for review unless told so.
+  lint, type-check, and `test_fast`, then `polar-code-review`, then cubic CLI,
+  then a draft PR. Do not mark it ready for review unless told so.
 
 ## Architecture
 
@@ -171,7 +171,7 @@ is a symlink to that directory, so Claude Code, Cursor, and Codex load the same 
 Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
 
 - `polar-code-review` — Polar-specific review of the branch diff (conventions, ADRs, reuse, slop, plus path-triggered API / ship-safety / billing lenses). Bugs, security, and simplification are `/code-review`, `/security-review`, and `/simplify`.
-- `open-pr` — open or update a draft PR. Runs `polar-code-review`, then cubic CLI (`CUBIC_API_KEY`), then creates the draft. Do not mark ready unless asked.
+- `open-pr` — open or update a draft PR. Runs lint, type-check, and `test_fast`, then `polar-code-review`, then cubic CLI (`CUBIC_API_KEY`), then creates the draft. Do not mark ready unless asked.
 
 ## Documentation
 

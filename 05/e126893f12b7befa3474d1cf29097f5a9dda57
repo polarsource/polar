@@ -1,0 +1,85 @@
+server/polar/merchant_migration/service.py
+  s_f2e6e0e6887dbe::t_c5930ae27a52a0 1563-1577
+  s_f2e6e0e6887dbe::t_c6c71decc0eb7f 608,617
+  s_f2e6e0e6887dbe::t_1b0f0c0c54121a 1510
+  s_f2e6e0e6887dbe::t_7e5eabfb3f1aac 1529,1544
+  s_f2e6e0e6887dbe::t_903bb133279af3 78
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewRows.ts
+  s_f2e6e0e6887dbe::t_d86af7e96c6436 36-45
+server/polar/merchant_migration/schemas.py
+  s_f2e6e0e6887dbe::t_350887cf641a10 178-183
+server/polar/customer/repository.py
+  s_f2e6e0e6887dbe::t_a1fb8dec1abbd7 199-218
+server/polar/merchant_migration/precheck.py
+  s_f2e6e0e6887dbe::t_259f30e728aec2 96
+  s_f2e6e0e6887dbe::t_e130e6972ea26e 118-122
+  s_f2e6e0e6887dbe::t_bf2289733ccea6 210-212
+  s_f2e6e0e6887dbe::t_bd0386a01cf2db 727
+  s_f2e6e0e6887dbe::t_9d979f0e91ed0e 148-155
+  s_f2e6e0e6887dbe::t_3b4d059038aa22 864,867
+  s_f2e6e0e6887dbe::t_034ede9701da01 1146,1151-1153,1155,1167-1175
+  s_f2e6e0e6887dbe::t_3f823bc8d10e17 898,902-906
+  s_f2e6e0e6887dbe::t_e86d8676d05b52 163
+  s_f2e6e0e6887dbe::t_f4e7298bba36c9 12,15
+  s_f2e6e0e6887dbe::t_e180db4fc03a1a 615,624-629
+  s_f2e6e0e6887dbe::t_63cfc3950704ea 1184,1196
+  s_f2e6e0e6887dbe::t_5108b8d111c512 1227,1233-1235
+  s_f2e6e0e6887dbe::t_a3189e7ee9cc22 1068,1080,1082-1086
+  s_1d480ef20fe259::t_cf06e2d8c49321 630-631
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordFields.tsx
+  s_f2e6e0e6887dbe::t_1fb9ac7c1ecf35 72-78,99-106
+  s_f2e6e0e6887dbe::t_ab63a0c3316e6a 6
+  s_1d480ef20fe259::t_dc8d4a1b5af168 107-108
+server/tests/merchant_migration/test_service.py
+  s_f2e6e0e6887dbe::t_d9c20e2043cdc1 1832-1884
+  s_f2e6e0e6887dbe::t_60245ff424f00b 1805
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordModal.tsx
+  s_f2e6e0e6887dbe::t_62469dd75b46b7 4,7-8,14-19,28,30,55-64,86
+server/tests/merchant_migration/test_precheck.py
+  s_f2e6e0e6887dbe::t_23e02c346c2af8 3
+  s_f2e6e0e6887dbe::t_d5666f5e3cb4b9 1252-1298
+  s_f2e6e0e6887dbe::t_f28bd140ca2be3 810-811
+  s_f2e6e0e6887dbe::t_e7ee81c8a53418 21
+  s_f2e6e0e6887dbe::t_ceb35ec3f6eafa 782-809,812-828
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.test.ts
+  s_f2e6e0e6887dbe::t_4d3766adadf52f 2
+  s_f2e6e0e6887dbe::t_356484d98122dd 139-153
+server/polar/merchant_migration/repository.py
+  s_f2e6e0e6887dbe::t_704f70ec158856 400-428
+server/polar/merchant_migration/importer.py
+  s_f2e6e0e6887dbe::t_70216376964894 438-452
+  s_f2e6e0e6887dbe::t_145411e27bc132 52
+  s_f2e6e0e6887dbe::t_abe0678446fb0f 194,202-204
+  s_f2e6e0e6887dbe::t_fafdcd8a13ff19 267
+  s_f2e6e0e6887dbe::t_2cafeb92ac3f01 180
+  s_f2e6e0e6887dbe::t_6c945b4a16f205 420
+  s_f2e6e0e6887dbe::t_ffde65d9f4f606 334,340
+  s_f2e6e0e6887dbe::t_e9b1985da8f3f1 248
+  s_f2e6e0e6887dbe::t_6b90ae8ac9bdba 49
+clients/packages/client/src/v1.ts
+  s_1d480ef20fe259::t_a97b9888ae3fed 25270-25273,25275-25279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "05e126893f12b7befa3474d1cf29097f5a9dda57",
+  "prompts": {},
+  "sessions": {
+    "s_1d480ef20fe259": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c443-70fc-78a2-90ca-8e5a17f79a3f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_f2e6e0e6887dbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ace9cdfa-e059-43a3-8d35-2b1456a9209a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

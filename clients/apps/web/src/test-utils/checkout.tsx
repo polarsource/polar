@@ -1,5 +1,6 @@
 import CheckoutPage from '@/app/(checkout)/checkout/[clientSecret]/CheckoutPage'
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
+import { UserContextProvider } from '@/providers/auth'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import {
   CheckoutFormProvider,
@@ -355,6 +356,7 @@ export interface CheckoutRenderResult extends ProvidersRenderResult {
 export interface RenderCheckoutOptions
   extends ProviderOptions, ServeCheckoutOptions {
   checkout?: Partial<ProductCheckoutPublic>
+  authenticatedUser?: schemas['UserRead']
   embed?: boolean
   theme?: 'light' | 'dark'
   distinctId?: string | null
@@ -362,6 +364,7 @@ export interface RenderCheckoutOptions
 
 export const renderCheckout = ({
   checkout: overrides,
+  authenticatedUser,
   embed = false,
   theme = 'light',
   distinctId = DISTINCT_ID,
@@ -383,15 +386,20 @@ export const renderCheckout = ({
     : 'polar_distinct_id=; max-age=0; path=/'
 
   const result = renderWithProviders(
-    <CheckoutProvider
-      clientSecret={checkout.client_secret}
-      initialCheckout={checkout}
-      serverURL={API_URL}
+    <UserContextProvider
+      user={authenticatedUser}
+      userOrganizations={authenticatedUser?.organizations ?? []}
     >
-      <CheckoutFormProvider locale="en">
-        <CheckoutPage embed={embed} theme={theme} locale="en" />
-      </CheckoutFormProvider>
-    </CheckoutProvider>,
+      <CheckoutProvider
+        clientSecret={checkout.client_secret}
+        initialCheckout={checkout}
+        serverURL={API_URL}
+      >
+        <CheckoutFormProvider locale="en">
+          <CheckoutPage embed={embed} theme={theme} locale="en" />
+        </CheckoutFormProvider>
+      </CheckoutProvider>
+    </UserContextProvider>,
     {
       pathname: `/checkout/${checkout.client_secret}`,
       searchParams: embed ? 'embed=true' : '',

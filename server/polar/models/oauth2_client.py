@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.kit.crypto import get_token_hash
+from polar.kit.crypto import get_token_hash, get_token_hash_candidates
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.oauth2.sub_type import SubType
@@ -70,6 +70,17 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
             return SubType(self.client_metadata["default_sub_type"])
         except KeyError:
             return SubType.user
+
+    @property
+    def client_info(self) -> dict[str, Any]:
+        return {**super().client_info, "client_secret": self.get_client_secret_sync()}
+
+    def check_client_secret(self, client_secret: str) -> bool:
+        if self.client_secret_hash is None:
+            return False
+        return (
+            self.client_secret_hash in get_token_hash_candidates(client_secret).values()
+        )
 
     @staticmethod
     def hash_secret(value: str | None) -> str | None:
@@ -174,3 +185,13 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
                 self.id, registration_access_token
             )
         )
+
+    def get_client_secret_sync(self) -> str | None:
+        if self.client_secret_encrypted is None:
+            return None
+        return self.client_secret_encrypted.decrypt_sync(id=str(self.id))
+
+    def get_registration_access_token_sync(self) -> str | None:
+        if self.registration_access_token_encrypted is None:
+            return None
+        return self.registration_access_token_encrypted.decrypt_sync(id=str(self.id))

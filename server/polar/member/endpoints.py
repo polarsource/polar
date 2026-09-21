@@ -93,12 +93,6 @@ def _validate_customer_id_params(
     tags=[APITag.private],
     deprecated=True,
     response_model=ListResource[Member],
-    openapi_extra={
-        "x-tool-name": "members_list_members",
-        "x-tool-title": "List customer members",
-        "x-tool-description": "List members with optional customer ID filter.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def list_members(
     auth_subject: auth.MemberRead,

@@ -31,10 +31,13 @@ const sessionFreshnessMiddleware: Middleware = {
   },
 }
 
+const NEXT_API_VERSION = '2026-10'
+
 const CLIENT_VERSION_HEADERS = {
   'X-Polar-Client-Version': `web/${
     process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'dev'
   }`,
+  'Polar-Version': NEXT_API_VERSION,
 }
 
 export const createClientSideAPI = (token?: string): Client => {

@@ -5,6 +5,7 @@ import jwt
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 from sqlalchemy import select
 
 from polar.auth.scope import Scope
@@ -13,6 +14,7 @@ from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import Session
 from polar.kit.encryption import EncryptedString
+from polar.kit.hash_secrets import HashSecrets
 from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2AuthorizationCode,
@@ -1779,6 +1781,50 @@ class TestOAuth2Token:
         response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 400
+
+    async def test_web_grant_rehashes_a_session_under_a_retired_secret(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        web_grant_oauth2_client: OAuth2Client,
+        mocker: MockerFixture,
+    ) -> None:
+        """The cookie path rehashes on every request; this one is the only way
+        in for a session that never touches the dashboard."""
+        secrets = {"k1": "retired", "k2": "current"}
+        mocker.patch(
+            "polar.kit.crypto.get_hash_secrets",
+            return_value=HashSecrets(secrets, "k1", "legacy"),
+        )
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        mocker.patch(
+            "polar.kit.crypto.get_hash_secrets",
+            return_value=HashSecrets(secrets, "k2", "legacy"),
+        )
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        refreshed = sync_session.get(UserSession, user_session.id)
+        assert refreshed is not None
+        assert refreshed.token == get_token_hash(token)
 
     async def test_web_grant_not_allowed_client(
         self,

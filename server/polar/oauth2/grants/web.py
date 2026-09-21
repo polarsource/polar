@@ -14,7 +14,7 @@ from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.authz.repository import select_accessible_org_ids
-from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.crypto import get_current_secret_id, get_token_hash_candidates
 from polar.kit.utils import utc_now
 from polar.models import User, UserSession
 
@@ -80,14 +80,20 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         if scope:
             self.server.validate_requested_scope(scope)
 
+        candidates = get_token_hash_candidates(token)
         statement = select(UserSession).where(
-            UserSession.token.in_(get_token_hash_candidates(token).values()),
+            UserSession.token.in_(candidates.values()),
             UserSession.expires_at > utc_now(),
         )
         result = self.server.session.execute(statement)
         user_session: UserSession | None = result.unique().scalar_one_or_none()
         if user_session is None:
             raise InvalidGrantError()
+
+        current = candidates[get_current_secret_id()]
+        if user_session.token != current:
+            user_session.token = current
+            self.server.session.flush()
 
         user = user_session.user
         session_organization_ids = [

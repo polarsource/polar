@@ -2,9 +2,12 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import delete
 
+from polar.config import settings
 from polar.enums import EmailSender
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.email_log import (
     EmailLog,
@@ -37,6 +40,12 @@ class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, U
             EmailLog.processor_id == processor_id
         )
         return await self.get_one_or_none(statement)
+
+    async def delete_expired(self) -> None:
+        statement = delete(EmailLog).where(
+            EmailLog.created_at < utc_now() - settings.EMAIL_LOG_RETENTION_PERIOD
+        )
+        await self.session.execute(statement)
 
     async def mark_failed(self, email_log: EmailLog, error: str) -> EmailLog:
         return await self.update(

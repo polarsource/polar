@@ -253,6 +253,7 @@ class Settings(BaseSettings):
     EMAIL_FROM_LOCAL: str = "mail"
     EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
     EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
+    EMAIL_LOG_RETENTION_PERIOD: timedelta = timedelta(days=660)
 
     TURNSTILE_SECRET: str = ""
 

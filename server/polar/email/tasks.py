@@ -6,7 +6,7 @@ import structlog
 from polar.config import settings
 from polar.logging import Logger
 from polar.models.email_log import EmailLogStatus
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .react import render_from_json
 from .repository import EmailLogRepository, extract_organization_id
@@ -88,3 +88,14 @@ async def email_send(
                 )
         except Exception:
             log.exception("Failed to write email log")
+
+
+@actor(
+    actor_name="email_log.delete_expired",
+    cron_trigger=CronTrigger(hour=3, minute=30),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def email_log_delete_expired() -> None:
+    async with AsyncSessionMaker() as session:
+        await EmailLogRepository.from_session(session).delete_expired()

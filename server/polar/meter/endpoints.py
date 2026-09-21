@@ -43,13 +43,10 @@ MeterNotFound = {
     summary="List Meters",
     response_model=ListResource[MeterSchema],
     openapi_extra={
-        "x-tool-name": "meters_list",
-        "x-tool-title": "List meters",
         "x-tool-description": (
             "List all usage meters in your organization for tracking consumption-"
             "based billing and analytics."
         ),
-        "x-tool-annotations": ["read_only"],
         "parameters": [get_metadata_query_openapi_schema()],
     },
 )
@@ -91,10 +88,7 @@ async def list(
     response_model=MeterSchema,
     responses={404: MeterNotFound},
     openapi_extra={
-        "x-tool-name": "meters_get",
-        "x-tool-title": "Get meter",
         "x-tool-description": "Retrieve a specific meter by ID.",
-        "x-tool-annotations": ["read_only"],
     },
 )
 async def get(
@@ -193,8 +187,6 @@ async def quantities(
     summary="Create Meter",
     responses={201: {"description": "Meter created."}},
     openapi_extra={
-        "x-tool-name": "meters_create",
-        "x-tool-title": "Create meter",
         "x-tool-description": (
             "Create a new usage meter to track customer consumption for usage-based "
             "pricing models."
@@ -219,8 +211,6 @@ async def create(
         404: MeterNotFound,
     },
     openapi_extra={
-        "x-tool-name": "meters_update",
-        "x-tool-title": "Update meter",
         "x-tool-description": "Update an existing meter's configuration.",
     },
 )

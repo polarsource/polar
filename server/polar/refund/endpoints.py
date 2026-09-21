@@ -27,12 +27,6 @@ router = APIRouter(
     "/",
     summary="List Refunds",
     response_model=ListResource[RefundSchema],
-    openapi_extra={
-        "x-tool-name": "refunds_list",
-        "x-tool-title": "List refunds",
-        "x-tool-description": "List refunds.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def list(
     pagination: PaginationParamsQuery,
@@ -98,11 +92,6 @@ async def list(
             "description": "Order is already fully refunded.",
             "model": RefundedAlready.schema(),
         },
-    },
-    openapi_extra={
-        "x-tool-name": "refunds_create",
-        "x-tool-title": "Create refund",
-        "x-tool-description": "Create a refund.",
     },
 )
 async def create(

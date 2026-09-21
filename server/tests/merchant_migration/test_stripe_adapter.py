@@ -563,6 +563,61 @@ class TestExtractProducts:
         assert products == []
 
 
+def _customer_with_tax_ids(*tax_ids: dict[str, Any]) -> stripe_lib.Customer:
+    return stripe_lib.Customer.construct_from(
+        {
+            "id": "cus_1",
+            "email": "a@example.com",
+            "tax_ids": {
+                "object": "list",
+                "data": list(tax_ids),
+                "has_more": False,
+            },
+        },
+        None,
+    )
+
+
+class TestMapTaxId:
+    def test_prefers_first_eu_vat_over_another_known_type(self) -> None:
+        adapter = StripeAdapter("rk_test")
+        customer = _customer_with_tax_ids(
+            {
+                "id": "txi_ein",
+                "object": "tax_id",
+                "type": "us_ein",
+                "value": "12-3456789",
+            },
+            {
+                "id": "txi_vat",
+                "object": "tax_id",
+                "type": "eu_vat",
+                "value": "FR61954506077",
+            },
+        )
+
+        assert adapter._map_tax_id(customer) == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_skips_unknown_type(self) -> None:
+        adapter = StripeAdapter("rk_test")
+        customer = _customer_with_tax_ids(
+            {
+                "id": "txi_unknown",
+                "object": "tax_id",
+                "type": "not_a_tax_id",
+                "value": "XX123",
+            },
+            {
+                "id": "txi_gb",
+                "object": "tax_id",
+                "type": "gb_vat",
+                "value": "GB123456789",
+            },
+        )
+
+        assert adapter._map_tax_id(customer) == ("GB123456789", TaxIDFormat.gb_vat)
+
+
 @pytest.mark.asyncio
 class TestExtractPages:
     async def test_customer_page_resumes_and_advances_to_subscriptions(

@@ -768,8 +768,9 @@ class StripeAdapter:
         return billing_country, source.get("country") or card.get("country")
 
     def _map_tax_id(self, customer: stripe_lib.Customer) -> TaxID | None:
+        tax_ids = customer.get("tax_ids")
         mapped: list[TaxID] = []
-        for item in customer.get("tax_ids") or []:
+        for item in (tax_ids["data"] if tax_ids else None) or []:
             tax_id = from_stripe_tax_id(item.get("type") or "", item.get("value"))
             if tax_id is not None:
                 mapped.append(tax_id)

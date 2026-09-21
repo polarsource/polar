@@ -105,7 +105,6 @@ async def list(
     ),
     response_model=BenefitSchema,
     responses={404: BenefitNotFound},
-    openapi_extra={},
 )
 async def get(
     id: BenefitID,

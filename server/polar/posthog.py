@@ -198,7 +198,7 @@ class Service:
         }
 
     def _get_user_properties(self, user: User) -> dict[str, Any]:
-        user_data = {"email": user.email, "verified": user.email_verified}
+        user_data: dict[str, Any] = {"verified": user.email_verified}
 
         signup = {}
         signup_attribution = user.signup_attribution

@@ -15,17 +15,21 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-uv run dramatiq \
-    -p 1 -t 1 \
-    --queues high_priority medium_priority low_priority \
-    -f polar.worker.scheduler:start \
-    polar.worker.run &
-worker_pid=$!
-
 uv run uvicorn polar.app:app \
     --host 127.0.0.1 \
     --port "$API_PORT" \
     --workers 1 &
 api_pid=$!
+
+until curl -sf "http://127.0.0.1:${API_PORT}/healthz" >/dev/null; do
+    kill -0 "$api_pid" 2>/dev/null || exit 1
+    sleep 5
+done
+
+uv run dramatiq \
+    -p 1 -t 1 \
+    polar.worker.run \
+    --queues high_priority medium_priority low_priority &
+worker_pid=$!
 
 wait -n "$worker_pid" "$api_pid"

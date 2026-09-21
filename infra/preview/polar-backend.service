@@ -12,7 +12,7 @@ ExecStart=/srv/preview-tools/run-preview-backend.sh
 Restart=on-failure
 RestartSec=5
 KillMode=control-group
-TimeoutStopSec=30
+TimeoutStopSec=10
 
 MemoryMax=2G
 CPUQuota=200%

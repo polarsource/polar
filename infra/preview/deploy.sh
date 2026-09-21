@@ -75,6 +75,7 @@ BASE_URL="https://${PREVIEW_HOST}"
 
 log "Deploying branch=${BRANCH} sha=${SHA}"
 
+systemctl stop "$SEED_COMPLEMENT_UNIT" 2>/dev/null || true
 exec 9>"$SEED_COMPLEMENT_LOCK"
 if ! flock --timeout 900 9; then
     log "Simple-complement seed did not finish within 15 minutes"
@@ -144,8 +145,6 @@ if changed '^clients/(pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json|patches
     pnpm install --frozen-lockfile
 fi
 
-log "Building frontend packages"
-pnpm exec turbo run build --filter='./packages/*'
 cd "${CHECKOUT}/server"
 
 # --- Backend .env (must be written before migrations) ---
@@ -206,12 +205,18 @@ log "Running database migrations"
 uv run alembic upgrade head
 
 # --- Readiness-critical seed data ---
-log "Loading readiness-critical seed data"
-uv run task seeds_load --phase simple
+SEED_MARKER="${CHECKOUT}/.seeded-$(grep -E '^POLAR_POSTGRES_DATABASE=' "${CHECKOUT}/server/.env" | cut -d= -f2)"
+if [[ -f "$SEED_MARKER" ]]; then
+    log "Readiness-critical seed data already loaded"
+else
+    log "Loading readiness-critical seed data"
+    uv run task seeds_load --phase simple
+    touch "$SEED_MARKER"
+fi
 
 # --- Restart services ---
 log "Restarting services"
-systemctl restart polar-backend polar-frontend
+systemctl restart polar-backend
 
 # --- Deferred demo and analytics data ---
 systemctl reset-failed "$SEED_COMPLEMENT_UNIT" 2>/dev/null || true

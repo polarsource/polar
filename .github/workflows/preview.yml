@@ -112,6 +112,7 @@ jobs:
           ENV_JSON=$(jq -n \
             --arg stripe_key "${{ secrets.POLAR_PREVIEW_STRIPE_SECRET_KEY }}" \
             --arg stripe_whsec "${{ secrets.POLAR_PREVIEW_STRIPE_WEBHOOK_SECRET }}" \
+            --arg stripe_pk "${{ secrets.POLAR_PREVIEW_STRIPE_PUBLISHABLE_KEY }}" \
             --arg pydantic_ai_key "${{ secrets.POLAR_PREVIEW_PYDANTIC_AI_GATEWAY_API_KEY }}" \
             --arg pg_db "${{ steps.provision.outputs.preview_postgres_database }}" \
             --arg pg_host "${{ fromJson(steps.provision.outputs.preview_postgres_env_json).POLAR_POSTGRES_HOST }}" \
@@ -126,6 +127,7 @@ jobs:
             '{
               POLAR_STRIPE_SECRET_KEY: $stripe_key,
               POLAR_STRIPE_WEBHOOK_SECRET: $stripe_whsec,
+              POLAR_STRIPE_PUBLISHABLE_KEY: $stripe_pk,
               POLAR_PYDANTIC_AI_GATEWAY_API_KEY: $pydantic_ai_key,
               POLAR_POSTGRES_DATABASE: $pg_db,
               POLAR_POSTGRES_HOST: $pg_host,
@@ -165,6 +167,21 @@ jobs:
             echo "Cloning ${BASE_VM} to pr-${PR_NUM}"
             ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key exe.dev cp "$BASE_VM" "pr-${PR_NUM}"
           fi
+
+      - name: Sync preview tools to VM
+        if: steps.action.outputs.action == 'deploy'
+        run: |
+          set -euo pipefail
+          tar -C infra/preview -cf - \
+            deploy.sh run-preview-backend.sh log-viewer.py \
+            polar-backend.service polar-frontend.service polar-logs.service polar-seed-simple-complement.service \
+          | ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key "pr-${PR_NUM}.exe.xyz" \
+            "sudo rm -rf /tmp/preview-tools && sudo mkdir -p /tmp/preview-tools \
+             && sudo tar -C /tmp/preview-tools -xf - \
+             && sudo install -m 755 /tmp/preview-tools/deploy.sh /tmp/preview-tools/run-preview-backend.sh /tmp/preview-tools/log-viewer.py /srv/preview-tools/ \
+             && sudo cp /tmp/preview-tools/polar-*.service /etc/systemd/system/ \
+             && sudo systemctl daemon-reload \
+             && sudo systemctl restart polar-logs"
 
       # --- SSH deploy ---
       - name: Deploy to preview VM
@@ -212,6 +229,55 @@ jobs:
 
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
           echo "preview_url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v6.1.0
+        if: steps.action.outputs.action == 'deploy' && steps.deploy.outputs.preview_url != ''
+        with:
+          package_json_file: clients/package.json
+
+      - name: Set up Node.js
+        if: steps.action.outputs.action == 'deploy' && steps.deploy.outputs.preview_url != ''
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Build frontend
+        if: steps.action.outputs.action == 'deploy' && steps.deploy.outputs.preview_url != ''
+        working-directory: ./clients
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          NEXT_PUBLIC_API_URL: ${{ steps.deploy.outputs.preview_url }}
+          NEXT_PUBLIC_FRONTEND_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          NEXT_PUBLIC_BACKOFFICE_URL: ${{ steps.deploy.outputs.preview_url }}/backoffice
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm turbo run build --filter=web
+
+      - name: Ship frontend build to preview VM
+        if: steps.action.outputs.action == 'deploy' && steps.deploy.outputs.preview_url != ''
+        run: |
+          set -euo pipefail
+          tar -C clients/apps/web --exclude=./.next/cache --exclude=./.next/dev -czf - ./.next \
+          | ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
+            "pr-${PR_NUM}.exe.xyz" \
+            "sudo rm -rf /srv/polar/clients/apps/web/.next \
+             && sudo tar -C /srv/polar/clients/apps/web -xzf - \
+             && sudo systemctl restart polar-frontend"
+          for i in $(seq 1 30); do
+            if ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key "pr-${PR_NUM}.exe.xyz" \
+              "ss -ltn | grep -q ':3000 '"; then
+              echo "Frontend is listening (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/30: frontend not listening yet"
+            sleep 5
+          done
+          echo "::error::Frontend did not come up"
+          exit 1
 
       # The preview URL is tailnet-only, so the health check runs on the
       # VM against Caddy.

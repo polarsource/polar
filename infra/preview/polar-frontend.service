@@ -2,18 +2,19 @@
 Description=Polar Preview Frontend
 After=network.target
 ConditionPathExists=/srv/polar/clients/.env.preview
+ConditionPathExists=/srv/polar/clients/apps/web/.next/BUILD_ID
 
 [Service]
 Type=simple
 WorkingDirectory=/srv/polar/clients/apps/web
 EnvironmentFile=/srv/polar/clients/.env.preview
-ExecStart=/usr/bin/npx next dev --turbopack --hostname 127.0.0.1 --port ${PORT}
+ExecStart=/usr/bin/npx next start --hostname 127.0.0.1 --port ${PORT}
 Restart=on-failure
 RestartSec=5
 KillMode=control-group
 TimeoutStopSec=15
 
-MemoryMax=5G
+MemoryMax=2G
 CPUQuota=200%
 
 [Install]

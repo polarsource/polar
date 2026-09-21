@@ -46,7 +46,8 @@ def unalias_email(email: str) -> str:
     return f"{parsed.local_part.split('+', 1)[0]}@{parsed.domain}"
 
 
-_GOOGLE_MAIL_DOMAINS = {"gmail.com", "googlemail.com"}
+_GMAIL_DOMAIN = "gmail.com"
+_GOOGLE_MAIL_DOMAINS = {_GMAIL_DOMAIN, "googlemail.com"}
 
 
 def normalize_email(email: str) -> str:
@@ -66,7 +67,7 @@ def normalize_email(email: str) -> str:
     domain = parsed.domain
 
     if domain in _GOOGLE_MAIL_DOMAINS:
-        domain = "gmail.com"
+        domain = _GMAIL_DOMAIN
         local_part = local_part.replace(".", "")
 
     return f"{local_part}@{domain}"

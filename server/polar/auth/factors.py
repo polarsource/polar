@@ -27,7 +27,11 @@ from polar.config import settings
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import ResourceNotFound
-from polar.kit.crypto import get_legacy_secret, get_token_hash_candidates
+from polar.kit.crypto import (
+    get_current_secret_id,
+    get_legacy_secret,
+    get_token_hash_candidates,
+)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import BackupCodesEnrollment, EmailOTP, TOTPEnrollment
@@ -259,7 +263,7 @@ class BackupCodesFactor(BackupCodesFactorBase):
             )
             raise AlreadyUsedBackupCodeException()
 
-        current = candidates[settings.CURRENT_HASH_SECRET_ID]
+        current = candidates[get_current_secret_id()]
         enrollment.codes_hashes = [
             current if candidate == stored else candidate
             for candidate in enrollment.codes_hashes

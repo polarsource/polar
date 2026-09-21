@@ -26,7 +26,9 @@ def get_hash_secrets() -> HashSecrets:
     arn = settings.AWS_HASH_SECRET_ARN
     if arn is None:
         return HashSecrets(
-            settings.HASH_SECRETS, settings.CURRENT_HASH_SECRET_ID, settings.SECRET
+            settings.HASH_SECRETS,  # lint-skip: hash-secret
+            settings.CURRENT_HASH_SECRET_ID,  # lint-skip: hash-secret
+            settings.SECRET,
         )
     return _fetch_hash_secrets(arn)
 

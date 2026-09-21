@@ -1,0 +1,111 @@
+---
+title: "Scheduled jobs"
+description: "Every cron task the worker runs, when it runs, and the daily maintenance window they share."
+---
+
+The worker's scheduler ([`polar/worker/scheduler.py`](https://github.com/polarsource/polar/blob/main/server/polar/worker/scheduler.py))
+runs an APScheduler instance next to Dramatiq. Any actor declared with a `cron_trigger` is
+registered as a job and enqueued on its schedule:
+
+```python
+@actor(
+    actor_name="external_event.prune",
+    cron_trigger=CronTrigger.from_crontab("36 4 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def external_event_prune() -> None: ...
+```
+
+**All schedules are UTC.** The scheduler has no notion of a local timezone, and neither should
+you when reading this page.
+
+This page is the registry of those jobs. It is the source of truth for "what runs when", so a
+PR that adds, moves or removes a scheduled job updates the table in the same PR.
+
+## The daily maintenance window: 04:00–05:00 UTC
+
+Daily jobs run staggered inside a maintenance window between 04:00 and 05:00 UTC, one job per
+slot, four minutes apart — see
+[ADR-0013](/engineering/decisions/0013-daily-maintenance-window). 04:00–05:00 UTC is our
+lowest-traffic hour, and spreading the jobs keeps a dozen bulk deletes from landing on the
+database at the same instant.
+
+**Adding a daily job:** take the next free slot below, declare it as
+`CronTrigger.from_crontab("<minute> 4 * * *")`, and add its row here. Two daily jobs never
+share a minute.
+
+| Slot (UTC) | Actor | Module | What it does |
+|---|---|---|---|
+| 04:00 | `auth.delete_expired` | `auth` | Delete expired user sessions |
+| 04:04 | `email_otp.delete_expired` | `auth` | Delete expired email OTPs |
+| 04:08 | `authentication_session.delete_expired` | `auth` | Delete expired authentication sessions |
+| 04:12 | `customer_session.delete_expired` | `customer_session` | Delete expired customer sessions |
+| 04:16 | `customer_session_code.delete_expired` | `customer_portal` | Delete expired customer portal login codes |
+| 04:20 | `member_session.delete_expired` | `member_session` | Delete expired member sessions |
+| 04:24 | `oauth2_token.delete_expired` | `oauth2` | Delete expired OAuth2 tokens |
+| 04:28 | `customer_email_update.delete_expired` | `customer_email_update` | Delete expired customer email change requests |
+| 04:32 | `email_update.delete_expired_record` | `email_update` | Delete expired user email change requests |
+| 04:36 | `external_event.prune` | `external_event` | Prune external events older than 30 days |
+| 04:40 | `webhook_event.archive` | `webhook` | Archive webhook events past the retention period |
+| 04:44 | `processor_fee.sync_stripe_fees` | `transaction` | Import Stripe fee balance transactions |
+| 04:48 | `organization.offboard_expired` | `organization` | Fan out offboarding for orgs past the wind-down floor |
+| 04:52 | `organization.cancel_expired_subscriptions` | `organization` | Cancel subscriptions of denied, blocked or offboarded orgs |
+| 04:56 | _free_ | | |
+
+`organization.cancel_expired_subscriptions` deliberately sits after
+`organization.offboard_expired`: an org offboarded in this window should have its subscriptions
+cancelled in the same pass.
+
+Fifteen slots fit at four-minute spacing. When the window fills, tighten the spacing rather
+than spilling past 05:00.
+
+## Hourly and sub-hourly jobs
+
+These are not part of the window. They already run often enough to be spread across the hour,
+and pinning them to a daily slot would defeat their purpose. They are listed here so the
+registry stays complete.
+
+| Schedule (UTC) | Actor | Module | What it does |
+|---|---|---|---|
+| every 5s | `payout.sample_database_waits` | `payout` | Sample database wait times |
+| every 5 min | `polar_self.track_event_ingestion_v2` | `integrations/polar` | Track our own event ingestion |
+| every 15 min | `meter.enqueue_billing` | `meter` | Fan out metered billing entries |
+| every 15 min | `observability.invariants.enqueue` | `observability/invariants` | Fan out invariant checks |
+| `:00,:15,:30,:45` | `checkout.expire_open_checkouts` | `checkout` | Expire checkouts past their deadline |
+| hourly `:00` | `order.process_dunning` | `order` | Retry payments due for dunning |
+| hourly `:00` | `organization.unsnooze_expired` | `organization` | Unsnooze time-based snoozed orgs |
+| hourly `:05` | `processor_transaction.sync_stripe` | `processor_transaction` | Sync Stripe processor transactions |
+| hourly `:15` | `order.enqueue_stale_payment_locks` | `order` | Fan out stale payment locks |
+| hourly `:15` | `payout.trigger_stripe_payouts` | `payout` | Trigger pending Stripe payouts |
+| hourly `:30` | `dispute.enqueue_auto_accepts` | `dispute` | Fan out disputes past the auto-accept delay |
+| hourly `:30` | `subscription.scan_renewal_reminders` | `subscription` | Fan out renewal reminders |
+| hourly `:30` | `subscription.scan_trial_conversion_reminders` | `subscription` | Fan out trial conversion reminders |
+| hourly `:45` | `payment_method.scan_expiration_reminders` | `payment_method` | Fan out card expiration reminders |
+
+## Weekly jobs
+
+| Schedule (UTC) | Actor | Module | What it does |
+|---|---|---|---|
+| Mon 09:00 | `slo_report.send_weekly` | `observability/slo_report` | Post the weekly SLO report to Slack |
+
+This one is intentionally outside the window: it exists to be read by a human on Monday
+morning, so the time of day is the point.
+
+## Outside the scheduler
+
+Not every recurring job is a Dramatiq actor. For completeness:
+
+- **`polar-production-backup-copy`** — daily at 12:00 UTC, an EventBridge-scheduled ECS task
+  (`terraform/production/backups.tf`). It copies snapshots rather than reading the primary, so
+  it is not part of the maintenance window.
+
+## Verifying the registry
+
+To list what the code actually declares:
+
+```bash
+cd server && grep -rn "cron_trigger" polar --include=tasks.py
+```
+
+If that output and the tables above disagree, the code is right and this page is stale — fix it.

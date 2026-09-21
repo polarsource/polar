@@ -270,6 +270,14 @@ async def resource_created(resource_id: UUID) -> None:
         # Do work... session commits automatically at end
 ```
 
+### Scheduled tasks
+
+An actor with a `cron_trigger` is picked up by the scheduler. Daily tasks run staggered in the
+**04:00–05:00 UTC maintenance window** (ADR-0013): take the next free slot from the handbook's
+[Scheduled jobs](../handbook/engineering/backend-development/scheduled-jobs.mdx) page, declare it
+as `CronTrigger.from_crontab("<minute> 4 * * *")`, and add a row for it there in the same PR.
+Hourly and sub-hourly tasks keep their own schedules.
+
 ## Testing
 
 Test files mirror the source layout: `polar/{module}/endpoints.py` → `tests/{module}/test_endpoints.py`.

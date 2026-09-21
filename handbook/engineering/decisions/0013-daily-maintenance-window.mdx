@@ -42,8 +42,6 @@ running them frequently.
   firing at once, during the hour when it has the most headroom to absorb them.
 - Every daily job has a known minute, so an incident at 04:3x can be traced to a specific task
   without reading the scheduler.
-- The registry is the source of truth for "what runs when" and has to be updated in the same PR
-  that adds or moves a job.
 - Slots are a finite resource: fifteen fit at four-minute spacing. When the window fills up,
   tighten the spacing rather than spilling out of the window — the crowding this ADR prevents is
   simultaneity, not proximity.
@@ -57,10 +55,7 @@ running them frequently.
   that the next day's run subsumes. A job for which a skipped day matters needs its own
   liveness check, not a slot.
 - A slot is a start time, not an exclusive lease: a long job can overlap the next one. That is
-  fine for the pruning work we run today, and the reason the window is not packed tighter.
-- The window is UTC only because the worker container is. APScheduler resolves a `CronTrigger`
-  against the process timezone, and we pin it nowhere — see
-  [Scheduled jobs](/engineering/backend-development/scheduled-jobs).
+  fine for the pruning work we run today.
 
 ## Alternatives considered
 

@@ -53,8 +53,8 @@ share a minute.
 | 04:58 | _free_ | | |
 
 Slots start at `:02` rather than `:00`: six recurring jobs already land on the top of the hour,
-and the point of the window is to avoid piling on. The one slot that still shares a minute with
-recurring work is 04:30, so it holds the smallest of the deletes.
+and the point of the window is to avoid piling on. 04:30 and 04:50 still share their minute with
+the five-minutely job below, and the five-second wait sampler runs inside every slot.
 
 The two `organization` jobs are independent despite sitting next to each other:
 `cancel_expired_subscriptions` only picks up organizations whose terminal status is at least
@@ -63,12 +63,13 @@ The two `organization` jobs are independent despite sitting next to each other:
 
 ### Changing a schedule
 
-Jobs live in a `MemoryJobStore` with APScheduler's default one-second misfire grace, so a
-worker restart recomputes the next run from now and silently drops any slot it stepped over.
-When a deploy moves a job's slot, deploy outside 04:00–05:00 UTC: a cutover *before* a job's
-new slot re-runs it that day, and a cutover *between* its new and old slot skips it for a day.
-Both are harmless for the jobs in the table today — the deletes are idempotent and the
-`organization` jobs are gated by multi-day delays — but check before assuming it for a new one.
+A worker restart recomputes each job's next run from now and never replays a slot it stepped
+over ([ADR-0013](/engineering/decisions/0013-daily-maintenance-window)), so when a deploy moves
+a job the cutover time decides what happens that day. A cutover that falls between an old slot
+and a later new one runs the job **twice**; one that falls between a new slot and a later old
+one **skips** it until the next day. Land the cutover outside both slots — after 05:00 UTC for
+a move within the window. Every job in the table today survives a double run, but a new one
+has to before it takes a slot.
 
 ## Hourly and sub-hourly jobs
 

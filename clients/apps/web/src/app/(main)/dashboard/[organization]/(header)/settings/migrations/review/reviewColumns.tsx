@@ -1,9 +1,10 @@
-import { DataTableColumnDef, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { DataTableColumnDef } from '@polar-sh/orbit'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { HeaderCheckState } from '../selection'
-import { importTaxLabel, renewsLabel } from '../recordFormat'
+import { renewsLabel } from '../recordFormat'
 import { isImported, isSelectable, ReviewRow, rowAmount } from './reviewRows'
 
 interface ColumnContext {
@@ -63,14 +64,6 @@ export function buildReviewColumns({
       size: 140,
       header: 'Renews',
       cell: ({ row }) => <RenewsCell row={row.original} />,
-    },
-    {
-      id: 'tax',
-      size: 120,
-      header: 'Tax',
-      cell: ({ row }) => (
-        <Text color="muted">{importTaxLabel(row.original)}</Text>
-      ),
     },
     {
       id: 'amount',

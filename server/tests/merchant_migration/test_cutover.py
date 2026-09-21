@@ -211,14 +211,19 @@ def cutover(
 
 @pytest.mark.asyncio
 class TestRun:
+    @pytest.mark.parametrize("tax", [TaxBehavior.inclusive, TaxBehavior.exclusive])
     async def test_creates_activates_and_stops_pending_subscription(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         cutover: RunCutover,
         pending_record: MerchantMigrationRecord,
         imported_customer: Customer,
+        tax: TaxBehavior,
     ) -> None:
+        pending_record.canonical = serialize(canonical_subscription(tax_behavior=tax))
+        await save_fixture(pending_record)
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
         adapter = _source()
 
@@ -233,28 +238,7 @@ class TestRun:
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["provider"] == "stripe"
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
-        assert subscription.tax_behavior == TaxBehavior.inclusive
-        assert subscription.tax_exempted is False
-
-    async def test_pins_exclusive_tax_when_merchant_chose_it(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        cutover: RunCutover,
-        pending_record: MerchantMigrationRecord,
-    ) -> None:
-        pending_record.canonical = serialize(
-            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
-        )
-        await save_fixture(pending_record)
-        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
-
-        outcome = await cutover(_source())
-
-        assert outcome.status == MerchantMigrationCutoverStatus.moved
-        subscription = await _created(session, pending_record)
-        assert subscription.tax_behavior == TaxBehavior.exclusive
+        assert subscription.tax_behavior == tax
         assert subscription.tax_exempted is False
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(
@@ -384,40 +368,6 @@ class TestRun:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.paused,
-            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
-        )
-        pending_record.target_id = subscription.id
-        pending_record.status = MerchantMigrationRecordStatus.imported
-        await save_fixture(pending_record)
-        subscription_id = subscription.id
-        session.expunge_all()
-        record = await session.get(MerchantMigrationRecord, pending_record.id)
-        assert record is not None
-
-        outcome = await SubscriptionCutover(session, migration, _source()).run(record)
-
-        reloaded = await session.get(Subscription, subscription_id)
-        assert reloaded is not None
-        assert outcome.status == MerchantMigrationCutoverStatus.moved
-        assert reloaded.status == SubscriptionStatus.active
-        assert reloaded.payment_method_id is not None
-
-    async def test_applies_canonical_tax_when_finishing_a_paused_subscription(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        migration: MerchantMigration,
-        pending_record: MerchantMigrationRecord,
-        imported_customer: Customer,
-        product: Product,
-    ) -> None:
-        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=imported_customer,
-            status=SubscriptionStatus.paused,
             tax_behavior=TaxBehavior.inclusive,
             user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
@@ -437,6 +387,8 @@ class TestRun:
         reloaded = await session.get(Subscription, subscription_id)
         assert reloaded is not None
         assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert reloaded.status == SubscriptionStatus.active
+        assert reloaded.payment_method_id is not None
         assert reloaded.tax_behavior == TaxBehavior.exclusive
         assert reloaded.tax_exempted is False
 

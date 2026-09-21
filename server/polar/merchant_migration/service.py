@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
-from dataclasses import replace
 from datetime import datetime
 from typing import NamedTuple, TypedDict
 from uuid import UUID
@@ -245,11 +244,7 @@ class RecordNotSubscription(MerchantMigrationError):
 
 class RecordTaxLocked(MerchantMigrationError):
     def __init__(self) -> None:
-        super().__init__(
-            "This subscription has already switched to Polar, so its tax "
-            "treatment can't be changed here.",
-            409,
-        )
+        super().__init__("This subscription has already switched to Polar.", 409)
 
 
 class BlockedByPrecheck(MerchantMigrationError):
@@ -498,16 +493,11 @@ class MerchantMigrationService:
 
         repository = MerchantMigrationRepository.from_session(session)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        preserved_tax = await record_repository.pending_subscription_tax_behaviors(
-            migration.id
-        )
-        previous = (
-            migration.operation.subscription_tax_behavior
-            if migration.operation is not None
-            else None
-        )
-        if previous:
-            preserved_tax = {**previous, **preserved_tax}
+        operation = migration.operation
+        preserved_tax = {
+            **((operation.subscription_tax_behavior if operation else None) or {}),
+            **await record_repository.pending_subscription_tax_behaviors(migration.id),
+        }
         await record_repository.delete_pending(migration.id)
         await repository.update(
             migration,
@@ -1461,14 +1451,12 @@ class MerchantMigrationService:
             raise RecordNotSubscription()
         if record.cutover_status == MerchantMigrationCutoverStatus.moved:
             raise RecordTaxLocked()
-        try:
-            staged = deserialize(record.type, record.canonical)
-        except KeyError, TypeError, ValueError:
-            raise MerchantMigrationRecordNotFound() from None
-        if not isinstance(staged, CanonicalSubscription):
-            raise RecordNotSubscription()
-        staged = replace(staged, tax_behavior=tax_behavior)
-        await repository.update(record, update_dict={"canonical": serialize(staged)})
+        await repository.update(
+            record,
+            update_dict={
+                "canonical": {**record.canonical, "tax_behavior": tax_behavior.value}
+            },
+        )
         return MerchantMigrationRecordUpdate(tax_behavior=tax_behavior)
 
     async def list_records(

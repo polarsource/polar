@@ -194,9 +194,7 @@ export function ReviewTableView({
 
         <Text variant="caption" color="muted">
           Preparing a subscription brings its customer and product to Polar.
-          Polar starts billing only when you switch. Tax is inclusive by default
-          — the customer keeps paying the listed price. Open a row to add tax on
-          top instead.
+          Polar starts billing only when you switch.
         </Text>
 
         {rows.length === 0 ? (

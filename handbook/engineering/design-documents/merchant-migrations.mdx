@@ -88,20 +88,11 @@ Before activating, we also decide each subscription's tax treatment and the cust
 
 ## Taxes
 
-Migrating billing to Polar changes who computes tax. At review the merchant picks per subscription:
+At review the merchant picks per subscription: **inclusive (default)** — customer pays the listed price, Polar takes tax out, pins `tax_behavior=inclusive` and `tax_exempted=false` — or **exclusive**, tax added on top. Inclusive is the default regardless of Stripe `automatic_tax` (info only). Without a pin, Polar falls back to the org `default_tax_behavior`; a `location` default is exclusive for `CA`/`IN`/`US`.
 
-1. **Inclusive (default)** — the customer pays the listed price; Polar takes tax out of it. Pins `tax_behavior=inclusive` and `tax_exempted=false`.
-2. **Exclusive** — tax is added on top. Pins `tax_behavior=exclusive`.
+The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover. A precheck refresh keeps a merchant choice already stored on a pending row. B2B reverse-charge is not a third option: carry the source VAT ID onto `Customer.tax_id`. `tax_exempted` is pinned `false`.
 
-Inclusive is the default regardless of Stripe `automatic_tax` (shown as information only). Without a pin, Polar would fall back to the org's `default_tax_behavior`; a `location` default is exclusive for `CA`/`IN`/`US` and would bill listed price plus tax.
-
-The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover, so a later org-default change does not move an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row.
-
-B2B reverse-charge is not a third tax option: Polar already derives it from `Customer.tax_id`. Carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id`. Miss it and the customer gets re-taxed as B2C.
-
-`subscription.tax_exempted` is pinned `false` at import.
-
-The change bites at the **first renewal on Polar**: inclusive lowers the merchant's net, exclusive raises the customer's charge. Merchants who were adding tax on top should pick exclusive.
+The change bites at the **first renewal on Polar**: inclusive lowers the merchant's net, exclusive raises the customer's charge.
 
 ### Customer country
 

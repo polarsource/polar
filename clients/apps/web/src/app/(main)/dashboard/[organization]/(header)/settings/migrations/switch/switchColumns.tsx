@@ -4,7 +4,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { HeaderCheckState } from '../selection'
 import { SelectCheckbox } from '../SelectCheckbox'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
-import { importTaxLabel, renewsLabel } from '../recordFormat'
+import { renewsLabel } from '../recordFormat'
 import {
   intervalAbbreviation,
   isSwitchable,
@@ -69,14 +69,6 @@ export function buildSwitchColumns({
         </Box>
       ),
       cell: ({ row }) => <PlanCell row={row.original} />,
-    },
-    {
-      id: 'tax',
-      size: 120,
-      header: 'Tax',
-      cell: ({ row }) => (
-        <Text color="muted">{importTaxLabel(row.original)}</Text>
-      ),
     },
     {
       id: 'renews',

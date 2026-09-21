@@ -135,7 +135,6 @@ class CanonicalSubscription:
     # doesn't say. Polar always computes its own, so a subscription that billed
     # tax-free on the source will start being taxed after the switch.
     automatic_tax: bool | None = None
-    # Merchant choice at review; extract never sets this. None → inclusive at import.
     tax_behavior: TaxBehavior | None = None
 
     type = MerchantMigrationRecordType.subscription

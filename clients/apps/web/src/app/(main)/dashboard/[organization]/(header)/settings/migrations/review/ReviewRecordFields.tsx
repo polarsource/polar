@@ -6,7 +6,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
-import { isSwitched } from '../switch/switchRows'
 import { ReviewRow, rowAmount } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -38,19 +37,10 @@ export function SubscriptionFields({
       {row.subtitle ? <DetailCell label="Status" value={row.subtitle} /> : null}
       <DetailCell label="Renewal" value={renewalDate(row)} />
       {tax ? <DetailCell label="Stripe automatic tax" value={tax} /> : null}
-      <DetailCell
-        label="Tax after switch"
-        value={
-          <ImportTaxPicker
-            key={row.record_id ?? row.source_id}
-            migrationId={migrationId}
-            recordId={row.record_id}
-            taxBehavior={row.tax_behavior}
-            amount={row.amount}
-            currency={row.currency}
-            locked={isSwitched(row)}
-          />
-        }
+      <ImportTaxPicker
+        key={row.record_id ?? row.source_id}
+        migrationId={migrationId}
+        row={row}
       />
       {row.import_status === 'failed' ? (
         <DetailCell label="Last run" value="Failed" />

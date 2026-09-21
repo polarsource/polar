@@ -139,7 +139,6 @@ class TestUpsert:
             migration, organization, canonical_subscription()
         )
         assert refreshed.canonical["tax_behavior"] == "exclusive"
-
         preserved = await repository.pending_subscription_tax_behaviors(migration.id)
         await repository.delete_pending(migration.id)
         restored = await repository.upsert(
@@ -148,7 +147,6 @@ class TestUpsert:
             canonical_subscription(),
             preserved_tax_behavior=preserved,
         )
-
         assert restored.canonical["tax_behavior"] == "exclusive"
 
     async def test_is_idempotent_per_source(

@@ -627,8 +627,6 @@ class MerchantMigrationRecordRepository(
     async def pending_subscription_tax_behaviors(
         self, migration_id: UUID
     ) -> dict[str, TaxBehavior]:
-        """Pending subscription tax pins, keyed by source id. Locked so a tax
-        PATCH cannot land between this snapshot and ``delete_pending``."""
         tax_behavior = MerchantMigrationRecord.canonical["tax_behavior"].astext
         statement = (
             self.get_base_statement()
@@ -638,19 +636,15 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.type
                 == MerchantMigrationRecordType.subscription,
             )
-            .with_only_columns(
-                MerchantMigrationRecord.source_id,
-                tax_behavior,
-            )
+            .with_only_columns(MerchantMigrationRecord.source_id, tax_behavior)
             .order_by(None)
             .with_for_update(of=MerchantMigrationRecord)
         )
-        preserved: dict[str, TaxBehavior] = {}
-        for source_id, raw in (await self.session.execute(statement)).all():
-            behavior = parse_tax_behavior(raw)
-            if behavior is not None:
-                preserved[source_id] = behavior
-        return preserved
+        return {
+            source_id: behavior
+            for source_id, raw in (await self.session.execute(statement)).all()
+            if (behavior := parse_tax_behavior(raw)) is not None
+        }
 
     async def delete_pending(self, migration_id: UUID) -> None:
         await self.session.execute(
@@ -667,11 +661,12 @@ class MerchantMigrationRecordRepository(
         existing: MerchantMigrationRecord | None,
         preserved_tax_behavior: Mapping[str, TaxBehavior] | None,
     ) -> CanonicalRecord:
-        if not isinstance(record, CanonicalSubscription) or (
-            record.tax_behavior is not None
+        if (
+            not isinstance(record, CanonicalSubscription)
+            or record.tax_behavior is not None
         ):
             return record
-        preserved: TaxBehavior | None = None
+        preserved = None
         if (
             existing is not None
             and existing.status == MerchantMigrationRecordStatus.pending
@@ -679,9 +674,9 @@ class MerchantMigrationRecordRepository(
             preserved = parse_tax_behavior(existing.canonical.get("tax_behavior"))
         if preserved is None and preserved_tax_behavior is not None:
             preserved = preserved_tax_behavior.get(record.source_id)
-        if preserved is None:
-            return record
-        return replace(record, tax_behavior=preserved)
+        return (
+            replace(record, tax_behavior=preserved) if preserved is not None else record
+        )
 
     async def upsert(
         self,

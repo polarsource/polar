@@ -157,9 +157,7 @@ class MerchantMigrationRecordItem(Schema):
     )
     tax_behavior: TaxBehavior | None = Field(
         description=(
-            "How Polar taxes this subscription after the switch: `inclusive` "
-            "(customer pays the listed price; Polar takes tax out of it) or "
-            "`exclusive` (tax added on top). Inclusive is the import default. "
+            "Polar tax after the switch (`inclusive` default, or `exclusive`). "
             "None for non-subscription rows."
         ),
     )
@@ -217,11 +215,7 @@ class MerchantMigrationRecordItem(Schema):
 
 class MerchantMigrationRecordUpdate(Schema):
     tax_behavior: TaxBehavior = Field(
-        description=(
-            "How Polar taxes this subscription after the switch. Inclusive "
-            "keeps the listed price (Polar takes tax out of it). Exclusive "
-            "adds tax on top."
-        ),
+        description="Polar tax after the switch: `inclusive` or `exclusive`.",
     )
 
 

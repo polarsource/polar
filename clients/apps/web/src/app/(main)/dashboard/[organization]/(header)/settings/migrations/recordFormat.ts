@@ -50,7 +50,3 @@ export function automaticTaxLabel(row: MigrationRecord): string | null {
   if (row.automatic_tax == null) return null
   return row.automatic_tax ? 'Enabled' : 'Disabled'
 }
-
-export function importTaxLabel(row: MigrationRecord): string {
-  return row.tax_behavior === 'exclusive' ? 'Exclusive' : 'Inclusive'
-}

@@ -6,7 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { automaticTaxLabel, renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
-import { isSwitched, needsAttention, SwitchRow } from './switchRows'
+import { needsAttention, SwitchRow } from './switchRows'
 
 export function SwitchRecordModal({
   row,
@@ -68,19 +68,10 @@ export function SwitchRecordModal({
             {tax ? (
               <DetailCell label="Stripe automatic tax" value={tax} />
             ) : null}
-            <DetailCell
-              label="Tax after switch"
-              value={
-                <ImportTaxPicker
-                  key={row.record_id ?? row.source_id}
-                  migrationId={migrationId}
-                  recordId={row.record_id}
-                  taxBehavior={row.tax_behavior}
-                  amount={row.amount}
-                  currency={row.currency}
-                  locked={isSwitched(row)}
-                />
-              }
+            <ImportTaxPicker
+              key={row.record_id ?? row.source_id}
+              migrationId={migrationId}
+              row={row}
             />
             <DetailCell
               label="Stripe subscription ID"

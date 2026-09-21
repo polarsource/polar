@@ -75,6 +75,7 @@ from .pan_transfer import (
     PanTransferUnavailable,
 )
 from .precheck import (
+    ExistingPolarCustomer,
     account_blockers,
     classify_records,
     import_blockers,
@@ -604,6 +605,7 @@ class MerchantMigrationService:
         existing_product_names = await ProductRepository.from_session(
             session
         ).get_active_names_by_organization(organization.id)
+        existing_customers = await self._existing_polar_customers(session, migration)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         report = await precheck_engine.run(
             self._stage_records(
@@ -612,6 +614,7 @@ class MerchantMigrationService:
             organization,
             source_account,
             existing_product_names,
+            existing_customers,
         )
 
         # Re-running the precheck to refresh the ledger must not regress a
@@ -1504,7 +1507,7 @@ class MerchantMigrationService:
             or PrecheckEntity.customers in entities
         ):
             extra_dependencies = (
-                await record_repository.list_imported_catalog_dependencies(
+                await record_repository.list_review_catalog_dependencies(
                     migration.organization_id
                 )
             )
@@ -1523,6 +1526,7 @@ class MerchantMigrationService:
             existing_product_names = await ProductRepository.from_session(
                 session
             ).get_active_names_by_organization(migration.organization_id)
+        existing_customers = await self._existing_polar_customers(session, migration)
 
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:
@@ -1537,6 +1541,7 @@ class MerchantMigrationService:
                 entity_type,
                 organization.default_presentment_currency,
                 existing_product_names,
+                existing_customers,
             )
             if entity_type == PrecheckEntity.customers:
                 staged_customer_source_ids = {
@@ -1554,6 +1559,21 @@ class MerchantMigrationService:
             )
             items.extend(entity_items)
         return items
+
+    async def _existing_polar_customers(
+        self, session: AsyncReadSession, migration: MerchantMigration
+    ) -> dict[str, ExistingPolarCustomer]:
+        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            return {}
+        identities = await CustomerRepository.from_session(
+            session
+        ).get_stripe_identities_by_organization(migration.organization_id)
+        return {
+            email: ExistingPolarCustomer(
+                id=customer_id, stripe_customer_id=stripe_customer_id
+            )
+            for email, (customer_id, stripe_customer_id) in identities.items()
+        }
 
     async def summarize_records(
         self,

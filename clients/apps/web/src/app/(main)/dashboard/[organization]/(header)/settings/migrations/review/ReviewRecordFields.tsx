@@ -3,6 +3,7 @@
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 import { ReactNode } from 'react'
 import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
 import { ReviewRow, rowAmount } from './reviewRows'
@@ -68,7 +69,13 @@ export function ProductFields({ row }: { row: ReviewRow }) {
   )
 }
 
-export function CustomerFields({ row }: { row: ReviewRow }) {
+export function CustomerFields({
+  row,
+  polarCustomerHref,
+}: {
+  row: ReviewRow
+  polarCustomerHref?: string | null
+}) {
   if (!row.customer_email && !row.customer_name && !row.customer_source_id) {
     return null
   }
@@ -87,6 +94,16 @@ export function CustomerFields({ row }: { row: ReviewRow }) {
           label="Stripe customer ID"
           value={row.customer_source_id}
           monospace
+        />
+      ) : null}
+      {polarCustomerHref ? (
+        <DetailCell
+          label="Polar customer"
+          value={
+            <Link href={polarCustomerHref}>
+              <Text as="span">View in Polar</Text>
+            </Link>
+          }
         />
       ) : null}
     </Section>

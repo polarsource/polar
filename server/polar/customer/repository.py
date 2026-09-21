@@ -196,6 +196,26 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_stripe_identities_by_organization(
+        self, organization_id: UUID
+    ) -> dict[str, tuple[UUID, str | None]]:
+        """Lower-cased email → (id, stripe_customer_id) for the org's customers.
+
+        Used by merchant migrations to detect a source customer whose email
+        already exists in Polar under a different Stripe id.
+        """
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Customer.id, Customer.email, Customer.stripe_customer_id)
+            .where(Customer.organization_id == organization_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            email.lower(): (customer_id, stripe_customer_id)
+            for customer_id, email, stripe_customer_id in result.all()
+            if email
+        }
+
     async def get_ids_by_email(self, email: str) -> Sequence[UUID]:
         statement = (
             self.get_base_statement()

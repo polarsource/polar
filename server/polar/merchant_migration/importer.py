@@ -46,8 +46,10 @@ from .canonical import (
     subscription_price_key,
 )
 from .precheck import (
+    ExistingPolarCustomer,
     ProductImportPlan,
     Reason,
+    customer_stripe_id_conflict,
     plan_customer_imports,
     plan_product_imports,
     plan_subscription_imports,
@@ -66,11 +68,6 @@ _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
     _DEPENDENCY_CODE,
     "This customer already has a live subscription to the product on Polar, so a "
     "duplicate isn't created. It stays on the source.",
-)
-_CUSTOMER_STRIPE_ID_CONFLICT = Reason(
-    "customer_stripe_id_conflict",
-    "A Polar customer with this email already has a different Stripe id. Reconcile "
-    "them manually; this customer stays on the source.",
 )
 
 
@@ -180,6 +177,7 @@ class CatalogImporter:
         catalog = self._catalog_with_imported_dependencies(
             records, imported_dependencies
         )
+        polar_customers = await self._polar_customers_by_email()
         product_records = self._records_of(records, MerchantMigrationRecordType.product)
         customer_records = self._records_of(
             records, MerchantMigrationRecordType.customer
@@ -193,6 +191,7 @@ class CatalogImporter:
                 subscription_records,
                 self._records_of(catalog, MerchantMigrationRecordType.product),
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
+                polar_customers,
             )
         )
 
@@ -200,7 +199,9 @@ class CatalogImporter:
             product_records, selected_source_ids=product_source_ids
         )
         customer_result = await self._import_customers(
-            customer_records, selected_source_ids=customer_source_ids
+            customer_records,
+            selected_source_ids=customer_source_ids,
+            polar_customers=polar_customers,
         )
         subscription_result = MerchantMigrationImportResult(
             entity=PrecheckEntity.subscriptions,
@@ -244,6 +245,7 @@ class CatalogImporter:
         subscription_records: Sequence[MerchantMigrationRecord],
         product_records: Sequence[MerchantMigrationRecord],
         customer_records: Sequence[MerchantMigrationRecord],
+        polar_customers: dict[str, ExistingPolarCustomer],
     ) -> tuple[set[str], set[str]]:
         subscriptions = [
             self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
@@ -262,6 +264,7 @@ class CatalogImporter:
             products,
             customers,
             self.organization.default_presentment_currency,
+            polar_customers,
         )
         product_by_price = {
             canonical_price_key(price): product
@@ -328,12 +331,13 @@ class CatalogImporter:
         records: Sequence[MerchantMigrationRecord],
         *,
         selected_source_ids: set[str],
+        polar_customers: dict[str, ExistingPolarCustomer],
     ) -> MerchantMigrationImportResult:
         customers = [
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
             for record in records
         ]
-        plans = plan_customer_imports(customers)
+        plans = plan_customer_imports(customers, polar_customers)
 
         counts = ImportCounts()
         for record, customer in zip(records, customers, strict=True):
@@ -413,7 +417,7 @@ class CatalogImporter:
                 and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
             ):
-                return ImportedCustomer(skip=_CUSTOMER_STRIPE_ID_CONFLICT)
+                return ImportedCustomer(skip=customer_stripe_id_conflict(existing.id))
             # Reconcile the source id so the PAN-copied card lands on the same
             # customer, but never overwrite one that's already set.
             if stripe_customer_id and existing.stripe_customer_id is None:
@@ -430,6 +434,21 @@ class CatalogImporter:
             stripe_customer_id=stripe_customer_id,
         )
         return ImportedCustomer(customer=polar_customer)
+
+    async def _polar_customers_by_email(self) -> dict[str, ExistingPolarCustomer]:
+        if self.migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            return {}
+        identities = (
+            await self.customer_repository.get_stripe_identities_by_organization(
+                self.organization.id
+            )
+        )
+        return {
+            email: ExistingPolarCustomer(
+                id=customer_id, stripe_customer_id=stripe_customer_id
+            )
+            for email, (customer_id, stripe_customer_id) in identities.items()
+        }
 
     def _stripe_customer_id(self, customer: CanonicalCustomer) -> str | None:
         # PAN copy preserves the Stripe `cus_…` id; other providers have no

@@ -1,0 +1,17 @@
+{
+  "name": "@polar-sh/cli-commands",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["src"],
+  "scripts": {
+    "generate": "uv run --directory ../generator -m cli generate-cli openapi/2026-04.openapi.json ../cli-commands"
+  },
+  "peerDependencies": {
+    "@polar-sh/sdk": "1.0.0-alpha.20",
+    "effect": "4.0.0-rc.112"
+  }
+}

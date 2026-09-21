@@ -6,7 +6,7 @@ from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models.member import MemberRole
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -36,6 +36,14 @@ router = APIRouter(
 customer_members_router = APIRouter(
     prefix="/customers",
     tags=["customers", "members", APITag.public, APITag.mcp, APITag.cli],
+)
+
+MEMBER_PREVIEW_FIELDS = (
+    ("id", "ID"),
+    ("name", "Name"),
+    ("email", "Email"),
+    ("external_id", "External ID"),
+    ("role", "Role"),
 )
 
 MemberNotFound = {
@@ -274,6 +282,7 @@ async def create_external(
 @customer_members_router.get(
     "/{id}/members/{member_id}",
     summary="Get Member",
+    openapi_extra=cli_preview(*MEMBER_PREVIEW_FIELDS),
     response_model=Member,
     responses={
         200: {"description": "Member retrieved."},
@@ -297,6 +306,7 @@ async def get(
 @customer_members_router.get(
     "/external/{external_id}/members/{member_external_id}",
     summary="Get Member by External ID",
+    openapi_extra=cli_preview(*MEMBER_PREVIEW_FIELDS),
     response_model=Member,
     responses={
         200: {"description": "Member retrieved."},

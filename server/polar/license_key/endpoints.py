@@ -13,7 +13,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import LicenseKey, LicenseKeyActivation
 from polar.models.license_key import LicenseKeyStatus
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_read_session, get_db_session
 from polar.routing import APIRouter
@@ -93,6 +93,9 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get License Key",
+    openapi_extra=cli_preview(
+        ("id", "ID"), ("status", "Status"), ("customer_id", "Customer ID")
+    ),
     response_model=LicenseKeyWithActivations,
     tags=[APITag.mcp, APITag.cli],
     responses={

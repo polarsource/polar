@@ -89,6 +89,7 @@ class MeterUpdate(Schema, MetadataInputMixin):
     aggregation: Aggregation | None = Field(None, description=_aggregation_description)
     is_archived: bool | None = Field(
         None,
+        json_schema_extra={"x-polar-cli-confirm": {"equals": True}},
         description=(
             "Whether the meter is archived. "
             "Archived meters are no longer used for billing."

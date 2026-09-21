@@ -12,7 +12,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
 from polar.meter.aggregation import AggregationFunction
 from polar.models import Meter
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -78,6 +78,7 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Meter",
+    openapi_extra=cli_preview(("id", "ID"), ("name", "Name"), ("unit", "Unit")),
     response_model=MeterSchema,
     responses={404: MeterNotFound},
 )

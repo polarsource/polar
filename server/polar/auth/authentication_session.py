@@ -18,7 +18,6 @@ from sqlalchemy import delete, select, update
 
 from polar.config import settings
 from polar.exceptions import PolarError
-from polar.kit.crypto import get_legacy_secret
 from polar.kit.http import is_localhost
 from polar.models import AuthenticationSession
 from polar.postgres import AsyncSession, get_db_session
@@ -43,7 +42,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
     ) -> None:
         self.session = session
         super().__init__(
-            hash_secret=get_legacy_secret(),
+            hash_secret=settings.SECRET,
             factors=factors,
             token_prefix=TOKEN_PREFIX,
             lifetime=settings.AUTHENTICATION_SESSION_TTL,

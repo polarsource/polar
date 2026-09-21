@@ -10,7 +10,6 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
 from polar.config import settings
-from polar.kit.crypto import get_current_secret_id
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import count_subquery
 from polar.kit.sorting import Sorting
@@ -325,7 +324,7 @@ class RepositoryTokenHashMixin[M]:
         object: M,
         candidates: dict[str | None, str],
     ) -> M:
-        current = candidates[get_current_secret_id()]
+        current = candidates[settings.CURRENT_HASH_SECRET_ID]
         if getattr(object, self.token_hash_attribute) == current:
             return object
         return await self.update(

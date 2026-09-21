@@ -26,11 +26,13 @@ class PaymentsMissingTransactionsInvariantError(InvariantError):
 class PaymentsMissingTransactionsInvariant(Invariant):
     LIMIT = 10
     AGE_LIMIT = timedelta(days=30)
+    LEEWAY = timedelta(minutes=5)
 
     async def check(self) -> None:
         repository = PaymentRepository.from_session(self.session)
+        now = utc_now()
         payments = await repository.get_succeeded_without_transaction_ids(
-            utc_now() - self.AGE_LIMIT, limit=self.LIMIT
+            now - self.AGE_LIMIT, now - self.LEEWAY, limit=self.LIMIT
         )
         if payments:
             raise PaymentsMissingTransactionsInvariantError(len(payments), payments)

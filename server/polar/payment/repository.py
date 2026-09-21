@@ -34,13 +34,14 @@ class PaymentRepository(
     model = Payment
 
     async def get_succeeded_without_transaction_ids(
-        self, since: datetime, *, limit: int
+        self, since: datetime, older_than: datetime, *, limit: int
     ) -> Sequence[UUID]:
         statement = (
             select(Payment.id)
             .where(
                 Payment.status == PaymentStatus.succeeded,
                 Payment.created_at > since,
+                Payment.created_at < older_than,
                 ~select(Transaction.id)
                 .where(
                     Transaction.type == TransactionType.payment,

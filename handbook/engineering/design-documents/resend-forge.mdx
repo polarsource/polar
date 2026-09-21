@@ -1,0 +1,63 @@
+---
+title: "Switching to Resend Forge"
+description: "One line: what we want to build."
+---
+
+<Info>
+
+**Created**: 2026-09-21
+
+**Last Updated**: 2026-09-21
+
+**Author**: Pieter Beulque
+</Info>
+
+## Summary
+
+Resend is moving from their SES wrapper to their own sending infrastructure.
+After running this test in sandbox for a few weeks, we'll now switch our production
+sending infrastructure to it to.
+
+## Context
+
+So far, sandbox has sent 17,900 emails through Resend Forge with a tiny 0.53% bounce rate.
+All the bounces were not reputation related, but just "mailbox full", "address does not exist".
+
+Also, the aggregated metrics as a whole for Forge are pretty good:
+
+ - 99.8% of email on the new engine deliveries land within 3 minutes vs 97.9% on the old one
+ - P50 delivery time is 23% faster
+ - Receivers defer/delay the new engine far less: 0.8% of sends delayed vs 19.9% on the old one
+
+## Implementation
+
+Resend Forge can be enabled through the Resend dashboard, and requires an additional DNS record:
+
+```
+CNAME mail.notifications.polar.sh send.forge.rmta.net
+```
+
+We will add this through Terraform in the `render_service` module, like so:
+
+```
+resource "cloudflare_dns_record" "resend_mail" {
+  zone_id = var.resend_domain.zone_id
+  name    = "mail.${var.email_from_domain}"
+  type    = "CNAME"
+  content = "send.forge.rmta.net"
+  proxied = false
+  ttl     = 1
+}
+```
+
+The sandbox DNS record was added on Cloudflare directly, so we'll have to import
+that record into Terraform as well to make the plan work.
+
+## Security considerations
+
+Always fill this in. If a point does not apply, write "None" and a short why.
+
+- **Data in and out** — No changes. Underlying email data won't touch SES anymore, so one less subprocessor
+- **Who can access it** — No changes. Underlying email data won't touch SES anymore, so one less subprocessor
+- **Data we store** — No changes. Underlying email data won't touch SES anymore, so one less subprocessor
+- **Risks** — No security risks

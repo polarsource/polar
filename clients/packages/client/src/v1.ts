@@ -23134,6 +23134,13 @@ export interface components {
       customer_id: string
       customer: components['schemas']['LicenseKeyCustomer']
       /**
+       * Member Id
+       * @description The ID of the seat member holding this key, if any.
+       */
+      member_id?: string | null
+      /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
+      member?: components['schemas']['LicenseKeyMember'] | null
+      /**
        * Benefit Id
        * Format: uuid4
        * @description The benefit ID.
@@ -34010,6 +34017,13 @@ export interface components {
        */
       customer_id: string
       customer: components['schemas']['LicenseKeyCustomer']
+      /**
+       * Member Id
+       * @description The ID of the seat member holding this key, if any.
+       */
+      member_id?: string | null
+      /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
+      member?: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -51026,7 +51040,7 @@ export interface operations {
           'application/json': components['schemas']['BadRequest']
         }
       }
-      /** @description License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match. */
+      /** @description License key not found, revoked, disabled, or expired, or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match. */
       404: {
         headers: {
           [name: string]: unknown
@@ -54466,7 +54480,7 @@ export interface operations {
           'application/json': components['schemas']['BadRequest']
         }
       }
-      /** @description License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match. */
+      /** @description License key not found, revoked, disabled, or expired, or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match. */
       404: {
         headers: {
           [name: string]: unknown

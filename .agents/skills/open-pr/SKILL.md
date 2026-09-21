@@ -1,13 +1,26 @@
+---
+name: open-pr
+description: Open or update a draft GitHub pull request after Polar-specific review and cubic CLI review. Use when opening a PR, including drafts, or when the user asks to open-pr, /open-pr, or $open-pr.
+license: MIT
+metadata:
+  author: polar
+  version: "1.0.0"
+---
+
 # Open PR
 
 Open or update a **draft** pull request. Polar-specific review first, then cubic CLI,
 then the PR. Do not mark it ready for review.
 
-`$ARGUMENTS` is an optional PR title. If omitted, write one from the branch diff.
+If the user gave a PR title, use it. Otherwise write one from the branch diff.
 
 This is not a bug hunt and not a security review. `/code-review`, `/security-review`,
 and `/simplify` do those. Cursor `/review` (the Bugbot vs security chooser) is also
-not this command — do not run it here.
+not this skill — do not run it here.
+
+Hosts load this skill from `.agents/skills/` (Cursor, Codex) and from `.claude/skills`,
+which is a symlink to that directory (Claude Code). Invoke as `/open-pr` in Cursor or
+Claude Code, or `$open-pr` in Codex.
 
 ## 1. Preconditions
 
@@ -22,7 +35,7 @@ If lint or tests fail, stop. Do not review or open a PR.
 
 ## 2. Polar code review
 
-Follow `/polar-code-review` exactly (diff vs `main`, route the lenses, merge, report).
+Read `.agents/skills/polar-code-review/SKILL.md` and follow it exactly.
 
 - Any 🔴: fix, commit, push, and rerun this step. Do not continue.
 - 🟠: judgement call — say which way you lean. Continue only if you would still ship a draft.
@@ -51,9 +64,12 @@ Use `--output-format stream-json` when you need progress events.
 
 Create or update a **draft** PR. Do not mark it ready.
 
-- Cursor cloud: `ManagePullRequest` with `draft: true`.
-- Otherwise: `gh pr create --draft`, or update the existing PR.
-- Title from `$ARGUMENTS` or the diff. Body from the PR template.
+Use the host's PR tool:
+
+- GitHub CLI: `gh pr create --draft`, or update the existing PR
+- Cursor cloud: `ManagePullRequest` with `draft: true`
+
+Title from the user message or the diff. Body from the PR template.
 
 ## 5. After the PR exists
 

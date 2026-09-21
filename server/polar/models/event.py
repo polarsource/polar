@@ -172,6 +172,16 @@ class Event(Model, MetadataMixin):
             "pending_parent_external_id",
             postgresql_where="pending_parent_external_id IS NOT NULL",
         ),
+        {
+            "postgresql_with": {
+                "autovacuum_vacuum_threshold": 1000,
+                "autovacuum_vacuum_scale_factor": 0.001,
+                "autovacuum_vacuum_insert_threshold": 1000,
+                "autovacuum_vacuum_insert_scale_factor": 0.001,
+                "autovacuum_analyze_threshold": 1000,
+                "autovacuum_analyze_scale_factor": 0.005,
+            },
+        },
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)

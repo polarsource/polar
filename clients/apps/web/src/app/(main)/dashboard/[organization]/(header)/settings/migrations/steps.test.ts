@@ -40,4 +40,10 @@ describe('currentPosition', () => {
       index: 3,
     })
   })
+
+  it('treats cleanup as completed for the merchant', () => {
+    expect(currentPosition(migration('cleanup'))).toEqual({
+      kind: 'completed',
+    })
+  })
 })

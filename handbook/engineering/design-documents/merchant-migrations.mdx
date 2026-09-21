@@ -88,7 +88,13 @@ Before activating, we also decide each subscription's tax treatment and the cust
 
 ## Taxes
 
-At review the merchant picks per subscription: **inclusive (default)** — customer pays the listed price, Polar takes tax out, pins `tax_behavior=inclusive` and `tax_exempted=false` — or **exclusive**, tax added on top. Inclusive is the default regardless of Stripe `automatic_tax` (info only). Without a pin, Polar falls back to the org `default_tax_behavior`; a `location` default is exclusive for `CA`/`IN`/`US`.
+At review the merchant picks per subscription: **inclusive** — customer pays the listed price, Polar takes tax out — or **exclusive**, tax added on top. The default is computed from the source, then pinned (`tax_exempted=false`) so a later org `default_tax_behavior` / `location` change cannot move it:
+
+1. A merchant choice already stored on the pending row.
+2. Else if Stripe was collecting tax on this subscription (`automatic_tax.enabled`, or `default_tax_rates` / item `tax_rates`) and the Price is `inclusive` or `exclusive`, pin that.
+3. Else inclusive — tax was off, or the Price is `unspecified` (do not guess exclusive from currency).
+
+`automatic_tax` is still shown as information only. Without a pin, Polar would fall back to the org default; a `location` default is exclusive for `CA`/`IN`/`US`.
 
 The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover, so a later org-default change does not move an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row. B2B reverse-charge is not a third option: carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id` — miss it and the customer gets re-taxed as B2C. `tax_exempted` is pinned `false`.
 
@@ -277,7 +283,7 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 | `sub_…` | `user_metadata['provider']` + `user_metadata['provider_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
 | `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2026-01-28.clover`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
 | `trial_*`, `cancel_at_period_end`, `default_payment_method` | same fields | |
-| tax behavior (`default_tax_rates` / inclusive / none) | `subscription.tax_behavior` (+ `tax_exempted`) | merchant choice at review, default inclusive (see *Taxes*). `automatic_tax` is display-only. |
+| tax behavior (`automatic_tax` / `Price.tax_behavior` / `default_tax_rates`) | `subscription.tax_behavior` (+ `tax_exempted`) | computed default then merchant choice at review (see *Taxes*). Never `location`. |
 | `discounts[]` (Coupon) | single `Discount` | not reliably on the sub object (came back empty on clover even when expanded). To be confirmed during implementation. |
 | `pm_…` (card) | `PaymentMethod` (`processor_id`) | copied via PAN copy; new `pm_…` id, same underlying card. |
 | Cards, ACH, SEPA `PaymentMethod` | `PaymentMethod` | copyable by PAN copy. |

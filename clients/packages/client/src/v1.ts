@@ -25209,7 +25209,7 @@ export interface components {
        * @description Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say.
        */
       automatic_tax: boolean | null
-      /** @description Polar tax after the switch (`inclusive` default, or `exclusive`). None for non-subscription rows. */
+      /** @description Polar tax after the switch. Defaults from the source when Stripe was collecting tax on an inclusive or exclusive price; otherwise inclusive. None for non-subscription rows. */
       tax_behavior: components['schemas']['TaxBehavior'] | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']

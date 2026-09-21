@@ -1,4 +1,8 @@
+from dataclasses import replace
 from datetime import UTC, datetime
+from typing import Any
+
+import pytest
 
 from polar.enums import TaxBehavior
 from polar.merchant_migration.canonical import (
@@ -131,4 +135,72 @@ class TestDeserialize:
         assert isinstance(result, CanonicalSubscription)
         assert result.currency == "usd"
         assert result.tax_behavior is None
+        assert result.price_tax_behavior is None
+        assert result.has_tax_rates is False
         assert result.import_tax_behavior() == TaxBehavior.inclusive
+
+
+class TestImportTaxBehavior:
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            ({}, TaxBehavior.inclusive),
+            (
+                {"tax_behavior": TaxBehavior.exclusive},
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "automatic_tax": True,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "automatic_tax": True,
+                    "price_tax_behavior": TaxBehavior.inclusive,
+                },
+                TaxBehavior.inclusive,
+            ),
+            ({"automatic_tax": True}, TaxBehavior.inclusive),
+            (
+                {"price_tax_behavior": TaxBehavior.exclusive},
+                TaxBehavior.inclusive,
+            ),
+            (
+                {
+                    "has_tax_rates": True,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.exclusive,
+            ),
+            ({"has_tax_rates": True}, TaxBehavior.inclusive),
+            (
+                {
+                    "tax_behavior": TaxBehavior.inclusive,
+                    "automatic_tax": True,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.inclusive,
+            ),
+        ],
+    )
+    def test_computes_from_source_unless_merchant_pinned(
+        self, kwargs: dict[str, Any], expected: TaxBehavior
+    ) -> None:
+        subscription = CanonicalSubscription(
+            source_id="sub_1",
+            customer_source_id="cus_1",
+            price_source_id="price_1",
+            status=CanonicalSubscriptionStatus.active,
+            collection_method=CanonicalCollectionMethod.charge_automatically,
+            current_period_start=None,
+            current_period_end=None,
+            trialing=False,
+            paused_collection=False,
+            line_item_count=1,
+            quantity=1,
+            payment_method=None,
+        )
+        assert replace(subscription, **kwargs).import_tax_behavior() == expected

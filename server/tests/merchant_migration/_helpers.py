@@ -155,6 +155,9 @@ def canonical_subscription(
     anchor_day: int | None = None,
     payment_method: CanonicalPaymentMethod | None = None,
     currency: str | None = "usd",
+    automatic_tax: bool | None = None,
+    price_tax_behavior: TaxBehavior | None = None,
+    has_tax_rates: bool = False,
     tax_behavior: TaxBehavior | None = None,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
@@ -177,6 +180,9 @@ def canonical_subscription(
         stopped_for_migration=stopped_for_migration,
         anchor_day=anchor_day,
         currency=currency,
+        automatic_tax=automatic_tax,
+        price_tax_behavior=price_tax_behavior,
+        has_tax_rates=has_tax_rates,
         tax_behavior=tax_behavior,
     )
 

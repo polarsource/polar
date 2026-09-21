@@ -241,6 +241,30 @@ class TestRun:
         assert subscription.tax_behavior == tax
         assert subscription.tax_exempted is False
 
+    async def test_pins_exclusive_from_source_price_when_unpinned(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                automatic_tax=True,
+                price_tax_behavior=TaxBehavior.exclusive,
+            )
+        )
+        await save_fixture(pending_record)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.tax_behavior == TaxBehavior.exclusive
+        assert subscription.tax_exempted is False
+
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,
         mocker: MockerFixture,

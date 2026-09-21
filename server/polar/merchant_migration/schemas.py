@@ -157,8 +157,9 @@ class MerchantMigrationRecordItem(Schema):
     )
     tax_behavior: TaxBehavior | None = Field(
         description=(
-            "Polar tax after the switch (`inclusive` default, or `exclusive`). "
-            "None for non-subscription rows."
+            "Polar tax after the switch. Defaults from the source when Stripe "
+            "was collecting tax on an inclusive or exclusive price; otherwise "
+            "inclusive. None for non-subscription rows."
         ),
     )
     status: PrecheckRecordStatus = Field(

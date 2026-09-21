@@ -1,7 +1,7 @@
 """add production meter covering index
 
 Revision ID: 508561324a89
-Revises: 01a1245dc86e
+Revises: 6b92cf7d539b
 Create Date: 2026-09-21 16:22:22.566766
 
 """
@@ -13,7 +13,7 @@ from polar.config import settings
 
 # revision identifiers, used by Alembic.
 revision = "508561324a89"
-down_revision = "01a1245dc86e"
+down_revision = "6b92cf7d539b"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

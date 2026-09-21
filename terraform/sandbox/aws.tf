@@ -169,7 +169,10 @@ module "lambda_worker" {
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker.version_id
   kms_key_arn        = module.secrets_kms.key_arn
 
-  additional_policy_documents = [data.aws_iam_policy_document.s3_access.json]
+  additional_policy_documents = [
+    data.aws_iam_policy_document.s3_access.json,
+    module.hash_secret.read_policy_json,
+  ]
 }
 
 module "lambda_worker_queue" {
@@ -196,7 +199,10 @@ module "lambda_worker_queue" {
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker.version_id
   kms_key_arn        = module.secrets_kms.key_arn
 
-  additional_policy_documents = [data.aws_iam_policy_document.s3_access.json]
+  additional_policy_documents = [
+    data.aws_iam_policy_document.s3_access.json,
+    module.hash_secret.read_policy_json,
+  ]
 }
 
 moved {

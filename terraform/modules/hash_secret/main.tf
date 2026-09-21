@@ -57,6 +57,11 @@ resource "aws_iam_role_policy" "hash" {
   policy = data.aws_iam_policy_document.hash.json
 }
 
+output "read_policy_json" {
+  description = "Read access on the secret, for roles this module does not own. The Lambda workers run as their own role, one per queue."
+  value       = data.aws_iam_policy_document.hash.json
+}
+
 output "secret_arn" {
   description = "ARN of the secret. Passed to the app as POLAR_AWS_HASH_SECRET_ARN."
   value       = aws_secretsmanager_secret.hash.arn

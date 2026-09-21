@@ -161,6 +161,8 @@ module "lambda_worker" {
   secrets_arn        = aws_secretsmanager_secret.lambda_worker[0].arn
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker[0].version_id
   kms_key_arn        = module.secrets_kms[0].key_arn
+
+  additional_policy_documents = [module.hash_secret[0].read_policy_json]
 }
 
 module "lambda_worker_queue" {
@@ -186,6 +188,8 @@ module "lambda_worker_queue" {
   secrets_arn        = aws_secretsmanager_secret.lambda_worker[0].arn
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker[0].version_id
   kms_key_arn        = module.secrets_kms[0].key_arn
+
+  additional_policy_documents = [module.hash_secret[0].read_policy_json]
 }
 
 # =============================================================================

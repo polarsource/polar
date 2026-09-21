@@ -2,6 +2,7 @@
 
 import { useUpdateMigrationRecordTax } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   Select,
   SelectContent,
@@ -15,15 +16,21 @@ import { useState } from 'react'
 
 type TaxBehavior = schemas['TaxBehavior']
 
+const formatMoney = formatCurrency('accounting', 'en-US')
+
 export function ImportTaxPicker({
   migrationId,
   recordId,
   taxBehavior,
+  amount,
+  currency,
   locked = false,
 }: {
   migrationId: string
   recordId: string | null
   taxBehavior: TaxBehavior | null
+  amount?: number | null
+  currency?: string | null
   locked?: boolean
 }) {
   const [optimistic, setOptimistic] = useState<TaxBehavior | null>(null)
@@ -57,11 +64,7 @@ export function ImportTaxPicker({
           <SelectItem value="exclusive">Exclusive</SelectItem>
         </SelectContent>
       </Select>
-      <Text variant="caption" color="muted">
-        {value === 'exclusive'
-          ? 'Tax is added on top of the listed price.'
-          : 'Customer pays the listed price. Polar takes tax out of it.'}
-      </Text>
+      <Hint value={value} amount={amount} currency={currency} />
       {update.isError ? (
         <Text variant="caption" color="error">
           {update.error instanceof Error && update.error.message
@@ -70,5 +73,34 @@ export function ImportTaxPicker({
         </Text>
       ) : null}
     </Box>
+  )
+}
+
+function Hint({
+  value,
+  amount,
+  currency,
+}: {
+  value: TaxBehavior
+  amount?: number | null
+  currency?: string | null
+}) {
+  if (value !== 'exclusive') {
+    return (
+      <Text variant="caption" color="muted">
+        Customer pays the listed price. Polar takes tax out of it.
+      </Text>
+    )
+  }
+
+  const listed =
+    amount != null && currency ? formatMoney(amount, currency) : null
+
+  return (
+    <Text variant="caption" as="strong">
+      {listed
+        ? `The customer will pay the listed price plus tax instead of ${listed}`
+        : 'Tax is added on top of the listed price.'}
+    </Text>
   )
 }

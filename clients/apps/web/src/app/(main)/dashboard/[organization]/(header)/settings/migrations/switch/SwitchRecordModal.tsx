@@ -76,6 +76,8 @@ export function SwitchRecordModal({
                   migrationId={migrationId}
                   recordId={row.record_id}
                   taxBehavior={row.tax_behavior}
+                  amount={row.amount}
+                  currency={row.currency}
                   locked={isSwitched(row)}
                 />
               }

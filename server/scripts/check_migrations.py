@@ -58,6 +58,11 @@ def git_toplevel() -> Path:
     )
 
 
+def current_migration_filenames() -> list[str]:
+    versions = Path(__file__).resolve().parents[1] / "migrations" / "versions"
+    return [path.name for path in versions.glob("*.py")]
+
+
 def git_migration_filenames(ref: str) -> list[str]:
     result = subprocess.run(
         [
@@ -95,10 +100,11 @@ def check(base: str) -> int:
 
     try:
         base_files = git_migration_filenames(base)
-        head_files = git_migration_filenames("HEAD")
     except subprocess.CalledProcessError as exc:
         print(f"Could not list migrations at {base}: {exc.stderr or exc}")
         return 1
+
+    head_files = current_migration_filenames()
 
     latest_base, stale = stale_new_migrations(base_files, head_files)
     new_count = len(set(head_files) - set(base_files))

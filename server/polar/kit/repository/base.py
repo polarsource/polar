@@ -299,3 +299,29 @@ class RepositorySortingMixin[M, PE: StrEnum]:
 
     def get_sorting_clause(self, property: PE) -> SortingClause:
         raise NotImplementedError()
+
+
+class RepositoryTokenHashProtocol[M](RepositoryProtocol[M], Protocol):
+    token_hash_attribute: str
+
+
+class RepositoryTokenHashMixin[M]:
+    token_hash_attribute: str
+
+    def token_hash_clause(
+        self: RepositoryTokenHashProtocol[M], candidates: dict[str | None, str]
+    ) -> ColumnExpressionArgument[bool]:
+        column: Mapped[str] = getattr(self.model, self.token_hash_attribute)
+        return column.in_(candidates.values())
+
+    async def rehash_token(
+        self: RepositoryTokenHashProtocol[M],
+        object: M,
+        candidates: dict[str | None, str],
+    ) -> M:
+        current = candidates[settings.CURRENT_HASH_SECRET_ID]
+        if getattr(object, self.token_hash_attribute) == current:
+            return object
+        return await self.update(
+            object, update_dict={self.token_hash_attribute: current}
+        )

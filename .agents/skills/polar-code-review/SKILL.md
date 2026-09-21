@@ -17,19 +17,16 @@ better, and they verify findings and can apply fixes. This adds what they cannot
 
 This is only a router. Every lens is a skill you can also run on its own.
 
-Hosts load this skill from `.agents/skills/` (Cursor, Codex) and from `.claude/skills`,
-which is a symlink to that directory (Claude Code). Invoke as `/polar-code-review` in
-Cursor or Claude Code, or `$polar-code-review` in Codex.
-
 ## 1. Diff
 
 ```bash
-git diff main...HEAD --stat
-git diff main...HEAD
+git fetch origin main
+git diff origin/main --stat
+git diff origin/main
 ```
 
-If that fails use `git diff HEAD~1`, or ask for the base. Keep the full diff — every agent
-gets it, not just file names.
+That is the branch plus the working tree. If fetch fails, use `main` instead of `origin/main`.
+Keep the full diff — every agent gets it, not just file names.
 
 ## 2. Route
 

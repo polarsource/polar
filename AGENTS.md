@@ -14,9 +14,8 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Do not modify code unrelated to the task or issue you are working on.
 - Do not create GitHub pull requests unless the user explicitly asks. Commit and
   push the branch as needed; leave opening the PR to the user. When you do open
-  a PR (including drafts), follow the `open-pr` skill (`/open-pr` or `$open-pr`):
-  lint, type-check, and `test_fast`, then `polar-code-review`, then cubic CLI,
-  then a draft PR. Do not mark it ready for review unless told so.
+  a PR (including drafts), follow the `open-pr` skill. Do not mark it ready for
+  review unless told so.
 
 ## Architecture
 
@@ -166,12 +165,11 @@ Treat **Accepted** ADRs as binding:
 
 ## Skills
 
-Reusable workflows live in `.agents/skills/` (the Agent Skills standard). `.claude/skills`
-is a symlink to that directory, so Claude Code, Cursor, and Codex load the same files.
-Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
+Reusable workflows live in `.agents/skills/`. `.claude/skills` is a symlink to that
+directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
 
-- `polar-code-review` — Polar-specific review of the branch diff (conventions, ADRs, reuse, slop, plus path-triggered API / ship-safety / billing lenses). Bugs, security, and simplification are `/code-review`, `/security-review`, and `/simplify`.
-- `open-pr` — open or update a draft PR. Runs lint, type-check, and `test_fast`, then `polar-code-review`, then cubic CLI (`CUBIC_API_KEY`), then creates the draft. Do not mark ready unless asked.
+- `polar-code-review` — Polar-specific review of the branch diff. Bugs, security, and simplification are `/code-review`, `/security-review`, and `/simplify`.
+- `open-pr` — draft PR after lint, type-check, `test_fast`, `polar-code-review`, and cubic CLI (`CUBIC_API_KEY`). Do not mark ready unless asked.
 
 ## Documentation
 
@@ -294,6 +292,3 @@ is the conventional test account.
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
 model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.
-
-**cubic CLI.** The `open-pr` skill runs `cubic review --base main --json` when `CUBIC_API_KEY`
-is set, and skips that step when it is not.

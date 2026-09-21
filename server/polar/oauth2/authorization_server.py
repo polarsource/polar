@@ -129,6 +129,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         client_metadata: dict[str, typing.Any],
         request: StarletteJsonRequest,
     ) -> OAuth2Client:
+        client_secret = client_info.pop("client_secret")
         oauth2_client = OAuth2Client(**client_info)
         oauth2_client.set_client_metadata(client_metadata)
 
@@ -136,7 +137,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
             oauth2_client.user_id = request.user.id
 
         # Sync: must run while we hold the plaintext, and authlib can't await.
-        oauth2_client.set_client_secret_sync(oauth2_client.client_secret)
+        oauth2_client.set_client_secret_sync(client_secret)
         oauth2_client.set_registration_access_token_sync(
             generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )

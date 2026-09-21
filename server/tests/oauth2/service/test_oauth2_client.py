@@ -56,9 +56,7 @@ class TestRevokeLeaked:
         enqueue_email_mock: MagicMock,
     ) -> None:
         token = (
-            oauth2_client.client_secret
-            if token_type == TokenType.client_secret
-            else oauth2_client.registration_access_token
+            "polar_cs_123" if token_type == TokenType.client_secret else "polar_crt_123"
         )
 
         result = await oauth2_client_service.revoke_leaked(
@@ -92,9 +90,7 @@ class TestRevokeLeaked:
         oauth2_client: OAuth2Client,
     ) -> None:
         token = (
-            oauth2_client.client_secret
-            if token_type == TokenType.client_secret
-            else oauth2_client.registration_access_token
+            "polar_cs_123" if token_type == TokenType.client_secret else "polar_crt_123"
         )
         oauth2_client.client_secret = "polar_cs_stale"
         oauth2_client.registration_access_token = "polar_crt_stale"

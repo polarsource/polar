@@ -21,7 +21,9 @@ class TestUsdRates:
             new_callable=AsyncMock,
             return_value={"eur": 1.14738},
         )
-        breakdowns = [MrrBreakdown(Money({"eur": 11100}), Money(), Money())]
+        breakdowns = [
+            MrrBreakdown(Money({"usd": 16350, "eur": 11100}), Money(), Money())
+        ]
 
         rates = await merchant_migrations_service.usd_rates(redis, breakdowns)
         cached = await merchant_migrations_service.usd_rates(redis, breakdowns)

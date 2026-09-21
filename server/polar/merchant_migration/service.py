@@ -1440,9 +1440,7 @@ class MerchantMigrationService:
         record_id: UUID,
         tax_behavior: TaxBehavior,
     ) -> MerchantMigrationRecordUpdate:
-        migration = await self._get_manageable(
-            session, auth_subject, migration_id, for_update=True
-        )
+        migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
         record = await repository.get_by_id(record_id, for_update=True)
         if record is None or record.merchant_migration_id != migration.id:

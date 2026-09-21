@@ -393,25 +393,17 @@ class StripeAdapter:
             return None
         return bool(automatic_tax.get("enabled"))
 
-    def _price_tax_behavior(self, price: object) -> TaxBehavior | None:
+    def _price_tax_behavior(self, price: Any) -> TaxBehavior | None:
         if price is None or isinstance(price, str):
             return None
-        raw = price.get("tax_behavior") if hasattr(price, "get") else None
-        return parse_tax_behavior(raw)
+        return parse_tax_behavior(price.get("tax_behavior"))
 
     def _has_tax_rates(
-        self, subscription: stripe_lib.Subscription, first_item: object
+        self, subscription: stripe_lib.Subscription, first_item: Any
     ) -> bool:
-        item_rates = first_item.get("tax_rates") if hasattr(first_item, "get") else None
-        return self._nonempty_rates(
-            subscription.get("default_tax_rates")
-        ) or self._nonempty_rates(item_rates)
-
-    def _nonempty_rates(self, value: object) -> bool:
-        if not value:
-            return False
-        data = getattr(value, "data", None)
-        return bool(data) if data is not None else True
+        return bool(subscription.get("default_tax_rates")) or bool(
+            first_item.get("tax_rates")
+        )
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

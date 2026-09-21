@@ -2,6 +2,7 @@
 
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { useUpdateMigrationRecordTax } from '@/hooks/queries/merchantMigrations'
+import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
@@ -13,7 +14,6 @@ import {
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
 
 type TaxBehavior = schemas['TaxBehavior']
 
@@ -26,24 +26,29 @@ export function ImportTaxPicker({
   migrationId: string
   row: schemas['MerchantMigrationRecordItem']
 }) {
-  const [optimistic, setOptimistic] = useState<TaxBehavior | null>(null)
-  const update = useUpdateMigrationRecordTax(migrationId)
-  const value = optimistic ?? row.tax_behavior ?? 'inclusive'
-  const save = (next: TaxBehavior) => {
-    if (!row.record_id || update.isPending || next === value) {
-      return
-    }
-    const previous = value
-    setOptimistic(next)
-    update.mutate(
-      { recordId: row.record_id, taxBehavior: next },
-      { onError: () => setOptimistic(previous) },
-    )
-  }
+  const updateTax = useUpdateMigrationRecordTax(migrationId)
+  const { value, update } = useOptimisticSave<TaxBehavior>(
+    row.tax_behavior ?? 'inclusive',
+    async (next) => {
+      if (!row.record_id) {
+        return false
+      }
+      try {
+        await updateTax.mutateAsync({
+          recordId: row.record_id,
+          taxBehavior: next,
+        })
+        return true
+      } catch {
+        return false
+      }
+    },
+  )
   const listed =
     row.amount != null && row.currency
       ? formatMoney(row.amount, row.currency)
       : null
+  const locked = row.cutover_status === 'moved' || !row.record_id
 
   return (
     <DetailCell
@@ -52,8 +57,8 @@ export function ImportTaxPicker({
         <Box flexDirection="column" rowGap="s" width="100%">
           <Select
             value={value}
-            disabled={row.cutover_status === 'moved' || !row.record_id}
-            onValueChange={(next) => save(next as TaxBehavior)}
+            disabled={locked}
+            onValueChange={(next) => update(next as TaxBehavior)}
           >
             <SelectTrigger>
               <SelectValue />
@@ -75,10 +80,10 @@ export function ImportTaxPicker({
               'Tax is added on top of the listed price.'
             )}
           </Text>
-          {update.isError ? (
+          {updateTax.isError ? (
             <Text variant="caption" color="error">
-              {update.error instanceof Error && update.error.message
-                ? update.error.message
+              {updateTax.error instanceof Error && updateTax.error.message
+                ? updateTax.error.message
                 : "We couldn't save the tax setting."}
             </Text>
           ) : null}

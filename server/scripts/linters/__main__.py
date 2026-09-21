@@ -11,15 +11,10 @@ import ast
 import sys
 from pathlib import Path
 
-from . import frontend_url, hash_secret, org_scope, subquery
+from . import frontend_url, org_scope, subquery
 from .base import Rule, line_has_skip
 
-RULES: tuple[Rule, ...] = (
-    subquery.RULE,
-    org_scope.RULE,
-    frontend_url.RULE,
-    hash_secret.RULE,
-)
+RULES: tuple[Rule, ...] = (subquery.RULE, org_scope.RULE, frontend_url.RULE)
 
 
 def main() -> int:

@@ -12,16 +12,20 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.license_key.schemas import (
+    ActivationNotFoundResponse,
     ActivationNotPermitted,
     LicenseKeyActivate,
-    LicenseKeyActivationRead,
+    LicenseKeyActivationCreated,
     LicenseKeyDeactivate,
     LicenseKeyRead,
     LicenseKeyValidate,
     LicenseKeyWithActivations,
     NotFoundResponse,
+    RotatedLicenseKey,
     UnauthorizedResponse,
     ValidatedLicenseKey,
+    ValidationBadRequestResponse,
+    ValidationNotFoundResponse,
 )
 from polar.license_key.service import ROTATABLE_STATUSES, RotateNotPermitted
 from polar.license_key.service import license_key as license_key_service
@@ -112,7 +116,7 @@ async def get(
 @router.post(
     "/{id}/rotate",
     summary="Rotate License Key",
-    response_model=LicenseKeyRead,
+    response_model=RotatedLicenseKey,
     responses={
         400: RotateNotPermittedResponse,
         401: UnauthorizedResponse,
@@ -142,7 +146,8 @@ async def rotate(
     summary="Validate License Key",
     response_model=ValidatedLicenseKey,
     responses={
-        404: NotFoundResponse,
+        400: ValidationBadRequestResponse,
+        404: ValidationNotFoundResponse,
     },
 )
 async def validate(
@@ -170,7 +175,7 @@ async def validate(
 @router.post(
     "/activate",
     summary="Activate License Key",
-    response_model=LicenseKeyActivationRead,
+    response_model=LicenseKeyActivationCreated,
     responses={
         403: ActivationNotPermitted,
         404: NotFoundResponse,
@@ -205,7 +210,7 @@ async def activate(
     status_code=204,
     responses={
         204: {"description": "License key activation deactivated."},
-        404: NotFoundResponse,
+        404: ActivationNotFoundResponse,
     },
 )
 async def deactivate(

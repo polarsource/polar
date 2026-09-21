@@ -11462,7 +11462,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LicenseKeyRead"
+                  "$ref": "#/components/schemas/RotatedLicenseKey"
                 }
               }
             }
@@ -11601,7 +11601,7 @@
             }
           },
           "404": {
-            "description": "License key not found.",
+            "description": "License key or activation not found, or activation does not belong to the license key.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11669,8 +11669,18 @@
               }
             }
           },
+          "400": {
+            "description": "The requested usage increment exceeds the license key's remaining usage allowance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
           "404": {
-            "description": "License key not found.",
+            "description": "License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11750,13 +11760,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LicenseKeyActivationRead"
+                  "$ref": "#/components/schemas/LicenseKeyActivationCreated"
                 }
               }
             }
           },
           "403": {
-            "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
+            "description": "License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11845,7 +11855,7 @@
             "description": "License key activation deactivated."
           },
           "404": {
-            "description": "License key not found.",
+            "description": "License key or activation not found, or activation does not belong to the license key.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18810,7 +18820,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LicenseKeyRead"
+                  "$ref": "#/components/schemas/RotatedLicenseKey"
                 }
               }
             }
@@ -18905,8 +18915,18 @@
               }
             }
           },
+          "400": {
+            "description": "The requested usage increment exceeds the license key's remaining usage allowance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
           "404": {
-            "description": "License key not found.",
+            "description": "License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18966,13 +18986,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LicenseKeyActivationRead"
+                  "$ref": "#/components/schemas/LicenseKeyActivationCreated"
                 }
               }
             }
           },
           "403": {
-            "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
+            "description": "License key is revoked, disabled, or expired, does not support activations, or has reached its activation limit. Use /validate for licenses without activations.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19044,7 +19064,7 @@
             "description": "License key activation deactivated."
           },
           "404": {
-            "description": "License key not found.",
+            "description": "License key or activation not found, or activation does not belong to the license key.",
             "content": {
               "application/json": {
                 "schema": {
@@ -94030,7 +94050,9 @@
             "title": "Display Key"
           },
           "status": {
-            "$ref": "#/components/schemas/LicenseKeyStatus"
+            "type": "string",
+            "const": "granted",
+            "title": "Status"
           },
           "limit_activations": {
             "anyOf": [
@@ -96740,6 +96762,426 @@
         ],
         "title": "IntrospectTokenRequest",
         "type": "object"
+      },
+      "GrantedLicenseKey": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/LicenseKeyCustomer"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The benefit ID."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_key": {
+            "type": "string",
+            "title": "Display Key"
+          },
+          "status": {
+            "type": "string",
+            "const": "granted",
+            "title": "Status"
+          },
+          "limit_activations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Activations"
+          },
+          "usage": {
+            "type": "integer",
+            "title": "Usage"
+          },
+          "limit_usage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Usage"
+          },
+          "validations": {
+            "type": "integer",
+            "title": "Validations"
+          },
+          "last_validated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Validated At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "benefit_id",
+          "key",
+          "display_key",
+          "status",
+          "limit_activations",
+          "usage",
+          "limit_usage",
+          "validations",
+          "last_validated_at",
+          "expires_at"
+        ],
+        "title": "GrantedLicenseKey"
+      },
+      "RotatedLicenseKey": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/LicenseKeyCustomer"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The benefit ID."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_key": {
+            "type": "string",
+            "title": "Display Key"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "disabled"
+            ],
+            "title": "Status"
+          },
+          "limit_activations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Activations"
+          },
+          "usage": {
+            "type": "integer",
+            "title": "Usage"
+          },
+          "limit_usage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Usage"
+          },
+          "validations": {
+            "type": "integer",
+            "title": "Validations"
+          },
+          "last_validated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Validated At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "benefit_id",
+          "key",
+          "display_key",
+          "status",
+          "limit_activations",
+          "usage",
+          "limit_usage",
+          "validations",
+          "last_validated_at",
+          "expires_at"
+        ],
+        "title": "RotatedLicenseKey"
+      },
+      "LicenseKeyActivationCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "license_key_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "License Key Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "meta": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Meta"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          },
+          "license_key": {
+            "$ref": "#/components/schemas/GrantedLicenseKey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "license_key_id",
+          "label",
+          "meta",
+          "created_at",
+          "modified_at",
+          "license_key"
+        ],
+        "title": "LicenseKeyActivationCreated"
       }
     },
     "securitySchemes": {

@@ -4,6 +4,7 @@ from typing import Any
 import structlog
 
 from polar.config import settings
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.email_log import EmailLogStatus
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
@@ -91,11 +92,12 @@ async def email_send(
 
 
 @actor(
-    actor_name="email_log.delete_expired",
+    actor_name="email_log.prune",
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
-async def email_log_delete_expired() -> None:
+async def email_log_prune() -> None:
     async with AsyncSessionMaker() as session:
-        await EmailLogRepository.from_session(session).delete_expired()
+        repository = EmailLogRepository.from_session(session)
+        await repository.delete_before(utc_now() - settings.EMAIL_LOG_RETENTION_PERIOD)

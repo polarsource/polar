@@ -23,9 +23,15 @@ def clear_cache() -> Any:
 
 def stub_client(mocker: MockerFixture, versions: list[dict[str, Any]]) -> MagicMock:
     client = MagicMock()
-    # One version per page, so a paginated listing is what the tests exercise.
-    client.get_paginator.return_value.paginate.return_value = [
-        {"Versions": [version]} for version in versions
+    # One version per page, chained by NextToken, so the tests walk the loop.
+    pages = [
+        {"Versions": [version], "NextToken": str(index + 1)}
+        if index + 1 < len(versions)
+        else {"Versions": [version]}
+        for index, version in enumerate(versions)
+    ]
+    client.list_secret_version_ids.side_effect = lambda **kwargs: pages[
+        int(kwargs.get("NextToken", 0))
     ]
     client.get_secret_value.side_effect = lambda SecretId, VersionId: {
         "SecretString": f"secret-for-{VersionId}"
@@ -71,7 +77,7 @@ def test_fetches_once_per_process(
     get_hash_secrets()
     get_hash_secrets()
 
-    client.get_paginator.assert_called_once()
+    assert client.list_secret_version_ids.call_count == 1
 
 
 def test_rejects_a_version_without_an_id(

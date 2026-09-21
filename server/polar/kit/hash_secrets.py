@@ -1,4 +1,5 @@
 import functools
+from collections.abc import Iterator
 from typing import Any
 
 from polar.config import settings
@@ -42,6 +43,20 @@ def _client() -> Any:
     )
 
 
+def _iter_versions(client: Any, arn: str) -> Iterator[dict[str, Any]]:
+    """ListSecretVersionIds has no botocore paginator, so follow NextToken."""
+    next_token: str | None = None
+    while True:
+        arguments: dict[str, Any] = {"SecretId": arn, "IncludeDeprecated": False}
+        if next_token is not None:
+            arguments["NextToken"] = next_token
+        page = client.list_secret_version_ids(**arguments)
+        yield from page["Versions"]
+        next_token = page.get("NextToken")
+        if next_token is None:
+            return
+
+
 @functools.cache
 def _fetch_hash_secrets(arn: str) -> tuple[dict[str, str], str | None]:
     """One fetch per process. A rotation applies on the next deploy."""
@@ -49,9 +64,7 @@ def _fetch_hash_secrets(arn: str) -> tuple[dict[str, str], str | None]:
     secrets: dict[str, str] = {}
     current: str | None = None
 
-    paginator = client.get_paginator("list_secret_version_ids")
-    pages = paginator.paginate(SecretId=arn, IncludeDeprecated=False)
-    for version in (v for page in pages for v in page["Versions"]):
+    for version in _iter_versions(client, arn):
         stages = set(version["VersionStages"])
         labels = stages - AWS_MANAGED_STAGES
         if len(labels) != 1:

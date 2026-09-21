@@ -4,7 +4,8 @@ import secrets
 import string
 import zlib
 
-from polar.config import HASH_SEPARATOR, settings
+from polar.config import HASH_SEPARATOR
+from polar.kit.hash_secrets import get_hash_secrets
 
 
 def _crc32_to_base62(number: int) -> str:
@@ -41,10 +42,11 @@ def get_token_hash(token: str) -> str:
 
     Without a current secret, the hash is a bare digest under SECRET.
     """
-    secret_id = settings.CURRENT_HASH_SECRET_ID
+    hash_secrets = get_hash_secrets()
+    secret_id = hash_secrets.current_id
     if secret_id is None:
-        return _digest(token, settings.SECRET)
-    digest = _digest(token, settings.HASH_SECRETS[secret_id])
+        return _digest(token, hash_secrets.legacy)
+    digest = _digest(token, hash_secrets.secrets[secret_id])
     return f"{secret_id}{HASH_SEPARATOR}{digest}"
 
 
@@ -54,12 +56,23 @@ def get_token_hash_candidates(token: str) -> dict[str | None, str]:
     A credential keeps its original hash until a lookup rewrites it, so a
     match has to try them all. `None` keys the bare digest under SECRET.
     """
+    hash_secrets = get_hash_secrets()
     candidates: dict[str | None, str] = {
         secret_id: f"{secret_id}{HASH_SEPARATOR}{_digest(token, secret)}"
-        for secret_id, secret in settings.HASH_SECRETS.items()
+        for secret_id, secret in hash_secrets.secrets.items()
     }
-    candidates[None] = _digest(token, settings.SECRET)
+    candidates[None] = _digest(token, hash_secrets.legacy)
     return candidates
+
+
+def get_current_secret_id() -> str | None:
+    """Which candidate a lookup should rewrite a stale hash to."""
+    return get_hash_secrets().current_id
+
+
+def get_legacy_secret() -> str:
+    """The secret reauth hashes its own short-lived columns with."""
+    return get_hash_secrets().legacy
 
 
 def generate_token_hash_pair(*, prefix: str = "") -> tuple[str, str]:

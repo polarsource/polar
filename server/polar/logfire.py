@@ -216,7 +216,15 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
-        scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
+        scrubbing=logfire.ScrubbingOptions(
+            callback=_scrubbing_callback,
+            # Logfire's defaults cover secrets, keys and credentials, but not
+            # access and refresh tokens.
+            extra_patterns=[
+                r"access_?token",
+                r"refresh_?token",
+            ],
+        ),
         additional_span_processors=additional_span_processors or None,
     )
 

@@ -81,7 +81,7 @@ const PaymentNotReadyBanner = ({
                   href={`/dashboard/${organizationSlug}/finance/account`}
                   className="font-medium underline hover:no-underline"
                 >
-                  Find out why?
+                  Find out why
                 </Link>
               </p>
             )}

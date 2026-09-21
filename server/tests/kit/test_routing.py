@@ -90,7 +90,17 @@ def test_tool_properties_can_be_overridden() -> None:
     assert openapi_extra["x-tool-title"] == "List Meters"
 
 
-def test_tool_properties_are_skipped_without_the_mcp_tag() -> None:
+def test_tool_properties_are_derived_for_cli_only_routes() -> None:
+    router = APIRouter(prefix="/payouts", tags=["payouts", APITag.cli])
+
+    @router.get("/", summary="List Payouts")
+    async def list() -> None:
+        """List payouts."""
+
+    assert get_openapi_extra(router, "list")["x-tool-name"] == "payouts_list"
+
+
+def test_tool_properties_are_skipped_without_the_mcp_or_cli_tags() -> None:
     router = APIRouter(prefix="/refunds", tags=["refunds", APITag.public])
 
     @router.get("/", summary="List Refunds")

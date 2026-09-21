@@ -46,8 +46,19 @@ def unalias_email(email: str) -> str:
     return f"{parsed.local_part.split('+', 1)[0]}@{parsed.domain}"
 
 
-_GMAIL_DOMAIN = "gmail.com"
-_GOOGLE_MAIL_DOMAINS = {_GMAIL_DOMAIN, "googlemail.com"}
+# Domains that deliver to the same mailbox, as (canonical, alternates).
+_DOMAIN_ALIASES: list[tuple[str, list[str]]] = [
+    ("gmail.com", ["googlemail.com"]),
+]
+
+_CANONICAL_DOMAINS = {
+    alternate: canonical
+    for canonical, alternates in _DOMAIN_ALIASES
+    for alternate in alternates
+}
+
+# Keyed by canonical domain — aliases are resolved before this is consulted.
+_DOTLESS_LOCAL_PART_DOMAINS = {"gmail.com"}
 
 
 def normalize_email(email: str) -> str:
@@ -64,10 +75,9 @@ def normalize_email(email: str) -> str:
     """
     parsed = validate_email_syntax(email)
     local_part = parsed.local_part.split("+", 1)[0].lower()
-    domain = parsed.domain
+    domain = _CANONICAL_DOMAINS.get(parsed.domain, parsed.domain)
 
-    if domain in _GOOGLE_MAIL_DOMAINS:
-        domain = _GMAIL_DOMAIN
+    if domain in _DOTLESS_LOCAL_PART_DOMAINS:
         local_part = local_part.replace(".", "")
 
     return f"{local_part}@{domain}"

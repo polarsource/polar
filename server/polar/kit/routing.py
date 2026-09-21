@@ -70,7 +70,8 @@ class IncludedInSchemaAPIRoute(APIRoute):
 class ToolAPIRoute(APIRoute):
     """
     A subclass of `APIRoute` that automatically adds the `x-tool-*` properties
-    describing the endpoint as a tool, for every route tagged with `APITag.mcp`.
+    describing the endpoint as a tool, for every route tagged with `APITag.mcp`
+    or `APITag.cli`.
 
     Each property is derived from the route itself and can be overridden
     individually by setting it in `openapi_extra`.
@@ -91,7 +92,7 @@ class ToolAPIRoute(APIRoute):
 
         super().__init__(path, endpoint, **kwargs)
 
-        if APITag.mcp not in self.tags:
+        if APITag.mcp not in self.tags and APITag.cli not in self.tags:
             return
 
         annotations: list[str] = []

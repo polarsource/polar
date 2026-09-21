@@ -51,8 +51,11 @@ from .service import (
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
+    MerchantMigrationRecordNotFound,
     MigrationOperationInProgress,
     MissingStripeScopes,
+    RecordNotSubscription,
+    RecordTaxLocked,
     SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
@@ -501,9 +504,23 @@ async def records(
     response_model=MerchantMigrationRecordUpdate,
     summary="Update Merchant Migration Record Tax",
     responses={
-        400: {"description": "Tax can only be set on a subscription."},
-        404: {"description": "Merchant migration or record not found."},
-        409: {"description": "The subscription has already switched to Polar."},
+        400: {
+            "description": "Tax can only be set on a subscription.",
+            "model": RecordNotSubscription.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration or record not found.",
+            "model": MerchantMigrationNotFound.schema()
+            | MerchantMigrationRecordNotFound.schema(),
+        },
+        409: {
+            "description": "The subscription has already switched to Polar.",
+            "model": RecordTaxLocked.schema(),
+        },
     },
 )
 async def update_record(

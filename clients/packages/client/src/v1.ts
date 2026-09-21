@@ -25254,6 +25254,17 @@ export interface components {
        */
       dependencies_imported: boolean | null
     }
+    /** MerchantMigrationRecordNotFound */
+    MerchantMigrationRecordNotFound: {
+      /**
+       * Error
+       * @example MerchantMigrationRecordNotFound
+       * @constant
+       */
+      error: 'MerchantMigrationRecordNotFound'
+      /** Detail */
+      detail: string
+    }
     /**
      * MerchantMigrationRecordStatus
      * @enum {string}
@@ -33636,6 +33647,28 @@ export interface components {
       totals?: {
         [key: string]: string
       }
+    }
+    /** RecordNotSubscription */
+    RecordNotSubscription: {
+      /**
+       * Error
+       * @example RecordNotSubscription
+       * @constant
+       */
+      error: 'RecordNotSubscription'
+      /** Detail */
+      detail: string
+    }
+    /** RecordTaxLocked */
+    RecordTaxLocked: {
+      /**
+       * Error
+       * @example RecordTaxLocked
+       * @constant
+       */
+      error: 'RecordTaxLocked'
+      /** Detail */
+      detail: string
     }
     /**
      * RecurringInterval
@@ -56797,21 +56830,38 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['RecordNotSubscription']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
       }
       /** @description Merchant migration or record not found. */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json':
+            | components['schemas']['MerchantMigrationNotFound']
+            | components['schemas']['MerchantMigrationRecordNotFound']
+        }
       }
       /** @description The subscription has already switched to Polar. */
       409: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['RecordTaxLocked']
+        }
       }
       /** @description Validation Error */
       422: {

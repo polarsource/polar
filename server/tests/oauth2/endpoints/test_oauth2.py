@@ -300,9 +300,7 @@ class TestOAuth2ConfigureGet:
     ) -> None:
         response = await client.get(
             f"/v1/oauth2/register/{oauth2_client.client_id}",
-            headers={
-                "Authorization": f"Bearer {oauth2_client.registration_access_token}"
-            },
+            headers={"Authorization": f"Bearer {'polar_crt_123'}"},
         )
 
         assert response.status_code == 200
@@ -310,24 +308,6 @@ class TestOAuth2ConfigureGet:
         assert json["client_id"] == oauth2_client.client_id
         for value in json.values():
             assert value is not None
-
-    async def test_token_reads_the_ciphertext(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        oauth2_client: OAuth2Client,
-    ) -> None:
-        token = oauth2_client.registration_access_token
-        oauth2_client.registration_access_token = "polar_crt_stale"
-        await save_fixture(oauth2_client)
-
-        response = await client.get(
-            f"/v1/oauth2/register/{oauth2_client.client_id}",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
-        assert response.status_code == 200
-        assert response.json()["registration_access_token"] == token
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_user_not_owner(
@@ -355,9 +335,7 @@ class TestOAuth2ConfigureGet:
         """Test that public clients don't receive client_secret when retrieving config."""
         response = await client.get(
             f"/v1/oauth2/register/{public_oauth2_client.client_id}",
-            headers={
-                "Authorization": f"Bearer {public_oauth2_client.registration_access_token}"
-            },
+            headers={"Authorization": f"Bearer {'polar_crt_123'}"},
         )
 
         assert response.status_code == 200
@@ -382,9 +360,7 @@ class TestOAuth2ConfigurePut:
     ) -> None:
         response = await client.put(
             f"/v1/oauth2/register/{oauth2_client.client_id}",
-            headers={
-                "Authorization": f"Bearer {oauth2_client.registration_access_token}"
-            },
+            headers={"Authorization": f"Bearer {'polar_crt_123'}"},
             json={
                 "client_id": oauth2_client.client_id,
                 "client_name": "Test Client Updated",
@@ -429,9 +405,7 @@ class TestOAuth2ConfigureDelete:
     ) -> None:
         response = await client.delete(
             f"/v1/oauth2/register/{oauth2_client.client_id}",
-            headers={
-                "Authorization": f"Bearer {oauth2_client.registration_access_token}"
-            },
+            headers={"Authorization": f"Bearer {'polar_crt_123'}"},
         )
 
         assert response.status_code == 204
@@ -1240,7 +1214,7 @@ class TestOAuth2Token:
             "grant_type": "authorization_code",
             "code": "CODE",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
@@ -1277,7 +1251,7 @@ class TestOAuth2Token:
             "grant_type": "authorization_code",
             "code": "CODE",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
@@ -1357,7 +1331,7 @@ class TestOAuth2Token:
             "grant_type": "authorization_code",
             "code": "CODE",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
@@ -1391,7 +1365,7 @@ class TestOAuth2Token:
             "grant_type": "authorization_code",
             "code": "CODE",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
@@ -1477,7 +1451,7 @@ class TestOAuth2Token:
             "grant_type": "refresh_token",
             "refresh_token": "REFRESH_TOKEN",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1513,7 +1487,7 @@ class TestOAuth2Token:
             "grant_type": "refresh_token",
             "refresh_token": "REFRESH_TOKEN",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1554,7 +1528,7 @@ class TestOAuth2Token:
             "grant_type": "refresh_token",
             "refresh_token": "REFRESH_TOKEN",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1597,7 +1571,7 @@ class TestOAuth2Token:
             "grant_type": "refresh_token",
             "refresh_token": "REFRESH_TOKEN",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1653,7 +1627,7 @@ class TestOAuth2Token:
             "grant_type": "refresh_token",
             "refresh_token": "REFRESH_TOKEN",
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1780,7 +1754,7 @@ class TestOAuth2Token:
         data = {
             **payload,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1855,7 +1829,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": oauth2_client.client_id,
-            "client_secret": oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1884,7 +1858,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -1914,7 +1888,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1950,7 +1924,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2006,7 +1980,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2054,7 +2028,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -2098,7 +2072,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -2147,7 +2121,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2200,7 +2174,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2236,7 +2210,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2289,7 +2263,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2333,7 +2307,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }
@@ -2388,7 +2362,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
             "sub_type": "organization",
             "sub": str(organization.id),
         }

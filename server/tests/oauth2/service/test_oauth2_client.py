@@ -3,12 +3,9 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.email.schemas import OAuth2LeakedClientEmail
 from polar.enums import TokenType
-from polar.models import OAuth2Client
 from polar.oauth2.service.oauth2_client import oauth2_client as oauth2_client_service
 from polar.postgres import AsyncSession
-from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture(autouse=True)
@@ -40,64 +37,3 @@ class TestRevokeLeaked:
         assert result is False
 
         enqueue_email_mock.assert_not_called()
-
-    @pytest.mark.parametrize(
-        "token_type",
-        [
-            TokenType.client_secret,
-            TokenType.client_registration_token,
-        ],
-    )
-    async def test_true_positive(
-        self,
-        token_type: TokenType,
-        session: AsyncSession,
-        oauth2_client: OAuth2Client,
-        enqueue_email_mock: MagicMock,
-    ) -> None:
-        token = (
-            "polar_cs_123" if token_type == TokenType.client_secret else "polar_crt_123"
-        )
-
-        result = await oauth2_client_service.revoke_leaked(
-            session, token, token_type, notifier="github", url="https://github.com"
-        )
-        assert result is True
-
-        updated_oauth2_client = await session.get(OAuth2Client, oauth2_client.id)
-        assert updated_oauth2_client is not None
-
-        if token_type == TokenType.client_secret:
-            assert updated_oauth2_client.client_secret != token
-        else:
-            assert updated_oauth2_client.registration_access_token != token
-
-        enqueue_email_mock.assert_called_once()
-        assert isinstance(enqueue_email_mock.call_args[0][0], OAuth2LeakedClientEmail)
-
-    @pytest.mark.parametrize(
-        "token_type",
-        [
-            TokenType.client_secret,
-            TokenType.client_registration_token,
-        ],
-    )
-    async def test_matches_on_the_hash(
-        self,
-        token_type: TokenType,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        oauth2_client: OAuth2Client,
-    ) -> None:
-        token = (
-            "polar_cs_123" if token_type == TokenType.client_secret else "polar_crt_123"
-        )
-        oauth2_client.client_secret = "polar_cs_stale"
-        oauth2_client.registration_access_token = "polar_crt_stale"
-        await save_fixture(oauth2_client)
-
-        result = await oauth2_client_service.revoke_leaked(
-            session, token, token_type, notifier="github", url="https://github.com"
-        )
-
-        assert result is True

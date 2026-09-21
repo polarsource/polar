@@ -1452,7 +1452,7 @@ class TestCancelSubscription:
             subscription_id="sub_existing",
         )
 
-    async def test_cancels_for_organization_that_cannot_change_plan(
+    async def test_cancels_without_consulting_organization_status(
         self,
         configured: None,
         client_mock: MagicMock,
@@ -1461,17 +1461,15 @@ class TestCancelSubscription:
         """Unlike ``change_plan``, cancelling is never gated on the status.
 
         An organization that is denied or being offboarded must still be able
-        to stop paying.
+        to stop paying, so the organization is never even loaded.
         """
-        winding_down = MagicMock(spec=Organization)
-        winding_down.can_change_plan.return_value = False
-        organization_repository_mock.get_by_id.return_value = winding_down
         client_mock.get_active_subscription.return_value = _make_subscription(
             id="sub_existing"
         )
 
         await polar_self.cancel_subscription(organization_id=ORG_A)
 
+        organization_repository_mock.get_by_id.assert_not_awaited()
         client_mock.cancel_subscription.assert_awaited_once_with(
             subscription_id="sub_existing",
         )

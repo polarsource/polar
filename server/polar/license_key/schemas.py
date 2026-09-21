@@ -47,7 +47,7 @@ ValidationBadRequestResponse = {
 ValidationNotFoundResponse = {
     "description": (
         "License key not found, revoked, disabled, or expired, "
-        "or the supplied activation, conditions, benefit, or customer do not match."
+        "or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match."
     ),
     "model": ResourceNotFound.schema(),
 }

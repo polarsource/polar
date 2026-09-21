@@ -326,6 +326,39 @@ class TestMoney:
         assert Money().is_zero
         assert not Money({"usd": 1}).is_zero
 
+    def test_to_usd_keeps_usd_and_converts_the_rest(self) -> None:
+        amount = Money({"usd": 16350, "eur": 11100})
+
+        assert amount.to_usd({"eur": 1.14738}) == 29086
+
+    def test_to_usd_scales_zero_decimal_currencies(self) -> None:
+        assert Money({"jpy": 11100}).to_usd({"jpy": 0.0067}) == 7437
+
+    def test_to_usd_returns_none_when_a_rate_is_missing(self) -> None:
+        assert Money({"usd": 100, "eur": 50}).to_usd({}) is None
+
+    def test_to_usd_ignores_zero_foreign_amounts(self) -> None:
+        assert Money({"usd": 100, "eur": 0}).to_usd({}) == 100
+
+    def test_share_on_polar_weights_by_usd_when_rates_exist(self) -> None:
+        breakdown = MrrBreakdown(
+            on_polar=Money({"usd": 1000}),
+            to_move=Money({"eur": 1000}),
+            staying=Money(),
+        )
+
+        assert breakdown.migrated_percent == 50
+        assert breakdown.share_on_polar({"eur": 2.0}) == 33
+
+    def test_share_on_polar_falls_back_without_a_rate(self) -> None:
+        breakdown = MrrBreakdown(
+            on_polar=Money({"usd": 1000}),
+            to_move=Money({"eur": 1000}),
+            staying=Money(),
+        )
+
+        assert breakdown.share_on_polar({}) == 50
+
 
 class TestCanonicalShape:
     def test_serialized_canonicals_are_what_the_ledger_stores(self) -> None:

@@ -8,11 +8,13 @@ subscriptions, so the same arithmetic covers revenue that has already landed and
 revenue that hasn't moved yet.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
+from polar.kit.currency import get_currency_decimal_factor
+from polar.kit.math import polar_round
 from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
@@ -68,6 +70,31 @@ class Money:
         """Currencies largest first, so the headline figure is the meaningful one."""
         return sorted(self.amounts.items(), key=lambda item: -item[1])
 
+    @property
+    def has_foreign_currency(self) -> bool:
+        return any(
+            currency.lower() != "usd" and amount
+            for currency, amount in self.amounts.items()
+        )
+
+    def to_usd(self, rates: Mapping[str, float]) -> int | None:
+        total = 0
+        usd_factor = get_currency_decimal_factor("usd")
+        for currency, amount in self.amounts.items():
+            if not amount:
+                continue
+            code = currency.lower()
+            if code == "usd":
+                total += amount
+                continue
+            rate = rates.get(code)
+            if rate is None:
+                return None
+            total += polar_round(
+                amount * rate * usd_factor / get_currency_decimal_factor(code)
+            )
+        return total
+
 
 @dataclass(frozen=True)
 class MrrBreakdown:
@@ -96,6 +123,14 @@ class MrrBreakdown:
         if total == 0:
             return 0
         return round(100 * sum(self.on_polar.amounts.values()) / total)
+
+    def share_on_polar(self, rates: Mapping[str, float]) -> int:
+        """Prefer a USD-weighted share when every currency can be converted."""
+        total = self.total.to_usd(rates)
+        on_polar = self.on_polar.to_usd(rates)
+        if total and on_polar is not None:
+            return round(100 * on_polar / total)
+        return self.migrated_percent
 
 
 def _is_earning(canonical: dict[str, Any]) -> bool:

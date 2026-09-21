@@ -12,11 +12,7 @@ import {
   SubscriptionFields,
 } from './ReviewRecordFields'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
-import {
-  conflictingPolarCustomerHref,
-  needsAttention,
-  ReviewRow,
-} from './reviewRows'
+import { needsAttention, ReviewRow } from './reviewRows'
 
 export function ReviewRecordModal({
   row,
@@ -27,7 +23,9 @@ export function ReviewRecordModal({
 }) {
   const { organization } = useContext(OrganizationContext)
   const isSubscription = row.entity === 'subscriptions'
-  const polarCustomerHref = conflictingPolarCustomerHref(organization.slug, row)
+  const polarCustomerHref = row.conflicting_customer_id
+    ? `/dashboard/${organization.slug}/customers/${row.conflicting_customer_id}`
+    : null
 
   return (
     <Box flexDirection="column" height="100%">
@@ -83,7 +81,7 @@ export function ReviewRecordModal({
           </Box>
         )}
         <ProductFields row={row} />
-        <CustomerFields row={row} polarCustomerHref={polarCustomerHref} />
+        <CustomerFields row={row} />
       </Box>
     </Box>
   )

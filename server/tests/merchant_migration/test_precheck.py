@@ -18,7 +18,6 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
 )
 from polar.merchant_migration.precheck import (
-    ExistingPolarCustomer,
     classify_records,
     plan_customer_imports,
     plan_product_imports,
@@ -789,41 +788,12 @@ class TestClassifyRecords:
             records,
             PrecheckEntity.customers,
             "usd",
-            existing_customers={
-                "a@example.com": ExistingPolarCustomer(
-                    id=polar_id, stripe_customer_id="cus_existing"
-                )
-            },
+            existing_customers={"a@example.com": (polar_id, "cus_existing")},
         )
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "customer_stripe_id_conflict"
         assert items[0].reason_level == PrecheckReasonLevel.action_required
-        assert items[0].conflicting_customer_id == polar_id
-
-    def test_subscription_inherits_customer_stripe_id_conflict(self) -> None:
-        polar_id = uuid4()
-        records: list[CanonicalRecord] = [
-            build_product(
-                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
-            ),
-            build_customer(source_id="cus_1", email="a@example.com"),
-            build_subscription(source_id="sub_1"),
-        ]
-
-        items = classify_records(
-            records,
-            PrecheckEntity.subscriptions,
-            "usd",
-            existing_customers={
-                "a@example.com": ExistingPolarCustomer(
-                    id=polar_id, stripe_customer_id="cus_existing"
-                )
-            },
-        )
-
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "customer_stripe_id_conflict"
         assert items[0].conflicting_customer_id == polar_id
 
     def test_subscription_status_drop(self) -> None:
@@ -1249,50 +1219,3 @@ class TestPlanCustomerImports:
 
         assert skip is not None
         assert skip.code == "customer_missing_email"
-
-    def test_stripe_id_conflict_skips_the_customer(self) -> None:
-        polar_id = uuid4()
-        customer = build_customer(source_id="cus_source", email="a@example.com")
-
-        skip = plan_customer_imports(
-            [customer],
-            {
-                "a@example.com": ExistingPolarCustomer(
-                    id=polar_id, stripe_customer_id="cus_existing"
-                )
-            },
-        )["cus_source"]
-
-        assert skip is not None
-        assert skip.code == "customer_stripe_id_conflict"
-        assert skip.polar_customer_id == polar_id
-
-    def test_matching_stripe_id_is_importable(self) -> None:
-        customer = build_customer(source_id="cus_1", email="a@example.com")
-
-        assert (
-            plan_customer_imports(
-                [customer],
-                {
-                    "a@example.com": ExistingPolarCustomer(
-                        id=uuid4(), stripe_customer_id="cus_1"
-                    )
-                },
-            )[customer.source_id]
-            is None
-        )
-
-    def test_polar_customer_without_stripe_id_is_importable(self) -> None:
-        customer = build_customer(source_id="cus_1", email="a@example.com")
-
-        assert (
-            plan_customer_imports(
-                [customer],
-                {
-                    "a@example.com": ExistingPolarCustomer(
-                        id=uuid4(), stripe_customer_id=None
-                    )
-                },
-            )[customer.source_id]
-            is None
-        )

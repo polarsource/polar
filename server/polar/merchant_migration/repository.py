@@ -392,29 +392,6 @@ class MerchantMigrationRecordRepository(
                     MerchantMigrationRecordType.product,
                 )
             ),
-            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
-            MerchantMigrationRecord.target_id.is_not(None),
-        )
-        return await self.get_all(statement)
-
-    async def list_review_catalog_dependencies(
-        self, organization_id: UUID
-    ) -> Sequence[MerchantMigrationRecord]:
-        """Imported or skipped catalog rows from any migration of this org.
-
-        Review classification needs skipped customers and products so a later
-        migration's subscriptions inherit the real skip reason instead of a
-        generic missing-dependency note. Imported rows still need a Polar
-        target so cutover readiness can be computed.
-        """
-        statement = self.get_base_statement().where(
-            MerchantMigrationRecord.organization_id == organization_id,
-            MerchantMigrationRecord.type.in_(
-                (
-                    MerchantMigrationRecordType.customer,
-                    MerchantMigrationRecordType.product,
-                )
-            ),
             or_(
                 and_(
                     MerchantMigrationRecord.status

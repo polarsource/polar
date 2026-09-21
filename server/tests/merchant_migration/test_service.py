@@ -1842,47 +1842,6 @@ class TestImportCatalog:
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
     @pytest.mark.auth
-    async def test_later_migration_surfaces_skipped_customer_conflict(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # A skipped customer stays on the first migration; a later assessment
-        # must still explain why its subscription won't import.
-        polar_customer = await customer_service.create_for_organization(
-            session,
-            organization,
-            email="alice@example.com",
-            name="Alice",
-            billing_address=None,
-            stripe_customer_id="cus_existing",
-        )
-        first = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization
-        )
-        await service.import_catalog(session, auth_subject, first.id)
-
-        second = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization
-        )
-        items, _ = await service.list_records(
-            session,
-            auth_subject,
-            second.id,
-            entity=PrecheckEntity.subscriptions,
-            status=None,
-            pagination=PaginationParams(page=1, limit=20),
-        )
-        assert len(items) == 1
-        assert items[0].reason_code == "customer_stripe_id_conflict"
-        assert items[0].conflicting_customer_id == polar_customer.id
-        assert items[0].status == PrecheckRecordStatus.skipped
-
-    @pytest.mark.auth
     async def test_rerunning_precheck_does_not_regress_step(
         self,
         mocker: MockerFixture,

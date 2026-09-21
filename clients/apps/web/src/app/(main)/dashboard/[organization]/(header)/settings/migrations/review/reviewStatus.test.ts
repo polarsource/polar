@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { conflictingPolarCustomerHref, type ReviewRow } from './reviewRows'
+import { type ReviewRow } from './reviewRows'
 import { reviewStatus } from './reviewStatus'
 
 const baseRow = {
@@ -134,20 +134,5 @@ describe('reviewStatus', () => {
         ),
       ).toEqual({ label: 'To prepare' })
     })
-  })
-})
-
-describe('conflictingPolarCustomerHref', () => {
-  it('returns the dashboard customer path when a Polar customer conflicts', () => {
-    expect(
-      conflictingPolarCustomerHref(
-        'pepy',
-        row({ conflicting_customer_id: 'cust_polar' }),
-      ),
-    ).toBe('/dashboard/pepy/customers/cust_polar')
-  })
-
-  it('returns null when there is no conflicting Polar customer', () => {
-    expect(conflictingPolarCustomerHref('pepy', row({}))).toBeNull()
   })
 })

@@ -115,7 +115,7 @@ _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
 )
-_CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
+CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
     "A Polar customer already exists for this email, bound to a different "
     "Stripe customer. Open that Polar customer to reconcile them; this one "
     "stays on Stripe."
@@ -145,14 +145,6 @@ def _is_supported_currency(currency: str) -> bool:
         return False
 
 
-@dataclass(frozen=True)
-class ExistingPolarCustomer:
-    """A Polar customer already in the org, keyed by lower-cased email."""
-
-    id: UUID
-    stripe_customer_id: str | None
-
-
 class PrecheckEngine:
     async def run(
         self,
@@ -160,7 +152,6 @@ class PrecheckEngine:
         organization: Organization,
         source_account: CanonicalAccount,
         existing_product_names: set[str] | None = None,
-        existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
     ) -> PrecheckReport:
         record_list = [record async for record in records]
         default_currency = organization.default_presentment_currency
@@ -207,9 +198,7 @@ class PrecheckEngine:
             can_start=not any(
                 issue.level == PrecheckIssueLevel.blocker for issue in issues
             ),
-            entities=summarize_records(
-                record_list, default_currency, existing_customers
-            ),
+            entities=summarize_records(record_list, default_currency),
         )
 
     def _check_organization(
@@ -621,14 +610,6 @@ class Reason:
         return PrecheckReasonLevel.info
 
 
-def customer_stripe_id_conflict(polar_customer_id: UUID) -> Reason:
-    return Reason(
-        "customer_stripe_id_conflict",
-        _CUSTOMER_STRIPE_ID_CONFLICT_REASON,
-        polar_customer_id=polar_customer_id,
-    )
-
-
 @dataclass(frozen=True)
 class PriceDisplay:
     """The price shown on a priced review row."""
@@ -861,7 +842,7 @@ def _price_items(
 
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
-    existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
     plans = plan_customer_imports(customers, existing_customers)
@@ -895,7 +876,7 @@ def _subscription_items(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
-    existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(
@@ -1065,7 +1046,7 @@ def classify_records(
     entity: PrecheckEntity,
     default_currency: str,
     existing_product_names: set[str] | None = None,
-    existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
@@ -1143,14 +1124,12 @@ def plan_product_imports(
 
 def plan_customer_imports(
     customers: Sequence[CanonicalCustomer],
-    existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> dict[str, Reason | None]:
     """Per customer ``source_id``, the skip reason or ``None`` when importable.
     A Polar customer is unique by email and carries a single source id, so of
     several customers sharing an email only the first can be imported; a customer
-    with no email can't be imported at all. A Polar customer that already has a
-    different Stripe id also can't be reused, or a copied card would land on the
-    wrong record."""
+    with no email can't be imported at all."""
     duplicates = _duplicate_customer_source_ids(customers)
     existing = existing_customers or {}
     plans: dict[str, Reason | None] = {}
@@ -1165,12 +1144,12 @@ def plan_customer_imports(
             )
         else:
             polar = existing.get(customer.email.lower())
-            if (
-                polar is not None
-                and polar.stripe_customer_id is not None
-                and polar.stripe_customer_id != customer.source_id
-            ):
-                plans[customer.source_id] = customer_stripe_id_conflict(polar.id)
+            if polar and polar[1] and polar[1] != customer.source_id:
+                plans[customer.source_id] = Reason(
+                    "customer_stripe_id_conflict",
+                    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
+                    polar_customer_id=polar[0],
+                )
             else:
                 plans[customer.source_id] = None
     return plans
@@ -1181,7 +1160,7 @@ def plan_subscription_imports(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
-    existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when
     importable. Mirrors the review drawer's per-subscription classification: a
@@ -1224,15 +1203,12 @@ def plan_subscription_imports(
 def summarize_records(
     records: Sequence[CanonicalRecord],
     default_currency: str,
-    existing_customers: Mapping[str, ExistingPolarCustomer] | None = None,
 ) -> list[PrecheckEntitySummary]:
     """Per-entity counts of total/importable/skipped, computed from the same
     classification the review drawer shows."""
     summaries: list[PrecheckEntitySummary] = []
     for entity in PrecheckEntity:
-        items = classify_records(
-            records, entity, default_currency, existing_customers=existing_customers
-        )
+        items = classify_records(records, entity, default_currency)
         importable = sum(
             1 for item in items if item.status == PrecheckRecordStatus.importable
         )

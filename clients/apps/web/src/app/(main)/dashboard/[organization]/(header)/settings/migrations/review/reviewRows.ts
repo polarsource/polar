@@ -33,16 +33,6 @@ export function isImported(row: ReviewRow): boolean {
   return row.import_status === 'imported'
 }
 
-export function conflictingPolarCustomerHref(
-  organizationSlug: string,
-  row: ReviewRow,
-): string | null {
-  if (!row.conflicting_customer_id) {
-    return null
-  }
-  return `/dashboard/${organizationSlug}/customers/${row.conflicting_customer_id}`
-}
-
 // Something the merchant has to fix, as opposed to a note they only read.
 export function needsAttention(row: ReviewRow): boolean {
   return row.reason_level === 'action_required' && !isImported(row)

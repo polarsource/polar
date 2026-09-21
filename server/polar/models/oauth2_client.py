@@ -82,6 +82,14 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
             self.client_secret_hash in get_token_hash_candidates(client_secret).values()
         )
 
+    def check_registration_access_token(self, registration_access_token: str) -> bool:
+        if self.registration_access_token_hash is None:
+            return False
+        return (
+            self.registration_access_token_hash
+            in get_token_hash_candidates(registration_access_token).values()
+        )
+
     @staticmethod
     def hash_secret(value: str | None) -> str | None:
         if value is None:

@@ -311,6 +311,24 @@ class TestOAuth2ConfigureGet:
         for value in json.values():
             assert value is not None
 
+    async def test_token_reads_the_ciphertext(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        token = oauth2_client.registration_access_token
+        oauth2_client.registration_access_token = "polar_crt_stale"
+        await save_fixture(oauth2_client)
+
+        response = await client.get(
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["registration_access_token"] == token
+
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_user_not_owner(
         self, client: AsyncClient, oauth2_client: OAuth2Client

@@ -88,7 +88,7 @@ async def _count_remaining(session: AsyncSession) -> int:
 
 
 async def run_backfill(
-    batch_size: int = 50,
+    batch_size: int = 500,
     sleep_seconds: float = 0.1,
     dry_run: bool = False,
     session: AsyncSession | None = None,
@@ -158,8 +158,9 @@ async def run_backfill(
                         )
                     break
 
-                for client in clients:
-                    await _fill_secrets(client)
+                # None of these touches the session, and the thread pool caps
+                # how many reach KMS at once.
+                await asyncio.gather(*(_fill_secrets(client) for client in clients))
 
                 after = clients[-1].id
                 await session.commit()
@@ -190,7 +191,7 @@ async def run_backfill(
 @typer_async
 async def backfill(
     batch_size: int = typer.Option(
-        50, min=1, help="Number of rows to process per batch"
+        500, min=1, help="Number of rows to process per batch"
     ),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
     execute: bool = typer.Option(

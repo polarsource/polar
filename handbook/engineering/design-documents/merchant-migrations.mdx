@@ -94,7 +94,7 @@ At review the merchant picks per subscription: **inclusive** — customer pays t
 2. Else if Stripe was collecting tax on this subscription (`automatic_tax.enabled`, or `default_tax_rates` / item `tax_rates`) and the Price is `inclusive` or `exclusive`, pin that.
 3. Else inclusive — tax was off, or the Price is `unspecified` (do not guess exclusive from currency).
 
-`automatic_tax` is still shown as information only. Without a pin, Polar would fall back to the org default; a `location` default is exclusive for `CA`/`IN`/`US`.
+The review UI still shows `automatic_tax` as a caption; `enabled` also feeds the computed default above. Without a pin, Polar would fall back to the org default; a `location` default is exclusive for `CA`/`IN`/`US`.
 
 The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover, so a later org-default change does not move an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row. B2B reverse-charge is not a third option: carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id` — miss it and the customer gets re-taxed as B2C. `tax_exempted` is pinned `false`.
 

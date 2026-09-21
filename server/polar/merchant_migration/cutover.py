@@ -383,7 +383,6 @@ class SubscriptionCutover:
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
-        staged.tax_behavior = self._cutover_tax(staged, source)
         subscription = await create_imported_subscription(
             self.session,
             staged,
@@ -472,11 +471,7 @@ class SubscriptionCutover:
         staged: CanonicalSubscription | None,
         source: CanonicalSubscription,
     ) -> TaxBehavior:
-        if staged is not None and staged.tax_behavior is not None:
-            return staged.tax_behavior
-        if staged is not None and (
-            staged.price_tax_behavior is not None or staged.has_tax_rates
-        ):
+        if staged is not None:
             return staged.import_tax_behavior()
         return source.import_tax_behavior()
 

@@ -16,7 +16,6 @@ import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
 import {
-  currentPosition,
   currentStepDef,
   MigrationStepDef,
   OWNER_LABELS,
@@ -157,21 +156,6 @@ function StepContent({
       </Text>
     )
   }
-  // Same rule as the list card: cleanup is Polar wrapping up, so the merchant
-  // already sees every visible step as done.
-  if (currentPosition(migration, panCurrentStepKey).kind === 'completed') {
-    return (
-      <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xs" as="h3">
-          Completed
-        </Text>
-        <Text variant="caption" color="muted">
-          This migration is complete. Billing for the switched subscriptions now
-          runs on Polar.
-        </Text>
-      </Box>
-    )
-  }
   const def = currentStepDef(migration, panCurrentStepKey)
   switch (visibleMigrationStep(migration, panCurrentStepKey)) {
     // The stepper shows a connected migration as assessing, but nothing is
@@ -200,7 +184,10 @@ function StepContent({
           />
         </Box>
       )
+    // The switch runs here, and stays reachable at cleanup so the merchant can
+    // switch the ones an earlier run left on Stripe.
     case 'activate_subscriptions':
+    case 'cleanup':
       return (
         <Box flexDirection="column" rowGap="l">
           {def && <StepHeading def={def} />}
@@ -213,7 +200,9 @@ function StepContent({
     <Box flexDirection="column" rowGap="l">
       <StepHeading def={def} />
       <Text variant="caption" color="muted">
-        This step is being rolled out. We&apos;ll keep this page up to date.
+        {def === null
+          ? 'This migration is complete.'
+          : "This step is being rolled out. We'll keep this page up to date."}
       </Text>
     </Box>
   )

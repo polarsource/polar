@@ -46,16 +46,14 @@ router = APIRouter(
         403: {"description": "Not permitted"},
         404: {"description": "Subscription, order, or customer not found"},
     },
-    openapi_extra={
-        "x-tool-title": "Assign customer seat",
-        "x-tool-description": "Assign a seat for a subscription or order.",
-    },
+    openapi_extra={"x-tool-title": "Assign customer seat"},
 )
 async def assign_seat(
     seat_assign: SeatAssign,
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
+    """Assign a seat for a subscription or order."""
     subscription: Subscription | None = None
     order: Order | None = None
 
@@ -115,10 +113,7 @@ async def assign_seat(
         403: {"description": "Not permitted"},
         404: {"description": "Subscription or order not found"},
     },
-    openapi_extra={
-        "x-tool-title": "List customer seats",
-        "x-tool-description": "List seats for a subscription or order.",
-    },
+    openapi_extra={"x-tool-title": "List customer seats"},
 )
 async def list_seats(
     auth_subject: SeatRead,
@@ -126,6 +121,7 @@ async def list_seats(
     subscription_id: Annotated[UUID4 | None, Query()] = None,
     order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
+    """List seats for a subscription or order."""
     subscription: Subscription | None = None
     order: Order | None = None
     total_seats = 0
@@ -185,16 +181,14 @@ async def list_seats(
         403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
-    openapi_extra={
-        "x-tool-title": "Revoke customer seat",
-        "x-tool-description": "Revoke a customer seat.",
-    },
+    openapi_extra={"x-tool-title": "Revoke customer seat"},
 )
 async def revoke_seat(
     seat_id: UUID4,
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
+    """Revoke a customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
     org_ids = await get_accessible_org_ids(session, auth_subject)
 
@@ -220,16 +214,14 @@ async def revoke_seat(
         403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
-    openapi_extra={
-        "x-tool-title": "Resend customer seat invitation",
-        "x-tool-description": "Resend an invitation for a pending customer seat.",
-    },
+    openapi_extra={"x-tool-title": "Resend customer seat invitation"},
 )
 async def resend_invitation(
     seat_id: UUID4,
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
+    """Resend an invitation for a pending customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
     org_ids = await get_accessible_org_ids(session, auth_subject)
 
@@ -254,15 +246,13 @@ async def resend_invitation(
         403: {"description": "Seat-based pricing not enabled for organization"},
         404: {"description": "Seat not found"},
     },
-    openapi_extra={
-        "x-tool-title": "Get customer seat claim info",
-        "x-tool-description": "Get claim information for a customer seat invitation.",
-    },
+    openapi_extra={"x-tool-title": "Get customer seat claim info"},
 )
 async def get_claim_info(
     invitation_token: str,
     session: AsyncSession = Depends(get_db_session),
 ) -> SeatClaimInfo:
+    """Get claim information for a customer seat invitation."""
     seat = await seat_service.get_seat_by_token(session, invitation_token)
 
     if not seat:
@@ -327,15 +317,13 @@ async def claim_stream(
         400: {"description": "Invalid, expired, or already claimed token"},
         403: {"description": "Seat-based pricing not enabled for organization"},
     },
-    openapi_extra={
-        "x-tool-title": "Claim customer seat",
-        "x-tool-description": "Claim Seat",
-    },
+    openapi_extra={"x-tool-title": "Claim customer seat"},
 )
 async def claim_seat(
     seat_claim: SeatClaim,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatClaimResponse:
+    """Claim a customer seat with an invitation token."""
     seat, customer_session_token = await seat_service.claim_seat(
         session,
         seat_claim.invitation_token,

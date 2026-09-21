@@ -288,7 +288,7 @@ async def webhook_event_archive() -> None:
 )
 async def webhook_delivery_archive() -> None:
     async with AsyncSessionMaker() as session:
-        return await webhook_service.archive_delivery_payloads(
+        await webhook_service.archive_delivery_payloads(
             session,
             older_than=utc_now() - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
         )

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import datetime
 import json
@@ -972,43 +973,30 @@ class WebhookService:
         session: AsyncSession,
         older_than: datetime.datetime,
         batch_size: int = 5000,
-    ) -> None:
-        log.debug(
-            "Archive webhook delivery payloads",
-            older_than=older_than,
-            batch_size=batch_size,
-        )
+        sleep_seconds: float = 0.1,
+    ) -> int:
+        repository = WebhookDeliveryRepository.from_session(session)
+        cursor: tuple[datetime.datetime, UUID] | None = None
+        total_scrubbed = 0
 
         while True:
-            batch_subquery = (
-                select(WebhookDelivery.id)
-                .where(
-                    WebhookDelivery.created_at < older_than,
-                    WebhookDelivery.response.is_not(None),
-                )
-                .order_by(WebhookDelivery.created_at.asc())
-                .limit(batch_size)
+            page = await repository.get_scrubbable_response_page(
+                older_than=older_than, limit=batch_size, after=cursor
             )
-            statement = (
-                update(WebhookDelivery)
-                .where(WebhookDelivery.id.in_(batch_subquery))
-                .values(response=None)
-            )
+            if not page:
+                break
 
-            # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
-            result = cast(
-                CursorResult[WebhookDelivery], await session.execute(statement)
-            )
-            updated_count = result.rowcount
-
+            await repository.scrub_responses([id for id, _ in page])
             await session.commit()
 
-            log.debug(
-                "Archived webhook delivery payloads batch", updated_count=updated_count
-            )
+            total_scrubbed += len(page)
+            last_id, last_created_at = page[-1]
+            cursor = (last_created_at, last_id)
 
-            if updated_count < batch_size:
-                break
+            if sleep_seconds > 0:
+                await asyncio.sleep(sleep_seconds)
+
+        return total_scrubbed
 
     async def _get_event_target_endpoints(
         self,

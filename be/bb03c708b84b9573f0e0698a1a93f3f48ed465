@@ -1,0 +1,23 @@
+clients/apps/web/src/hooks/posthog.ts
+  s_9f046c8f9de256::t_d54472b6991d9a 99
+server/polar/posthog.py
+  s_9f046c8f9de256::t_db160d49e2b691 201
+server/polar/sentry.py
+  s_9f046c8f9de256::t_487938cb9e7146 86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bebb03c708b84b9573f0e0698a1a93f3f48ed465",
+  "prompts": {},
+  "sessions": {
+    "s_9f046c8f9de256": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "920ac674-a74f-4ed4-8684-2fdc4c1e6576",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

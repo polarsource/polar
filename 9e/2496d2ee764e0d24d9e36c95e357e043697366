@@ -1,0 +1,20 @@
+server/polar/logfire.py
+  s_9f046c8f9de256::t_cd9c82d41b8f25 219-221,227
+  s_9f046c8f9de256::t_e6fb40439f11e1 222-226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9e2496d2ee764e0d24d9e36c95e357e043697366",
+  "prompts": {},
+  "sessions": {
+    "s_9f046c8f9de256": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "920ac674-a74f-4ed4-8684-2fdc4c1e6576",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}

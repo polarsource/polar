@@ -87,19 +87,14 @@ class CheckoutRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
-    async def anonymize_customer_pii(
+    async def get_all_by_customer_reference(
         self, customer_id: UUID, organization_id: UUID, email: str | None
-    ) -> None:
-        """Erase the customer PII copied onto checkouts, for GDPR erasure.
+    ) -> Sequence[Checkout]:
+        """Every checkout holding a copy of this customer's details.
 
-        Checkouts snapshot the customer details at checkout time, independently
-        of the `customers` row. Orders keep their own snapshot of everything the
-        tax records need (billing name, address, tax ID and tax breakdown), so
-        the copy here can be erased outright rather than pseudonymized.
-
-        Guest checkouts that were never confirmed have no `customer_id`, so they
-        are matched on the email within the same organization as well.
-        Soft-deleted checkouts are included: the PII is still in the table.
+        Checkouts that were never confirmed have no `customer_id`, so they are
+        matched on the email within the same organization as well. Soft-deleted
+        checkouts are included: their copy of the PII is still in the table.
         """
         where_clauses = [Checkout.customer_id == customer_id]
         if email is not None:
@@ -110,23 +105,10 @@ class CheckoutRepository(
                 )
             )
 
-        statement = (
-            update(Checkout)
-            .where(
-                Checkout.organization_id == organization_id,
-                or_(*where_clauses),
-            )
-            .values(
-                customer_name=None,
-                customer_email=None,
-                _customer_ip_address=None,
-                customer_billing_name=None,
-                customer_billing_address=None,
-                customer_tax_id=None,
-                customer_metadata={},
-            )
+        statement = select(Checkout).where(
+            Checkout.organization_id == organization_id, or_(*where_clauses)
         )
-        await self.session.execute(statement)
+        return await self.get_all(statement)
 
     async def list_embed_origins(
         self, organization_id: UUID, *, since: datetime

@@ -14,6 +14,10 @@ from polar.customer.service import customer as customer_service
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
+from polar.kit.anonymization import (
+    ANONYMIZED_EMAIL_DOMAIN,
+    anonymize_for_deletion,
+)
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import (
@@ -1792,25 +1796,85 @@ class TestAnonymize:
         assert len(anonymized._billing_name) == 64
         assert anonymized._billing_name != "Business Billing Name"
 
-    async def test_erases_checkout_pii(
+    async def test_anonymizes_checkout_pii(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         product: Product,
     ) -> None:
-        """Checkouts snapshot the customer PII independently and must be erased."""
+        """Checkouts snapshot the customer PII independently and must be scrubbed."""
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="checkout@example.com",
             name="John Doe",
         )
+        assert customer.email is not None
         checkout = await _checkout_with_customer_pii(
-            save_fixture, product, customer=customer
+            save_fixture, product, customer=customer, customer_email=customer.email
+        )
+
+        anonymized = await customer_service.anonymize(session, customer)
+        await session.flush()
+        await session.refresh(checkout)
+
+        # Hashed with the customer's created_at, so it matches the customer row
+        assert checkout.customer_email == anonymized.email
+        assert checkout.customer_name == anonymized.name
+        assert checkout.customer_billing_name is not None
+        assert len(checkout.customer_billing_name) == 64
+
+        # The tax ID number is hashed, its format kept
+        assert checkout.customer_tax_id is not None
+        assert checkout.customer_tax_id[0] != "DE123456789"
+        assert len(checkout.customer_tax_id[0]) == 64
+        assert checkout.customer_tax_id[1] == TaxIDFormat.eu_vat
+
+        # Street-level parts hashed, tax jurisdiction kept
+        address = checkout.customer_billing_address
+        assert address is not None
+        assert address.line1 == anonymize_for_deletion(
+            "123 Main St", customer.created_at
+        )
+        assert address.city == anonymize_for_deletion(
+            "San Francisco", customer.created_at
+        )
+        assert address.postal_code == anonymize_for_deletion(
+            "94102", customer.created_at
+        )
+        assert address.country == "US"
+        assert address.state == "US-CA"
+
+        # An IP can't hold a hash and stay valid, so it becomes the sentinel
+        assert checkout.customer_ip_address == "0.0.0.0"
+
+        # Metadata keys are kept, values hashed
+        assert list(checkout.customer_metadata) == ["phone"]
+        assert checkout.customer_metadata["phone"] != "+3312345678"
+
+        # The link to the customer is kept: only the PII copy is scrubbed
+        assert checkout.customer_id == customer.id
+
+    async def test_leaves_unset_checkout_fields_unset(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Scrubbing must not make an empty field look like it was filled."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="sparse@example.com",
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
         )
 
         await customer_service.anonymize(session, customer)
+        await session.flush()
         await session.refresh(checkout)
 
         assert checkout.customer_email is None
@@ -1821,10 +1885,7 @@ class TestAnonymize:
         assert checkout.customer_tax_id is None
         assert checkout.customer_metadata == {}
 
-        # The link to the customer is kept: only the PII copy is erased
-        assert checkout.customer_id == customer.id
-
-    async def test_erases_guest_checkout_pii(
+    async def test_anonymizes_guest_checkout_pii(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1842,10 +1903,12 @@ class TestAnonymize:
         )
 
         await customer_service.anonymize(session, customer)
+        await session.flush()
         await session.refresh(checkout)
 
-        assert checkout.customer_email is None
-        assert checkout.customer_ip_address is None
+        assert checkout.customer_email is not None
+        assert checkout.customer_email.endswith(f"@{ANONYMIZED_EMAIL_DOMAIN}")
+        assert checkout.customer_ip_address == "0.0.0.0"
 
     async def test_leaves_other_customers_checkouts_alone(
         self,
@@ -1869,6 +1932,7 @@ class TestAnonymize:
         )
 
         await customer_service.anonymize(session, customer)
+        await session.flush()
         await session.refresh(other_checkout)
 
         assert other_checkout.customer_email == "buyer@example.com"

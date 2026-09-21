@@ -1,9 +1,15 @@
 from datetime import UTC, datetime
 
+from pydantic import IPvAnyAddress, TypeAdapter
+
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.anonymization import (
     ANONYMIZED_EMAIL_DOMAIN,
+    ANONYMIZED_IP_ADDRESS,
+    anonymize_address_for_deletion,
     anonymize_email_for_deletion,
     anonymize_for_deletion,
+    anonymize_metadata_for_deletion,
 )
 
 
@@ -54,3 +60,62 @@ class TestAnonymizeEmailForDeletion:
         assert anonymize_email_for_deletion(
             email, created_at
         ) == anonymize_email_for_deletion(email, created_at)
+
+
+class TestAnonymizeAddressForDeletion:
+    def test_hashes_street_level_parts_and_keeps_jurisdiction(self) -> None:
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        address = Address(
+            line1="123 Main St",
+            line2="Apt 4",
+            city="San Francisco",
+            state="CA",
+            postal_code="94102",
+            country=CountryAlpha2("US"),
+        )
+
+        result = anonymize_address_for_deletion(address, created_at)
+
+        assert result.line1 == anonymize_for_deletion("123 Main St", created_at)
+        assert result.line2 == anonymize_for_deletion("Apt 4", created_at)
+        assert result.city == anonymize_for_deletion("San Francisco", created_at)
+        assert result.postal_code == anonymize_for_deletion("94102", created_at)
+        assert result.country == "US"
+        assert result.state == "US-CA"
+
+    def test_keeps_unset_parts_unset(self) -> None:
+        address = Address(country=CountryAlpha2("FR"))
+
+        result = anonymize_address_for_deletion(
+            address, datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        )
+
+        assert result.line1 is None
+        assert result.line2 is None
+        assert result.city is None
+        assert result.postal_code is None
+        assert result.state is None
+
+
+class TestAnonymizeMetadataForDeletion:
+    def test_keeps_keys_and_hashes_values(self) -> None:
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+        result = anonymize_metadata_for_deletion(
+            {"phone": "+3312345678", "seats": 3}, created_at
+        )
+
+        assert result == {
+            "phone": anonymize_for_deletion("+3312345678", created_at),
+            "seats": anonymize_for_deletion("3", created_at),
+        }
+
+
+class TestAnonymizedIPAddress:
+    def test_is_a_valid_ip_address(self) -> None:
+        """The checkout schema types the field as an IP, so the sentinel must
+        survive serialization."""
+        parsed: IPvAnyAddress = TypeAdapter(IPvAnyAddress).validate_python(
+            ANONYMIZED_IP_ADDRESS
+        )
+        assert str(parsed) == ANONYMIZED_IP_ADDRESS

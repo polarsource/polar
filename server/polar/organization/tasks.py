@@ -92,7 +92,7 @@ async def organization_unsnooze_expired() -> None:
 
 @actor(
     actor_name="organization.offboard_expired",
-    cron_trigger=CronTrigger.from_crontab("48 4 * * *"),
+    cron_trigger=CronTrigger.from_crontab("50 4 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
@@ -116,7 +116,7 @@ async def organization_offboard_expired_one(organization_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="organization.cancel_expired_subscriptions",
-    cron_trigger=CronTrigger.from_crontab("52 4 * * *"),
+    cron_trigger=CronTrigger.from_crontab("54 4 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

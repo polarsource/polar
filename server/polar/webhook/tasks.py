@@ -271,7 +271,7 @@ async def webhook_event_failed(
 
 @actor(
     actor_name="webhook_event.archive",
-    cron_trigger=CronTrigger.from_crontab("40 4 * * *"),
+    cron_trigger=CronTrigger.from_crontab("42 4 * * *"),
     priority=TaskPriority.LOW,
 )
 async def webhook_event_archive() -> None:

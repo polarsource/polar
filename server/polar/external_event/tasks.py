@@ -11,7 +11,7 @@ from .repository import ExternalEventRepository
 @actor(
     actor_name="external_event.prune",
     priority=TaskPriority.LOW,
-    cron_trigger=CronTrigger.from_crontab("36 4 * * *"),
+    cron_trigger=CronTrigger.from_crontab("38 4 * * *"),
     max_retries=0,
 )
 async def external_event_prune() -> None:

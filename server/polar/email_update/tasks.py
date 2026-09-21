@@ -11,7 +11,7 @@ log: Logger = structlog.get_logger()
 
 @actor(
     actor_name="email_update.delete_expired_record",
-    cron_trigger=CronTrigger.from_crontab("32 4 * * *"),
+    cron_trigger=CronTrigger.from_crontab("34 4 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

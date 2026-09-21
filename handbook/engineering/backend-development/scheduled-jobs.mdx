@@ -10,15 +10,16 @@ registered as a job and enqueued on its schedule:
 ```python
 @actor(
     actor_name="external_event.prune",
-    cron_trigger=CronTrigger.from_crontab("36 4 * * *"),
+    cron_trigger=CronTrigger.from_crontab("38 4 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
 async def external_event_prune() -> None: ...
 ```
 
-**All schedules are UTC.** The scheduler has no notion of a local timezone, and neither should
-you when reading this page.
+Read every time on this page as UTC. APScheduler resolves a `CronTrigger` against the process
+timezone and we pin it nowhere, so "UTC" holds because the worker container has no `TZ` set,
+not because the scheduler enforces it. Locally, the same triggers fire in your own timezone.
 
 This page is the registry of those jobs. It is the source of truth for "what runs when", so a
 PR that adds, moves or removes a scheduled job updates the table in the same PR.
@@ -27,44 +28,49 @@ PR that adds, moves or removes a scheduled job updates the table in the same PR.
 
 Daily jobs run staggered inside a maintenance window between 04:00 and 05:00 UTC, one job per
 slot, four minutes apart — see
-[ADR-0013](/engineering/decisions/0013-daily-maintenance-window). 04:00–05:00 UTC is our
-lowest-traffic hour, and spreading the jobs keeps a dozen bulk deletes from landing on the
-database at the same instant.
+[ADR-0013](/engineering/decisions/0013-daily-maintenance-window).
 
-**Adding a daily job:** take the next free slot below, declare it as
+**Adding a daily job:** take the free slot below, declare it as
 `CronTrigger.from_crontab("<minute> 4 * * *")`, and add its row here. Two daily jobs never
 share a minute.
 
 | Slot (UTC) | Actor | Module | What it does |
 |---|---|---|---|
-| 04:00 | `auth.delete_expired` | `auth` | Delete expired user sessions |
-| 04:04 | `email_otp.delete_expired` | `auth` | Delete expired email OTPs |
-| 04:08 | `authentication_session.delete_expired` | `auth` | Delete expired authentication sessions |
-| 04:12 | `customer_session.delete_expired` | `customer_session` | Delete expired customer sessions |
-| 04:16 | `customer_session_code.delete_expired` | `customer_portal` | Delete expired customer portal login codes |
-| 04:20 | `member_session.delete_expired` | `member_session` | Delete expired member sessions |
-| 04:24 | `oauth2_token.delete_expired` | `oauth2` | Delete expired OAuth2 tokens |
-| 04:28 | `customer_email_update.delete_expired` | `customer_email_update` | Delete expired customer email change requests |
-| 04:32 | `email_update.delete_expired_record` | `email_update` | Delete expired user email change requests |
-| 04:36 | `external_event.prune` | `external_event` | Prune external events older than 30 days |
-| 04:40 | `webhook_event.archive` | `webhook` | Archive webhook events past the retention period |
-| 04:44 | `processor_fee.sync_stripe_fees` | `transaction` | Import Stripe fee balance transactions |
-| 04:48 | `organization.offboard_expired` | `organization` | Fan out offboarding for orgs past the wind-down floor |
-| 04:52 | `organization.cancel_expired_subscriptions` | `organization` | Cancel subscriptions of denied, blocked or offboarded orgs |
-| 04:56 | _free_ | | |
+| 04:02 | `auth.delete_expired` | `auth` | Delete expired user sessions |
+| 04:06 | `email_otp.delete_expired` | `auth` | Delete expired email OTPs |
+| 04:10 | `authentication_session.delete_expired` | `auth` | Delete expired authentication sessions |
+| 04:14 | `customer_session.delete_expired` | `customer_session` | Delete expired customer sessions |
+| 04:18 | `customer_session_code.delete_expired` | `customer_portal` | Delete expired customer portal login codes |
+| 04:22 | `member_session.delete_expired` | `member_session` | Delete expired member sessions |
+| 04:26 | `oauth2_token.delete_expired` | `oauth2` | Delete expired OAuth2 tokens |
+| 04:30 | `customer_email_update.delete_expired` | `customer_email_update` | Delete expired customer email change requests |
+| 04:34 | `email_update.delete_expired_record` | `email_update` | Delete expired user email change requests |
+| 04:38 | `external_event.prune` | `external_event` | Prune external events older than 30 days |
+| 04:42 | `webhook_event.archive` | `webhook` | Archive webhook events past the retention period |
+| 04:46 | `processor_fee.sync_stripe_fees` | `transaction` | Import Stripe fee balance transactions |
+| 04:50 | `organization.offboard_expired` | `organization` | Fan out offboarding for orgs past the wind-down floor |
+| 04:54 | `organization.cancel_expired_subscriptions` | `organization` | Cancel subscriptions of denied, blocked or offboarded orgs |
+| 04:58 | _free_ | | |
 
-`organization.cancel_expired_subscriptions` deliberately sits after
-`organization.offboard_expired`: an org offboarded in this window should have its subscriptions
-cancelled in the same pass.
+Slots start at `:02` rather than `:00`: six recurring jobs already land on the top of the hour,
+and the point of the window is to avoid piling on. The one slot that still shares a minute with
+recurring work is 04:30, so it holds the smallest of the deletes.
 
-Fifteen slots fit at four-minute spacing. When the window fills, tighten the spacing rather
-than spilling past 05:00.
+The two `organization` jobs are independent despite sitting next to each other:
+`cancel_expired_subscriptions` only picks up organizations whose terminal status is at least
+`ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY` (7 days) old, so it can never act on an org that
+`offboard_expired` handled four minutes earlier. Their order carries no guarantee.
+
+### Changing a schedule
+
+Jobs live in a `MemoryJobStore` with APScheduler's default one-second misfire grace, so a
+worker restart recomputes the next run from now and silently drops any slot it stepped over.
+When a deploy moves a job's slot, deploy outside 04:00–05:00 UTC: a cutover *before* a job's
+new slot re-runs it that day, and a cutover *between* its new and old slot skips it for a day.
+Both are harmless for the jobs in the table today — the deletes are idempotent and the
+`organization` jobs are gated by multi-day delays — but check before assuming it for a new one.
 
 ## Hourly and sub-hourly jobs
-
-These are not part of the window. They already run often enough to be spread across the hour,
-and pinning them to a daily slot would defeat their purpose. They are listed here so the
-registry stays complete.
 
 | Schedule (UTC) | Actor | Module | What it does |
 |---|---|---|---|
@@ -89,12 +95,7 @@ registry stays complete.
 |---|---|---|---|
 | Mon 09:00 | `slo_report.send_weekly` | `observability/slo_report` | Post the weekly SLO report to Slack |
 
-This one is intentionally outside the window: it exists to be read by a human on Monday
-morning, so the time of day is the point.
-
 ## Outside the scheduler
-
-Not every recurring job is a Dramatiq actor. For completeness:
 
 - **`polar-production-backup-copy`** — daily at 12:00 UTC, an EventBridge-scheduled ECS task
   (`terraform/production/backups.tf`). It copies snapshots rather than reading the primary, so

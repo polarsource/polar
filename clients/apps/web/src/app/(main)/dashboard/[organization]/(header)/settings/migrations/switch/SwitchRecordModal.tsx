@@ -68,16 +68,18 @@ export function SwitchRecordModal({
             {tax ? (
               <DetailCell label="Stripe automatic tax" value={tax} />
             ) : null}
-            <Box flexDirection="column" rowGap="s">
-              <Text color="muted">Tax after switch</Text>
-              <ImportTaxPicker
-                key={row.record_id ?? row.source_id}
-                migrationId={migrationId}
-                recordId={row.record_id}
-                taxBehavior={row.tax_behavior}
-                locked={isSwitched(row)}
-              />
-            </Box>
+            <DetailCell
+              label="Tax after switch"
+              value={
+                <ImportTaxPicker
+                  key={row.record_id ?? row.source_id}
+                  migrationId={migrationId}
+                  recordId={row.record_id}
+                  taxBehavior={row.tax_behavior}
+                  locked={isSwitched(row)}
+                />
+              }
+            />
             <DetailCell
               label="Stripe subscription ID"
               value={row.source_id}

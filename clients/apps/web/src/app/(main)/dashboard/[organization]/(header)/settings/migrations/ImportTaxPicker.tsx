@@ -2,14 +2,18 @@
 
 import { useUpdateMigrationRecordTax } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { SegmentedControl, Text } from '@polar-sh/orbit'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Text,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 
-const OPTIONS: { value: schemas['TaxBehavior']; label: string }[] = [
-  { value: 'inclusive', label: 'Inclusive' },
-  { value: 'exclusive', label: 'Exclusive' },
-]
+type TaxBehavior = schemas['TaxBehavior']
 
 export function ImportTaxPicker({
   migrationId,
@@ -19,52 +23,44 @@ export function ImportTaxPicker({
 }: {
   migrationId: string
   recordId: string | null
-  taxBehavior: schemas['TaxBehavior'] | null
+  taxBehavior: TaxBehavior | null
   locked?: boolean
 }) {
-  const [optimistic, setOptimistic] = useState<schemas['TaxBehavior'] | null>(
-    null,
-  )
+  const [optimistic, setOptimistic] = useState<TaxBehavior | null>(null)
   const update = useUpdateMigrationRecordTax(migrationId)
   const value = optimistic ?? taxBehavior ?? 'inclusive'
-  const hint =
-    value === 'exclusive'
-      ? 'Tax is added on top of the listed price.'
-      : 'Customer pays the listed price. Polar takes tax out of it.'
 
-  if (!recordId || locked) {
-    return (
-      <Box flexDirection="column" rowGap="xs">
-        <Text>{value === 'exclusive' ? 'Exclusive' : 'Inclusive'}</Text>
-        <Text variant="caption" color="muted">
-          {hint}
-        </Text>
-      </Box>
+  const save = (next: TaxBehavior) => {
+    if (!recordId || update.isPending || next === value) {
+      return
+    }
+    const previous = value
+    setOptimistic(next)
+    update.mutate(
+      { recordId, taxBehavior: next },
+      { onError: () => setOptimistic(previous) },
     )
   }
 
   return (
-    <Box flexDirection="column" rowGap="s">
-      <SegmentedControl
-        size="sm"
-        options={OPTIONS}
+    <Box flexDirection="column" rowGap="s" width="100%">
+      <Select
         value={value}
-        onChange={(next) => {
-          if (update.isPending || next === value) {
-            return
-          }
-          const previous = value
-          setOptimistic(next)
-          update.mutate(
-            { recordId, taxBehavior: next },
-            {
-              onError: () => setOptimistic(previous),
-            },
-          )
-        }}
-      />
+        disabled={locked || !recordId}
+        onValueChange={(next) => save(next as TaxBehavior)}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="inclusive">Inclusive</SelectItem>
+          <SelectItem value="exclusive">Exclusive</SelectItem>
+        </SelectContent>
+      </Select>
       <Text variant="caption" color="muted">
-        {hint}
+        {value === 'exclusive'
+          ? 'Tax is added on top of the listed price.'
+          : 'Customer pays the listed price. Polar takes tax out of it.'}
       </Text>
       {update.isError ? (
         <Text variant="caption" color="error">

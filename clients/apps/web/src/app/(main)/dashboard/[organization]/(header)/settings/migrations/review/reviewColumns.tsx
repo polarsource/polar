@@ -68,7 +68,9 @@ export function buildReviewColumns({
       id: 'tax',
       size: 120,
       header: 'Tax',
-      cell: ({ row }) => <TaxCell row={row.original} />,
+      cell: ({ row }) => (
+        <Text color="muted">{importTaxLabel(row.original)}</Text>
+      ),
     },
     {
       id: 'amount',
@@ -114,10 +116,6 @@ function RenewsCell({ row }: { row: ReviewRow }) {
     return <Text color="muted">—</Text>
   }
   return <Text color="muted">{label}</Text>
-}
-
-function TaxCell({ row }: { row: ReviewRow }) {
-  return <Text color="muted">{importTaxLabel(row)}</Text>
 }
 
 function AmountCell({ row }: { row: ReviewRow }) {

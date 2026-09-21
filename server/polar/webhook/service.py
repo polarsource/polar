@@ -967,6 +967,49 @@ class WebhookService:
             if updated_count < batch_size:
                 break
 
+    async def archive_delivery_payloads(
+        self,
+        session: AsyncSession,
+        older_than: datetime.datetime,
+        batch_size: int = 5000,
+    ) -> None:
+        log.debug(
+            "Archive webhook delivery payloads",
+            older_than=older_than,
+            batch_size=batch_size,
+        )
+
+        while True:
+            batch_subquery = (
+                select(WebhookDelivery.id)
+                .where(
+                    WebhookDelivery.created_at < older_than,
+                    WebhookDelivery.response.is_not(None),
+                )
+                .order_by(WebhookDelivery.created_at.asc())
+                .limit(batch_size)
+            )
+            statement = (
+                update(WebhookDelivery)
+                .where(WebhookDelivery.id.in_(batch_subquery))
+                .values(response=None)
+            )
+
+            # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+            result = cast(
+                CursorResult[WebhookDelivery], await session.execute(statement)
+            )
+            updated_count = result.rowcount
+
+            await session.commit()
+
+            log.debug(
+                "Archived webhook delivery payloads batch", updated_count=updated_count
+            )
+
+            if updated_count < batch_size:
+                break
+
     async def _get_event_target_endpoints(
         self,
         session: AsyncSession,

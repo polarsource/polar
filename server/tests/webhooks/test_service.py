@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -454,3 +455,71 @@ class TestCountEarlierPendingEvents:
         await save_fixture(event)
 
         assert await webhook_service.count_earlier_pending_events(session, event) == 0
+
+
+@pytest.mark.asyncio
+class TestArchiveDeliveryPayloads:
+    async def test_scrubs_only_old_responses(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        now = utc_now()
+        old_delivery = WebhookDelivery(
+            webhook_endpoint=webhook_endpoint_organization,
+            webhook_event=webhook_event_organization,
+            succeeded=True,
+            http_code=200,
+            response="old response",
+            created_at=now - timedelta(days=91),
+        )
+        await save_fixture(old_delivery)
+        recent_delivery = WebhookDelivery(
+            webhook_endpoint=webhook_endpoint_organization,
+            webhook_event=webhook_event_organization,
+            succeeded=True,
+            http_code=200,
+            response="recent response",
+            created_at=now - timedelta(days=89),
+        )
+        await save_fixture(recent_delivery)
+
+        await webhook_service.archive_delivery_payloads(
+            session, older_than=now - timedelta(days=90)
+        )
+
+        await session.refresh(old_delivery)
+        await session.refresh(recent_delivery)
+        assert old_delivery.response is None
+        assert recent_delivery.response == "recent response"
+
+    async def test_batches(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        now = utc_now()
+        deliveries = []
+        for _ in range(3):
+            delivery = WebhookDelivery(
+                webhook_endpoint=webhook_endpoint_organization,
+                webhook_event=webhook_event_organization,
+                succeeded=True,
+                http_code=200,
+                response="response",
+                created_at=now - timedelta(days=91),
+            )
+            await save_fixture(delivery)
+            deliveries.append(delivery)
+
+        await webhook_service.archive_delivery_payloads(
+            session, older_than=now - timedelta(days=90), batch_size=2
+        )
+
+        for delivery in deliveries:
+            await session.refresh(delivery)
+            assert delivery.response is None

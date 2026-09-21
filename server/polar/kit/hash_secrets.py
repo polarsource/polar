@@ -1,25 +1,41 @@
 import functools
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, NamedTuple
+
+import structlog
 
 from polar.config import settings
+from polar.logging import Logger
 
+log: Logger = structlog.get_logger()
+
+# The version carrying this label is the one bare digests were computed with.
+# Without it, POLAR_SECRET still holds that value.
+LEGACY_STAGE = "LEGACY"
 AWS_MANAGED_STAGES = {"AWSCURRENT", "AWSPREVIOUS", "AWSPENDING"}
+RESERVED_STAGES = AWS_MANAGED_STAGES | {LEGACY_STAGE}
 
 
 class HashSecretsError(Exception):
     pass
 
 
-def get_hash_secrets() -> tuple[dict[str, str], str | None]:
-    """The secrets every hash is checked against, and the id new hashes carry.
+class HashSecrets(NamedTuple):
+    secrets: dict[str, str]
+    current_id: str | None
+    legacy: str
 
-    Do not cache this: the fetch is cached instead, so local settings stay
-    readable.
-    """
+
+def get_hash_secrets() -> HashSecrets:
+    """Do not cache this: the fetch is cached instead, so local settings stay
+    readable."""
     arn = settings.AWS_HASH_SECRET_ARN
     if arn is None:
-        return settings.HASH_SECRETS, settings.CURRENT_HASH_SECRET_ID
+        return HashSecrets(
+            settings.HASH_SECRETS,  # lint-skip: hash-secret
+            settings.CURRENT_HASH_SECRET_ID,  # lint-skip: hash-secret
+            settings.SECRET,
+        )
     return _fetch_hash_secrets(arn)
 
 
@@ -58,27 +74,34 @@ def _iter_versions(client: Any, arn: str) -> Iterator[dict[str, Any]]:
 
 
 @functools.cache
-def _fetch_hash_secrets(arn: str) -> tuple[dict[str, str], str | None]:
+def _fetch_hash_secrets(arn: str) -> HashSecrets:
     """One fetch per process. A rotation applies on the next deploy."""
     client = _client()
     secrets: dict[str, str] = {}
     current: str | None = None
+    legacy: str | None = None
 
     for version in _iter_versions(client, arn):
         stages = set(version["VersionStages"])
-        labels = stages - AWS_MANAGED_STAGES
+        labels = stages - RESERVED_STAGES
         if len(labels) != 1:
             raise HashSecretsError(
                 f"Version {version['VersionId']} of {arn} carries {len(labels)} "
                 "custom staging labels, expected exactly one"
             )
         secret_id = labels.pop()
-        value = client.get_secret_value(SecretId=arn, VersionId=version["VersionId"])
-        secrets[secret_id] = value["SecretString"]
+        secret = client.get_secret_value(SecretId=arn, VersionId=version["VersionId"])[
+            "SecretString"
+        ]
+        secrets[secret_id] = secret
         if "AWSCURRENT" in stages:
             current = secret_id
+        if LEGACY_STAGE in stages:
+            legacy = secret
 
     if current is None:
         raise HashSecretsError(f"No AWSCURRENT version on {arn}")
+    if legacy is None:
+        log.warning("hash_secrets_no_legacy_version", arn=arn)
 
-    return secrets, current
+    return HashSecrets(secrets, current, legacy or settings.SECRET)

@@ -374,7 +374,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("accounts.id", ondelete="restrict"),
         nullable=True,
-        index=True,
     )
     """
     ID of the `Account` concerned by this transaction.

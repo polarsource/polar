@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.crypto import get_token_hash_candidates
@@ -32,3 +32,9 @@ class CustomerSessionCodeRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def delete_expired(self) -> None:
+        statement = delete(CustomerSessionCode).where(
+            CustomerSessionCode.expires_at < utc_now()
+        )
+        await self.session.execute(statement)

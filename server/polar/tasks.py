@@ -4,6 +4,7 @@ from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
 from polar.customer_email_update import tasks as customer_email_update
 from polar.customer_meter import tasks as customer_meter
+from polar.customer_portal import tasks as customer_portal
 from polar.customer_seat import tasks as customer_seat
 from polar.customer_session import tasks as customer_session
 from polar.dispute import tasks as dispute
@@ -53,6 +54,7 @@ __all__ = [
     "customer",
     "customer_email_update",
     "customer_meter",
+    "customer_portal",
     "customer_seat",
     "customer_session",
     "dispute",

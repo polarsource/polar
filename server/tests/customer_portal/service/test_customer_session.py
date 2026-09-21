@@ -7,6 +7,9 @@ from sqlalchemy import select
 
 from polar.customer.schemas.customer import CustomerUpdate
 from polar.customer.service import customer as customer_service
+from polar.customer_portal.repository.customer_session_code import (
+    CustomerSessionCodeRepository,
+)
 from polar.customer_portal.service.customer_session import (
     CustomerDoesNotExist,
     CustomerSelectionRequired,
@@ -936,3 +939,47 @@ class TestAuthenticate:
         assert session_obj.member_id == member1.id
         # Verify it's NOT member2
         assert session_obj.member_id != member2.id
+
+
+@pytest.mark.asyncio
+class TestDeleteExpired:
+    async def test_deletes_only_expired(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        _, code_hash = customer_session_service._generate_code_hash()
+        expired = CustomerSessionCode(
+            code=code_hash,
+            email="test@example.com",
+            customer=customer,
+            expires_at=utc_now() - timedelta(hours=1),
+        )
+        await save_fixture(expired)
+
+        valid, _ = await customer_session_service.request(
+            session, "test@example.com", organization.id
+        )
+        await session.flush()
+
+        await customer_session_service.delete_expired(session)
+        await session.flush()
+
+        repository = CustomerSessionCodeRepository.from_session(session)
+        assert (
+            await repository.get_one_or_none(
+                select(CustomerSessionCode).where(CustomerSessionCode.id == expired.id)
+            )
+            is None
+        )
+        assert (
+            await repository.get_one_or_none(
+                select(CustomerSessionCode).where(CustomerSessionCode.id == valid.id)
+            )
+            is not None
+        )

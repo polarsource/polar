@@ -27,6 +27,7 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
     create_sync_sessionmaker,
 )
+from polar.kit.hash_secrets import get_hash_secrets
 from polar.kit.http import HSTSMiddleware
 from polar.kit.versioning import VERSION_HEADER, add_versioned_routers
 from polar.logfire import (
@@ -122,6 +123,10 @@ class State(TypedDict):
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
+
+    # Fail the deploy on a misconfigured secret
+    hash_secrets = get_hash_secrets()
+    log.info("hash_secrets_loaded", current_secret_id=hash_secrets.current_id)
 
     # Start memory profiler (if configured)
     profiler_enabled = start_memory_profiler()

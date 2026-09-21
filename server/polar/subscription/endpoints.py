@@ -486,7 +486,6 @@ async def update(
             "model": SubscriptionLocked.schema(),
         },
     },
-    openapi_extra={},
 )
 async def revoke(
     id: SubscriptionID,

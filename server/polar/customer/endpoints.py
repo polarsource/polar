@@ -72,10 +72,6 @@ CustomerNotFound = {
     response_model=ListResource[CustomerSchema],
     tags=[APITag.mcp, APITag.cli],
     openapi_extra={
-        "x-tool-name": "customers_list",
-        "x-tool-title": "List customers",
-        "x-tool-description": "List customers.",
-        "x-tool-annotations": ["read_only", "idempotent"],
         "parameters": [get_metadata_query_openapi_schema()],
     },
 )
@@ -269,12 +265,6 @@ async def top(
     response_model=CustomerSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
-    openapi_extra={
-        "x-tool-name": "customers_get",
-        "x-tool-title": "Get customer",
-        "x-tool-description": "Get a customer by ID.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def get(
     id: CustomerID,
@@ -296,12 +286,6 @@ async def get(
     response_model=CustomerSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
-    openapi_extra={
-        "x-tool-name": "customers_get_external",
-        "x-tool-title": "Get customer by external ID",
-        "x-tool-description": "Get a customer by external ID.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def get_external(
     external_id: ExternalCustomerID,
@@ -323,20 +307,6 @@ async def get_external(
     response_model=CustomerState,
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
-    openapi_extra={
-        "x-tool-name": "customers_get_state",
-        "x-tool-title": "Get customer state",
-        "x-tool-description": (
-            "Get a customer state by ID.\n"
-            "\n"
-            "The customer state includes information about\n"
-            "the customer's active subscriptions and benefits.\n"
-            "\n"
-            "It's the ideal endpoint to use when you need to get a full overview\n"
-            "of a customer's status."
-        ),
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def get_state(
     id: CustomerID,
@@ -367,20 +337,6 @@ async def get_state(
     response_model=CustomerState,
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
-    openapi_extra={
-        "x-tool-name": "customers_get_state_external",
-        "x-tool-title": "Get customer state by external ID",
-        "x-tool-description": (
-            "Get a customer state by external ID.\n"
-            "\n"
-            "The customer state includes information about\n"
-            "the customer's active subscriptions and benefits.\n"
-            "\n"
-            "It's the ideal endpoint to use when you need to get a full overview\n"
-            "of a customer's status."
-        ),
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def get_state_external(
     external_id: ExternalCustomerID,
@@ -425,12 +381,6 @@ def _serialize_payment_method(
     response_model=ListResource[CustomerPaymentMethod],
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
-    openapi_extra={
-        "x-tool-name": "customers_list_payment_methods",
-        "x-tool-title": "List customer payment methods",
-        "x-tool-description": "Get saved payment methods of a customer.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def list_payment_methods(
     id: CustomerID,
@@ -461,12 +411,6 @@ async def list_payment_methods(
     response_model=ListResource[CustomerPaymentMethod],
     tags=[APITag.mcp, APITag.cli],
     responses={404: CustomerNotFound},
-    openapi_extra={
-        "x-tool-name": "customers_list_payment_methods_external",
-        "x-tool-title": "List customer payment methods by external ID",
-        "x-tool-description": "Get saved payment methods of a customer by external ID.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def list_payment_methods_external(
     external_id: ExternalCustomerID,
@@ -499,8 +443,6 @@ async def list_payment_methods_external(
     tags=[APITag.mcp, APITag.cli],
     responses={201: {"description": "Customer created."}},
     openapi_extra={
-        "x-tool-name": "customers_create",
-        "x-tool-title": "Create customer",
         "x-tool-description": (
             "Create a new customer record with email, name, metadata, and optional "
             "external_id for reconciliation."
@@ -524,11 +466,6 @@ async def create(
     responses={
         200: {"description": "Customer updated."},
         404: CustomerNotFound,
-    },
-    openapi_extra={
-        "x-tool-name": "customers_update",
-        "x-tool-title": "Update customer",
-        "x-tool-description": "Update a customer.",
     },
 )
 async def update(
@@ -558,11 +495,6 @@ async def update(
         200: {"description": "Customer updated."},
         404: CustomerNotFound,
     },
-    openapi_extra={
-        "x-tool-name": "customers_update_external",
-        "x-tool-title": "Update customer by external ID",
-        "x-tool-description": "Update a customer by external ID.",
-    },
 )
 async def update_external(
     external_id: ExternalCustomerID,
@@ -590,29 +522,6 @@ async def update_external(
     responses={
         204: {"description": "Customer deleted."},
         404: CustomerNotFound,
-    },
-    openapi_extra={
-        "x-tool-name": "customers_delete",
-        "x-tool-title": "Delete customer",
-        "x-tool-description": (
-            "Delete a customer.\n"
-            "\n"
-            "This action cannot be undone and will immediately:\n"
-            "- Cancel any active subscriptions for the customer\n"
-            "- Revoke all their benefits\n"
-            "- Clear any `external_id`\n"
-            "\n"
-            "Use it only in the context of deleting a user within your\n"
-            "own service. Otherwise, use more granular API endpoints to cancel\n"
-            "a specific subscription or revoke certain benefits.\n"
-            "\n"
-            "Note: The customers information will nonetheless be retained for "
-            "historic\n"
-            "orders and subscriptions.\n"
-            "\n"
-            "Set `anonymize=true` to also anonymize PII for GDPR compliance."
-        ),
-        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete(
@@ -665,19 +574,6 @@ async def delete(
     responses={
         204: {"description": "Customer deleted."},
         404: CustomerNotFound,
-    },
-    openapi_extra={
-        "x-tool-name": "customers_delete_external",
-        "x-tool-title": "Delete customer by external ID",
-        "x-tool-description": (
-            "Delete a customer by external ID.\n"
-            "\n"
-            "Immediately cancels any active subscriptions and revokes any active "
-            "benefits.\n"
-            "\n"
-            "Set `anonymize=true` to also anonymize PII for GDPR compliance."
-        ),
-        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete_external(

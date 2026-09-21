@@ -220,16 +220,7 @@ async def list_external(
         404: CustomerNotFound,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_create",
         "x-tool-title": "Create customer member",
-        "x-tool-description": (
-            "Create a new member for a customer.\n"
-            "\n"
-            "Only B2B customers with the member management feature enabled can add "
-            "members.\n"
-            "The authenticated user or organization must have access to the "
-            "customer's organization."
-        ),
     },
 )
 async def create(
@@ -269,9 +260,7 @@ async def create(
         409: AmbiguousExternalCustomer,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_create_external",
         "x-tool-title": "Create customer member by external ID",
-        "x-tool-description": "Create a new member for a customer identified by its external ID.",
     },
 )
 async def create_external(
@@ -303,10 +292,7 @@ async def create_external(
         404: MemberNotFound,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_get",
         "x-tool-title": "Get customer member",
-        "x-tool-description": "Get a member of a customer by its ID.",
-        "x-tool-annotations": ["read_only", "idempotent"],
     },
 )
 async def get(
@@ -333,12 +319,7 @@ async def get(
         409: AmbiguousExternalCustomer,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_get_external",
         "x-tool-title": "Get customer member by external ID",
-        "x-tool-description": (
-            "Get a member by external ID for a customer identified by its external ID."
-        ),
-        "x-tool-annotations": ["read_only", "idempotent"],
     },
 )
 async def get_external(
@@ -369,7 +350,6 @@ async def get_external(
         404: MemberNotFound,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_update",
         "x-tool-title": "Update customer member",
         "x-tool-description": "Update the name, email, or role of a customer member.",
     },
@@ -412,12 +392,7 @@ async def update(
         409: AmbiguousExternalCustomer,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_update_external",
         "x-tool-title": "Update customer member by external ID",
-        "x-tool-description": (
-            "Update a member by external ID for a customer identified by its external"
-            " ID."
-        ),
     },
 )
 async def update_external(
@@ -458,10 +433,7 @@ async def update_external(
         404: MemberNotFound,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_delete",
         "x-tool-title": "Delete customer member",
-        "x-tool-description": "Delete a member of a customer.",
-        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete(
@@ -488,13 +460,7 @@ async def delete(
         409: AmbiguousExternalCustomer,
     },
     openapi_extra={
-        "x-tool-name": "customers_members_delete_external",
         "x-tool-title": "Delete customer member by external ID",
-        "x-tool-description": (
-            "Delete a member by external ID for a customer identified by its external"
-            " ID."
-        ),
-        "x-tool-annotations": ["destructive", "idempotent"],
     },
 )
 async def delete_external(

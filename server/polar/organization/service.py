@@ -481,6 +481,7 @@ class OrganizationService:
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
         feature_settings = create_data.get("feature_settings", {})
         feature_settings["member_model_enabled"] = True
+        feature_settings["frame_ancestors_enforced"] = True
         create_data["feature_settings"] = feature_settings
 
         if settings.is_sandbox():

@@ -4,9 +4,10 @@ from typing import Any
 import structlog
 
 from polar.config import settings
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.email_log import EmailLogStatus
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .react import render_from_json
 from .repository import EmailLogRepository, extract_organization_id
@@ -88,3 +89,15 @@ async def email_send(
                 )
         except Exception:
             log.exception("Failed to write email log")
+
+
+@actor(
+    actor_name="email_log.prune",
+    cron_trigger=CronTrigger(hour=0, minute=0),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def email_log_prune() -> None:
+    async with AsyncSessionMaker() as session:
+        repository = EmailLogRepository.from_session(session)
+        await repository.delete_before(utc_now() - settings.EMAIL_LOG_RETENTION_PERIOD)

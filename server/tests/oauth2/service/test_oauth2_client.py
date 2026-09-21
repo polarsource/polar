@@ -8,6 +8,7 @@ from polar.enums import TokenType
 from polar.models import OAuth2Client
 from polar.oauth2.service.oauth2_client import oauth2_client as oauth2_client_service
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture(autouse=True)
@@ -75,3 +76,32 @@ class TestRevokeLeaked:
 
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], OAuth2LeakedClientEmail)
+
+    @pytest.mark.parametrize(
+        "token_type",
+        [
+            TokenType.client_secret,
+            TokenType.client_registration_token,
+        ],
+    )
+    async def test_matches_on_the_hash(
+        self,
+        token_type: TokenType,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        token = (
+            oauth2_client.client_secret
+            if token_type == TokenType.client_secret
+            else oauth2_client.registration_access_token
+        )
+        oauth2_client.client_secret = "polar_cs_stale"
+        oauth2_client.registration_access_token = "polar_crt_stale"
+        await save_fixture(oauth2_client)
+
+        result = await oauth2_client_service.revoke_leaked(
+            session, token, token_type, notifier="github", url="https://github.com"
+        )
+
+        assert result is True

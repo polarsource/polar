@@ -36,7 +36,6 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.sql.elements import BinaryExpression
 
-from polar.config import settings
 from polar.kit.db.models import Model
 from polar.kit.metadata import MetadataMixin, get_nested_metadata_value
 from polar.kit.utils import generate_uuid, utc_now
@@ -172,24 +171,6 @@ class Event(Model, MetadataMixin):
             "organization_id",
             "pending_parent_external_id",
             postgresql_where="pending_parent_external_id IS NOT NULL",
-        ),
-        # Cover usage aggregation for a very active meter in production.
-        *(
-            (
-                Index(
-                    "ix_events_meter_a266c3bf-a7a0-4883-950c-b1f995b6193d",
-                    "external_customer_id",
-                    "ingested_at",
-                    postgresql_include=["user_metadata"],
-                    postgresql_where=(
-                        "organization_id = 'd49ecf1e-4cb2-41f2-827d-ea48b03706f6'::uuid "
-                        "AND source = 'user' AND name = 'credit_usage' "
-                        "AND external_customer_id IS NOT NULL"
-                    ),
-                ),
-            )
-            if settings.is_production()
-            else ()
         ),
         {
             "postgresql_with": {

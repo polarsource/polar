@@ -32,12 +32,6 @@ PaymentNotFound = {
     "/",
     summary="List Payments",
     response_model=ListResource[PaymentSchema],
-    openapi_extra={
-        "x-tool-name": "payments_list",
-        "x-tool-title": "List payments",
-        "x-tool-description": "List payments.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def list(
     auth_subject: auth.PaymentRead,
@@ -93,12 +87,6 @@ async def list(
     summary="Get Payment",
     response_model=PaymentSchema,
     responses={404: PaymentNotFound},
-    openapi_extra={
-        "x-tool-name": "payments_get",
-        "x-tool-title": "Get payment",
-        "x-tool-description": "Get a payment by ID.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def get(
     id: PaymentID,

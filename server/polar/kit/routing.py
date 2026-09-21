@@ -67,6 +67,49 @@ class IncludedInSchemaAPIRoute(APIRoute):
                 self.include_in_schema = False
 
 
+class ToolAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds the `x-tool-*` properties
+    describing the endpoint as a tool, for every route tagged with `APITag.mcp`.
+
+    Each property is derived from the route itself and can be overridden
+    individually by setting it in `openapi_extra`.
+
+    It must come *before* `DocumentedAuthSubjectAPIRoute` in the MRO, so the
+    description is read before the required scopes are appended to it.
+    """
+
+    TOOL_ANNOTATIONS: dict[str, list[str]] = {
+        "GET": ["read_only", "idempotent"],
+        "PUT": ["idempotent"],
+        "DELETE": ["destructive", "idempotent"],
+    }
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        description: str = kwargs.get("description") or endpoint.__doc__ or ""
+        tool_description = inspect.cleandoc(description).split("\f")[0].strip()
+
+        super().__init__(path, endpoint, **kwargs)
+
+        if APITag.mcp not in self.tags:
+            return
+
+        annotations: list[str] = []
+        for method in sorted(self.methods or set()):
+            annotations += self.TOOL_ANNOTATIONS.get(method, [])
+
+        defaults = {
+            "x-tool-name": self.unique_id.replace(":", "_").replace("-", "_"),
+            "x-tool-title": self.summary or self.name.replace("_", " ").title(),
+            "x-tool-description": tool_description,
+            "x-tool-annotations": annotations,
+        }
+        self.openapi_extra = {
+            **{key: value for key, value in defaults.items() if value},
+            **(self.openapi_extra or {}),
+        }
+
+
 class SpeakeasyNameOverrideAPIRoute(APIRoute):
     """
     A subclass of `APIRoute` that automatically adds `x-speakeasy-name-override` property
@@ -223,6 +266,7 @@ __all__ = [
     "SpeakeasyIgnoreAPIRoute",
     "SpeakeasyNameOverrideAPIRoute",
     "SpeakeasyPaginationAPIRoute",
+    "ToolAPIRoute",
     "TransactionalAPIRoute",
     "get_api_router_class",
 ]

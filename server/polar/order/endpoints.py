@@ -96,10 +96,6 @@ GET_INVOICE_MINTLIFY_CONTENT = dedent(
     response_model=ListResource[OrderSchema],
     tags=[APITag.mcp, APITag.cli],
     openapi_extra={
-        "x-tool-name": "orders_list",
-        "x-tool-title": "List orders",
-        "x-tool-description": "List orders.",
-        "x-tool-annotations": ["read_only", "idempotent"],
         "parameters": [get_metadata_query_openapi_schema()],
     },
 )
@@ -243,12 +239,6 @@ async def export(
     response_model=OrderSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
-    openapi_extra={
-        "x-tool-name": "orders_get",
-        "x-tool-title": "Get order",
-        "x-tool-description": "Get an order by ID.",
-        "x-tool-annotations": ["read_only", "idempotent"],
-    },
 )
 async def get(
     id: OrderID,
@@ -297,11 +287,6 @@ async def create(
     response_model=OrderSchema,
     tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
-    openapi_extra={
-        "x-tool-name": "orders_update",
-        "x-tool-title": "Update order",
-        "x-tool-description": "Update an order.",
-    },
 )
 async def update(
     order_update: OrderUpdate,
@@ -377,9 +362,6 @@ async def finalize(
         },
     },
     openapi_extra={
-        "x-tool-name": "orders_generate_invoice",
-        "x-tool-title": "Generate order invoice",
-        "x-tool-description": "Trigger generation of an order's invoice.",
         "x-mint": {"content": GENERATE_INVOICE_MINTLIFY_CONTENT},
     },
 )
@@ -408,10 +390,6 @@ async def generate_invoice(
     tags=[APITag.mcp, APITag.cli],
     responses={404: OrderNotFound},
     openapi_extra={
-        "x-tool-name": "orders_invoice",
-        "x-tool-title": "Get order invoice",
-        "x-tool-description": "Get an order's invoice data.",
-        "x-tool-annotations": ["read_only", "idempotent"],
         "x-mint": {"content": GET_INVOICE_MINTLIFY_CONTENT},
     },
 )
@@ -437,12 +415,6 @@ async def invoice(
     responses={
         202: {"description": "Receipt generation in progress."},
         404: OrderNotFound,
-    },
-    openapi_extra={
-        "x-tool-name": "orders_receipt",
-        "x-tool-title": "Get order receipt",
-        "x-tool-description": "Get a presigned URL to download an order's receipt PDF.",
-        "x-tool-annotations": ["read_only", "idempotent"],
     },
 )
 async def receipt(

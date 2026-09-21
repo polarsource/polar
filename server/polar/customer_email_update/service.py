@@ -13,7 +13,7 @@ from polar.email.schemas import (
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.utils import utc_now
 from polar.member.service import member_service
 from polar.models import Customer, Organization
@@ -113,9 +113,8 @@ class CustomerEmailUpdateService:
         )
 
     async def check_token(self, session: AsyncReadSession, token: str) -> bool:
-        token_hash = get_token_hash(token)
         repository = CustomerEmailVerificationRepository.from_session(session)
-        record = await repository.get_valid_by_token_hash(token_hash)
+        record = await repository.get_valid_by_token(token)
         return record is not None
 
     async def verify(
@@ -123,9 +122,8 @@ class CustomerEmailUpdateService:
         session: AsyncSession,
         token: str,
     ) -> Customer:
-        token_hash = get_token_hash(token)
         repository = CustomerEmailVerificationRepository.from_session(session)
-        record = await repository.get_valid_by_token_hash(token_hash)
+        record = await repository.get_valid_by_token(token)
 
         if record is None:
             raise InvalidCustomerEmailUpdate()

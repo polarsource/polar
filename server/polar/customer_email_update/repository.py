@@ -3,22 +3,25 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
 
-from polar.kit.repository import RepositoryBase
+from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.utils import utc_now
 from polar.models.customer import Customer
 from polar.models.customer_email_verification import CustomerEmailVerification
 
 
-class CustomerEmailVerificationRepository(RepositoryBase[CustomerEmailVerification]):
+class CustomerEmailVerificationRepository(
+    RepositoryTokenHashMixin[CustomerEmailVerification],
+    RepositoryBase[CustomerEmailVerification],
+):
     model = CustomerEmailVerification
+    token_hash_attribute = "token_hash"
 
-    async def get_valid_by_token_hash(
-        self, token_hash: str
-    ) -> CustomerEmailVerification | None:
+    async def get_valid_by_token(self, token: str) -> CustomerEmailVerification | None:
         statement = (
             select(CustomerEmailVerification)
             .where(
-                CustomerEmailVerification.token_hash == token_hash,
+                self.token_hash_clause(get_token_hash_candidates(token)),
                 CustomerEmailVerification.expires_at > utc_now(),
             )
             .options(

@@ -29,9 +29,8 @@ Sentry.init({
   enableLogs: true,
 
   // Configure Session Replay
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration()],
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 0,
 
   // Limit breadcrumb size to prevent JSI crashes from oversized payloads
   maxBreadcrumbs: 50,

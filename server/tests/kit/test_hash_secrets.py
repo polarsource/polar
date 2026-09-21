@@ -106,11 +106,11 @@ def test_rejects_a_secret_with_no_current_version(
         get_hash_secrets()
 
 
-def test_rejects_a_secret_with_no_legacy_version(
+def test_falls_back_to_the_settings_secret_without_a_legacy_version(
     mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    monkeypatch.setattr(settings, "SECRET", "from-the-environment")
     stub_client(mocker, [{"VersionId": "v1", "VersionStages": ["k1", "AWSCURRENT"]}])
 
-    with pytest.raises(HashSecretsError, match="LEGACY"):
-        get_hash_secrets()
+    assert get_hash_secrets().legacy == "from-the-environment"

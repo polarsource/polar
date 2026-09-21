@@ -2,9 +2,15 @@ import functools
 from collections.abc import Iterator
 from typing import Any, NamedTuple
 
+import structlog
+
 from polar.config import settings
+from polar.logging import Logger
+
+log: Logger = structlog.get_logger()
 
 # The version carrying this label is the one bare digests were computed with.
+# Without it, POLAR_SECRET still holds that value.
 LEGACY_STAGE = "LEGACY"
 AWS_MANAGED_STAGES = {"AWSCURRENT", "AWSPREVIOUS", "AWSPENDING"}
 RESERVED_STAGES = AWS_MANAGED_STAGES | {LEGACY_STAGE}
@@ -96,6 +102,6 @@ def _fetch_hash_secrets(arn: str) -> HashSecrets:
     if current is None:
         raise HashSecretsError(f"No AWSCURRENT version on {arn}")
     if legacy is None:
-        raise HashSecretsError(f"No {LEGACY_STAGE} version on {arn}")
+        log.warning("hash_secrets_no_legacy_version", arn=arn)
 
-    return HashSecrets(secrets, current, legacy)
+    return HashSecrets(secrets, current, legacy or settings.SECRET)

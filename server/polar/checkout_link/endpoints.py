@@ -27,7 +27,7 @@ from .service import checkout_link as checkout_link_service
 
 router = APIRouter(
     prefix="/checkout-links",
-    tags=["checkout-links", APITag.public, APITag.mcp, APITag.cli],
+    tags=["checkout-links", APITag.public],
 )
 
 CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT = dedent(

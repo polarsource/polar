@@ -1,6 +1,6 @@
 import os
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import httpx
 import logfire
@@ -112,22 +112,6 @@ class LevelSampler(Sampler):
         return "LevelSampler"
 
 
-def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
-    # Don't scrub auth subject in log messages
-    if match.path == ("attributes", "subject"):
-        return match.value
-    # Don't scrub thread stacks from the event loop watchdog — they contain
-    # "session" via SQLAlchemy frames which triggers the default scrubber,
-    # but these are stack traces, not secrets.
-    if match.path == ("attributes", "thread_stacks"):
-        return match.value
-    if match.path == ("attributes", "event_loop_stack"):
-        return match.value
-    if match.path == ("attributes", "asyncio_tasks"):
-        return match.value
-    return None
-
-
 class PidSpanProcessor(SpanProcessor):
     def on_start(self, span: Span, parent_context: "Context | None" = None) -> None:
         span.set_attribute("process.pid", os.getpid())
@@ -177,18 +161,6 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                     aws_access_key_id=access_key_id,
                     aws_secret_access_key=secret_access_key,
                     region_name=settings.AWS_REGION,
-                    scrub_patterns=[
-                        r"email",
-                        r"user[._]?name",
-                        r"full[._]?name",
-                        r"first[._]?name",
-                        r"last[._]?name",
-                        r"phone",
-                        r"address",
-                        r"ip_?address",
-                        r"cookie",
-                        r"^http\.url$",
-                    ],
                 ),
                 max_export_batch_size=2048,
                 schedule_delay_millis=60_000,
@@ -215,15 +187,6 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                 local_parent_sampled=LevelSampler(),
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
-        ),
-        scrubbing=logfire.ScrubbingOptions(
-            callback=_scrubbing_callback,
-            # Logfire's defaults cover secrets, keys and credentials, but not
-            # access and refresh tokens.
-            extra_patterns=[
-                r"access_?token",
-                r"refresh_?token",
-            ],
         ),
         additional_span_processors=additional_span_processors or None,
     )

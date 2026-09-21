@@ -47,12 +47,10 @@ cubic review --base origin/main --json
 - If the diff changed, rerun step 2 before opening the PR.
 - Repeat until the local review is clean or only disputed issues remain.
 - `cubic review` exits 1 when it reports findings; that is work to do, not a skip.
-- Cubic's GitHub review after the PR exists uses a different model. Do not treat
-  the CLI as the final pass.
 
 ## 4. Open the draft
 
-Create or update a **draft** PR. Do not mark it ready.
+Create or update a **draft** PR.
 
 - GitHub CLI: `gh pr create --draft`, or update the existing PR
 - Cursor cloud: `ManagePullRequest` with `draft: true`

@@ -45,8 +45,8 @@ Run the first four always. Add the rest only when the trigger matches.
 ## 3. Launch
 
 Launch one independent subagent per selected skill in a single turn. They must not wait
-on each other. Use the host's general-purpose agent type (Claude Code:
-`subagent_type: "general-purpose"`; Cursor: `subagent_type: "generalPurpose"`).
+on each other. Use the host's general-purpose agent type (`general-purpose` in Claude
+Code, `generalPurpose` in Cursor, `general` if that is all the host exposes).
 Same prompt for every lens:
 
 ```

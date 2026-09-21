@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.repository import (
     AuthenticationSessionRepository,
@@ -147,3 +148,34 @@ class TestUserSessionRepositoryGetByToken:
         await session.flush()
         await session.refresh(found)
         assert found.token == get_token_hash(token)
+
+    async def test_rewrites_to_the_secret_the_resolver_names(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        """In production the current id comes from Secrets Manager, and
+        CURRENT_HASH_SECRET_ID stays unset. Reading the setting here would
+        rewrite every hit to the bare legacy digest."""
+        secrets = {"k1": "retired", "k2": "current"}
+        mocker.patch("polar.kit.crypto.get_hash_secrets", return_value=(secrets, "k1"))
+        token = generate_token(prefix=USER_SESSION_TOKEN_PREFIX)
+        user_session = UserSession(
+            token=get_token_hash(token),
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        mocker.patch("polar.kit.crypto.get_hash_secrets", return_value=(secrets, "k2"))
+        repository = UserSessionRepository.from_session(session)
+        found = await repository.get_by_token(token)
+
+        assert found is not None
+        await session.flush()
+        await session.refresh(found)
+        assert found.token.startswith("k2$")

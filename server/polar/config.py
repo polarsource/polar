@@ -411,6 +411,10 @@ class Settings(BaseSettings):
     AWS_JWKS_KMS_KEY_ID: str | None = None
     AWS_JWKS_KMS_PUBLISHED_KEY_IDS: list[str] = []
 
+    # Token hashing. Unset, HASH_SECRETS and CURRENT_HASH_SECRET_ID are read
+    # instead.
+    AWS_HASH_SECRET_ARN: str | None = None
+
     # Worker SQS/Lambda execution engine (POC)
     # When enabled, jobs enqueued for an allowlisted actor are routed to an
     # SQS queue consumed by the Lambda worker instead of Redis.

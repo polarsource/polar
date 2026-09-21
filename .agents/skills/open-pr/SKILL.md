@@ -21,7 +21,7 @@ and `/simplify` do those. Do not run Cursor `/review` here.
   - Backend: `cd server && uv run task lint && uv run task lint_types && uv run task test_fast`
   - Frontend: `clients/AGENTS.md` (`pnpm lint`, `pnpm typecheck`, scoped tests)
 - PR body: no PII, stats, or org information. PRs are public.
-- Body from `.github/pull_request_template.md`. Title from the user or the diff.
+- Body from `.github/pull_request_template.md`. Mark Summary `(LLM generated)`. Title from the user or the diff.
 
 If lint or tests fail, stop. Do not review or open a PR.
 

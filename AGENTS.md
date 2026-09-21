@@ -13,8 +13,10 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
 - Do not create GitHub pull requests unless the user explicitly asks. Commit and
-  push the branch as needed; leave opening the PR to the user. If asked to open
-  a PR, make sure tests, lint, and type-check pass first.
+  push the branch as needed; leave opening the PR to the user. When you do open
+  a PR (including drafts), follow `/open-pr`: lint and tests, then
+  `/polar-code-review`, then cubic CLI, then a draft PR. Do not mark it ready
+  for review unless told so.
 
 ## Architecture
 
@@ -163,7 +165,8 @@ Treat **Accepted** ADRs as binding:
 
 ## Custom Commands
 
-- `/polar-code-review` — checks the diff against Polar-specific rules with 2 parallel agents (conventions, ADR compliance). Bugs, security, and simplification are covered by the built-in `/code-review`, `/security-review`, and `/simplify`.
+- `/polar-code-review` — Polar-specific review of the branch diff (conventions, ADRs, reuse, slop, plus path-triggered API / ship-safety / billing lenses). Bugs, security, and simplification are `/code-review`, `/security-review`, and `/simplify`.
+- `/open-pr` — open or update a draft PR. Runs `/polar-code-review`, then cubic CLI (`CUBIC_API_KEY`), then creates the draft. Do not mark ready unless asked.
 
 ## Documentation
 
@@ -286,3 +289,6 @@ is the conventional test account.
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
 model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.
+
+**cubic CLI.** `/open-pr` runs `cubic review --base main --json` when `CUBIC_API_KEY` is set, and
+skips that step when it is not.

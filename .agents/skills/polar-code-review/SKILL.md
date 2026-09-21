@@ -1,3 +1,12 @@
+---
+name: polar-code-review
+description: Review a Polar branch diff against conventions, Accepted ADRs, reuse, slop, and path-triggered API, ship-safety, and billing lenses. Use before opening a PR, when the user asks for a Polar code review, /polar-code-review, or $polar-code-review. Not a bug hunt or security review.
+license: MIT
+metadata:
+  author: polar
+  version: "1.0.0"
+---
+
 # Polar Code Review
 
 Review the diff against the things only Polar knows: its conventions, its Accepted ADRs, its
@@ -11,12 +20,13 @@ This is only a router. Every lens is a skill you can also run on its own.
 ## 1. Diff
 
 ```bash
-git diff main...HEAD --stat
-git diff main...HEAD
+git fetch origin main
+git diff origin/main --stat
+git diff origin/main
 ```
 
-If that fails use `git diff HEAD~1`, or ask for the base. Keep the full diff — every agent
-gets it, not just file names.
+That is the branch plus the working tree. If fetch fails, use `main` instead of `origin/main`.
+Keep the full diff — every agent gets it, not just file names.
 
 ## 2. Route
 
@@ -34,26 +44,25 @@ Run the first four always. Add the rest only when the trigger matches.
 
 ## 3. Launch
 
-One message, one `Agent` call per selected skill, `subagent_type: "general-purpose"`. They are
-independent and must not wait on each other. Same prompt for every lens:
+Launch one independent subagent per selected skill in a single turn. They must not wait
+on each other. Use the host's general-purpose agent type (`general-purpose` in Claude
+Code, `generalPurpose` in Cursor, `general` if that is all the host exposes).
+Same prompt for every lens:
 
 ```
-description: "<skill name>"
-subagent_type: "general-purpose"
-prompt: |
-  Read `.agents/skills/<skill name>/SKILL.md` and follow it exactly.
+Read `.agents/skills/<skill name>/SKILL.md` and follow it exactly.
 
-  Review this diff. Only changed lines are in scope — never the rest of the repo.
+Review this diff. Only changed lines are in scope — never the rest of the repo.
 
-  [INSERT FULL DIFF]
+[INSERT FULL DIFF]
 
-  Use the output format the skill defines. High-confidence findings only. If you are unsure
-  whether something is a defect, put it under Question instead of asserting it.
+Use the output format the skill defines. High-confidence findings only. If you are unsure
+whether something is a defect, put it under Question instead of asserting it.
 ```
 
 Each skill declares what it does **not** own, so the lenses do not overlap by construction.
 
-`adr-check` predates this command and has its own terser format: either `No violations`, or a
+`adr-check` predates this skill and has its own terser format: either `No violations`, or a
 list of ADR id, `file:line`, what breaks, and the fix. Map its findings to 🔴.
 
 ## 4. Merge

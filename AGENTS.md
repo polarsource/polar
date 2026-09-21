@@ -13,8 +13,9 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
 - Do not create GitHub pull requests unless the user explicitly asks. Commit and
-  push the branch as needed; leave opening the PR to the user. If asked to open
-  a PR, make sure tests, lint, and type-check pass first.
+  push the branch as needed; leave opening the PR to the user. When you do open
+  a PR (including drafts), follow the `open-pr` skill. Do not mark it ready for
+  review unless told so.
 
 ## Architecture
 
@@ -46,7 +47,8 @@ polar/
 │   ├── generator/              # Internal SDK code generator
 │   ├── python/                 # Generated Python SDK
 │   └── overlays/               # OpenAPI Overlay tweaks for Speakeasy-generated SDKs
-└── .claude/                # Claude Code config (settings, hooks, commands)
+├── .agents/                # Agent Skills (Cursor, Claude, Codex)
+└── .claude/                # Claude Code config (settings, hooks). skills/ → ../.agents/skills
 ```
 
 The TypeScript API client is generated from the backend's OpenAPI schema. After changing the
@@ -161,9 +163,13 @@ Treat **Accepted** ADRs as binding:
 - **ADR-0012:** AI API prompts send only the fields the feature needs. Do not
   dump a whole org, customer, or payment object into a model call.
 
-## Custom Commands
+## Skills
 
-- `/polar-code-review` — checks the diff against Polar-specific rules with 2 parallel agents (conventions, ADR compliance). Bugs, security, and simplification are covered by the built-in `/code-review`, `/security-review`, and `/simplify`.
+Reusable workflows live in `.agents/skills/`. `.claude/skills` is a symlink to that
+directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
+
+- `polar-code-review` — Polar-specific review of the branch diff. Bugs, security, and simplification are `/code-review`, `/security-review`, and `/simplify`.
+- `open-pr` — draft PR after lint, type-check, `test_fast`, `polar-code-review`, and cubic CLI (`CUBIC_API_KEY`). Do not mark ready unless asked.
 
 ## Documentation
 

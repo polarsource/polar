@@ -41,6 +41,8 @@ class TestCheck:
         payments = []
         for _ in range(count):
             payment = await create_payment(save_fixture, organization)
+            payment.created_at = utc_now() - timedelta(minutes=10)
+            await save_fixture(payment)
             await create_payment_transaction(
                 save_fixture,
                 charge_id=payment.processor_id,
@@ -72,3 +74,35 @@ class TestCheck:
                     "has_more": count >= 10,
                 },
             }
+
+    async def test_recent_missing_transaction_within_grace_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        payment = await create_payment(save_fixture, organization)
+        payment.created_at = utc_now() - timedelta(
+            seconds=PaymentsMissingTransactionsInvariant.LEEWAY.total_seconds() / 2
+        )
+        await save_fixture(payment)
+
+        invariant = PaymentsMissingTransactionsInvariant(session)
+        await invariant.check()
+
+    async def test_old_missing_transaction_past_grace_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        payment = await create_payment(save_fixture, organization)
+        payment.created_at = utc_now() - (
+            PaymentsMissingTransactionsInvariant.LEEWAY + timedelta(minutes=1)
+        )
+        await save_fixture(payment)
+
+        invariant = PaymentsMissingTransactionsInvariant(session)
+        with pytest.raises(PaymentsMissingTransactionsInvariantError) as exc_info:
+            await invariant.check()
+        assert exc_info.value.context["payments"]["ids"] == [payment.id]

@@ -33,13 +33,14 @@ from .service import seat_service
 
 router = APIRouter(
     prefix="/customer-seats",
-    tags=["customer-seats", APITag.public, APITag.mcp, APITag.cli],
+    tags=["customer-seats", APITag.public],
 )
 
 
 @router.post(
     "",
     summary="Assign Seat",
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
         400: {"description": "No available seats or customer already has a seat"},
@@ -108,6 +109,7 @@ async def assign_seat(
 @router.get(
     "",
     summary="List Seats",
+    tags=[APITag.mcp, APITag.cli],
     response_model=SeatsList,
     responses={
         401: {"description": "Authentication required"},
@@ -176,6 +178,7 @@ async def list_seats(
 @router.delete(
     "/{seat_id}",
     summary="Revoke Seat",
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
         401: {"description": "Authentication required"},
@@ -208,6 +211,7 @@ async def revoke_seat(
 @router.post(
     "/{seat_id}/resend",
     summary="Resend Invitation",
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
         400: {"description": "Seat is not pending or already claimed"},
@@ -241,6 +245,7 @@ async def resend_invitation(
 @router.get(
     "/claim/{invitation_token}",
     summary="Get Claim Info",
+    tags=[APITag.mcp, APITag.cli],
     response_model=SeatClaimInfo,
     responses={
         400: {"description": "Invalid or expired invitation token"},
@@ -313,6 +318,7 @@ async def claim_stream(
 @router.post(
     "/claim",
     summary="Claim Seat",
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatClaimResponse,
     responses={
         400: {"description": "Invalid, expired, or already claimed token"},

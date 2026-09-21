@@ -96,11 +96,18 @@ function Hint({
   const listed =
     amount != null && currency ? formatMoney(amount, currency) : null
 
+  if (!listed) {
+    return (
+      <Text variant="caption" color="muted">
+        Tax is added on top of the listed price.
+      </Text>
+    )
+  }
+
   return (
-    <Text variant="caption" as="strong">
-      {listed
-        ? `The customer will pay the listed price plus tax instead of ${listed}`
-        : 'Tax is added on top of the listed price.'}
+    <Text variant="caption" color="muted">
+      The customer will pay <strong>the listed price plus tax</strong> instead
+      of <strong>{listed}</strong>
     </Text>
   )
 }

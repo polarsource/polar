@@ -98,6 +98,11 @@ import {
   id = "22bcd1b07ec25452aab472486bc8df94/eb6326cb55c1a417eacc2f984c9ecf88"
 }
 
+import {
+  to = module.sandbox.cloudflare_dns_record.resend_mail
+  id = "22bcd1b07ec25452aab472486bc8df94/af131d86b4ecaae21255fb5a69434984"
+}
+
 module "sandbox" {
   source = "../modules/render_service"
 

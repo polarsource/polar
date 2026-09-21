@@ -289,6 +289,10 @@ class CustomerSessionService:
         # Legacy: create CustomerSession
         return await customer_session_service.create_customer_session(session, customer)
 
+    async def delete_expired(self, session: AsyncSession) -> None:
+        repository = CustomerSessionCodeRepository.from_session(session)
+        await repository.delete_expired()
+
     def _generate_code_hash(self) -> tuple[str, str]:
         code = "".join(
             secrets.choice(string.ascii_uppercase + string.digits)

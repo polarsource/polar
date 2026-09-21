@@ -769,7 +769,7 @@ class StripeAdapter:
 
     def _map_tax_id(self, customer: stripe_lib.Customer) -> TaxID | None:
         mapped: list[TaxID] = []
-        for item in self._stripe_tax_ids(customer):
+        for item in customer.get("tax_ids") or []:
             tax_id = from_stripe_tax_id(item.get("type") or "", item.get("value"))
             if tax_id is not None:
                 mapped.append(tax_id)
@@ -779,14 +779,6 @@ class StripeAdapter:
             if tax_id[1] is TaxIDFormat.eu_vat:
                 return tax_id
         return mapped[0]
-
-    def _stripe_tax_ids(self, customer: stripe_lib.Customer) -> Sequence[Any]:
-        tax_ids = customer.get("tax_ids")
-        if tax_ids is None:
-            return []
-        if isinstance(tax_ids, list):
-            return tax_ids
-        return tax_ids.get("data") or []
 
     def _resolve_payment_method(
         self, subscription: stripe_lib.Subscription

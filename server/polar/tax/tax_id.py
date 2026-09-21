@@ -570,8 +570,6 @@ def from_stripe_tax_id(tax_id_type: str, value: str | None) -> TaxID | None:
         parsed_type = TaxIDFormat(tax_id_type)
     except ValueError:
         return None
-    if not parsed_type.is_stripe_supported():
-        return None
     return (value, parsed_type)
 
 

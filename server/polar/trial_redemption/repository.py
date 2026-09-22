@@ -32,10 +32,10 @@ class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
         if customer_email is not None:
             clauses.append(
                 or_(
-                    TrialRedemption.customer_email_hash == hash_pii(customer_email),
+                    TrialRedemption.customer_email == hash_pii(customer_email),
                     # Rows written before the hashing backfill hold the address
                     # itself. Drop this once the backfill has run everywhere.
-                    func.lower(TrialRedemption.customer_email_hash)
+                    func.lower(TrialRedemption.customer_email)
                     == customer_email.lower(),
                 )
             )

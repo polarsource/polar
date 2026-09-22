@@ -9,11 +9,9 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_trial_redemption
 
 
-async def _customer_email_hashes(session: AsyncSession) -> list[str]:
+async def _customer_emails(session: AsyncSession) -> list[str]:
     return list(
-        (await session.execute(select(TrialRedemption.customer_email_hash)))
-        .scalars()
-        .all()
+        (await session.execute(select(TrialRedemption.customer_email))).scalars().all()
     )
 
 
@@ -27,7 +25,7 @@ class TestHashBatch:
     ) -> None:
         customer = await create_customer(save_fixture, organization=organization)
         await create_trial_redemption(
-            save_fixture, customer=customer, customer_email_hash="Customer@example.com"
+            save_fixture, customer=customer, customer_email="Customer@example.com"
         )
 
         after, count = await hash_batch(
@@ -36,9 +34,7 @@ class TestHashBatch:
 
         assert after is not None
         assert count == 1
-        assert await _customer_email_hashes(session) == [
-            hash_pii("customer@example.com")
-        ]
+        assert await _customer_emails(session) == [hash_pii("customer@example.com")]
 
     async def test_skips_the_hashes(
         self,
@@ -49,7 +45,7 @@ class TestHashBatch:
         customer = await create_customer(save_fixture, organization=organization)
         hash = hash_pii("customer@example.com")
         await create_trial_redemption(
-            save_fixture, customer=customer, customer_email_hash=hash
+            save_fixture, customer=customer, customer_email=hash
         )
 
         after, count = await hash_batch(
@@ -58,7 +54,7 @@ class TestHashBatch:
 
         assert after is None
         assert count == 0
-        assert await _customer_email_hashes(session) == [hash]
+        assert await _customer_emails(session) == [hash]
 
     async def test_dry_run_leaves_the_addresses(
         self,
@@ -68,7 +64,7 @@ class TestHashBatch:
     ) -> None:
         customer = await create_customer(save_fixture, organization=organization)
         await create_trial_redemption(
-            save_fixture, customer=customer, customer_email_hash="customer@example.com"
+            save_fixture, customer=customer, customer_email="customer@example.com"
         )
 
         after, count = await hash_batch(
@@ -77,4 +73,4 @@ class TestHashBatch:
 
         assert after is not None
         assert count == 1
-        assert await _customer_email_hashes(session) == ["customer@example.com"]
+        assert await _customer_emails(session) == ["customer@example.com"]

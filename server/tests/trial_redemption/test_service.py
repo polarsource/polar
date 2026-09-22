@@ -25,7 +25,7 @@ class TestCreateTrialRedemption:
         )
 
         assert trial_redemption is not None
-        assert trial_redemption.customer_email_hash == hash_pii("customer@example.com")
+        assert trial_redemption.customer_email == hash_pii("customer@example.com")
 
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ class TestCheckTrialAlreadyRedeemed:
         await create_trial_redemption(
             save_fixture,
             customer=customer,
-            customer_email_hash=hash_pii("customer@example.com"),
+            customer_email=hash_pii("customer@example.com"),
         )
         other_customer = await create_customer(
             save_fixture, organization=organization, email="Customer+1@example.com"
@@ -60,7 +60,7 @@ class TestCheckTrialAlreadyRedeemed:
         await create_trial_redemption(
             save_fixture,
             customer=customer,
-            customer_email_hash="customer@example.com",
+            customer_email="customer@example.com",
         )
         other_customer = await create_customer(
             save_fixture, organization=organization, email="Customer+1@example.com"
@@ -80,7 +80,7 @@ class TestCheckTrialAlreadyRedeemed:
         await create_trial_redemption(
             save_fixture,
             customer=customer,
-            customer_email_hash=hash_pii("customer@example.com"),
+            customer_email=hash_pii("customer@example.com"),
         )
         other_customer = await create_customer(
             save_fixture, organization=organization, email="other@example.com"

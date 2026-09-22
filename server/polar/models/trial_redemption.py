@@ -14,12 +14,9 @@ if TYPE_CHECKING:
 class TrialRedemption(RecordModel):
     __tablename__ = "trial_redemptions"
 
-    # Salted hash of the normalized customer email, under the column that used
-    # to hold the address itself. Rows written before the hashing backfill are
-    # still the address.
-    customer_email_hash: Mapped[str] = mapped_column(
-        "customer_email", String, nullable=False, index=True
-    )
+    # Salted hash of the normalized email, not the address itself. Rows written
+    # before the hashing backfill are still the address.
+    customer_email: Mapped[str] = mapped_column(String, nullable=False, index=True)
     payment_method_fingerprint: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )

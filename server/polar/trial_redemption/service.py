@@ -41,7 +41,7 @@ class TrialRedemptionService:
         repository = TrialRedemptionRepository.from_session(session)
         return await repository.create(
             TrialRedemption(
-                customer_email_hash=hash_pii(normalize_email(customer.email)),
+                customer_email=hash_pii(normalize_email(customer.email)),
                 customer=customer,
                 product=product,
                 payment_method_fingerprint=payment_method_fingerprint,

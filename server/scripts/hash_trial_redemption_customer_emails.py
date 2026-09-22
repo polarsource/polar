@@ -48,7 +48,7 @@ log = structlog.get_logger()
 configure_script_console_logging()
 
 # An address always carries an "@"; a hexadecimal digest never does.
-PLAINTEXT_CLAUSE = TrialRedemption.customer_email_hash.like("%@%")
+PLAINTEXT_CLAUSE = TrialRedemption.customer_email.like("%@%")
 
 
 async def hash_batch(
@@ -56,7 +56,7 @@ async def hash_batch(
 ) -> tuple[UUID | None, int]:
     """Hash one batch of addresses, returning the cursor and the row count."""
     statement = (
-        select(TrialRedemption.id, TrialRedemption.customer_email_hash)
+        select(TrialRedemption.id, TrialRedemption.customer_email)
         .where(PLAINTEXT_CLAUSE)
         .order_by(TrialRedemption.id)
         .limit(batch_size)
@@ -72,10 +72,7 @@ async def hash_batch(
         await session.execute(
             update(TrialRedemption),
             [
-                {
-                    "id": trial_redemption_id,
-                    "customer_email_hash": hash_pii(email.lower()),
-                }
+                {"id": trial_redemption_id, "customer_email": hash_pii(email.lower())}
                 for trial_redemption_id, email in batch
             ],
         )

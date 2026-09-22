@@ -6024,7 +6024,7 @@ class TestConfirm:
         await create_trial_redemption(
             save_fixture,
             customer=existing_customer,
-            customer_email_hash=hash_pii(normalize_email(existing_customer.email)),
+            customer_email=hash_pii(normalize_email(existing_customer.email)),
             payment_method_fingerprint="FINGERPRINT",
         )
 

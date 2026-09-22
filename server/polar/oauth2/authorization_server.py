@@ -20,7 +20,7 @@ from authlib.oauth2.rfc7592 import (
 )
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from authlib.oauth2.rfc9207 import IssuerParameter as _IssuerParameter
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
@@ -239,6 +239,18 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> None:
         client.set_deleted_at()
+        now = int(time.time())
+        self.server.session.execute(
+            update(OAuth2Token)
+            .where(
+                OAuth2Token.client_id == client.client_id,
+                or_(
+                    OAuth2Token.access_token_revoked_at == 0,
+                    OAuth2Token.refresh_token_revoked_at == 0,
+                ),
+            )
+            .values(access_token_revoked_at=now, refresh_token_revoked_at=now)
+        )
         self.server.session.flush()
 
     def update_client(

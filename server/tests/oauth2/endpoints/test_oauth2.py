@@ -418,6 +418,47 @@ class TestOAuth2ConfigureDelete:
 
         assert response.status_code == 204
 
+    async def test_revokes_client_tokens(
+        self,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+        user: User,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        other_client = OAuth2Client(client_id="polar_ci_other", user_id=user.id)
+        other_client.set_client_metadata(oauth2_client.client_metadata)
+        await save_fixture(other_client)
+        tokens = [
+            await create_oauth2_token(
+                save_fixture,
+                client=token_client,
+                access_token=f"polar_at_{index}",
+                refresh_token=f"polar_rt_{index}",
+                scopes=["openid"],
+                user=user,
+            )
+            for index, token_client in enumerate(
+                (oauth2_client, oauth2_client, other_client)
+            )
+        ]
+
+        response = await client.delete(
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={"Authorization": "Bearer polar_crt_123"},
+        )
+
+        assert response.status_code == 204
+        for token in tokens[:2]:
+            saved_token = sync_session.get(OAuth2Token, token.id)
+            assert saved_token is not None
+            assert saved_token.access_token_revoked_at > 0
+            assert saved_token.refresh_token_revoked_at > 0
+        other_token = sync_session.get(OAuth2Token, tokens[2].id)
+        assert other_token is not None
+        assert other_token.access_token_revoked_at == 0
+        assert other_token.refresh_token_revoked_at == 0
+
 
 @pytest.mark.asyncio
 class TestOAuth2Authorize:

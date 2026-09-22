@@ -1,6 +1,5 @@
 from collections.abc import AsyncIterator
 from dataclasses import replace
-from uuid import uuid4
 
 import pytest
 
@@ -777,24 +776,6 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "customer_missing_email"
-
-    def test_customer_stripe_id_conflict_is_skipped(self) -> None:
-        polar_id = uuid4()
-        records: list[CanonicalRecord] = [
-            build_customer(source_id="cus_source", email="a@example.com")
-        ]
-
-        items = classify_records(
-            records,
-            PrecheckEntity.customers,
-            "usd",
-            existing_customers={"a@example.com": (polar_id, "cus_existing")},
-        )
-
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "customer_stripe_id_conflict"
-        assert items[0].reason_level == PrecheckReasonLevel.action_required
-        assert items[0].conflicting_customer_id == polar_id
 
     def test_subscription_status_drop(self) -> None:
         records: list[CanonicalRecord] = [

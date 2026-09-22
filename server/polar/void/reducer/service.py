@@ -88,6 +88,67 @@ async def query_buckets(
     return result["data"]
 
 
+def derived_bucket_rows(
+    reducer: Reducer,
+    sources: dict[str, Reducer],
+    buckets: Sequence[VoidReducerBucket],
+) -> list[dict[str, Any]]:
+    assert reducer.aggregation.func == "derive"
+    functions = {name: source.aggregation.func for name, source in sources.items()}
+    by_bucket: dict[
+        tuple[str | None, datetime], dict[uuid.UUID, VoidReducerBucket]
+    ] = {}
+    for bucket in buckets:
+        by_bucket.setdefault((bucket.external_identity_id, bucket.bucket_start), {})[
+            bucket.reducer_id
+        ] = bucket
+    rows = []
+    for (actor, start), inputs in by_bucket.items():
+        state = empty_state(functions)
+        root = None
+        for name, source in sources.items():
+            if (source_bucket := inputs.get(source.id)) is not None:
+                state[name] = source_bucket.value
+                root = source_bucket.external_root_id
+        rows.append(
+            {
+                "reducer_id": reducer.id,
+                "organization_id": reducer.organization_id,
+                "external_identity_id": actor,
+                "external_root_id": root,
+                "bucket_start": start,
+                "value": evaluate(reducer.aggregation.expression, state),
+                "data": {"inputs": state},
+                "last_processed_event": None,
+            }
+        )
+    return rows
+
+
+async def event_bucket_rows(
+    tinybird: TinybirdApi, reducer: Reducer, start: datetime, end: datetime
+) -> list[dict[str, Any]]:
+    result = await query_buckets(tinybird, reducer, start, end)
+    rows = [
+        {
+            "reducer_id": reducer.id,
+            "organization_id": reducer.organization_id,
+            "external_identity_id": row["external_identity_id"],
+            "external_root_id": row["external_root_id"],
+            "bucket_start": datetime.fromisoformat(row["bucket_start"]).replace(
+                tzinfo=UTC
+            ),
+            "value": row["value"] if reducer.aggregation.type == "scalar" else None,
+            "data": json.loads(row["data"]) if row["data"] else None,
+            "last_processed_event": decode_last_processed_event(
+                row["last_processed_event"]
+            ),
+        }
+        for row in result
+    ]
+    return rows
+
+
 class ReducerService:
     async def list(
         self, session: AsyncReadSession, organization_id: uuid.UUID
@@ -182,33 +243,8 @@ class ReducerService:
         repository = ReducerRepository.from_session(session)
         await repository.lock_bucket(reducer.id, start)
         sources = await repository.input_sources(reducer)
-        functions = {name: source.aggregation.func for name, source in sources.items()}
         buckets = await repository.input_buckets(reducer, list(sources.values()), start)
-        by_actor: dict[str | None, dict[uuid.UUID, VoidReducerBucket]] = {}
-        for bucket in buckets:
-            by_actor.setdefault(bucket.external_identity_id, {})[bucket.reducer_id] = (
-                bucket
-            )
-        rows = []
-        for actor, inputs in by_actor.items():
-            state = empty_state(functions)
-            root = None
-            for name, source in sources.items():
-                if (source_bucket := inputs.get(source.id)) is not None:
-                    state[name] = source_bucket.value
-                    root = source_bucket.external_root_id
-            rows.append(
-                {
-                    "reducer_id": reducer.id,
-                    "organization_id": reducer.organization_id,
-                    "external_identity_id": actor,
-                    "external_root_id": root,
-                    "bucket_start": start,
-                    "value": evaluate(reducer.aggregation.expression, state),
-                    "data": {"inputs": state},
-                    "last_processed_event": None,
-                }
-            )
+        rows = derived_bucket_rows(reducer, sources, buckets)
         await self.write_buckets(session, rows)
         return len(rows)
 
@@ -277,24 +313,7 @@ class ReducerService:
         repository = ReducerRepository.from_session(session)
         await repository.lock_definitions(reducer.organization_id, shared=True)
         await repository.lock_bucket(reducer.id, start)
-        result = await query_buckets(tinybird, reducer, start, end)
-        rows = [
-            {
-                "reducer_id": reducer.id,
-                "organization_id": reducer.organization_id,
-                "external_identity_id": row["external_identity_id"],
-                "external_root_id": row["external_root_id"],
-                "bucket_start": datetime.fromisoformat(row["bucket_start"]).replace(
-                    tzinfo=UTC
-                ),
-                "value": row["value"] if reducer.aggregation.type == "scalar" else None,
-                "data": json.loads(row["data"]) if row["data"] else None,
-                "last_processed_event": decode_last_processed_event(
-                    row["last_processed_event"]
-                ),
-            }
-            for row in result
-        ]
+        rows = await event_bucket_rows(tinybird, reducer, start, end)
         await self.write_buckets(session, rows)
         current = bucket_start(start)
         while current < end:

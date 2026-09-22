@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-import json
 import random
 from copy import deepcopy
 from dataclasses import dataclass
@@ -61,9 +60,9 @@ from polar.void.meter.balance import step
 from polar.void.metric.definitions import REDUCERS
 from polar.void.metric.schemas import TimeInterval
 from polar.void.product.service import product as product_service
-from polar.void.reducer.buckets import bucket_start
-from polar.void.reducer.filter import EventMatcher
+from polar.void.reducer.buckets import BUCKET_SIZE, bucket_start
 from polar.void.reducer.repository import ReducerRepository
+from polar.void.reducer.service import derived_bucket_rows, event_bucket_rows
 from polar.void.scenario.schemas import ScenarioCreate, ScenarioPatch
 from polar.void.scenario.service import scenario as scenario_service
 from polar.void.subscription.repository import SubscriptionRepository
@@ -907,13 +906,6 @@ class DemoSeeder:
 
     async def deliver(self, tinybird: TinybirdApi) -> dict[str, int]:
         repository = EventRepository.from_session(self.session)
-        reducers = ReducerRepository.from_session(self.session)
-        matchers = [
-            (reducer.id, EventMatcher(reducer.filter))
-            for reducer in await reducers.list(self.organization.id)
-            if reducer.aggregation.func != "derive"
-        ]
-        buckets: set[tuple[UUID, datetime]] = set()
         delivered = 0
         while pending := await repository.pending(
             {self.organization.id}, limit=EVENT_BATCH
@@ -923,30 +915,52 @@ class DemoSeeder:
                 "void_events",
                 [event.payload for event in pending],
             )
-            for event in pending:
-                metadata = {
-                    **json.loads(event.payload["metadata"]),
-                    **{
-                        key: event.payload.get(key)
-                        for key in (
-                            "source",
-                            "external_identity_id",
-                            "external_root_id",
-                        )
-                    },
-                }
-                start = bucket_start(event.timestamp)
-                for reducer_id, matcher in matchers:
-                    key = (reducer_id, start)
-                    if key not in buckets and matcher.matches(
-                        event.payload["name"], metadata
-                    ):
-                        buckets.add(key)
             await activity_service.touch_events(self.session, pending)
             await repository.mark_delivered(pending, utc_now())
             delivered += len(pending)
-        await reducers.enqueue_buckets(self.organization.id, sorted(buckets))
-        return {"delivered_events": delivered, "reducer_jobs": len(buckets)}
+        return {"delivered_events": delivered}
+
+    async def backfill_buckets(self, tinybird: TinybirdApi) -> int:
+        start, end = await EventRepository.from_session(self.session).timestamp_range(
+            self.organization.id
+        )
+        if start is None or end is None:
+            return 0
+        repository = ReducerRepository.from_session(self.session)
+        await repository.lock_definitions(self.organization.id)
+        reducers = {r.slug: r for r in await repository.list(self.organization.id)}
+        base: dict[UUID, list[VoidReducerBucket]] = {}
+        rows: list[dict[str, Any]] = []
+        for reducer in reducers.values():
+            if reducer.aggregation.func == "derive":
+                continue
+            values = await event_bucket_rows(
+                tinybird, reducer, bucket_start(start), bucket_start(end) + BUCKET_SIZE
+            )
+            rows.extend(values)
+            base[reducer.id] = [VoidReducerBucket(**row) for row in values]
+        for reducer in reducers.values():
+            if reducer.aggregation.func != "derive":
+                continue
+            sources = {
+                name: reducers[slug]
+                for name, slug in reducer.aggregation.inputs.items()
+            }
+            rows.extend(
+                derived_bucket_rows(
+                    reducer,
+                    sources,
+                    [row for source in sources.values() for row in base[source.id]],
+                )
+            )
+        await self.session.execute(
+            delete(VoidReducerBucket).where(
+                VoidReducerBucket.organization_id == self.organization.id
+            )
+        )
+        for offset in range(0, len(rows), EVENT_BATCH):
+            await repository.write_buckets(rows[offset : offset + EVENT_BATCH])
+        return len(rows)
 
     async def create_scenarios(self, base_version_id: str) -> None:
         for index, (name, patch) in enumerate(SCENARIOS):
@@ -990,7 +1004,7 @@ class DemoSeeder:
         }
 
 
-async def run(reset: bool, customers: int = len(CUSTOMERS)) -> dict[str, int] | None:
+async def run(reset: bool, customers: int = len(CUSTOMERS)) -> dict[str, int]:
     if not settings.is_development():
         raise ValueError("The Void demo seed only runs with POLAR_ENV=development")
     engine = create_async_engine("script")
@@ -1012,13 +1026,10 @@ async def run(reset: bool, customers: int = len(CUSTOMERS)) -> dict[str, int] | 
                 if reset or not await seeder.is_seeded():
                     counts = await seeder.run()
             async with session.begin():
-                if not await EventRepository.from_session(session).pending(
-                    {organization.id}, limit=1
-                ):
-                    return counts
                 if tinybird is None:
                     tinybird = create_client(local=True)
                 delivery = await seeder.deliver(tinybird)
+                delivery["reducer_buckets"] = await seeder.backfill_buckets(tinybird)
             return {**(counts or {}), **delivery}
     finally:
         if tinybird is not None:
@@ -1047,13 +1058,8 @@ def main() -> None:
         counts = asyncio.run(run(arguments.reset, arguments.customers))
     except (ValueError, RuntimeError) as error:
         parser.error(str(error))
-    if counts is None:
-        print(f"{ORGANIZATION_SLUG} already has demo data; pass --reset to rebuild it.")
-        return
     summary = ", ".join(f"{value} {key}" for key, value in counts.items())
-    print(
-        f"Seeded {ORGANIZATION_SLUG}: {summary}. Run `dev void` to process queued reducers."
-    )
+    print(f"Seeded {ORGANIZATION_SLUG}: {summary}.")
 
 
 if __name__ == "__main__":

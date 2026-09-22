@@ -10,7 +10,7 @@ export default function GlobalError({ error }: { error: Error }) {
   }, [error])
 
   return (
-    <html className="antialiased">
+    <html lang="en" translate="no" className="antialiased">
       <body>
         <InternalServerError
           digest={'digest' in error ? (error.digest as string) : undefined}

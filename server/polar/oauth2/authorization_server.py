@@ -1,5 +1,4 @@
 import json
-import secrets
 import time
 import typing
 import uuid
@@ -81,12 +80,13 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     def generate_client_registration_info(
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> dict[str, str]:
-        assert client.registration_access_token is not None
+        registration_access_token = client.get_registration_access_token_sync()
+        assert registration_access_token is not None
         return {
             "registration_client_uri": str(
                 request.url_for("oauth2:get_client", client_id=client.client_id)
             ),
-            "registration_access_token": client.registration_access_token,
+            "registration_access_token": registration_access_token,
         }
 
     def generate_client_id(self, request: StarletteJsonRequest) -> str:
@@ -152,11 +152,13 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
     def generate_client_registration_info(
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> dict[str, str]:
+        registration_access_token = client.get_registration_access_token_sync()
+        assert registration_access_token is not None
         return {
             "registration_client_uri": str(
                 request.url_for("oauth2:get_client", client_id=client.client_id)
             ),
-            "registration_access_token": client.registration_access_token,
+            "registration_access_token": registration_access_token,
         }
 
     def create_read_client_response(
@@ -214,9 +216,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             credential is None
             or (
                 isinstance(credential, str)
-                and not secrets.compare_digest(
-                    client.registration_access_token, credential
-                )
+                and not client.check_registration_access_token(credential)
             )
             or (isinstance(credential, User) and client.user_id != credential.id)
         ):

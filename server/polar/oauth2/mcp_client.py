@@ -31,13 +31,12 @@ async def create_client(add_to_env_file: bool) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     async with sessionmaker() as session:
+        client_secret = generate_token(prefix=CLIENT_SECRET_PREFIX)
         oauth2_client = OAuth2Client(
             client_id=generate_token(prefix=CLIENT_ID_PREFIX),
             user=None,
         )
-        await oauth2_client.set_client_secret(
-            generate_token(prefix=CLIENT_SECRET_PREFIX)
-        )
+        await oauth2_client.set_client_secret(client_secret)
         await oauth2_client.set_registration_access_token(
             generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )
@@ -68,12 +67,12 @@ async def create_client(add_to_env_file: bool) -> None:
             append_credentials_to_env_file,
             env_file_path,
             oauth2_client.client_id,
-            oauth2_client.client_secret,
+            client_secret,
         )
         print(f"[bold blue]Credentials added to {env_file_path}[/bold blue]")
     else:
         print(f"Client ID: [bold]{oauth2_client.client_id}[/bold]")
-        print(f"Client Secret: [bold]{oauth2_client.client_secret}[/bold]")
+        print(f"Client Secret: [bold]{client_secret}[/bold]")
 
 
 if __name__ == "__main__":

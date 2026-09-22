@@ -38,12 +38,9 @@ from ..conftest import create_oauth2_authorization_code, create_oauth2_token
 
 @pytest_asyncio.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
-    oauth2_client = OAuth2Client(
-        client_id="polar_ci_123",
-        client_secret="polar_cs_123",
-        registration_access_token="polar_crt_123",
-        user=user,
-    )
+    oauth2_client = OAuth2Client(client_id="polar_ci_123", user=user)
+    await oauth2_client.set_client_secret("polar_cs_123")
+    await oauth2_client.set_registration_access_token("polar_crt_123")
     oauth2_client.set_client_metadata(
         {
             "client_name": "Test Client",
@@ -61,12 +58,9 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
 
 @pytest_asyncio.fixture
 async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
-    oauth2_client = OAuth2Client(
-        client_id="polar_ci_123",
-        client_secret="polar_cs_123",
-        registration_access_token="polar_crt_123",
-        user=user,
-    )
+    oauth2_client = OAuth2Client(client_id="polar_ci_123", user=user)
+    await oauth2_client.set_client_secret("polar_cs_123")
+    await oauth2_client.set_registration_access_token("polar_crt_123")
     oauth2_client.set_client_metadata(
         {
             "client_name": "Test Client",
@@ -86,13 +80,9 @@ async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2C
 async def first_party_oauth2_client(
     save_fixture: SaveFixture, user: User
 ) -> OAuth2Client:
-    oauth2_client = OAuth2Client(
-        client_id="polar_ci_123",
-        client_secret="polar_cs_123",
-        registration_access_token="polar_crt_123",
-        first_party=True,
-        user=user,
-    )
+    oauth2_client = OAuth2Client(client_id="polar_ci_123", first_party=True, user=user)
+    await oauth2_client.set_client_secret("polar_cs_123")
+    await oauth2_client.set_registration_access_token("polar_crt_123")
     oauth2_client.set_client_metadata(
         {
             "client_name": "Test Client",
@@ -112,12 +102,9 @@ async def first_party_oauth2_client(
 async def web_grant_oauth2_client(
     save_fixture: SaveFixture, user: User
 ) -> OAuth2Client:
-    oauth2_client = OAuth2Client(
-        client_id="polar_ci_123",
-        client_secret="polar_cs_123",
-        registration_access_token="polar_crt_123",
-        user=user,
-    )
+    oauth2_client = OAuth2Client(client_id="polar_ci_123", user=user)
+    await oauth2_client.set_client_secret("polar_cs_123")
+    await oauth2_client.set_registration_access_token("polar_crt_123")
     oauth2_client.set_client_metadata(
         {
             "client_name": "Test Client",
@@ -323,6 +310,24 @@ class TestOAuth2ConfigureGet:
         assert json["client_id"] == oauth2_client.client_id
         for value in json.values():
             assert value is not None
+
+    async def test_token_reads_the_ciphertext(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        token = oauth2_client.registration_access_token
+        oauth2_client.registration_access_token = "polar_crt_stale"
+        await save_fixture(oauth2_client)
+
+        response = await client.get(
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["registration_access_token"] == token
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_user_not_owner(
@@ -1798,6 +1803,9 @@ class TestOAuth2Token:
             "polar.kit.crypto.get_hash_secrets",
             return_value=HashSecrets(secrets, "k1", "legacy"),
         )
+        # The fixture hashed the client secret before the patch.
+        await web_grant_oauth2_client.set_client_secret("polar_cs_123")
+        await save_fixture(web_grant_oauth2_client)
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,

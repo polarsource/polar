@@ -1,0 +1,26 @@
+name: Docs Acceptable Use Policy
+
+on:
+  pull_request:
+    paths:
+      - "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx"
+      - "docs/merchant-of-record/acceptable-use.mdx"
+      - "docs/scripts/sync-acceptable-use.mjs"
+      - "docs/.node-version"
+      - ".github/workflows/docs-aup-sync.yml"
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check policy synchronization
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: docs/.node-version
+      - name: Check generated policy
+        run: node docs/scripts/sync-acceptable-use.mjs --check

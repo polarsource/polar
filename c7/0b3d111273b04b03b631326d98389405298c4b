@@ -1,0 +1,21 @@
+server/polar/organization_review/analyzer.py
+  s_73cb8c6198c793::t_43dd227ce3682b 641
+  s_73cb8c6198c793::t_d73e50a310a15e 642-646
+  s_73cb8c6198c793::t_12790170f5d9be 254-255
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c70b3d111273b04b03b631326d98389405298c4b",
+  "prompts": {},
+  "sessions": {
+    "s_73cb8c6198c793": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0888ce91-afb7-4986-bc8b-f42337d04eac",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

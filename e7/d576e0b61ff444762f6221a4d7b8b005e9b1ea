@@ -1,0 +1,24 @@
+server/polar/merchant_migration/service.py
+  s_f2e6e0e6887dbe::t_0ba1816ddf9740 1508
+server/polar/merchant_migration/repository.py
+  s_f2e6e0e6887dbe::t_a61e94a87552f5 385,387-390,400,402-404
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordModal.tsx
+  s_f2e6e0e6887dbe::t_d5566b44de4a87 28-30
+  s_f2e6e0e6887dbe::t_a54e2331d81c46 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e7d576e0b61ff444762f6221a4d7b8b005e9b1ea",
+  "prompts": {},
+  "sessions": {
+    "s_f2e6e0e6887dbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ace9cdfa-e059-43a3-8d35-2b1456a9209a",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

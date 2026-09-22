@@ -1,0 +1,22 @@
+AGENTS.md
+  s_d19d0323f9ab36::t_3b0270be796fd1 16,18-20
+  s_d19d0323f9ab36::t_5c9d785c6eec89 17
+.agents/skills/open-pr/SKILL.md
+  s_d19d0323f9ab36::t_3b0270be796fd1 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "214047d7931fba66d3c08752b85d732657b04e72",
+  "prompts": {},
+  "sessions": {
+    "s_d19d0323f9ab36": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65a8f164-bbb9-4987-84b3-e51bf7b25323",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

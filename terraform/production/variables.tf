@@ -589,3 +589,22 @@ variable "backup_alert_slack_bot_token" {
   type        = string
   sensitive   = true
 }
+
+variable "linear_api_key" {
+  description = "Linear API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "linear_team_id" {
+  description = "Linear team ID"
+  type        = string
+  default     = ""
+}
+
+variable "linear_payout_amount_mismatch_template_id" {
+  description = "Linear payout amount mismatch issue template ID"
+  type        = string
+  default     = ""
+}

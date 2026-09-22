@@ -488,3 +488,22 @@ variable "private_backoffice_tailscale_ip" {
     error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
   }
 }
+
+variable "linear_api_key" {
+  description = "Linear API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "linear_team_id" {
+  description = "Linear team ID"
+  type        = string
+  default     = ""
+}
+
+variable "linear_payout_amount_mismatch_template_id" {
+  description = "Linear payout amount mismatch issue template ID"
+  type        = string
+  default     = ""
+}

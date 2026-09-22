@@ -384,6 +384,10 @@ class Settings(BaseSettings):
     # S3 logs storage
     S3_LOGS_BUCKET_NAME: str | None = None
 
+    LINEAR_API_KEY: str | None = None
+    LINEAR_TEAM_ID: str | None = None
+    LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID: str | None = None
+
     # Plain
     PLAIN_REQUEST_SIGNING_SECRET: str | None = None
     PLAIN_TOKEN: str | None = None

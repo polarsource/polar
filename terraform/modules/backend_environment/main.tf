@@ -45,6 +45,12 @@ locals {
     var.backend_config.plain_default_tier_external_id != "" ? {
       POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = var.backend_config.plain_default_tier_external_id
     } : {},
+    var.backend_config.linear_team_id != "" ? {
+      POLAR_LINEAR_TEAM_ID = var.backend_config.linear_team_id
+    } : {},
+    var.backend_config.linear_payout_amount_mismatch_template_id != "" ? {
+      POLAR_LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID = var.backend_config.linear_payout_amount_mismatch_template_id
+    } : {},
     var.backend_config.merchant_migration_destination_stripe_account_id != "" ? {
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = var.backend_config.merchant_migration_destination_stripe_account_id
     } : {},
@@ -59,6 +65,7 @@ locals {
       POLAR_RESEND_API_KEY        = var.backend_secrets.resend_api_key
       POLAR_RESEND_WEBHOOK_SECRET = var.backend_secrets.resend_webhook_secret
       POLAR_FIRECRAWL_API_KEY     = var.backend_secrets.firecrawl_api_key
+      POLAR_LINEAR_API_KEY        = var.backend_secrets.linear_api_key
       POLAR_SENTRY_DSN            = var.backend_secrets.sentry_dsn
       POLAR_NUMERAL_API_KEY       = var.backend_secrets.numeral_api_key
       POLAR_TURNSTILE_SECRET      = var.backend_secrets.turnstile_secret

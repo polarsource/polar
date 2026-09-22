@@ -38,6 +38,7 @@ from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
+    TaxBehavior,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -868,6 +869,8 @@ class SubscriptionService:
         current_period_end: datetime | None,
         anchor_day: int | None = None,
         user_metadata: dict[str, Any],
+        tax_behavior: TaxBehavior = TaxBehavior.inclusive,
+        tax_exempted: bool = False,
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
         so nothing bills until the merchant cuts over, and grants no benefits.
@@ -910,6 +913,8 @@ class SubscriptionService:
             currency=price.price_currency,
             user_metadata=user_metadata,
             pending_update=None,
+            tax_behavior=tax_behavior,
+            tax_exempted=tax_exempted,
         )
         subscription.initialize_meter_period(start)
 

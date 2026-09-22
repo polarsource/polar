@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi.encoders import jsonable_encoder
 
+from polar.enums import TaxBehavior
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 
 
@@ -138,8 +139,25 @@ class CanonicalSubscription:
     # doesn't say. Polar always computes its own, so a subscription that billed
     # tax-free on the source will start being taxed after the switch.
     automatic_tax: bool | None = None
+    # Stripe Price.tax_behavior when it is inclusive/exclusive. None if missing
+    # or unspecified — that must not be guessed as exclusive.
+    price_tax_behavior: TaxBehavior | None = None
+    # Legacy Stripe TaxRate lists on the subscription or its first item.
+    has_tax_rates: bool = False
+    # Merchant pin at review. None means compute from the source fields above.
+    tax_behavior: TaxBehavior | None = None
 
     type = MerchantMigrationRecordType.subscription
+
+    def import_tax_behavior(self) -> TaxBehavior:
+        if self.tax_behavior is not None:
+            return self.tax_behavior
+        if self._source_collects_tax() and self.price_tax_behavior is not None:
+            return self.price_tax_behavior
+        return TaxBehavior.inclusive
+
+    def _source_collects_tax(self) -> bool:
+        return self.automatic_tax is True or self.has_tax_rates
 
 
 @dataclass
@@ -187,6 +205,15 @@ def serialize(record: CanonicalRecord) -> dict[str, Any]:
 
 def _parse_datetime(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
+
+
+def parse_tax_behavior(value: object | None) -> TaxBehavior | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return TaxBehavior(value)
+    except ValueError:
+        return None
 
 
 def deserialize(
@@ -252,6 +279,9 @@ def deserialize(
                 anchor_day=data.get("anchor_day"),
                 currency=data.get("currency"),
                 automatic_tax=data.get("automatic_tax"),
+                price_tax_behavior=parse_tax_behavior(data.get("price_tax_behavior")),
+                has_tax_rates=bool(data.get("has_tax_rates", False)),
+                tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

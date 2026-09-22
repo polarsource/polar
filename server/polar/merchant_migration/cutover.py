@@ -241,6 +241,18 @@ class SubscriptionCutover:
         if subscription.status != SubscriptionStatus.paused:
             return _skip(_NOT_PAUSED)
 
+        try:
+            staged = deserialize(record.type, record.canonical)
+        except KeyError, TypeError, ValueError:
+            staged = None
+        if not isinstance(staged, CanonicalSubscription):
+            # The merchant pin lives only on the staged row. The live source
+            # has no copy of it, so guessing a default would bill the wrong tax.
+            # A retry that already cancelled the source must not look skipped.
+            return _fail(_UNREADABLE) if already_stopped else _skip(_UNREADABLE)
+        subscription.tax_behavior = staged.import_tax_behavior()
+        subscription.tax_exempted = False
+
         if not already_stopped:
             await self.adapter.stop_source_subscription(
                 record.source_id, reference=str(self.migration.id)

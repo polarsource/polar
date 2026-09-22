@@ -1,5 +1,9 @@
 from datetime import UTC, datetime
+from typing import Any
 
+import pytest
+
+from polar.enums import TaxBehavior
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
@@ -14,6 +18,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
+from tests.merchant_migration._helpers import canonical_subscription
 
 
 class TestSerialize:
@@ -130,3 +135,35 @@ class TestDeserialize:
 
         assert isinstance(result, CanonicalSubscription)
         assert result.currency == "usd"
+        assert result.import_tax_behavior() == TaxBehavior.inclusive
+
+
+class TestImportTaxBehavior:
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            ({}, TaxBehavior.inclusive),
+            ({"tax_behavior": TaxBehavior.exclusive}, TaxBehavior.exclusive),
+            (
+                {"automatic_tax": True, "price_tax_behavior": TaxBehavior.exclusive},
+                TaxBehavior.exclusive,
+            ),
+            ({"price_tax_behavior": TaxBehavior.exclusive}, TaxBehavior.inclusive),
+            (
+                {"has_tax_rates": True, "price_tax_behavior": TaxBehavior.exclusive},
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "tax_behavior": TaxBehavior.inclusive,
+                    "automatic_tax": True,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.inclusive,
+            ),
+        ],
+    )
+    def test_computes_from_source_unless_merchant_pinned(
+        self, kwargs: dict[str, Any], expected: TaxBehavior
+    ) -> None:
+        assert canonical_subscription(**kwargs).import_tax_behavior() == expected

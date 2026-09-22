@@ -3,6 +3,7 @@ from dataclasses import replace
 
 import pytest
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -1043,7 +1044,11 @@ class TestClassifyCascade:
         assert items[0].amount == 1000
 
     def test_subscription_carries_its_product_and_customer_detail(self) -> None:
-        subscription = replace(build_subscription(), automatic_tax=True)
+        subscription = replace(
+            build_subscription(),
+            automatic_tax=True,
+            price_tax_behavior=TaxBehavior.exclusive,
+        )
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1",
@@ -1066,6 +1071,7 @@ class TestClassifyCascade:
         assert items[0].customer_source_id == "cus_1"
         assert items[0].customer_country == "US"
         assert items[0].automatic_tax is True
+        assert items[0].tax_behavior == TaxBehavior.exclusive
 
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,

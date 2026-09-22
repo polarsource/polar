@@ -8,6 +8,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxBehavior
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -210,14 +211,32 @@ def cutover(
 
 @pytest.mark.asyncio
 class TestRun:
+    @pytest.mark.parametrize(
+        ("canonical_kwargs", "tax"),
+        [
+            ({"tax_behavior": TaxBehavior.inclusive}, TaxBehavior.inclusive),
+            (
+                {
+                    "automatic_tax": True,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.exclusive,
+            ),
+        ],
+    )
     async def test_creates_activates_and_stops_pending_subscription(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         cutover: RunCutover,
         pending_record: MerchantMigrationRecord,
         imported_customer: Customer,
+        canonical_kwargs: dict[str, Any],
+        tax: TaxBehavior,
     ) -> None:
+        pending_record.canonical = serialize(canonical_subscription(**canonical_kwargs))
+        await save_fixture(pending_record)
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
         adapter = _source()
 
@@ -232,6 +251,8 @@ class TestRun:
         assert subscription.payment_method_id is not None
         assert subscription.user_metadata["provider"] == "stripe"
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
+        assert subscription.tax_behavior == tax
+        assert subscription.tax_exempted is False
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,
@@ -360,10 +381,14 @@ class TestRun:
             product=product,
             customer=imported_customer,
             status=SubscriptionStatus.paused,
+            tax_behavior=TaxBehavior.inclusive,
             user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
         )
         pending_record.target_id = subscription.id
         pending_record.status = MerchantMigrationRecordStatus.imported
+        pending_record.canonical = serialize(
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
+        )
         await save_fixture(pending_record)
         subscription_id = subscription.id
         session.expunge_all()
@@ -377,6 +402,8 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert reloaded.status == SubscriptionStatus.active
         assert reloaded.payment_method_id is not None
+        assert reloaded.tax_behavior == TaxBehavior.exclusive
+        assert reloaded.tax_exempted is False
 
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,

@@ -9,6 +9,7 @@ from typing import Any
 
 import stripe as stripe_lib
 
+from polar.enums import TaxBehavior
 from polar.kit.schemas import Schema
 
 from ..canonical import (
@@ -23,6 +24,7 @@ from ..canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    parse_tax_behavior,
 )
 from .base import ExtractionPage
 
@@ -410,6 +412,8 @@ class StripeAdapter:
             anchor_day=self._anchor_day(subscription),
             currency=subscription.currency,
             automatic_tax=self._automatic_tax(subscription),
+            price_tax_behavior=self._price_tax_behavior(first_item.get("price")),
+            has_tax_rates=self._has_tax_rates(subscription, first_item),
         )
 
     def _automatic_tax(self, subscription: stripe_lib.Subscription) -> bool | None:
@@ -417,6 +421,18 @@ class StripeAdapter:
         if automatic_tax is None:
             return None
         return bool(automatic_tax.get("enabled"))
+
+    def _price_tax_behavior(self, price: Any) -> TaxBehavior | None:
+        if price is None or isinstance(price, str):
+            return None
+        return parse_tax_behavior(price.get("tax_behavior"))
+
+    def _has_tax_rates(
+        self, subscription: stripe_lib.Subscription, first_item: Any
+    ) -> bool:
+        return bool(subscription.get("default_tax_rates")) or bool(
+            first_item.get("tax_rates")
+        )
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

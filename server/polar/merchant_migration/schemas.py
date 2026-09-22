@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import UUID4, Field
 
+from polar.enums import TaxBehavior
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -154,6 +155,13 @@ class MerchantMigrationRecordItem(Schema):
             "non-subscription rows, or when the source doesn't say."
         ),
     )
+    tax_behavior: TaxBehavior | None = Field(
+        description=(
+            "Polar tax after the switch. Defaults from the source when Stripe "
+            "was collecting tax on an inclusive or exclusive price; otherwise "
+            "inclusive. None for non-subscription rows."
+        ),
+    )
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."
     )
@@ -203,6 +211,12 @@ class MerchantMigrationRecordItem(Schema):
             "Whether this subscription's customer and product are already in Polar, "
             "so it can be created at cutover. Null for non-subscription rows."
         ),
+    )
+
+
+class MerchantMigrationRecordUpdate(Schema):
+    tax_behavior: TaxBehavior = Field(
+        description="Polar tax after the switch: `inclusive` or `exclusive`.",
     )
 
 

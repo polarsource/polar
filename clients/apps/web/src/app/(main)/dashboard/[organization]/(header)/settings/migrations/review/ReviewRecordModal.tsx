@@ -13,9 +13,11 @@ import {
 
 export function ReviewRecordModal({
   row,
+  migrationId,
   onClose,
 }: {
   row: ReviewRow
+  migrationId: string
   onClose: () => void
 }) {
   const isSubscription = row.entity === 'subscriptions'
@@ -49,7 +51,7 @@ export function ReviewRecordModal({
         )}
 
         {isSubscription ? (
-          <SubscriptionFields row={row} />
+          <SubscriptionFields row={row} migrationId={migrationId} />
         ) : (
           <Box flexDirection="column" rowGap="l" minWidth={0}>
             <Text variant="body" as="h3">

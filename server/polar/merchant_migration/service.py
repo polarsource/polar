@@ -11,6 +11,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.enums import TaxBehavior
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -91,6 +92,7 @@ from .schemas import (
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
+    MerchantMigrationRecordUpdate,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -228,6 +230,21 @@ class CutoverNotStarted(MerchantMigrationError):
             "subscriptions over.",
             409,
         )
+
+
+class MerchantMigrationRecordNotFound(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("Merchant migration record not found.", 404)
+
+
+class RecordNotSubscription(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("Tax can only be set on a subscription.", 400)
+
+
+class RecordTaxLocked(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("This subscription has already switched to Polar.", 409)
 
 
 class BlockedByPrecheck(MerchantMigrationError):
@@ -475,15 +492,20 @@ class MerchantMigrationService:
         await self._build_adapter(migration)
 
         repository = MerchantMigrationRepository.from_session(session)
-        await MerchantMigrationRecordRepository.from_session(session).delete_pending(
-            migration.id
-        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        operation = migration.operation
+        preserved_tax = {
+            **((operation.subscription_tax_behavior if operation else None) or {}),
+            **await record_repository.pending_subscription_tax_behaviors(migration.id),
+        }
+        await record_repository.delete_pending(migration.id)
         await repository.update(
             migration,
             update_dict={
                 "operation": MerchantMigrationOperation(
                     status=MerchantMigrationOperationStatus.pending,
                     last_progress_at=utc_now(),
+                    subscription_tax_behavior=preserved_tax or None,
                 )
             },
         )
@@ -550,12 +572,14 @@ class MerchantMigrationService:
             update_dict={"operation": running_operation},
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
+        preserved_tax = current_operation.subscription_tax_behavior
         for record in page.records:
             await record_repository.upsert(
                 migration,
                 organization,
                 record,
                 merge_product_prices=True,
+                preserved_tax_behavior=preserved_tax,
             )
         if page.next_cursor is not None:
             await repository.update(
@@ -1407,6 +1431,31 @@ class MerchantMigrationService:
         if organization is None:
             raise MerchantMigrationNotFound()
         return organization
+
+    async def update_record_tax_behavior(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        record_id: UUID,
+        tax_behavior: TaxBehavior,
+    ) -> MerchantMigrationRecordUpdate:
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await repository.get_by_id(record_id, for_update=True)
+        if record is None or record.merchant_migration_id != migration.id:
+            raise MerchantMigrationRecordNotFound()
+        if record.type != MerchantMigrationRecordType.subscription:
+            raise RecordNotSubscription()
+        if record.cutover_status == MerchantMigrationCutoverStatus.moved:
+            raise RecordTaxLocked()
+        await repository.update(
+            record,
+            update_dict={
+                "canonical": {**record.canonical, "tax_behavior": tax_behavior.value}
+            },
+        )
+        return MerchantMigrationRecordUpdate(tax_behavior=tax_behavior)
 
     async def list_records(
         self,

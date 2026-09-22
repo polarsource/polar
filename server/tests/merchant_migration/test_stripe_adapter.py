@@ -5,6 +5,7 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.adapters.stripe import (
     CANCELLATION_COMMENT_PREFIX,
     StripeAdapter,
@@ -242,7 +243,12 @@ def _stripe_subscription(
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
     automatic_tax: dict[str, Any] | None = None,
+    default_tax_rates: list[dict[str, Any]] | None = None,
+    price_tax_behavior: str | None = None,
 ) -> stripe_lib.Subscription:
+    price: dict[str, Any] = {"id": "price_1", "currency": "usd"}
+    if price_tax_behavior is not None:
+        price["tax_behavior"] = price_tax_behavior
     return stripe_lib.Subscription.construct_from(
         {
             "id": id,
@@ -256,6 +262,7 @@ def _stripe_subscription(
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,
+            "default_tax_rates": default_tax_rates or [],
             "discounts": [],
             "cancellation_details": (
                 {"comment": cancellation_comment} if cancellation_comment else None
@@ -265,8 +272,9 @@ def _stripe_subscription(
                 if items is not None
                 else [
                     {
-                        "price": {"id": "price_1", "currency": "usd"},
+                        "price": price,
                         "quantity": 1,
+                        "tax_rates": [],
                         "current_period_start": 1_700_000_000,
                         "current_period_end": 1_702_000_000,
                     }
@@ -760,6 +768,48 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.automatic_tax is None
+
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            (
+                {
+                    "automatic_tax": {"enabled": True},
+                    "price_tax_behavior": "exclusive",
+                },
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "automatic_tax": {"enabled": True},
+                    "price_tax_behavior": "unspecified",
+                },
+                TaxBehavior.inclusive,
+            ),
+            (
+                {
+                    "default_tax_rates": [{"id": "txr_1"}],
+                    "price_tax_behavior": "exclusive",
+                },
+                TaxBehavior.exclusive,
+            ),
+        ],
+    )
+    async def test_maps_source_tax_into_import_default(
+        self,
+        mocker: MockerFixture,
+        kwargs: dict[str, Any],
+        expected: TaxBehavior,
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(**kwargs)
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.import_tax_behavior() == expected
 
     async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
         """The cutover keeps the trial running rather than billing at once, so

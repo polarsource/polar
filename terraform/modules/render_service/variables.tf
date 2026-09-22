@@ -124,7 +124,6 @@ variable "environment_groups" {
       POLAR_RESEND_WEBHOOK_SECRET                = string
       POLAR_FIRECRAWL_API_KEY                    = string
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = string
-      POLAR_SECRET                               = string
       POLAR_SENTRY_DSN                           = string
       POLAR_TAX_PROCESSORS                       = string
       POLAR_TAX_RECORD_PROCESSOR                 = string

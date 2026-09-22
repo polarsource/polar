@@ -1,7 +1,9 @@
 import json
+import time
 from collections.abc import Iterator, Sequence
 from typing import Annotated, Any
 from urllib.parse import urlparse
+from uuid import UUID
 
 import httpx
 from fastapi import Depends
@@ -67,11 +69,34 @@ class TinybirdApi:
         ):
             raise RuntimeError("Void event storage did not accept the entire batch")
 
+    def delete_organization_events(self, organization_id: UUID) -> None:
+        response = self.client.post(
+            "/v0/datasources/void_events/delete",
+            data={"delete_condition": f"organization_id = toUUID('{organization_id}')"},
+        )
+        if not response.is_success:
+            raise TinybirdRequestError.from_response(response, endpoint="void_events")
+        job_id = response.json().get("job_id")
+        if job_id is None:
+            return
+        deadline = time.monotonic() + 300
+        while time.monotonic() < deadline:
+            response = self.client.get(f"/v0/jobs/{job_id}")
+            if not response.is_success:
+                raise TinybirdRequestError.from_response(response, endpoint="jobs")
+            job = response.json()
+            if job.get("status") == "done":
+                return
+            if job.get("status") == "error":
+                raise RuntimeError(f"Void event cleanup failed: {job.get('error')}")
+            time.sleep(0.25)
+        raise TimeoutError("Timed out waiting for Void event cleanup")
 
-def create_client() -> TinybirdApi:
+
+def create_client(*, local: bool = False) -> TinybirdApi:
     return TinybirdApi(
         base_url=settings.VOID_TINYBIRD_API_URL,
-        token=get_token(),
+        token=get_token(local=local),
     )
 
 

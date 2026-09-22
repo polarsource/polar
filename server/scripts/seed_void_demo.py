@@ -1,20 +1,14 @@
-"""Fill the Void development organization with a realistic demo dataset.
-
-Mirrors the dashboard's frontend fixtures: four configuration versions in a
-lineage, twelve customers with agent and service identities, subscriptions
-across three plans, thirty days of usage events, and three pricing scenarios.
-Everything goes through the same services `void push` and the SDK use, so
-the data is indistinguishable from a real integration. Events are inserted
-pending; the Void worker (`dev void`) delivers them to Tinybird and folds the
-reducers.
-"""
+"""Seed the Void demo; edit CUSTOMERS below to control its timelines."""
 
 import argparse
 import asyncio
+import json
 import random
 from copy import deepcopy
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import UUID, uuid5
 
 import dramatiq
 from sqlalchemy import delete, update
@@ -24,6 +18,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.authz.dependencies import AuthzContext
 from polar.config import settings
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -43,9 +38,13 @@ from polar.models import (
     VoidReducerJob,
     VoidScenario,
     VoidSubscription,
+    VoidSubscriptionStatus,
 )
 from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import create_redis
+from polar.void.activity.service import activity as activity_service
+from polar.void.customer.repository import CustomerRepository
+from polar.void.customer.schemas import Customer as CustomerSchema
 from polar.void.customer.schemas import CustomerCreate
 from polar.void.customer.service import customer as customer_service
 from polar.void.deploy.repository import DeployRepository
@@ -53,37 +52,342 @@ from polar.void.deploy.schemas import DeployCreate
 from polar.void.deploy.service import deploy as deploy_service
 from polar.void.development.service import ORGANIZATION_ID, ORGANIZATION_SLUG
 from polar.void.development.service import development as development_service
+from polar.void.event.repository import EventRepository
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import identity as identity_service
+from polar.void.meter.balance import step
+from polar.void.metric.definitions import REDUCERS
+from polar.void.metric.schemas import TimeInterval
 from polar.void.product.service import product as product_service
+from polar.void.reducer.buckets import bucket_start
+from polar.void.reducer.filter import EventMatcher
+from polar.void.reducer.repository import ReducerRepository
 from polar.void.scenario.schemas import ScenarioCreate, ScenarioPatch
 from polar.void.scenario.service import scenario as scenario_service
-from polar.void.subscription.schemas import SubscriptionCreate
-from polar.void.subscription.service import subscription as subscription_service
+from polar.void.subscription.repository import SubscriptionRepository
+from polar.void.subscription.service import lifecycle_events
+from polar.void.tinybird import TinybirdApi, create_client
 from polar.worker import JobQueueManager
 
-SEED = 20260910
 DAYS = 30
 EVENT_BATCH = 1_000
 
-# name, plan or None, relative usage weight, days since subscription start,
-# canceled days ago or None
-ROOTS: list[tuple[str, str | None, float, int, int | None]] = [
-    ("Northwind Labs", "scale", 1.0, 190, None),
-    ("Halcyon Robotics", "scale", 0.72, 160, None),
-    ("Aperture Analytics", "scale", 0.45, 120, None),
-    ("Brightline Media", "team", 0.35, 200, None),
-    ("Sable Systems", "team", 0.23, 95, None),
-    ("Orbital Foods", "team", 0.18, 70, None),
-    ("Meridian Health", "team", 0.13, 45, None),
-    ("Kestrel Games", "team", 0.09, 5, None),
-    ("Tidewater Finance", "starter", 0.0, 150, 40),
-    ("Lumen Studio", None, 0.0, 0, None),
-    ("Fairweather Co", "starter", 0.0, 60, 12),
-    ("Pinecrest Logistics", "starter", 0.03, 30, None),
-]
+SEED = 20260910
+
+
+def at(date: str) -> datetime:
+    return datetime.fromisoformat(date).replace(tzinfo=UTC)
+
+
+@dataclass(frozen=True)
+class SubscriptionSeed:
+    plan: str
+    starts_at: datetime
+    canceled_at: datetime | None = None
+    ends_at: datetime | None = None
+    uncanceled_at: datetime | None = None
+    cancellation_reason: str = "unused"
+
+    def cancellation_at(self, until: datetime) -> datetime | None:
+        if self.uncanceled_at is not None and self.uncanceled_at <= until:
+            return None
+        if self.canceled_at is not None and self.canceled_at <= until:
+            return self.canceled_at
+        return None
+
+
+@dataclass(frozen=True)
+class CustomerSeed:
+    name: str
+    created_at: datetime
+    subscription: SubscriptionSeed | None = None
+    usage_weight: float = 0.0
+
+    @property
+    def external_id(self) -> str:
+        return self.name.lower().replace(" ", "-")
+
+
+CUSTOMERS = (
+    CustomerSeed(
+        "Northwind Labs",
+        at("2025-01-15"),
+        SubscriptionSeed("scale", at("2026-01-15")),
+        usage_weight=1.0,
+    ),
+    CustomerSeed(
+        "Halcyon Robotics",
+        at("2025-10-03"),
+        SubscriptionSeed("scale", at("2026-02-03")),
+        usage_weight=0.72,
+    ),
+    CustomerSeed(
+        "Aperture Analytics",
+        at("2026-03-20"),
+        SubscriptionSeed("scale", at("2026-03-23")),
+        usage_weight=0.45,
+    ),
+    CustomerSeed(
+        "Brightline Media",
+        at("2025-11-08"),
+        SubscriptionSeed("team", at("2026-01-08")),
+        usage_weight=0.35,
+    ),
+    CustomerSeed(
+        "Sable Systems",
+        at("2026-02-10"),
+        SubscriptionSeed(
+            "team",
+            at("2026-02-15"),
+            canceled_at=at("2026-05-20"),
+            ends_at=at("2026-06-15"),
+            uncanceled_at=at("2026-05-30"),
+            cancellation_reason="missing_features",
+        ),
+        usage_weight=0.23,
+    ),
+    CustomerSeed(
+        "Orbital Foods",
+        at("2026-04-17"),
+        SubscriptionSeed("team", at("2026-04-19")),
+        usage_weight=0.18,
+    ),
+    CustomerSeed(
+        "Meridian Health",
+        at("2026-06-02"),
+        SubscriptionSeed("team", at("2026-06-05")),
+        usage_weight=0.13,
+    ),
+    CustomerSeed(
+        "Kestrel Games",
+        at("2026-09-14"),
+        SubscriptionSeed("team", at("2026-09-17")),
+        usage_weight=0.09,
+    ),
+    CustomerSeed(
+        "Tidewater Finance",
+        at("2025-12-20"),
+        SubscriptionSeed(
+            "starter",
+            at("2026-01-15"),
+            canceled_at=at("2026-04-20"),
+            ends_at=at("2026-05-15"),
+            cancellation_reason="too_expensive",
+        ),
+        usage_weight=0.06,
+    ),
+    CustomerSeed("Lumen Studio", at("2026-08-24")),
+    CustomerSeed(
+        "Fairweather Co",
+        at("2026-05-09"),
+        SubscriptionSeed(
+            "starter",
+            at("2026-05-12"),
+            canceled_at=at("2026-08-18"),
+            ends_at=at("2026-09-12"),
+        ),
+        usage_weight=0.04,
+    ),
+    CustomerSeed(
+        "Pinecrest Logistics",
+        at("2026-08-18"),
+        SubscriptionSeed("starter", at("2026-08-23")),
+        usage_weight=0.03,
+    ),
+)
+
+
+def demo_customers(count: int, until: datetime) -> list[CustomerSeed]:
+    if count < len(CUSTOMERS):
+        raise ValueError(
+            f"Keep the {len(CUSTOMERS)} named customers; count must be >= {len(CUSTOMERS)}"
+        )
+    customers = list(CUSTOMERS)
+    rng = random.Random(SEED)
+    start = at("2026-01-01")
+    for index in range(len(customers), count):
+        joined = start + (until - start) * rng.random()
+        subscribed = joined + timedelta(days=rng.randint(0, 7))
+        plan = rng.choice(("starter", "starter", "team", "team", "scale"))
+        canceled = subscribed + timedelta(days=rng.randint(35, 150))
+        ends = subscribed
+        cycle = 0
+        while ends <= canceled:
+            cycle += 1
+            ends = step(subscribed, TimeInterval.month, cycle)
+        subscription = None
+        if index % 10 and subscribed <= until:
+            churns = index % 5 == 0 and canceled <= until
+            subscription = SubscriptionSeed(
+                plan,
+                subscribed,
+                canceled_at=canceled if churns else None,
+                ends_at=ends if churns else None,
+                cancellation_reason=rng.choice(
+                    ("unused", "too_expensive", "switched_service")
+                ),
+            )
+        customers.append(
+            CustomerSeed(
+                f"Demo Customer {index + 1:03d}",
+                joined,
+                subscription,
+                usage_weight=round(rng.uniform(0.02, 0.25), 2),
+            )
+        )
+    return customers
+
+
+DATASET = "void-demo-polar-metrics"
+
+
+def metric_reducers() -> list[dict[str, Any]]:
+    reducers = []
+    for reducer in REDUCERS.values():
+        definition = reducer.model_dump(mode="json")
+        if definition["filter"] is not None:
+            definition["filter"]["clauses"].append(
+                {"property": "seed_dataset", "operator": "eq", "value": DATASET}
+            )
+        reducers.append(definition)
+    return reducers
+
+
+def customer_event(customer: CustomerSchema) -> EventCreate:
+    return EventCreate(
+        name=SystemEvent.customer_created,
+        external_id=f"{DATASET}:customer:{customer.id}:created",
+        external_identity_id=customer.external_id,
+        timestamp=customer.created_at,
+        metadata={
+            "seed_dataset": DATASET,
+            "customer_id": str(customer.id),
+            "customer_email": customer.email,
+            "customer_name": customer.name,
+            "customer_external_id": customer.external_id,
+        },
+    )
+
+
+def subscription_events(
+    customer: CustomerSchema,
+    subscription: VoidSubscription,
+    timeline: SubscriptionSeed,
+    until: datetime,
+) -> list[EventCreate]:
+    product = subscription.product
+    assert product.interval is not None
+    amount = int(product.amount * 100)
+    common = {
+        "seed_dataset": DATASET,
+        "customer_id": str(customer.id),
+        "subscription_id": str(subscription.id),
+        "product_id": str(product.id),
+        "currency": product.currency,
+    }
+    recurring = {
+        "amount": amount,
+        "recurring_interval": product.interval,
+        "recurring_interval_count": product.interval_count,
+    }
+    events: list[EventCreate] = []
+
+    def emit(
+        name: SystemEvent, key: str, at: datetime, metadata: dict[str, Any]
+    ) -> None:
+        if at > until:
+            return
+        events.append(
+            EventCreate(
+                name=name,
+                external_id=f"{DATASET}:{subscription.id}:{key}:{name.value}",
+                external_identity_id=customer.external_id,
+                timestamp=at,
+                metadata={**common, **metadata},
+            )
+        )
+
+    emit(
+        SystemEvent.subscription_created,
+        "created",
+        subscription.started_at,
+        {**recurring, "started_at": subscription.started_at.isoformat()},
+    )
+    cycle = 0
+    while (
+        at := step(
+            subscription.started_at,
+            TimeInterval(product.interval),
+            cycle * product.interval_count,
+        )
+    ) <= until:
+        if subscription.ends_at is not None and at >= subscription.ends_at:
+            break
+        order_id = str(uuid5(subscription.id, f"order:{cycle}"))
+        order = {
+            "order_id": order_id,
+            "amount": amount,
+            "net_amount": amount,
+            "tax_amount": 0,
+        }
+        if cycle:
+            emit(SystemEvent.subscription_cycled, str(cycle), at, recurring)
+            for meter in product.meters:
+                emit(
+                    SystemEvent.meter_reset,
+                    f"{cycle}:{meter.id}",
+                    at,
+                    {"meter_id": str(meter.id)},
+                )
+        emit(
+            SystemEvent.order_paid,
+            order_id,
+            at,
+            {**order, **recurring, "billing_type": "recurring"},
+        )
+        emit(
+            SystemEvent.balance_order,
+            order_id,
+            at,
+            {
+                **order,
+                "transaction_id": str(uuid5(subscription.id, f"balance:{cycle}")),
+                "presentment_amount": amount,
+                "presentment_currency": product.currency,
+                "fee": amount * 4 // 100,
+            },
+        )
+        cycle += 1
+
+    if timeline.canceled_at is not None:
+        assert timeline.ends_at is not None
+        emit(
+            SystemEvent.subscription_canceled,
+            "canceled",
+            timeline.canceled_at,
+            {
+                **recurring,
+                "canceled_at": timeline.canceled_at.isoformat(),
+                "ends_at": timeline.ends_at.isoformat(),
+                "cancel_at_period_end": True,
+                "customer_cancellation_reason": timeline.cancellation_reason,
+            },
+        )
+    if timeline.uncanceled_at is not None:
+        emit(
+            SystemEvent.subscription_uncanceled,
+            "uncanceled",
+            timeline.uncanceled_at,
+            recurring,
+        )
+    if subscription.ends_at is not None:
+        emit(
+            SystemEvent.subscription_revoked, "revoked", subscription.ends_at, recurring
+        )
+    return sorted(events, key=lambda event: event.timestamp)
+
 
 NOTES = {
     "northwind-labs": "Enterprise pilot, invoiced quarterly",
@@ -101,10 +405,6 @@ CHILDREN: list[tuple[str, str]] = [
 
 MODELS = ["gpt-5", "claude-sonnet-5", "claude-opus-5"]
 TOOLS = ["search", "code_exec", "browser", "file_read"]
-
-
-def slugify(name: str) -> str:
-    return name.lower().replace(" ", "-")
 
 
 def _reducer(slug: str, event_name: str, aggregation: dict[str, Any]) -> dict[str, Any]:
@@ -154,6 +454,7 @@ def configuration_v1() -> dict[str, Any]:
     return {
         "checksum": "demo:v1",
         "reducers": [
+            *metric_reducers(),
             _reducer(
                 "output_tokens",
                 "llm.completion",
@@ -309,21 +610,30 @@ SCENARIOS: list[tuple[str, dict[str, Any]]] = [
 
 
 class DemoSeeder:
-    def __init__(self, session: AsyncSession, organization: Organization) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        customers: int = len(CUSTOMERS),
+        now: datetime | None = None,
+    ) -> None:
         self.session = session
         self.organization = organization
-        self.now = utc_now()
+        self.now = now or utc_now()
         self.random = random.Random(SEED)
+        self.timelines = demo_customers(customers, self.now)
+        self.customers: dict[str, CustomerSchema] = {}
+        self.history: list[EventCreate] = []
 
     async def is_seeded(self) -> bool:
-        deployment = await DeployRepository.from_session(self.session).by_version(
-            self.organization.id,
-            DeployCreate.model_validate(configuration_v3()).version_id,
+        deployments = await DeployRepository.from_session(self.session).list(
+            self.organization.id
         )
-        return deployment is not None
+        return any(deployment.checksum == "demo:v3" for deployment in deployments)
 
-    async def reset(self) -> None:
-        """Hard-delete the organization's Void rows. Tinybird keeps its copies."""
+    async def reset(self, tinybird: TinybirdApi) -> None:
+        """Clear the organization's database rows and Tinybird history."""
         organization_id = self.organization.id
         await self.session.execute(
             update(Customer)
@@ -361,6 +671,8 @@ class DemoSeeder:
         )
         # Polar customers stay; unbound above, they are re-bound by external id.
         await self.session.flush()
+        # The event deletion waits for in-flight deliveries before clearing Tinybird.
+        await asyncio.to_thread(tinybird.delete_organization_events, organization_id)
 
     async def deploy_versions(self) -> str:
         """v1 → v2 → v3, each activated in turn, backdated like the fixtures."""
@@ -398,17 +710,9 @@ class DemoSeeder:
         Returns the external ids that emit events for each root.
         """
         emitters: dict[str, list[str]] = {}
-        for index, (name, _, _, _, _) in enumerate(ROOTS):
-            slug = slugify(name)
-            await customer_service.create(
-                self.session,
-                auth,
-                CustomerCreate(
-                    external_id=slug,
-                    email=f"void-demo+{slug}@polar.sh",
-                    name=name,
-                ),
-            )
+        for index, timeline in enumerate(self.timelines):
+            slug = timeline.external_id
+            self.customers[slug] = await self.seed_customer(auth, timeline)
             root = await identity_service.get(self.session, self.organization.id, slug)
             root.metadata_ = {
                 **root.metadata_,
@@ -433,39 +737,88 @@ class DemoSeeder:
         await self.session.flush()
         return emitters
 
+    async def seed_customer(
+        self, auth: AuthzContext[User], timeline: CustomerSeed
+    ) -> CustomerSchema:
+        customer = await customer_service.create(
+            self.session,
+            auth,
+            CustomerCreate(
+                external_id=timeline.external_id,
+                email=f"void-demo+{timeline.external_id}@polar.sh",
+                name=timeline.name,
+            ),
+        )
+        repository = CustomerRepository.from_session(self.session)
+        native = await repository.get_active_by_external_id(
+            self.organization.id, timeline.external_id
+        )
+        assert native is not None
+        assert native.root_identity is not None
+        native.created_at = timeline.created_at
+        native.root_identity.created_at = timeline.created_at
+        customer.created_at = timeline.created_at
+        self.history.append(customer_event(customer))
+        return customer
+
     async def create_subscriptions(self, version_id: str) -> None:
         products = {
-            product.slug: product.id
+            product.slug: product
             for product in await product_service.list(
                 self.session, self.organization.id
             )
             if product.version_id == version_id
         }
-        for name, plan, _, started_days, canceled_days in ROOTS:
+        for timeline in self.timelines:
+            plan = timeline.subscription
             if plan is None:
                 continue
-            await subscription_service.create(
-                self.session,
-                self.organization.id,
-                SubscriptionCreate(
-                    product_id=products[plan],
-                    external_identity_id=slugify(name),
-                    starts_at=self.now - timedelta(days=started_days, hours=3),
-                    ends_at=(
-                        self.now - timedelta(days=canceled_days, hours=1)
-                        if canceled_days is not None
-                        else None
-                    ),
-                ),
+            await self.seed_subscription(timeline, products[plan.plan])
+
+    async def seed_subscription(
+        self, timeline: CustomerSeed, product: VoidProduct
+    ) -> None:
+        plan = timeline.subscription
+        assert plan is not None
+        canceled_at = plan.cancellation_at(self.now)
+        subscription = VoidSubscription(
+            id=uuid5(self.organization.id, f"demo:subscription:{timeline.external_id}"),
+            organization=self.organization,
+            product=product,
+            billing_identity=await identity_service.get(
+                self.session, self.organization.id, timeline.external_id
+            ),
+            created_at=plan.starts_at,
+            started_at=plan.starts_at,
+            status=VoidSubscriptionStatus.canceled
+            if canceled_at
+            else VoidSubscriptionStatus.active,
+            canceled_at=canceled_at,
+            ends_at=plan.ends_at if canceled_at else None,
+        )
+        await SubscriptionRepository.from_session(self.session).create(subscription)
+        self.history.extend(
+            lifecycle_events(subscription, "created", subscription.started_at)
+        )
+        if subscription.ends_at is not None:
+            self.history.extend(
+                lifecycle_events(subscription, "canceled", subscription.ends_at)
             )
+        self.history.extend(
+            subscription_events(
+                self.customers[timeline.external_id], subscription, plan, self.now
+            )
+        )
 
     def _events_for(
-        self, root_slug: str, emitters: list[str], weight: float
+        self, timeline: CustomerSeed, emitters: list[str]
     ) -> list[EventCreate]:
         """Thirty days of usage, heavier on weekdays, scaled by the root's weight."""
         events: list[EventCreate] = []
-        if weight == 0:
+        plan = timeline.subscription
+        if plan is None:
             return events
+        root_slug, weight = timeline.external_id, timeline.usage_weight
         rng = self.random
         start = self.now - timedelta(days=DAYS)
         for day in range(DAYS):
@@ -524,22 +877,76 @@ class DemoSeeder:
                         metadata={"sandbox_id": sandbox_id, "minutes": minutes},
                     )
                 )
-        return events
+        ends_at = plan.ends_at if plan.cancellation_at(self.now) else None
+        return [
+            event
+            for event in events
+            if plan.starts_at <= event.timestamp <= self.now
+            and (ends_at is None or event.timestamp < ends_at)
+        ]
 
     async def ingest_events(self, emitters: dict[str, list[str]]) -> int:
-        saved = 0
-        for name, _, weight, _, _ in ROOTS:
-            slug = slugify(name)
-            events = self._events_for(slug, emitters[slug], weight)
-            for offset in range(0, len(events), EVENT_BATCH):
-                count, _ = await event_service.ingest(
-                    self.session,
-                    self.organization.id,
-                    events[offset : offset + EVENT_BATCH],
-                    EventSource.user,
-                )
-                saved += count
+        saved = await self.ingest(self.history, EventSource.system)
+        for timeline in self.timelines:
+            events = self._events_for(timeline, emitters[timeline.external_id])
+            saved += await self.ingest(events, EventSource.user)
         return saved
+
+    async def ingest(self, events: list[EventCreate], source: EventSource) -> int:
+        saved = 0
+        events.sort(key=lambda event: event.timestamp)
+        for offset in range(0, len(events), EVENT_BATCH):
+            count, _ = await event_service.ingest(
+                self.session,
+                self.organization.id,
+                events[offset : offset + EVENT_BATCH],
+                source,
+            )
+            saved += count
+        return saved
+
+    async def deliver(self, tinybird: TinybirdApi) -> dict[str, int]:
+        repository = EventRepository.from_session(self.session)
+        reducers = ReducerRepository.from_session(self.session)
+        matchers = [
+            (reducer.id, EventMatcher(reducer.filter))
+            for reducer in await reducers.list(self.organization.id)
+            if reducer.aggregation.func != "derive"
+        ]
+        buckets: set[tuple[UUID, datetime]] = set()
+        delivered = 0
+        while pending := await repository.pending(
+            {self.organization.id}, limit=EVENT_BATCH
+        ):
+            await asyncio.to_thread(
+                tinybird.ingest_batch,
+                "void_events",
+                [event.payload for event in pending],
+            )
+            for event in pending:
+                metadata = {
+                    **json.loads(event.payload["metadata"]),
+                    **{
+                        key: event.payload.get(key)
+                        for key in (
+                            "source",
+                            "external_identity_id",
+                            "external_root_id",
+                        )
+                    },
+                }
+                start = bucket_start(event.timestamp)
+                for reducer_id, matcher in matchers:
+                    key = (reducer_id, start)
+                    if key not in buckets and matcher.matches(
+                        event.payload["name"], metadata
+                    ):
+                        buckets.add(key)
+            await activity_service.touch_events(self.session, pending)
+            await repository.mark_delivered(pending, utc_now())
+            delivered += len(pending)
+        await reducers.enqueue_buckets(self.organization.id, sorted(buckets))
+        return {"delivered_events": delivered, "reducer_jobs": len(buckets)}
 
     async def create_scenarios(self, base_version_id: str) -> None:
         for index, (name, patch) in enumerate(SCENARIOS):
@@ -572,34 +979,50 @@ class DemoSeeder:
         await self.create_scenarios(version_id)
         return {
             "versions": 4,
-            "identities": len(ROOTS)
+            "customers": len(self.timelines),
+            "identities": len(self.timelines)
             + sum(len(e) for slug, e in emitters.items() if e != [slug]),
-            "subscriptions": sum(1 for root in ROOTS if root[1] is not None),
+            "subscriptions": sum(
+                timeline.subscription is not None for timeline in self.timelines
+            ),
             "events": events,
             "scenarios": len(SCENARIOS),
         }
 
 
-async def run(reset: bool) -> dict[str, int] | None:
+async def run(reset: bool, customers: int = len(CUSTOMERS)) -> dict[str, int] | None:
     if not settings.is_development():
         raise ValueError("The Void demo seed only runs with POLAR_ENV=development")
     engine = create_async_engine("script")
     redis = create_redis("app")
+    tinybird: TinybirdApi | None = None
     try:
         sessionmaker = create_async_sessionmaker(engine)
-        async with (
-            JobQueueManager.open(dramatiq.get_broker(), redis),
-            sessionmaker() as session,
-            session.begin(),
-        ):
-            organization, _ = await development_service.seed(session)
-            seeder = DemoSeeder(session, organization)
-            if reset:
-                await seeder.reset()
-            elif await seeder.is_seeded():
-                return None
-            return await seeder.run()
+        async with sessionmaker() as session:
+            counts = None
+            async with (
+                JobQueueManager.open(dramatiq.get_broker(), redis),
+                session.begin(),
+            ):
+                organization, _ = await development_service.seed(session)
+                seeder = DemoSeeder(session, organization, customers=customers)
+                if reset:
+                    tinybird = create_client(local=True)
+                    await seeder.reset(tinybird)
+                if reset or not await seeder.is_seeded():
+                    counts = await seeder.run()
+            async with session.begin():
+                if not await EventRepository.from_session(session).pending(
+                    {organization.id}, limit=1
+                ):
+                    return counts
+                if tinybird is None:
+                    tinybird = create_client(local=True)
+                delivery = await seeder.deliver(tinybird)
+            return {**(counts or {}), **delivery}
     finally:
+        if tinybird is not None:
+            tinybird.close()
         await redis.close()
         await engine.dispose()
 
@@ -609,20 +1032,28 @@ def main() -> None:
         description=f"Seed {ORGANIZATION_SLUG} ({ORGANIZATION_ID}) with demo data"
     )
     parser.add_argument(
+        "--customers",
+        type=int,
+        default=len(CUSTOMERS),
+        help="Total customers, including the 12 named timelines (default: 12)",
+    )
+    parser.add_argument(
         "--reset",
         action="store_true",
         help="Delete the organization's Void data first and seed again",
     )
     arguments = parser.parse_args()
     try:
-        counts = asyncio.run(run(arguments.reset))
+        counts = asyncio.run(run(arguments.reset, arguments.customers))
     except (ValueError, RuntimeError) as error:
         parser.error(str(error))
     if counts is None:
         print(f"{ORGANIZATION_SLUG} already has demo data; pass --reset to rebuild it.")
         return
     summary = ", ".join(f"{value} {key}" for key, value in counts.items())
-    print(f"Seeded {ORGANIZATION_SLUG}: {summary}. Run `dev void` to fold usage.")
+    print(
+        f"Seeded {ORGANIZATION_SLUG}: {summary}. Run `dev void` to process queued reducers."
+    )
 
 
 if __name__ == "__main__":

@@ -142,6 +142,27 @@ class ReducerRepository(RepositoryBase[VoidReducer]):
             )
         )
 
+    async def enqueue_buckets(
+        self, organization_id: UUID, buckets: Sequence[tuple[UUID, datetime]]
+    ) -> None:
+        for offset in range(0, len(buckets), 1_000):
+            statement = insert(VoidReducerJob).values(
+                [
+                    {
+                        "organization_id": organization_id,
+                        "reducer_id": reducer_id,
+                        "bucket_start": start,
+                    }
+                    for reducer_id, start in buckets[offset : offset + 1_000]
+                ]
+            )
+            await self.session.execute(
+                statement.on_conflict_do_update(
+                    index_elements=["reducer_id", "bucket_start"],
+                    set_={"bucket_start": statement.excluded.bucket_start},
+                )
+            )
+
     async def input_sources(self, reducer: VoidReducer) -> dict[str, VoidReducer]:
         rows = await self.session.execute(
             select(VoidReducerDependency.input_name, VoidReducer)

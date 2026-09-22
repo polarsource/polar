@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -28,9 +29,35 @@ if TYPE_CHECKING:
 from polar.config import settings
 from polar.kit.aws import get_credentials
 from polar.kit.db.postgres import Engine
+from polar.logging import REDACTED, SENSITIVE_LOG_FIELDS
 from polar.observability.otel_prometheus import PrometheusMeterProvider
 
 Matcher = Callable[[str, "Attributes | None"], bool]
+
+_LOGFIRE_DEFAULT_FIELDS = frozenset(
+    {
+        "password",
+        "passwd",
+        "secret",
+        "authorization",
+        "credential",
+        "private_key",
+        "api_key",
+        "session",
+        "cookie",
+        "social_security",
+        "ssn",
+        "jwt",
+    }
+)
+_LOGFIRE_FIELD_PATTERN = (
+    r"(?:^|[.])(?:"
+    + "|".join(
+        re.escape(key).replace("_", "[._-]")
+        for key in sorted(SENSITIVE_LOG_FIELDS.keys() - _LOGFIRE_DEFAULT_FIELDS)
+    )
+    + r")$"
+)
 
 
 class IgnoreSampler(Sampler):
@@ -112,6 +139,11 @@ class LevelSampler(Sampler):
         return "LevelSampler"
 
 
+def _scrubbing_callback(match: logfire.ScrubMatch) -> str:
+    # The SDK's default replacement and metadata include the matched substring.
+    return REDACTED
+
+
 class PidSpanProcessor(SpanProcessor):
     def on_start(self, span: Span, parent_context: "Context | None" = None) -> None:
         span.set_attribute("process.pid", os.getpid())
@@ -187,6 +219,10 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                 local_parent_sampled=LevelSampler(),
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
+        ),
+        scrubbing=logfire.ScrubbingOptions(
+            extra_patterns=(_LOGFIRE_FIELD_PATTERN,),
+            callback=_scrubbing_callback,
         ),
         additional_span_processors=additional_span_processors or None,
     )

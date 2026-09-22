@@ -16,9 +16,11 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.modules import ModulesIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.integrations.threading import ThreadingIntegration
+from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
+from polar.logging import SENSITIVE_LOG_FIELDS, LogScrubBudget
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
@@ -45,6 +47,13 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
         return None
+    breadcrumbs = event.get("breadcrumbs")
+    if isinstance(breadcrumbs, dict):
+        budget = LogScrubBudget()
+        for breadcrumb in breadcrumbs.get("values", []):
+            message = breadcrumb.get("message")
+            if isinstance(message, str):
+                breadcrumb["message"] = budget.scrub_text(message)
     return event
 
 
@@ -58,6 +67,11 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
         environment=settings.ENV,
         # Stack frame locals here carry customer, order and payment objects.
         include_local_variables=False,
+        send_default_pii=False,
+        event_scrubber=EventScrubber(
+            denylist=[*DEFAULT_DENYLIST, *SENSITIVE_LOG_FIELDS],
+            recursive=True,
+        ),
         default_integrations=False,
         auto_enabling_integrations=False,
         before_send=before_send,

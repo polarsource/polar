@@ -6,6 +6,7 @@ from polar.kit.routing import (
     SpeakeasyIgnoreAPIRoute,
     SpeakeasyNameOverrideAPIRoute,
     SpeakeasyPaginationAPIRoute,
+    ToolAPIRoute,
     TransactionalAPIRoute,
     get_api_router_class,
 )
@@ -16,6 +17,7 @@ class APIRoute(
     VersionedAPIRoute,
     TransactionalAPIRoute,
     IncludedInSchemaAPIRoute,
+    ToolAPIRoute,
     DocumentedAuthSubjectAPIRoute,
     PaginationAPIRoute,
     SpeakeasyIgnoreAPIRoute,

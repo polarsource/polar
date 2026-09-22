@@ -37,7 +37,9 @@ CustomFieldNotFound = {
 
 
 @router.get(
-    "/", summary="List Custom Fields", response_model=ListResource[CustomFieldSchema]
+    "/",
+    summary="List Custom Fields",
+    response_model=ListResource[CustomFieldSchema],
 )
 async def list(
     auth_subject: auth.CustomFieldRead,

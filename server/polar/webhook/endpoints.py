@@ -37,7 +37,10 @@ WebhookEndpointNotFound = {
 }
 
 
-@router.get("/endpoints", response_model=ListResource[WebhookEndpointSchema])
+@router.get(
+    "/endpoints",
+    response_model=ListResource[WebhookEndpointSchema],
+)
 async def list_webhook_endpoints(
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,

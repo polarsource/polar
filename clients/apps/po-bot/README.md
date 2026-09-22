@@ -1,7 +1,7 @@
 # Po Bot
 
 A small Grok Bot-style app: one organization, its members, and each member's
-reusable agents. It exists to show three things about Void.
+reusable agents. It exists to show four things about Void.
 
 1. **Billing identities.** The organization is the customer and the root. Each
    member is an identity under it with a credit cap; each agent is an identity
@@ -13,6 +13,11 @@ reusable agents. It exists to show three things about Void.
    gateway cost.
 3. **Config as code.** `void.ts` is the whole billing model: the plugin in
    credits mode with a rate per model, and one product that includes credits.
+4. **Both kinds of signal.** `retry-storm` asks Jev about one agent's recent
+   spend. `credits-low` is an ordinary meter signal: the SDK latches it from
+   the organization's remaining credits, on the root customer, with no model
+   in the loop. The band sits just under the grant so a conversation crosses
+   it. Redeploy with `pnpm bootstrap` after pulling this config.
 
 The UI is built on Orbit, Polar's design system, so it looks like the rest of
 the dashboard. Layout is `Box`, copy is `Text`, and the buttons, inputs, pills
@@ -56,7 +61,7 @@ the identities and events already on the server stay.
 
 | File                           | What it is                                                                                                                                            |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `void.ts`                      | The billing model: models, rates, the team plan.                                                                                                      |
+| `void.ts`                      | The billing model: models, rates, the team plan, the meter signal and the semantic one.                                                               |
 | `src/void.ts`                  | Every call the app makes to Void: spawn a member with a cap, spawn an agent, the agent's metered model, credits per identity, the latest completions. |
 | `src/channels.ts`              | The shape of the live state: the identity tree with standings, the completion log, judgments, activities. Shared by server and browser.               |
 | `src/live.ts`                  | One broadcaster per process: each channel reloads on its own beat and is sent only when it changed; `publish` pushes what this process just saw.      |
@@ -66,7 +71,7 @@ the identities and events already on the server stay.
 | `src/tools.ts`                 | Shared tools every agent can call: web, files, a code sandbox, email. Implementations are mocked.                                                     |
 | `src/app/api/chat/route.ts`    | `streamText` on the agent's metered model, with the shared tools. The model's hooks publish the call and its completion the moment they happen.       |
 | `src/app/api/live/route.ts`    | Server-sent events: one named event per channel as it changes, plus `live` events for calls starting and completions landing.                         |
-| `src/hooks/live.ts`            | The browser side: channels land in the query cache, a completion bumps standings and pulses the tree before Void confirms it.                        |
+| `src/hooks/live.ts`            | The browser side: channels land in the query cache, a completion bumps standings and pulses the tree before Void confirms it.                         |
 | `src/components/Workspace.tsx` | The member page's frame: sidebar, chat, event panel, and the tree along the bottom. The panel and tree are dragged to size.                           |
 | `src/components/Hierarchy.tsx` | The tree along the bottom. A completion climbs from its agent to the member to the org as the credits fold into each.                                 |
 | `src/setup.ts`                 | Make the organization a customer and subscribe it, after `void deploy`.                                                                               |

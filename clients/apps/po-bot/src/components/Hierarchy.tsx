@@ -184,7 +184,12 @@ export const Hierarchy = () => {
           <Node
             placed={org}
             title={tree.org.name}
-            subtitle="organization"
+            subtitle={
+              tree.org.signal.status === 'active'
+                ? 'credits low'
+                : 'organization'
+            }
+            alert={tree.org.signal.status === 'active'}
             standing={tree.org.standing}
             limit={tree.org.standing.credits}
             arrivals={arrivals.get(org.id) ?? NONE}
@@ -256,6 +261,7 @@ const Node = memo(function Node({
   current = false,
   wide = false,
   busy = false,
+  alert = false,
   arrivals,
 }: {
   placed: Placed
@@ -267,6 +273,7 @@ const Node = memo(function Node({
   current?: boolean
   wide?: boolean
   busy?: boolean
+  alert?: boolean
   arrivals: readonly Arrival[]
 }) {
   const width = wide ? NODE.w + 40 : NODE.w
@@ -307,7 +314,7 @@ const Node = memo(function Node({
         </Text>
         <Text
           variant="caption"
-          color="muted"
+          color={alert && !busy ? 'danger' : 'muted'}
           as="span"
           monospace
           truncate

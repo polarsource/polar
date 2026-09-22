@@ -13,6 +13,7 @@ import {
   activityReport,
   completions,
   judgments,
+  orgSignal,
   spanKey,
   spansFor,
   standings,
@@ -45,8 +46,9 @@ const treeFrom = (
   memberRows: readonly Member[],
   agentRows: readonly Agent[],
   standing: (id: string) => Standing,
+  signal: Tree['org']['signal'],
 ): Tree => ({
-  org: { id: ORG, name: 'Acme', standing: standing(ORG) },
+  org: { id: ORG, name: 'Acme', standing: standing(ORG), signal },
   members: memberRows.map((member) => ({
     id: member.id,
     name: member.name,
@@ -74,8 +76,8 @@ const loadTree = async (): Promise<Tree> => {
     ...memberRows.map((row) => row.id),
     ...agentRows.map((row) => row.id),
   ]
-  const at = await standings(ids)
-  return treeFrom(memberRows, agentRows, (id) => at.get(id) ?? nothing)
+  const [at, signal] = await Promise.all([standings(ids), orgSignal()])
+  return treeFrom(memberRows, agentRows, (id) => at.get(id) ?? nothing, signal)
 }
 
 const loadEvents = async (): Promise<readonly LogEvent[]> => {

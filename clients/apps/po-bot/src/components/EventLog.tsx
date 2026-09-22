@@ -2,7 +2,6 @@
 
 import { n, pct, time, usd } from '@/format'
 import type { LogEvent } from '@/channels'
-import type { AgentJudgment } from '@/void'
 import { Grid } from '@polar-sh/orbit/Grid'
 import { Text } from '@polar-sh/orbit/Text'
 import { Box } from '@polar-sh/orbit/Box'
@@ -16,8 +15,8 @@ import {
 } from '@/hooks/live'
 import { ActivityPill, MixSection } from './Activity'
 import { Divider } from './Card'
-import { Meter } from './Meter'
 import { SectionLabel } from './SectionLabel'
+import { Signals } from './Signals'
 
 const Row = ({
   label,
@@ -34,54 +33,6 @@ const Row = ({
       {children}
     </Text>
   </>
-)
-
-const grain = (over: AgentJudgment['over']) =>
-  `last ${over.amount} ${over.unit}${over.amount === 1 ? '' : 's'}`
-
-/** Jev's answer to the SDK's question about an agent's recent spend. Never moves money. */
-const SignalSection = ({
-  judgments,
-}: {
-  judgments: readonly AgentJudgment[]
-}) => (
-  <Box flexDirection="column" rowGap="s" width="100%">
-    <SectionLabel>Signals</SectionLabel>
-    {judgments.length === 0 ? (
-      <Text variant="caption" color="muted" style={{ paddingInline: 4 }}>
-        Polar has not judged this identity yet.
-      </Text>
-    ) : (
-      <Box flexDirection="column" rowGap="s" paddingHorizontal="xs">
-        {judgments.map((judgment) => (
-          <Box
-            key={`${judgment.signal}:${judgment.identityId}`}
-            flexDirection="column"
-            rowGap="xs"
-          >
-            <Box justifyContent="between" alignItems="baseline" columnGap="s">
-              <Text variant="caption" as="span">
-                {judgment.signal}
-              </Text>
-              <Text variant="caption" color="muted" as="span" tabularNums>
-                {judgment.noul === null ? 'unknown' : pct(judgment.noul)},{' '}
-                {judgment.status}, {n(judgment.events)} events{' '}
-                {grain(judgment.over)}
-              </Text>
-            </Box>
-            <Meter
-              share={(judgment.noul ?? 0) * 100}
-              spent={judgment.status === 'active'}
-              height={4}
-            />
-            <Text variant="caption" color="muted">
-              {judgment.when}
-            </Text>
-          </Box>
-        ))}
-      </Box>
-    )}
-  </Box>
 )
 
 const Span = ({ event }: { event: LogEvent }) => {
@@ -223,7 +174,7 @@ export const EventLog = () => {
       <Divider />
 
       <Box padding="m">
-        <SignalSection judgments={shown} />
+        <Signals balance={tree.org.signal} judgments={shown} />
       </Box>
       <Divider />
 

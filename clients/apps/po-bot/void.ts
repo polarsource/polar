@@ -35,11 +35,26 @@ export const ai = llm({
   classify: true,
 })
 
+/** Credits the team plan grants the organization each period. */
+export const POOL = 100_000
+
 export const team = product('po_bot_team', {
   name: 'Po Bot Team',
   description: '100,000 credits a month for the whole organization.',
   price: recurring({ interval: 'month', amount: usd(99) }),
-  meters: [included(ai.credits, 100_000, { limit: 'hard' })],
+  meters: [included(ai.credits, POOL, { limit: 'hard' })],
+})
+
+/**
+ * Ordinary meter signal on the customer's remaining credits. The band sits
+ * just under the grant so one conversation crosses it; a real plan would
+ * put it near empty. Evaluated on the root, because that is the customer.
+ */
+export const creditsLow = signal('credits-low', {
+  meter: ai.credits,
+  field: 'remaining',
+  enter: { below: POOL - 200 },
+  exit: { atLeast: POOL - 50 },
 })
 
 /** Polar asks Jev about the agent's recent credit spend; the SDK latches the answer. */
@@ -52,6 +67,6 @@ export const retryStorm = signal('retry-storm', {
 })
 
 export const config = defineConfig({
-  schema: { ai, team, retryStorm },
+  schema: { ai, team, creditsLow, retryStorm },
   eventStorage: [{ type: 'sqlite', connection: events }],
 })

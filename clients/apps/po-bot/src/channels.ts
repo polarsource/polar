@@ -1,6 +1,6 @@
 import type { Wire } from '@void/sdk'
 import { ORG } from './constants'
-import type { AgentJudgment, Standing } from './void'
+import type { AgentJudgment, BalanceSignal, Standing } from './void'
 
 /**
  * The shape of the organization's live state, shared by the server that
@@ -28,6 +28,7 @@ export interface Tree {
     readonly id: string
     readonly name: string
     readonly standing: Standing
+    readonly signal: BalanceSignal
   }
   readonly members: readonly MemberNode[]
 }
@@ -67,8 +68,20 @@ export type Live =
 
 const nothing: Standing = { usage: 0, credits: 0, remaining: null }
 
+const unread: BalanceSignal = {
+  signal: 'credits-low',
+  status: 'unknown',
+  remaining: null,
+  provisional: false,
+  enterBelow: 0,
+  exitAtLeast: 0,
+}
+
 export const emptyChannels: Channels = {
-  tree: { org: { id: ORG, name: 'Acme', standing: nothing }, members: [] },
+  tree: {
+    org: { id: ORG, name: 'Acme', standing: nothing, signal: unread },
+    members: [],
+  },
   events: [],
   judgments: [],
   activities: {

@@ -7,7 +7,7 @@ import {
   type VoidOptions,
   type Wire,
 } from '@void/sdk'
-import { ai, CHEAPER, config, retryStorm } from '../void'
+import { ai, CHEAPER, config, creditsLow, retryStorm } from '../void'
 import { ORG } from './constants'
 import { db } from './db'
 import { agents, members, type Agent } from './db/schema'
@@ -101,6 +101,42 @@ export const agentModel = async (agent: Agent, hooks: CallHooks) => {
 }
 
 export type Standing = Pick<BalanceResult, 'usage' | 'credits' | 'remaining'>
+
+/** A meter signal as the dashboard shows it. No noul: the latch is the balance. */
+export interface BalanceSignal {
+  readonly signal: string
+  readonly status: SignalState['status']
+  readonly remaining: number | null
+  readonly provisional: boolean
+  readonly enterBelow: number
+  readonly exitAtLeast: number
+}
+
+const unreadSignal = (): BalanceSignal => ({
+  signal: creditsLow.key,
+  status: 'unknown',
+  remaining: null,
+  provisional: false,
+  enterBelow: creditsLow.definition.enter.below,
+  exitAtLeast: creditsLow.definition.exit.atLeast,
+})
+
+export const orgSignal = async (): Promise<BalanceSignal> => {
+  try {
+    const state = await withTimeout(
+      (await getVoid()).as(ORG).signals.creditsLow.get(),
+      3_000,
+    )
+    return {
+      ...unreadSignal(),
+      status: state.status,
+      remaining: state.balance?.remaining ?? null,
+      provisional: state.provisional,
+    }
+  } catch {
+    return unreadSignal()
+  }
+}
 
 /** Every identity's standing from one snapshot of the organization's tree. */
 export const standings = async (ids: readonly string[]) => {

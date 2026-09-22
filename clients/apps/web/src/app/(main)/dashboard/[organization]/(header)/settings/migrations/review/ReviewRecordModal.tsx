@@ -1,15 +1,19 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { needsAttention, ReviewRow } from './reviewRows'
-import { ReviewStatusIndicator } from './ReviewStatusIndicator'
+import Link from 'next/link'
+import { useContext } from 'react'
 import {
   CustomerFields,
   ProductFields,
   SubscriptionFields,
 } from './ReviewRecordFields'
+import { ReviewStatusIndicator } from './ReviewStatusIndicator'
+import { needsAttention, ReviewRow } from './reviewRows'
 
 export function ReviewRecordModal({
   row,
@@ -20,7 +24,13 @@ export function ReviewRecordModal({
   migrationId: string
   onClose: () => void
 }) {
+  const { organization } = useContext(OrganizationContext)
   const isSubscription = row.entity === 'subscriptions'
+  const polarCustomerHref = row.conflicting_customer_id
+    ? buildCustomerDashboardPath(organization.slug, {
+        id: row.conflicting_customer_id,
+      })
+    : null
 
   return (
     <Box flexDirection="column" height="100%">
@@ -45,7 +55,16 @@ export function ReviewRecordModal({
               title={
                 needsAttention(row) ? 'Needs your attention' : 'Good to know'
               }
-              description={row.reason}
+              description={
+                polarCustomerHref ? (
+                  <>
+                    {row.reason}{' '}
+                    <Link href={polarCustomerHref}>View Polar customer</Link>
+                  </>
+                ) : (
+                  row.reason
+                )
+              }
             />
           </Box>
         )}

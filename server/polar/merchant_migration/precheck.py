@@ -9,9 +9,10 @@ something, `info` when there is nothing to fix.
 """
 
 from collections import Counter
-from collections.abc import AsyncIterable, Iterable, Sequence
+from collections.abc import AsyncIterable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from uuid import UUID
 
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.kit.currency import (
@@ -92,6 +93,7 @@ ACTION_REQUIRED_CODES = {
     "multiple_prices_same_currency",
     "subscription_has_discount",
     "send_invoice_collection",
+    "customer_stripe_id_conflict",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -112,6 +114,11 @@ _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
 )
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
+)
+CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
+    "A Polar customer already exists for this email, bound to a different "
+    "Stripe customer. Open that Polar customer to reconcile them; this one "
+    "stays on Stripe."
 )
 _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."
@@ -594,6 +601,7 @@ class Reason:
 
     code: str
     message: str
+    polar_customer_id: UUID | None = None
 
     @property
     def level(self) -> PrecheckReasonLevel:
@@ -698,6 +706,7 @@ def _item(
         reason=reason.message if reason else None,
         reason_code=reason.code if reason else None,
         reason_level=reason.level if reason else None,
+        conflicting_customer_id=reason.polar_customer_id if reason else None,
         cutover_status=None,
         cutover_error=None,
         renews_at=renews_at,
@@ -835,9 +844,10 @@ def _price_items(
 
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
-    plans = plan_customer_imports(customers)
+    plans = plan_customer_imports(customers, existing_customers)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
         # It imports either way, but without a country tax can't be computed.
@@ -868,10 +878,15 @@ def _subscription_items(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(
-        subscriptions, products, customers, default_currency
+        subscriptions,
+        products,
+        customers,
+        default_currency,
+        existing_customers,
     )
     customer_by_source = {c.source_id: c for c in customers}
     product_by_price = _product_by_price_key(products)
@@ -1034,6 +1049,7 @@ def classify_records(
     entity: PrecheckEntity,
     default_currency: str,
     existing_product_names: set[str] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
@@ -1045,9 +1061,13 @@ def classify_records(
     if entity == PrecheckEntity.prices:
         return _price_items(split.products, default_currency)
     if entity == PrecheckEntity.customers:
-        return _customer_items(split.customers)
+        return _customer_items(split.customers, existing_customers)
     return _subscription_items(
-        split.subscriptions, split.products, split.customers, default_currency
+        split.subscriptions,
+        split.products,
+        split.customers,
+        default_currency,
+        existing_customers,
     )
 
 
@@ -1107,12 +1127,14 @@ def plan_product_imports(
 
 def plan_customer_imports(
     customers: Sequence[CanonicalCustomer],
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> dict[str, Reason | None]:
     """Per customer ``source_id``, the skip reason or ``None`` when importable.
     A Polar customer is unique by email and carries a single source id, so of
     several customers sharing an email only the first can be imported; a customer
     with no email can't be imported at all."""
     duplicates = _duplicate_customer_source_ids(customers)
+    existing = existing_customers or {}
     plans: dict[str, Reason | None] = {}
     for customer in customers:
         if customer.source_id in duplicates:
@@ -1124,7 +1146,15 @@ def plan_customer_imports(
                 "customer_missing_email", _MISSING_EMAIL_REASON
             )
         else:
-            plans[customer.source_id] = None
+            polar = existing.get(customer.email.lower())
+            if polar and polar[1] and polar[1] != customer.source_id:
+                plans[customer.source_id] = Reason(
+                    "customer_stripe_id_conflict",
+                    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
+                    polar_customer_id=polar[0],
+                )
+            else:
+                plans[customer.source_id] = None
     return plans
 
 
@@ -1133,6 +1163,7 @@ def plan_subscription_imports(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when
     importable. Mirrors the review drawer's per-subscription classification: a
@@ -1144,7 +1175,7 @@ def plan_subscription_imports(
     }
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
-    customer_plans = plan_customer_imports(customers)
+    customer_plans = plan_customer_imports(customers, existing_customers)
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         skip = subscription_import_reason(subscription)

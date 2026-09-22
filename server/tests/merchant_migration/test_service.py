@@ -1110,6 +1110,7 @@ class TestListRecords:
             save_fixture,
             organization=organization,
             email="shared@example.com",
+            stripe_customer_id="cus_reused",
         )
         await save_fixture(
             MerchantMigrationRecord(
@@ -1802,7 +1803,7 @@ class TestImportCatalog:
     ) -> None:
         # An existing Polar customer sharing the email but carrying a different
         # Stripe id must not be reused, or the card would land on the wrong record.
-        await customer_service.create_for_organization(
+        polar_customer = await customer_service.create_for_organization(
             session,
             organization,
             email="alice@example.com",
@@ -1828,6 +1829,18 @@ class TestImportCatalog:
         assert customer_record is not None
         assert customer_record.status == MerchantMigrationRecordStatus.skipped
         assert customer_record.error is not None
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].reason_code == "customer_stripe_id_conflict"
+        assert items[0].conflicting_customer_id == polar_customer.id
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
 
     @pytest.mark.auth
     async def test_rerunning_precheck_does_not_regress_step(

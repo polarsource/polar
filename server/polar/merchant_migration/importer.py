@@ -46,6 +46,7 @@ from .canonical import (
     subscription_price_key,
 )
 from .precheck import (
+    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
     ProductImportPlan,
     Reason,
     plan_customer_imports,
@@ -66,11 +67,6 @@ _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
     _DEPENDENCY_CODE,
     "This customer already has a live subscription to the product on Polar, so a "
     "duplicate isn't created. It stays on the source.",
-)
-_CUSTOMER_STRIPE_ID_CONFLICT = Reason(
-    "customer_stripe_id_conflict",
-    "A Polar customer with this email already has a different Stripe id. Reconcile "
-    "them manually; this customer stays on the source.",
 )
 
 
@@ -415,7 +411,12 @@ class CatalogImporter:
                 and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
             ):
-                return ImportedCustomer(skip=_CUSTOMER_STRIPE_ID_CONFLICT)
+                return ImportedCustomer(
+                    skip=Reason(
+                        "customer_stripe_id_conflict",
+                        CUSTOMER_STRIPE_ID_CONFLICT_REASON,
+                    )
+                )
             # Reconcile the source id so the PAN-copied card lands on the same
             # customer, but never overwrite one that's already set.
             if stripe_customer_id and existing.stripe_customer_id is None:

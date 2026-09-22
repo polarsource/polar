@@ -183,6 +183,12 @@ class MerchantMigrationRecordItem(Schema):
             "reason."
         )
     )
+    conflicting_customer_id: UUID4 | None = Field(
+        description=(
+            "The Polar customer that already exists for this email, when the skip "
+            "reason is a Stripe id conflict. None otherwise."
+        ),
+    )
     cutover_status: MerchantMigrationCutoverStatus | None = Field(
         description=(
             "What the switch did with this subscription: `moved` (Polar bills it "

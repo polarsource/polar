@@ -1,0 +1,46 @@
+---
+title: "Payment Methods"
+sidebarTitle: "Payment Methods"
+description: "Payment methods supported by Polar Checkout"
+---
+
+Polar automatically shows the payment methods available for each checkout. The options a customer sees depend on their location, the checkout currency, the type of purchase, and their device or browser.
+
+You don't need to enable individual payment methods.
+
+## Cards and wallets
+
+| Payment method | Availability |
+| --- | --- |
+| Credit and debit cards | Worldwide, in every supported currency. One-time purchases and recurring subscriptions |
+| Apple Pay | Shown in Safari on an Apple device signed in to an Apple account with Apple Pay configured |
+| Google Pay | Shown in Google Chrome when signed in to a Google account with Google Pay configured |
+| Link | Shown to customers who saved their details with Stripe Link, which autofills their payment and address details |
+| Amazon Pay | Customers in the United States and Germany, for checkouts priced in USD |
+| Cash App Pay | Customers in the United States, for checkouts priced in USD |
+| WeChat Pay | Customers in mainland China, Hong Kong, and Macao, for checkouts priced in USD or CNY. One-time purchases only |
+
+<Note>
+  **On Polar's hosted checkout, wallets need no setup.** They're enabled by default and appear automatically whenever the customer's device and browser support them.
+
+  Domain validation is only required for [Embedded Checkout](/features/checkout/embed#enable-wallets-in-embedded-checkout), where the checkout runs on your own domain.
+</Note>
+
+## Local payment methods
+
+| Payment method | Customer location | Currency | Purchase type |
+| --- | --- | --- | --- |
+| Bancontact | Belgium | EUR | One-time purchases |
+| BLIK | Poland | PLN | One-time purchases |
+| EPS | Austria | EUR | One-time purchases |
+| iDEAL / Wero | Netherlands | EUR | One-time purchases |
+| UPI | India | INR | One-time purchases and recurring subscriptions |
+| Kakao Pay | South Korea | KRW | One-time purchases and recurring subscriptions |
+| Naver Pay | South Korea | KRW | One-time purchases and recurring subscriptions |
+| Samsung Pay | South Korea | KRW | One-time purchases |
+
+## Other payment methods
+
+The list above is everything we support today. There's no setting or plan that unlocks more, and payment methods can't be enabled per organization.
+
+PayPal is by far the most common thing people ask about. We don't have a timeline to share.

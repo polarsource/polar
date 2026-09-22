@@ -22,8 +22,6 @@ from polar.kit.address import Address, CountryAlpha2
 HASH_SEPARATOR = "$"
 MAX_HASH_SECRET_ID_LENGTH = 15
 
-# Digests salted with this are reproducible by anyone holding the source, so
-# an environment that stores any has to set a salt of its own.
 DEFAULT_PII_SCRUBBING_SALT = "super secret pii scrubbing salt"
 
 DEVELOPMENT_JWKS = json.dumps(
@@ -129,9 +127,6 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
     SECRET: str = "super secret jwt secret"
-    # Salt for the digests stored in place of personal data. A credential hash
-    # is rotated by rehashing the credential; these have no plaintext left to
-    # rehash from, so this is one static secret per environment.
     PII_SCRUBBING_SALT: str = DEFAULT_PII_SCRUBBING_SALT
     HASH_SECRETS: dict[str, str] = {}
     CURRENT_HASH_SECRET_ID: str | None = None

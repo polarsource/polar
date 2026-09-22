@@ -240,8 +240,13 @@ jobs:
       needs.changes.outputs.migration_heads == 'true' &&
       (github.event_name == 'pull_request' || github.event_name == 'merge_group')
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    env:
+      POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
     steps:
       - uses: actions/checkout@v7.0.1
+
+      - name: Create mock email renderer binary
+        run: touch /tmp/email-renderer
 
       - name: Fetch base commit
         env:

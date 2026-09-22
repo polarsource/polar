@@ -119,6 +119,11 @@ Delete `AWSRevokeOlderSessions`, restore whatever step 2 cut, re-enable the key,
 the API and the workers.
 
 ```bash
+ROLE=polar-production-secrets   # the one you revoked in step 1
+KEY=$(aws kms describe-key \
+  --key-id alias/polar-production-secrets \
+  --query KeyMetadata.KeyId --output text)
+
 aws iam delete-role-policy --role-name "$ROLE" --policy-name AWSRevokeOlderSessions
 aws kms enable-key --key-id "$KEY"
 ```

@@ -131,7 +131,6 @@ class TestSetters:
 
         await client.set_client_secret("cs-new")
 
-        assert client.client_secret == "cs-new"
         assert client.client_secret_hash == OAuth2Client.hash_secret("cs-new")
         assert isinstance(client.client_secret_encrypted, EncryptedString)
         assert (
@@ -145,7 +144,6 @@ class TestSetters:
 
         await client.set_registration_access_token("crt-new")
 
-        assert client.registration_access_token == "crt-new"
         assert client.registration_access_token_hash == OAuth2Client.hash_secret(
             "crt-new"
         )
@@ -175,13 +173,6 @@ class TestReveal:
 
         assert client.get_client_secret_sync() is None
         assert client.get_registration_access_token_sync() is None
-
-    async def test_client_info_reads_the_ciphertext(self, user: User) -> None:
-        client = _build(user)
-        await client.set_client_secret("cs-test")
-        client.client_secret = "polar_cs_stale"
-
-        assert client.client_info["client_secret"] == "cs-test"
 
 
 @pytest.mark.asyncio

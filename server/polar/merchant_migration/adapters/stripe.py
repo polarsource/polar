@@ -262,7 +262,10 @@ class StripeAdapter:
     async def _extract_customer_page(
         self, cursor: StripeExtractionCursor
     ) -> ExtractionPage:
-        params: stripe_lib.params.CustomerListParams = {"limit": PAGE_SIZE}
+        params: stripe_lib.params.CustomerListParams = {
+            "limit": PAGE_SIZE,
+            "expand": ["data.invoice_settings.default_payment_method"],
+        }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
         customers = await self._client.v1.customers.list_async(params=params)
@@ -450,12 +453,51 @@ class StripeAdapter:
 
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
         address = customer.address
+        country = address.country if address is not None else None
         return CanonicalCustomer(
             source_id=customer.id,
             email=customer.email or "",
             name=customer.name,
-            country=address.country if address is not None else None,
+            country=country,
+            country_hint=None if country else self._customer_country_hint(customer),
         )
+
+    def _customer_country_hint(self, customer: stripe_lib.Customer) -> str | None:
+        invoice_settings = customer.get("invoice_settings")
+        payment_method = (
+            invoice_settings.get("default_payment_method")
+            if invoice_settings is not None
+            else None
+        )
+        billing_country, card_country = self._payment_method_countries(payment_method)
+        if billing_country or card_country:
+            return billing_country or card_country
+        source_billing_country, source_card_country = self._source_countries(
+            customer.get("default_source")
+        )
+        return source_billing_country or source_card_country
+
+    def _payment_method_countries(
+        self, payment_method: Any
+    ) -> tuple[str | None, str | None]:
+        if not isinstance(payment_method, stripe_lib.PaymentMethod):
+            return None, None
+        billing_details = payment_method.get("billing_details")
+        address = (
+            billing_details.get("address") if billing_details is not None else None
+        )
+        billing_country = address.get("country") if address is not None else None
+        details = payment_method.get(payment_method.type) or {}
+        return billing_country, details.get("country")
+
+    def _source_countries(self, source: Any) -> tuple[str | None, str | None]:
+        if source is None or isinstance(source, str):
+            return None, None
+        owner = source.get("owner") or {}
+        address = owner.get("address") or {}
+        billing_country = source.get("address_country") or address.get("country")
+        card = source.get("card") or {}
+        return billing_country, source.get("country") or card.get("country")
 
     def _resolve_payment_method(
         self, subscription: stripe_lib.Subscription
@@ -502,6 +544,7 @@ class StripeAdapter:
         except ValueError:
             type = CanonicalPaymentMethodType.other
         details = payment_method.get(payment_method.type) or {}
+        billing_country, card_country = self._payment_method_countries(payment_method)
         return CanonicalPaymentMethod(
             source_id=payment_method.id,
             type=type,
@@ -509,6 +552,8 @@ class StripeAdapter:
             brand=details.get("brand"),
             exp_month=details.get("exp_month"),
             exp_year=details.get("exp_year"),
+            billing_country=billing_country,
+            card_country=card_country,
         )
 
     def _id_of(self, value: Any) -> str:

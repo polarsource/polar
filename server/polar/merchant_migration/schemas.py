@@ -129,8 +129,16 @@ class MerchantMigrationRecordItem(Schema):
     )
     customer_country: str | None = Field(
         description=(
-            "The customer billing country. None for product and price rows, or "
-            "when the source customer has none."
+            "The billing country Polar will import. This is the source customer "
+            "country, or a payment-method fallback. None for product and price "
+            "rows, or when neither is available."
+        ),
+    )
+    customer_country_hint: str | None = Field(
+        description=(
+            "The payment-method country used as the billing-country fallback. "
+            "Present only to disclose fallback provenance; Polar tax still uses "
+            "the imported customer billing address."
         ),
     )
     amount: int | None = Field(

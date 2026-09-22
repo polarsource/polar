@@ -25252,9 +25252,14 @@ export interface components {
       customer_source_id: string | null
       /**
        * Customer Country
-       * @description The customer billing country. None for product and price rows, or when the source customer has none.
+       * @description The billing country Polar will import. This is the source customer country, or a payment-method fallback. None for product and price rows, or when neither is available.
        */
       customer_country: string | null
+      /**
+       * Customer Country Hint
+       * @description The payment-method country used as the billing-country fallback. Present only to disclose fallback provenance; Polar tax still uses the imported customer billing address.
+       */
+      customer_country_hint: string | null
       /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.

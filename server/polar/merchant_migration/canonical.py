@@ -61,6 +61,10 @@ class CanonicalPaymentMethod:
     brand: str | None = None
     exp_month: int | None = None
     exp_year: int | None = None
+    # Cardholder billing country from `billing_details.address`. Hint only.
+    billing_country: str | None = None
+    # Card issuer country (`card.country`). Weaker than billing_country; hint only.
+    card_country: str | None = None
 
 
 @dataclass
@@ -98,7 +102,12 @@ class CanonicalCustomer:
     source_id: str
     email: str
     name: str | None
+    # From the source customer's own address.
     country: str | None
+    # Card / payment-method fallback when `country` is missing. The importer
+    # writes it to Polar billing_address, while retaining this field so the
+    # review UI can disclose its provenance.
+    country_hint: str | None = None
 
     type = MerchantMigrationRecordType.customer
 
@@ -247,6 +256,7 @@ def deserialize(
                 email=data["email"],
                 name=data["name"],
                 country=data["country"],
+                country_hint=data.get("country_hint"),
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]
@@ -269,6 +279,8 @@ def deserialize(
                     brand=payment_method.get("brand"),
                     exp_month=payment_method.get("exp_month"),
                     exp_year=payment_method.get("exp_year"),
+                    billing_country=payment_method.get("billing_country"),
+                    card_country=payment_method.get("card_country"),
                 )
                 if payment_method is not None
                 else None,

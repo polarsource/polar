@@ -29,6 +29,7 @@ from .canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalPaymentMethod,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -85,7 +86,6 @@ SUBSCRIPTION_DROP_CODES = {
 # Reasons the merchant has to act on. Every other code is informational: the
 # record either imports as-is, or Polar can't take it and there is nothing to do.
 ACTION_REQUIRED_CODES = {
-    "customer_missing_country",
     "customer_missing_email",
     "duplicate_customer_email",
     "product_name_too_short",
@@ -124,7 +124,8 @@ _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."
 )
 _MISSING_COUNTRY_REASON = (
-    "No billing country. Confirm it before the first renewal so tax is correct."
+    "No billing or payment-method country was found. The customer will import, "
+    "but Polar won't calculate tax until a billing country is added."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
@@ -491,8 +492,9 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="customer_missing_country",
                 message=(
-                    f"{count} customers have no billing country; the payment "
-                    "card's country will be used as a default."
+                    f"{count} customers have no billing country on Stripe. Polar "
+                    "will use a payment-method country when available; otherwise "
+                    "they import without a country and tax isn't calculated."
                 ),
                 source_id=None,
             )
@@ -673,6 +675,7 @@ def _item(
     customer_name: str | None = None,
     customer_source_id: str | None = None,
     customer_country: str | None = None,
+    customer_country_hint: str | None = None,
     renews_at: datetime | None = None,
     automatic_tax: bool | None = None,
     tax_behavior: TaxBehavior | None = None,
@@ -696,6 +699,7 @@ def _item(
         customer_name=customer_name,
         customer_source_id=customer_source_id,
         customer_country=customer_country,
+        customer_country_hint=customer_country_hint,
         amount=price.amount,
         currency=price.currency,
         recurring_interval=price.recurring_interval,
@@ -842,32 +846,84 @@ def _price_items(
     return items
 
 
+def _country_hint(
+    customer: CanonicalCustomer,
+    payment_methods: Sequence[CanonicalPaymentMethod],
+) -> str | None:
+    """Best payment-method country fallback, retaining its display provenance."""
+    if customer.country:
+        return None
+    if customer.country_hint:
+        return customer.country_hint
+    billing_country: str | None = None
+    card_country: str | None = None
+    for payment_method in payment_methods:
+        if billing_country is None and payment_method.billing_country:
+            billing_country = payment_method.billing_country
+        if card_country is None and payment_method.card_country:
+            card_country = payment_method.card_country
+        if billing_country:
+            return billing_country
+    return billing_country or card_country
+
+
+def _country_hints_by_customer(
+    customers: Sequence[CanonicalCustomer],
+    subscriptions: Sequence[CanonicalSubscription],
+) -> dict[str, str | None]:
+    payment_methods_by_customer: dict[str, list[CanonicalPaymentMethod]] = {}
+    for subscription in subscriptions:
+        if subscription.payment_method is not None:
+            payment_methods_by_customer.setdefault(
+                subscription.customer_source_id, []
+            ).append(subscription.payment_method)
+    return {
+        customer.source_id: _country_hint(
+            customer, payment_methods_by_customer.get(customer.source_id, [])
+        )
+        for customer in customers
+    }
+
+
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
+    subscriptions: Sequence[CanonicalSubscription],
     existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
     plans = plan_customer_imports(customers, existing_customers)
+    hints = _country_hints_by_customer(customers, subscriptions)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
-        # It imports either way, but without a country tax can't be computed.
-        note = (
+        country_fallback = hints.get(customer.source_id)
+        note = _pick_note(
+            Reason(
+                "customer_country_from_payment_method",
+                (
+                    f"Billing country {country_fallback} came from a payment "
+                    "method. Review it after import."
+                ),
+            )
+            if not customer.country and country_fallback
+            else None,
             Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
-            if not customer.country
-            else None
+            if not customer.country and not country_fallback
+            else None,
         )
+        effective_country = customer.country or country_fallback
         items.append(
             _item(
                 PrecheckEntity.customers,
                 customer.source_id,
                 customer.email or customer.name or customer.source_id,
-                customer.country or "No billing country",
+                effective_country or "No billing country",
                 skip=plans[customer.source_id],
                 note=note,
                 customer_email=customer.email or None,
                 customer_name=customer.name,
                 customer_source_id=customer.source_id,
-                customer_country=customer.country,
+                customer_country=effective_country,
+                customer_country_hint=country_fallback,
             )
         )
     return items
@@ -889,13 +945,30 @@ def _subscription_items(
         existing_customers,
     )
     customer_by_source = {c.source_id: c for c in customers}
+    hints = _country_hints_by_customer(customers, subscriptions)
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         payment_method = subscription.payment_method
+        customer = customer_by_source.get(subscription.customer_source_id)
+        country_fallback = (
+            hints.get(customer.source_id) if customer is not None else None
+        )
         note = _pick_note(
+            Reason(
+                "customer_country_from_payment_method",
+                (
+                    f"Billing country {country_fallback} came from a payment "
+                    "method. Review it after import."
+                ),
+            )
+            if customer is not None and not customer.country and country_fallback
+            else None,
+            Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
+            if customer is not None and not customer.country and not country_fallback
+            else None,
             Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
             if payment_method is not None and payment_method.type.requires_reentry
             else None,
@@ -903,7 +976,6 @@ def _subscription_items(
             if subscription.trialing
             else None,
         )
-        customer = customer_by_source.get(subscription.customer_source_id)
         product = _product_for_subscription(
             subscription, product_by_price, product_by_price_id
         )
@@ -929,7 +1001,12 @@ def _subscription_items(
                 customer_email=customer.email if customer is not None else None,
                 customer_name=customer.name if customer is not None else None,
                 customer_source_id=subscription.customer_source_id,
-                customer_country=customer.country if customer is not None else None,
+                customer_country=(
+                    customer.country or country_fallback
+                    if customer is not None
+                    else None
+                ),
+                customer_country_hint=country_fallback,
                 renews_at=subscription.current_period_end,
                 automatic_tax=subscription.automatic_tax,
                 tax_behavior=subscription.import_tax_behavior(),
@@ -1061,7 +1138,7 @@ def classify_records(
     if entity == PrecheckEntity.prices:
         return _price_items(split.products, default_currency)
     if entity == PrecheckEntity.customers:
-        return _customer_items(split.customers, existing_customers)
+        return _customer_items(split.customers, split.subscriptions, existing_customers)
     return _subscription_items(
         split.subscriptions,
         split.products,

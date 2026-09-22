@@ -193,12 +193,18 @@ class CatalogImporter:
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
             )
         )
+        country_fallbacks = self._customer_country_fallbacks(
+            self._records_of(catalog, MerchantMigrationRecordType.customer),
+            subscription_records,
+        )
 
         product_result = await self._import_products(
             product_records, selected_source_ids=product_source_ids
         )
         customer_result = await self._import_customers(
-            customer_records, selected_source_ids=customer_source_ids
+            customer_records,
+            selected_source_ids=customer_source_ids,
+            country_fallbacks=country_fallbacks,
         )
         subscription_result = MerchantMigrationImportResult(
             entity=PrecheckEntity.subscriptions,
@@ -285,6 +291,43 @@ class CatalogImporter:
                 product_source_ids.add(product.source_id)
         return product_source_ids, customer_source_ids
 
+    def _customer_country_fallbacks(
+        self,
+        customer_records: Sequence[MerchantMigrationRecord],
+        subscription_records: Sequence[MerchantMigrationRecord],
+    ) -> dict[str, str]:
+        customers = [
+            self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
+            for record in customer_records
+        ]
+        subscriptions = [
+            self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
+            for record in subscription_records
+        ]
+        billing_countries: dict[str, str] = {}
+        card_countries: dict[str, str] = {}
+        for subscription in subscriptions:
+            payment_method = subscription.payment_method
+            if payment_method is None:
+                continue
+            if payment_method.billing_country:
+                billing_countries.setdefault(
+                    subscription.customer_source_id, payment_method.billing_country
+                )
+            if payment_method.card_country:
+                card_countries.setdefault(
+                    subscription.customer_source_id, payment_method.card_country
+                )
+        return {
+            customer.source_id: fallback
+            for customer in customers
+            if (
+                fallback := customer.country_hint
+                or billing_countries.get(customer.source_id)
+                or card_countries.get(customer.source_id)
+            )
+        }
+
     async def _import_products(
         self,
         records: Sequence[MerchantMigrationRecord],
@@ -326,6 +369,7 @@ class CatalogImporter:
         records: Sequence[MerchantMigrationRecord],
         *,
         selected_source_ids: set[str],
+        country_fallbacks: dict[str, str],
     ) -> MerchantMigrationImportResult:
         customers = [
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
@@ -345,7 +389,9 @@ class CatalogImporter:
                 await self._mark_skipped(record, skip)
                 counts.skipped += 1
                 continue
-            result = await self._create_or_reuse_customer(customer)
+            result = await self._create_or_reuse_customer(
+                customer, country_fallbacks.get(customer.source_id)
+            )
             if result.skip is not None:
                 await self._mark_skipped(record, result.skip)
                 counts.skipped += 1
@@ -397,7 +443,7 @@ class CatalogImporter:
         return polar_product
 
     async def _create_or_reuse_customer(
-        self, customer: CanonicalCustomer
+        self, customer: CanonicalCustomer, country_fallback: str | None
     ) -> ImportedCustomer:
         stripe_customer_id = self._stripe_customer_id(customer)
         existing = await self.customer_repository.get_by_email_and_organization(
@@ -418,18 +464,28 @@ class CatalogImporter:
                     )
                 )
             # Reconcile the source id so the PAN-copied card lands on the same
-            # customer, but never overwrite one that's already set.
+            # customer, but never overwrite one that's already set. Fill a
+            # missing Polar billing country from the best source country.
+            updates: dict[str, object] = {}
             if stripe_customer_id and existing.stripe_customer_id is None:
-                await self.customer_repository.update(
-                    existing, update_dict={"stripe_customer_id": stripe_customer_id}
-                )
+                updates["stripe_customer_id"] = stripe_customer_id
+            address = self._billing_address(customer, country_fallback)
+            if address is not None:
+                if existing.billing_address is None:
+                    updates["billing_address"] = address
+                elif existing.billing_address.country is None:
+                    updates["billing_address"] = existing.billing_address.model_copy(
+                        update={"country": address.country}
+                    )
+            if updates:
+                await self.customer_repository.update(existing, update_dict=updates)
             return ImportedCustomer(customer=existing)
         polar_customer = await customer_service.create_for_organization(
             self.session,
             self.organization,
             email=customer.email,
             name=customer.name,
-            billing_address=self._billing_address(customer),
+            billing_address=self._billing_address(customer, country_fallback),
             stripe_customer_id=stripe_customer_id,
         )
         return ImportedCustomer(customer=polar_customer)
@@ -441,11 +497,14 @@ class CatalogImporter:
             return customer.source_id
         return None
 
-    def _billing_address(self, customer: CanonicalCustomer) -> Address | None:
-        if not customer.country:
+    def _billing_address(
+        self, customer: CanonicalCustomer, country_fallback: str | None
+    ) -> Address | None:
+        country_code = customer.country or country_fallback
+        if not country_code:
             return None
         try:
-            country = CountryAlpha2(customer.country.upper())
+            country = CountryAlpha2(country_code.upper())
         except ValueError:
             return None
         return Address(country=country)

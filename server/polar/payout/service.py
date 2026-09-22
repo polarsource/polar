@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import uuid
 from collections.abc import AsyncGenerator, Sequence
 from typing import Any, cast
@@ -14,6 +15,7 @@ from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.integrations.linear.client import linear as linear_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
@@ -510,6 +512,43 @@ class PayoutService:
                     current_payout_account_id=str(organization.payout_account_id),
                 )
                 return await self.cancel(session, payout)
+
+        # Validate the payout amount matches the sum of concerned transactions.
+        # This is a compliance check to make sure we transfer the exact amount we expect to, and not more or less.
+        (
+            transaction_sum,
+            transaction_sum_currency,
+        ) = await payout_transaction_repository.get_paid_transactions_sum(
+            transaction.id
+        )
+        if (
+            transaction_sum != payout.amount
+            or transaction_sum_currency != payout.currency
+        ):
+            if (
+                settings.LINEAR_TEAM_ID is None
+                or settings.LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID is None
+            ):
+                log.warning(
+                    "payout.transfer.amount_mismatch",
+                    payout_id=str(payout.id),
+                    payout_amount=payout.amount,
+                    payout_currency=payout.currency,
+                    transaction_sum=transaction_sum,
+                    transaction_sum_currency=transaction_sum_currency,
+                )
+            else:
+                await linear_service.create_issue_from_template(
+                    teamId=settings.LINEAR_TEAM_ID,
+                    templateId=settings.LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID,
+                    description=inspect.cleandoc(f"""
+                        * Payout ID: {payout.id}
+                        * Payout amount: {format_currency(payout.amount, payout.currency)}
+                        * Transaction ID: {transaction.id}
+                        * Sum of paid transactions: {format_currency(transaction_sum, transaction_sum_currency or payout.currency)}
+                    """),
+                )
+            return payout
 
         if payout.processor == PayoutAccountType.stripe:
             return await self.transfer_stripe(session, payout)

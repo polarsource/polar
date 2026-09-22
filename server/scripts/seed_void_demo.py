@@ -57,11 +57,24 @@ from polar.void.event.service import event as event_service
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.balance import step
-from polar.void.metric.definitions import REDUCERS
 from polar.void.metric.schemas import TimeInterval
 from polar.void.product.service import product as product_service
+from polar.void.reducer.aggregation import (
+    Aggregation,
+    CountAggregation,
+    DerivedAggregation,
+    PropertyAggregation,
+)
 from polar.void.reducer.buckets import BUCKET_SIZE, bucket_start
+from polar.void.reducer.filter import (
+    Filter,
+    FilterClause,
+    FilterConjunction,
+    FilterOperator,
+)
+from polar.void.reducer.map import EventMap
 from polar.void.reducer.repository import ReducerRepository
+from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import derived_bucket_rows, event_bucket_rows
 from polar.void.scenario.schemas import ScenarioCreate, ScenarioPatch
 from polar.void.scenario.service import scenario as scenario_service
@@ -240,6 +253,192 @@ def demo_customers(count: int, until: datetime) -> list[CustomerSeed]:
 
 
 DATASET = "void-demo-polar-metrics"
+
+
+@dataclass(frozen=True)
+class MetricDefinition:
+    reducer: ReducerCreate
+    cumulative: bool = False
+
+
+def _event(
+    slug: str,
+    name: SystemEvent,
+    aggregation: Aggregation,
+    *,
+    mapping: EventMap | None = None,
+    **filters: str,
+) -> ReducerCreate:
+    return ReducerCreate(
+        slug=slug,
+        filter=Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property=key, operator=FilterOperator.eq, value=value)
+                for key, value in {"name": name, **filters}.items()
+            ],
+        ),
+        aggregation=aggregation,
+        map=mapping,
+    )
+
+
+def _derive(
+    slug: str, inputs: dict[str, ReducerCreate], expression: str
+) -> ReducerCreate:
+    return ReducerCreate(
+        slug=slug,
+        aggregation=DerivedAggregation(
+            inputs={name: reducer.slug for name, reducer in inputs.items()},
+            expression=expression,
+        ),
+    )
+
+
+_ORDERS = _event("orders", SystemEvent.order_paid, CountAggregation())
+_ONE_TIME_PRODUCTS = _event(
+    "one_time_products",
+    SystemEvent.order_paid,
+    CountAggregation(),
+    billing_type="one_time",
+)
+_NEW_SUBSCRIPTIONS = _event(
+    "new_subscriptions", SystemEvent.subscription_created, CountAggregation()
+)
+_ORDER_REVENUE = _event(
+    "polar_order_revenue",
+    SystemEvent.balance_order,
+    PropertyAggregation(func="sum", property="net_amount"),
+    currency="usd",
+    presentment_currency="usd",
+)
+_CREDIT_REVENUE = _event(
+    "polar_credit_revenue",
+    SystemEvent.balance_credit_order,
+    PropertyAggregation(func="sum", property="amount"),
+    currency="usd",
+)
+_ORDER_NET_REVENUE = _event(
+    "polar_order_net_revenue",
+    SystemEvent.balance_order,
+    PropertyAggregation(func="sum", property="value"),
+    mapping={"value": "$net_amount - $fee"},
+    currency="usd",
+    presentment_currency="usd",
+)
+_CREDIT_NET_REVENUE = _event(
+    "polar_credit_net_revenue",
+    SystemEvent.balance_credit_order,
+    PropertyAggregation(func="sum", property="value"),
+    mapping={"value": "$amount - $fee"},
+    currency="usd",
+)
+_ADJUSTMENTS = {
+    key: _event(
+        slug,
+        event,
+        PropertyAggregation(func="sum", property="value"),
+        mapping={"value": "$amount - $fee"},
+        currency="usd",
+        presentment_currency="usd",
+    )
+    for key, slug, event in (
+        ("refunds", "polar_refund_adjustments", SystemEvent.balance_refund),
+        (
+            "refundReversals",
+            "polar_refund_reversals",
+            SystemEvent.balance_refund_reversal,
+        ),
+        ("disputes", "polar_dispute_adjustments", SystemEvent.balance_dispute),
+        (
+            "disputeReversals",
+            "polar_dispute_reversals",
+            SystemEvent.balance_dispute_reversal,
+        ),
+    )
+}
+_REVENUE_INPUTS = {"paid": _ORDER_REVENUE, "credit": _CREDIT_REVENUE}
+_NET_REVENUE_INPUTS = {
+    "paid": _ORDER_NET_REVENUE,
+    "credit": _CREDIT_NET_REVENUE,
+    **_ADJUSTMENTS,
+}
+_NET_EXPRESSION = (
+    "$paid + $credit + $refunds + $refundReversals + $disputes + $disputeReversals"
+)
+_REVENUE = _derive("revenue", _REVENUE_INPUTS, "$paid + $credit")
+_NET_REVENUE = _derive("net_revenue", _NET_REVENUE_INPUTS, _NET_EXPRESSION)
+_CANCELED_SUBSCRIPTIONS = _event(
+    "canceled_subscriptions", SystemEvent.subscription_canceled, CountAggregation()
+)
+_CANCELLATION_REASONS = {
+    reason: _event(
+        f"canceled_subscriptions_{reason}",
+        SystemEvent.subscription_canceled,
+        CountAggregation(),
+        customer_cancellation_reason=reason,
+    )
+    for reason in (
+        "customer_service",
+        "low_quality",
+        "missing_features",
+        "switched_service",
+        "too_complex",
+        "too_expensive",
+        "unused",
+    )
+}
+
+METRICS: dict[str, MetricDefinition] = {
+    "orders": MetricDefinition(_ORDERS),
+    "one_time_products": MetricDefinition(_ONE_TIME_PRODUCTS),
+    "new_subscriptions": MetricDefinition(_NEW_SUBSCRIPTIONS),
+    "revenue": MetricDefinition(_REVENUE),
+    "cumulative_revenue": MetricDefinition(_REVENUE, cumulative=True),
+    "net_revenue": MetricDefinition(_NET_REVENUE),
+    "net_cumulative_revenue": MetricDefinition(_NET_REVENUE, cumulative=True),
+    "average_order_value": MetricDefinition(
+        _derive(
+            "average_order_value",
+            {**_REVENUE_INPUTS, "orders": _ORDERS},
+            "($paid + $credit) / $orders",
+        )
+    ),
+    "net_average_order_value": MetricDefinition(
+        _derive(
+            "net_average_order_value",
+            {**_NET_REVENUE_INPUTS, "orders": _ORDERS},
+            f"({_NET_EXPRESSION}) / $orders",
+        )
+    ),
+    "canceled_subscriptions": MetricDefinition(_CANCELED_SUBSCRIPTIONS),
+    **{
+        reducer.slug: MetricDefinition(reducer)
+        for reducer in _CANCELLATION_REASONS.values()
+    },
+    "canceled_subscriptions_other": MetricDefinition(
+        _derive(
+            "canceled_subscriptions_other",
+            {"total": _CANCELED_SUBSCRIPTIONS, **_CANCELLATION_REASONS},
+            "$total" + "".join(f" - ${reason}" for reason in _CANCELLATION_REASONS),
+        )
+    ),
+}
+
+# Base inputs precede derived reducers so the seed can register them in order.
+REDUCERS: dict[str, ReducerCreate] = {
+    reducer.slug: reducer
+    for reducer in (
+        _ORDERS,
+        _ONE_TIME_PRODUCTS,
+        _NEW_SUBSCRIPTIONS,
+        *_REVENUE_INPUTS.values(),
+        *_NET_REVENUE_INPUTS.values(),
+        _CANCELED_SUBSCRIPTIONS,
+        *_CANCELLATION_REASONS.values(),
+        *(metric.reducer for metric in METRICS.values()),
+    )
+}
 
 
 def metric_reducers() -> list[dict[str, Any]]:

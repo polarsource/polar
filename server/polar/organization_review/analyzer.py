@@ -186,7 +186,7 @@ product generates images or video, or starts that generation, DENY — the agenc
 does not change that.
 **Lesson**: Website-to-Polar mismatch is only a red flag when the Polar products themselves \
 are prohibited. A design agency selling Figma templates, or a marketing agency selling a \
-text SaaS tool, is fine. Image and video generation is not.
+text SaaS tool, is fine.
 
 ### Example 3: Space Rental Marketplace → DENY
 **Business**: Online marketplace connecting property owners with creators for short-term \
@@ -251,8 +251,7 @@ prohibited.
 **Lesson**: A tool that CAN be used for circumvention is not the same as a tool DESIGNED \
 for circumvention. Evaluate the tool's primary function, not hypothetical misuse scenarios. \
 Text rewriters are not prohibited on that basis. VPN, VPS, and VDS products are a \
-closer-review category, not an automatic approve. Image and video generation is a hard \
-deny and is not this case.
+closer-review category, not an automatic approve.
 
 ### Example 8: Testimonial Collection SaaS → APPROVE
 **Business**: SaaS platform for collecting, managing, and displaying customer testimonials \
@@ -348,15 +347,12 @@ for the user's own brand. Subscription and credit-based pricing.
 **Agent concern**: "Marketing automation" or "bulk content generation" could overlap with \
 spam/unsolicited outreach restrictions.
 **Correct verdict**: APPROVE. The tool generates text for the USER'S OWN accounts \
-and channels — it does not send unsolicited messages to third parties, and it does not \
-generate images or video. The spam/outreach prohibition targets tools that send mass \
-emails, DMs, or messages to people who did not opt in. Text for the user's own marketing \
-is standard SaaS. If the same product generates images or video, or starts that \
-generation, DENY.
-**Lesson**: "Text for own channels" ≠ "spam/unsolicited outreach," and it is also not \
-image or video generation. The outreach distinction is WHO receives the content: the \
-user's own audience (fine) vs. unsolicited recipients (prohibited). The generation \
-distinction is the medium: text is fine; image and video generation is a hard deny.
+and channels — it does not send unsolicited messages to third parties. The spam/outreach \
+prohibition targets tools that send mass emails, DMs, or messages to people who did not \
+opt in. Text for the user's own marketing is standard SaaS.
+**Lesson**: "Text for own channels" ≠ "spam/unsolicited outreach." The key \
+distinction is WHO receives the content: the user's own audience (fine) vs. unsolicited \
+recipients (prohibited).
 
 ### Example 15: Chat Mockup / Message Generator Tool → DENY borderline, APPROVE
 **Business**: SaaS that generates realistic-looking chat screenshots for marketing, \

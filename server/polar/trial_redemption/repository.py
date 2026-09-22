@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import ColumnExpressionArgument, func, or_, select
 
+from polar.kit.pii import hash_pii
 from polar.kit.repository import RepositoryBase
 from polar.models import Customer, TrialRedemption
 
@@ -30,7 +31,13 @@ class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
 
         if customer_email is not None:
             clauses.append(
-                func.lower(TrialRedemption.customer_email) == customer_email.lower()
+                or_(
+                    TrialRedemption.customer_email_hash == hash_pii(customer_email),
+                    # Rows written before the hashing backfill hold the address
+                    # itself. Drop this once the backfill has run everywhere.
+                    func.lower(TrialRedemption.customer_email_hash)
+                    == customer_email.lower(),
+                )
             )
 
         if payment_method_fingerprint is not None:

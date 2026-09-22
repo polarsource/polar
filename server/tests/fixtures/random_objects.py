@@ -2692,12 +2692,12 @@ async def create_trial_redemption(
     save_fixture: SaveFixture,
     *,
     customer: Customer,
-    customer_email: str,
+    customer_email_hash: str,
     product: Product | None = None,
     payment_method_fingerprint: str | None = None,
 ) -> TrialRedemption:
     trial_redemption = TrialRedemption(
-        customer_email=customer_email,
+        customer_email_hash=customer_email_hash,
         payment_method_fingerprint=payment_method_fingerprint,
         customer=customer,
         product=product,

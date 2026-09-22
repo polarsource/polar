@@ -207,3 +207,6 @@ class SlackClient:
 
     async def aclose(self) -> None:
         await self.client.aclose()
+
+
+client = SlackClient()

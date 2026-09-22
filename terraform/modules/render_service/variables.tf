@@ -134,6 +134,10 @@ variable "environment_groups" {
       POLAR_USER_SESSION_COOKIE_KEY              = optional(string)
       POLAR_AUTH_COOKIE_KEY                      = optional(string)
 
+      POLAR_LINEAR_API_KEY                            = optional(string)
+      POLAR_LINEAR_TEAM_ID                            = optional(string)
+      POLAR_LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID = optional(string)
+
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
     })
     backend_production = object({

@@ -809,3 +809,27 @@ resource "tfe_variable" "ec2_tailscale_oauth_client_secret_sandbox" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "linear_api_key_sandbox" {
+  key             = "linear_api_key"
+  category        = "terraform"
+  description     = "Linear API key for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "linear_team_id_sandbox" {
+  key             = "linear_team_id"
+  category        = "terraform"
+  description     = "Linear team ID for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "linear_payout_amount_mismatch_template_id_sandbox" {
+  key             = "linear_payout_amount_mismatch_template_id"
+  category        = "terraform"
+  description     = "Linear payout amount mismatch issue template ID for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+}

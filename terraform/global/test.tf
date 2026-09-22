@@ -811,3 +811,27 @@ resource "tfe_variable" "ec2_tailscale_oauth_client_secret_test" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "linear_api_key_test" {
+  key             = "linear_api_key"
+  category        = "terraform"
+  description     = "Linear API key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "linear_team_id_test" {
+  key             = "linear_team_id"
+  category        = "terraform"
+  description     = "Linear team ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "linear_payout_amount_mismatch_template_id_test" {
+  key             = "linear_payout_amount_mismatch_template_id"
+  category        = "terraform"
+  description     = "Linear payout amount mismatch issue template ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}

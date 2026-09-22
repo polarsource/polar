@@ -53,6 +53,8 @@ variable "backend_config" {
     tax_record_processor                             = optional(string, "stripe")
     customer_portal_url_overrides                    = optional(string, "{}")
     plain_default_tier_external_id                   = optional(string, "")
+    linear_team_id                                   = optional(string, "")
+    linear_payout_amount_mismatch_template_id        = optional(string, "")
     merchant_migration_destination_stripe_account_id = optional(string, "")
   })
 }
@@ -79,6 +81,7 @@ variable "backend_secrets" {
     chargeback_stop_webhook_secret = optional(string, "")
     numeral_api_key                = optional(string, "")
     firecrawl_api_key              = optional(string, "")
+    linear_api_key                 = optional(string, "")
     turnstile_secret               = string
   })
   sensitive = true

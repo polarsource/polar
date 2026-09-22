@@ -1,5 +1,8 @@
 locals {
   backend_config = {
+    linear_team_id                            = var.linear_team_id
+    linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
+
     base_url                             = "https://api.polar.sh"
     backoffice_host                      = local.private_backoffice_hostname
     checkout_link_host                   = "buy.polar.sh"
@@ -64,6 +67,7 @@ locals {
   }
 
   backend_secrets = {
+    linear_api_key                 = var.linear_api_key
     stripe_publishable_key         = var.stripe_publishable_key_production
     discord_bot_token              = var.backend_discord_bot_token_production
     discord_client_id              = var.backend_discord_client_id_production

@@ -1,5 +1,6 @@
 'use client'
 
+import { PolarMark } from '@/components/PolarMark'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@polar-sh/orbit/Button'
 import { ArrowLeft, ArrowRight, Pause, Play } from 'lucide-react'
@@ -91,8 +92,9 @@ export const Lesson = ({
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
           >
+            <PolarMark size={16} />
             Chapters
           </Link>
           <span className="text-border">/</span>

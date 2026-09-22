@@ -1,3 +1,4 @@
+import { PolarMark } from '@/components/PolarMark'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { lessons, planned } from '@/content'
 import { ArrowRight } from 'lucide-react'
@@ -8,7 +9,8 @@ export default function Home() {
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-6 py-16">
       <header className="flex items-start justify-between">
         <div className="flex flex-col gap-2">
-          <p className="text-muted-foreground font-mono text-xs tracking-wide uppercase">
+          <p className="text-muted-foreground flex items-center gap-2 font-mono text-xs tracking-wide uppercase">
+            <PolarMark size={18} />
             Void Atlas
           </p>
           <h1 className="text-xl font-medium">

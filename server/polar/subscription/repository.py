@@ -50,7 +50,7 @@ from polar.models import (
     SubscriptionUpdate,
 )
 from polar.models.customer_seat import SeatStatus
-from polar.models.email_log import EmailLog, EmailLogStatus
+from polar.models.email_log import EmailLog
 from polar.models.subscription import SubscriptionStatus
 from polar.product.guard import is_metered_price
 
@@ -455,7 +455,6 @@ class SubscriptionRepository(
             select(EmailLog.id)
             .where(
                 EmailLog.email_template == "subscription_renewal_reminder",
-                EmailLog.status == EmailLogStatus.sent,
                 EmailLog.deduplication_key
                 == subscription_renewal_reminder_key_sql(
                     Subscription.id, Subscription.current_period_end
@@ -503,7 +502,6 @@ class SubscriptionRepository(
             select(EmailLog.id)
             .where(
                 EmailLog.email_template == "subscription_trial_conversion_reminder",
-                EmailLog.status == EmailLogStatus.sent,
                 EmailLog.deduplication_key
                 == subscription_trial_conversion_reminder_key_sql(
                     Subscription.id, Subscription.trial_end

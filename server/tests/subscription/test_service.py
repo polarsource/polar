@@ -7042,6 +7042,7 @@ class TestUpdateTrial:
         mocker: MockerFixture,
         product: Product,
         customer: Customer,
+        webhook_service_send_mock: AsyncMock,
     ) -> None:
         mocker.patch.object(
             subscription_service,
@@ -7069,6 +7070,9 @@ class TestUpdateTrial:
         assert subscription.status == SubscriptionStatus.trialing
         assert subscription.trial_end == original_trial_end
         assert subscription.current_period_end == original_period_end
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_cycled
+        )
 
     async def test_trialing_subscription_ending_now(
         self,

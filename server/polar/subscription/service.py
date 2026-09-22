@@ -1283,11 +1283,6 @@ class SubscriptionService:
         reset_at = min(cycle_at, utc_now())
         await self.reset_meters(session, subscription, reset_at=reset_at)
 
-        if not revoke:
-            await self._send_webhook(
-                session, subscription, WebhookEventType.subscription_cycled
-            )
-
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
         elif previous_status == SubscriptionStatus.trialing:
@@ -1305,6 +1300,11 @@ class SubscriptionService:
                 subscription.id,
                 billing_reason,
                 cutoff=cycle_at.isoformat(),
+            )
+
+        if not revoke:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_cycled
             )
 
         return subscription

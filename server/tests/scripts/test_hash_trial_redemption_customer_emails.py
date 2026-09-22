@@ -25,7 +25,7 @@ class TestHashBatch:
     ) -> None:
         customer = await create_customer(save_fixture, organization=organization)
         await create_trial_redemption(
-            save_fixture, customer=customer, customer_email="Customer@example.com"
+            save_fixture, customer=customer, customer_email="John.Doe+1@googlemail.com"
         )
 
         after, count = await hash_batch(
@@ -34,39 +34,7 @@ class TestHashBatch:
 
         assert after is not None
         assert count == 1
-        assert await _customer_emails(session) == [hash_pii("customer@example.com")]
-
-    async def test_normalizes_before_hashing(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        customer = await create_customer(save_fixture, organization=organization)
-        await create_trial_redemption(
-            save_fixture,
-            customer=customer,
-            customer_email="John.Doe+1@googlemail.com",
-        )
-
-        await hash_batch(session, after=None, batch_size=100, execute=True)
-
         assert await _customer_emails(session) == [hash_pii("johndoe@gmail.com")]
-
-    async def test_hashes_an_unparseable_address(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        customer = await create_customer(save_fixture, organization=organization)
-        await create_trial_redemption(
-            save_fixture, customer=customer, customer_email="Not@An@Address"
-        )
-
-        await hash_batch(session, after=None, batch_size=100, execute=True)
-
-        assert await _customer_emails(session) == [hash_pii("not@an@address")]
 
     async def test_skips_the_hashes(
         self,

@@ -10,9 +10,8 @@ address itself for rows written before this script ran.
 Run this right after deploying the hashing code, then drop that fallback.
 
 Addresses are normalized before hashing, the way the service normalizes what it
-writes and what it looks up. They already are, by the service on write and by
-the re-normalization backfill for older rows, but a digest can't be normalized
-afterwards — this is the last point where the rules can be applied at all.
+writes and what it looks up. They already are — but a digest can't be
+normalized afterwards, so this is the last point where the rules can be applied.
 
 Rows whose value holds no `@` are already hashed and are skipped, which makes
 the script resumable and safe to re-run.
@@ -37,7 +36,7 @@ from sqlalchemy import func, select, update
 
 from polar.config import DEFAULT_PII_SCRUBBING_SALT, Environment, settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.kit.email import EmailNotValidError, normalize_email
+from polar.kit.email import normalize_email
 from polar.kit.pii import hash_pii
 from polar.models import TrialRedemption
 from polar.postgres import create_async_engine
@@ -51,21 +50,6 @@ configure_script_console_logging()
 
 # An address always carries an "@"; a hexadecimal digest never does.
 PLAINTEXT_CLAUSE = TrialRedemption.customer_email.like("%@%")
-
-
-def _hash_email(trial_redemption_id: UUID, email: str) -> str:
-    """Hash the mailbox the address delivers to, the key a lookup hashes."""
-    try:
-        normalized = normalize_email(email)
-    except EmailNotValidError:
-        # Already unmatchable, since a lookup compares normalized addresses.
-        # Hashing it anyway is what gets the address out of the table.
-        log.warning(
-            "hash_trial_redemption_customer_emails.unparseable_email",
-            trial_redemption_id=str(trial_redemption_id),
-        )
-        normalized = email.lower()
-    return hash_pii(normalized)
 
 
 async def hash_batch(
@@ -91,7 +75,7 @@ async def hash_batch(
             [
                 {
                     "id": trial_redemption_id,
-                    "customer_email": _hash_email(trial_redemption_id, email),
+                    "customer_email": hash_pii(normalize_email(email)),
                 }
                 for trial_redemption_id, email in batch
             ],

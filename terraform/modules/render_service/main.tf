@@ -425,3 +425,12 @@ resource "cloudflare_dns_record" "resend_spf_txt" {
   content = var.resend_domain.spf_policy
   ttl     = 1
 }
+
+resource "cloudflare_dns_record" "resend_mail" {
+  zone_id = var.resend_domain.zone_id
+  name    = "mail.${var.email_from_domain}"
+  type    = "CNAME"
+  content = "send.forge.rmta.net"
+  proxied = false
+  ttl     = 1
+}

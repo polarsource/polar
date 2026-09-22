@@ -1,5 +1,4 @@
-import { ParsedMetricPeriod, ParsedMetricsResponse } from '@/hooks/queries'
-import { schemas } from '@polar-sh/client'
+import { ParsedMetricsResponse } from '@/hooks/queries'
 import { subDays } from 'date-fns'
 import {
   CHILD_NAMES,
@@ -17,6 +16,7 @@ import {
   usageSeriesFor,
 } from './generators'
 import { VoidReducerMetric } from './identityLive'
+import { overviewResponse, VoidOverviewPoint } from './overview'
 import {
   VoidActivityMix,
   VoidActivityShare,
@@ -43,65 +43,55 @@ const startOfUtcDay = (date: Date) =>
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
   )
 
-const METRICS: schemas['Metrics'] = {
-  revenue: { slug: 'revenue', display_name: 'Revenue', type: 'currency' },
-  orders: { slug: 'orders', display_name: 'Orders', type: 'scalar' },
-  monthly_recurring_revenue: {
-    slug: 'monthly_recurring_revenue',
-    display_name: 'Monthly Recurring Revenue',
-    type: 'currency',
-  },
-  active_subscriptions: {
-    slug: 'active_subscriptions',
-    display_name: 'Active Subscriptions',
-    type: 'scalar',
-  },
-  churn_rate: {
-    slug: 'churn_rate',
-    display_name: 'Churn Rate',
-    type: 'percentage',
-  },
-}
+const activeOn = (identity: VoidIdentity, day: number) =>
+  (identity.cadence[day] ?? 0) > 0 ||
+  Object.values(identity.usageSeries).some((series) => (series[day] ?? 0) > 0)
 
-const buildMetrics = (
+const buildOverview = (
   end: Date,
   random: () => number,
   scale: number,
+  identities: VoidIdentity[],
+  subscriptions: VoidSubscription[],
 ): ParsedMetricsResponse => {
-  let active = Math.round(118 * scale)
-  const periods = Array.from({ length: DAYS }, (_, index) => {
-    const timestamp = startOfUtcDay(subDays(end, DAYS - 1 - index))
-    const weekend = [0, 6].includes(timestamp.getUTCDay())
-    const orders = Math.round((weekend ? 9 : 17) * scale + random() * 8)
-    const revenue = Math.round(orders * (5_800 + random() * 3_200))
-    active += Math.round(random() * 3) - (random() > 0.7 ? 1 : 0)
+  const days = Array.from({ length: DAYS }, (_, index) =>
+    startOfUtcDay(subDays(end, DAYS - 1 - index)),
+  )
+  const billedTotal = METERS.reduce((sum, meter) => sum + meter.billed, 0)
+  const billed = dailySeriesFor(Math.round(billedTotal * scale), random)
+  const finalSubscriptions = PLANS.reduce((sum, plan) => sum + plan.active, 0)
+  const finalMrr = PLANS.reduce((sum, plan) => sum + plan.mrr, 0)
+  const growth = (day: number) =>
+    scale * (0.9 + (0.1 * day) / (DAYS - 1)) - (random() > 0.8 ? 0.01 : 0)
+  const points: VoidOverviewPoint[] = days.map((timestamp, day) => {
+    const factor = growth(day)
+    const isCurrent = scale === 1
     return {
       timestamp,
-      revenue,
-      orders,
-      monthly_recurring_revenue: active * 4_900,
-      active_subscriptions: active,
-      churn_rate: Number((0.008 + random() * 0.012).toFixed(4)),
+      billed: billed[day],
+      activeIdentities: isCurrent
+        ? identities.filter((identity) => activeOn(identity, day)).length
+        : Math.round(12 * scale + random() * 6),
+      mrr: Math.round(finalMrr * factor),
+      activeSubscriptions: Math.round(finalSubscriptions * factor),
+      newSubscriptions: isCurrent
+        ? subscriptions.filter(
+            (subscription) =>
+              startOfUtcDay(new Date(subscription.started_at)).getTime() ===
+              timestamp.getTime(),
+          ).length
+        : random() > 0.75
+          ? 1
+          : 0,
     }
   })
-  const sum = (key: 'revenue' | 'orders') =>
-    periods.reduce((total, period) => total + period[key], 0)
-  const last = periods[periods.length - 1]
-  return {
-    periods: periods as unknown as ParsedMetricPeriod[],
-    totals: {
-      revenue: sum('revenue'),
-      orders: sum('orders'),
-      monthly_recurring_revenue: last.monthly_recurring_revenue,
-      active_subscriptions: last.active_subscriptions,
-      churn_rate: Number(
-        (
-          periods.reduce((total, period) => total + period.churn_rate, 0) / DAYS
-        ).toFixed(4),
-      ),
-    },
-    metrics: METRICS,
-  }
+  const distinct =
+    scale === 1
+      ? identities.filter((identity) =>
+          days.some((_, day) => activeOn(identity, day)),
+        ).length
+      : Math.round(18 * scale)
+  return overviewResponse(points, distinct)
 }
 
 const buildIdentities = (end: Date, random: () => number): VoidIdentity[] =>
@@ -242,10 +232,16 @@ const buildActivities = (
 export const getVoidData = (): VoidData => {
   const end = new Date()
   const random = seeded(20260910)
-  const metrics = buildMetrics(end, random, 1)
-  const previousMetrics = buildMetrics(subDays(end, DAYS), random, 0.86)
   const identities = buildIdentities(end, random)
   const subscriptions = buildSubscriptions(identities, end)
+  const metrics = buildOverview(end, random, 1, identities, subscriptions)
+  const previousMetrics = buildOverview(
+    subDays(end, DAYS),
+    random,
+    0.86,
+    identities,
+    subscriptions,
+  )
   const events: VoidEvent[] = EVENT_NAMES.map(([name, source], index) => ({
     id: `evt_${index + 1}`,
     name,

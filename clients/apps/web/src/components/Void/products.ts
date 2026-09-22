@@ -52,6 +52,23 @@ export const formatProductPrice = (price: VoidPrice): string => {
   return `${amount} / ${period}`
 }
 
+/** A recurring price normalised to one month, in cents; one-time prices are 0. */
+export const monthlyCents = (price: VoidPrice): number => {
+  if (price.type !== 'recurring') return 0
+  const cents = priceCents(price.amount)
+  const months =
+    price.interval === 'year'
+      ? 12 * price.interval_count
+      : price.interval === 'month'
+        ? price.interval_count
+        : price.interval === 'week'
+          ? price.interval_count / 4.345
+          : price.interval === 'day'
+            ? price.interval_count / 30.437
+            : 1
+  return Math.round(cents / months)
+}
+
 export const priceKind = (price: VoidPrice): 'recurring' | 'one_time' =>
   price.type
 

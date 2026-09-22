@@ -100,3 +100,26 @@ export interface VoidData {
   entitlements: VoidEntitlement[]
   activities: Record<string, VoidActivityMix>
 }
+
+export interface VoidHomeIdentity {
+  id: string
+  parent_id: string | null
+  name: string
+  kind: string
+  created_at: string
+  /** Rolled-up 30-day spend, in cents. */
+  spend: number
+  orders?: number
+}
+
+/** What the Home page renders; fixtures and the live API both produce it. */
+export interface VoidHomeData {
+  metrics: ParsedMetricsResponse | null
+  previousMetrics: ParsedMetricsResponse | null
+  identities: VoidHomeIdentity[]
+  meters: VoidMeter[]
+  plans: VoidPlan[]
+  deployments: VoidDeployment[]
+  events: VoidEvent[]
+  eventCount: number
+}

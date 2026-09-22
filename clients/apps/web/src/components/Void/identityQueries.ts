@@ -136,7 +136,10 @@ export const useVoidIdentityActivities = (
     enabled: Boolean(externalId),
   })
 
-export const useVoidIdentityUsage = (organizationId: string) =>
+export const useVoidIdentityUsage = (
+  organizationId: string,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: voidKeys.identityUsage(organizationId),
     queryFn: async (): Promise<VoidIdentityUsageMaps> => {
@@ -183,4 +186,5 @@ export const useVoidIdentityUsage = (organizationId: string) =>
       return { ...maps, spend }
     },
     retry: false,
+    ...options,
   })

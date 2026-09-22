@@ -8,7 +8,7 @@ import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import Link from 'next/link'
-import { VoidData } from './types'
+import { VoidHomeData } from './types'
 
 const cellClassName =
   'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200'
@@ -24,7 +24,7 @@ export const VoidWidgets = ({
   data,
   base,
 }: {
-  data: VoidData
+  data: VoidHomeData
   base: string
 }) => {
   const activePlans = data.plans.reduce((sum, plan) => sum + plan.active, 0)

@@ -12,7 +12,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Avatar, Grid } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { subDays } from 'date-fns'
-import { VoidData, VoidIdentity } from './types'
+import { VoidHomeData, VoidHomeIdentity } from './types'
 import { describeKinds, topSpenders } from './identities'
 
 const LIMIT = 5
@@ -23,8 +23,8 @@ const plural = (count: number, noun: string) =>
   `${count} ${noun}${count === 1 ? '' : 's'}`
 
 const describeChildren = (
-  identity: VoidIdentity,
-  identities: VoidIdentity[],
+  identity: VoidHomeIdentity,
+  identities: VoidHomeIdentity[],
 ) => {
   const children = identities.filter(
     (candidate) => candidate.parent_id === identity.id,
@@ -42,7 +42,7 @@ export const VoidToplists = ({
   data,
   base,
 }: {
-  data: VoidData
+  data: VoidHomeData
   base: string
 }) => {
   const since = subDays(new Date(), 30)
@@ -82,7 +82,11 @@ export const VoidToplists = ({
               />
               <ToplistValue
                 value={usd(identity.spend)}
-                caption={plural(identity.orders, 'order')}
+                caption={
+                  identity.orders === undefined
+                    ? undefined
+                    : plural(identity.orders, 'order')
+                }
               />
             </ToplistItem>
           ))}

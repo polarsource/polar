@@ -2,17 +2,9 @@
 
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import { ParsedMetricsResponse } from '@/hooks/queries'
-import { schemas } from '@polar-sh/client'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-const METRIC_KEYS: (keyof schemas['Metrics'])[] = [
-  'revenue',
-  'orders',
-  'monthly_recurring_revenue',
-  'active_subscriptions',
-  'churn_rate',
-]
+import { OVERVIEW_KEYS } from './overview'
 
 interface VoidMetricGridProps {
   data: ParsedMetricsResponse
@@ -28,7 +20,7 @@ export const VoidMetricGrid = ({ data, previousData }: VoidMetricGridProps) => {
   return (
     <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
       <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-2 2xl:grid-cols-3">
-        {METRIC_KEYS.map((metricKey, index) => (
+        {OVERVIEW_KEYS.map((metricKey, index) => (
           <MetricChartBox
             key={metricKey}
             data={data}

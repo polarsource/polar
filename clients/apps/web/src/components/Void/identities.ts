@@ -199,10 +199,12 @@ export const describeKinds = (identities: { kind: string }[]): string => {
     .join(', ')
 }
 
-export const rootIdentities = (identities: VoidIdentity[]) =>
+export const rootIdentities = <T extends IdentityRef>(identities: T[]) =>
   identities.filter((identity) => identity.parent_id === null)
 
-export const topSpenders = (identities: VoidIdentity[]) =>
+export const topSpenders = <T extends IdentityRef & { spend: number }>(
+  identities: T[],
+) =>
   rootIdentities(identities)
     .filter((identity) => identity.spend > 0)
     .sort((a, b) => b.spend - a.spend)

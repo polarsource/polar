@@ -1110,6 +1110,7 @@ class TestListRecords:
             save_fixture,
             organization=organization,
             email="shared@example.com",
+            stripe_customer_id="cus_reused",
         )
         await save_fixture(
             MerchantMigrationRecord(

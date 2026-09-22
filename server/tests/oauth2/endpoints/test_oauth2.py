@@ -1803,6 +1803,9 @@ class TestOAuth2Token:
             "polar.kit.crypto.get_hash_secrets",
             return_value=HashSecrets(secrets, "k1", "legacy"),
         )
+        # The fixture hashed the client secret before the patch.
+        await web_grant_oauth2_client.set_client_secret("polar_cs_123")
+        await save_fixture(web_grant_oauth2_client)
         token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
         user_session = UserSession(
             token=token_hash,

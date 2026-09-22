@@ -102,7 +102,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             help="Clear Postgres and Tinybird, then load fresh seeds including the Void demo.",
         ),
     ) -> None:
-        """Load sample data (users, organizations, products) into the database."""
+        """Load sample data and the Void demo into the database."""
         console.print()
 
         if reset and new_org:
@@ -164,6 +164,19 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         _print_info("This usually takes a few minutes.")
         with step_spinner("Seeding database..."):
             result = run_command(cmd, cwd=SERVER_DIR, capture=True)
+
+        if not new_org and result and result.returncode in (0, 2):
+            with step_spinner("Loading Void demo..."):
+                demo_result = run_command(
+                    ["uv", "run", "task", "void_seed_demo"],
+                    cwd=SERVER_DIR,
+                    capture=True,
+                )
+            _print_command_output(demo_result)
+            if not demo_result or demo_result.returncode != 0:
+                console.print("\n[red]Loading Void demo failed.[/red]\n")
+                raise typer.Exit(1)
+            step_status(True, "Void demo loaded")
 
         if result and result.returncode == 2:
             console.print()

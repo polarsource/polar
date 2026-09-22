@@ -1,7 +1,9 @@
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { CATALOG_READ_DURATION } from '../catalogReadCopy'
-import { CATALOG_EMPTY_COPY, ReviewCatalogEmptyKind } from './reviewCatalog'
+import {
+  catalogEmptyPanelCopy,
+  type ReviewCatalogEmptyKind,
+} from './reviewCatalog'
 
 interface Props {
   kind: ReviewCatalogEmptyKind
@@ -14,7 +16,7 @@ export function CatalogEmptyPanel({
   onRerunPrecheck,
   rerunning = false,
 }: Props) {
-  const { title, description } = CATALOG_EMPTY_COPY[kind]
+  const { title, description } = catalogEmptyPanelCopy(kind, rerunning)
 
   return (
     <Box
@@ -36,11 +38,6 @@ export function CatalogEmptyPanel({
         <Text variant="caption" color="muted">
           {description}
         </Text>
-        {rerunning ? (
-          <Text variant="caption" color="muted">
-            {CATALOG_READ_DURATION}
-          </Text>
-        ) : null}
       </Box>
       {onRerunPrecheck && (
         <Button

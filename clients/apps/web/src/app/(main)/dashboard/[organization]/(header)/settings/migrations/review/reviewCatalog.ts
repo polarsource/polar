@@ -1,3 +1,5 @@
+import { CATALOG_READ_DURATION } from '../catalogReadCopy'
+
 export type ReviewCatalogEmptyKind = 'no_stripe_subscriptions' | 'all_switched'
 
 export function remainingSubscriptionCount(
@@ -34,4 +36,19 @@ export const CATALOG_EMPTY_COPY: Record<
     description:
       'We found no subscriptions in Stripe that can move to Polar. If you have added some since, scan again.',
   },
+}
+
+export const CATALOG_REFRESH_COPY = {
+  title: 'Refreshing from Stripe',
+  description: `We're reading your Stripe catalog again. ${CATALOG_READ_DURATION}.`,
+} as const
+
+export function catalogEmptyPanelCopy(
+  kind: ReviewCatalogEmptyKind,
+  rerunning: boolean,
+): { title: string; description: string } {
+  if (rerunning) {
+    return CATALOG_REFRESH_COPY
+  }
+  return CATALOG_EMPTY_COPY[kind]
 }

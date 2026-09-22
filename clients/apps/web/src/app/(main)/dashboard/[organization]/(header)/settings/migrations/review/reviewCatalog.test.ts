@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { CATALOG_READ_DURATION } from '../catalogReadCopy'
 import {
+  catalogEmptyPanelCopy,
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
 } from './reviewCatalog'
@@ -23,5 +25,23 @@ describe('reviewCatalogEmptyKind', () => {
 
   it('shows the table when any subscription still needs work', () => {
     expect(reviewCatalogEmptyKind(58, 20)).toBeNull()
+  })
+})
+
+describe('catalogEmptyPanelCopy', () => {
+  it('does not claim the catalog is empty while a refresh is running', () => {
+    expect(catalogEmptyPanelCopy('no_stripe_subscriptions', true)).toEqual({
+      title: 'Refreshing from Stripe',
+      description: `We're reading your Stripe catalog again. ${CATALOG_READ_DURATION}.`,
+    })
+  })
+
+  it('keeps the settled empty result when nothing is refreshing', () => {
+    expect(catalogEmptyPanelCopy('no_stripe_subscriptions', false).title).toBe(
+      'Nothing to import',
+    )
+    expect(catalogEmptyPanelCopy('all_switched', false).title).toBe(
+      'All subscriptions already switched',
+    )
   })
 })

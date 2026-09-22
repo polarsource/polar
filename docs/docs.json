@@ -94,11 +94,17 @@
               {
                 "group": "Checkout",
                 "pages": [
-                  "features/checkout/embed",
-                  "features/checkout/embed-payment-method",
                   "features/checkout/links",
                   "features/checkout/session",
-                  "features/checkout/localization"
+                  "features/checkout/payment-methods",
+                  "features/checkout/localization",
+                  {
+                    "group": "Embeds",
+                    "pages": [
+                      "features/checkout/embed",
+                      "features/checkout/embed-payment-method"
+                    ]
+                  }
                 ]
               },
               "features/seat-based-pricing",

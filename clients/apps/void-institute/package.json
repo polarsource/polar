@@ -1,0 +1,43 @@
+{
+  "name": "void-institute",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 3005",
+    "build": "next build --turbopack",
+    "start": "next start -p 3005",
+    "format": "oxfmt ./src",
+    "format:check": "oxfmt --check ./src",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "dependencies": {
+    "@polar-sh/orbit": "workspace:*",
+    "@stylexjs/stylex": "catalog:",
+    "@void/sdk": "workspace:*",
+    "ai": "7.0.94",
+    "lucide-react": "catalog:",
+    "motion": "catalog:",
+    "next": "^16.2.6",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "shiki": "catalog:"
+  },
+  "devDependencies": {
+    "@polar-sh/typescript-config": "workspace:*",
+    "@stylexjs/babel-plugin": "catalog:",
+    "@stylexjs/postcss-plugin": "catalog:",
+    "@tailwindcss/forms": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "^24.0.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "5.9.3",
+    "vitest": "catalog:"
+  }
+}

@@ -72,6 +72,8 @@ We also maintain SDKs for the following languages:
 
 Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to know to configure your development environment.
 
+Working with an AI coding agent? [`AGENTS.md`](./AGENTS.md) is the entry point for agents: repository layout, setup, and the conventions we enforce in review.
+
 ### Contributors
 
 <a href="https://github.com/polarsource/polar/graphs/contributors">

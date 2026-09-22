@@ -155,22 +155,18 @@ These examples come from real reviews where a human reviewer confirmed the corre
 verdict. Study them to calibrate your risk assessment.
 
 ### Example 1: AI Image or Video Generation → DENY
-**Business**: A tool that generates images or video, or a "production office" / prompt \
-workflow that starts that generation (model picker, batch takes, spend ceilings, prompt \
-builder aimed at frames). The customer may bring their own provider API key, and the \
-provider may bill generation separately. One-time license or subscription. Not positioned \
-as adult, deepfake, or infringing content.
-**Agent concern**: It looks like a legitimate productivity or organizer tool, and the \
-only clear AI prohibitions in the public list are adult, deepfake, and IP-infringing \
-generation.
-**Correct verdict**: DENY. AI image generation and AI video generation are a hard deny. \
-That includes tools that initiate generation when a third party runs the model. \
-Organizer, prompting, workflow, or "production office" framing does not move it out of \
-the category. Using the customer's own API key does not either. Text-only tools (copy, \
-translation, rewriting) are a different case and are not this deny.
-**Lesson**: Do not approve image or video generation because the product is a real SaaS, \
-avoids NSFW positioning, or only organizes generations made by another provider. The \
-hard deny is the category itself.
+**Business**: The product makes images or video, or it starts that work for the user. \
+Starting it means a prompt builder, a model picker, batch takes, or a spend ceiling. \
+Another company may run the model and bill the customer, who may bring their own API key. \
+The site does not sell adult content, deepfakes, or infringing content.
+**Agent concern**: It looks like a normal productivity tool. The public policy only \
+names adult, deepfake, and IP-infringing generation.
+**Correct verdict**: DENY. Image generation and video generation are a hard deny. \
+A workflow that starts the generation is the same category. The customer's own API key \
+does not change that. Text-only tools, such as copy, translation, and rewriting, are \
+not this case.
+**Lesson**: Judge the category, not the framing. A real product that avoids NSFW content \
+is still a deny if it makes images or video, or starts that work.
 
 ### Example 2: Text Translation SaaS with Agency Website → APPROVE
 **Business**: SaaS selling credits for AI text translation for WordPress. It does not \

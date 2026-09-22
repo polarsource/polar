@@ -4,7 +4,6 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
-import { CATALOG_READ_DURATION } from '../catalogReadCopy'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
@@ -21,6 +20,7 @@ import {
   SelectionState,
 } from '../selection'
 import {
+  CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
 } from './reviewCatalog'
@@ -138,8 +138,8 @@ export function ReviewTableView({
         <Alert
           variant="info"
           loading
-          title="Refreshing from Stripe"
-          description={CATALOG_READ_DURATION}
+          title={CATALOG_REFRESH_COPY.title}
+          description={CATALOG_REFRESH_COPY.description}
         />
       )}
       {refreshError && (

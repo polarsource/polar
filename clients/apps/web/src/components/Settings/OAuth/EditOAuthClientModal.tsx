@@ -4,6 +4,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useDeleteOAuthClient,
+  useOAuth2ClientSecret,
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -63,6 +64,12 @@ export const EditOAuthClientModal = ({
   const { handleSubmit } = form
 
   const updateOAuth2Client = useUpdateOAuth2Client()
+
+  const {
+    data: clientSecret,
+    isFetching: isFetchingSecret,
+    refetch: revealSecret,
+  } = useOAuth2ClientSecret(client.client_id)
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
@@ -128,9 +135,18 @@ export const EditOAuthClientModal = ({
             <FieldName />
             <FieldClientID clientId={client.client_id} />
             {client.token_endpoint_auth_method !== 'none' &&
-              client.client_secret && (
-                <FieldClientSecret clientSecret={client.client_secret} />
-              )}
+              (clientSecret ? (
+                <FieldClientSecret clientSecret={clientSecret} />
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={isFetchingSecret}
+                  onClick={() => revealSecret()}
+                >
+                  Reveal client secret
+                </Button>
+              ))}
             <FieldClientType />
             <FieldRedirectURIs />
             <FieldScopes />

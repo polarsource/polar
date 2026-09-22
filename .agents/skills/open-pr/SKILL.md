@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Open or update a draft GitHub pull request after Polar-specific review and cubic CLI review. Use when opening a PR, including drafts, or when the user asks to open-pr, /open-pr, or $open-pr.
+description: Open or update a draft GitHub pull request after Polar-specific review and cubic CLI review. Use only when the user invokes open-pr, /open-pr, or $open-pr by name. Do not use for a plain request to open a PR, or for a host Create PR button.
 license: MIT
 metadata:
   author: polar

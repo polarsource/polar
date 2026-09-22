@@ -13,9 +13,11 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
 - Follow established conventions and good practices (SOLID, maintainable code).
 - Do not modify code unrelated to the task or issue you are working on.
 - Do not create GitHub pull requests unless the user explicitly asks. Commit and
-  push the branch as needed; leave opening the PR to the user. When you do open
-  a PR (including drafts), follow the `open-pr` skill. Do not mark it ready for
-  review unless told so.
+  push the branch as needed; leave opening the PR to the user. Open the PR the way
+  the user asked. A plain "open a PR", or the host's Create PR button, is just
+  `gh pr create`. Run the `open-pr` skill only when the user names it (`/open-pr`):
+  it runs lint, type-check, tests and two review passes, and takes several minutes.
+  Do not mark a PR ready for review unless told so.
 
 ## Architecture
 

@@ -26465,8 +26465,6 @@ export interface components {
       modified_at: string | null
       /** Client Id */
       client_id: string
-      /** Client Secret */
-      client_secret: string
       /** Client Id Issued At */
       client_id_issued_at: number
       /** Client Secret Expires At */

@@ -1,4 +1,5 @@
 from .base import Invariant, InvariantError
+from .expired_records_not_deleted import ExpiredRecordsNotDeletedInvariant
 from .external_events_unhandled import ExternalEventsUnhandledInvariant
 from .no_recent_orders import NoRecentOrdersInvariant
 from .no_recent_subscriptions import NoRecentSubscriptionsInvariant
@@ -12,6 +13,7 @@ from .subscriptions_future_period_start import SubscriptionsFuturePeriodStartInv
 from .subscriptions_locked_invariant import SubscriptionsLockedInvariant
 
 INVARIANTS: set[type[Invariant]] = {
+    ExpiredRecordsNotDeletedInvariant,
     ExternalEventsUnhandledInvariant,
     NoRecentOrdersInvariant,
     NoRecentSubscriptionsInvariant,

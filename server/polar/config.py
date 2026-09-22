@@ -255,6 +255,8 @@ class Settings(BaseSettings):
     EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
     EMAIL_LOG_RETENTION_PERIOD: timedelta = timedelta(days=660)
 
+    EXTERNAL_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
+
     TURNSTILE_SECRET: str = ""
 
     # Github App

@@ -4,6 +4,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useDeleteOAuthClient,
+  useOAuth2ClientSecret,
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -11,7 +12,7 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   FieldClientID,
@@ -63,6 +64,10 @@ export const EditOAuthClientModal = ({
   const { handleSubmit } = form
 
   const updateOAuth2Client = useUpdateOAuth2Client()
+
+  const [revealSecret, setRevealSecret] = useState(false)
+  const { data: clientSecret, isFetching: isFetchingSecret } =
+    useOAuth2ClientSecret(client.client_id, revealSecret)
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
@@ -128,9 +133,18 @@ export const EditOAuthClientModal = ({
             <FieldName />
             <FieldClientID clientId={client.client_id} />
             {client.token_endpoint_auth_method !== 'none' &&
-              client.client_secret && (
-                <FieldClientSecret clientSecret={client.client_secret} />
-              )}
+              (clientSecret ? (
+                <FieldClientSecret clientSecret={clientSecret} />
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={isFetchingSecret}
+                  onClick={() => setRevealSecret(true)}
+                >
+                  Reveal client secret
+                </Button>
+              ))}
             <FieldClientType />
             <FieldRedirectURIs />
             <FieldScopes />

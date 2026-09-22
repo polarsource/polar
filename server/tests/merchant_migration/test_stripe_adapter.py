@@ -563,42 +563,87 @@ class TestExtractProducts:
         assert products == []
 
 
-def _customer_with_tax_ids(*tax_ids: dict[str, Any]) -> stripe_lib.Customer:
-    return stripe_lib.Customer.construct_from(
-        {
-            "id": "cus_1",
-            "email": "a@example.com",
-            "tax_ids": {
-                "object": "list",
-                "data": list(tax_ids),
-                "has_more": False,
-            },
+def _customer_with_tax_ids(
+    *tax_ids: dict[str, Any], country: str | None = None
+) -> stripe_lib.Customer:
+    payload: dict[str, Any] = {
+        "id": "cus_1",
+        "email": "a@example.com",
+        "name": "A",
+        "tax_ids": {
+            "object": "list",
+            "data": list(tax_ids),
+            "has_more": False,
         },
-        None,
-    )
+    }
+    if country is not None:
+        payload["address"] = {"country": country}
+    return stripe_lib.Customer.construct_from(payload, None)
+
+
+_EIN = {
+    "id": "txi_ein",
+    "object": "tax_id",
+    "type": "us_ein",
+    "value": "12-3456789",
+}
+_EU_VAT = {
+    "id": "txi_vat",
+    "object": "tax_id",
+    "type": "eu_vat",
+    "value": "FR61954506077",
+}
 
 
 class TestMapTaxId:
-    def test_prefers_first_eu_vat_over_another_known_type(self) -> None:
+    def test_country_match_prefers_map_order_over_eu_vat(self) -> None:
         adapter = StripeAdapter("rk_test")
-        customer = _customer_with_tax_ids(
-            {
-                "id": "txi_ein",
-                "object": "tax_id",
-                "type": "us_ein",
-                "value": "12-3456789",
-            },
-            {
-                "id": "txi_vat",
-                "object": "tax_id",
-                "type": "eu_vat",
-                "value": "FR61954506077",
-            },
+        customer = _customer_with_tax_ids(_EIN, _EU_VAT, country="US")
+
+        assert adapter._map_tax_id(customer, "US") == (
+            "12-3456789",
+            TaxIDFormat.us_ein,
         )
 
-        assert adapter._map_tax_id(customer) == ("FR61954506077", TaxIDFormat.eu_vat)
+    def test_country_match_picks_eu_vat_for_eu_address(self) -> None:
+        adapter = StripeAdapter("rk_test")
+        customer = _customer_with_tax_ids(_EIN, _EU_VAT, country="FR")
 
-    def test_skips_unknown_type(self) -> None:
+        assert adapter._map_tax_id(customer, "FR") == (
+            "FR61954506077",
+            TaxIDFormat.eu_vat,
+        )
+
+    def test_known_country_no_matching_type_is_none(self) -> None:
+        adapter = StripeAdapter("rk_test")
+        customer = _customer_with_tax_ids(_EIN, country="FR")
+
+        assert adapter._map_tax_id(customer, "FR") is None
+
+    def test_missing_country_prefers_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT)
+        )
+
+        assert mapped.country is None
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_unknown_country_prefers_eu_vat(self) -> None:
+        adapter = StripeAdapter("rk_test")
+        customer = _customer_with_tax_ids(_EIN, _EU_VAT, country="ZZ")
+
+        assert adapter._map_tax_id(customer, "ZZ") == (
+            "FR61954506077",
+            TaxIDFormat.eu_vat,
+        )
+
+    def test_missing_country_without_eu_vat_is_none(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(_customer_with_tax_ids(_EIN))
+
+        assert mapped.country is None
+        assert mapped.tax_id is None
+
+    def test_skips_unknown_type_for_matching_country(self) -> None:
         adapter = StripeAdapter("rk_test")
         customer = _customer_with_tax_ids(
             {
@@ -613,9 +658,44 @@ class TestMapTaxId:
                 "type": "gb_vat",
                 "value": "GB123456789",
             },
+            country="GB",
         )
 
-        assert adapter._map_tax_id(customer) == ("GB123456789", TaxIDFormat.gb_vat)
+        assert adapter._map_tax_id(customer, "GB") == (
+            "GB123456789",
+            TaxIDFormat.gb_vat,
+        )
+
+    def test_ca_map_order_prefers_qst_over_bn(self) -> None:
+        adapter = StripeAdapter("rk_test")
+        customer = _customer_with_tax_ids(
+            {
+                "id": "txi_bn",
+                "object": "tax_id",
+                "type": "ca_bn",
+                "value": "123456789",
+            },
+            {
+                "id": "txi_qst",
+                "object": "tax_id",
+                "type": "ca_qst",
+                "value": "1234567890TQ1234",
+            },
+            country="CA",
+        )
+
+        assert adapter._map_tax_id(customer, "CA") == (
+            "1234567890TQ1234",
+            TaxIDFormat.ca_qst,
+        )
+
+    def test_lowercase_country_still_matches_map(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="us")
+        )
+
+        assert mapped.country == "us"
+        assert mapped.tax_id == ("12-3456789", TaxIDFormat.us_ein)
 
 
 @pytest.mark.asyncio

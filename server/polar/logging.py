@@ -85,7 +85,9 @@ SENSITIVE_LOG_FIELDS = dict.fromkeys(
 )
 _SAFE_LOG_FIELDS = frozenset({"service_name", "logger_name"})
 _SQL_FIELDS = frozenset({"db.statement", "db.query.text"})
-_MAX_LOG_TEXT_LENGTH = 32_768
+_MAX_LOG_TEXT_LENGTH = 8_192
+_MAX_LOG_EVENT_TEXT_LENGTH = 16_384
+_MAX_WATCHDOG_TEXT_LENGTH = 32_768
 _MAX_LOG_CONTAINER_LENGTH = 1_000
 _MAX_LOG_DEPTH = 32
 
@@ -108,7 +110,10 @@ _LOG_VALUE_RE = re.compile("|".join(_LOG_VALUE_PATTERNS), re.IGNORECASE)
 
 
 def scrub_log_text(value: str, *, preserve_oversized: bool = False) -> str:
-    if len(value) > _MAX_LOG_TEXT_LENGTH:
+    max_length = (
+        _MAX_WATCHDOG_TEXT_LENGTH if preserve_oversized else _MAX_LOG_TEXT_LENGTH
+    )
+    if len(value) > max_length:
         return value if preserve_oversized else REDACTED
     return _LOG_VALUE_RE.sub(REDACTED, value)
 
@@ -116,7 +121,7 @@ def scrub_log_text(value: str, *, preserve_oversized: bool = False) -> str:
 @dataclass(slots=True)
 class LogScrubBudget:
     remaining_values: int = _MAX_LOG_CONTAINER_LENGTH
-    remaining_text: int = 4 * _MAX_LOG_TEXT_LENGTH
+    remaining_text: int = _MAX_LOG_EVENT_TEXT_LENGTH
 
     def scrub_text(self, value: str) -> str:
         self.remaining_text -= len(value)

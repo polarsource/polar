@@ -45,6 +45,13 @@ class TestScrubLogText:
         assert scrub_log_text(message) == expected
 
     def test_oversized_text_requires_explicit_preservation(self) -> None:
+        assert scrub_log_text("x" * 8_192) == "x" * 8_192
+        assert scrub_log_text("x" * 8_193) == REDACTED
+        watchdog_message = "alice@example.com " + "x" * (32_768 - 18)
+        assert scrub_log_text(watchdog_message) == REDACTED
+        assert scrub_log_text(watchdog_message, preserve_oversized=True) == (
+            f"{REDACTED} " + "x" * (32_768 - 18)
+        )
         message = "alice@example.com " + "x" * 32_768
 
         assert scrub_log_text(message) == REDACTED
@@ -88,11 +95,11 @@ class TestScrubConsoleLog:
         assert event == original
 
     def test_text_budget_is_shared_across_fields_and_resets_per_event(self) -> None:
-        event = {"messages": ["x" * 32_768] * 4 + ["remaining diagnostics"]}
+        event = {"messages": ["x" * 8_192] * 2 + ["remaining diagnostics"]}
 
         result = _scrub_console_log(logging.getLogger(__name__), "info", event)
 
-        assert result == {"messages": ["x" * 32_768] * 4 + [REDACTED]}
+        assert result == {"messages": ["x" * 8_192] * 2 + [REDACTED]}
         assert _scrub_console_log(
             logging.getLogger(__name__), "info", {"event": "next event"}
         ) == {"event": "next event"}

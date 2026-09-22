@@ -1,4 +1,4 @@
-# Void Institute
+# Void Atlas
 
 Short interactive lessons on how Void works, in the style of effect.institute:
 one step at a time, a short prose card beside a code file that evolves, and a
@@ -13,8 +13,8 @@ the code on screen cannot drift from `@void/sdk`.
 ## Run it
 
 ```bash
-pnpm --filter void-institute dev   # http://127.0.0.1:3005
-pnpm --filter void-institute test  # snippets compile against the real SDK
+pnpm --filter void-atlas dev   # http://127.0.0.1:3005
+pnpm --filter void-atlas test  # snippets compile against the real SDK
 ```
 
 ## Where things are

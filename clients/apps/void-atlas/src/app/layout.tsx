@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 
 export const metadata: Metadata = {
-  title: { default: 'Void Institute', template: '%s / Void Institute' },
+  title: { default: 'Void Atlas', template: '%s / Void Atlas' },
   description: 'Short interactive lessons on how Void works.',
 }
 

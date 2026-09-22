@@ -9,7 +9,7 @@ export default function Home() {
       <header className="flex items-start justify-between">
         <div className="flex flex-col gap-2">
           <p className="text-muted-foreground font-mono text-xs tracking-wide uppercase">
-            Void Institute
+            Void Atlas
           </p>
           <h1 className="text-xl font-medium">
             How Void works, one step at a time.

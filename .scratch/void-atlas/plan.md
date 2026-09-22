@@ -1,7 +1,7 @@
-# Void Institute: plan
+# Void Atlas: plan
 
 Written 2026-09-21. A small effect.institute-style teaching app for Void, built as
-`clients/apps/void-institute`. Static content, no backend, no Void API calls.
+`clients/apps/void-atlas`. Static content, no backend, no Void API calls.
 Everything the reader sees runs in the browser.
 
 ## What we are copying from effect.institute
@@ -226,7 +226,7 @@ signal thresholds and questions are; scenarios are out of scope for this round.
 ## App structure
 
 ```
-clients/apps/void-institute/
+clients/apps/void-atlas/
 ├── package.json              # next 16, react 19, @polar-sh/orbit, @void/sdk, shiki, motion
 ├── next.config.mjs           # transpilePackages: orbit, void-sdk
 ├── babel.config.js           # copied from po-bot (StyleX)
@@ -331,7 +331,7 @@ animation with `layoutId` per line.
 Per the usual multi-agent workflow: contracts first, one worktree, never push.
 
 **Wave 0, done 2026-09-21: scaffold and engine.** Built in
-`clients/apps/void-institute` with chapter 0 (five steps) chapter 1,
+`clients/apps/void-atlas` with chapter 0 (five steps) chapter 1,
 Events and reducers (seven steps, `scenes/fold.ts` interprets compiled
 reducers in the browser so scenes fold real IR), and chapter 2, Meters and
 products (nine steps, `scenes/balance.ts` models holder standing and checks
@@ -372,7 +372,7 @@ and HTML with Orbit's `Button`; Box is not required in this app.
 `types.ts`, `Lesson.tsx`, `CodePanel.tsx`, `highlight.ts`, `diff.ts`, the
 chapter list page and the chapter route. Ship with chapter 0 as the proof, since
 it is three steps and exercises code-only, scene-only and split layouts.
-Acceptance: `pnpm --filter void-institute typecheck` passes, chapter 0 animates
+Acceptance: `pnpm --filter void-atlas typecheck` passes, chapter 0 animates
 between steps in the browser.
 
 **Wave 1, eight agents in parallel: one chapter each.** Each writes
@@ -404,7 +404,7 @@ which may need the same max-lines waiver Void packages already have.
 
 ## Open choices I made
 
-- Name: `void-institute`. Trivial to rename before the first commit.
+- Name: `void-atlas`. Trivial to rename before the first commit.
 - Content lives in TypeScript, not MDX. Prose is JSX, code is a template
   string. This keeps one file per chapter and avoids an MDX pipeline.
 - Scenes are hand-written SVG per chapter rather than a shared diagram

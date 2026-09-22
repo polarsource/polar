@@ -30,20 +30,14 @@ Append `.usr-cgvspcgdh87jokuesjfg.svc.cluster.local` to that id:
 dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
 ```
 
-Production `db` is:
-
-```text
-dpg-d8m0n4poagis73du7gr0-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
-```
-
-Confirm `dpg-d8m0n4poagis73du7gr0-a` still matches the internal host on the Render page before connecting. `db-test` and each read replica have their own `dpg-` id. Use that id with the same suffix.
+Copy the `dpg-` id from the internal host on the Render page. `db-test` and each read replica have their own id. Use that id with the same suffix.
 
 ## 3. Connect
 
 Use the internal port, `5432`. This path is the private network, so TLS is not required. Leave SSH tunneling off.
 
 ```bash
-psql "host=dpg-d8m0n4poagis73du7gr0-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE sslmode=disable"
+psql "host=dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE sslmode=disable"
 ```
 
 `psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.

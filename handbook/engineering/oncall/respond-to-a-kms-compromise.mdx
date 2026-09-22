@@ -1,0 +1,130 @@
+---
+title: "Respond to a KMS Key Compromise"
+description: "Revoke the sessions, close the path, read what was decrypted, reissue it."
+---
+
+<Warning>
+  Production. This key unwraps every secret we store encrypted.
+</Warning>
+
+The key material never leaves KMS. What leaks is access to it: a stolen session, a worker role,
+an AWS account. This procedure cuts that access and replaces what it read.
+
+The key wraps seven columns:
+
+- `users.oauth_account_access_token` and `oauth_account_refresh_token`
+- `oauth2_clients.client_secret_encrypted` and `registration_access_token_encrypted`
+- `slack_apps.client_secret`, `signing_secret` and `bot_token`
+
+The token hashing secret is not one of them: Secrets Manager encrypts it under the AWS-managed
+key.
+
+Two roles hold `kms:Decrypt`, each through an inline policy of the same name:
+
+- `polar-production-secrets`, assumed by the Render backend through OIDC
+- one per worker Lambda, named after the function
+
+## Prerequisites
+
+- AWS access to the environment's account, with `iam:PutRolePolicy`
+- CloudTrail history for that account
+- A psql session on the production database
+- [Render Dashboard](https://dashboard.render.com/) to redeploy
+
+## 1. Revoke the sessions
+
+On the role whose credentials leaked, and only that one:
+
+```bash
+cat > /tmp/revoke.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Effect": "Deny",
+    "Action": "*",
+    "Resource": "*",
+    "Condition": {
+      "DateLessThan": {"aws:TokenIssueTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+    }
+  }
+}
+EOF
+
+aws iam put-role-policy \
+  --role-name polar-production-secrets \
+  --policy-name AWSRevokeOlderSessions \
+  --policy-document file:///tmp/revoke.json
+```
+
+Sessions assumed before that instant die, later ones are untouched, so our services re-assume
+through OIDC and keep serving. The console does the same from **Revoke sessions**.
+
+## 2. Close the path
+
+Step 1 only helps if what leaked was a session. If the thief can assume the role again — they
+hold the Render environment, or the OIDC trust is being abused — they are back within seconds.
+Then:
+
+```bash
+aws kms disable-key --key-id alias/polar-production-secrets
+```
+
+Every `Decrypt` and `GenerateDataKey` fails, theirs and ours. Slack stops sending and revealing
+an OAuth2 client secret errors. Login and registration read hashes, so they keep working.
+
+`aws kms enable-key` undoes it. Then cut the trust that let them in: the OIDC provider, the
+role's trust policy, or the role.
+
+## 3. Read what was decrypted
+
+Every `Decrypt` carries its encryption context, and ours is `{table, column, id}`. CloudTrail
+names the rows that were opened, not a guess at what else is gone.
+
+```bash
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=EventName,AttributeValue=Decrypt \
+  --start-time "$(date -u -v-1d +%Y-%m-%dT%H:%M:%SZ)" \
+  --max-items 500 \
+  --output json \
+| jq -r '.Events[].CloudTrailEvent | fromjson
+  | [.eventTime, .userIdentity.arn,
+     .requestParameters.encryptionContext.table,
+     .requestParameters.encryptionContext.column,
+     .requestParameters.encryptionContext.id] | @tsv'
+```
+
+Nothing prints until the last page arrives, so start narrow and widen. Most of what comes back
+is ours; only the rows the stolen credentials opened are disclosed. `lookup-events` reaches back
+90 days, no further.
+
+## 4. Restore service
+
+Delete `AWSRevokeOlderSessions`, restore whatever step 2 cut, `aws kms enable-key`, then
+redeploy the API and the workers.
+
+## 5. Reissue what was read
+
+A disclosed secret stays disclosed. Re-encrypting changes nothing — replace the value.
+
+- **Slack.** These belong to the merchant's own app, so we cannot regenerate them. The merchant
+  rotates them in Slack and enters them again.
+- **OAuth2 clients.** We issue a new `client_secret` and registration access token. Warn the
+  integrator before the old one stops working.
+- **OAuth account tokens.** Delete the pair; the user signs in with GitHub or Google again.
+  Revoke at the provider too: deleting our row does not stop the copy they took.
+
+## Rotation is not the remedy
+
+Key rotation looks like the answer and fixes nothing. AWS is explicit:
+
+> Key rotation has no effect on the data that the KMS key protects. It does not rotate the data
+> keys that the KMS key generated or re-encrypt any data protected by the KMS key.
+
+Old key material is kept until the key is deleted, so a ciphertext read yesterday stays readable
+tomorrow. Rotation protects the next write, never the last one. Run one if an auditor asks; it
+changes nothing here.
+
+Deleting the key does change what they can read later: every ciphertext under it becomes
+unreadable for good, including a dump kept for the day they get back in. It becomes unreadable
+to us on the same terms, so the option opens only once **every** row has been reissued under a
+new key — seven columns, every merchant.

@@ -132,6 +132,7 @@
               "engineering/oncall/rotate-db-credentials",
               "engineering/oncall/rotate-jwks",
               "engineering/oncall/rotate-secret",
+              "engineering/oncall/respond-to-a-kms-compromise",
               "engineering/oncall/vendor-security-monitoring"
             ]
           }

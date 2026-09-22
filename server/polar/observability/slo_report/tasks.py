@@ -8,7 +8,7 @@ import httpx
 import structlog
 
 from polar.config import Environment, settings
-from polar.integrations.slack.client import SlackClient
+from polar.integrations.slack.client import client as slack_client
 from polar.logging import Logger
 from polar.worker import CronTrigger, TaskPriority, actor
 
@@ -17,8 +17,6 @@ from .service import slo_report_service
 from .slack import format_slo_report_slack_payload
 
 log: Logger = structlog.get_logger()
-
-_slack_client = SlackClient()
 
 
 @actor(
@@ -65,7 +63,7 @@ async def slo_report_send_weekly() -> None:
         )
 
         payload = format_slo_report_slack_payload(report)
-        await _slack_client.chat_post_message(
+        await slack_client.chat_post_message(
             bot_token=bot_token, channel=channel, **payload
         )
 

@@ -26,13 +26,16 @@ import { ScenarioProjection } from './ScenarioProjection'
 import { ScenarioReplay } from './ScenarioReplay'
 import { ScenarioModal } from './ScenarioModal'
 import { useScenarios } from './store'
+import { useSimulationCustomers } from './customers'
 
 export const VoidScenarioPage = () => {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}`
-  const { scenarios, duplicate, update, remove, promote } = useScenarios()
+  const { scenarios, duplicate, update, remove, promote, isLoading, error } =
+    useScenarios()
+  const customers = useSimulationCustomers(organization.id, scenarios)
   const scenario = scenarios.find((candidate) => candidate.id === id)
   const editModal = useModal()
   const { toast } = useToast()
@@ -48,13 +51,29 @@ export const VoidScenarioPage = () => {
   }
 
   const result = useMemo(
-    () => (scenario ? replay(scenario.levers, scenario.baseLevers) : null),
-    [scenario],
+    () =>
+      scenario && customers.data
+        ? replay(scenario.levers, scenario.baseLevers, customers.data)
+        : null,
+    [scenario, customers.data],
   )
   const projection = useMemo(
-    () => (scenario ? project(scenario.levers, scenario.baseLevers) : null),
-    [scenario],
+    () =>
+      scenario && customers.data
+        ? project(scenario.levers, scenario.baseLevers, customers.data)
+        : null,
+    [scenario, customers.data],
   )
+
+  if (isLoading || customers.isLoading || error || customers.error) {
+    return (
+      <DashboardBody title="Simulate">
+        <Text>
+          {error?.message ?? customers.error?.message ?? 'Loading simulation…'}
+        </Text>
+      </DashboardBody>
+    )
+  }
 
   if (!scenario || !result || !projection) {
     return (

@@ -62,7 +62,7 @@ const LeverField = ({
         postSlot={suffix ? <span>{suffix}</span> : undefined}
         onChange={(event) => {
           const parsed = Number.parseFloat(event.target.value)
-          onChange(Number.isNaN(parsed) ? 0 : Math.round(parsed * scale))
+          onChange(Number.isNaN(parsed) ? 0 : parsed * scale)
         }}
       />
     </Box>
@@ -137,21 +137,23 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
                   })
                 }
               />
-              <LeverField
-                label={`${plan.name} allowance`}
-                value={plan.includedUsage}
-                baseline={
-                  baseLevers.plans.find((p) => p.id === plan.id)
-                    ?.includedUsage ?? plan.includedUsage
-                }
-                prefix="$"
-                scale={100}
-                onChange={(value) =>
-                  edit((draft) => {
-                    draft.plans[index].includedUsage = value
-                  })
-                }
-              />
+              {Object.entries(plan.includedUsage).map(([slug, included]) => (
+                <LeverField
+                  key={slug}
+                  label={`${slug} allowance`}
+                  value={included}
+                  baseline={
+                    baseLevers.plans.find((p) => p.id === plan.id)
+                      ?.includedUsage[slug] ?? included
+                  }
+                  suffix="units"
+                  onChange={(value) =>
+                    edit((draft) => {
+                      draft.plans[index].includedUsage[slug] = value
+                    })
+                  }
+                />
+              ))}
             </Box>
           ))}
         </Group>
@@ -171,7 +173,7 @@ export const ScenarioLevers = ({ scenario }: { scenario: Scenario }) => {
                 meter.price
               }
               prefix="$"
-              step={0.5}
+              step={0.000001}
               scale={100}
               onChange={(value) =>
                 edit((draft) => {

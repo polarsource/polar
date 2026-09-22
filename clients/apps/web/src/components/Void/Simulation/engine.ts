@@ -1,7 +1,4 @@
 import { addMonths, startOfMonth, subDays } from 'date-fns'
-import { buildTree, walk } from '../identities'
-import { getVoidData } from '../mock'
-import { VoidData } from '../types'
 import {
   Assumptions,
   ComponentResult,
@@ -14,12 +11,11 @@ import {
 const DAYS = 30
 const HORIZON_MONTHS = 12
 
-interface CustomerUsage {
+export interface CustomerUsage {
   id: string
   name: string
-  plan: string | null
-  trialing: boolean
-  /** Daily units per meter name for the customer and everything below it. */
+  plan: string
+  /** Daily units per reducer slug, including child identities. */
   units: Record<string, number[]>
 }
 
@@ -33,59 +29,28 @@ interface Bill {
 
 const sum = (values: number[]) => values.reduce((total, v) => total + v, 0)
 
-const collectCustomers = (data: VoidData): CustomerUsage[] => {
-  const tree = buildTree(data.identities)
-  return tree.roots
-    .map((root) => {
-      const subscription = data.subscriptions.find(
-        (candidate) => candidate.identity_id === root.identity.id,
-      )
-      const units: Record<string, number[]> = {}
-      for (const node of walk(root)) {
-        for (const [meter, total] of Object.entries(node.identity.meters)) {
-          const series = node.identity.usageSeries[meter] ?? []
-          const weight = sum(series)
-          const target = (units[meter] ??= Array.from(
-            { length: DAYS },
-            () => 0,
-          ))
-          for (let day = 0; day < DAYS; day++) {
-            target[day] +=
-              weight > 0 ? (total * (series[day] ?? 0)) / weight : total / DAYS
-          }
-        }
-      }
-      return {
-        id: root.identity.id,
-        name: root.identity.name,
-        plan: subscription?.product ?? null,
-        trialing: subscription?.status === 'trialing',
-        units,
-      }
-    })
-    .filter((customer) => customer.plan !== null)
-}
-
 const billFor = (customer: CustomerUsage, levers: ScenarioLevers): Bill => {
-  const plan = levers.plans.find(
-    (candidate) => candidate.name === customer.plan,
-  )
+  const plan = levers.plans.find((candidate) => candidate.id === customer.plan)
   const daily = Array.from({ length: DAYS }, () => 0)
   const usageByMeter: Record<string, number> = {}
+  let usage = 0
   for (const meter of levers.meters) {
-    const series = customer.units[meter.name]
-    if (!series) continue
+    const series = customer.units[meter.reducer]
+    const included = plan?.includedUsage[meter.id]
+    if (!series || included === undefined) continue
+    let remaining = included
     let meterTotal = 0
     series.forEach((value, day) => {
-      const cost = (value * meter.price) / meter.per
+      usage += (value * meter.price) / meter.per
+      const cost = (Math.max(0, value - remaining) * meter.price) / meter.per
+      remaining = Math.max(0, remaining - value)
       daily[day] += cost
       meterTotal += cost
     })
-    usageByMeter[meter.name] = meterTotal
+    usageByMeter[meter.id] = meterTotal
   }
-  const usage = sum(daily)
-  const fee = plan && !customer.trialing ? plan.monthlyPrice : 0
-  const overage = Math.max(0, usage - (plan?.includedUsage ?? 0))
+  const fee = plan?.monthlyPrice ?? 0
+  const overage = sum(daily)
   return { fee, overage, usage, usageByMeter, daily }
 }
 
@@ -103,14 +68,11 @@ export const churnRiskFor = (
 
 const round = (value: number) => Math.round(value)
 
-let cachedData: VoidData | null = null
-const data = () => (cachedData ??= getVoidData())
-
 export const replay = (
   levers: ScenarioLevers,
   base: ScenarioLevers,
+  customers: CustomerUsage[],
 ): ReplayResult => {
-  const customers = collectCustomers(data())
   const bills = customers.map((customer) => ({
     customer,
     baseline: billFor(customer, base),
@@ -124,7 +86,9 @@ export const replay = (
       return {
         id: customer.id,
         name: customer.name,
-        plan: customer.plan,
+        plan:
+          levers.plans.find((plan) => plan.id === customer.plan)?.name ??
+          customer.plan,
         baseline: before,
         scenario: after,
         delta: after - before,
@@ -143,8 +107,7 @@ export const replay = (
         ['baseline', baseline],
         ['scenario', scenario],
       ] as const) {
-        const share = bill.usage > 0 ? bill.daily[day] / bill.usage : 1 / DAYS
-        point[key] += bill.fee / DAYS + bill.overage * share
+        point[key] += bill.fee / DAYS + bill.daily[day]
       }
     }
     return {
@@ -162,23 +125,20 @@ export const replay = (
       baseline: round(
         sum(
           bills
-            .filter((b) => b.customer.plan === plan.name)
+            .filter((b) => b.customer.plan === plan.id)
             .map((b) => b.baseline.fee),
         ),
       ),
       scenario: round(
         sum(
           bills
-            .filter((b) => b.customer.plan === plan.name)
+            .filter((b) => b.customer.plan === plan.id)
             .map((b) => b.scenario.fee),
         ),
       ),
     })),
     ...levers.meters.map((meter) => {
-      const attributed = (bill: Bill) =>
-        bill.usage > 0
-          ? (bill.overage * (bill.usageByMeter[meter.name] ?? 0)) / bill.usage
-          : 0
+      const attributed = (bill: Bill) => bill.usageByMeter[meter.id] ?? 0
       return {
         key: meter.id,
         label: meter.name,
@@ -212,8 +172,8 @@ export const replay = (
 export const project = (
   levers: ScenarioLevers,
   base: ScenarioLevers,
+  customers: CustomerUsage[],
 ): ProjectionPoint[] => {
-  const customers = collectCustomers(data())
   const bills = customers.map((customer) => ({
     baseline: billFor(customer, base),
     scenario: billFor(customer, levers),

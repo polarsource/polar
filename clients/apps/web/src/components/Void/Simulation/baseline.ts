@@ -23,11 +23,6 @@ const termsOf = (
 
 const cents = (amount: string) => Math.round(Number(amount) * 100)
 
-/**
- * Levers of one configuration. Plans are recurring products, their allowance
- * is the `included` units of the first meter they bill. Meter prices are per
- * single unit, in cents, so the engine's `per` is always 1.
- */
 export const leversFromConfiguration = (
   configuration: VoidConfiguration,
   assumptions: Assumptions,
@@ -38,12 +33,16 @@ export const leversFromConfiguration = (
       id: product.slug,
       name: product.name,
       monthlyPrice: cents(product.price.amount),
-      includedUsage: product.meters[0]
-        ? termsOf(product.meters[0]).included
-        : 0,
+      includedUsage: Object.fromEntries(
+        product.meters.map((entry) => {
+          const { slug, included } = termsOf(entry)
+          return [slug, included]
+        }),
+      ),
     })),
   meters: configuration.meters.map((meter) => ({
     id: meter.slug,
+    reducer: meter.reducer,
     name: meter.slug,
     unit: 'unit',
     per: 1,
@@ -71,10 +70,14 @@ export const patchFromLevers = (
         amount: (plan.monthlyPrice / 100).toString(),
       }
     }
-    const first = product.meters[0] ? termsOf(product.meters[0]) : null
-    if (first && first.included !== plan.includedUsage) {
-      const { slug, ...terms } = first
-      changes.meters = { [slug]: { ...terms, included: plan.includedUsage } }
+    for (const entry of product.meters) {
+      const { slug, ...terms } = termsOf(entry)
+      if (terms.included !== plan.includedUsage[slug]) {
+        ;(changes.meters ??= {})[slug] = {
+          ...terms,
+          included: plan.includedUsage[slug],
+        }
+      }
     }
     if (Object.keys(changes).length > 0) patch.products[plan.id] = changes
   }
@@ -98,8 +101,10 @@ export const changedLevers = (
     if (!basePlan) return
     if (plan.monthlyPrice !== basePlan.monthlyPrice)
       changed.push(`${plan.name} price`)
-    if (plan.includedUsage !== basePlan.includedUsage)
-      changed.push(`${plan.name} allowance`)
+    for (const [slug, included] of Object.entries(plan.includedUsage)) {
+      if (included !== basePlan.includedUsage[slug])
+        changed.push(`${plan.name} ${slug} allowance`)
+    }
   })
   levers.meters.forEach((meter) => {
     const baseMeter = base.meters.find((m) => m.id === meter.id)

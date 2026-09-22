@@ -9,7 +9,8 @@ import { useRouter } from 'next/navigation'
 import { useContext, useMemo } from 'react'
 import { useModal } from '@/components/Modal/useModal'
 import { changedLevers } from './baseline'
-import { replay } from './engine'
+import { CustomerUsage, replay } from './engine'
+import { useSimulationCustomers } from './customers'
 import { Delta } from './Delta'
 import { shortDate, usd } from './format'
 import { ScenarioModal } from './ScenarioModal'
@@ -29,8 +30,12 @@ interface Card {
   updatedAt: string
 }
 
-const toCard = (scenario: Scenario): Card => {
-  const { totals, daily } = replay(scenario.levers, scenario.baseLevers)
+const toCard = (scenario: Scenario, customers: CustomerUsage[]): Card => {
+  const { totals, daily } = replay(
+    scenario.levers,
+    scenario.baseLevers,
+    customers,
+  )
   return {
     id: scenario.id,
     name: scenario.name,
@@ -96,9 +101,26 @@ export const VoidSimulationList = () => {
   const router = useRouter()
   const { organization } = useContext(OrganizationContext)
   const base = `/void/dashboard/${organization.slug}/definition/simulate`
-  const { scenarios, create } = useScenarios()
-  const cards = useMemo(() => scenarios.map(toCard), [scenarios])
+  const { scenarios, create, isLoading, error } = useScenarios()
+  const customers = useSimulationCustomers(organization.id, scenarios)
+  const cards = useMemo(
+    () =>
+      customers.data
+        ? scenarios.map((scenario) => toCard(scenario, customers.data))
+        : [],
+    [scenarios, customers.data],
+  )
   const { isShown, show, hide } = useModal()
+
+  if (isLoading || customers.isLoading || error || customers.error) {
+    return (
+      <DashboardBody title="Simulate">
+        <Text>
+          {error?.message ?? customers.error?.message ?? 'Loading simulation…'}
+        </Text>
+      </DashboardBody>
+    )
+  }
 
   return (
     <DashboardBody

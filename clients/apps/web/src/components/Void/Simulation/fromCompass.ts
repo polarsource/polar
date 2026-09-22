@@ -32,7 +32,8 @@ export const applyChanges = (
       continue
     }
     if (change.kind === 'plan_price') plan.monthlyPrice = change.amount
-    else plan.includedUsage = change.amount
+    // Compass supplies a monetary allowance, not per-meter included units.
+    else unmatched.push(change.name)
   }
   return unmatched
 }

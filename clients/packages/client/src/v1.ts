@@ -25267,10 +25267,7 @@ export interface components {
        * @description Stable code for `reason`, if any.
        */
       reason_code: string | null
-      /**
-       * Reason Level
-       * @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason.
-       */
+      /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
       reason_level: components['schemas']['PrecheckReasonLevel'] | null
       /**
        * Conflicting Customer Id

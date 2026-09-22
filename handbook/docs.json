@@ -127,6 +127,11 @@
               "engineering/oncall/deploy-infra",
               "engineering/oncall/trigger-webhooks",
               "engineering/oncall/run-one-off-jobs",
+              "engineering/oncall/connecting-to-prod-db",
+              "engineering/oncall/kill-blocking-queries",
+              "engineering/oncall/rotate-db-credentials",
+              "engineering/oncall/rotate-jwks",
+              "engineering/oncall/rotate-secret",
               "engineering/oncall/vendor-security-monitoring"
             ]
           }

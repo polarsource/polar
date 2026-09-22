@@ -1514,7 +1514,12 @@ class MerchantMigrationService:
         }
         extra_canonicals = [
             deserialize(record.type, record.canonical)
-            for record in extra_dependencies
+            for record in sorted(
+                extra_dependencies,
+                key=lambda record: (
+                    record.status != MerchantMigrationRecordStatus.imported
+                ),
+            )
             if (record.type, record.source_id) not in staged_identities
         ]
         # Only product classification consults it.

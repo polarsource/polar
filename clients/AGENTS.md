@@ -26,7 +26,8 @@ Notes that save time:
 - `pnpm test` includes `packages/cli`, whose tests require **bun**, plus `apps/app` (jest) and
   `adapters/nuxt` (builds a Nuxt fixture).
 - Unit tests need neither a running backend nor `.env.local`; `apps/web/vitest.config.ts`
-  injects the `NEXT_PUBLIC_*` values itself. Only `test:e2e` (Playwright) needs a live stack.
+  injects the `NEXT_PUBLIC_*` values itself. Only `test:e2e` (Stagehand) needs a live stack and `OPENAI_API_KEY`;
+  `test:e2e:headed` runs it with a visible browser, and `dev e2e setup` prepares the stack.
 - `pnpm generate` shells into the server's Python env to run `scripts.generate_openapi`, so it
   needs the import-blocking backend artifact — the email-renderer binary. You rarely need it:
   the generated `packages/client/src/v1.ts` is committed.

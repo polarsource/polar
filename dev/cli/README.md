@@ -72,6 +72,13 @@ dev seed --reset        # Recreate database and load fresh seed data
 dev help                # Show all commands
 ```
 
+### End-to-end Tests
+
+```bash
+dev e2e setup                       # Trial product, checkout link, and env for the Stagehand checkout test
+dev e2e setup --org acme-corp       # Pick the organization up front instead of being asked
+```
+
 ### Visual Regression Testing
 
 ```bash

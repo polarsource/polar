@@ -12,7 +12,8 @@
     "format:check": "oxfmt --check ./src",
     "lint:changed": "oxlint --type-aware $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(cjs|js|jsx|mjs|ts|tsx)$')",
     "test": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:e2e:headed": "E2E_HEADED=1 vitest run --config vitest.e2e.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
@@ -98,7 +99,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.0",
+    "@browserbasehq/stagehand": "4.1.0",
     "@polar-sh/typescript-config": "workspace:*",
     "@stylexjs/babel-plugin": "catalog:",
     "@stylexjs/postcss-plugin": "catalog:",

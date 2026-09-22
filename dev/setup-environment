@@ -315,9 +315,8 @@ def _write_server_env_file(
 def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) -> None:
     template_file_path = ROOT_PATH / "clients" / "apps" / "web" / ".env.template"
     env_file_path = ROOT_PATH / "clients" / "apps" / "web" / ".env.local"
-    replacements: dict[str, str] = {}
-
     central_secrets = _load_central_secrets()
+    replacements: dict[str, str] = {**central_secrets}
     if "POLAR_STRIPE_PUBLISHABLE_KEY" in central_secrets:
         replacements["NEXT_PUBLIC_STRIPE_KEY"] = central_secrets[
             "POLAR_STRIPE_PUBLISHABLE_KEY"

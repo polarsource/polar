@@ -339,6 +339,7 @@ def help() -> None:
     section_titles = {
         "db": "Database",
         "docker": "Docker",
+        "e2e": "End-to-end tests",
     }
 
     for group_info in sorted(

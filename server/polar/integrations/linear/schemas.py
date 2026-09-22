@@ -15,7 +15,7 @@ class IssueCreateFromTemplateInput(TypedDict):
     parentId: NotRequired[str | None]
     cycleId: NotRequired[str | None]
     dueDate: NotRequired[str | None]
-    estimate: NotRequired[int | None]
+    estimate: NotRequired[int | float | None]
     subscriberIds: NotRequired[list[str]]
 
 

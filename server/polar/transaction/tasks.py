@@ -28,7 +28,7 @@ class PaymentTransactionDoesNotExist(TransactionTaskError):
 
 @actor(
     actor_name="processor_fee.sync_stripe_fees",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=CronTrigger(hour=4, minute=46),
     priority=TaskPriority.LOW,
 )
 async def sync_stripe_fees() -> None:

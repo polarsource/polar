@@ -1,0 +1,81 @@
+---
+title: "ADR-0013: Daily scheduled jobs run staggered in a 04:00–05:00 UTC maintenance window"
+description: "Every daily cron task gets its own minute in the 04:00–05:00 UTC window, recorded in the scheduled jobs registry."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-09-21
+</Info>
+
+## Context
+
+Daily cron tasks were declared independently, each one picking its own schedule, and twelve of
+the fourteen we run picked `CronTrigger(hour=0, minute=0)` — the obvious default. Those twelve
+fired at the same instant, most of them bulk `DELETE`s over session, token and event tables.
+That put a spike on the primary database that nothing in our traffic caused: we made it
+ourselves, and it grew every time someone added another "prune expired rows" task.
+
+Midnight UTC is also not a quiet moment for us. 04:00–05:00 UTC is our lowest-traffic hour —
+not by a wide margin, but consistently the trough.
+
+## Decision
+
+Daily scheduled tasks run in a **maintenance window between 04:00 and 05:00 UTC**, staggered
+one job per slot, four minutes apart. Declare them with `CronTrigger(hour=4, minute=<minute>)`,
+imported from `polar.worker`.
+
+When you add a daily task, take the next free slot, and add a row for it to
+[Scheduled jobs](/engineering/backend-development/scheduled-jobs). No two daily jobs share a
+minute.
+
+This covers *daily* jobs only. Hourly and sub-hourly tasks keep their own schedules: they are
+already spread across the hour, and pinning them to the window would defeat the point of
+running them frequently.
+
+## Consequences
+
+- The database sees fourteen small maintenance jobs spread over an hour instead of twelve
+  firing at once, during the hour when it has the most headroom to absorb them.
+- Every daily job has a known minute, so an incident at 04:3x can be traced to a specific task
+  without reading the scheduler.
+- Slots are a finite resource: fifteen fit at four-minute spacing. When the window fills up,
+  tighten the spacing rather than spilling out of the window — the crowding this ADR prevents is
+  simultaneity, not proximity.
+- Anything genuinely time-of-day sensitive (a report a human reads in the morning, a job that
+  must close a financial day) does not belong in the window and should not be forced into it.
+- A missed run stays missed, and the window widens the odds. Cron jobs live in a
+  `MemoryJobStore` with APScheduler's default one-second misfire grace, so a worker restart
+  recomputes the next run from now and silently drops any slot it stepped over. The daily jobs
+  used to occupy three instants; they now occupy a 52-minute band, so more restart times drop a
+  run. We accept that rather than add catch-up: every job in the window is a periodic cleanup
+  that the next day's run subsumes. A job for which a skipped day matters needs its own
+  liveness check, not a slot.
+- A slot is a start time, not an exclusive lease: a long job can overlap the next one. That is
+  fine for the pruning work we run today.
+- "UTC" is enforced rather than assumed. APScheduler resolves an unspecified trigger timezone to
+  the machine's, so `polar.worker` exports a `CronTrigger` subclass defaulting to UTC and the
+  scheduler is built with `timezone=datetime.UTC`. A task importing `CronTrigger` straight from
+  `apscheduler` opts back out of that, which is why declarations go through `polar.worker`.
+
+## Alternatives considered
+
+- **Leave them all at midnight**: the status quo, and a self-inflicted spike on the hour we
+  least want one.
+- **Spread jobs across the whole day**: lowest peak load, but daily maintenance could then land
+  in peak traffic, and there is no window to reason about during an incident.
+- **Derive the slot from a hash of the actor name**: no registry to maintain, but the schedule
+  stops being readable at the call site and silently reshuffles when an actor is renamed.
+- **One "daily maintenance" task calling each job in sequence**: one slot and no overlap, but it
+  couples unrelated modules and one failure stalls everything behind it.
+
+## References
+
+- [Scheduled jobs](/engineering/backend-development/scheduled-jobs) — the registry of every
+  cron task and when it runs.
+- `server/polar/worker/scheduler.py` (APScheduler wiring),
+  `server/polar/worker/_broker.py` (`SchedulerMiddleware`).
+- Example declarations: `server/polar/auth/tasks.py`, `server/polar/organization/tasks.py`.

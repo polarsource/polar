@@ -5,7 +5,7 @@ from .service import customer_session as customer_session_service
 
 @actor(
     actor_name="customer_session.delete_expired",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=CronTrigger(hour=4, minute=14),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

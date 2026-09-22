@@ -1,3 +1,4 @@
+import datetime
 import threading
 import time
 
@@ -58,7 +59,7 @@ def start() -> None:
     health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
     health_thread.start()
 
-    scheduler = LogfireBlockingScheduler()
+    scheduler = LogfireBlockingScheduler(timezone=datetime.UTC)
 
     scheduler.add_jobstore(MemoryJobStore(), "memory")
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")

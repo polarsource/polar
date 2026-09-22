@@ -12,7 +12,7 @@ log: Logger = structlog.get_logger()
 
 @actor(
     actor_name="auth.delete_expired",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=CronTrigger(hour=4, minute=2),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
@@ -23,7 +23,7 @@ async def auth_delete_expired() -> None:
 
 @actor(
     actor_name="email_otp.delete_expired",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=CronTrigger(hour=4, minute=6),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
@@ -34,7 +34,7 @@ async def email_otp_delete_expired() -> None:
 
 @actor(
     actor_name="authentication_session.delete_expired",
-    cron_trigger=CronTrigger(hour=0, minute=0),
+    cron_trigger=CronTrigger(hour=4, minute=10),
     priority=TaskPriority.LOW,
     max_retries=0,
 )

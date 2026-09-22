@@ -2453,8 +2453,8 @@ export interface paths {
      * Delete Product
      * @description Delete a product.
      *
-     *     Only products that never had an order, subscription or trial can be deleted.
-     *     Products with sales can only be archived.
+     *     Only products without orders, subscriptions, trials or discounts can be deleted.
+     *     Products that are in use can only be archived.
      *
      *     **Scopes**: `products:write`
      */
@@ -46752,7 +46752,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Product has sales and cannot be deleted. */
+      /** @description Product is in use and cannot be deleted. */
       409: {
         headers: {
           [name: string]: unknown

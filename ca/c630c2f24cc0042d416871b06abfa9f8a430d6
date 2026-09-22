@@ -1,0 +1,19 @@
+clients/packages/client/src/v1.ts
+  s_f2e6e0e6887dbe::t_41b33aa8f9f416 25270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cac630c2f24cc0042d416871b06abfa9f8a430d6",
+  "prompts": {},
+  "sessions": {
+    "s_f2e6e0e6887dbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ace9cdfa-e059-43a3-8d35-2b1456a9209a",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

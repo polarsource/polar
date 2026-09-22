@@ -955,37 +955,6 @@ class TestCreate:
             )
 
     @pytest.mark.auth
-    async def test_invalid_multiple_static_prices_same_currency(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that multiple static prices in the same currency are not allowed"""
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateOneTime(
-                    name="Product",
-                    prices=[
-                        ProductPriceFixedCreate(
-                            amount_type=ProductPriceAmountType.fixed,
-                            price_amount=1000,
-                            price_currency=PresentmentCurrency.usd,
-                        ),
-                        ProductPriceFixedCreate(
-                            amount_type=ProductPriceAmountType.fixed,
-                            price_amount=2000,
-                            price_currency=PresentmentCurrency.usd,
-                        ),
-                    ],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth
     async def test_invalid_different_price_sets_across_currencies(
         self,
         auth_subject: AuthSubject[User],

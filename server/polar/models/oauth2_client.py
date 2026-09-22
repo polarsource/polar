@@ -73,7 +73,12 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
 
     @property
     def client_info(self) -> dict[str, Any]:
-        return {**super().client_info, "client_secret": self.get_client_secret_sync()}
+        return {
+            "client_id": self.client_id,
+            "client_secret": self.get_client_secret_sync(),
+            "client_id_issued_at": self.client_id_issued_at,
+            "client_secret_expires_at": self.client_secret_expires_at,
+        }
 
     def check_client_secret(self, client_secret: str) -> bool:
         if self.client_secret_hash is None:

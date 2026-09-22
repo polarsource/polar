@@ -35,7 +35,11 @@ const OutwardArrow = () => (
 )
 
 const DestinationCard = ({ title, href, Graphic }: Destination) => (
-  <Link href={href} className="min-w-0">
+  <Link
+    href={href}
+    className="min-w-0"
+    rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+  >
     <Box
       height="100%"
       minWidth="0"

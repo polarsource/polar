@@ -93,7 +93,6 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         current = candidates[get_current_secret_id()]
         if user_session.token != current:
             user_session.token = current
-            self.server.session.flush()
 
         user = user_session.user
         session_organization_ids = [

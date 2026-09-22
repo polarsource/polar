@@ -140,8 +140,8 @@ export const SyntaxHighlighterClient = ({
 
   return highlightedCode ? (
     // oxlint-disable-next-line react/no-danger
-    <div dangerouslySetInnerHTML={{ __html: highlightedCode }} />
+    <div translate="no" dangerouslySetInnerHTML={{ __html: highlightedCode }} />
   ) : (
-    <pre>{code}</pre>
+    <pre translate="no">{code}</pre>
   )
 }

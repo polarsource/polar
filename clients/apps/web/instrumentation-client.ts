@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import { CONFIG } from '@/utils/config'
+import { installGoogleTranslateGuard } from '@/utils/googleTranslateGuard'
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
@@ -68,6 +69,22 @@ Sentry.init({
 
     return event
   },
+})
+
+const MAX_REPORTED_TRANSLATION_SUPPRESSIONS = 3
+let reportedTranslationSuppressions = 0
+
+installGoogleTranslateGuard((method) => {
+  if (
+    reportedTranslationSuppressions >= MAX_REPORTED_TRANSLATION_SUPPRESSIONS
+  ) {
+    return
+  }
+  reportedTranslationSuppressions += 1
+  Sentry.captureMessage(
+    `Suppressed ${method} DOM crash caused by page translation`,
+    'warning',
+  )
 })
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

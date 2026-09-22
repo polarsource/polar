@@ -56,7 +56,10 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   }, [interval, intervalCount])
 
   return (
-    <span className="inline-flex flex-row items-baseline gap-x-1">
+    <span
+      translate="no"
+      className="inline-flex flex-row items-baseline gap-x-1"
+    >
       {formatCurrency('compact')(amount, currency)}
       <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
     </span>

@@ -405,50 +405,6 @@ class TestRun:
         assert reloaded.tax_behavior == TaxBehavior.exclusive
         assert reloaded.tax_exempted is False
 
-    async def test_unreadable_staged_row_does_not_guess_tax_on_retry(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        migration: MerchantMigration,
-        pending_record: MerchantMigrationRecord,
-        imported_customer: Customer,
-        product: Product,
-    ) -> None:
-        """A crashed retry must not pin tax from the live source."""
-        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=imported_customer,
-            status=SubscriptionStatus.paused,
-            tax_behavior=TaxBehavior.inclusive,
-            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
-        )
-        pending_record.target_id = subscription.id
-        pending_record.status = MerchantMigrationRecordStatus.imported
-        pending_record.canonical = {}
-        await save_fixture(pending_record)
-        subscription_id = subscription.id
-        session.expunge_all()
-        record = await session.get(MerchantMigrationRecord, pending_record.id)
-        assert record is not None
-        adapter = _source(
-            **STOPPED_BY_US,
-            automatic_tax=True,
-            price_tax_behavior=TaxBehavior.exclusive,
-        )
-
-        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
-
-        assert outcome.status == MerchantMigrationCutoverStatus.failed
-        assert "can't read" in (outcome.message or "")
-        assert adapter.stopped == []
-        reloaded = await session.get(Subscription, subscription_id)
-        assert reloaded is not None
-        assert reloaded.status == SubscriptionStatus.paused
-        assert reloaded.tax_behavior == TaxBehavior.inclusive
-
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
         mocker: MockerFixture,

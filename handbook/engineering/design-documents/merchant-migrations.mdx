@@ -88,7 +88,7 @@ Before activating, we also decide each subscription's tax treatment and the cust
 
 ## Taxes
 
-At review the merchant picks per subscription: **inclusive** — customer pays the listed price, Polar takes tax out — or **exclusive**, tax added on top. The default is computed from the source, then pinned (`tax_exempted=false`) so a later org `default_tax_behavior` / `location` change cannot move it:
+At review the merchant picks per subscription: **inclusive** — customer pays the listed price, Polar takes tax out — or **exclusive**, tax added on top. The default is computed from the source, then written onto the Polar subscription (`tax_exempted=false`) so Polar does not consult the org `default_tax_behavior` at renewal:
 
 1. A merchant choice already stored on the pending row.
 2. Else if Stripe was collecting tax on this subscription (`automatic_tax.enabled`, or `default_tax_rates` / item `tax_rates`) and the Price is `inclusive` or `exclusive`, pin that.

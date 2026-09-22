@@ -4,6 +4,7 @@ import { CreditBar } from '@/components/CreditBar'
 import { n } from '@/format'
 import { Surface } from '@/components/Card'
 import { PoBotLogo } from '@/components/PoBotLogo'
+import { TopUp } from '@/components/TopUp'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LiveStream, useTree } from '@/hooks/live'
 import { useCreateMember, useMembers } from '@/hooks/queries'
@@ -60,17 +61,22 @@ export default function Home() {
         {org.credits > 0 ? (
           <CreditBar credits={org} limit={org.credits} />
         ) : null}
-        {tree.org.signal.enterBelow > 0 ? (
-          <Text
-            variant="caption"
-            color={tree.org.signal.status === 'active' ? 'danger' : 'muted'}
-          >
-            {tree.org.signal.status === 'unknown'
-              ? `${tree.org.signal.signal} has not been read yet`
-              : `${tree.org.signal.signal} is ${tree.org.signal.status}, ${n(tree.org.signal.remaining)} left`}
-            . On below {n(tree.org.signal.enterBelow)}.
-          </Text>
-        ) : null}
+        <Box justifyContent="between" alignItems="center" columnGap="m">
+          {tree.org.signal.enterBelow > 0 ? (
+            <Text
+              variant="caption"
+              color={tree.org.signal.status === 'active' ? 'danger' : 'muted'}
+            >
+              {tree.org.signal.status === 'unknown'
+                ? `${tree.org.signal.signal} has not been read yet`
+                : `${tree.org.signal.signal} is ${tree.org.signal.status}, ${n(tree.org.signal.remaining)} left`}
+              . On below {n(tree.org.signal.enterBelow)}.
+            </Text>
+          ) : (
+            <span />
+          )}
+          <TopUp />
+        </Box>
       </Box>
 
       <Box as="section" flexDirection="column" rowGap="m">

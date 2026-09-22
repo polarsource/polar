@@ -61,6 +61,12 @@ export const useCreateMember = () => {
   })
 }
 
+/** Refill the organization's pool. The next tree beat carries the new balance. */
+export const useTopUp = () =>
+  useMutation({
+    mutationFn: () => post<{ granted: number }>('/api/credits', {}),
+  })
+
 export const useCreateAgent = (memberId: string) => {
   const client = useQueryClient()
   return useMutation({

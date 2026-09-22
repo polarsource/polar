@@ -4,6 +4,9 @@
 /** The one organization this demo runs on. */
 export const ORG = 'acme'
 
+/** Credits the team plan grants the organization each period. */
+export const POOL = 100_000
+
 /** The models an agent can be pinned to. */
 export const MODELS = [
   'anthropic/claude-sonnet-5',

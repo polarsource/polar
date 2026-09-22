@@ -7,10 +7,10 @@ import {
   perThousand,
   vercelGateway,
 } from '@void/sdk/plugins'
-import { MODELS } from './src/constants'
+import { MODELS, POOL } from './src/constants'
 import { events } from './src/db/events'
 
-export { MODELS }
+export { MODELS, POOL }
 
 export const CHEAPER: Record<string, string> = {
   'anthropic/claude-sonnet-5': 'anthropic/claude-haiku-4-5',
@@ -35,9 +35,6 @@ export const ai = llm({
   classify: true,
 })
 
-/** Credits the team plan grants the organization each period. */
-export const POOL = 100_000
-
 export const team = product('po_bot_team', {
   name: 'Po Bot Team',
   description: '100,000 credits a month for the whole organization.',
@@ -53,8 +50,8 @@ export const team = product('po_bot_team', {
 export const creditsLow = signal('credits-low', {
   meter: ai.credits,
   field: 'remaining',
-  enter: { below: POOL - 200 },
-  exit: { atLeast: POOL - 50 },
+  enter: { below: POOL - 50 },
+  exit: { atLeast: POOL - 20 },
 })
 
 /** Polar asks Jev about the agent's recent credit spend; the SDK latches the answer. */

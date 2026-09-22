@@ -8,7 +8,7 @@ import {
   type Wire,
 } from '@void/sdk'
 import { ai, CHEAPER, config, creditsLow, retryStorm } from '../void'
-import { ORG } from './constants'
+import { ORG, POOL } from './constants'
 import { db } from './db'
 import { agents, members, type Agent } from './db/schema'
 
@@ -67,6 +67,21 @@ export const addMember = async (id: string, cap: number) => {
 
 export const addAgent = async (memberId: string, id: string) =>
   (await getVoid()).as(memberId).spawn(id)
+
+/**
+ * Put the organization's pool back to a full period's worth. The grant is a
+ * `po_bot.granted` event on the root, the same credit side the plan tops up,
+ * so `remaining` climbs and the credits-low signal clears on the next read.
+ */
+export const topUpOrg = async () => {
+  const void_ = await getVoid()
+  const org = void_.as(ORG)
+  const { remaining } = await org.ai.credits.balance()
+  const granted = POOL - (remaining ?? POOL)
+  if (granted <= 0) return { granted: 0 }
+  await org.ai.grant(granted, { reason: 'top-up' })
+  return { granted }
+}
 
 /** Below this many credits left anywhere up the chain, the gate runs for real. */
 const GATE_HEADROOM = 1_000

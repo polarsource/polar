@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit/Text'
 import { Meter } from './Meter'
 import { SectionLabel } from './SectionLabel'
+import { TopUp } from './TopUp'
 
 const grain = (over: AgentJudgment['over']) =>
   `last ${over.amount} ${over.unit}${over.amount === 1 ? '' : 's'}`
@@ -71,7 +72,10 @@ export const Signals = ({
   judgments: readonly AgentJudgment[]
 }) => (
   <Box flexDirection="column" rowGap="s" width="100%">
-    <SectionLabel>Signals</SectionLabel>
+    <Box justifyContent="between" alignItems="center" columnGap="s">
+      <SectionLabel>Signals</SectionLabel>
+      <TopUp />
+    </Box>
     <Box flexDirection="column" rowGap="s" paddingHorizontal="xs">
       <BalanceRow signal={balance} />
       {judgments.length === 0 ? (

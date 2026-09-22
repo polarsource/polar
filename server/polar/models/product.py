@@ -69,11 +69,12 @@ ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility"
 
 # Referenced by table name rather than model to avoid circular imports: these
 # models import from `polar.product` while this module is still loading.
-_PRODUCT_SALES_TABLES = (
+_PRODUCT_DELETION_BLOCKING_TABLES = (
     table("orders", column("product_id", Uuid)),
     table("subscriptions", column("product_id", Uuid)),
     table("subscription_updates", column("product_id", Uuid)),
     table("trial_redemptions", column("product_id", Uuid)),
+    table("discount_products", column("product_id", Uuid)),
 )
 
 
@@ -199,8 +200,8 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
         """
         Whether the product can be permanently deleted.
 
-        Only products that never had a sale (order, subscription or trial)
-        can be deleted; the others can only be archived.
+        Only products without orders, subscriptions, trials or discounts can be
+        deleted; the others can only be archived.
         """
         return column_property(
             and_(
@@ -208,10 +209,10 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
                     ~exists()
                     .where(referencing_table.c.product_id == cls.id)
                     .correlate_except(referencing_table)
-                    for referencing_table in _PRODUCT_SALES_TABLES
+                    for referencing_table in _PRODUCT_DELETION_BLOCKING_TABLES
                 )
             ),
-            # Sales come from other flows, never from a product flush
+            # References come from other flows, never from a product flush
             expire_on_flush=False,
         )
 

@@ -18,7 +18,6 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
-from polar.discount.repository import DiscountRepository
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
     PolarError,
@@ -80,7 +79,7 @@ class ProductNotDeletable(ProductError):
     def __init__(self, product_id: uuid.UUID) -> None:
         self.product_id = product_id
         message = (
-            "This product has orders, subscriptions or trials "
+            "This product has orders, subscriptions, trials or discounts "
             "and cannot be deleted. Archive it instead."
         )
         super().__init__(message, 409)
@@ -613,9 +612,6 @@ class ProductService:
 
         if not product.is_archived:
             product = await self._archive(session, product)
-
-        discount_repository = DiscountRepository.from_session(session)
-        await discount_repository.remove_product(product.id)
 
         repository = ProductRepository.from_session(session)
         return await repository.soft_delete(product)

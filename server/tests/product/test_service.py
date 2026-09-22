@@ -2941,6 +2941,30 @@ class TestDelete:
         with pytest.raises(ProductNotDeletable):
             await product_service.delete(session, product, auth_subject)
 
+    @pytest.mark.auth
+    async def test_not_deletable_with_discount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[product],
+        )
+        product = await self._reload(session, auth_subject, product)
+
+        assert not product.is_deletable
+        with pytest.raises(ProductNotDeletable):
+            await product_service.delete(session, product, auth_subject)
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -2950,20 +2974,10 @@ class TestDelete:
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
         product: Product,
-        product_second: Product,
         user_organization: UserOrganization,
     ) -> None:
         checkout_link = await create_checkout_link(save_fixture, products=[product])
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.fixed,
-            amounts={"usd": 1000},
-            duration=DiscountDuration.once,
-            organization=organization,
-            products=[product, product_second],
-        )
         product = await self._reload(session, auth_subject, product)
 
         assert product.is_deletable
@@ -2972,14 +2986,9 @@ class TestDelete:
         assert deleted_product.deleted_at is not None
         assert deleted_product.is_archived
 
+        await session.flush()
         await session.refresh(checkout_link, {"deleted_at"})
         assert checkout_link.deleted_at is not None
-
-        await session.refresh(discount, {"discount_products"})
-        assert [
-            discount_product.product_id
-            for discount_product in discount.discount_products
-        ] == [product_second.id]
 
         assert await product_service.get(session, auth_subject, product.id) is None
 

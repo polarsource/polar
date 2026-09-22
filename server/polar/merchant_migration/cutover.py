@@ -13,7 +13,7 @@ import structlog
 from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.customer.repository import CustomerRepository
-from polar.enums import PaymentProcessor, TaxBehavior
+from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -245,10 +245,12 @@ class SubscriptionCutover:
             staged = deserialize(record.type, record.canonical)
         except KeyError, TypeError, ValueError:
             staged = None
-        subscription.tax_behavior = self._cutover_tax(
-            staged if isinstance(staged, CanonicalSubscription) else None,
-            source,
-        )
+        if not isinstance(staged, CanonicalSubscription):
+            # The merchant pin lives only on the staged row. The live source
+            # has no copy of it, so guessing a default would bill the wrong tax.
+            # A retry that already cancelled the source must not look skipped.
+            return _fail(_UNREADABLE) if already_stopped else _skip(_UNREADABLE)
+        subscription.tax_behavior = staged.import_tax_behavior()
         subscription.tax_exempted = False
 
         if not already_stopped:
@@ -465,15 +467,6 @@ class SubscriptionCutover:
                 selectinload(Subscription.subscription_product_prices),
             ),
         )
-
-    def _cutover_tax(
-        self,
-        staged: CanonicalSubscription | None,
-        source: CanonicalSubscription,
-    ) -> TaxBehavior:
-        if staged is not None:
-            return staged.import_tax_behavior()
-        return source.import_tax_behavior()
 
     def _source_reason(
         self,

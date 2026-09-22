@@ -7,11 +7,28 @@ from polar.routing import APIRouter
 from polar.void.auth import VoidRead, VoidWrite
 from polar.void.tinybird import TinybirdClient
 
-from .schemas import EventCreate, EventsIngestResponse, EventsList, EventSource
+from .schemas import (
+    EventCreate,
+    EventsIngestResponse,
+    EventsList,
+    EventSource,
+    EventType,
+)
 from .service import InvalidAttribution, ReservedEventName
 from .service import event as event_service
 
 router = APIRouter(prefix="/events", tags=["events"], include_in_schema=False)
+
+
+@router.get("/types", response_model=list[EventType], operation_id="events:types")
+async def event_types(
+    auth: VoidRead,
+    tinybird: TinybirdClient,
+    external_identity_id: str | None = Query(None, description="Only this actor"),
+) -> list[EventType]:
+    return await event_service.types(
+        tinybird, auth.organization.id, external_identity_id
+    )
 
 
 @router.get("", response_model=EventsList, operation_id="events:list")

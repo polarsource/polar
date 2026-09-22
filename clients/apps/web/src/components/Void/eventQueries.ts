@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { voidRequest, voidSearch } from './api'
+import type { VoidEventTypeStat } from './events'
 import { VoidEventsList } from './identityLive'
 
 export interface VoidEventListParams {
@@ -15,8 +16,8 @@ export const eventKeys = {
     organizationId,
     params,
   ],
-  names: (organizationId: string, identity?: string) => [
-    'void_event_names',
+  types: (organizationId: string, identity?: string) => [
+    'void_event_types',
     organizationId,
     identity,
   ],
@@ -43,19 +44,17 @@ export const useVoidEvents = (
     ...options,
   })
 
-export const useVoidEventNames = (
+export const useVoidEventTypes = (
   organizationId: string,
   identity?: string,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
-    queryKey: eventKeys.names(organizationId, identity),
+    queryKey: eventKeys.types(organizationId, identity),
     queryFn: () =>
-      voidRequest<VoidEventsList>(
+      voidRequest<VoidEventTypeStat[]>(
         organizationId,
-        `/events${voidSearch({
-          page: '1',
-          limit: '200',
+        `/events/types${voidSearch({
           external_identity_id: identity,
         })}`,
       ),

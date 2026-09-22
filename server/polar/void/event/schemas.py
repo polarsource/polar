@@ -53,6 +53,12 @@ class EventsIngestResponse(Schema):
     ignored: int
 
 
+class EventType(Schema):
+    name: str
+    source: EventSource
+    occurrences: int
+
+
 class Event(Schema):
     id: UUID
     timestamp: datetime

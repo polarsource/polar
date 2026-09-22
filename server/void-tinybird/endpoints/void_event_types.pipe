@@ -1,0 +1,13 @@
+NODE types
+SQL >
+    %
+    SELECT name, source, count() AS occurrences
+    FROM void_events FINAL
+    WHERE organization_id = toUUIDOrZero({{String(organization_id, required=True)}})
+    {% if defined(external_identity_id) %}
+    AND external_identity_id = {{String(external_identity_id)}}
+    {% end %}
+    GROUP BY name, source
+    ORDER BY name, source
+
+TYPE endpoint

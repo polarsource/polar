@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.kit.repository import RepositoryBase
@@ -11,6 +11,17 @@ from polar.models import VoidEvent
 
 class EventRepository(RepositoryBase[VoidEvent]):
     model = VoidEvent
+
+    async def timestamp_range(
+        self, organization_id: UUID
+    ) -> tuple[datetime | None, datetime | None]:
+        result = await self.session.execute(
+            select(func.min(VoidEvent.timestamp), func.max(VoidEvent.timestamp)).where(
+                VoidEvent.organization_id == organization_id
+            )
+        )
+        start, end = result.one()
+        return start, end
 
     async def existing_external_ids(
         self, organization_id: UUID, external_ids: Sequence[str]

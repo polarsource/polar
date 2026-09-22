@@ -9,7 +9,7 @@ import { useSearchParams } from 'next/navigation'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useContext, useMemo } from 'react'
 import { useVoidDataSource } from './dataSource'
-import { useVoidEventNames, useVoidEvents } from './eventQueries'
+import { useVoidEvents, useVoidEventTypes } from './eventQueries'
 import {
   eventTypeStats,
   filterFixtureEvents,
@@ -80,7 +80,7 @@ export const VoidEventsPage = () => {
     },
     { enabled: live },
   )
-  const namesQuery = useVoidEventNames(organization.id, identity ?? undefined, {
+  const typesQuery = useVoidEventTypes(organization.id, identity ?? undefined, {
     enabled: live,
   })
 
@@ -115,13 +115,13 @@ export const VoidEventsPage = () => {
     ? (eventsQuery.data?.pagination.total_count ?? 0)
     : fixtureItems.length
   const types = live
-    ? eventTypeStats((namesQuery.data?.items ?? []).map(toCatalogEvent))
+    ? (typesQuery.data ?? [])
     : eventTypeStats(
         filterFixtureEvents(FIXTURE_EVENTS, { identity, identityNames }),
       )
 
-  const loading = live && eventsQuery.isLoading
-  const error = live ? eventsQuery.error : null
+  const loading = live && (eventsQuery.isLoading || typesQuery.isLoading)
+  const error = live ? (eventsQuery.error ?? typesQuery.error) : null
   const empty = !loading && !error && events.length === 0
 
   return (

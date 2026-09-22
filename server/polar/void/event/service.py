@@ -17,7 +17,7 @@ from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
 
 from .repository import EventRepository
-from .schemas import Event, EventCreate, EventsList, EventSource, Pagination
+from .schemas import Event, EventCreate, EventsList, EventSource, EventType, Pagination
 
 
 class InvalidAttribution(PolarError):
@@ -35,6 +35,18 @@ class ReservedEventName(PolarError):
 
 
 class EventService:
+    async def types(
+        self,
+        tinybird: TinybirdApi,
+        organization_id: UUID,
+        external_identity_id: str | None = None,
+    ) -> list[EventType]:
+        params = {"organization_id": str(organization_id)}
+        if external_identity_id is not None:
+            params["external_identity_id"] = external_identity_id
+        result = await asyncio.to_thread(tinybird.query, "void_event_types", params)
+        return [EventType.model_validate(row) for row in result["data"]]
+
     async def list(
         self,
         tinybird: TinybirdApi,

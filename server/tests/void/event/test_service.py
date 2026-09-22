@@ -248,6 +248,28 @@ class TestDelivery:
 
 
 @pytest.mark.asyncio
+class TestTypes:
+    @pytest.mark.parametrize("identity", [None, "actor"])
+    async def test_uses_grouped_counts_without_pagination(
+        self, organization: Organization, identity: str | None
+    ) -> None:
+        rows = [
+            {"name": "order.paid", "source": "system", "occurrences": 350},
+            {"name": "usage", "source": "user", "occurrences": 2500},
+        ]
+        tinybird = MagicMock(spec=TinybirdApi)
+        tinybird.query.return_value = {"data": rows}
+
+        result = await event_service.types(tinybird, organization.id, identity)
+
+        assert [item.model_dump(mode="json") for item in result] == rows
+        params = {"organization_id": str(organization.id)}
+        if identity is not None:
+            params["external_identity_id"] = identity
+        tinybird.query.assert_called_once_with("void_event_types", params)
+
+
+@pytest.mark.asyncio
 class TestList:
     async def test_filters_and_decodes_event_rows(
         self, organization: Organization

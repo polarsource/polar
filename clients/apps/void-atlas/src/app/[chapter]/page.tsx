@@ -24,9 +24,12 @@ export default async function Chapter({ params, searchParams }: Props) {
   if (!lesson) notFound()
   const step = Number((await searchParams).step ?? '1')
   const steps = await prepare(lesson)
+  const chapters = lessons.map(({ slug, title }) => ({ slug, title }))
   return (
     <Lesson
+      slug={lesson.slug}
       title={lesson.title}
+      chapters={chapters}
       steps={steps}
       initialStep={Number.isFinite(step) ? step - 1 : 0}
     />

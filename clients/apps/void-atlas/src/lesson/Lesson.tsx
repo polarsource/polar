@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Pause, Play } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import { ChapterMap, type ChapterLink } from './ChapterMap'
 import { CodePanel } from './CodePanel'
 import type { PreparedStep } from './types'
 
@@ -20,13 +21,17 @@ const syncUrl = (index: number) => {
 }
 
 export const Lesson = ({
+  slug,
   title,
   steps,
   initialStep,
+  chapters,
 }: {
+  slug: string
   title: string
   steps: readonly PreparedStep[]
   initialStep: number
+  chapters: readonly ChapterLink[]
 }) => {
   const [index, setIndex] = useState(
     Math.min(Math.max(initialStep, 0), steps.length - 1),
@@ -34,6 +39,7 @@ export const Lesson = ({
   const [playing, setPlaying] = useState(false)
   const step = steps[index]!
   const last = index === steps.length - 1
+  const nextChapter = chapters[chapters.findIndex((c) => c.slug === slug) + 1]
 
   const go = useCallback(
     (to: number) => {
@@ -92,17 +98,17 @@ export const Lesson = ({
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
+            aria-label="All chapters"
+            className="text-muted-foreground hover:text-foreground flex items-center transition-colors"
           >
             <PolarMark size={16} />
-            Chapters
           </Link>
-          <span className="text-border">/</span>
           <h1 className="text-sm font-medium">{title}</h1>
         </div>
         <div className="flex items-center gap-1">
           <span className="text-muted-foreground mr-2 font-mono text-xs tabular-nums">
             {index + 1} / {steps.length}
+            <span className="ml-3 hidden lg:inline">← → to move</span>
           </span>
           <Button
             variant="ghost"
@@ -131,27 +137,30 @@ export const Lesson = ({
               {step.prose}
             </motion.div>
           </AnimatePresence>
-          <div className="flex items-center justify-between">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={index === 0}
-              onClick={() => go(index - 1)}
-            >
-              <ArrowLeft size={14} className="mr-1.5" /> Back
-            </Button>
-            <span className="text-muted-foreground hidden font-mono text-xs lg:inline">
-              ← → to move
-            </span>
-            {last ? (
-              <Link href="/">
-                <Button size="sm">Chapters</Button>
-              </Link>
-            ) : (
-              <Button size="sm" onClick={() => go(index + 1)}>
-                Next <ArrowRight size={14} className="ml-1.5" />
+          <div className="flex flex-col gap-6">
+            <ChapterMap chapters={chapters} current={slug} />
+            <div className="flex items-center justify-between">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={index === 0}
+                onClick={() => go(index - 1)}
+              >
+                <ArrowLeft size={14} className="mr-1.5" /> Back
               </Button>
-            )}
+              {last ? (
+                <Link href={nextChapter ? `/${nextChapter.slug}` : '/'}>
+                  <Button size="sm">
+                    {nextChapter ? 'Next chapter' : 'All chapters'}
+                    <ArrowRight size={14} className="ml-1.5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button size="sm" onClick={() => go(index + 1)}>
+                  Next <ArrowRight size={14} className="ml-1.5" />
+                </Button>
+              )}
+            </div>
           </div>
         </section>
 

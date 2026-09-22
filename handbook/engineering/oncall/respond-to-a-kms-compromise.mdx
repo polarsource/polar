@@ -10,11 +10,12 @@ description: "Revoke the sessions, close the path, read what was decrypted, reis
 The key material never leaves KMS. What leaks is access to it: a stolen session, a worker role,
 an AWS account. This procedure cuts that access and replaces what it read.
 
-The key wraps seven columns:
+The key wraps seven columns. CloudTrail reports each by the `{table, column}` in its encryption
+context, and the ciphertext sits in the matching `*_encrypted` column:
 
-- `users.oauth_account_access_token` and `oauth_account_refresh_token`
-- `oauth2_clients.client_secret_encrypted` and `registration_access_token_encrypted`
-- `slack_apps.client_secret`, `signing_secret` and `bot_token`
+- `oauth_accounts` — `access_token`, `refresh_token`
+- `oauth2_clients` — `client_secret`, `registration_access_token`
+- `slack_apps` — `client_secret`, `signing_secret`, `bot_token`
 
 The token hashing secret is not one of them: Secrets Manager encrypts it under the AWS-managed
 key.
@@ -33,9 +34,11 @@ Two roles hold `kms:Decrypt`, each through an inline policy of the same name:
 
 ## 1. Revoke the sessions
 
-On the role whose credentials leaked, and only that one:
+Set `ROLE` to the one whose credentials leaked, and only that one.
 
 ```bash
+ROLE=polar-production-secrets   # or the worker Lambda's role
+
 cat > /tmp/revoke.json <<EOF
 {
   "Version": "2012-10-17",
@@ -51,7 +54,7 @@ cat > /tmp/revoke.json <<EOF
 EOF
 
 aws iam put-role-policy \
-  --role-name polar-production-secrets \
+  --role-name "$ROLE" \
   --policy-name AWSRevokeOlderSessions \
   --policy-document file:///tmp/revoke.json
 ```
@@ -66,14 +69,20 @@ hold the Render environment, or the OIDC trust is being abused — they are back
 Then:
 
 ```bash
-aws kms disable-key --key-id alias/polar-production-secrets
+KEY=$(aws kms describe-key \
+  --key-id alias/polar-production-secrets \
+  --query KeyMetadata.KeyId --output text)
+
+aws kms disable-key --key-id "$KEY"
 ```
+
+Key management takes an id, not an alias, so resolve it first.
 
 Every `Decrypt` and `GenerateDataKey` fails, theirs and ours. Slack stops sending and revealing
 an OAuth2 client secret errors. Login and registration read hashes, so they keep working.
 
-`aws kms enable-key` undoes it. Then cut the trust that let them in: the OIDC provider, the
-role's trust policy, or the role.
+`aws kms enable-key --key-id "$KEY"` undoes it. Then cut the trust that let them in: the OIDC
+provider, the role's trust policy, or the role.
 
 ## 3. Read what was decrypted
 
@@ -81,26 +90,38 @@ Every `Decrypt` carries its encryption context, and ours is `{table, column, id}
 names the rows that were opened, not a guess at what else is gone.
 
 ```bash
+SINCE="$(date -u -v-1d +%Y-%m-%dT%H:%M:%SZ)"  # GNU: date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ
+
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventName,AttributeValue=Decrypt \
-  --start-time "$(date -u -v-1d +%Y-%m-%dT%H:%M:%SZ)" \
+  --start-time "$SINCE" \
   --max-items 500 \
-  --output json \
-| jq -r '.Events[].CloudTrailEvent | fromjson
+  --output json > /tmp/decrypts.json
+
+jq -r '.Events[].CloudTrailEvent | fromjson
   | [.eventTime, .userIdentity.arn,
      .requestParameters.encryptionContext.table,
      .requestParameters.encryptionContext.column,
-     .requestParameters.encryptionContext.id] | @tsv'
+     .requestParameters.encryptionContext.id] | @tsv' /tmp/decrypts.json
+
+jq -r 'if .NextToken then "TRUNCATED: more than 500 matched" else empty end' /tmp/decrypts.json
 ```
 
-Nothing prints until the last page arrives, so start narrow and widen. Most of what comes back
-is ours; only the rows the stolen credentials opened are disclosed. `lookup-events` reaches back
-90 days, no further.
+The cap keeps the query responsive, and the last line says when it hid something. On a
+truncation, narrow `SINCE` and run again until it stays quiet.
+
+Most of what comes back is ours; only the rows the stolen credentials opened are disclosed.
+`lookup-events` reaches back 90 days, no further.
 
 ## 4. Restore service
 
-Delete `AWSRevokeOlderSessions`, restore whatever step 2 cut, `aws kms enable-key`, then
-redeploy the API and the workers.
+Delete `AWSRevokeOlderSessions`, restore whatever step 2 cut, re-enable the key, then redeploy
+the API and the workers.
+
+```bash
+aws iam delete-role-policy --role-name "$ROLE" --policy-name AWSRevokeOlderSessions
+aws kms enable-key --key-id "$KEY"
+```
 
 ## 5. Reissue what was read
 

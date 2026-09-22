@@ -251,7 +251,8 @@ prohibited.
 **Lesson**: A tool that CAN be used for circumvention is not the same as a tool DESIGNED \
 for circumvention. Evaluate the tool's primary function, not hypothetical misuse scenarios. \
 Text rewriters are not prohibited on that basis. VPN, VPS, and VDS products are a \
-closer-review category, not an automatic approve.
+closer-review category: DENY so a human reviews them. The only verdicts are \
+APPROVE or DENY, and the restricted-category line is the policy basis.
 
 ### Example 8: Testimonial Collection SaaS → APPROVE
 **Business**: SaaS platform for collecting, managing, and displaying customer testimonials \
@@ -637,8 +638,12 @@ POLICY_NOTE = (
     "authoring scaffolding — a title banner, reading guide, TODOs, editorial "
     "comments, assessment dates, and links to Slack or the backoffice. Treat "
     "that scaffolding as context, not as rules. Section-status labels are rules: "
-    "Hard AUP or Hard deny means DENY, and Soft AUP means closer review rather "
-    "than an automatic deny. Also base the decision on the prohibited/allowed "
+    "Hard AUP or Hard deny means DENY. Soft AUP is not a hard deny. Follow its "
+    "nuance, including when it says the category may be approved (for example "
+    "with good payment metrics). A closer-review category with no approve nuance, "
+    "such as VPN, VPS, and VDS, means DENY so a human reviews it: the only "
+    "verdicts are APPROVE or DENY, and that restricted-category line is the "
+    "policy basis. Also base the decision on the prohibited/allowed "
     "categories and their documented reasoning (Context/Why, Examples, "
     "Nuances), including a parenthetical decision on a category line. Where a "
     "note records a decision or exception, honor it; where it is an unresolved "

@@ -1,17 +1,51 @@
-HERE BE DRAGONS
+---
+title: "Connecting to the Database"
+description: "Query Render Postgres over Tailscale on the private network"
+---
 
-## Solution A: Direct connection to DB
+Query Render Postgres over Tailscale. Do not add a laptop IP under **Access Control** on the database. Engineer access stays on Tailscale. An allowlist entry publishes the database on the public internet.
 
-1. Add your IP to the allowlist in the database settings Render in [the “Access Control”-section](https://dashboard.render.com/) of the `db`-instance
-2. Connect directly to the database using the database environment variables in Render
+Sandbox data is a database on the production `db` instance. Test is the separate `db-test` instance. Every instance on the account uses the same private-network suffix.
 
-## Solution B: SSH connection
+<Warning>
+  These instances hold live data. Confirm the database name before running anything that writes. Use a read replica when you only need to inspect rows.
+</Warning>
 
-1. Add your SSH public key to your Render user in the Account Settings and going to “SSH public keys” and adding your public key there
-2. Check that you are able to connect by doing `ssh {FIND_ON_RENDER}`. This command is the one that is shown if you click on **Connect** on the service page:  https://dashboard.render.com/web/{DB}
-3. Now in Postico or TablePlus, create a new connection and check the “Use SSH tunnel”. Plug in
-    1. Server name: `ssh.ohio.render.com`
-    2. User name: `{FIND_ON_RENDER}`
-    3. Private key: \<select the private key corresponding to the public key you uploaded>
-4. In the same connection plug in the hostname, username, password, and database from the Render environment variables
-5. You should be good to go!
+## Prerequisites
+
+- Tailscale is connected to the company tailnet, with Tailscale DNS enabled. The hostname below resolves only through that DNS.
+- Access to the database in the [Render Dashboard](https://dashboard.render.com/).
+
+## 1. Copy the internal credentials
+
+On the instance's **Connect** or **Info** page, copy the **internal** user, password, port, and database name.
+
+The internal host is a bare id such as `dpg-xxxxxxxx-a`. Do not use the external hostname (`*.render.com`).
+
+## 2. Build the Tailscale hostname
+
+Append `.usr-cgvspcgdh87jokuesjfg.svc.cluster.local` to that id:
+
+```text
+dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
+```
+
+Production `db` is:
+
+```text
+dpg-d8m0n4poagis73du7gr0-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
+```
+
+Confirm `dpg-d8m0n4poagis73du7gr0-a` still matches the internal host on the Render page before connecting. `db-test` and each read replica have their own `dpg-` id. Use that id with the same suffix.
+
+## 3. Connect
+
+Use the internal port, `5432`. This path is the private network, so TLS is not required. Leave SSH tunneling off.
+
+```bash
+psql "host=dpg-d8m0n4poagis73du7gr0-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE sslmode=disable"
+```
+
+`psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.
+
+Sandbox is the `polar_sandbox` database on this same host. Production application data is the database name in the production service's internal URL.

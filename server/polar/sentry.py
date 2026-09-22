@@ -20,7 +20,7 @@ from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
-from polar.logging import SENSITIVE_LOG_FIELDS, LogScrubBudget
+from polar.logging import SENSITIVE_LOG_FIELDS, LogScrubBudget, _scrub_log_value
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
@@ -47,9 +47,24 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
         return None
+    budget = LogScrubBudget()
+    exceptions = event.get("exception")
+    if exceptions is not None:
+        for exception in reversed(exceptions.get("values", [])):
+            value = exception.get("value")
+            if isinstance(value, str):
+                exception["value"] = budget.scrub_text(value)
+    message = event.get("message")
+    if isinstance(message, str):
+        event["message"] = budget.scrub_text(message)
+    logentry = event.get("logentry")
+    if logentry is not None:
+        scrubbed = _scrub_log_value(logentry, budget=budget)
+        event["logentry"] = (
+            scrubbed if isinstance(scrubbed, dict) else {"formatted": scrubbed}
+        )
     breadcrumbs = event.get("breadcrumbs")
     if isinstance(breadcrumbs, dict):
-        budget = LogScrubBudget()
         for breadcrumb in breadcrumbs.get("values", []):
             message = breadcrumb.get("message")
             if isinstance(message, str):

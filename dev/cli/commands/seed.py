@@ -99,7 +99,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         reset: bool = typer.Option(
             False,
             "--reset",
-            help="Recreate the database before loading fresh seed data.",
+            help="Clear Postgres and Tinybird, then load fresh seeds including the Void demo.",
         ),
     ) -> None:
         """Load sample data (users, organizations, products) into the database."""
@@ -115,33 +115,30 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             )
 
             console.print(
-                "[yellow]This will delete all local database data before reseeding.[/yellow]"
+                "[yellow]This will delete all local Postgres and Tinybird data before reseeding.[/yellow]"
             )
             if not _confirm("Continue?"):
                 raise typer.Abort()
             console.print()
 
-            with step_spinner("Recreating database..."):
-                result = run_command(
-                    ["uv", "run", "task", "db_recreate"],
-                    cwd=SERVER_DIR,
-                    capture=True,
-                )
-            if not result or result.returncode != 0:
-                _print_command_output(result)
-                console.print("\n[red]Database recreate failed.[/red]\n")
-                raise typer.Exit(1)
-            step_status(True, "Database recreated")
-
-            _print_info("Loading fresh seed data. This usually takes a few minutes.")
-            seed_cmd = ["uv", "run", "task", "seeds_load"]
-            with step_spinner("Seeding database..."):
-                result = run_command(seed_cmd, cwd=SERVER_DIR, capture=True)
-            if not result or result.returncode != 0:
-                _print_command_output(result)
-                console.print("\n[red]Seeding failed after database recreate.[/red]\n")
-                raise typer.Exit(1)
-            step_status(True, "Seed data loaded")
+            for label, command in (
+                ("Recreating database", ["task", "db_recreate"]),
+                (
+                    "Clearing Tinybird",
+                    ["python", "-m", "scripts.tinybird", "--reset-local"],
+                ),
+                ("Loading seed data", ["task", "seeds_load"]),
+                ("Loading Void demo", ["task", "void_seed_demo"]),
+            ):
+                with step_spinner(f"{label}..."):
+                    result = run_command(
+                        ["uv", "run", *command], cwd=SERVER_DIR, capture=True
+                    )
+                if not result or result.returncode != 0:
+                    _print_command_output(result)
+                    console.print(f"\n[red]{label} failed.[/red]\n")
+                    raise typer.Exit(1)
+                step_status(True, label)
 
             _configure_polar_self_integration()
             _print_seeded_login_info()

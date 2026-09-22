@@ -4,7 +4,9 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, urlparse
 
+import httpx
 import typer
 
 from polar.config import settings
@@ -149,8 +151,36 @@ def validate_tinybird_target(cwd: str) -> None:
         )
 
 
+def reset_local() -> None:
+    urls = {
+        settings.TINYBIRD_API_URL.rstrip("/"),
+        settings.VOID_TINYBIRD_API_URL.rstrip("/"),
+    }
+    if not (settings.is_development() or settings.is_testing()) or any(
+        urlparse(url).hostname not in {"localhost", "127.0.0.1", "::1"} for url in urls
+    ):
+        raise RuntimeError("Tinybird reset requires local development URLs")
+
+    for url in sorted(urls):
+        with httpx.Client(base_url=url, timeout=60) as client:
+            response = client.get("/tokens")
+            response.raise_for_status()
+            client.headers["Authorization"] = f"Bearer {response.json()['admin_token']}"
+            response = client.get("/v0/datasources")
+            response.raise_for_status()
+            datasources = response.json()["datasources"]
+            for datasource in datasources:
+                name = quote(datasource["name"], safe="")
+                client.post(f"/v0/datasources/{name}/truncate").raise_for_status()
+            print(f"Cleared {len(datasources)} Tinybird datasources at {url}")
+
+
 @cli.command()
-def deploy() -> None:
+def deploy(reset: bool = typer.Option(False, "--reset-local")) -> None:
+    if reset:
+        reset_local()
+        return
+
     if not is_configured():
         print("Tinybird not configured, skipping deployment")
         return

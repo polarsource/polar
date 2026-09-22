@@ -87,6 +87,29 @@ class TransactionRepository(
             )
         )
 
+    async def get_paid_transactions_sum(
+        self, payout_transaction_id: UUID
+    ) -> tuple[int, str | None]:
+        """
+        Get the sum of all paid transactions for a given payout transaction ID, with the currency.
+
+        Args:
+            payout_transaction_id: The ID of the payout transaction.
+
+        Returns:
+            A tuple containing the sum of the amounts and the currency.
+        """
+        statement = (
+            select(func.sum(Transaction.amount), Transaction.currency)
+            .where(Transaction.payout_transaction_id == payout_transaction_id)
+            .group_by(Transaction.currency)
+        )
+        result = await self.session.execute(statement)
+        row = result.one_or_none()
+        if row is None:
+            return 0, None
+        return row._tuple()
+
 
 class PaymentTransactionRepository(TransactionRepository):
     async def get_by_payment_id(

@@ -1,4 +1,4 @@
-from typing import cast
+import typing
 
 import httpx
 
@@ -30,7 +30,7 @@ class LinearClientError(PolarError): ...
 
 class LinearClient:
     async def create_issue_from_template(
-        self, input: IssueCreateFromTemplateInput
+        self, **input: typing.Unpack[IssueCreateFromTemplateInput]
     ) -> Issue | None:
         """Create an issue with template overrides; return None when unconfigured."""
         api_key = settings.LINEAR_API_KEY
@@ -60,7 +60,7 @@ class LinearClient:
             message = "; ".join(error["message"] for error in errors)
             raise LinearClientError(f"Linear issue creation failed: {message}")
 
-        payload = cast(IssueCreatePayload, body["data"]["issueCreate"])
+        payload = typing.cast(IssueCreatePayload, body["data"]["issueCreate"])
         if not payload["success"] or payload["issue"] is None:
             raise LinearClientError("Linear issue creation failed")
         return payload["issue"]

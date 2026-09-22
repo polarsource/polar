@@ -784,7 +784,7 @@ class TestMarkManualAsPaid:
 
 
 @pytest.mark.asyncio
-class TestTransferStripe:
+class TestTransfer:
     @pytest.mark.parametrize(
         "status",
         [PayoutStatus.canceled, PayoutStatus.held],
@@ -931,6 +931,57 @@ class TestTransferStripe:
         stripe_service_mock.transfer.assert_not_called()
         fee_reversal_mock.assert_called_once_with(session, payout=payout)
 
+    async def test_skips_payout_transaction_amount_mismatch(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", destination_payment=None
+        )
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
+        transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account.currency,
+            payout=payout,
+        )
+        paid_transactions = [
+            await create_transaction(
+                save_fixture,
+                account=account,
+                type=TransactionType.balance,
+                # Mismatch: transaction amount is 100 less than payout amount
+                amount=payout.amount + 100,
+                account_currency=account.currency,
+                payout_transaction=transaction,
+            )
+        ]
+
+        await payout_service.transfer(session, payout)
+
+        stripe_service_mock.transfer.assert_not_called()
+
+        payout_transaction_repository = PayoutTransactionRepository.from_session(
+            session
+        )
+        updated_transaction = await payout_transaction_repository.get_by_id(
+            transaction.id
+        )
+        assert updated_transaction is not None
+        assert updated_transaction.transfer_id is None
+
     async def test_valid(
         self,
         stripe_service_mock: MagicMock,
@@ -957,8 +1008,18 @@ class TestTransferStripe:
             account_currency=account.currency,
             payout=payout,
         )
+        paid_transactions = [
+            await create_transaction(
+                save_fixture,
+                account=account,
+                type=TransactionType.balance,
+                amount=payout.amount,
+                account_currency=account.currency,
+                payout_transaction=transaction,
+            )
+        ]
 
-        await payout_service.transfer_stripe(session, payout)
+        await payout_service.transfer(session, payout)
 
         stripe_service_mock.transfer.assert_any_call(
             payout_account.stripe_id,
@@ -979,6 +1040,9 @@ class TestTransferStripe:
         assert updated_transaction is not None
         assert updated_transaction.transfer_id == "STRIPE_TRANSFER_ID"
 
+
+@pytest.mark.asyncio
+class TestTransferStripe:
     @pytest.mark.parametrize(
         ("account_currency", "stripe_amount", "expected_amount"),
         [

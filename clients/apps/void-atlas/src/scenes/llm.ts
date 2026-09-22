@@ -21,16 +21,57 @@ export const estimateInputTokens = (chars: number) =>
 
 const precise = (value: number) => Number(value.toPrecision(12))
 
+/** Credits before rounding. The meter rounds up unless the rate says `none`. */
+export const creditsExact = (rate: Rate, tokens: Tokens) =>
+  precise(
+    rate.call +
+      (tokens.input * rate.input + tokens.output * rate.output) / 1000,
+  )
+
 export const creditsFor = (
   rate: Rate,
   tokens: Tokens,
   round: 'up' | 'none' = 'up',
 ) => {
-  const raw = precise(
-    rate.call +
-      (tokens.input * rate.input + tokens.output * rate.output) / 1000,
-  )
+  const raw = creditsExact(rate, tokens)
   return round === 'none' ? raw : Math.ceil(raw)
+}
+
+/** List price with the markup folded in, as a per-token meter's unit price. */
+export const markedUp = (amount: number, markupPercent: number) =>
+  precise(amount * (1 + markupPercent / 100))
+
+/**
+ * What `perToken` charges for one call: each token at list price times the
+ * markup, summed per side. The markup lives in the meter price, not on top
+ * of a later total.
+ */
+export const perTokenCharge = (
+  prices: { readonly input: number; readonly output: number },
+  tokens: Tokens,
+  markupPercent: number,
+) => {
+  const inputPrice = markedUp(prices.input, markupPercent)
+  const outputPrice = markedUp(prices.output, markupPercent)
+  const input = precise(tokens.input * inputPrice)
+  const output = precise(tokens.output * outputPrice)
+  return {
+    inputPrice,
+    outputPrice,
+    input,
+    output,
+    total: precise(input + output),
+  }
+}
+
+/**
+ * What `costPlus` charges: the gateway's cost times the markup factor.
+ * The spend meter's usage is the raw cost; its price is the factor, so an
+ * allowance of 20 covers twenty dollars of provider cost.
+ */
+export const costPlusCharge = (gatewayCost: number, markupPercent: number) => {
+  const factor = precise(1 + markupPercent / 100)
+  return { factor, total: precise(gatewayCost * factor) }
 }
 
 /** USD list cost from per-million-token prices, what a gateway would report. */

@@ -5,12 +5,13 @@ export interface PlanLever {
   name: string
   /** Monthly subscription fee, in cents. */
   monthlyPrice: number
-  /** Usage covered by the fee before overage starts, in cents. */
-  includedUsage: number
+  /** Included units, keyed by meter slug. */
+  includedUsage: Record<string, number>
 }
 
 export interface MeterLever {
   id: string
+  reducer: string
   name: string
   unit: string
   /** Units covered by one `price`, e.g. 1,000,000 tokens. */

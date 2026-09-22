@@ -164,7 +164,13 @@ export const Lesson = ({
           </div>
         </section>
 
-        <section className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-1 gap-4">
+        <section
+          className={`grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] gap-4 ${
+            step.layout === 'split'
+              ? 'grid-rows-[minmax(280px,0.9fr)_minmax(0,1.1fr)]'
+              : 'grid-rows-1'
+          }`}
+        >
           {step.layout !== 'code' && (
             <div
               className={`bg-card border-border min-h-0 min-w-0 overflow-hidden rounded-2xl border ${

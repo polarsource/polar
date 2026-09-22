@@ -46,7 +46,12 @@ export default async function RootLayout({
   })
 
   return (
-    <html lang="en" suppressHydrationWarning className="antialiased">
+    <html
+      lang="en"
+      translate="no"
+      suppressHydrationWarning
+      className="antialiased"
+    >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (
           <>

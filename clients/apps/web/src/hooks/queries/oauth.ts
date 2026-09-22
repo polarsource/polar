@@ -12,10 +12,11 @@ export const useOAuth2Clients = (
       unwrap(api.GET('/v1/oauth2/', { params: { query: options } })),
   })
 
-export const useOAuth2ClientSecret = (clientId: string, enabled: boolean) =>
+export const useOAuth2ClientSecret = (clientId: string) =>
   useQuery({
     queryKey: ['oauth2Clients', clientId, 'secret'],
-    enabled,
+    // The caller drives this one with refetch().
+    enabled: false,
     // Don't keep a client secret in the cache once the modal is gone.
     gcTime: 0,
     queryFn: async () => {

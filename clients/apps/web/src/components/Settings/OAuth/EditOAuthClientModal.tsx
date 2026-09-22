@@ -12,7 +12,7 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   FieldClientID,
@@ -65,9 +65,11 @@ export const EditOAuthClientModal = ({
 
   const updateOAuth2Client = useUpdateOAuth2Client()
 
-  const [revealSecret, setRevealSecret] = useState(false)
-  const { data: clientSecret, isFetching: isFetchingSecret } =
-    useOAuth2ClientSecret(client.client_id, revealSecret)
+  const {
+    data: clientSecret,
+    isFetching: isFetchingSecret,
+    refetch: revealSecret,
+  } = useOAuth2ClientSecret(client.client_id)
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
@@ -140,7 +142,7 @@ export const EditOAuthClientModal = ({
                   type="button"
                   variant="secondary"
                   loading={isFetchingSecret}
-                  onClick={() => setRevealSecret(true)}
+                  onClick={() => revealSecret()}
                 >
                   Reveal client secret
                 </Button>

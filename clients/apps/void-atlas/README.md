@@ -5,8 +5,9 @@ one step at a time, a short prose card beside a code file that evolves, and a
 scene that shows what the code does. Static content, no backend, no Void API
 calls.
 
-Nine chapters: Config, Events and reducers, Meters and products, Identities,
-Ambient identity, Signals, LLM plugin, Local events, Deploy and versions. Each
+Ten chapters: Config, Events and reducers, Meters and products, Identities,
+Ambient identity, Signals, LLM plugin, Local events, Deploy and versions,
+Scenarios. Each
 chapter's definitions are built with the real SDK and compiled in its test, so
 the code on screen cannot drift from `@void/sdk`.
 

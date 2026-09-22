@@ -30,18 +30,21 @@ describe('reviewCatalogEmptyKind', () => {
 
 describe('catalogEmptyPanelCopy', () => {
   it('does not claim the catalog is empty while a refresh is running', () => {
-    expect(catalogEmptyPanelCopy('no_stripe_subscriptions', true)).toEqual({
+    expect(catalogEmptyPanelCopy({ mode: 'refreshing' })).toEqual({
       title: 'Refreshing from Stripe',
       description: `We're reading your Stripe catalog again. ${CATALOG_READ_DURATION}.`,
     })
   })
 
   it('keeps the settled empty result when nothing is refreshing', () => {
-    expect(catalogEmptyPanelCopy('no_stripe_subscriptions', false).title).toBe(
-      'Nothing to import',
-    )
-    expect(catalogEmptyPanelCopy('all_switched', false).title).toBe(
-      'All subscriptions already switched',
-    )
+    expect(
+      catalogEmptyPanelCopy({
+        mode: 'empty',
+        kind: 'no_stripe_subscriptions',
+      }).title,
+    ).toBe('Nothing to import')
+    expect(
+      catalogEmptyPanelCopy({ mode: 'empty', kind: 'all_switched' }).title,
+    ).toBe('All subscriptions already switched')
   })
 })

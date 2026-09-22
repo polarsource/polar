@@ -16,7 +16,9 @@ export function CatalogEmptyPanel({
   onRerunPrecheck,
   rerunning = false,
 }: Props) {
-  const { title, description } = catalogEmptyPanelCopy(kind, rerunning)
+  const { title, description } = catalogEmptyPanelCopy(
+    rerunning ? { mode: 'refreshing' } : { mode: 'empty', kind },
+  )
 
   return (
     <Box

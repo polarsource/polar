@@ -43,12 +43,16 @@ export const CATALOG_REFRESH_COPY = {
   description: `We're reading your Stripe catalog again. ${CATALOG_READ_DURATION}.`,
 } as const
 
-export function catalogEmptyPanelCopy(
-  kind: ReviewCatalogEmptyKind,
-  rerunning: boolean,
-): { title: string; description: string } {
-  if (rerunning) {
+export type CatalogEmptyPanelState =
+  | { mode: 'refreshing' }
+  | { mode: 'empty'; kind: ReviewCatalogEmptyKind }
+
+export function catalogEmptyPanelCopy(state: CatalogEmptyPanelState): {
+  title: string
+  description: string
+} {
+  if (state.mode === 'refreshing') {
     return CATALOG_REFRESH_COPY
   }
-  return CATALOG_EMPTY_COPY[kind]
+  return CATALOG_EMPTY_COPY[state.kind]
 }

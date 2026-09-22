@@ -1505,7 +1505,7 @@ class MerchantMigrationService:
         ):
             extra_dependencies = (
                 await record_repository.list_imported_catalog_dependencies(
-                    migration.organization_id
+                    migration.organization_id, include_skipped=True
                 )
             )
         records = [deserialize(record.type, record.canonical) for record in staged]

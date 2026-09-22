@@ -382,8 +382,12 @@ class MerchantMigrationRecordRepository(
         return await self.get_one_or_none(statement)
 
     async def list_imported_catalog_dependencies(
-        self, organization_id: UUID
+        self, organization_id: UUID, *, include_skipped: bool = False
     ) -> Sequence[MerchantMigrationRecord]:
+        imported = and_(
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+        )
         statement = self.get_base_statement().where(
             MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type.in_(
@@ -393,13 +397,11 @@ class MerchantMigrationRecordRepository(
                 )
             ),
             or_(
-                and_(
-                    MerchantMigrationRecord.status
-                    == MerchantMigrationRecordStatus.imported,
-                    MerchantMigrationRecord.target_id.is_not(None),
-                ),
+                imported,
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.skipped,
-            ),
+            )
+            if include_skipped
+            else imported,
         )
         return await self.get_all(statement)
 

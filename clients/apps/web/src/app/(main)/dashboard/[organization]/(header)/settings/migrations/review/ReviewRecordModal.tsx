@@ -2,6 +2,7 @@
 
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
@@ -24,7 +25,9 @@ export function ReviewRecordModal({
   const { organization } = useContext(OrganizationContext)
   const isSubscription = row.entity === 'subscriptions'
   const polarCustomerHref = row.conflicting_customer_id
-    ? `/dashboard/${organization.slug}/customers/${row.conflicting_customer_id}`
+    ? buildCustomerDashboardPath(organization.slug, {
+        id: row.conflicting_customer_id,
+      })
     : null
 
   return (

@@ -1798,7 +1798,7 @@ class TestOAuth2Token:
             "grant_type": "web",
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
+            "client_secret": "polar_cs_123",
         }
 
         response = await client.post("/v1/oauth2/token", data=data)

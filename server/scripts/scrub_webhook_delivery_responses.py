@@ -8,7 +8,7 @@ cursor it prints on exit back as `--start-after`.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import typer
@@ -24,6 +24,18 @@ from scripts.helper import configure_script_logging, typer_async
 cli = typer.Typer()
 
 configure_script_logging()
+
+# Round-trips exactly: microseconds are always present (unlike `isoformat()`,
+# which drops them when zero) and `%z` both writes and reads the offset, so the
+# cursor printed on exit is accepted verbatim by --start-after.
+CURSOR_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
+START_AFTER_FORMATS = [
+    CURSOR_FORMAT,
+    "%Y-%m-%dT%H:%M:%S%z",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d",
+]
 
 
 @cli.command()
@@ -41,7 +53,10 @@ async def scrub_webhook_delivery_responses(
         None, help="Stop after scrubbing this many rows, to run the backlog in chunks"
     ),
     start_after: datetime | None = typer.Option(
-        None, help="Resume from this `created_at` cursor instead of the oldest row"
+        None,
+        formats=START_AFTER_FORMATS,
+        help="Resume from this `created_at` cursor instead of the oldest row."
+        " Naive values are read as UTC",
     ),
     dry_run: bool = typer.Option(
         False, help="Only report how many rows would be scrubbed, then exit"
@@ -51,6 +66,9 @@ async def scrub_webhook_delivery_responses(
 
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
+
+    if start_after is not None and start_after.tzinfo is None:
+        start_after = start_after.replace(tzinfo=UTC)
 
     cursor: tuple[datetime, UUID] | None = (
         (start_after, UUID(int=0)) if start_after is not None else None
@@ -124,7 +142,9 @@ async def scrub_webhook_delivery_responses(
             if exhausted:
                 typer.echo("Nothing left to scrub past the retention period.")
             elif cursor is not None:
-                typer.echo(f"Resume with --start-after {cursor[0].isoformat()}")
+                typer.echo(
+                    f"Resume with --start-after {cursor[0].strftime(CURSOR_FORMAT)}"
+                )
         await engine.dispose()
 
 

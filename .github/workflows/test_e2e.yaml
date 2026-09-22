@@ -6,15 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       api_url:
-        description: "API base URL (default: production)"
+        description: "API base URL (default: sandbox)"
         type: string
       checkout_link:
         description: "Checkout link client secret (default: the E2E_CHECKOUT_LINK secret)"
         type: string
-      test_card:
-        description: "Use Stripe's 4242 test card instead of the real card (for sandbox)"
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -26,11 +22,8 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
 
     env:
-      E2E_API_URL: ${{ inputs.api_url || 'https://api.polar.sh' }}
+      E2E_API_URL: ${{ inputs.api_url || 'https://sandbox-api.polar.sh' }}
       E2E_CHECKOUT_LINK: ${{ inputs.checkout_link || secrets.E2E_CHECKOUT_LINK }}
-      E2E_CARD_NUMBER: ${{ inputs.test_card && '' || secrets.E2E_CARD_NUMBER }}
-      E2E_CARD_EXPIRY: ${{ inputs.test_card && '' || secrets.E2E_CARD_EXPIRY }}
-      E2E_CARD_CVC: ${{ inputs.test_card && '' || secrets.E2E_CARD_CVC }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:

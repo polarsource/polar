@@ -5,11 +5,7 @@ export const API_URL = (
 export const CHECKOUT_LINK =
   process.env.E2E_CHECKOUT_LINK || 'polar_cl_e2e_seed_trial_subscription'
 
-export const CARD = {
-  number: process.env.E2E_CARD_NUMBER || '4242424242424242',
-  expiry: process.env.E2E_CARD_EXPIRY || '1234',
-  cvc: process.env.E2E_CARD_CVC || '123',
-}
+export const CARD = { number: '4242424242424242', expiry: '1234', cvc: '123' }
 
 export const STRIPE_FRAME = 'iframe[name^="__privateStripeFrame"]'
 

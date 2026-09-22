@@ -1,6 +1,15 @@
 import type { Lesson } from '@/lesson/types'
+import { BillingModes } from '@/scenes/BillingModes'
 import { ConfigToIr } from '@/scenes/ConfigToIr'
-import { creditsFor, estimateInputTokens, ladder, listCost } from '@/scenes/llm'
+import {
+  costPlusCharge,
+  creditsExact,
+  creditsFor,
+  estimateInputTokens,
+  ladder,
+  listCost,
+  perTokenCharge,
+} from '@/scenes/llm'
 import { LlmPipeline, type Call } from '@/scenes/LlmPipeline'
 import {
   checksumOf,
@@ -13,10 +22,13 @@ import {
   type Config,
 } from '@void/sdk/config'
 import {
+  costPlus,
   inCredits,
   llm,
   perCall,
   perThousand,
+  perToken,
+  percent,
   vercelGateway,
 } from '@void/sdk/plugins'
 import { code } from './code'
@@ -30,6 +42,27 @@ export const RATES = {
   'anthropic/claude-haiku-4-5': perThousand({ input: 1, output: 5 }),
   other: perCall(5),
 }
+/** USD per token, the list the credit rates are priced against. */
+export const LIST = {
+  'anthropic/claude-sonnet-5': { input: usd(0.000003), output: usd(0.000015) },
+  'anthropic/claude-haiku-4-5': { input: usd(0.000001), output: usd(0.000005) },
+  other: { input: usd(0.000004), output: usd(0.00002) },
+}
+export const PER_TOKEN_MARKUP = 30
+export const COST_PLUS_MARKUP = 40
+
+export const tokens = llm({
+  key: 'tokens',
+  models: MODELS,
+  gateway: vercelGateway(),
+  billing: perToken(LIST, { markup: percent(PER_TOKEN_MARKUP) }),
+})
+export const plus = llm({
+  key: 'plus',
+  models: MODELS,
+  gateway: vercelGateway(),
+  billing: costPlus({ markup: percent(COST_PLUS_MARKUP) }),
+})
 
 const plugin = (classify: boolean) =>
   llm({
@@ -69,6 +102,21 @@ const PROMPT_CHARS = 1_840
 const inputTokens = estimateInputTokens(PROMPT_CHARS)
 const sonnet = RATES['anthropic/claude-sonnet-5']
 const usage = { input: inputTokens, output: 812 }
+const sonnetList = LIST['anthropic/claude-sonnet-5']
+const tokenBill = perTokenCharge(
+  { input: sonnetList.input.amount, output: sonnetList.output.amount },
+  usage,
+  PER_TOKEN_MARKUP,
+)
+const gatewayCost = listCost({ input: 3, output: 15 }, usage)
+const plusBill = costPlusCharge(gatewayCost, COST_PLUS_MARKUP)
+const exactCredits = creditsExact(sonnet, usage)
+
+const n = (value: number) => value.toLocaleString('en-US')
+const money = (value: number) => {
+  const digits = Math.abs(value) >= 0.01 ? 6 : 10
+  return `$${value.toFixed(digits).replace(/0+$/, '')}`
+}
 export const call: Call = {
   identity: 'nightly',
   model: 'anthropic/claude-sonnet-5',
@@ -81,7 +129,7 @@ export const call: Call = {
   remaining: 120,
   usage,
   credits: creditsFor(sonnet, usage),
-  cost: listCost({ input: 3, output: 15 }, usage),
+  cost: gatewayCost,
   callId: 'call_8f2a',
 }
 const short = { ...call, remaining: 40 }
@@ -110,6 +158,32 @@ export const ai = llm({
       other: perCall(5),
     },
   }),
+})
+`
+
+const BILLING = `import { usd } from '@void/sdk'
+import { costPlus, inCredits, perCall, perThousand, perToken, percent } from '@void/sdk/plugins'
+
+// list price per token; the markup is part of the meter price
+billing: perToken(
+  {
+    'anthropic/claude-sonnet-5': { input: usd(0.000003), output: usd(0.000015) },
+    'anthropic/claude-haiku-4-5': { input: usd(0.000001), output: usd(0.000005) },
+    other: { input: usd(0.000004), output: usd(0.00002) },
+  },
+  { markup: percent(30) },
+)
+
+// the meter sums gateway cost; each dollar is priced at the markup
+billing: costPlus({ markup: percent(40) })
+
+// a rate per model, taken from a pool and rounded up
+billing: inCredits({
+  rates: {
+    'anthropic/claude-sonnet-5': perThousand({ input: 3, output: 15 }),
+    'anthropic/claude-haiku-4-5': perThousand({ input: 1, output: 5 }),
+    other: perCall(5),
+  },
 })
 `
 
@@ -289,6 +363,75 @@ export const llmLesson: Lesson = {
         <ConfigToIr
           ir={compile(stages.plugin)}
           checksum={checksumOf(stages.plugin)}
+        />
+      ),
+    },
+    {
+      id: 'billing',
+      prose: (
+        <>
+          <p>
+            The mode changes the bill, not the record. This call is{' '}
+            {usage.input.toLocaleString('en-US')} input tokens and{' '}
+            {usage.output.toLocaleString('en-US')} output on Sonnet. The gateway
+            reports {money(gatewayCost)}.
+          </p>
+          <p>
+            {code('inCredits')} converts at the model&apos;s rate and rounds{' '}
+            {exactCredits} up to {creditsFor(sonnet, usage)}. {code('costPlus')}{' '}
+            records the gateway cost on a spend meter priced at{' '}
+            {code('percent(40)')}: the allowance is dollars of provider cost,
+            and the customer pays the marked-up amount. {code('perToken')}{' '}
+            charges each token at list price times {code('percent(30)')}, so the
+            markup sits in the meter price.
+          </p>
+        </>
+      ),
+      code: BILLING,
+      focus: [5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 19, 20, 21, 22, 23, 24, 25],
+      scene: (
+        <BillingModes
+          model={call.model}
+          input={usage.input}
+          output={usage.output}
+          gatewayCost={money(gatewayCost)}
+          modes={[
+            {
+              id: 'inCredits',
+              caption: 'rate, round up',
+              chapter: true,
+              lines: [
+                `${n(usage.input)} × 3`,
+                `${n(usage.output)} × 15`,
+                `exact ${exactCredits}`,
+              ],
+              total: String(creditsFor(sonnet, usage)),
+              unit: 'credits',
+              meter: 'assistant-credits',
+            },
+            {
+              id: 'costPlus',
+              caption: 'gateway × markup',
+              lines: [
+                `cost ${money(gatewayCost)}`,
+                `× ${plusBill.factor.toFixed(2)}`,
+              ],
+              total: money(plusBill.total),
+              unit: 'usd',
+              meter: 'plus-spend',
+            },
+            {
+              id: 'perToken',
+              caption: 'list × 1.30',
+              lines: [
+                `${n(usage.input)} × ${money(tokenBill.inputPrice)}`,
+                `${n(usage.output)} × ${money(tokenBill.outputPrice)}`,
+              ],
+              total: money(tokenBill.total),
+              unit: 'usd',
+              meter: 'input + output',
+            },
+          ]}
         />
       ),
     },

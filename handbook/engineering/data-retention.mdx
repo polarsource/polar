@@ -1,0 +1,186 @@
+---
+title: "Data Retention Schedule"
+description: "How long Polar keeps each category of data, why, how the period is enforced, and what is deliberately kept indefinitely."
+---
+
+<Info>
+**Status**: Draft · **Owner**: Engineering · **Last Updated**: September 2026
+
+**Review**: annually, and whenever a retention period is added or changed
+
+**Companion**: [Data Flows](/engineering/data-flows) describes *where* data lives and who
+receives it. This page describes *how long* it stays.
+</Info>
+
+## Scope and principles
+
+This schedule covers data Polar stores itself: PostgreSQL, S3 and Redis. Data held by
+sub-processors is governed by their own retention terms, listed in
+[Data Flows](/engineering/data-flows).
+
+Four principles decide every row below.
+
+1. **Storage limitation is a standing obligation.** GDPR Art. 5(1)(e) requires that personal
+   data not be kept in identifiable form longer than the purpose requires. It applies whether
+   or not anyone asks us to delete anything.
+2. **A documented period beats a short one.** Auditors and regulators accept a long retention
+   period with a recorded justification. They do not accept an undocumented one, however short.
+   Every period here carries its reason.
+3. **Transaction records are not short-lived data.** Invoices, orders, payments, payouts and
+   the events that price them are financial records with statutory retention. They are exempt
+   from expiry by design, not by omission.
+4. **Erasure is not retention.** Responding to a GDPR Art. 17 request is a separate obligation
+   from expiring data on a clock. Neither substitutes for the other. See
+   [Erasure requests](#erasure-requests).
+
+## PostgreSQL — enforced today
+
+Every actor below is a Dramatiq cron running daily with `TaskPriority.LOW`. Most run at
+00:00 UTC; `webhook_delivery.archive` runs at 00:30 so the two webhook sweeps do not contend.
+
+| Data | Period | Enforced by | Why this period |
+| --- | --- | --- | --- |
+| `authentication_sessions` | 15 min (`AUTHENTICATION_SESSION_TTL`) | `authentication_session.delete_expired` | Single-use handoff during login; worthless the moment the session is issued. |
+| `email_otps` | 30 min (`EMAIL_OTP_TTL`) | `email_otp.delete_expired` | A login code that outlives its window is only an attack surface. |
+| `oauth2_states` | 10 min (`OAUTH2_SESSION_STATE_TTL`) | `oauth2_state.delete_expired` | CSRF state for one in-flight OAuth handshake; abandoned flows otherwise leave `redirect_uri`, `nonce` and `code_verifier` behind forever. |
+| `customer_session_codes` | 30 min (`CUSTOMER_SESSION_CODE_TTL`) | `customer_session_code.delete_expired` | Portal login code carrying a buyer email; no reason to hold the email past the code. |
+| `email_verification` | 30 min (`EMAIL_VERIFICATION_TTL_SECONDS`) | `email_update.delete_expired_record` | Same shape as an OTP: a one-shot token tied to an address change. |
+| `customer_email_verifications` | 30 min | `customer_email_update.delete_expired` | As above, for buyer-initiated email changes. |
+| `customer_sessions` | 1 h (`CUSTOMER_SESSION_TTL`) | `customer_session.delete_expired` | Buyer portal session; expiry is the security control, deletion keeps the table bounded. |
+| `member_sessions` | 1 h (`CUSTOMER_SESSION_TTL`) | `member_session.delete_expired` | Seat-member portal session; same reasoning as customer sessions. |
+| `oauth2_tokens` | Token `expires_in` | `oauth2_token.delete_expired` | An expired access or refresh token grants nothing; retaining it only widens a breach. |
+| `user_sessions` | 31 days (`USER_SESSION_TTL`) | `auth.delete_expired` | Dashboard sessions are long-lived by product decision; the row dies with the session. |
+| `external_events` | 30 days (`EXTERNAL_EVENT_RETENTION_PERIOD`) | `external_event.prune` | Inbound processor payloads (Stripe et al.). Kept long enough to replay and debug a delivery, not long enough to become a second copy of Stripe's records. |
+| `email_logs` | 660 days (`EMAIL_LOG_RETENTION_PERIOD`) | `email_log.prune` | Covers the 540-day card-scheme dispute window with ~4 months of slack, so "did the customer receive the notice?" is answerable for any dispute we can still receive. |
+| `webhook_events.payload` | 90 days (`WEBHOOK_EVENT_RETENTION_PERIOD`) | `webhook_event.archive` | Payload nulled, row kept. Merchants debug recent deliveries; the delivery history stays queryable without holding the body. |
+| `webhook_deliveries.response` | 90 days (`WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD`) | `webhook_delivery.archive` | Response bodies are captured verbatim from merchant endpoints and can contain anything. Same clock as the event payload, so the two halves of a delivery record expire together. |
+
+## PostgreSQL — retained indefinitely, by decision
+
+| Data | Why |
+| --- | --- |
+| `events`, `meter_events` | Single source of truth for usage billing. Every invoice must remain reconstructible from the events that priced it, for as long as the invoice itself is retained. |
+| `orders`, `order_items`, `payments`, `refunds`, `disputes`, `transactions`, `payouts` | Financial records. EU invoicing and VAT rules require 7–10 years depending on member state; we do not expire them. |
+| `customers`, `organizations`, `products`, `subscriptions` | Live account and catalogue state. Removal follows deletion by the account holder, not a clock. |
+| `merchant_migration_records` | Migration audit trail; `canonical` holds the source platform's record as imported, which is the evidence that a migration was faithful. |
+
+<Note>
+`events.user_metadata` is merchant-supplied and unvalidated. Indefinite event retention means
+Polar holds whatever a merchant chose to put there for as long as the event lives. Metadata
+retention follows the event; merchants are the controller for its contents.
+</Note>
+
+## PostgreSQL — in flight
+
+| Data | Proposed period | Status |
+| --- | --- | --- |
+| Checkout PII on GDPR erasure | On request | Draft PR. Scrubs `customer_email`, `customer_name`, `customer_billing_name`, `customer_billing_address`, `customer_tax_id`, `customer_ip_address` and `customer_metadata` from a customer's checkouts when that customer is anonymised. |
+
+## PostgreSQL — open decisions
+
+These are recorded so they are decisions rather than oversights.
+
+| Data | Question |
+| --- | --- |
+| Orphan checkouts (`customer_id IS NULL`, status `expired` / `failed`) | Erasure-driven scrubbing cannot reach these: the person never became a customer, has no account and will never file a request. Needs either a time-based sweep (18–24 months clears the dispute window and preserves fraud signal) or a written legitimate-interest position for indefinite retention. |
+| `webhook_deliveries` rows | `response` is now scrubbed at 90 days, but the rows themselves accumulate unboundedly. A size question, not a privacy one — deferred deliberately. |
+| `oauth2_authorization_codes` | Soft-deleted on revoke; no expiry job. Codes are single-use and short-lived, so rows outlive their usefulness immediately. |
+| `notifications`, `organization_risk_signals`, `compass_thread_messages`, `support_cases` | No period set. Compass messages hold full AI transcripts; risk signals hold vendor payloads. |
+| Soft-deleted customers and organizations | `deleted_at` is a logical delete: the row keeps its personal data. `DELETE /v1/customers/{id}` takes `anonymize`, but it defaults to `false`, so the default path through our own API soft-deletes a customer and retains their email, name and billing address indefinitely. Either the default should flip, or the schedule needs a period after which soft-deleted rows are anonymised. |
+
+## Object storage
+
+| Bucket | Contents | Period | Why |
+| --- | --- | --- | --- |
+| `polar-customer-invoices` | Customer invoice PDFs | Indefinite | Statutory invoicing records; exempt from expiry. |
+| `polar-customer-receipts` | Receipt PDFs | Indefinite | As above. |
+| `polar-payout-invoices` | Merchant payout invoices | Indefinite | As above. |
+| `polar-{env}-files` | Merchant-uploaded product files | Life of the product | Merchant-owned content; deleted when the merchant deletes it. |
+| `polar-{env}-public-files`, `polar-public-assets` | Public media and assets | Life of the object | Public by design; no personal data expected. |
+| `polar-{env}-logs` | Gzipped JSONL span archive | **Open** — Object Lock GOVERNANCE, 7 years, no lifecycle rule | See [Open: the logs bucket](#open-the-logs-bucket). |
+| `polar-sh-backups` (+ replica) | PostgreSQL backups | 30 days, plus 1 day for non-current versions | Long enough to recover from a fault discovered late; short enough that deleted data does not survive indefinitely in backups. Object Lock COMPLIANCE. |
+| `polar-{env}-athena-results` | Athena query results | 7 days | Derived output, regenerable by re-running the query. |
+| Memory profiles (`MEMORY_PROFILE_S3_BUCKET_NAME`) | Heap snapshots | **None set — highest priority gap** | Snapshots can contain anything resident in process memory, including personal data and secrets. Needs a short period (7–14 days) and to be declared in Terraform. |
+
+When adding an expiration rule, also set `noncurrent_version_expiration` and
+`abort_incomplete_multipart_upload`. Without the first, objects "deleted" from a versioned
+bucket persist as non-current versions — still stored, still discoverable. The backups module
+is the reference implementation.
+
+### Open: the logs bucket
+
+`polar-{env}-logs` receives the OpenTelemetry span exporter's output: all traces, with
+sensitive attribute keys scrubbed before write. It carries a 7-year GOVERNANCE Object Lock and
+no lifecycle rule, so nothing in it can expire.
+
+That is correct if these are audit logs subject to a retention requirement, and wrong if they
+are operational telemetry — in which case the lock should be removed and a 90-day rule applied.
+[Data Flows](/engineering/data-flows) currently describes them as "Audit logs and span archive",
+which does not match what the exporter writes. **This needs a decision before the bucket can be
+described as in or out of scope for automated deletion.**
+
+## Redis
+
+Redis holds no durable records. Every key is written with an explicit TTL and nothing survives
+a flush.
+
+| Keys | TTL |
+| --- | --- |
+| Metrics response cache | 60 s (`METRICS_CACHE_TTL_SECONDS`) |
+| Worker debounce keys | 1 h (`DEBOUNCE_KEY_TTL`) |
+| Distributed locks | Lock lifetime |
+| Rate-limit counters | Window length |
+| Event stream | Delivery only; not persisted |
+
+## Erasure requests
+
+Art. 17 erasure is handled per request and is **not** a substitute for the schedule above.
+`CustomerService.anonymize` scrubs a customer's email, name, billing name, billing address and
+OAuth tokens, and records `__anonymized_at`. It deliberately retains:
+
+- **`external_id` and `tax_id`** — required for tax and legal records.
+- **Business names** (customers carrying a `tax_id`) — a company name is not personal data.
+- **Orders, subscriptions and invoices** — immutable financial records; the invoice keeps the
+  address as issued.
+
+Erasure reaches backups by expiry, not by deletion: `polar-sh-backups` is Object Lock
+COMPLIANCE, so a backup cannot be deleted before its retention elapses by anyone, including
+root. A request completed today is fully reflected across all copies within 30 days.
+
+## Monitoring
+
+Retention that stops working silently is worse than no retention, because the schedule still
+claims it happened.
+
+`ExpiredRecordsNotDeletedInvariant` covers every PostgreSQL period in this schedule except
+`webhook_event.archive`. It runs with the other invariants every 15 minutes and alerts to Slack,
+naming the cleanup actors that have fallen behind. Each entry mirrors its task's own deletion
+predicate, so rows a task deliberately keeps — an OAuth2 token with a live refresh token, an
+unhandled external event, a delivery with nothing left to scrub — are not reported as overdue.
+A record counts as overdue only once it has been deletable for a full `CLEANUP_INTERVAL`
+(1 day) plus `LEEWAY` (1 hour), since the cleanups run daily and the check does not.
+
+Adding a retention period means adding its `CleanupTask` entry in the same PR. A period with no
+entry is unmonitored, and an unmonitored period is a claim in this document that nothing checks.
+
+Two gaps remain:
+
+- **`webhook_event.archive`** is not in `CLEANUP_TASKS`. If it stops nulling payloads, nothing
+  alerts.
+- **S3 lifecycle rules emit no failure event.** Coverage has to come from CloudWatch bucket
+  metrics or a job asserting the age of the oldest object under a prefix. Allow ~48 h of slack:
+  lifecycle expiry is asynchronous and runs after the rule boundary.
+
+Separately, `InvariantService.check` alerts on `InvariantError` but lets any other exception
+propagate out of an actor running `max_retries=0`. An invariant that is itself erroring — a bad
+query, a statement timeout — looks exactly like one that is passing.
+
+## Changing this schedule
+
+- Adding or changing a period means updating this page, and its `CleanupTask` entry in
+  `ExpiredRecordsNotDeletedInvariant`, in the same PR as the code. A period in `config.py` with
+  no row here is not a policy; a row here with no invariant entry is not enforced.
+- New tables holding personal data need a row before they ship, even if the answer is
+  "retained indefinitely, because X".
+- Material changes — shortening a period that data subjects were told about, or removing an
+  expiry — belong in an ADR under `handbook/engineering/decisions/`.

@@ -28,7 +28,10 @@ class HashSecrets(NamedTuple):
 
 def get_hash_secrets() -> HashSecrets:
     """Do not cache this: the fetch is cached instead, so local settings stay
-    readable."""
+    readable.
+
+    Rotating or retiring a secret: handbook/engineering/oncall/rotate-secret.mdx.
+    """
     arn = settings.AWS_HASH_SECRET_ARN
     if arn is None:
         return HashSecrets(

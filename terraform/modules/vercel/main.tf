@@ -97,22 +97,24 @@ locals {
   )
 
   environment_variables = [for env in local.managed_environment_variables : env if env.value != null]
+
+  # Vercel allows one variable per key and target pair, so that pair is the
+  # address. The map holds a position rather than the entry, because a
+  # sensitive value cannot reach a for_each argument.
+  environment_variable_positions = {
+    for position, variable in local.environment_variables :
+    "${variable.key}/${join(",", sort(tolist(variable.target)))}" => position
+  }
 }
 
-# Vercel allows one variable per key and target pair, so that pair is the
-# identity. Indexing by position makes every later entry shift when one is
-# added or removed.
 resource "vercel_project_environment_variable" "this" {
-  for_each = {
-    for variable in local.environment_variables :
-    "${variable.key}/${join(",", sort(tolist(variable.target)))}" => variable
-  }
+  for_each = local.environment_variable_positions
 
   project_id = vercel_project.this.id
-  key        = each.value.key
-  value      = each.value.value
-  target     = each.value.target
-  sensitive  = each.value.sensitive
+  key        = local.environment_variables[each.value].key
+  value      = local.environment_variables[each.value].value
+  target     = local.environment_variables[each.value].target
+  sensitive  = local.environment_variables[each.value].sensitive
 }
 
 resource "vercel_project_domain" "this" {

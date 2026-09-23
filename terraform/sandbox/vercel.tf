@@ -74,149 +74,134 @@ module "vercel" {
   ]
 }
 
-# --- Environment variable imports (adopt existing live vars) ---
-
-import {
-  to = module.vercel.vercel_project_environment_variable.this[0]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/w1NY4uqMF9RRJEQ4"
+# Adopt the positional state entries under their identity. Remove once
+# applied.
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[0]
+  to   = module.vercel.vercel_project_environment_variable.this["SENTRY_ORG/preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[1]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/28dvcKhgCADC0p13"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[1]
+  to   = module.vercel.vercel_project_environment_variable.this["SENTRY_PROJECT/preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[2]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/4dyzp0AbpAz6c9K3"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[2]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_API_URL/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[3]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/IdczbgDwiRTC2v6f"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[3]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_BACKOFFICE_URL/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[4]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/5mCAPYOHrZNEsXty"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[4]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_SENTRY_DSN/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[5]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/FySW8EWdhQzpyzKA"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[5]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_POSTHOG_TOKEN/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[6]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/QAYtBfaZlKB4pTin"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[6]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[7]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/L4qbynrJFIyufUiH"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[7]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_CHECKOUT_EMBED_SCRIPT_SRC/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[8]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/bytc5jFrDw9ssXxt"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[8]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[9]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/VobDmxSUtP7adFLt"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[9]
+  to   = module.vercel.vercel_project_environment_variable.this["S3_PUBLIC_IMAGES_BUCKET_PROTOCOL/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[10]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/X3X8orv1KleBBo0r"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[10]
+  to   = module.vercel.vercel_project_environment_variable.this["S3_PUBLIC_IMAGES_BUCKET_HOSTNAME/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[11]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/vJhzDLNxPKJsd2Wp"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[11]
+  to   = module.vercel.vercel_project_environment_variable.this["S3_PUBLIC_IMAGES_BUCKET_PATHNAME/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[12]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/iTAa5iIkwA9YODNZ"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[12]
+  to   = module.vercel.vercel_project_environment_variable.this["S3_UPLOAD_ORIGINS/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[13]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/dbGdko2sXT89XX5Z"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[13]
+  to   = module.vercel.vercel_project_environment_variable.this["POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[14]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/OBCQHn3zEiJO3IAs"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[14]
+  to   = module.vercel.vercel_project_environment_variable.this["ENABLE_EXPERIMENTAL_COREPACK/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[15]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/EgQjfzlTK2qIKGHB"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[17]
+  to   = module.vercel.vercel_project_environment_variable.this["MINTLIFY_ASSISTANT_API_KEY/preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[16]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/97nfHHz8Yp3jyhDP"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[18]
+  to   = module.vercel.vercel_project_environment_variable.this["GRAM_API_KEY/preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[17]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/lXOEP3o9Ba2vywVe"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[19]
+  to   = module.vercel.vercel_project_environment_variable.this["POLAR_PREVIEW_ACCESS_TOKEN/preview"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[18]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/226bArwHf6cBkwQL"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[20]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_FRONTEND_BASE_URL/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[19]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/G8Hea1UtAUeyc7Op"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[21]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_ENVIRONMENT/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[20]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/GGmDCMw1PtlON5aO"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[22]
+  to   = module.vercel.vercel_project_environment_variable.this["POLAR_AUTH_COOKIE_KEY/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[21]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/AsZo1f5xvFesGTii"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[23]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_PRODUCT_LINK_BASE_URL/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[22]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/Y1MhbDdlM5AGmqQA"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[24]
+  to   = module.vercel.vercel_project_environment_variable.this["POLAR_PREVIEW_BACKEND_HOST/preview"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[23]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/EC3UsI3H59QtadgB"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[26]
+  to   = module.vercel.vercel_project_environment_variable.this["NEXT_PUBLIC_STRIPE_KEY/development,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[24]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/TNVIdwsxp2x4uY0y"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[27]
+  to   = module.vercel.vercel_project_environment_variable.this["MCP_OAUTH2_CLIENT_ID/development,preview,production"]
 }
 
-import {
-  to = module.vercel.vercel_project_environment_variable.this[25]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/H3gjIuSxXosjhMAM"
-}
-
-import {
-  to = module.vercel.vercel_project_environment_variable.this[26]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/5EOd7Pn9ATsN2xg0"
-}
-
-import {
-  to = module.vercel.vercel_project_environment_variable.this[27]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/YxzqIpIRgF8vwtd2"
-}
-
-import {
-  to = module.vercel.vercel_project_environment_variable.this[28]
-  id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/2zLQorUoqHKTSpF9"
+moved {
+  from = module.vercel.vercel_project_environment_variable.this[28]
+  to   = module.vercel.vercel_project_environment_variable.this["MCP_OAUTH2_CLIENT_SECRET/development,preview,production"]
 }

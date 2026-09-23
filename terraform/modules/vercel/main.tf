@@ -99,14 +99,20 @@ locals {
   environment_variables = [for env in local.managed_environment_variables : env if env.value != null]
 }
 
+# Vercel allows one variable per key and target pair, so that pair is the
+# identity. Indexing by position makes every later entry shift when one is
+# added or removed.
 resource "vercel_project_environment_variable" "this" {
-  count = length(local.environment_variables)
+  for_each = {
+    for variable in local.environment_variables :
+    "${variable.key}/${join(",", sort(tolist(variable.target)))}" => variable
+  }
 
   project_id = vercel_project.this.id
-  key        = local.environment_variables[count.index].key
-  value      = local.environment_variables[count.index].value
-  target     = local.environment_variables[count.index].target
-  sensitive  = local.environment_variables[count.index].sensitive
+  key        = each.value.key
+  value      = each.value.value
+  target     = each.value.target
+  sensitive  = each.value.sensitive
 }
 
 resource "vercel_project_domain" "this" {

@@ -1,6 +1,8 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import OrganizationAccessTokenRepository
@@ -14,14 +16,14 @@ def _record_usage_debounce_key(
 
 @actor(
     actor_name="organization_access_token.record_usage",
-    log_fields=("organization_access_token_id", "last_used_at"),
     priority=TaskPriority.LOW,
     max_retries=1,
     min_backoff=5_000,
     debounce_key=_record_usage_debounce_key,
 )
 async def record_usage(
-    organization_access_token_id: uuid.UUID, last_used_at: float
+    organization_access_token_id: Annotated[uuid.UUID, LoggableField],
+    last_used_at: Annotated[float, LoggableField],
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationAccessTokenRepository.from_session(session)

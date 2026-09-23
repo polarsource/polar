@@ -1,10 +1,12 @@
 import uuid
+from typing import Annotated
 
 import structlog
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.payout import PayoutStatus
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -32,10 +34,8 @@ class PayoutDoesNotExist(PayoutTaskError):
         super().__init__(message)
 
 
-@actor(
-    actor_name="payout.created", priority=TaskPriority.LOW, log_fields=("payout_id",)
-)
-async def payout_created(payout_id: uuid.UUID) -> None:
+@actor(actor_name="payout.created", priority=TaskPriority.LOW)
+async def payout_created(payout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     # Event-only hook (fires for held payouts too); the Stripe transfer is the
     # separate `payout.transfer` task.
     async with AsyncSessionMaker() as session:
@@ -45,10 +45,8 @@ async def payout_created(payout_id: uuid.UUID) -> None:
             raise PayoutDoesNotExist(payout_id)
 
 
-@actor(
-    actor_name="payout.transfer", priority=TaskPriority.LOW, log_fields=("payout_id",)
-)
-async def payout_transfer(payout_id: uuid.UUID) -> None:
+@actor(actor_name="payout.transfer", priority=TaskPriority.LOW)
+async def payout_transfer(payout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         # Lock the payout row up front: a queued transfer can race a cancel
@@ -66,7 +64,6 @@ async def payout_transfer(payout_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="payout.trigger_stripe_payouts",
-    log_fields=(),
     cron_trigger=CronTrigger(minute=15),
     priority=TaskPriority.LOW,
 )
@@ -78,10 +75,10 @@ async def trigger_stripe_payouts() -> None:
 @actor(
     actor_name="payout.trigger_stripe_payout",
     priority=TaskPriority.LOW,
-    log_fields=("payout_id", "account_amount"),
 )
 async def trigger_payout(
-    payout_id: uuid.UUID, account_amount: int | None = None
+    payout_id: Annotated[uuid.UUID, LoggableField],
+    account_amount: Annotated[int | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
@@ -103,10 +100,8 @@ async def trigger_payout(
             pass
 
 
-@actor(
-    actor_name="payout.invoice", priority=TaskPriority.LOW, log_fields=("payout_id",)
-)
-async def order_invoice(payout_id: uuid.UUID) -> None:
+@actor(actor_name="payout.invoice", priority=TaskPriority.LOW)
+async def order_invoice(payout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         payout = await repository.get_by_id(
@@ -121,9 +116,8 @@ async def order_invoice(payout_id: uuid.UUID) -> None:
 @actor(
     actor_name="payout.release_held_payouts",
     priority=TaskPriority.LOW,
-    log_fields=("account_id",),
 )
-async def release_held_payouts(account_id: uuid.UUID) -> None:
+async def release_held_payouts(account_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Release held payouts for an account once its org becomes ACTIVE.
 
     Enqueued by ``confirm_organization_reviewed`` after a REVIEW/SNOOZED org is
@@ -137,9 +131,10 @@ async def release_held_payouts(account_id: uuid.UUID) -> None:
 @actor(
     actor_name="payout.cancel_account_payouts",
     priority=TaskPriority.LOW,
-    log_fields=("account_id",),
 )
-async def cancel_account_payouts(account_id: uuid.UUID) -> None:
+async def cancel_account_payouts(
+    account_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Cancel in-flight payouts for an account leaving the review flow.
 
     Enqueued when an org is denied, blocked or set to offboarding. Cancels both
@@ -153,10 +148,10 @@ async def cancel_account_payouts(account_id: uuid.UUID) -> None:
 @actor(
     actor_name="payout.cancel_held_payouts",
     priority=TaskPriority.LOW,
-    log_fields=("account_id", "payout_account_id"),
 )
 async def cancel_held_payouts(
-    account_id: uuid.UUID, payout_account_id: uuid.UUID | None = None
+    account_id: Annotated[uuid.UUID, LoggableField],
+    payout_account_id: Annotated[uuid.UUID | None, LoggableField] = None,
 ) -> None:
     """Cancel only held payouts for an account.
 

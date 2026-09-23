@@ -1,8 +1,10 @@
 import uuid
+from typing import Annotated
 
 from dramatiq import Retry
 
 from polar.exceptions import PolarTaskError
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor, can_retry
 
 from .repository import PaymentTransactionRepository
@@ -28,7 +30,6 @@ class PaymentTransactionDoesNotExist(TransactionTaskError):
 
 @actor(
     actor_name="processor_fee.sync_stripe_fees",
-    log_fields=(),
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
 )
@@ -40,9 +41,10 @@ async def sync_stripe_fees() -> None:
 @actor(
     actor_name="processor_fee.create_payment_fees",
     priority=TaskPriority.LOW,
-    log_fields=("payment_transaction_id",),
 )
-async def create_payment_fees(payment_transaction_id: uuid.UUID) -> None:
+async def create_payment_fees(
+    payment_transaction_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentTransactionRepository.from_session(session)
         payment_transaction = await repository.get_by_id(payment_transaction_id)

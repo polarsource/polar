@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Literal, Unpack
+from typing import Annotated, Literal, Unpack
 
 import structlog
 from dramatiq import Retry
@@ -11,6 +11,7 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
+from polar.observability.task_logging import LoggableField
 from polar.product.repository import ProductRepository
 from polar.worker import (
     AsyncSessionMaker,
@@ -70,20 +71,12 @@ class OrganizationDoesNotExist(BenefitTaskError):
 @actor(
     actor_name="benefit.enqueue_benefits_grants",
     priority=TaskPriority.MEDIUM,
-    log_fields=(
-        "task",
-        "customer_id",
-        "product_id",
-        "member_id",
-        "scope.subscription_id",
-        "scope.order_id",
-    ),
 )
 async def enqueue_benefits_grants(
-    task: Literal["grant", "revoke"],
-    customer_id: uuid.UUID,
-    product_id: uuid.UUID,
-    member_id: uuid.UUID | None = None,
+    task: Annotated[Literal["grant", "revoke"], LoggableField],
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    product_id: Annotated[uuid.UUID, LoggableField],
+    member_id: Annotated[uuid.UUID | None, LoggableField] = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -113,18 +106,11 @@ async def enqueue_benefits_grants(
 @actor(
     actor_name="benefit.enqueue_grants",
     priority=TaskPriority.MEDIUM,
-    log_fields=(
-        "customer_id",
-        "grant_benefit_ids",
-        "member_id",
-        "scope.subscription_id",
-        "scope.order_id",
-    ),
 )
 async def benefit_enqueue_grants(
-    customer_id: uuid.UUID,
-    grant_benefit_ids: list[uuid.UUID],
-    member_id: uuid.UUID | None = None,
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    grant_benefit_ids: Annotated[list[uuid.UUID], LoggableField],
+    member_id: Annotated[uuid.UUID | None, LoggableField] = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     for benefit_id in grant_benefit_ids:
@@ -140,18 +126,11 @@ async def benefit_enqueue_grants(
 @actor(
     actor_name="benefit.grant",
     priority=TaskPriority.MEDIUM,
-    log_fields=(
-        "customer_id",
-        "benefit_id",
-        "member_id",
-        "scope.subscription_id",
-        "scope.order_id",
-    ),
 )
 async def benefit_grant(
-    customer_id: uuid.UUID,
-    benefit_id: uuid.UUID,
-    member_id: uuid.UUID | None = None,
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    benefit_id: Annotated[uuid.UUID, LoggableField],
+    member_id: Annotated[uuid.UUID | None, LoggableField] = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -208,18 +187,11 @@ async def benefit_grant(
 @actor(
     actor_name="benefit.revoke",
     priority=TaskPriority.MEDIUM,
-    log_fields=(
-        "customer_id",
-        "benefit_id",
-        "member_id",
-        "scope.subscription_id",
-        "scope.order_id",
-    ),
 )
 async def benefit_revoke(
-    customer_id: uuid.UUID,
-    benefit_id: uuid.UUID,
-    member_id: uuid.UUID | None = None,
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    benefit_id: Annotated[uuid.UUID, LoggableField],
+    member_id: Annotated[uuid.UUID | None, LoggableField] = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -293,9 +265,8 @@ async def benefit_revoke(
 @actor(
     actor_name="benefit.update",
     priority=TaskPriority.MEDIUM,
-    log_fields=("benefit_grant_id",),
 )
-async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
+async def benefit_update(benefit_grant_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         benefit_grant_repository = BenefitGrantRepository.from_session(session)
         benefit_grant = await benefit_grant_repository.get_by_id(
@@ -323,7 +294,6 @@ async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
 @actor(
     actor_name="benefit.enqueue_benefit_grant_cycles",
     priority=TaskPriority.MEDIUM,
-    log_fields=("scope.subscription_id", "scope.order_id"),
 )
 async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -> None:
     async with AsyncSessionMaker() as session:
@@ -336,9 +306,8 @@ async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -
 @actor(
     actor_name="benefit.cycle",
     priority=TaskPriority.MEDIUM,
-    log_fields=("benefit_grant_id",),
 )
-async def benefit_cycle(benefit_grant_id: uuid.UUID) -> None:
+async def benefit_cycle(benefit_grant_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         benefit_grant_repository = BenefitGrantRepository.from_session(session)
         benefit_grant = await benefit_grant_repository.get_by_id(
@@ -366,9 +335,8 @@ async def benefit_cycle(benefit_grant_id: uuid.UUID) -> None:
 @actor(
     actor_name="benefit.delete",
     priority=TaskPriority.MEDIUM,
-    log_fields=("benefit_id",),
 )
-async def benefit_delete(benefit_id: uuid.UUID) -> None:
+async def benefit_delete(benefit_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_id(
@@ -385,9 +353,10 @@ async def benefit_delete(benefit_id: uuid.UUID) -> None:
 @actor(
     actor_name="benefit.revoke_customer",
     priority=TaskPriority.MEDIUM,
-    log_fields=("customer_id",),
 )
-async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
+async def benefit_revoke_customer(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(
@@ -402,9 +371,10 @@ async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
 @actor(
     actor_name="benefit.delete_grant",
     priority=TaskPriority.MEDIUM,
-    log_fields=("benefit_grant_id",),
 )
-async def benefit_delete_grant(benefit_grant_id: uuid.UUID) -> None:
+async def benefit_delete_grant(
+    benefit_grant_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         benefit_grant_repository = BenefitGrantRepository.from_session(session)
         benefit_grant = await benefit_grant_repository.get_by_id(

@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 import structlog
 from sqlalchemy.orm import selectinload
@@ -6,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.product import Product
+from polar.observability.task_logging import LoggableField
 from polar.product.repository import ProductRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
@@ -28,9 +30,10 @@ class ProductDoesNotExist(SeatTaskError):
 @actor(
     actor_name="customer_seat.revoke_seats_for_member",
     priority=TaskPriority.MEDIUM,
-    log_fields=("member_id",),
 )
-async def revoke_seats_for_member(member_id: uuid.UUID) -> None:
+async def revoke_seats_for_member(
+    member_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Revoke all active seats for a member."""
     async with AsyncSessionMaker() as session:
         repository = CustomerSeatRepository.from_session(session)
@@ -62,10 +65,11 @@ async def revoke_seats_for_member(member_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="customer_seat.update_product_benefits_grants",
-    log_fields=("product_id",),
     priority=TaskPriority.MEDIUM,
 )
-async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
+async def update_product_benefits_grants(
+    product_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Re-sync benefit grants for all claimed seats of a product."""
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)

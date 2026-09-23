@@ -2,6 +2,7 @@ import base64
 from collections.abc import Mapping
 from datetime import datetime
 from ssl import SSLError
+from typing import Annotated
 from uuid import UUID
 
 import httpx
@@ -18,6 +19,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
+from polar.observability.task_logging import LoggableField
 from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
 from polar.worker import (
     AsyncSessionMaker,
@@ -62,11 +64,13 @@ _webhook_max_retries = _ordering_max_retries + settings.WEBHOOK_MAX_RETRIES
 
 @actor(
     actor_name="webhook_event.send",
-    log_fields=("webhook_event_id", "redeliver"),
     max_retries=_webhook_max_retries,
     queue_name=TaskQueue.WEBHOOKS,
 )
-async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
+async def webhook_event_send(
+    webhook_event_id: Annotated[UUID, LoggableField],
+    redeliver: Annotated[bool, LoggableField] = False,
+) -> None:
     async with AsyncSessionMaker() as session:
         return await _webhook_event_send(
             session, webhook_event_id=webhook_event_id, redeliver=redeliver
@@ -247,9 +251,10 @@ async def _webhook_event_send(
 @actor(
     actor_name="webhook_event.success",
     priority=TaskPriority.HIGH,
-    log_fields=("webhook_event_id",),
 )
-async def webhook_event_success(webhook_event_id: UUID) -> None:
+async def webhook_event_success(
+    webhook_event_id: Annotated[UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)
 
@@ -264,12 +269,12 @@ def _webhook_event_failed_debounce_key(
 
 @actor(
     actor_name="webhook_event.failed",
-    log_fields=("webhook_event_id", "webhook_endpoint_id"),
     priority=TaskPriority.HIGH,
     debounce_key=_webhook_event_failed_debounce_key,
 )
 async def webhook_event_failed(
-    webhook_event_id: UUID, webhook_endpoint_id: UUID | None = None
+    webhook_event_id: Annotated[UUID, LoggableField],
+    webhook_endpoint_id: Annotated[UUID | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_failed(session, webhook_event_id)
@@ -277,7 +282,6 @@ async def webhook_event_failed(
 
 @actor(
     actor_name="webhook_event.archive",
-    log_fields=(),
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
 )
@@ -291,9 +295,11 @@ async def webhook_event_archive() -> None:
 @actor(
     actor_name="webhook_event.publish",
     priority=TaskPriority.MEDIUM,
-    log_fields=("webhook_event_id", "organization_id"),
 )
-async def webhook_event_publish(webhook_event_id: UUID, organization_id: UUID) -> None:
+async def webhook_event_publish(
+    webhook_event_id: Annotated[UUID, LoggableField],
+    organization_id: Annotated[UUID, LoggableField],
+) -> None:
     """
     Publish a webhook event to the eventstream for CLI listeners.
 

@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 import structlog
 
@@ -11,6 +12,7 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models.license_key import LicenseKeyStatus
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 from .repository import LicenseKeyRepository
@@ -31,9 +33,10 @@ class LicenseKeyDoesNotExist(LicenseKeyTaskError):
 @actor(
     actor_name="license_key.sync_benefit_grant",
     priority=TaskPriority.MEDIUM,
-    log_fields=("license_key_id",),
 )
-async def sync_benefit_grant(license_key_id: uuid.UUID) -> None:
+async def sync_benefit_grant(
+    license_key_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         license_key_repository = LicenseKeyRepository.from_session(session)
         license_key = await license_key_repository.get_by_id(license_key_id)

@@ -1,4 +1,5 @@
 import asyncio
+from typing import Annotated
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import joinedload
@@ -20,6 +21,7 @@ from polar.models.support_case import (
     SupportCaseMessageAuthorKind,
     SupportCaseType,
 )
+from polar.observability.task_logging import LoggableField
 from polar.support_case.pdf import is_mergeable, merge_attachments
 from polar.support_case.repository import (
     SupportCaseAttachmentRepository,
@@ -66,9 +68,10 @@ def _case_dashboard_path(case: SupportCase, organization: Organization) -> str:
 
 @actor(
     actor_name="support_case.notify_organization_of_new_message",
-    log_fields=("message_id",),
 )
-async def notify_organization_of_new_message(message_id: UUID) -> None:
+async def notify_organization_of_new_message(
+    message_id: Annotated[UUID, LoggableField],
+) -> None:
     """Email an organization's members when a new staff message is posted on
     their case — a reply or a decision (a decision is just another message).
     Polar staff work the case in the backoffice and are never emailed.
@@ -133,9 +136,11 @@ def _read_attachment(service: FileServiceTypes, path: str) -> bytes:
 @actor(
     actor_name="support_case.merge_attachments",
     priority=TaskPriority.LOW,
-    log_fields=("case_id", "attachment_ids"),
 )
-async def merge_case_attachments(case_id: UUID, attachment_ids: list[UUID]) -> None:
+async def merge_case_attachments(
+    case_id: Annotated[UUID, LoggableField],
+    attachment_ids: Annotated[list[UUID], LoggableField],
+) -> None:
     """Merge the selected case attachments into one PDF stored back on the
     case as an internal, case-level attachment (no message)."""
     async with AsyncSessionMaker() as session:

@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from typing import Annotated
 
 import structlog
 from opentelemetry import trace
@@ -9,6 +10,7 @@ from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
+from polar.observability.task_logging import LoggableField
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.worker import (
@@ -46,12 +48,14 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
 
 @actor(
     actor_name="subscription.cycle",
-    log_fields=("subscription_id", "force"),
     priority=TaskPriority.LOW,
     # The meter-only branch links pending billing entries inline; doesn't fit 60s.
     time_limit=600_000,
 )
-async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) -> None:
+async def subscription_cycle(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+    force: Annotated[bool, LoggableField] = False,
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(
@@ -106,10 +110,11 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
 
 @actor(
     actor_name="subscription.cancel_for_organization",
-    log_fields=("organization_id",),
     priority=TaskPriority.LOW,
 )
-async def subscription_cancel_for_organization(organization_id: uuid.UUID) -> None:
+async def subscription_cancel_for_organization(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Cancel all billable subscriptions of a denied/blocked/offboarded org,
     enqueued per-organization by ``organization.cancel_expired_subscriptions``.
 
@@ -130,11 +135,10 @@ async def subscription_cancel_for_organization(organization_id: uuid.UUID) -> No
 
 @actor(
     actor_name="subscription.subscription.update_product_benefits_grants",
-    log_fields=("subscription_tier_id",),
     priority=TaskPriority.MEDIUM,
 )
 async def subscription_update_product_benefits_grants(
-    subscription_tier_id: uuid.UUID,
+    subscription_tier_id: Annotated[uuid.UUID, LoggableField],
 ) -> None:
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)
@@ -147,10 +151,11 @@ async def subscription_update_product_benefits_grants(
 
 @actor(
     actor_name="subscription.enqueue_benefits_grants",
-    log_fields=("subscription_id",),
     priority=TaskPriority.MEDIUM,
 )
-async def subscription_enqueue_benefits_grants(subscription_id: uuid.UUID) -> None:
+async def subscription_enqueue_benefits_grants(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(subscription_id)
@@ -163,9 +168,10 @@ async def subscription_enqueue_benefits_grants(subscription_id: uuid.UUID) -> No
 @actor(
     actor_name="subscription.update_meters",
     priority=TaskPriority.LOW,
-    log_fields=("subscription_id",),
 )
-async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
+async def subscription_update_meters(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(
@@ -182,9 +188,10 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
 @actor(
     actor_name="subscription.cancel_customer",
     priority=TaskPriority.HIGH,
-    log_fields=("customer_id",),
 )
-async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
+async def subscription_cancel_customer(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)
 
@@ -192,9 +199,10 @@ async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
 @actor(
     actor_name="subscription.resume",
     priority=TaskPriority.MEDIUM,
-    log_fields=("subscription_id",),
 )
-async def subscription_resume(subscription_id: uuid.UUID) -> None:
+async def subscription_resume(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Resume a paused subscription. Enqueued by the resume scheduler once its
     ``resumes_at`` is reached (see ``SubscriptionResumeJobStore``)."""
     async with AsyncSessionMaker() as session:
@@ -231,7 +239,6 @@ async def subscription_resume(subscription_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="subscription.scan_renewal_reminders",
-    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -253,9 +260,10 @@ async def scan_renewal_reminders() -> None:
 @actor(
     actor_name="subscription.send_renewal_reminder",
     priority=TaskPriority.LOW,
-    log_fields=("subscription_id",),
 )
-async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
+async def send_renewal_reminder(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(
@@ -276,7 +284,6 @@ async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="subscription.scan_grace_expired_revocations",
-    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -294,7 +301,6 @@ async def scan_grace_expired_revocations() -> None:
 
 @actor(
     actor_name="subscription.scan_trial_conversion_reminders",
-    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -317,9 +323,10 @@ async def scan_trial_conversion_reminders() -> None:
 @actor(
     actor_name="subscription.send_trial_conversion_reminder",
     priority=TaskPriority.LOW,
-    log_fields=("subscription_id",),
 )
-async def send_trial_conversion_reminder(subscription_id: uuid.UUID) -> None:
+async def send_trial_conversion_reminder(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(

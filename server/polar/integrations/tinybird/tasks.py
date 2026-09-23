@@ -34,7 +34,6 @@ async def _ingest_batch(events: list[TinybirdEvent]) -> None:
 
 @actor(
     actor_name="tinybird.ingest",
-    log_fields=(),
     queue_name=TaskQueue.TINYBIRD,
     min_backoff=30_000,
 )

@@ -1,8 +1,10 @@
-from typing import Any
+from typing import Annotated, Any, cast
 
 import structlog
+from typing_extensions import TypedDict
 
 from polar.config import settings
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import FileRepository
@@ -11,19 +13,29 @@ from .service import file as file_service
 log = structlog.get_logger()
 
 
+class GuardDutyS3ObjectDetails(TypedDict, total=False, extra_items=Any):  # type: ignore[call-arg]
+    bucketName: Annotated[str, LoggableField]
+    objectKey: str
+    versionId: Annotated[str | None, LoggableField]
+
+
+class GuardDutyScanResultDetails(TypedDict, total=False, extra_items=Any):  # type: ignore[call-arg]
+    scanResultStatus: Annotated[str, LoggableField]
+
+
+class GuardDutyScanResult(TypedDict, total=False, extra_items=Any):  # type: ignore[call-arg]
+    schemaVersion: Annotated[str, LoggableField]
+    scanStatus: Annotated[str, LoggableField]
+    resourceType: Annotated[str, LoggableField]
+    s3ObjectDetails: GuardDutyS3ObjectDetails
+    scanResultDetails: GuardDutyScanResultDetails
+
+
 @actor(
     actor_name="file.guardduty_scan_result",
     priority=TaskPriority.MEDIUM,
-    log_fields=(
-        "scan_result.schemaVersion",
-        "scan_result.scanStatus",
-        "scan_result.resourceType",
-        "scan_result.s3ObjectDetails.bucketName",
-        "scan_result.s3ObjectDetails.versionId",
-        "scan_result.scanResultDetails.scanResultStatus",
-    ),
 )
-async def guardduty_scan_result(scan_result: dict[str, Any]) -> None:
+async def guardduty_scan_result(scan_result: GuardDutyScanResult) -> None:
     s3_object = scan_result["s3ObjectDetails"]
     bucket_name = s3_object["bucketName"]
     object_key = s3_object["objectKey"]
@@ -51,5 +63,7 @@ async def guardduty_scan_result(scan_result: dict[str, Any]) -> None:
             return
 
         await file_service.flag_malicious(
-            session, file=file, scan_result_details=scan_result["scanResultDetails"]
+            session,
+            file=file,
+            scan_result_details=cast(dict[str, Any], scan_result["scanResultDetails"]),
         )

@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Annotated, Any
 
 import structlog
 
@@ -7,6 +7,7 @@ from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.email_log import EmailLogStatus
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .react import render_from_json
@@ -26,7 +27,7 @@ def _build_tags(template: str | None, email_props: dict[str, Any]) -> dict[str, 
     return tags
 
 
-@actor(actor_name="email.send", priority=TaskPriority.HIGH, log_fields=("template",))
+@actor(actor_name="email.send", priority=TaskPriority.HIGH)
 async def email_send(
     to_email_addr: str,
     subject: str,
@@ -36,7 +37,7 @@ async def email_send(
     email_headers: dict[str, str] | None,
     reply_to_name: str | None,
     reply_to_email_addr: str | None,
-    template: str | None = None,
+    template: Annotated[str | None, LoggableField] = None,
     props_json: str | None = None,
     attachments: list[Attachment] | None = None,
     deduplication_key: str | None = None,
@@ -93,7 +94,6 @@ async def email_send(
 
 @actor(
     actor_name="email_log.prune",
-    log_fields=(),
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
     max_retries=0,

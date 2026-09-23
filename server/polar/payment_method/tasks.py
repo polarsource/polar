@@ -1,7 +1,9 @@
 import uuid
 from datetime import timedelta
+from typing import Annotated
 
 from polar.kit.utils import utc_now
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -21,7 +23,6 @@ EXPIRATION_REMINDER_WINDOW = timedelta(days=20)
 
 @actor(
     actor_name="payment_method.scan_expiration_reminders",
-    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("45 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -43,9 +44,10 @@ async def scan_expiration_reminders() -> None:
 @actor(
     actor_name="payment_method.send_expiration_reminder",
     priority=TaskPriority.LOW,
-    log_fields=("payment_method_id",),
 )
-async def send_expiration_reminder(payment_method_id: uuid.UUID) -> None:
+async def send_expiration_reminder(
+    payment_method_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentMethodRepository.from_session(session)
         payment_method = await repository.get_by_id(

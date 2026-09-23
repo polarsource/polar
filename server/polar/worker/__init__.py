@@ -78,7 +78,6 @@ def actor[**P, R](
     queue_name: TaskQueue | None = None,
     priority: TaskPriority = TaskPriority.LOW,
     broker: dramatiq.Broker | None = None,
-    log_fields: tuple[str, ...] = (),
     **options: Any,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     if queue_name is None:
@@ -109,7 +108,7 @@ def actor[**P, R](
             broker=broker,
             **options,
         )
-        register_task_logging(declared_actor, log_fields)
+        register_task_logging(declared_actor)
 
         return _wrapped_fn
 

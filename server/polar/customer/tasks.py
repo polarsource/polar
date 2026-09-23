@@ -1,5 +1,5 @@
 import uuid
-from typing import Literal
+from typing import Annotated, Literal
 
 from sqlalchemy.orm import joinedload
 
@@ -10,6 +10,7 @@ from polar.exceptions import PolarTaskError
 from polar.integrations.tinybird import service as tinybird_service
 from polar.models import Customer
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 from .repository import CustomerRepository
@@ -29,9 +30,10 @@ class CustomerDoesNotExist(CustomerTaskError):
 @actor(
     actor_name="customer.state_changed",
     priority=TaskPriority.HIGH,
-    log_fields=("customer_id",),
 )
-async def customer_state_changed(customer_id: uuid.UUID) -> None:
+async def customer_state_changed(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(
@@ -52,11 +54,12 @@ def _customer_resolve_first_user_event_at_debounce_key(customer_id: uuid.UUID) -
 
 @actor(
     actor_name="customer.resolve_first_user_event_at",
-    log_fields=("customer_id",),
     priority=TaskPriority.LOW,
     debounce_key=_customer_resolve_first_user_event_at_debounce_key,
 )
-async def customer_resolve_first_user_event_at(customer_id: uuid.UUID) -> None:
+async def customer_resolve_first_user_event_at(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id, include_deleted=True)
@@ -95,14 +98,14 @@ def _customer_webhook_debounce_key(
 
 @actor(
     actor_name="customer.webhook",
-    log_fields=("event_type", "customer_id"),
     priority=TaskPriority.MEDIUM,
     debounce_key=_customer_webhook_debounce_key,
     debounce_min_threshold=1,
     debounce_max_threshold=5,
 )
 async def customer_webhook(
-    event_type: CustomerWebhookEventType, customer_id: uuid.UUID
+    event_type: Annotated[CustomerWebhookEventType, LoggableField],
+    customer_id: Annotated[uuid.UUID, LoggableField],
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
@@ -123,14 +126,16 @@ async def customer_webhook(
 @actor(
     actor_name="customer.event",
     priority=TaskPriority.LOW,
-    log_fields=("customer_id", "event_name"),
 )
 async def customer_event(
-    customer_id: uuid.UUID,
-    event_name: Literal[
-        SystemEvent.customer_created,
-        SystemEvent.customer_updated,
-        SystemEvent.customer_deleted,
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    event_name: Annotated[
+        Literal[
+            SystemEvent.customer_created,
+            SystemEvent.customer_updated,
+            SystemEvent.customer_deleted,
+        ],
+        LoggableField,
     ],
     updated_fields: CustomerUpdatedFields | None = None,
 ) -> None:

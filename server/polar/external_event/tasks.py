@@ -9,7 +9,6 @@ from .repository import ExternalEventRepository
 
 @actor(
     actor_name="external_event.prune",
-    log_fields=(),
     priority=TaskPriority.LOW,
     cron_trigger=CronTrigger(hour=0, minute=0),
     max_retries=0,

@@ -1,9 +1,18 @@
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Unpack,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 import dramatiq
 import sentry_sdk
+from typing_extensions import is_typeddict
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
@@ -11,16 +20,44 @@ if TYPE_CHECKING:
 _task_fields: dict[str, tuple[inspect.Signature, dict[str, list[str]]]] = {}
 
 
-def register_task_logging(
-    actor: dramatiq.Actor[Any, Any], fields: tuple[str, ...]
-) -> None:
-    signature = inspect.signature(actor.fn)
-    paths = {field: field.split(".") for field in fields}
-    for field, path in paths.items():
-        if path[0] not in signature.parameters:
-            raise ValueError(
-                f"Unknown log field {field!r} for actor {actor.actor_name}"
+class LoggableField:
+    pass
+
+
+def _loggable_paths(
+    annotations: dict[str, Any], prefix: list[str]
+) -> dict[str, list[str]]:
+    paths: dict[str, list[str]] = {}
+    for name, annotation in annotations.items():
+        path = [*prefix, name]
+        if get_origin(annotation) is Annotated:
+            annotation, *metadata = get_args(annotation)
+            if LoggableField in metadata:
+                paths[".".join(path)] = path
+                continue
+        if get_origin(annotation) is Unpack:
+            annotation = get_args(annotation)[0]
+        if is_typeddict(annotation) or (
+            isinstance(annotation, type) and issubclass(annotation, dict)
+        ):
+            paths.update(
+                _loggable_paths(get_type_hints(annotation, include_extras=True), path)
             )
+    return paths
+
+
+def register_task_logging(actor: dramatiq.Actor[Any, Any]) -> None:
+    fn = inspect.unwrap(actor.fn)
+    signature = inspect.signature(fn)
+    annotations = get_type_hints(fn, include_extras=True)
+    paths = _loggable_paths(
+        {
+            name: annotations[name]
+            for name in signature.parameters
+            if name in annotations
+        },
+        [],
+    )
     _task_fields[actor.actor_name] = (signature, paths)
     actor.logger.addFilter(TaskLogFilter())
 

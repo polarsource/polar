@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from polar.exceptions import PolarTaskError
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -24,7 +27,6 @@ class InvariantDoesNotExistError(InvariantTaskError):
 
 @actor(
     actor_name="observability.invariants.enqueue",
-    log_fields=(),
     priority=TaskPriority.HIGH,
     max_retries=0,
     cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
@@ -39,11 +41,10 @@ async def enqueue_invariants() -> None:
 
 @actor(
     actor_name="observability.invariants.check",
-    log_fields=("invariant_cls_name",),
     priority=TaskPriority.HIGH,
     max_retries=0,
 )
-async def check_invariant(invariant_cls_name: str) -> None:
+async def check_invariant(invariant_cls_name: Annotated[str, LoggableField]) -> None:
     try:
         invariant_cls = next(
             cls

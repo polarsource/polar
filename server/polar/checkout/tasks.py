@@ -1,7 +1,9 @@
 import uuid
+from typing import Annotated
 
 from polar.exceptions import PolarTaskError
 from polar.models.checkout import CheckoutStatus
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -27,9 +29,8 @@ class CheckoutDoesNotExist(CheckoutTaskError):
 @actor(
     actor_name="checkout.handle_free_success",
     priority=TaskPriority.HIGH,
-    log_fields=("checkout_id",),
 )
-async def handle_free_success(checkout_id: uuid.UUID) -> None:
+async def handle_free_success(checkout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.get_by_id(
@@ -42,7 +43,6 @@ async def handle_free_success(checkout_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="checkout.expire_open_checkouts",
-    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0,15,30,45 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -59,9 +59,8 @@ async def expire_open_checkouts() -> None:
 @actor(
     actor_name="checkout.expired",
     priority=TaskPriority.HIGH,
-    log_fields=("checkout_id",),
 )
-async def checkout_expired(checkout_id: uuid.UUID) -> None:
+async def checkout_expired(checkout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.get_by_id(

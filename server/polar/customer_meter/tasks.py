@@ -1,10 +1,12 @@
 import uuid
+from typing import Annotated
 
 from opentelemetry import trace
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, get_message_timestamp
 
 from .service import customer_meter as customer_meter_service
@@ -26,7 +28,6 @@ def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
 
 @actor(
     actor_name="customer_meter.update_customer",
-    log_fields=("customer_id",),
     priority=TaskPriority.LOW,
     max_retries=1,
     min_backoff=30_000,
@@ -38,7 +39,7 @@ def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
         settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD.total_seconds()
     ),
 )
-async def update_customer(customer_id: uuid.UUID) -> None:
+async def update_customer(customer_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id, include_deleted=True)

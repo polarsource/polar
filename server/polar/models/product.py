@@ -6,6 +6,7 @@ from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
+    TIMESTAMP,
     Boolean,
     ColumnElement,
     ForeignKey,
@@ -69,12 +70,19 @@ ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility"
 
 # Referenced by table name rather than model to avoid circular imports: these
 # models import from `polar.product` while this module is still loading.
-_PRODUCT_DELETION_BLOCKING_TABLES = (
-    table("orders", column("product_id", Uuid)),
-    table("subscriptions", column("product_id", Uuid)),
-    table("subscription_updates", column("product_id", Uuid)),
-    table("trial_redemptions", column("product_id", Uuid)),
-    table("discount_products", column("product_id", Uuid)),
+_orders = table("orders", column("product_id", Uuid))
+_subscriptions = table("subscriptions", column("product_id", Uuid))
+_subscription_updates = table(
+    "subscription_updates",
+    column("product_id", Uuid),
+    column("deleted_at", TIMESTAMP(timezone=True)),
+)
+_trial_redemptions = table("trial_redemptions", column("product_id", Uuid))
+_discount_products = table(
+    "discount_products", column("product_id", Uuid), column("discount_id", Uuid)
+)
+_discounts = table(
+    "discounts", column("id", Uuid), column("deleted_at", TIMESTAMP(timezone=True))
 )
 
 
@@ -205,12 +213,28 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
         """
         return column_property(
             and_(
-                *(
-                    ~exists()
-                    .where(referencing_table.c.product_id == cls.id)
-                    .correlate_except(referencing_table)
-                    for referencing_table in _PRODUCT_DELETION_BLOCKING_TABLES
+                ~exists()
+                .where(_orders.c.product_id == cls.id)
+                .correlate_except(_orders),
+                ~exists()
+                .where(_subscriptions.c.product_id == cls.id)
+                .correlate_except(_subscriptions),
+                ~exists()
+                .where(
+                    _subscription_updates.c.product_id == cls.id,
+                    _subscription_updates.c.deleted_at.is_(None),
                 )
+                .correlate_except(_subscription_updates),
+                ~exists()
+                .where(_trial_redemptions.c.product_id == cls.id)
+                .correlate_except(_trial_redemptions),
+                ~exists()
+                .where(
+                    _discount_products.c.product_id == cls.id,
+                    _discounts.c.id == _discount_products.c.discount_id,
+                    _discounts.c.deleted_at.is_(None),
+                )
+                .correlate_except(_discount_products, _discounts),
             ),
             # References come from other flows, never from a product flush
             expire_on_flush=False,

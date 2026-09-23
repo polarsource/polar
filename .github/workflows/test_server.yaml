@@ -258,6 +258,16 @@ jobs:
             echo "orphans<<EOF" >> $GITHUB_OUTPUT
             echo "$OUTPUT" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+
+            NAMES=$(echo "$OUTPUT" | grep -oE 'POLAR_[A-Z0-9_]+' | paste -sd' ' -)
+            echo "::warning title=Provisioned but never read::$NAMES"
+            {
+              echo "## 🔑 Env Var Check"
+              echo
+              echo '```'
+              echo "$OUTPUT"
+              echo '```'
+            } >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Find existing comment

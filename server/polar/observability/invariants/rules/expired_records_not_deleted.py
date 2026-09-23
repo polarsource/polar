@@ -20,6 +20,7 @@ from polar.models import (
     OAuth2State,
     OAuth2Token,
     UserSession,
+    WebhookDelivery,
 )
 
 from .base import Invariant, InvariantError
@@ -106,6 +107,15 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         EmailLog,
         lambda cutoff: (
             EmailLog.created_at < cutoff - settings.EMAIL_LOG_RETENTION_PERIOD
+        ),
+    ),
+    CleanupTask(
+        "webhook_delivery.archive",
+        WebhookDelivery,
+        lambda cutoff: and_(
+            WebhookDelivery.response.is_not(None),
+            WebhookDelivery.created_at
+            < cutoff - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
         ),
     ),
 )

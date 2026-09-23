@@ -1,7 +1,7 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
-import { useUpdateMigrationRecordTax } from '@/hooks/queries/merchantMigrations'
+import { useUpdateMigrationRecord } from '@/hooks/queries/merchantMigrations'
 import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -26,7 +26,7 @@ export function ImportTaxPicker({
   migrationId: string
   row: schemas['MerchantMigrationRecordItem']
 }) {
-  const updateTax = useUpdateMigrationRecordTax(migrationId)
+  const updateRecord = useUpdateMigrationRecord(migrationId)
   const { value, update } = useOptimisticSave<TaxBehavior>(
     row.tax_behavior ?? 'inclusive',
     async (next) => {
@@ -34,9 +34,9 @@ export function ImportTaxPicker({
         return false
       }
       try {
-        await updateTax.mutateAsync({
+        await updateRecord.mutateAsync({
           recordId: row.record_id,
-          taxBehavior: next,
+          update: { tax_behavior: next },
         })
         return true
       } catch {
@@ -80,10 +80,10 @@ export function ImportTaxPicker({
               'Tax is added on top of the listed price.'
             )}
           </Text>
-          {updateTax.isError ? (
+          {updateRecord.isError ? (
             <Text variant="caption" color="error">
-              {updateTax.error instanceof Error && updateTax.error.message
-                ? updateTax.error.message
+              {updateRecord.error instanceof Error && updateRecord.error.message
+                ? updateRecord.error.message
                 : "We couldn't save the tax setting."}
             </Text>
           ) : null}

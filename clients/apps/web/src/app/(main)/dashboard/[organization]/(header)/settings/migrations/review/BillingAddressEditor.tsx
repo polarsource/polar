@@ -2,11 +2,11 @@
 
 import { useUpdateMigrationRecord } from '@/hooks/queries/merchantMigrations'
 import { enums, schemas } from '@polar-sh/client'
-import { Button, Grid, Input, Text } from '@polar-sh/orbit'
+import { Grid, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import { FormEvent, useState } from 'react'
+import { useState } from 'react'
 
 type AddressForm = {
   line1: string
@@ -16,6 +16,12 @@ type AddressForm = {
   postal_code: string
   country: string
 }
+
+const isComplete = (address: AddressForm) =>
+  !!address.country &&
+  (address.country !== 'US' ||
+    (!!address.line1 && !!address.city && !!address.postal_code)) &&
+  (!['US', 'CA'].includes(address.country) || !!address.state)
 
 export function BillingAddressEditor({
   migrationId,
@@ -36,53 +42,42 @@ export function BillingAddressEditor({
   }))
   const needsState = address.country === 'US' || address.country === 'CA'
   const needsFullAddress = address.country === 'US'
-  const complete =
-    !!address.country &&
-    (!needsFullAddress ||
-      (!!address.line1 && !!address.city && !!address.postal_code)) &&
-    (!needsState || !!address.state)
 
-  const setField = (field: keyof AddressForm, value: string) => {
-    setAddress((current) => ({ ...current, [field]: value }))
-  }
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault()
-    if (!row.record_id || !complete) {
+  const save = (next: AddressForm) => {
+    setAddress(next)
+    if (!row.record_id || !isComplete(next)) {
       return
     }
     updateRecord.mutate({
       recordId: row.record_id,
       update: {
         billing_address: {
-          ...address,
-          line2: address.line2 || null,
-          state: address.state || null,
+          ...next,
+          line2: next.line2 || null,
+          state: next.state || null,
         } as schemas['AddressInput'],
       },
     })
   }
 
+  const setField = (field: keyof AddressForm, value: string) => {
+    setAddress((current) => ({ ...current, [field]: value }))
+  }
+
   return (
-    <Box
-      as="form"
-      flexDirection="column"
-      rowGap="s"
-      width="100%"
-      onSubmit={onSubmit}
-    >
+    <Box flexDirection="column" rowGap="s" width="100%">
       <CountryPicker
         allowedCountries={enums.addressInputCountryValues}
         value={address.country || undefined}
         onChange={(country) =>
-          setAddress((current) => ({
-            ...current,
+          save({
+            ...address,
             country,
             state: '',
             ...(country === 'US'
               ? {}
               : { line1: '', line2: '', city: '', postal_code: '' }),
-          }))
+          })
         }
         placeholder="Select billing country"
       />
@@ -94,6 +89,7 @@ export function BillingAddressEditor({
             placeholder="Address line 1"
             value={address.line1}
             onChange={(event) => setField('line1', event.target.value)}
+            onBlur={(event) => save({ ...address, line1: event.target.value })}
           />
           <Input
             aria-label="Address line 2"
@@ -101,6 +97,7 @@ export function BillingAddressEditor({
             placeholder="Address line 2 (optional)"
             value={address.line2}
             onChange={(event) => setField('line2', event.target.value)}
+            onBlur={(event) => save({ ...address, line2: event.target.value })}
           />
           <Grid templateColumns="1fr 1fr" gap="s">
             <Input
@@ -109,6 +106,9 @@ export function BillingAddressEditor({
               placeholder="Postal code"
               value={address.postal_code}
               onChange={(event) => setField('postal_code', event.target.value)}
+              onBlur={(event) =>
+                save({ ...address, postal_code: event.target.value })
+              }
             />
             <Input
               aria-label="City"
@@ -116,6 +116,7 @@ export function BillingAddressEditor({
               placeholder="City"
               value={address.city}
               onChange={(event) => setField('city', event.target.value)}
+              onBlur={(event) => save({ ...address, city: event.target.value })}
             />
           </Grid>
         </>
@@ -125,22 +126,13 @@ export function BillingAddressEditor({
           autoComplete="billing address-level1"
           country={address.country as 'US' | 'CA'}
           value={address.state || undefined}
-          onChange={(state) => setField('state', state)}
+          onChange={(state) => save({ ...address, state })}
           placeholder={address.country === 'US' ? 'State' : 'Province'}
         />
       ) : null}
-      {address.country ? (
-        <Button
-          type="submit"
-          size="sm"
-          loading={updateRecord.isPending}
-          disabled={!complete || updateRecord.isPending}
-        >
-          Save billing address
-        </Button>
-      ) : null}
       <Text variant="caption" color="muted">
-        Used for Polar tax. Editing it does not block the migration.
+        Used for Polar tax. Changes save automatically and do not block the
+        migration.
       </Text>
       {updateRecord.isError ? (
         <Text variant="caption" color="error">

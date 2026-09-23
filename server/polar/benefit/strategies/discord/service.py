@@ -68,7 +68,13 @@ class BenefitDiscordService(
                 bound_logger.debug(
                     "Revoke before granting because guild, role or account have changed"
                 )
-                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
+                await self.revoke(
+                    benefit,
+                    customer,
+                    grant_properties,
+                    attempt=attempt,
+                    member=member,
+                )
 
         if (account_id := grant_properties.get("account_id")) is None:
             raise BenefitActionRequiredError(

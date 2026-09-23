@@ -93,6 +93,7 @@ const BenefitGrantOAuth = ({
   const searchParams = useSearchParams()
   const {
     customer,
+    member,
     properties: { account_id },
     benefit: { type: benefitType },
     error: grantError,
@@ -145,15 +146,15 @@ const BenefitGrantOAuth = ({
   }, [retryAfter])
   /* oxlint-enable react-hooks/set-state-in-effect */
 
-  const accounts = useMemo(
-    () =>
-      customer
-        ? Object.keys(customer.oauth_accounts || {})
-            .filter((key) => key.startsWith(platform))
-            .map((key) => customer.oauth_accounts[key])
-        : [],
-    [customer, platform],
-  )
+  const accounts = useMemo(() => {
+    const oauthAccounts = {
+      ...customer?.oauth_accounts,
+      ...member?.oauth_accounts,
+    }
+    return Object.keys(oauthAccounts)
+      .filter((key) => key.startsWith(platform))
+      .map((key) => oauthAccounts[key])
+  }, [customer, member, platform])
 
   const authorize = useCallback(async () => {
     const { data } = await api.GET(

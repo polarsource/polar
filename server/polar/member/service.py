@@ -448,12 +448,16 @@ class MemberService:
             async with session.begin_nested():
                 created_member = await repository.create(member, flush=True)
         except IntegrityError as e:
+            database_error = getattr(e.orig, "__cause__", None)
             log.info(
                 "member.create_owner_member.constraint_violation",
                 customer_id=customer.id,
                 organization_id=organization.id,
                 error_type=type(e).__name__,
                 sqlstate=getattr(e.orig, "sqlstate", None),
+                table_name=getattr(database_error, "table_name", None),
+                column_name=getattr(database_error, "column_name", None),
+                constraint_name=getattr(database_error, "constraint_name", None),
                 reason="Likely race condition - member already exists",
             )
             existing_owner = await repository.get_owner_by_customer_id(customer.id)
@@ -474,6 +478,9 @@ class MemberService:
                 organization_id=organization.id,
                 error_type=type(e).__name__,
                 sqlstate=getattr(e.orig, "sqlstate", None),
+                table_name=getattr(database_error, "table_name", None),
+                column_name=getattr(database_error, "column_name", None),
+                constraint_name=getattr(database_error, "constraint_name", None),
             )
             raise
         else:
@@ -692,6 +699,7 @@ class MemberService:
             async with session.begin_nested():
                 created_member = await repository.create(member, flush=True)
         except IntegrityError as e:
+            database_error = getattr(e.orig, "__cause__", None)
             log.warning(
                 "member.create.constraint_violation",
                 customer_id=customer_id,
@@ -699,6 +707,9 @@ class MemberService:
                 role=role,
                 error_type=type(e).__name__,
                 sqlstate=getattr(e.orig, "sqlstate", None),
+                table_name=getattr(database_error, "table_name", None),
+                column_name=getattr(database_error, "column_name", None),
+                constraint_name=getattr(database_error, "constraint_name", None),
             )
             existing_member = await repository.get_by_customer_and_email(
                 customer, email=email

@@ -9,7 +9,6 @@ import { unwrap, UnauthorizedResponseError } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import { EmbedError } from './EmbedError'
 import { PaymentMethodEmbed } from './PaymentMethodEmbed'
-import { isAllowedEmbedOrigin } from './embedOrigin'
 
 export const metadata: Metadata = {
   title: 'Add payment method | Polar',
@@ -68,10 +67,19 @@ export default async function Page(props: {
 
   const api = await getServerSideAPI(sessionToken)
   let customer
+  let embedPolicy
   try {
-    customer = await unwrap(
-      api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
-    )
+    ;[customer, embedPolicy] = await Promise.all([
+      unwrap(
+        api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
+      ),
+      unwrap(
+        api.GET('/v1/customer-portal/customers/me/embed-policy', {
+          params: { query: { embed_origin } },
+          cache: 'no-store',
+        }),
+      ),
+    ])
   } catch (error) {
     return (
       <EmbedError
@@ -85,11 +93,11 @@ export default async function Page(props: {
     )
   }
 
-  if (!isAllowedEmbedOrigin(embed_origin, customer.organization.embed_hosts)) {
+  const embedOrigin = embedPolicy.embed_origin
+  if (!embedOrigin) {
     return <EmbedError code="invalid_request" locale={locale} />
   }
 
-  const embedOrigin = embed_origin
   const embedReturnUrl = resolveEmbedReturnUrl(embed_return_url, embedOrigin)
 
   let setupCurrency = 'usd'

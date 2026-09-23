@@ -2,7 +2,7 @@ import json
 from textwrap import dedent
 
 import structlog
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from fastapi.responses import Response
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
@@ -15,7 +15,7 @@ from polar.kit.http import get_content_disposition
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
-from polar.organization.embed_hosts import csp_frame_ancestors
+from polar.organization.embed_hosts import csp_frame_ancestors, match_origin
 from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
 from polar.postgres import (
     AsyncReadSession,
@@ -35,7 +35,6 @@ from ..schemas.customer import (
     CustomerPaymentMethodTypeAdapter,
     CustomerPortalCustomer,
     CustomerPortalCustomerUpdate,
-    CustomerPortalCustomerWithOrganization,
     CustomerPortalEmbedPolicy,
 )
 from ..service.customer import CustomerNotReady, PaymentMethodSetupFailed
@@ -68,9 +67,7 @@ async def stream(
     return EventSourceResponse(subscribe(redis, channels, request))
 
 
-@router.get(
-    "/me", summary="Get Customer", response_model=CustomerPortalCustomerWithOrganization
-)
+@router.get("/me", summary="Get Customer", response_model=CustomerPortalCustomer)
 async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
     """Get authenticated customer."""
     return get_customer(auth_subject)
@@ -78,19 +75,25 @@ async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
 
 @router.get(
     "/me/embed-policy",
+    summary="Get Embed Policy",
     response_model=CustomerPortalEmbedPolicy,
     tags=[APITag.private],
-    include_in_schema=False,
 )
 async def get_embed_policy(
     auth_subject: auth.CustomerPortalUnionRead,
+    embed_origin: str | None = Query(
+        None, description="The origin of the page embedding the customer portal."
+    ),
 ) -> CustomerPortalEmbedPolicy:
-    """Get the hosts allowed to embed the customer's portal, as CSP sources."""
+    """Get the hosts allowed to embed the customer's portal."""
     organization = get_customer(auth_subject).organization
     return CustomerPortalEmbedPolicy(
         frame_ancestors=csp_frame_ancestors(organization.embed_hosts)
         if organization.is_frame_ancestors_enforced
-        else ["*"]
+        else ["*"],
+        embed_origin=match_origin(embed_origin, organization.embed_hosts)
+        if embed_origin is not None
+        else None,
     )
 
 

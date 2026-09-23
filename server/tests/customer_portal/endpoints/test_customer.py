@@ -25,28 +25,6 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-class TestGet:
-    async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/customer-portal/customers/me")
-        assert response.status_code == 401
-
-    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT)
-    async def test_organization_embed_hosts(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        save_fixture: SaveFixture,
-    ) -> None:
-        organization.embed_hosts = ["*.example.com"]
-        await save_fixture(organization)
-
-        response = await client.get("/v1/customer-portal/customers/me")
-
-        assert response.status_code == 200
-        assert response.json()["organization"] == {"embed_hosts": ["*.example.com"]}
-
-
-@pytest.mark.asyncio
 class TestGetEmbedPolicy:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-portal/customers/me/embed-policy")
@@ -100,6 +78,41 @@ class TestGetEmbedPolicy:
 
         assert response.status_code == 200
         assert response.json()["frame_ancestors"] == ["*"]
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT)
+    @pytest.mark.parametrize(
+        ("embed_hosts", "embed_origin", "expected"),
+        [
+            (["*.example.com"], "https://shop.example.com", "https://shop.example.com"),
+            (["*.example.com"], "https://example.com", None),
+            (
+                ["192.168.1.43:5500"],
+                "http://192.168.1.43:5500",
+                "http://192.168.1.43:5500",
+            ),
+            (["example.com"], "http://example.com", None),
+            ([], "https://example.com", None),
+        ],
+    )
+    async def test_embed_origin(
+        self,
+        embed_hosts: list[str],
+        embed_origin: str,
+        expected: str | None,
+        client: AsyncClient,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.embed_hosts = embed_hosts
+        await save_fixture(organization)
+
+        response = await client.get(
+            "/v1/customer-portal/customers/me/embed-policy",
+            params={"embed_origin": embed_origin},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["embed_origin"] == expected
 
 
 @pytest.fixture(autouse=True)

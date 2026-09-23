@@ -4288,6 +4288,28 @@ export interface paths {
     patch: operations['customer_portal:customers:update']
     trace?: never
   }
+  '/v1/customer-portal/customers/me/embed-policy': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Embed Policy
+     * @description Get the hosts allowed to embed the customer's portal.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:customers:get_embed_policy']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/customers/me/export': {
     parameters: {
       query?: never
@@ -18827,11 +18849,6 @@ export interface components {
       /** Locale */
       locale?: string | null
     }
-    /** CustomerPortalCustomerOrganization */
-    CustomerPortalCustomerOrganization: {
-      /** Embed Hosts */
-      embed_hosts: string[]
-    }
     /** CustomerPortalCustomerSettings */
     CustomerPortalCustomerSettings: {
       /** Allow Email Change */
@@ -18847,47 +18864,18 @@ export interface components {
       /** Default Payment Method Id */
       default_payment_method_id?: string | null
     }
-    /** CustomerPortalCustomerWithOrganization */
-    CustomerPortalCustomerWithOrganization: {
+    /** CustomerPortalEmbedPolicy */
+    CustomerPortalEmbedPolicy: {
       /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
+       * Frame Ancestors
+       * @description The `frame-ancestors` sources admitting the hosts allowed to embed.
        */
-      created_at: string
+      frame_ancestors: string[]
       /**
-       * Modified At
-       * @description Last modification timestamp of the object.
+       * Embed Origin
+       * @description The requested embed origin, normalized, when the organization allows it to embed.
        */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /** Email */
-      email: string | null
-      /** Email Verified */
-      email_verified: boolean
-      /** Name */
-      name: string | null
-      /** Billing Name */
-      billing_name: string | null
-      billing_address: components['schemas']['Address'] | null
-      /** Tax Id */
-      tax_id: [string, components['schemas']['TaxIDFormat']] | null
-      /** Oauth Accounts */
-      oauth_accounts: {
-        [key: string]: components['schemas']['CustomerPortalOAuthAccount']
-      }
-      /** Default Payment Method Id */
-      default_payment_method_id?: string | null
-      type?: components['schemas']['CustomerType'] | null
-      /** Locale */
-      locale?: string | null
-      organization: components['schemas']['CustomerPortalCustomerOrganization']
+      embed_origin: string | null
     }
     /**
      * CustomerPortalMember
@@ -53591,7 +53579,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerPortalCustomerWithOrganization']
+          'application/json': components['schemas']['CustomerPortalCustomer']
         }
       }
     }
@@ -53616,6 +53604,38 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerPortalCustomer']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customers:get_embed_policy': {
+    parameters: {
+      query?: {
+        /** @description The origin of the page embedding the customer portal. */
+        embed_origin?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerPortalEmbedPolicy']
         }
       }
       /** @description Validation Error */

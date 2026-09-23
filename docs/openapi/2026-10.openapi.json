@@ -16910,7 +16910,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CustomerPortalCustomerWithOrganization"
+                  "$ref": "#/components/schemas/CustomerPortalCustomer"
                 }
               }
             }
@@ -50905,22 +50905,6 @@
         ],
         "title": "CustomerPortalCustomer"
       },
-      "CustomerPortalCustomerOrganization": {
-        "properties": {
-          "embed_hosts": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Embed Hosts"
-          }
-        },
-        "type": "object",
-        "required": [
-          "embed_hosts"
-        ],
-        "title": "CustomerPortalCustomerOrganization"
-      },
       "CustomerPortalCustomerSettings": {
         "properties": {
           "allow_email_change": {
@@ -50980,177 +50964,6 @@
         },
         "type": "object",
         "title": "CustomerPortalCustomerUpdate"
-      },
-      "CustomerPortalCustomerWithOrganization": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object.",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "email_verified": {
-            "type": "boolean",
-            "title": "Email Verified"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "billing_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Billing Name"
-          },
-          "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Address"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tax_id": {
-            "anyOf": [
-              {
-                "prefixItems": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TaxIDFormat"
-                  }
-                ],
-                "type": "array",
-                "maxItems": 2,
-                "minItems": 2,
-                "examples": [
-                  [
-                    "911144442",
-                    "us_ein"
-                  ],
-                  [
-                    "FR61954506077",
-                    "eu_vat"
-                  ]
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tax Id"
-          },
-          "oauth_accounts": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/CustomerPortalOAuthAccount"
-            },
-            "type": "object",
-            "title": "Oauth Accounts"
-          },
-          "default_payment_method_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Payment Method Id"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "organization": {
-            "$ref": "#/components/schemas/CustomerPortalCustomerOrganization"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "email",
-          "email_verified",
-          "name",
-          "billing_name",
-          "billing_address",
-          "tax_id",
-          "oauth_accounts",
-          "organization"
-        ],
-        "title": "CustomerPortalCustomerWithOrganization"
       },
       "CustomerPortalMember": {
         "properties": {

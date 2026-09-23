@@ -23,6 +23,7 @@ from .base import (
     TaxCalculationTechnicalError,
     TaxCode,
     TaxRecordError,
+    TaxRevertError,
     TaxServiceProtocol,
 )
 
@@ -371,55 +372,73 @@ class NumeralTaxService(TaxServiceProtocol):
     ) -> str:
         span = trace.get_current_span()
         span.set_attribute("numeral.api_version", NUMERAL_API_VERSION)
-        refund: NumeralTaxRefundResponse
+        try:
+            refund: NumeralTaxRefundResponse
 
-        if reverted_amount is None and reverted_tax_amount is None:
-            span.set_attribute("numeral.refund_type", "full")
+            if reverted_amount is None and reverted_tax_amount is None:
+                span.set_attribute("numeral.refund_type", "full")
+                response = await self.client.post(
+                    "/tax/refunds",
+                    json={
+                        "transaction_id": transaction_id,
+                        "type": "full",
+                    },
+                )
+                response.raise_for_status()
+                refund = response.json()
+                span.set_attribute("numeral.refund_id", refund["id"])
+                return refund["id"]
+
+            span.set_attribute("numeral.refund_type", "partial")
+
+            assert reverted_amount is not None
+            assert reverted_tax_amount is not None
+
+            response = await self.client.get(f"/tax/transactions/{transaction_id}")
+            response.raise_for_status()
+            transaction: NumeralTaxTransactionResponse = response.json()
+
+            item = transaction["line_items"][0]
+            reference_product_id = item["product"]["reference_product_id"]
             response = await self.client.post(
                 "/tax/refunds",
                 json={
                     "transaction_id": transaction_id,
-                    "type": "full",
+                    "type": "partial",
+                    "line_items": [
+                        {
+                            "reference_product_id": reference_product_id,
+                            "quantity": 1,
+                            "sales_amount_refunded": -(
+                                reverted_amount - reverted_tax_amount
+                            ),
+                            "tax_amount_refunded": -reverted_tax_amount,
+                        }
+                    ],
                 },
             )
             response.raise_for_status()
+
             refund = response.json()
             span.set_attribute("numeral.refund_id", refund["id"])
             return refund["id"]
-
-        span.set_attribute("numeral.refund_type", "partial")
-
-        assert reverted_amount is not None
-        assert reverted_tax_amount is not None
-
-        response = await self.client.get(f"/tax/transactions/{transaction_id}")
-        response.raise_for_status()
-        transaction: NumeralTaxTransactionResponse = response.json()
-
-        item = transaction["line_items"][0]
-        reference_product_id = item["product"]["reference_product_id"]
-        response = await self.client.post(
-            "/tax/refunds",
-            json={
-                "transaction_id": transaction_id,
-                "type": "partial",
-                "line_items": [
-                    {
-                        "reference_product_id": reference_product_id,
-                        "quantity": 1,
-                        "sales_amount_refunded": -(
-                            reverted_amount - reverted_tax_amount
-                        ),
-                        "tax_amount_refunded": -reverted_tax_amount,
-                    }
-                ],
-            },
-        )
-        response.raise_for_status()
-
-        refund = response.json()
-        span.set_attribute("numeral.refund_id", refund["id"])
-        return refund["id"]
+        except httpx.HTTPStatusError as e:
+            log.warning(
+                "Numeral tax revert error",
+                transaction_id=transaction_id,
+                reference=reference,
+                status_code=e.response.status_code,
+                text=e.response.text,
+            )
+            raise TaxRevertError() from e
+        except httpx.RequestError as e:
+            log.warning(
+                "Numeral tax revert request error",
+                transaction_id=transaction_id,
+                reference=reference,
+                error=str(e),
+            )
+            raise TaxRevertError() from e
 
     @logfire.instrument("numeral.backfill")
     async def backfill(

@@ -1,13 +1,13 @@
 import gzip
 import json
 import re
+import traceback
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
 import boto3
-import logfire
 from botocore.config import Config
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
@@ -88,7 +88,8 @@ class S3SpanExporter(SpanExporter):
         try:
             self._client.put_object(Bucket=self.bucket_name, Key=key, Body=body)
         except Exception:
-            logfire.error("Failed to export spans to S3", _exc_info=True)
+            # Logging through telemetry here can deadlock the active flush.
+            traceback.print_exc()
             return SpanExportResult.FAILURE
 
         return SpanExportResult.SUCCESS

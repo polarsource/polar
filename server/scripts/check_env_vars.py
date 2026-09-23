@@ -14,6 +14,7 @@ import ast
 import re
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -80,7 +81,7 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Exception as error:
+    except Exception:
         # 2 separates "the check broke" from "the check found something".
-        print(f"check_env_vars failed: {error}", file=sys.stderr)
+        traceback.print_exc()
         sys.exit(2)

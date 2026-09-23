@@ -319,8 +319,3 @@ import {
   to = module.vercel.vercel_project_environment_variable.this[31]
   id = "prj_9YDPCLXAX2w3RJqbXV7F1c3cZi9F/6E07M1Zs6ZallJFb"
 }
-
-import {
-  to = module.vercel.vercel_project_environment_variable.this[32]
-  id = "prj_9YDPCLXAX2w3RJqbXV7F1c3cZi9F/cOVlRr8hf2lAd94n"
-}

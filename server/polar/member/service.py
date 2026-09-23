@@ -368,14 +368,12 @@ class MemberService:
         if owner is None or owner.email.lower() == customer.email.lower():
             return
 
-        old_email = owner.email
         await repository.update(owner, update_dict={"email": customer.email})
         log.info(
             "member.sync_owner_email",
             customer_id=customer.id,
             member_id=owner.id,
-            old_email=old_email,
-            new_email=customer.email,
+            organization_id=customer.organization_id,
         )
 
     async def create_owner_member(
@@ -454,7 +452,8 @@ class MemberService:
                 "member.create_owner_member.constraint_violation",
                 customer_id=customer.id,
                 organization_id=organization.id,
-                error=str(e),
+                error_type=type(e).__name__,
+                sqlstate=getattr(e.orig, "sqlstate", None),
                 reason="Likely race condition - member already exists",
             )
             existing_owner = await repository.get_owner_by_customer_id(customer.id)
@@ -473,7 +472,8 @@ class MemberService:
                 "member.create_owner_member.integrity_error_no_member",
                 customer_id=customer.id,
                 organization_id=organization.id,
-                error=str(e),
+                error_type=type(e).__name__,
+                sqlstate=getattr(e.orig, "sqlstate", None),
             )
             raise
         else:
@@ -536,7 +536,8 @@ class MemberService:
             log.info(
                 "member.get_or_create_by_email.integrity_error_retry",
                 customer_id=customer_id,
-                email=email,
+                organization_id=organization_id,
+                role=role,
             )
             existing = await repository.get_by_customer_id_and_email(customer_id, email)
             if existing:
@@ -548,7 +549,7 @@ class MemberService:
                 member_id=created.id,
                 customer_id=customer_id,
                 organization_id=organization_id,
-                email=email,
+                role=created.role,
             )
             return created
 
@@ -670,8 +671,9 @@ class MemberService:
             log.info(
                 "member.create.already_exists",
                 customer_id=customer_id,
-                email=email,
+                organization_id=customer.organization_id,
                 existing_member_id=existing_member.id,
+                role=existing_member.role,
             )
             return existing_member
 
@@ -694,7 +696,9 @@ class MemberService:
                 "member.create.constraint_violation",
                 customer_id=customer_id,
                 organization_id=customer.organization_id,
-                error=str(e),
+                role=role,
+                error_type=type(e).__name__,
+                sqlstate=getattr(e.orig, "sqlstate", None),
             )
             existing_member = await repository.get_by_customer_and_email(
                 customer, email=email

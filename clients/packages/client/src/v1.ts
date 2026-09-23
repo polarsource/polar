@@ -2453,8 +2453,8 @@ export interface paths {
      * Delete Product
      * @description Delete a product.
      *
-     *     Only products without orders, subscriptions, trials or discounts can be deleted.
-     *     Products that are in use can only be archived.
+     *     Only archived products without orders, subscriptions, trials or discounts
+     *     can be deleted. Products that are in use can only be archived.
      *
      *     **Scopes**: `products:write`
      */
@@ -32245,7 +32245,7 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Is Deletable
-       * @description Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted.
+       * @description Whether the product can be permanently deleted. Only archived products not referenced by an order, subscription, trial or discount can be deleted.
        */
       is_deletable: boolean
       /**
@@ -46817,7 +46817,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Product is in use and cannot be deleted. */
+      /** @description Product is not archived or is in use, and cannot be deleted. */
       409: {
         headers: {
           [name: string]: unknown

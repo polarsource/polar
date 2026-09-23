@@ -213,7 +213,7 @@ async def update_benefits(
         },
         404: ProductNotFound,
         409: {
-            "description": "Product is in use and cannot be deleted.",
+            "description": "Product is not archived or is in use, and cannot be deleted.",
             "model": ProductNotDeletable.schema(),
         },
     },
@@ -226,8 +226,8 @@ async def delete(
     """
     Delete a product.
 
-    Only products without orders, subscriptions, trials or discounts can be deleted.
-    Products that are in use can only be archived.
+    Only archived products without orders, subscriptions, trials or discounts
+    can be deleted. Products that are in use can only be archived.
     """
     product = await product_service.get(session, auth_subject, id)
 

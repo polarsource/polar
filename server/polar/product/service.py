@@ -79,8 +79,8 @@ class ProductNotDeletable(ProductError):
     def __init__(self, product_id: uuid.UUID) -> None:
         self.product_id = product_id
         message = (
-            "This product has orders, subscriptions, trials or discounts "
-            "and cannot be deleted. Archive it instead."
+            "Only archived products without orders, subscriptions, trials "
+            "or discounts can be deleted."
         )
         super().__init__(message, 409)
 
@@ -494,7 +494,7 @@ class ProductService:
         session.add(product)
         await session.flush()
 
-        await session.refresh(product, {"prices", "all_prices"})
+        await session.refresh(product, {"prices", "all_prices", "is_deletable"})
 
         await self._after_product_updated(session, product)
         self._enqueue_organization_review(product)
@@ -609,9 +609,6 @@ class ProductService:
 
         if not product.is_deletable:
             raise ProductNotDeletable(product.id)
-
-        if not product.is_archived:
-            product = await self._archive(session, product)
 
         repository = ProductRepository.from_session(session)
         return await repository.soft_delete(product)

@@ -2965,6 +2965,22 @@ class TestDelete:
         with pytest.raises(ProductNotDeletable):
             await product_service.delete(session, product, auth_subject)
 
+    @pytest.mark.auth
+    async def test_not_deletable_not_archived(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await self._reload(session, auth_subject, product, archived=False)
+
+        assert not product.is_deletable
+        with pytest.raises(ProductNotDeletable):
+            await product_service.delete(session, product, auth_subject)
+
+        assert product.deleted_at is None
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -2978,13 +2994,17 @@ class TestDelete:
         user_organization: UserOrganization,
     ) -> None:
         checkout_link = await create_checkout_link(save_fixture, products=[product])
-        product = await self._reload(session, auth_subject, product)
+        product = await self._reload(session, auth_subject, product, archived=False)
+        assert not product.is_deletable
+
+        product = await product_service.update(
+            session, product, ProductUpdate(is_archived=True), auth_subject
+        )
 
         assert product.is_deletable
         deleted_product = await product_service.delete(session, product, auth_subject)
 
         assert deleted_product.deleted_at is not None
-        assert deleted_product.is_archived
 
         await session.flush()
         await session.refresh(checkout_link, {"deleted_at"})
@@ -2992,29 +3012,17 @@ class TestDelete:
 
         assert await product_service.get(session, auth_subject, product.id) is None
 
-    @pytest.mark.auth
-    async def test_valid_archived(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        product.is_archived = True
-        await save_fixture(product)
-        product = await self._reload(session, auth_subject, product)
-
-        deleted_product = await product_service.delete(session, product, auth_subject)
-
-        assert deleted_product.deleted_at is not None
-
     async def _reload(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
+        *,
+        archived: bool = True,
     ) -> Product:
+        product.is_archived = archived
+        session.add(product)
+        await session.flush()
         await session.refresh(product, {"is_deletable"})
         reloaded_product = await product_service.get(session, auth_subject, product.id)
         assert reloaded_product is not None

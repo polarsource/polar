@@ -1098,8 +1098,9 @@ class Product(MetadataOutputMixin, ProductBase):
 
     is_deletable: bool = Field(
         description=(
-            "Whether the product can be permanently deleted. Products referenced "
-            "by an order, subscription, trial or discount cannot be deleted."
+            "Whether the product can be permanently deleted. Only archived "
+            "products not referenced by an order, subscription, trial or "
+            "discount can be deleted."
         )
     )
     prices: ProductPriceList

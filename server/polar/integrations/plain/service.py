@@ -1531,14 +1531,14 @@ class PlainService:
             log.warning("Plain integration is disabled, assuming no thread exists")
             return False
 
-        log.info("Checking thread existence", customer_email=customer_email)
+        log.info("Checking thread existence", fuzzy=fuzzy)
 
         async with self._get_plain_client() as plain:
             user = await plain.customer_by_email(email=customer_email)
-            log.info("User found", user_id=user)
             if not user:
-                log.warning("User not found", email=customer_email)
+                log.warning("User not found")
                 return False
+            log.info("User found", plain_customer_id=user.id)
             filters = ThreadsFilter(
                 customer_ids=[user.id],
                 statuses=[ThreadStatus.TODO, ThreadStatus.SNOOZED],
@@ -1553,7 +1553,12 @@ class PlainService:
                     match = thread.title == thread_title
                 if match:
                     nr_threads += 1
-            log.info(f"There are {nr_threads} threads for user {customer_email}")
+            log.info(
+                "Thread existence checked",
+                plain_customer_id=user.id,
+                matching_thread_count=nr_threads,
+                fuzzy=fuzzy,
+            )
             return nr_threads > 0
 
     async def upsert_customer(
@@ -1577,9 +1582,9 @@ class PlainService:
                     log.warning(
                         "plain.upsert_customer.rebinding_external_id",
                         plain_customer_id=existing.id,
-                        email=email,
                         previous_external_id=existing.external_id,
                         new_external_id=external_id,
+                        email_verified=email_verified,
                     )
                 identifier = UpsertCustomerIdentifierInput(email_address=email)
             else:

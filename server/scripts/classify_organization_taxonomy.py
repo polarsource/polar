@@ -1,22 +1,22 @@
 """Classify an organization with Jev against the 50-label selling taxonomy.
 
-Sends organization details and fetched website text to TypeSafe Jev
-(``jev-1.13.0``). One Choice question picks the primary thing a buyer pays
-for. The policy tag (allowed, review, prohibited) is applied here from the
-Acceptable Use Policy; it is not part of the question.
+Sends organization details and fetched website text to Jev through the
+Vercel AI Gateway (``typesafe-ai/jev``). One Choice question picks the
+primary thing a buyer pays for. The policy tag (allowed, review, prohibited)
+is applied here from the Acceptable Use Policy; it is not part of the question.
 
 Usage:
     cd server
-    export TYPESAFE_API_KEY=...
+    export AI_GATEWAY_API_KEY=...
 
     uv run python -m scripts.classify_organization_taxonomy --slug stilla
     uv run python -m scripts.classify_organization_taxonomy --input case.json
     uv run python -m scripts.classify_organization_taxonomy --slug stilla --skip-website
     uv run python -m scripts.classify_organization_taxonomy --input case.json --print-request
 
-``TYPESAFE_BASE_URL`` overrides the API host. A root such as
-``https://api.example.com`` is called at ``/v1/systemone``. A URL that already
-ends with that path is used as-is.
+``AI_GATEWAY_BASE_URL`` overrides the gateway host. A root such as
+``https://ai-gateway.vercel.sh/typesafe`` is called at ``/v1/systemone``.
+A URL that already ends with that path is used as-is.
 
 ``case.json`` fields: name, slug, about, product_description, website,
 selling_categories, pricing_models, products (name, description, billing_type),
@@ -43,8 +43,8 @@ from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import OrganizationData, ProductsData
 from scripts.helper import configure_script_console_logging, read_engine, typer_async
 
-JEV_URL = "https://api.typesafe.ai/v1/systemone"
-JEV_MODEL = "jev-1.13.0"
+JEV_URL = "https://ai-gateway.vercel.sh/typesafe/v1/systemone"
+JEV_MODEL = "typesafe-ai/jev"
 MIN_PROBABILITY = 0.45
 MIN_CONFIDENCE = 0.5
 PRODUCT_LIMIT = 20
@@ -533,14 +533,19 @@ async def attach_website(case: Case) -> Case:
     )
 
 
+def resolve_jev_url(base_url: str | None) -> str:
+    if not base_url:
+        return JEV_URL
+    root = base_url.rstrip("/")
+    if root.endswith("/v1/systemone"):
+        return root
+    return f"{root}/v1/systemone"
+
+
 async def call_jev(
     request: dict[str, Any], *, api_key: str, base_url: str | None = None
 ) -> dict[str, Any]:
-    if not base_url:
-        url = JEV_URL
-    else:
-        root = base_url.rstrip("/")
-        url = root if root.endswith("/v1/systemone") else f"{root}/v1/systemone"
+    url = resolve_jev_url(base_url)
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -599,13 +604,13 @@ async def main(
         typer.echo(json.dumps(request, indent=2))
         return
 
-    api_key = os.environ.get("TYPESAFE_API_KEY")
+    api_key = os.environ.get("AI_GATEWAY_API_KEY")
     if not api_key:
-        raise typer.BadParameter("TYPESAFE_API_KEY is not set")
+        raise typer.BadParameter("AI_GATEWAY_API_KEY is not set")
     raw = await call_jev(
         request,
         api_key=api_key,
-        base_url=os.environ.get("TYPESAFE_BASE_URL"),
+        base_url=os.environ.get("AI_GATEWAY_BASE_URL"),
     )
     result = interpret(raw["answers"]["primary"])
     if as_json:

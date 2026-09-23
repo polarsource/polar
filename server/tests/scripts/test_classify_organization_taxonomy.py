@@ -8,6 +8,7 @@ from scripts.classify_organization_taxonomy import (
     build_state,
     case_from_payload,
     interpret,
+    resolve_jev_url,
 )
 
 
@@ -59,10 +60,22 @@ def test_request_choice_covers_every_label() -> None:
     request = build_request(Case(name="Stilla"))
 
     primary = request["questions"]["primary"]
-    assert request["model"] == "jev-1.13.0"
+    assert request["model"] == "typesafe-ai/jev"
     assert request["state"] == {"name": "Stilla"}
     assert primary["type"] == "choice"
     assert set(primary["criteria"]) == set(LABEL_BY_KEY)
+
+
+def test_requests_go_through_the_vercel_ai_gateway() -> None:
+    assert resolve_jev_url(None) == "https://ai-gateway.vercel.sh/typesafe/v1/systemone"
+    assert (
+        resolve_jev_url("https://ai-gateway.vercel.sh/typesafe")
+        == "https://ai-gateway.vercel.sh/typesafe/v1/systemone"
+    )
+    assert (
+        resolve_jev_url("https://ai-gateway.vercel.sh/typesafe/v1/systemone")
+        == "https://ai-gateway.vercel.sh/typesafe/v1/systemone"
+    )
 
 
 def test_interpret_flags_a_weak_winner() -> None:

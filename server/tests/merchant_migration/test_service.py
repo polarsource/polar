@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
@@ -71,6 +72,7 @@ from polar.merchant_migration.service import (
 from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
+    Discount,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -112,6 +114,7 @@ from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    canonical_discount,
     canonical_subscription,
     copied_cards,
     pan_steps_until,
@@ -1211,6 +1214,29 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
+async def _imported_discounts(
+    session: AsyncSession, organization: Organization
+) -> list[Discount]:
+    result = await session.execute(
+        select(Discount).where(Discount.organization_id == organization.id)
+    )
+    return list(result.scalars().all())
+
+
+def _catalog_with_discounted_subscription(
+    *, max_redemptions: int | None = None
+) -> list[CanonicalRecord]:
+    """Same catalog as `_catalog_with_subscription`, with a coupon on the sub."""
+    return [
+        *_importable_catalog(),
+        canonical_discount(max_redemptions=max_redemptions),
+        canonical_subscription(
+            has_discount=True,
+            discount_source_ids=["coupon_1"],
+        ),
+    ]
+
+
 def _multi_currency_catalog() -> list[CanonicalRecord]:
     return [
         CanonicalProduct(
@@ -1647,6 +1673,113 @@ class TestImportCatalog:
         await service.import_catalog(session, auth_subject, migration.id)
 
         after_created.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_imports_discounts_without_notify(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(),
+        )
+        send_webhook = mocker.spy(discount_service, "_send_webhook")
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 1
+        send_webhook.assert_not_called()
+
+        discounts = await _imported_discounts(session, organization)
+        assert len(discounts) == 1
+        assert discounts[0].name == "Launch"
+        assert discounts[0].code == "LAUNCH"
+        assert discounts[0].user_metadata["stripe_coupon_id"] == "coupon_1"
+
+    @pytest.mark.auth
+    async def test_exhausted_discount_imports_without_checkout_code(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(max_redemptions=0),
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        discounts = await _imported_discounts(session, organization)
+        assert len(discounts) == 1
+        assert discounts[0].code is None
+        assert discounts[0].max_redemptions == 0
+        assert discounts[0].ends_at is not None
+
+    @pytest.mark.auth
+    async def test_product_restricted_discount_skips_when_products_were_not_imported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_importable_catalog(),
+                canonical_discount(product_source_ids=["prod_1"]),
+                canonical_subscription(
+                    has_discount=True,
+                    discount_source_ids=["coupon_1"],
+                ),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        for record in await record_repository.list_by_migration(migration.id):
+            if record.type == MerchantMigrationRecordType.product:
+                await record_repository.update(
+                    record,
+                    update_dict={"status": MerchantMigrationRecordStatus.skipped},
+                )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 0
+        assert results[PrecheckEntity.discounts].skipped == 1
+        discount_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert discount_record is not None
+        assert discount_record.status == MerchantMigrationRecordStatus.skipped
+        assert discount_record.error is not None
+        assert "weren't imported" in discount_record.error
 
     @pytest.mark.auth
     async def test_listing_reflects_import_status_after_import(

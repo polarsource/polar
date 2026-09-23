@@ -947,7 +947,10 @@ class TestTransfer:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         payout = await create_payout(
-            save_fixture, account=account, payout_account=payout_account
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
         )
         transaction = await create_transaction(
             save_fixture,
@@ -969,7 +972,9 @@ class TestTransfer:
             )
         ]
 
-        await payout_service.transfer(session, payout)
+        updated_payout = await payout_service.transfer(session, payout)
+
+        assert updated_payout.status == PayoutStatus.held
 
         stripe_service_mock.transfer.assert_not_called()
 
@@ -998,7 +1003,10 @@ class TestTransfer:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         payout = await create_payout(
-            save_fixture, account=account, payout_account=payout_account
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
         )
         transaction = await create_transaction(
             save_fixture,
@@ -1019,7 +1027,9 @@ class TestTransfer:
             )
         ]
 
-        await payout_service.transfer(session, payout)
+        updated_payout = await payout_service.transfer(session, payout)
+
+        assert updated_payout.status == PayoutStatus.pending
 
         stripe_service_mock.transfer.assert_any_call(
             payout_account.stripe_id,

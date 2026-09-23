@@ -2,12 +2,9 @@ export const API_URL = (
   process.env.E2E_API_URL ?? 'http://127.0.0.1:8000'
 ).replace(/\/$/, '')
 
-export const CHECKOUT_LINK =
-  process.env.E2E_CHECKOUT_LINK || 'polar_cl_e2e_seed_trial_subscription'
+export const ORG_TOKEN = process.env.E2E_ORG_TOKEN
 
 export const CARD = { number: '4242424242424242', expiry: '1234', cvc: '123' }
-
-export const STRIPE_FRAME = 'iframe[name^="__privateStripeFrame"]'
 
 export const BILLING_ADDRESS = {
   country: 'US',
@@ -17,7 +14,4 @@ export const BILLING_ADDRESS = {
   state: { code: 'CA', name: 'California' },
 }
 
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-export const CHROME_PATH = process.env.E2E_CHROME_PATH
-export const CHROMIUM_SANDBOX = !process.env.CI
 export const HEADLESS = !process.env.E2E_HEADED

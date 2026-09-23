@@ -1,15 +1,15 @@
 name: "E2E Tests"
 
 on:
+  workflow_run:
+    workflows: ["Build and Deploy"]
+    types: [completed]
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       api_url:
         description: "API base URL (default: sandbox)"
-        type: string
-      checkout_link:
-        description: "Checkout link client secret (default: the E2E_CHECKOUT_LINK secret)"
         type: string
 
 permissions:
@@ -18,15 +18,20 @@ permissions:
 jobs:
   e2e:
     name: "E2E Tests 🎭"
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     timeout-minutes: 40
     runs-on: blacksmith-4vcpu-ubuntu-2404
 
     env:
       E2E_API_URL: ${{ inputs.api_url || 'https://sandbox-api.polar.sh' }}
-      E2E_CHECKOUT_LINK: ${{ inputs.checkout_link || secrets.E2E_CHECKOUT_LINK }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      SLACK_CHANNEL_ID: ${{ secrets.E2E_SLACK_CHANNEL_ID }}
+      E2E_ORG_TOKEN: ${{ secrets.E2E_ORG_TOKEN }}
 
     steps:
+      # Deliberately not pinned to workflow_run.head_sha: checking out a SHA taken
+      # from the triggering event runs that code with this workflow's secrets
+      # (CodeQL: untrusted checkout). SOURCE_SHA is only used for the source link.
       - name: Check out code
         uses: actions/checkout@v7.0.1
 
@@ -45,17 +50,13 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: ./clients
 
-      - name: Install Chrome
-        id: chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
+      - name: Install Chromium
+        run: pnpm --filter web exec playwright install --with-deps chromium
+        working-directory: ./clients
 
       - name: Run E2E tests
         run: pnpm --filter web test:e2e
         working-directory: ./clients
-        env:
-          E2E_CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
 
       - name: Upload artifacts
         id: artifacts
@@ -73,20 +74,19 @@ jobs:
         env:
           RESULTS: clients/apps/web/e2e/artifacts/results.json
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}
+          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ env.SOURCE_SHA }}
           ARTIFACT_URL: ${{ steps.artifacts.outputs.artifact-url }}
-          SLACK_CHANNEL_ID: ${{ secrets.E2E_SLACK_CHANNEL_ID }}
         run: |
           [ -f "$RESULTS" ] || echo '{"testResults": []}' > "$RESULTS"
           jq -n --arg channel "$SLACK_CHANNEL_ID" --arg source "$SOURCE_URL" --arg run "$RUN_URL" \
             --arg artifacts "$ARTIFACT_URL" --arg event "$GITHUB_EVENT_NAME" \
-            --arg checkout "$E2E_API_URL/v1/checkout-links/$E2E_CHECKOUT_LINK/redirect" \
             --slurpfile results "$RESULTS" '
             [ $results[0].testResults[] | .name as $file | .assertionResults[] | select(.status == "failed")
               | { name: (.ancestorTitles | join(" › ")), title,
                   error: (.failureMessages[0] | split("\n")[0]),
                   source: ($source + "/" + ($file | sub("^.*/clients/"; "clients/"))
-                    + ((.failureMessages[0] | capture("e2e/[^:\\s]+:(?<line>[0-9]+)")? | "#L" + .line) // "")) }
+                    + ((.failureMessages[0] | capture("e2e/[^:\\s]+:(?<line>[0-9]+)")? | "#L" + .line) // "")),
+                  checkout: (.meta.checkoutUrl // "") }
             ] as $failed
             | (if ($failed | length) == 1 then
                  ":bufo-has-activated: E2E test failed: *\($failed[0].name)*: \($failed[0].title) (\($event))"
@@ -97,8 +97,8 @@ jobs:
                end) as $header
             | [ $header,
                 ($failed[] | (if ($failed | length) > 1 then "*\(.name)*: \(.title)\n" else "" end)
-                  + "```\(.error)```\n• <\(.source)|Test source>"),
-                "• <\($checkout)|Checkout link> (try it yourself)",
+                  + "```\(.error)```\n• <\(.source)|Test source>"
+                  + (if .checkout == "" then "" else " · <\(.checkout)|Open the checkout>" end)),
                 "• <\($run)|View run>" + (if $artifacts == "" then "" else " · <\($artifacts)|Screenshots and browser logs>" end)
               ] | { channel: $channel, text: join("\n") }' > slack-message.json
           screenshot=$(ls clients/apps/web/e2e/artifacts/*/*/*.png 2>/dev/null | sort | tail -1)
@@ -123,7 +123,7 @@ jobs:
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
           errors: true
           payload: |
-            channel_id: ${{ secrets.E2E_SLACK_CHANNEL_ID }}
+            channel_id: ${{ env.SLACK_CHANNEL_ID }}
             thread_ts: "${{ steps.slack.outputs.ts }}"
             initial_comment: "Last screenshot before the failure"
             file: ${{ steps.failure.outputs.screenshot }}
@@ -138,14 +138,13 @@ jobs:
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
           errors: true
           payload: |
-            channel: ${{ secrets.E2E_SLACK_CHANNEL_ID }}
+            channel: ${{ env.SLACK_CHANNEL_ID }}
             thread_ts: "${{ steps.slack.outputs.ts }}"
             text: "Flaky? `gh run rerun ${{ github.run_id }}`"
 
       - name: Check provider status
         if: failure()
         env:
-          SLACK_CHANNEL_ID: ${{ secrets.E2E_SLACK_CHANNEL_ID }}
           SLACK_THREAD_TS: ${{ steps.slack.outputs.ts }}
         run: |
           status() {
@@ -171,21 +170,3 @@ jobs:
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
           errors: true
           payload-file-path: slack-status.json
-
-      - name: Analyze the failure
-        if: failure()
-        working-directory: ./clients/apps/web
-        env:
-          SLACK_CHANNEL_ID: ${{ secrets.E2E_SLACK_CHANNEL_ID }}
-          SLACK_THREAD_TS: ${{ steps.slack.outputs.ts }}
-        run: node e2e/ci/analyze-failure.mts
-
-      - name: Post the analysis
-        if: failure()
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v4.0.0
-        with:
-          method: chat.postMessage
-          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
-          errors: true
-          payload-file-path: clients/apps/web/slack-analysis.json

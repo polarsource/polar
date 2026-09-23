@@ -99,7 +99,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@browserbasehq/stagehand": "4.1.0",
     "@polar-sh/typescript-config": "workspace:*",
     "@stylexjs/babel-plugin": "catalog:",
     "@stylexjs/postcss-plugin": "catalog:",
@@ -125,6 +124,7 @@
     "tailwindcss": "catalog:",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
+    "playwright": "1.61.0",
     "vitest": "catalog:"
   }
 }

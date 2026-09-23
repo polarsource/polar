@@ -75,8 +75,10 @@ dev help                # Show all commands
 ### End-to-end Tests
 
 ```bash
-dev e2e setup                       # Trial product, checkout link, and env for the Stagehand checkout test
+dev e2e setup                       # Organization token and settings for the Playwright E2E tests
 dev e2e setup --org acme-corp       # Pick the organization up front instead of being asked
+dev e2e run                         # Run the Playwright E2E tests against the local stack
+dev e2e run trial --headed          # Only files matching "trial", with a visible browser
 ```
 
 ### Visual Regression Testing

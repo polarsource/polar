@@ -13,6 +13,7 @@ export default defineConfig({
       ['json', { outputFile: 'e2e/artifacts/results.json' }],
     ],
     environment: 'node',
+    fileParallelism: false,
     retry: 2,
     testTimeout: 300_000,
     hookTimeout: 120_000,

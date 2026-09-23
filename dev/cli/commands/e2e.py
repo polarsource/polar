@@ -1,18 +1,15 @@
-"""Set up what the Stagehand E2E checkout test needs on the local stack.
+"""Set up what the Playwright E2E tests need on the local stack.
 
-The test checks out a free trial through a checkout link and cancels it, so it
-needs a product with a trial, an organization that allows repeated trials, and
-an OpenAI key for Stagehand. All of that is per machine, so the values land in
-the central secrets file and flow into clients/apps/web/.env.local from there.
+The tests create their own products and checkouts through the API, so they need
+an organization access token and an organization that allows repeated trials.
+The token is per machine, so it lands in the central secrets file and flows into
+clients/apps/web/.env.local from there.
 """
 
 import subprocess
-import urllib.error
-import urllib.request
 from typing import Annotated
 
 import typer
-from dotenv import dotenv_values
 from rich.panel import Panel
 from rich.table import Table
 
@@ -21,16 +18,14 @@ from shared import (
     ROOT_DIR,
     SERVER_DIR,
     console,
-    read_secrets,
+    gradient,
+    gradient_title,
     run_command,
     step_failed,
     step_spinner,
     step_status,
     update_secrets,
 )
-
-WEB_ENV_FILE = CLIENTS_DIR / "apps" / "web" / ".env.local"
-OPENAI_KEYS_URL = "https://platform.openai.com/api-keys"
 
 
 def _script(*args: str) -> subprocess.CompletedProcess | None:
@@ -42,7 +37,8 @@ def _script(*args: str) -> subprocess.CompletedProcess | None:
 
 
 def _pick_org(slug: str | None) -> str:
-    result = _script("list-orgs")
+    with step_spinner("Looking up organizations that can take payments..."):
+        result = _script("list-orgs")
     if not result or result.returncode != 0:
         step_failed("Listing organizations", "failed", result)
         raise typer.Exit(1)
@@ -69,39 +65,16 @@ def _pick_org(slug: str | None) -> str:
     ).execute()
 
 
-def _has_openai_key() -> bool:
-    if read_secrets().get("OPENAI_API_KEY"):
-        return True
-    return bool(dotenv_values(WEB_ENV_FILE).get("OPENAI_API_KEY")) if WEB_ENV_FILE.exists() else False
-
-
-def _openai_key_rejected(key: str) -> bool:
-    request = urllib.request.Request(
-        "https://api.openai.com/v1/models", headers={"Authorization": f"Bearer {key}"}
-    )
-    try:
-        urllib.request.urlopen(request, timeout=10)
-    except urllib.error.HTTPError as error:
-        return error.code == 401
-    except urllib.error.URLError:
-        return False
-    return False
-
-
-def _prompt_openai_key() -> str | None:
+def _intro() -> None:
+    title = gradient("Polar E2E")
+    title.append("\nPlaywright checkout tests against your local stack", style="dim")
+    title.justify = "center"
     console.print()
-    console.print("  Stagehand drives the browser with an OpenAI model, so the test needs an API key.")
-    console.print(f"  Create one at [link={OPENAI_KEYS_URL}]{OPENAI_KEYS_URL}[/link]")
-    key = typer.prompt(
-        "  Paste it here (leave empty to add it later)",
-        default="",
-        hide_input=True,
-        show_default=False,
-    ).strip()
-    if key and _openai_key_rejected(key):
-        console.print("  [red]OpenAI rejected that key, so it was not saved.[/red]")
-        return None
-    return key or None
+    console.print(Panel(title, border_style="blue", padding=(1, 4)))
+    console.print(
+        "[dim]Creates an organization token, allows repeated trials, "
+        "installs Chromium and writes it all into .env.local[/dim]\n"
+    )
 
 
 def _stripe_listener_running() -> bool:
@@ -120,8 +93,8 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             typer.Option("--org", help="Organization slug (prompted when there are several)"),
         ] = None,
     ) -> None:
-        """Create the trial product and checkout link the E2E test needs, and point the test at them."""
-        console.print("\n[bold blue]E2E setup[/bold blue]\n")
+        """Create an organization token for the E2E tests and allow repeated trials."""
+        _intro()
         slug = _pick_org(org)
 
         with step_spinner(f"Preparing {slug}..."):
@@ -132,29 +105,54 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         values = dict(
             line.split("=", 1) for line in result.stdout.splitlines() if "=" in line
         )
-        step_status(True, f"{values['PRODUCT_NAME']} product with a 7-day trial in {slug}")
-        step_status(True, "Repeated trials allowed", "prevent_trial_abuse off")
-        step_status(True, "Checkout link", values["E2E_CHECKOUT_LINK"])
+        step_status(True, "Organization token", f"created for {slug}, the tests create products and checkouts with it")
+        step_status(True, "Repeated trials", f"prevent_trial_abuse off for {slug}")
 
-        secrets = {"E2E_CHECKOUT_LINK": values["E2E_CHECKOUT_LINK"]}
-        if not _has_openai_key():
-            key = _prompt_openai_key()
-            if key:
-                secrets["OPENAI_API_KEY"] = key
+        with step_spinner("Installing Chromium for Playwright..."):
+            result = run_command(
+                ["pnpm", "--filter", "web", "exec", "playwright", "install", "chromium"],
+                cwd=CLIENTS_DIR,
+                capture=True,
+            )
+        if not result or result.returncode != 0:
+            step_failed("Installing Chromium", "failed", result)
+            raise typer.Exit(1)
+        step_status(True, "Chromium", "Playwright's own build")
+
+        secrets = {"E2E_ORG_TOKEN": values["E2E_ORG_TOKEN"]}
         update_secrets(secrets)
         run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
-        step_status(True, "clients/apps/web/.env.local", ", ".join(secrets))
-        if not _has_openai_key():
-            console.print(
-                f"  [yellow]No OPENAI_API_KEY yet: create one at {OPENAI_KEYS_URL}, then rerun dev e2e setup[/yellow]"
-            )
+        step_status(True, ".env.local", "E2E_ORG_TOKEN written for clients/apps/web")
 
         next_steps = Table(show_header=False, box=None, padding=(0, 2))
         next_steps.add_column(style="bold cyan")
         next_steps.add_column(style="dim")
         if not _stripe_listener_running():
             next_steps.add_row("dev stripe --listen", "Forward Stripe webhooks, the trial needs them")
-        next_steps.add_row("pnpm --filter web test:e2e", "Run the test, from clients/")
+        next_steps.add_row("dev e2e run", "Run the tests")
+        next_steps.add_row("dev e2e run --headed", "Run the tests with a visible browser")
         console.print()
-        console.print(Panel(next_steps, title="[bold green]Next[/bold green]", border_style="green", padding=(1, 2)))
+        console.print(
+            Panel(next_steps, title=gradient_title("Next"), border_style="blue", padding=(1, 2))
+        )
         console.print()
+
+    @e2e_app.command("run")
+    def run(
+        pattern: Annotated[
+            str | None,
+            typer.Argument(help="Only run test files whose path contains this text"),
+        ] = None,
+        headed: Annotated[
+            bool,
+            typer.Option("--headed", help="Show the browser while the tests run"),
+        ] = False,
+    ) -> None:
+        """Run the E2E tests against the local stack."""
+        script = "test:e2e:headed" if headed else "test:e2e"
+        result = run_command(
+            ["pnpm", "--filter", "web", script, *([pattern] if pattern else [])],
+            cwd=CLIENTS_DIR,
+            capture=False,
+        )
+        raise typer.Exit(result.returncode if result else 1)

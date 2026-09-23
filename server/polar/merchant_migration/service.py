@@ -527,7 +527,7 @@ class MerchantMigrationService:
             organization = await self._get_organization(session, migration)
             adapter = await self._build_adapter(migration)
             page = await adapter.extract_page(cursor)
-        except stripe_lib.StripeError:
+        except (stripe_lib.StripeError, MerchantMigrationError) as e:
             repository = MerchantMigrationRepository.from_session(session)
             await repository.refresh_for_update(migration)
             current_operation = migration.operation
@@ -537,21 +537,12 @@ class MerchantMigrationService:
                 or current_operation.cursor != cursor
             ):
                 return
-            await self._fail_operation(
-                session, migration, SourceVerificationUnavailable().message
+            message = (
+                e.message
+                if isinstance(e, MerchantMigrationError)
+                else SourceVerificationUnavailable().message
             )
-            return
-        except MerchantMigrationError as e:
-            repository = MerchantMigrationRepository.from_session(session)
-            await repository.refresh_for_update(migration)
-            current_operation = migration.operation
-            if (
-                current_operation is None
-                or not current_operation.is_active
-                or current_operation.cursor != cursor
-            ):
-                return
-            await self._fail_operation(session, migration, e.message)
+            await self._fail_operation(session, migration, message)
             return
 
         repository = MerchantMigrationRepository.from_session(session)
@@ -1768,7 +1759,12 @@ class MerchantMigrationService:
         """Stage each record as it streams past, so we persist the catalog in
         the same single pass the precheck reads (extraction stays incremental)."""
         async for record in records:
-            await record_repository.upsert(migration, organization, record)
+            await record_repository.upsert(
+                migration,
+                organization,
+                record,
+                merge_product_prices=True,
+            )
             yield record
 
     async def _build_adapter(

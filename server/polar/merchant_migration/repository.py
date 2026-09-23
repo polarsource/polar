@@ -42,14 +42,17 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import (
+    CanonicalDiscount,
     CanonicalPrice,
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
     canonical_price_key,
     deserialize,
+    earlier_datetime,
     parse_tax_behavior,
     serialize,
+    tighter_cap,
 )
 
 type RecordCounts = dict[
@@ -738,6 +741,14 @@ class MerchantMigrationRecordRepository(
                     if isinstance(current, CanonicalProduct):
                         record = replace(record, prices=_merged_prices(current, record))
                         canonical = serialize(record)
+                if (
+                    existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalDiscount)
+                ):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalDiscount):
+                        record = self._merge_discount_code(current, record)
+                        canonical = serialize(record)
                 return await self.update(
                     existing,
                     update_dict={
@@ -756,4 +767,37 @@ class MerchantMigrationRecordRepository(
                 canonical=canonical,
             ),
             flush=True,
+        )
+
+    @staticmethod
+    def _merge_discount_code(
+        current: CanonicalDiscount, incoming: CanonicalDiscount
+    ) -> CanonicalDiscount:
+        """Refresh coupon terms on re-extract and attach the first Polar-valid
+        promotion code. Extra codes are counted so the precheck can warn."""
+        if incoming.code is None:
+            return replace(
+                incoming,
+                code=current.code,
+                extra_codes=current.extra_codes,
+                max_redemptions=tighter_cap(
+                    incoming.max_redemptions, current.max_redemptions
+                ),
+                ends_at=earlier_datetime(incoming.ends_at, current.ends_at),
+            )
+        if current.code is None:
+            return replace(
+                current,
+                code=incoming.code,
+                max_redemptions=incoming.max_redemptions,
+                ends_at=earlier_datetime(current.ends_at, incoming.ends_at),
+            )
+        if current.code != incoming.code:
+            return replace(current, extra_codes=current.extra_codes + 1)
+        return replace(
+            current,
+            max_redemptions=tighter_cap(
+                incoming.max_redemptions, current.max_redemptions
+            ),
+            ends_at=earlier_datetime(incoming.ends_at, current.ends_at),
         )

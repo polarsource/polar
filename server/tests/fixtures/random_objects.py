@@ -2339,7 +2339,16 @@ async def create_payout(
     attempts: list[PayoutAttemptStatus] | None = None,
 ) -> Payout:
     if attempts is None:
-        attempts = [PayoutAttemptStatus.succeeded]
+        match status:
+            case PayoutStatus.pending | PayoutStatus.held:
+                attempts = []
+            case PayoutStatus.in_transit:
+                attempts = [PayoutAttemptStatus.in_transit]
+            case PayoutStatus.succeeded:
+                attempts = [PayoutAttemptStatus.succeeded]
+            case PayoutStatus.failed | PayoutStatus.canceled:
+                attempts = [PayoutAttemptStatus.failed]
+
     payout = Payout(
         created_at=created_at,
         account=account,

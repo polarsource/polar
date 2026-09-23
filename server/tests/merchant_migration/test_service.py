@@ -2416,6 +2416,122 @@ class TestImportCatalog:
             if isinstance(price, ProductPriceFixed)
         } == {("eur", 900), ("usd", 1000)}
 
+    @pytest.mark.auth
+    async def test_product_restricted_discount_waits_until_every_product_settles(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                CanonicalProduct(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="Pro",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_1",
+                            currency="usd",
+                            amount=1000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                ),
+                CanonicalProduct(
+                    source_id="prod_2:month:1",
+                    product_source_id="prod_2",
+                    name="Team",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_2",
+                            currency="usd",
+                            amount=2000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                ),
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="alice@example.com",
+                    name="Alice",
+                    country="US",
+                ),
+                canonical_discount(
+                    name="Both",
+                    code="BOTH",
+                    product_source_ids=["prod_1", "prod_2"],
+                ),
+                canonical_subscription(source_id="sub_1", price_source_id="price_1"),
+                canonical_subscription(source_id="sub_2", price_source_id="price_2"),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        first_subscription = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        second_subscription = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_2",
+        )
+        assert first_subscription is not None
+        assert second_subscription is not None
+
+        first = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            record_ids=[first_subscription.id],
+        )
+        first_results = {result.entity: result for result in first.results}
+        assert first_results[PrecheckEntity.discounts].imported == 0
+        assert first_results[PrecheckEntity.discounts].skipped == 0
+        assert await _imported_discounts(session, organization) == []
+        discount_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert discount_record is not None
+        assert discount_record.status == MerchantMigrationRecordStatus.pending
+
+        second = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            record_ids=[second_subscription.id],
+        )
+        second_results = {result.entity: result for result in second.results}
+        assert second_results[PrecheckEntity.discounts].imported == 1
+
+        result = await session.execute(
+            select(Discount)
+            .where(Discount.organization_id == organization.id)
+            .options(selectinload(Discount.discount_products))
+        )
+        discounts = list(result.scalars().unique().all())
+        assert len(discounts) == 1
+        products = await _products(session, organization)
+        assert {product.name for product in products} == {"Pro", "Team"}
+        assert {link.product_id for link in discounts[0].discount_products} == {
+            product.id for product in products
+        }
+
 
 @pytest.mark.asyncio
 class TestSummarizeRecords:

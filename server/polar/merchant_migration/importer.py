@@ -454,16 +454,16 @@ class CatalogImporter:
                 continue
             product_ids: list[UUID] = []
             if discount.product_source_ids:
+                if any(
+                    product_source_id in pending_product_source_ids
+                    for product_source_id in discount.product_source_ids
+                ):
+                    continue
                 for product_source_id in discount.product_source_ids:
                     product_ids.extend(
                         polar_product_ids_by_source.get(product_source_id, [])
                     )
                 if not product_ids:
-                    if any(
-                        product_source_id in pending_product_source_ids
-                        for product_source_id in discount.product_source_ids
-                    ):
-                        continue
                     await self._mark_skipped(
                         record,
                         Reason(

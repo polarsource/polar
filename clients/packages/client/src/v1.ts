@@ -555,7 +555,7 @@ export interface paths {
     head?: never
     /**
      * Patch
-     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     * @description **Scopes**: `payouts:write` `transactions:write`
      */
     patch: operations['accounts:patch']
     trace?: never

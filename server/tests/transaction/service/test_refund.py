@@ -463,8 +463,10 @@ class TestRevert:
         with pytest.raises(RefundTransactionDoesNotExistError):
             await refund_transaction_service.revert(session, refund)
 
+    @pytest.mark.parametrize("refund_amount", [1000, 300], ids=["full", "partial"])
     async def test_valid(
         self,
+        refund_amount: int,
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
@@ -474,14 +476,15 @@ class TestRevert:
         stripe_service_mock: MagicMock,
     ) -> None:
         # Create a charge and order
-        charge = build_stripe_charge()
+        charge = build_stripe_charge(amount=1000)
         refund, order, payment = await create_order_and_refund(
             save_fixture,
             customer,
             status=RefundStatus.succeeded,
             subtotal_amount=charge.amount,
+            refund_subtotal_amount=refund_amount,
         )
-        balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
+        balance_transaction = build_stripe_balance_transaction(amount=-refund_amount)
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
 
         # Create the payment transaction
@@ -543,9 +546,9 @@ class TestRevert:
             processor=Processor.stripe,
             account=account,
             currency=charge.currency,
-            amount=-charge.amount * 0.75,
+            amount=-refund_amount * 0.75,
             account_currency=charge.currency,
-            account_amount=-charge.amount * 0.75,
+            account_amount=-refund_amount * 0.75,
             tax_amount=0,
             order=order,
             balance_correlation_key="REFUND_BALANCE",
@@ -555,9 +558,9 @@ class TestRevert:
             type=TransactionType.balance,
             processor=Processor.stripe,
             currency=charge.currency,
-            amount=charge.amount * 0.75,
+            amount=refund_amount * 0.75,
             account_currency=charge.currency,
-            account_amount=charge.amount * 0.75,
+            account_amount=refund_amount * 0.75,
             tax_amount=0,
             order=order,
             balance_correlation_key="REFUND_BALANCE",
@@ -610,10 +613,6 @@ class TestRevert:
         assert reverse_balance_account.account is None
         assert reverse_balance_account.balance_reversal_transaction is not None
         assert reverse_balance_account.balance_reversal_transaction == outgoing_balance
-        assert (
-            reverse_balance_account.balance_reversal_transaction.amount
-            == reverse_balance_account.amount
-        )
         assert reverse_balance_account.amount < 0
         assert reverse_balance_account.amount == -refund_incoming_balance.amount
         assert reverse_balance_account.payment_transaction is None
@@ -622,15 +621,18 @@ class TestRevert:
         assert reverse_balance_polar.account is not None
         assert reverse_balance_polar.balance_reversal_transaction is not None
         assert reverse_balance_polar.balance_reversal_transaction == incoming_balance
-        assert (
-            reverse_balance_polar.balance_reversal_transaction.amount
-            == reverse_balance_polar.amount
-        )
         assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
         assert reverse_balance_polar.payment_transaction is None
 
+    @pytest.mark.parametrize(
+        ("refund_amount", "refund_tax_amount"),
+        [(1000, 200), (400, 80)],
+        ids=["full", "partial"],
+    )
     async def test_valid_different_settlement_currency(
         self,
+        refund_amount: int,
+        refund_tax_amount: int,
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
@@ -648,6 +650,8 @@ class TestRevert:
             subtotal_amount=1000,
             tax_amount=200,
             currency="eur",
+            refund_subtotal_amount=refund_amount,
+            refund_tax_amount=refund_tax_amount,
         )
 
         # Create the payment transaction
@@ -700,7 +704,9 @@ class TestRevert:
 
         # Refund this transaction
         balance_transaction = build_stripe_balance_transaction(
-            amount=-1800, currency="usd", exchange_rate=1.5
+            amount=-int((refund_amount + refund_tax_amount) * 1.5),
+            currency="usd",
+            exchange_rate=1.5,
         )
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
         refund_transaction = await create_transaction(
@@ -708,11 +714,11 @@ class TestRevert:
             type=TransactionType.refund,
             refund=refund,
             currency="usd",
-            amount=-1500,
-            tax_amount=-300,
+            amount=-int(refund_amount * 1.5),
+            tax_amount=-int(refund_tax_amount * 1.5),
             presentment_currency="eur",
-            presentment_amount=-1000,
-            presentment_tax_amount=-200,
+            presentment_amount=-refund_amount,
+            presentment_tax_amount=-refund_tax_amount,
         )
 
         refund_outgoing_balance = Transaction(
@@ -720,9 +726,9 @@ class TestRevert:
             processor=Processor.stripe,
             account=account,
             currency="usd",
-            amount=-payment_transaction.amount * 0.75,
+            amount=refund_transaction.amount * 0.75,
             account_currency="usd",
-            account_amount=-payment_transaction.amount * 0.75,
+            account_amount=refund_transaction.amount * 0.75,
             tax_amount=0,
             order=order,
             balance_correlation_key="REFUND_BALANCE",
@@ -732,9 +738,9 @@ class TestRevert:
             type=TransactionType.balance,
             processor=Processor.stripe,
             currency="usd",
-            amount=payment_transaction.amount * 0.75,
+            amount=-refund_transaction.amount * 0.75,
             account_currency="usd",
-            account_amount=payment_transaction.amount * 0.75,
+            account_amount=-refund_transaction.amount * 0.75,
             tax_amount=0,
             order=order,
             balance_correlation_key="REFUND_BALANCE",
@@ -751,11 +757,11 @@ class TestRevert:
         assert refund_reversal_transaction.type == TransactionType.refund_reversal
         assert refund_reversal_transaction.processor == Processor.stripe
         assert refund_reversal_transaction.currency == "usd"
-        assert refund_reversal_transaction.amount == 1500
-        assert refund_reversal_transaction.tax_amount == 300
+        assert refund_reversal_transaction.amount == refund_amount * 1.5
+        assert refund_reversal_transaction.tax_amount == refund_tax_amount * 1.5
         assert refund_reversal_transaction.presentment_currency == "eur"
-        assert refund_reversal_transaction.presentment_amount == 1000
-        assert refund_reversal_transaction.presentment_tax_amount == 200
+        assert refund_reversal_transaction.presentment_amount == refund_amount
+        assert refund_reversal_transaction.presentment_tax_amount == refund_tax_amount
 
         assert refund_reversal_transaction.account_currency == (
             refund_transaction.account_currency
@@ -787,10 +793,6 @@ class TestRevert:
         assert reverse_balance_account.account is None
         assert reverse_balance_account.balance_reversal_transaction is not None
         assert reverse_balance_account.balance_reversal_transaction == outgoing_balance
-        assert (
-            reverse_balance_account.balance_reversal_transaction.amount
-            == reverse_balance_account.amount
-        )
         assert reverse_balance_account.amount < 0
         assert reverse_balance_account.amount == -refund_incoming_balance.amount
         assert reverse_balance_account.payment_transaction is None
@@ -799,9 +801,5 @@ class TestRevert:
         assert reverse_balance_polar.account is not None
         assert reverse_balance_polar.balance_reversal_transaction is not None
         assert reverse_balance_polar.balance_reversal_transaction == incoming_balance
-        assert (
-            reverse_balance_polar.balance_reversal_transaction.amount
-            == reverse_balance_polar.amount
-        )
         assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
         assert reverse_balance_polar.payment_transaction is None

@@ -274,7 +274,6 @@ class RefundTransactionService(BaseTransactionService):
         await self._create_revert_reversal_balances(
             session,
             payment_transaction=payment_transaction,
-            refund_amount=-refund_transaction.amount,
         )
         return refund_reversal_transaction
 
@@ -311,10 +310,7 @@ class RefundTransactionService(BaseTransactionService):
         session: AsyncSession,
         *,
         payment_transaction: Transaction,
-        refund_amount: int,
     ) -> list[tuple[Transaction, Transaction]]:
-        total_amount = payment_transaction.amount
-
         revert_reversal_balances: list[tuple[Transaction, Transaction]] = []
         reverse_balance_transactions_couples = (
             await self._get_reverse_balance_transactions_for_payment(
@@ -324,10 +320,9 @@ class RefundTransactionService(BaseTransactionService):
         for reverse_balance_transactions_couple in reverse_balance_transactions_couples:
             outgoing, incoming = reverse_balance_transactions_couple
             assert outgoing.account is not None
-            # Reverse each balance proportionally
-            balance_reversal_amount = abs(
-                int(math.floor(outgoing.amount * refund_amount) / total_amount)
-            )
+            # Restore the full withdrawn amount; outgoing is already the
+            # proportionally-allocated reversal, not the original payment split.
+            balance_reversal_amount = abs(outgoing.amount)
             (
                 outgoing_reversal,
                 incoming_reversal,

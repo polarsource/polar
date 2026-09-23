@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Polar Development CLI - Bootstrap wrapper
 # This script ensures uv is installed, then runs the actual CLI
 

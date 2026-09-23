@@ -9,7 +9,7 @@ services:
     volumes:
       - temporal_data:/data
     healthcheck:
-      test: ["CMD", "temporal", "operator", "cluster", "health"]
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
       interval: 2s
       timeout: 10s
       retries: 30

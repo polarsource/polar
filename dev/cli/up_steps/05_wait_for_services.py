@@ -23,7 +23,19 @@ def wait_for_temporal(timeout: int = 60) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         result = run_command(
-            ["docker", "compose", "exec", "-T", "temporal", "temporal", "operator", "cluster", "health"],
+            [
+                "docker",
+                "compose",
+                "exec",
+                "-T",
+                "temporal",
+                "temporal",
+                "operator",
+                "cluster",
+                "health",
+                "--address",
+                "127.0.0.1:7233",
+            ],
             cwd=SERVER_DIR,
             capture=True,
             timeout=5,

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Installs the 'dev' alias for easy access to the Polar development CLI
 # Usage: ./dev/cli/install
 

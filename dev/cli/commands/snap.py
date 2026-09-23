@@ -42,6 +42,8 @@ from shared import (
     ROOT_DIR,
     check_command_exists,
     console,
+    gradient,
+    gradient_title,
     is_port_in_use,
     run_command,
 )
@@ -959,7 +961,7 @@ def _finalize(
     console.print(
         Panel(
             "\n".join(lines),
-            title=_gradient_title("Regression result"),
+            title=gradient_title("Regression result"),
             border_style="blue" if ok else "red",
             padding=(1, 2),
         )
@@ -1020,27 +1022,6 @@ def _maybe_open_result(run_dir: Path) -> None:
             subprocess.run([opener, str(result_dir)])
         else:  # exit
             return
-
-
-# Shared cyan→blue gradient used for the "Snap" title and every panel title.
-GRADIENT_START = (0x22, 0xD3, 0xEE)  # cyan
-GRADIENT_END = (0x4F, 0x7C, 0xFF)  # blue
-
-
-def _gradient(word: str, start: tuple[int, int, int], end: tuple[int, int, int]) -> Text:
-    """Bold `word` with a per-letter color gradient from start→end (RGB)."""
-    text = Text()
-    last = max(len(word) - 1, 1)
-    for i, char in enumerate(word):
-        f = i / last
-        r, g, b = (round(s + (e - s) * f) for s, e in zip(start, end))
-        text.append(char, style=f"bold #{r:02x}{g:02x}{b:02x}")
-    return text
-
-
-def _gradient_title(text: str) -> Text:
-    """A panel title in the shared cyan→blue gradient."""
-    return _gradient(text, GRADIENT_START, GRADIENT_END)
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
@@ -1117,7 +1098,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         and saves raw before/after PNGs (+ a local diff verdict) to result/.
         """
         console.print()
-        title = _gradient("Snap", GRADIENT_START, GRADIENT_END)
+        title = gradient("Snap")
         title.append("\nPolar's visual regression tool", style="dim")
         title.justify = "center"
         console.print(Panel(title, border_style="blue", padding=(1, 4)))
@@ -1273,7 +1254,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         console.print(
             Panel(
                 table,
-                title=_gradient_title("Visual regression job"),
+                title=gradient_title("Visual regression job"),
                 border_style="blue",
                 padding=(1, 1),
             )

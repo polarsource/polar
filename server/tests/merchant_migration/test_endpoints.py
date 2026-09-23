@@ -1146,6 +1146,59 @@ class TestUpdateRecord:
         assert reloaded.canonical["tax_behavior"] == "exclusive"
 
 
+@pytest.mark.asyncio
+class TestUpdateBillingCountry:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_updates_staged_customer(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        customer = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_1",
+            canonical=serialize(
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="customer@example.com",
+                    name="Customer",
+                    country=None,
+                    country_hint="DE",
+                )
+            ),
+        )
+        subscription = MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+            canonical=serialize(canonical_subscription()),
+        )
+        await save_fixture(customer)
+        await save_fixture(subscription)
+
+        response = await client.patch(
+            f"/v1/merchant-migrations/{migration.id}/records/"
+            f"{subscription.id}/billing-country",
+            json={"country": "FR"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"country": "FR"}
+        reloaded = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_id(customer.id)
+        assert reloaded is not None
+        assert reloaded.canonical["country"] == "FR"
+        assert reloaded.canonical["country_hint"] is None
+
+
 async def _create_migration(
     save_fixture: SaveFixture,
     organization: Organization,

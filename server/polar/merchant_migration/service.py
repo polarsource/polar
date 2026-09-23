@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from dataclasses import replace
 from datetime import datetime
 from typing import NamedTuple, TypedDict
 from uuid import UUID
@@ -12,6 +13,7 @@ from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TaxBehavior
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -45,6 +47,7 @@ from polar.worker import enqueue_job
 from . import pan_transfer
 from .adapters import PaginatedSourceAdapter, StripeAdapter
 from .canonical import (
+    CanonicalCustomer,
     CanonicalPaymentMethod,
     CanonicalProduct,
     CanonicalRecord,
@@ -86,6 +89,7 @@ from .repository import (
     MerchantMigrationRepository,
 )
 from .schemas import (
+    MerchantMigrationBillingCountryUpdate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
@@ -1456,6 +1460,65 @@ class MerchantMigrationService:
             },
         )
         return MerchantMigrationRecordUpdate(tax_behavior=tax_behavior)
+
+    async def update_customer_billing_country(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        record_id: UUID,
+        country: CountryAlpha2,
+    ) -> MerchantMigrationBillingCountryUpdate:
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        subscription_record = await repository.get_by_id(record_id, for_update=True)
+        if (
+            subscription_record is None
+            or subscription_record.merchant_migration_id != migration.id
+        ):
+            raise MerchantMigrationRecordNotFound()
+        if subscription_record.type != MerchantMigrationRecordType.subscription:
+            raise RecordNotSubscription()
+        subscription = deserialize(
+            subscription_record.type, subscription_record.canonical
+        )
+        if not isinstance(subscription, CanonicalSubscription):
+            raise RecordNotSubscription()
+        customer_record = await repository.get_by_source(
+            organization_id=migration.organization_id,
+            type=MerchantMigrationRecordType.customer,
+            source_id=subscription.customer_source_id,
+        )
+        if customer_record is None:
+            raise MerchantMigrationRecordNotFound()
+        customer = deserialize(customer_record.type, customer_record.canonical)
+        if not isinstance(customer, CanonicalCustomer):
+            raise MerchantMigrationRecordNotFound()
+        await repository.update(
+            customer_record,
+            update_dict={
+                "canonical": serialize(
+                    replace(customer, country=country.value, country_hint=None)
+                )
+            },
+        )
+        if customer_record.target_id is not None:
+            customer_repository = CustomerRepository.from_session(session)
+            polar_customer = await customer_repository.get_by_id(
+                customer_record.target_id
+            )
+            if polar_customer is not None:
+                billing_address = polar_customer.billing_address
+                if billing_address is None:
+                    billing_address = Address(country=country)
+                else:
+                    billing_address = billing_address.model_copy(
+                        update={"country": country}
+                    )
+                await customer_repository.update(
+                    polar_customer, update_dict={"billing_address": billing_address}
+                )
+        return MerchantMigrationBillingCountryUpdate(country=country)
 
     async def list_records(
         self,

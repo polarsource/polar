@@ -5,6 +5,7 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.kit.address import CountryAlpha2
 from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -30,6 +31,7 @@ from .pan_transfer import (
 )
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
+    MerchantMigrationBillingCountryUpdate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
@@ -536,4 +538,40 @@ async def update_record(
         id,
         record_id,
         record_update.tax_behavior,
+    )
+
+
+@router.patch(
+    "/{id}/records/{record_id}/billing-country",
+    response_model=MerchantMigrationBillingCountryUpdate,
+    summary="Update Merchant Migration Customer Billing Country",
+    responses={
+        400: {
+            "description": "Billing country can only be set through a subscription.",
+            "model": RecordNotSubscription.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration, subscription, or customer not found.",
+            "model": MerchantMigrationNotFound.schema()
+            | MerchantMigrationRecordNotFound.schema(),
+        },
+    },
+)
+async def update_customer_billing_country(
+    id: UUID4,
+    record_id: UUID4,
+    update: MerchantMigrationBillingCountryUpdate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationBillingCountryUpdate:
+    return await merchant_migration_service.update_customer_billing_country(
+        session,
+        auth_subject,
+        id,
+        record_id,
+        CountryAlpha2(str(update.country)),
     )

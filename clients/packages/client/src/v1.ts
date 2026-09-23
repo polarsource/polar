@@ -5580,6 +5580,26 @@ export interface paths {
     patch: operations['merchant-migrations:update_record']
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/records/{record_id}/billing-country': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Merchant Migration Customer Billing Country
+     * @description **Scopes**: `organizations:write`
+     */
+    patch: operations['merchant-migrations:update_customer_billing_country']
+    trace?: never
+  }
   '/v1/email-update/request': {
     parameters: {
       query?: never
@@ -25032,6 +25052,259 @@ export interface components {
       } | null
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
+    }
+    /** MerchantMigrationBillingCountryUpdate */
+    MerchantMigrationBillingCountryUpdate: {
+      /**
+       * CountryAlpha2Input
+       * @description Billing country Polar will store on the imported customer.
+       * @enum {string}
+       */
+      country:
+        | 'AD'
+        | 'AE'
+        | 'AF'
+        | 'AG'
+        | 'AI'
+        | 'AL'
+        | 'AM'
+        | 'AO'
+        | 'AQ'
+        | 'AR'
+        | 'AS'
+        | 'AT'
+        | 'AU'
+        | 'AW'
+        | 'AX'
+        | 'AZ'
+        | 'BA'
+        | 'BB'
+        | 'BD'
+        | 'BE'
+        | 'BF'
+        | 'BG'
+        | 'BH'
+        | 'BI'
+        | 'BJ'
+        | 'BL'
+        | 'BM'
+        | 'BN'
+        | 'BO'
+        | 'BQ'
+        | 'BR'
+        | 'BS'
+        | 'BT'
+        | 'BV'
+        | 'BW'
+        | 'BY'
+        | 'BZ'
+        | 'CA'
+        | 'CC'
+        | 'CD'
+        | 'CF'
+        | 'CG'
+        | 'CH'
+        | 'CI'
+        | 'CK'
+        | 'CL'
+        | 'CM'
+        | 'CN'
+        | 'CO'
+        | 'CR'
+        | 'CV'
+        | 'CW'
+        | 'CX'
+        | 'CY'
+        | 'CZ'
+        | 'DE'
+        | 'DJ'
+        | 'DK'
+        | 'DM'
+        | 'DO'
+        | 'DZ'
+        | 'EC'
+        | 'EE'
+        | 'EG'
+        | 'EH'
+        | 'ER'
+        | 'ES'
+        | 'ET'
+        | 'FI'
+        | 'FJ'
+        | 'FK'
+        | 'FM'
+        | 'FO'
+        | 'FR'
+        | 'GA'
+        | 'GB'
+        | 'GD'
+        | 'GE'
+        | 'GF'
+        | 'GG'
+        | 'GH'
+        | 'GI'
+        | 'GL'
+        | 'GM'
+        | 'GN'
+        | 'GP'
+        | 'GQ'
+        | 'GR'
+        | 'GS'
+        | 'GT'
+        | 'GU'
+        | 'GW'
+        | 'GY'
+        | 'HK'
+        | 'HM'
+        | 'HN'
+        | 'HR'
+        | 'HT'
+        | 'HU'
+        | 'ID'
+        | 'IE'
+        | 'IL'
+        | 'IM'
+        | 'IN'
+        | 'IO'
+        | 'IQ'
+        | 'IS'
+        | 'IT'
+        | 'JE'
+        | 'JM'
+        | 'JO'
+        | 'JP'
+        | 'KE'
+        | 'KG'
+        | 'KH'
+        | 'KI'
+        | 'KM'
+        | 'KN'
+        | 'KR'
+        | 'KW'
+        | 'KY'
+        | 'KZ'
+        | 'LA'
+        | 'LB'
+        | 'LC'
+        | 'LI'
+        | 'LK'
+        | 'LR'
+        | 'LS'
+        | 'LT'
+        | 'LU'
+        | 'LV'
+        | 'LY'
+        | 'MA'
+        | 'MC'
+        | 'MD'
+        | 'ME'
+        | 'MF'
+        | 'MG'
+        | 'MH'
+        | 'MK'
+        | 'ML'
+        | 'MM'
+        | 'MN'
+        | 'MO'
+        | 'MP'
+        | 'MQ'
+        | 'MR'
+        | 'MS'
+        | 'MT'
+        | 'MU'
+        | 'MV'
+        | 'MW'
+        | 'MX'
+        | 'MY'
+        | 'MZ'
+        | 'NA'
+        | 'NC'
+        | 'NE'
+        | 'NF'
+        | 'NG'
+        | 'NI'
+        | 'NL'
+        | 'NO'
+        | 'NP'
+        | 'NR'
+        | 'NU'
+        | 'NZ'
+        | 'OM'
+        | 'PA'
+        | 'PE'
+        | 'PF'
+        | 'PG'
+        | 'PH'
+        | 'PK'
+        | 'PL'
+        | 'PM'
+        | 'PN'
+        | 'PR'
+        | 'PS'
+        | 'PT'
+        | 'PW'
+        | 'PY'
+        | 'QA'
+        | 'RE'
+        | 'RO'
+        | 'RS'
+        | 'RW'
+        | 'SA'
+        | 'SB'
+        | 'SC'
+        | 'SD'
+        | 'SE'
+        | 'SG'
+        | 'SH'
+        | 'SI'
+        | 'SJ'
+        | 'SK'
+        | 'SL'
+        | 'SM'
+        | 'SN'
+        | 'SO'
+        | 'SR'
+        | 'SS'
+        | 'ST'
+        | 'SV'
+        | 'SX'
+        | 'SZ'
+        | 'TC'
+        | 'TD'
+        | 'TF'
+        | 'TG'
+        | 'TH'
+        | 'TJ'
+        | 'TK'
+        | 'TL'
+        | 'TM'
+        | 'TN'
+        | 'TO'
+        | 'TR'
+        | 'TT'
+        | 'TV'
+        | 'TW'
+        | 'TZ'
+        | 'UA'
+        | 'UG'
+        | 'UM'
+        | 'US'
+        | 'UY'
+        | 'UZ'
+        | 'VA'
+        | 'VC'
+        | 'VE'
+        | 'VG'
+        | 'VI'
+        | 'VN'
+        | 'VU'
+        | 'WF'
+        | 'WS'
+        | 'YE'
+        | 'YT'
+        | 'ZA'
+        | 'ZM'
+        | 'ZW'
     }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
@@ -57127,6 +57400,71 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:update_customer_billing_country': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+        record_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationBillingCountryUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationBillingCountryUpdate']
+        }
+      }
+      /** @description Billing country can only be set through a subscription. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecordNotSubscription']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration, subscription, or customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['MerchantMigrationNotFound']
+            | components['schemas']['MerchantMigrationRecordNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'email-update:request_email_update': {
     parameters: {
       query?: never
@@ -70480,6 +70818,254 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationBillingCountryUpdateCountryValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationBillingCountryUpdate']['country']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']

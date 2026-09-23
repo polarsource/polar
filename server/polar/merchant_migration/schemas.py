@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import UUID4, Field
 
 from polar.enums import TaxBehavior
+from polar.kit.address import CountryAlpha2Input
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -231,6 +232,12 @@ class MerchantMigrationRecordItem(Schema):
 class MerchantMigrationRecordUpdate(Schema):
     tax_behavior: TaxBehavior = Field(
         description="Polar tax after the switch: `inclusive` or `exclusive`.",
+    )
+
+
+class MerchantMigrationBillingCountryUpdate(Schema):
+    country: CountryAlpha2Input = Field(
+        description="Billing country Polar will store on the imported customer.",
     )
 
 

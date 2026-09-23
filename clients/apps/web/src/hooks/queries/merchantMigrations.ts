@@ -321,3 +321,27 @@ export const useUpdateMigrationRecordTax = (id: string) =>
       invalidateMigrationRecords(id)
     },
   })
+
+export const useUpdateMigrationBillingCountry = (id: string) =>
+  useMutation({
+    mutationFn: ({
+      recordId,
+      country,
+    }: {
+      recordId: string
+      country: schemas['CountryAlpha2Input']
+    }) =>
+      dataOrThrow(
+        api.PATCH(
+          '/v1/merchant-migrations/{id}/records/{record_id}/billing-country',
+          {
+            params: { path: { id, record_id: recordId } },
+            body: { country },
+          },
+        ),
+        "We couldn't save the billing country.",
+      ),
+    onSuccess: () => {
+      invalidateMigrationRecords(id)
+    },
+  })

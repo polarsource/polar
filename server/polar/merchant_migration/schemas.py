@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Self
 
-from pydantic import UUID4, Field, model_validator
+from pydantic import UUID4, ConfigDict, Field, model_validator
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address, AddressInput
@@ -236,12 +236,16 @@ class MerchantMigrationRecordItem(Schema):
 
 
 class MerchantMigrationRecordTaxUpdate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     tax_behavior: TaxBehavior = Field(
         description="Polar tax after the switch: `inclusive` or `exclusive`.",
     )
 
 
 class MerchantMigrationRecordBillingAddressUpdate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     billing_address: AddressInput = Field(
         description="Billing address Polar will store on the imported customer.",
     )

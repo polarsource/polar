@@ -12,8 +12,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
-from polar.enums import TaxBehavior
-from polar.kit.address import Address, AddressInput
+from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -89,7 +88,6 @@ from .repository import (
     MerchantMigrationRepository,
 )
 from .schemas import (
-    MerchantMigrationBillingAddressUpdate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
@@ -1436,13 +1434,13 @@ class MerchantMigrationService:
             raise MerchantMigrationNotFound()
         return organization
 
-    async def update_record_tax_behavior(
+    async def update_record(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         record_id: UUID,
-        tax_behavior: TaxBehavior,
+        update: MerchantMigrationRecordUpdate,
     ) -> MerchantMigrationRecordUpdate:
         migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
@@ -1451,39 +1449,22 @@ class MerchantMigrationService:
             raise MerchantMigrationRecordNotFound()
         if record.type != MerchantMigrationRecordType.subscription:
             raise RecordNotSubscription()
-        if record.cutover_status == MerchantMigrationCutoverStatus.moved:
-            raise RecordTaxLocked()
-        await repository.update(
-            record,
-            update_dict={
-                "canonical": {**record.canonical, "tax_behavior": tax_behavior.value}
-            },
-        )
-        return MerchantMigrationRecordUpdate(tax_behavior=tax_behavior)
-
-    async def update_customer_billing_address(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        migration_id: UUID,
-        record_id: UUID,
-        billing_address_input: AddressInput,
-    ) -> MerchantMigrationBillingAddressUpdate:
-        migration = await self._get_manageable(session, auth_subject, migration_id)
-        repository = MerchantMigrationRecordRepository.from_session(session)
-        subscription_record = await repository.get_by_id(record_id, for_update=True)
-        if (
-            subscription_record is None
-            or subscription_record.merchant_migration_id != migration.id
-        ):
-            raise MerchantMigrationRecordNotFound()
-        if subscription_record.type != MerchantMigrationRecordType.subscription:
-            raise RecordNotSubscription()
-        subscription = deserialize(
-            subscription_record.type, subscription_record.canonical
-        )
-        if not isinstance(subscription, CanonicalSubscription):
-            raise RecordNotSubscription()
+        if update.tax_behavior is not None:
+            if record.cutover_status == MerchantMigrationCutoverStatus.moved:
+                raise RecordTaxLocked()
+            await repository.update(
+                record,
+                update_dict={
+                    "canonical": {
+                        **record.canonical,
+                        "tax_behavior": update.tax_behavior.value,
+                    }
+                },
+            )
+            return update
+        assert update.billing_address is not None
+        subscription = deserialize(record.type, record.canonical)
+        assert isinstance(subscription, CanonicalSubscription)
         customer_record = await repository.get_by_source(
             organization_id=migration.organization_id,
             type=MerchantMigrationRecordType.customer,
@@ -1495,7 +1476,7 @@ class MerchantMigrationService:
         if not isinstance(customer, CanonicalCustomer):
             raise MerchantMigrationRecordNotFound()
         billing_address = Address.model_validate(
-            billing_address_input.model_dump(exclude_none=True)
+            update.billing_address.model_dump(exclude_none=True)
         )
         await repository.update(
             customer_record,
@@ -1519,9 +1500,7 @@ class MerchantMigrationService:
                 await customer_repository.update(
                     polar_customer, update_dict={"billing_address": billing_address}
                 )
-        return MerchantMigrationBillingAddressUpdate(
-            billing_address=billing_address_input
-        )
+        return update
 
     async def list_records(
         self,

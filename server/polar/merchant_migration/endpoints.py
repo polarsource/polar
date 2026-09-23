@@ -30,7 +30,6 @@ from .pan_transfer import (
 )
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
-    MerchantMigrationBillingAddressUpdate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
@@ -503,10 +502,10 @@ async def records(
 @router.patch(
     "/{id}/records/{record_id}",
     response_model=MerchantMigrationRecordUpdate,
-    summary="Update Merchant Migration Record Tax",
+    summary="Update Merchant Migration Record",
     responses={
         400: {
-            "description": "Tax can only be set on a subscription.",
+            "description": "Only subscription records can be updated.",
             "model": RecordNotSubscription.schema(),
         },
         403: {
@@ -531,46 +530,10 @@ async def update_record(
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigrationRecordUpdate:
-    return await merchant_migration_service.update_record_tax_behavior(
+    return await merchant_migration_service.update_record(
         session,
         auth_subject,
         id,
         record_id,
-        record_update.tax_behavior,
-    )
-
-
-@router.patch(
-    "/{id}/records/{record_id}/billing-address",
-    response_model=MerchantMigrationBillingAddressUpdate,
-    summary="Update Merchant Migration Customer Billing Address",
-    responses={
-        400: {
-            "description": "Billing address can only be set through a subscription.",
-            "model": RecordNotSubscription.schema(),
-        },
-        403: {
-            "description": "Not allowed to manage this organization.",
-            "model": NotPermitted.schema(),
-        },
-        404: {
-            "description": "Merchant migration, subscription, or customer not found.",
-            "model": MerchantMigrationNotFound.schema()
-            | MerchantMigrationRecordNotFound.schema(),
-        },
-    },
-)
-async def update_customer_billing_address(
-    id: UUID4,
-    record_id: UUID4,
-    update: MerchantMigrationBillingAddressUpdate,
-    auth_subject: MerchantMigrationWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> MerchantMigrationBillingAddressUpdate:
-    return await merchant_migration_service.update_customer_billing_address(
-        session,
-        auth_subject,
-        id,
-        record_id,
-        update.billing_address,
+        record_update,
     )

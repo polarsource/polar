@@ -979,8 +979,64 @@ class TestMapCustomer:
         assert mapped.billing_address is not None
         assert mapped.billing_address.country == "FR"
 
-    def test_payment_method_billing_country_is_preferred(
-        self, mocker: MockerFixture
+    @pytest.mark.parametrize(
+        ("fields", "expected"),
+        [
+            (
+                {
+                    "invoice_settings": {
+                        "default_payment_method": {
+                            "id": "pm_1",
+                            "object": "payment_method",
+                            "type": "card",
+                            "billing_details": {"address": {"country": "DE"}},
+                            "card": {"country": "US"},
+                        }
+                    }
+                },
+                "DE",
+            ),
+            (
+                {
+                    "invoice_settings": {
+                        "default_payment_method": {
+                            "id": "pm_1",
+                            "object": "payment_method",
+                            "type": "card",
+                            "billing_details": {"address": None},
+                            "card": {"country": "US"},
+                        }
+                    }
+                },
+                "US",
+            ),
+            (
+                {
+                    "default_source": {
+                        "id": "card_1",
+                        "object": "card",
+                        "address_country": "IE",
+                        "country": "US",
+                    }
+                },
+                "IE",
+            ),
+            (
+                {
+                    "tax": {
+                        "automatic_tax": "supported",
+                        "location": {"country": "IE", "source": "ip_address"},
+                    }
+                },
+                None,
+            ),
+        ],
+    )
+    def test_country_fallbacks(
+        self,
+        mocker: MockerFixture,
+        fields: dict[str, object],
+        expected: str | None,
     ) -> None:
         adapter, _ = _adapter(mocker)
         customer = stripe_lib.Customer.construct_from(
@@ -989,15 +1045,7 @@ class TestMapCustomer:
                 "email": "a@example.com",
                 "name": "A",
                 "address": None,
-                "invoice_settings": {
-                    "default_payment_method": {
-                        "id": "pm_1",
-                        "object": "payment_method",
-                        "type": "card",
-                        "billing_details": {"address": {"country": "DE"}},
-                        "card": {"country": "US", "last4": "4242", "brand": "visa"},
-                    }
-                },
+                **fields,
             },
             None,
         )
@@ -1005,76 +1053,4 @@ class TestMapCustomer:
         mapped = adapter._map_customer(customer)
 
         assert mapped.country is None
-        assert mapped.country_hint == "DE"
-
-    def test_card_issuer_country_is_a_fallback(self, mocker: MockerFixture) -> None:
-        adapter, _ = _adapter(mocker)
-        customer = stripe_lib.Customer.construct_from(
-            {
-                "id": "cus_1",
-                "email": "a@example.com",
-                "name": "A",
-                "address": None,
-                "invoice_settings": {
-                    "default_payment_method": {
-                        "id": "pm_1",
-                        "object": "payment_method",
-                        "type": "card",
-                        "billing_details": {"address": None},
-                        "card": {"country": "US", "last4": "4242", "brand": "visa"},
-                    }
-                },
-            },
-            None,
-        )
-
-        mapped = adapter._map_customer(customer)
-
-        assert mapped.country is None
-        assert mapped.country_hint == "US"
-
-    def test_legacy_card_country_is_a_fallback(self, mocker: MockerFixture) -> None:
-        adapter, _ = _adapter(mocker)
-        customer = stripe_lib.Customer.construct_from(
-            {
-                "id": "cus_1",
-                "email": "a@example.com",
-                "name": "A",
-                "address": None,
-                "default_source": {
-                    "id": "card_1",
-                    "object": "card",
-                    "address_country": "IE",
-                    "country": "US",
-                },
-            },
-            None,
-        )
-
-        mapped = adapter._map_customer(customer)
-
-        assert mapped.country is None
-        assert mapped.country_hint == "IE"
-
-    def test_does_not_invent_a_country_from_tax_location(
-        self, mocker: MockerFixture
-    ) -> None:
-        adapter, _ = _adapter(mocker)
-        customer = stripe_lib.Customer.construct_from(
-            {
-                "id": "cus_1",
-                "email": "a@example.com",
-                "name": "A",
-                "address": None,
-                "tax": {
-                    "automatic_tax": "supported",
-                    "location": {"country": "IE", "source": "ip_address"},
-                },
-            },
-            None,
-        )
-
-        mapped = adapter._map_customer(customer)
-
-        assert mapped.country is None
-        assert mapped.country_hint is None
+        assert mapped.country_hint == expected

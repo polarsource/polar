@@ -30,7 +30,6 @@ from .canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
-    CanonicalPaymentMethod,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -39,6 +38,7 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
     canonical_price_key,
+    customer_country_fallbacks,
     subscription_price_key,
 )
 from .schemas import (
@@ -849,45 +849,6 @@ def _price_items(
     return items
 
 
-def _country_hint(
-    customer: CanonicalCustomer,
-    payment_methods: Sequence[CanonicalPaymentMethod],
-) -> str | None:
-    """Best payment-method country fallback, retaining its display provenance."""
-    if customer.country:
-        return None
-    if customer.country_hint:
-        return customer.country_hint
-    billing_country: str | None = None
-    card_country: str | None = None
-    for payment_method in payment_methods:
-        if billing_country is None and payment_method.billing_country:
-            billing_country = payment_method.billing_country
-        if card_country is None and payment_method.card_country:
-            card_country = payment_method.card_country
-        if billing_country:
-            return billing_country
-    return billing_country or card_country
-
-
-def _country_hints_by_customer(
-    customers: Sequence[CanonicalCustomer],
-    subscriptions: Sequence[CanonicalSubscription],
-) -> dict[str, str | None]:
-    payment_methods_by_customer: dict[str, list[CanonicalPaymentMethod]] = {}
-    for subscription in subscriptions:
-        if subscription.payment_method is not None:
-            payment_methods_by_customer.setdefault(
-                subscription.customer_source_id, []
-            ).append(subscription.payment_method)
-    return {
-        customer.source_id: _country_hint(
-            customer, payment_methods_by_customer.get(customer.source_id, [])
-        )
-        for customer in customers
-    }
-
-
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
     subscriptions: Sequence[CanonicalSubscription],
@@ -895,7 +856,7 @@ def _customer_items(
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
     plans = plan_customer_imports(customers, existing_customers)
-    hints = _country_hints_by_customer(customers, subscriptions)
+    hints = customer_country_fallbacks(customers, subscriptions)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
         country_fallback = hints.get(customer.source_id)
@@ -949,7 +910,7 @@ def _subscription_items(
         existing_customers,
     )
     customer_by_source = {c.source_id: c for c in customers}
-    hints = _country_hints_by_customer(customers, subscriptions)
+    hints = customer_country_fallbacks(customers, subscriptions)
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)

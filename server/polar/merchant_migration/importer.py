@@ -42,6 +42,7 @@ from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
     canonical_price_key,
+    customer_country_fallbacks,
     deserialize,
     subscription_price_key,
 )
@@ -193,9 +194,19 @@ class CatalogImporter:
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
             )
         )
-        country_fallbacks = self._customer_country_fallbacks(
-            self._records_of(catalog, MerchantMigrationRecordType.customer),
-            subscription_records,
+        country_fallbacks = customer_country_fallbacks(
+            [
+                self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
+                for record in self._records_of(
+                    catalog, MerchantMigrationRecordType.customer
+                )
+            ],
+            [
+                self._as(
+                    deserialize(record.type, record.canonical), CanonicalSubscription
+                )
+                for record in subscription_records
+            ],
         )
 
         product_result = await self._import_products(
@@ -290,43 +301,6 @@ class CatalogImporter:
             if product is not None:
                 product_source_ids.add(product.source_id)
         return product_source_ids, customer_source_ids
-
-    def _customer_country_fallbacks(
-        self,
-        customer_records: Sequence[MerchantMigrationRecord],
-        subscription_records: Sequence[MerchantMigrationRecord],
-    ) -> dict[str, str]:
-        customers = [
-            self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
-            for record in customer_records
-        ]
-        subscriptions = [
-            self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
-            for record in subscription_records
-        ]
-        billing_countries: dict[str, str] = {}
-        card_countries: dict[str, str] = {}
-        for subscription in subscriptions:
-            payment_method = subscription.payment_method
-            if payment_method is None:
-                continue
-            if payment_method.billing_country:
-                billing_countries.setdefault(
-                    subscription.customer_source_id, payment_method.billing_country
-                )
-            if payment_method.card_country:
-                card_countries.setdefault(
-                    subscription.customer_source_id, payment_method.card_country
-                )
-        return {
-            customer.source_id: fallback
-            for customer in customers
-            if (
-                fallback := customer.country_hint
-                or billing_countries.get(customer.source_id)
-                or card_countries.get(customer.source_id)
-            )
-        }
 
     async def _import_products(
         self,

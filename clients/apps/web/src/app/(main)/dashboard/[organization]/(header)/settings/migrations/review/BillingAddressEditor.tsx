@@ -1,6 +1,6 @@
 'use client'
 
-import { useUpdateMigrationBillingAddress } from '@/hooks/queries/merchantMigrations'
+import { useUpdateMigrationRecord } from '@/hooks/queries/merchantMigrations'
 import { enums, schemas } from '@polar-sh/client'
 import { Button, Grid, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -24,7 +24,7 @@ export function BillingAddressEditor({
   migrationId: string
   row: schemas['MerchantMigrationRecordItem']
 }) {
-  const updateAddress = useUpdateMigrationBillingAddress(migrationId)
+  const updateRecord = useUpdateMigrationRecord(migrationId)
   const [address, setAddress] = useState<AddressForm>(() => ({
     line1: row.customer_billing_address?.line1 ?? '',
     line2: row.customer_billing_address?.line2 ?? '',
@@ -51,13 +51,15 @@ export function BillingAddressEditor({
     if (!row.record_id || !complete) {
       return
     }
-    updateAddress.mutate({
+    updateRecord.mutate({
       recordId: row.record_id,
-      billingAddress: {
-        ...address,
-        line2: address.line2 || null,
-        state: address.state || null,
-      } as schemas['AddressInput'],
+      update: {
+        billing_address: {
+          ...address,
+          line2: address.line2 || null,
+          state: address.state || null,
+        } as schemas['AddressInput'],
+      },
     })
   }
 
@@ -131,8 +133,8 @@ export function BillingAddressEditor({
         <Button
           type="submit"
           size="sm"
-          loading={updateAddress.isPending}
-          disabled={!complete || updateAddress.isPending}
+          loading={updateRecord.isPending}
+          disabled={!complete || updateRecord.isPending}
         >
           Save billing address
         </Button>
@@ -140,10 +142,10 @@ export function BillingAddressEditor({
       <Text variant="caption" color="muted">
         Used for Polar tax. Editing it does not block the migration.
       </Text>
-      {updateAddress.isError ? (
+      {updateRecord.isError ? (
         <Text variant="caption" color="error">
-          {updateAddress.error instanceof Error && updateAddress.error.message
-            ? updateAddress.error.message
+          {updateRecord.error instanceof Error && updateRecord.error.message
+            ? updateRecord.error.message
             : "We couldn't save the billing address."}
         </Text>
       ) : null}

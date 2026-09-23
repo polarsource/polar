@@ -5574,30 +5574,10 @@ export interface paths {
     options?: never
     head?: never
     /**
-     * Update Merchant Migration Record Tax
+     * Update Merchant Migration Record
      * @description **Scopes**: `organizations:write`
      */
     patch: operations['merchant-migrations:update_record']
-    trace?: never
-  }
-  '/v1/merchant-migrations/{id}/records/{record_id}/billing-address': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /**
-     * Update Merchant Migration Customer Billing Address
-     * @description **Scopes**: `organizations:write`
-     */
-    patch: operations['merchant-migrations:update_customer_billing_address']
     trace?: never
   }
   '/v1/email-update/request': {
@@ -25053,11 +25033,6 @@ export interface components {
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
     }
-    /** MerchantMigrationBillingAddressUpdate */
-    MerchantMigrationBillingAddressUpdate: {
-      /** @description Billing address Polar will store on the imported customer. */
-      billing_address: components['schemas']['AddressInput']
-    }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
       /**
@@ -25440,7 +25415,9 @@ export interface components {
     /** MerchantMigrationRecordUpdate */
     MerchantMigrationRecordUpdate: {
       /** @description Polar tax after the switch: `inclusive` or `exclusive`. */
-      tax_behavior: components['schemas']['TaxBehavior']
+      tax_behavior?: components['schemas']['TaxBehavior'] | null
+      /** @description Billing address Polar will store on the imported customer. */
+      billing_address?: components['schemas']['AddressInput'] | null
     }
     /**
      * MerchantMigrationSourcePlatform
@@ -57105,7 +57082,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationRecordUpdate']
         }
       }
-      /** @description Tax can only be set on a subscription. */
+      /** @description Only subscription records can be updated. */
       400: {
         headers: {
           [name: string]: unknown
@@ -57141,71 +57118,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['RecordTaxLocked']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'merchant-migrations:update_customer_billing_address': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-        record_id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MerchantMigrationBillingAddressUpdate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MerchantMigrationBillingAddressUpdate']
-        }
-      }
-      /** @description Billing address can only be set through a subscription. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RecordNotSubscription']
-        }
-      }
-      /** @description Not allowed to manage this organization. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['NotPermitted']
-        }
-      }
-      /** @description Merchant migration, subscription, or customer not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json':
-            | components['schemas']['MerchantMigrationNotFound']
-            | components['schemas']['MerchantMigrationRecordNotFound']
         }
       }
       /** @description Validation Error */

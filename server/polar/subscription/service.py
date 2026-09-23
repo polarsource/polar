@@ -871,6 +871,8 @@ class SubscriptionService:
         user_metadata: dict[str, Any],
         tax_behavior: TaxBehavior = TaxBehavior.inclusive,
         tax_exempted: bool = False,
+        discount: Discount | None = None,
+        discount_applied_at: datetime | None = None,
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
         so nothing bills until the merchant cuts over, and grants no benefits.
@@ -915,7 +917,12 @@ class SubscriptionService:
             pending_update=None,
             tax_behavior=tax_behavior,
             tax_exempted=tax_exempted,
+            discount=discount,
         )
+        # The discount listener clears applied_at on set; restore the source start
+        # so once/repeating duration does not restart at cutover.
+        if discount is not None:
+            subscription.discount_applied_at = discount_applied_at or start
         subscription.initialize_meter_period(start)
 
         repository = SubscriptionRepository.from_session(session)

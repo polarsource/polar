@@ -4,7 +4,7 @@ Every check runs before the source is stopped, so a subscription that fails one
 stays there.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -13,17 +13,20 @@ import structlog
 from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.customer.repository import CustomerRepository
+from polar.discount.repository import DiscountRepository
 from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
     Customer,
+    Discount,
     MerchantMigration,
     MerchantMigrationRecord,
     PaymentMethod,
     Product,
     Subscription,
 )
+from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
@@ -42,6 +45,7 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     deserialize,
+    discount_started_at_for,
 )
 from .cards import AmbiguousCopiedCard, link_payment_method
 from .importer import (
@@ -49,7 +53,7 @@ from .importer import (
     create_imported_subscription,
     find_imported_price,
 )
-from .precheck import subscription_import_reason
+from .precheck import kept_discount_source_id, subscription_import_reason
 from .repository import MerchantMigrationRecordRepository
 
 log: Logger = structlog.get_logger()
@@ -82,6 +86,18 @@ _ENDING = (
 _PLAN_CHANGED = (
     "The plan changed on the source since the import, so the imported "
     "subscription no longer matches. Re-run the import for this customer."
+)
+_DISCOUNT_CHANGED = (
+    "The coupon on the source changed since the import, so Polar won't take "
+    "billing over at a different price. Re-run the import for this customer."
+)
+_DISCOUNT_NOT_IMPORTED = (
+    "This subscription's coupon was never imported into Polar, so taking it "
+    "over would renew at full price. Re-run the import for this customer."
+)
+_DISCOUNT_MISSING_START = (
+    "The source doesn't say when this coupon was applied, so Polar can't "
+    "continue its remaining duration. It stays on the source."
 )
 _NO_CARD = (
     "No copied card has landed on Polar for this customer yet. They need to "
@@ -126,6 +142,13 @@ class CutoverOutcome:
     message: str | None = None
 
 
+@dataclass(frozen=True)
+class ImportedDiscount:
+    discount: Discount | None = None
+    skip: str | None = None
+    started_at: datetime | None = None
+
+
 def _moved(message: str | None = None) -> CutoverOutcome:
     return CutoverOutcome(MerchantMigrationCutoverStatus.moved, message)
 
@@ -153,6 +176,7 @@ class SubscriptionCutover:
         self.subscription_repository = SubscriptionRepository.from_session(session)
         self.customer_repository = CustomerRepository.from_session(session)
         self.product_repository = ProductRepository.from_session(session)
+        self.discount_repository = DiscountRepository.from_session(session)
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
 
     async def run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
@@ -212,7 +236,7 @@ class SubscriptionCutover:
             # over would cancel it on the source and then never bill it.
             if not subscription.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
-            reason = self._source_reason(source, record, subscription.currency)
+            reason = await self._source_reason(source, record, subscription.currency)
             if reason is not None:
                 return _skip(reason)
 
@@ -336,7 +360,7 @@ class SubscriptionCutover:
         if not already_stopped:
             if not product.organization.can_renew_subscriptions:
                 return _skip(_RENEWALS_DISABLED)
-            reason = self._source_reason(source, record, staged.currency)
+            reason = await self._source_reason(source, record, staged.currency)
             if reason is not None:
                 return _skip(reason)
 
@@ -344,6 +368,10 @@ class SubscriptionCutover:
             customer.id, product.id
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
+
+        imported = await self._imported_discount(source, staged)
+        if imported.skip is not None:
+            return _skip(imported.skip)
 
         payment_method = await self._resolve_payment_method(record, customer, source)
         if already_stopped:
@@ -387,11 +415,12 @@ class SubscriptionCutover:
 
         subscription = await create_imported_subscription(
             self.session,
-            staged,
+            replace(staged, discount_started_at=imported.started_at),
             product,
             price,
             customer,
             provider=self.migration.source_platform,
+            discount=imported.discount,
         )
         await self.record_repository.update(
             record,
@@ -468,7 +497,7 @@ class SubscriptionCutover:
             ),
         )
 
-    def _source_reason(
+    async def _source_reason(
         self,
         source: CanonicalSubscription,
         record: MerchantMigrationRecord,
@@ -501,7 +530,69 @@ class SubscriptionCutover:
                 and source.currency != imported_currency
             ):
                 return _PLAN_CHANGED
+            importable = await self._importable_discount_source_ids(
+                staged.discount_source_ids
+            )
+            if self._discount_changed(source, staged, importable):
+                return _DISCOUNT_CHANGED
         return self._renewal_reason(source)
+
+    async def _importable_discount_source_ids(self, source_ids: list[str]) -> set[str]:
+        if not source_ids:
+            return set()
+        records = await self.record_repository.list_discount_records(
+            self.migration.organization_id, source_ids
+        )
+        return {
+            record.source_id
+            for record in records
+            if record.status
+            in (
+                MerchantMigrationRecordStatus.pending,
+                MerchantMigrationRecordStatus.imported,
+            )
+        }
+
+    def _discount_changed(
+        self,
+        source: CanonicalSubscription,
+        staged: CanonicalSubscription,
+        importable_discount_source_ids: set[str],
+    ) -> bool:
+        staged_has = bool(staged.discount_source_ids) or staged.has_discount
+        source_has = bool(source.discount_source_ids) or source.has_discount
+        if not staged_has:
+            return source_has
+        kept = kept_discount_source_id(staged, importable_discount_source_ids)
+        if kept is None:
+            return set(source.discount_source_ids) != set(staged.discount_source_ids)
+        return kept not in set(source.discount_source_ids)
+
+    async def _imported_discount(
+        self, source: CanonicalSubscription, staged: CanonicalSubscription
+    ) -> ImportedDiscount:
+        importable = await self._importable_discount_source_ids(
+            staged.discount_source_ids
+        )
+        if self._discount_changed(source, staged, importable):
+            return ImportedDiscount(skip=_DISCOUNT_CHANGED)
+        kept = kept_discount_source_id(staged, importable)
+        if kept is None:
+            if bool(staged.discount_source_ids) or staged.has_discount:
+                return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
+            return ImportedDiscount()
+        record = await self.record_repository.get_imported_discount_dependency(
+            self.migration.organization_id, kept
+        )
+        if record is None or record.target_id is None:
+            return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
+        discount = await self.discount_repository.get_by_id(record.target_id)
+        if discount is None:
+            return ImportedDiscount(skip=_DISCOUNT_NOT_IMPORTED)
+        started_at = discount_started_at_for(source, kept)
+        if discount.duration != DiscountDuration.forever and started_at is None:
+            return ImportedDiscount(skip=_DISCOUNT_MISSING_START)
+        return ImportedDiscount(discount=discount, started_at=started_at)
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
         renewal = source.current_period_end

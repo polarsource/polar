@@ -1,7 +1,10 @@
 import contextvars
 import logging.config
+import re
 import typing
 import uuid
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 import structlog
@@ -10,6 +13,176 @@ from logfire.integrations.structlog import LogfireProcessor
 from polar.config import settings
 
 Logger = structlog.stdlib.BoundLogger
+
+REDACTED = "[Redacted]"
+SENSITIVE_LOG_FIELDS = dict.fromkeys(
+    (
+        "url",
+        "email",
+        "customer_email",
+        "user_email",
+        "owner_email",
+        "billing_email",
+        "old_email",
+        "new_email",
+        "previous_email",
+        "to_email_addr",
+        "from_email_addr",
+        "reply_to_email_addr",
+        "name",
+        "full_name",
+        "first_name",
+        "last_name",
+        "billing_name",
+        "customer_name",
+        "owner_name",
+        "from_name",
+        "reply_to_name",
+        "username",
+        "account_username",
+        "phone",
+        "phone_number",
+        "address",
+        "billing_address",
+        "shipping_address",
+        "line1",
+        "line2",
+        "postal_code",
+        "zip",
+        "ip",
+        "ip_address",
+        "client_ip",
+        "ssn",
+        "social_security",
+        "tax_id",
+        "date_of_birth",
+        "dob",
+        "card_number",
+        "pan",
+        "cvv",
+        "cvc",
+        "iban",
+        "account_number",
+        "routing_number",
+        "fingerprint",
+        "processor_id",
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "access_token",
+        "refresh_token",
+        "invitation_token",
+        "api_key",
+        "authorization",
+        "cookie",
+        "session",
+        "jwt",
+        "credential",
+        "private_key",
+    ),
+    REDACTED,
+)
+_SAFE_LOG_FIELDS = frozenset({"service_name", "logger_name"})
+_SQL_FIELDS = frozenset({"db.statement", "db.query.text"})
+_MAX_LOG_TEXT_LENGTH = 8_192
+_MAX_LOG_EVENT_TEXT_LENGTH = 16_384
+_MAX_WATCHDOG_TEXT_LENGTH = 32_768
+_MAX_LOG_CONTAINER_LENGTH = 1_000
+_MAX_LOG_DEPTH = 32
+
+_LOG_VALUE_PATTERNS = (
+    r"(?<![\w.%+\-])[A-Z0-9._%+\-]{1,64}+@[A-Z0-9.\-]{1,253}+",
+    r"\b(?:Bearer|Basic)\s++[^\s,;\"']++",
+    r"(?<![A-Z0-9_\-])eyJ[A-Z0-9_\-]++\.[A-Z0-9_\-]++\.[A-Z0-9_\-]++",
+    r"\b(?:(?:sk|rk)_(?:live|test)_|whsec_)[A-Z0-9]++",
+    r"(?<![\w-])(?:[0-9][ -]?){12,18}[0-9](?![\w-])",
+    r"(?<!\w)[A-Z]{2}[0-9]{2}(?: ?[A-Z0-9]){11,30}(?!\w)",
+    (
+        r"\b(?:password|passwd|secret|token|access_token|refresh_token|api_key|"
+        r"authorization|cookie|session|jwt|credential|private_key)"
+        r"[\"']?\s{0,16}[:=]\s{0,16}"
+        r"(?:\"[^\"\r\n]*+\"|'[^'\r\n]*+'|[^\s,;&}\]]++)"
+    ),
+    r"\b[a-z][a-z0-9+.\-]{0,20}://[^/\s:@]++:[^/\s@]++@",
+)
+_LOG_VALUE_RE = re.compile("|".join(_LOG_VALUE_PATTERNS), re.IGNORECASE)
+
+
+def scrub_log_text(value: str, *, preserve_oversized: bool = False) -> str:
+    max_length = (
+        _MAX_WATCHDOG_TEXT_LENGTH if preserve_oversized else _MAX_LOG_TEXT_LENGTH
+    )
+    if len(value) > max_length:
+        return value if preserve_oversized else REDACTED
+    return _LOG_VALUE_RE.sub(REDACTED, value)
+
+
+@dataclass(slots=True)
+class LogScrubBudget:
+    remaining_values: int = _MAX_LOG_CONTAINER_LENGTH
+    remaining_text: int = _MAX_LOG_EVENT_TEXT_LENGTH
+
+    def scrub_text(self, value: str) -> str:
+        self.remaining_text -= len(value)
+        if self.remaining_text < 0:
+            return REDACTED
+        return scrub_log_text(value)
+
+
+def _scrub_log_value(value: Any, *, budget: LogScrubBudget, depth: int = 0) -> Any:
+    budget.remaining_values -= 1
+    if depth >= _MAX_LOG_DEPTH or budget.remaining_values < 0:
+        return REDACTED
+    if isinstance(value, str):
+        return budget.scrub_text(value)
+    if isinstance(value, bytes):
+        if len(value) > _MAX_LOG_TEXT_LENGTH:
+            return REDACTED
+        return budget.scrub_text(value.decode("utf-8", errors="replace"))
+    if isinstance(value, Mapping):
+        if len(value) > _MAX_LOG_CONTAINER_LENGTH:
+            return REDACTED
+        result = {}
+        for key, item in value.items():
+            if budget.remaining_values <= 0:
+                return REDACTED
+            key = str(key)
+            normalized = key.lower().replace("-", "_")
+            flattened = normalized.replace(".", "_")
+            replacement = None
+            if flattened not in _SAFE_LOG_FIELDS:
+                replacement = (
+                    SENSITIVE_LOG_FIELDS.get(normalized)
+                    or SENSITIVE_LOG_FIELDS.get(flattened)
+                    or SENSITIVE_LOG_FIELDS.get(normalized.rsplit(".", 1)[-1])
+                )
+            if replacement is not None:
+                budget.remaining_values -= 1
+                result[key] = replacement
+            elif normalized in _SQL_FIELDS and isinstance(item, str):
+                budget.remaining_values -= 1
+                result[key] = item
+            else:
+                result[key] = _scrub_log_value(item, budget=budget, depth=depth + 1)
+        return result
+    if isinstance(value, (list, tuple, set, frozenset)):
+        if len(value) > _MAX_LOG_CONTAINER_LENGTH:
+            return REDACTED
+        items = [
+            _scrub_log_value(item, budget=budget, depth=depth + 1) for item in value
+        ]
+        return tuple(items) if isinstance(value, tuple) else items
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    return budget.scrub_text(repr(value))
+
+
+def _scrub_console_log(
+    _logger: logging.Logger, _method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    scrubbed = _scrub_log_value(event_dict, budget=LogScrubBudget())
+    return scrubbed if isinstance(scrubbed, dict) else {"event": REDACTED}
 
 
 def _map_critical_to_fatal(
@@ -68,6 +241,8 @@ class Logging[RendererType]:
                         "()": structlog.stdlib.ProcessorFormatter,
                         "processors": [
                             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                            structlog.processors.format_exc_info,
+                            _scrub_console_log,
                             cls.get_renderer(),
                         ],
                         "foreign_pre_chain": [

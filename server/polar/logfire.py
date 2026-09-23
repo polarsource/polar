@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -28,9 +29,35 @@ if TYPE_CHECKING:
 from polar.config import settings
 from polar.kit.aws import get_credentials
 from polar.kit.db.postgres import Engine
+from polar.logging import REDACTED, SENSITIVE_LOG_FIELDS
 from polar.observability.otel_prometheus import PrometheusMeterProvider
 
 Matcher = Callable[[str, "Attributes | None"], bool]
+
+_LOGFIRE_DEFAULT_FIELDS = frozenset(
+    {
+        "password",
+        "passwd",
+        "secret",
+        "authorization",
+        "credential",
+        "private_key",
+        "api_key",
+        "session",
+        "cookie",
+        "social_security",
+        "ssn",
+        "jwt",
+    }
+)
+_LOGFIRE_FIELD_PATTERN = (
+    r"(?:^|[.])(?:"
+    + "|".join(
+        re.escape(key).replace("_", "[._-]")
+        for key in sorted(SENSITIVE_LOG_FIELDS.keys() - _LOGFIRE_DEFAULT_FIELDS)
+    )
+    + r")$"
+)
 
 
 class IgnoreSampler(Sampler):
@@ -125,7 +152,8 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
         return match.value
     if match.path == ("attributes", "asyncio_tasks"):
         return match.value
-    return None
+    # The SDK's default replacement and metadata include the matched substring.
+    return REDACTED
 
 
 class PidSpanProcessor(SpanProcessor):
@@ -188,6 +216,10 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                         r"ip_?address",
                         r"cookie",
                         r"^http\.url$",
+                        *(
+                            rf"(?:^|[.]){re.escape(field).replace('_', '[._-]')}$"
+                            for field in SENSITIVE_LOG_FIELDS
+                        ),
                     ],
                 ),
                 max_export_batch_size=2048,
@@ -223,6 +255,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             extra_patterns=[
                 r"access_?token",
                 r"refresh_?token",
+                _LOGFIRE_FIELD_PATTERN,
             ],
         ),
         additional_span_processors=additional_span_processors or None,

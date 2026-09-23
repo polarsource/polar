@@ -1438,6 +1438,7 @@ def plan_subscription_imports(
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
     existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    _discounts: Sequence[CanonicalDiscount] = (),
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when
     importable. Mirrors the review drawer's per-subscription classification: a

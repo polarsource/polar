@@ -310,6 +310,7 @@ class CatalogImporter:
             products,
             customers,
             self.organization.default_presentment_currency,
+            None,
             discounts,
         )
         product_by_price = {

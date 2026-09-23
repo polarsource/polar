@@ -94,6 +94,7 @@ from .schemas import (
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
+    MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
     PanTransferChecklist,
     PrecheckEntity,
@@ -1449,7 +1450,7 @@ class MerchantMigrationService:
             raise MerchantMigrationRecordNotFound()
         if record.type != MerchantMigrationRecordType.subscription:
             raise RecordNotSubscription()
-        if update.tax_behavior is not None:
+        if isinstance(update, MerchantMigrationRecordTaxUpdate):
             if record.cutover_status == MerchantMigrationCutoverStatus.moved:
                 raise RecordTaxLocked()
             await repository.update(
@@ -1462,7 +1463,6 @@ class MerchantMigrationService:
                 },
             )
             return update
-        assert update.billing_address is not None
         subscription = deserialize(record.type, record.canonical)
         assert isinstance(subscription, CanonicalSubscription)
         customer_record = await repository.get_by_source(

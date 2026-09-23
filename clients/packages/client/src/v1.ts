@@ -25201,6 +25201,11 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /** MerchantMigrationRecordBillingAddressUpdate */
+    MerchantMigrationRecordBillingAddressUpdate: {
+      /** @description Billing address Polar will store on the imported customer. */
+      billing_address: components['schemas']['AddressInput']
+    }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -25412,13 +25417,14 @@ export interface components {
        */
       selectable: number
     }
-    /** MerchantMigrationRecordUpdate */
-    MerchantMigrationRecordUpdate: {
+    /** MerchantMigrationRecordTaxUpdate */
+    MerchantMigrationRecordTaxUpdate: {
       /** @description Polar tax after the switch: `inclusive` or `exclusive`. */
-      tax_behavior?: components['schemas']['TaxBehavior'] | null
-      /** @description Billing address Polar will store on the imported customer. */
-      billing_address?: components['schemas']['AddressInput'] | null
+      tax_behavior: components['schemas']['TaxBehavior']
     }
+    MerchantMigrationRecordUpdate:
+      | components['schemas']['MerchantMigrationRecordTaxUpdate']
+      | components['schemas']['MerchantMigrationRecordBillingAddressUpdate']
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -57069,7 +57075,9 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MerchantMigrationRecordUpdate']
+        'application/json':
+          | components['schemas']['MerchantMigrationRecordTaxUpdate']
+          | components['schemas']['MerchantMigrationRecordBillingAddressUpdate']
       }
     }
     responses: {

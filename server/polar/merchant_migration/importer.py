@@ -438,8 +438,7 @@ class CatalogImporter:
                     )
                 )
             # Reconcile the source id so the PAN-copied card lands on the same
-            # customer, but never overwrite one that's already set. Fill a
-            # missing Polar billing country from the best source country.
+            # customer, but never overwrite one that's already set.
             updates: dict[str, object] = {}
             if stripe_customer_id and existing.stripe_customer_id is None:
                 updates["stripe_customer_id"] = stripe_customer_id

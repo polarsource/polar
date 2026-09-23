@@ -235,22 +235,19 @@ class MerchantMigrationRecordItem(Schema):
     )
 
 
-class MerchantMigrationRecordUpdate(Schema):
-    tax_behavior: TaxBehavior | None = Field(
-        default=None,
+class MerchantMigrationRecordTaxUpdate(Schema):
+    tax_behavior: TaxBehavior = Field(
         description="Polar tax after the switch: `inclusive` or `exclusive`.",
     )
-    billing_address: AddressInput | None = Field(
-        default=None,
+
+
+class MerchantMigrationRecordBillingAddressUpdate(Schema):
+    billing_address: AddressInput = Field(
         description="Billing address Polar will store on the imported customer.",
     )
 
     @model_validator(mode="after")
-    def validate_update(self) -> Self:
-        if (self.tax_behavior is None) == (self.billing_address is None):
-            raise ValueError("Set exactly one record update.")
-        if self.billing_address is None:
-            return self
+    def validate_billing_address(self) -> Self:
         address = self.billing_address
         if address.country == "US" and not all(
             (address.line1, address.city, address.postal_code, address.state)
@@ -262,6 +259,11 @@ class MerchantMigrationRecordUpdate(Schema):
         if address.country == "CA" and not address.state:
             raise ValueError("Canadian billing addresses require a province.")
         return self
+
+
+type MerchantMigrationRecordUpdate = (
+    MerchantMigrationRecordTaxUpdate | MerchantMigrationRecordBillingAddressUpdate
+)
 
 
 class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):

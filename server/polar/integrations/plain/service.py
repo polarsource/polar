@@ -1531,7 +1531,7 @@ class PlainService:
             log.warning("Plain integration is disabled, assuming no thread exists")
             return False
 
-        log.info("Checking thread existence", fuzzy=fuzzy)
+        log.info("Checking thread existence")
 
         async with self._get_plain_client() as plain:
             user = await plain.customer_by_email(email=customer_email)

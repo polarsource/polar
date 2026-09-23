@@ -1,9 +1,11 @@
 import gzip
 import json
+import os
 import subprocess
 import sys
 import textwrap
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
@@ -20,7 +22,9 @@ BUCKET_NAME = "testing-s3-span-exporter"
 
 class TestExportFailure:
     @pytest.mark.parametrize("warm_log_tracer", [False, True])
-    def test_flush_returns_after_s3_access_denied(self, warm_log_tracer: bool) -> None:
+    def test_flush_returns_after_s3_access_denied(
+        self, warm_log_tracer: bool, tmp_path: Path
+    ) -> None:
         result = subprocess.run(
             [
                 sys.executable,
@@ -64,6 +68,7 @@ class TestExportFailure:
                 str(warm_log_tracer),
             ],
             capture_output=True,
+            env={**os.environ, "PROMETHEUS_MULTIPROC_DIR": str(tmp_path)},
             text=True,
             timeout=10,
             check=False,

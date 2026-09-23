@@ -64,32 +64,84 @@ beforeEach(() => {
   )
 })
 
-it('compares against the active deployment and deploys the reviewed revision as a draft', async () => {
-  const requests: unknown[] = []
+it.each([false, true])(
+  'deploys the reviewed revision with activate=%s and clears the stage',
+  async (activate) => {
+    const requests: unknown[] = []
+    let cleared = false
+    const result = { ...draft, status: activate ? 'active' : 'draft' }
+    server.use(
+      http.get('*/v1/void/stage', () =>
+        cleared
+          ? new HttpResponse(null, { status: 404 })
+          : HttpResponse.json({ revision: 3, configuration: staged }),
+      ),
+      http.get('*/v1/void/deploys', () =>
+        HttpResponse.json(
+          cleared && activate
+            ? [result, { ...active, status: 'archived' }]
+            : [draft, active],
+        ),
+      ),
+      http.get('*/v1/void/deploys/draft/configuration', () =>
+        HttpResponse.json(staged),
+      ),
+      http.post('*/v1/void/stage/deploy', async ({ request }) => {
+        requests.push({
+          body: await request.json(),
+          organization: request.headers.get('Polar-Organization-ID'),
+        })
+        cleared = true
+        return HttpResponse.json(result)
+      }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <VoidStagePage />
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText('Basic support')).toBeInTheDocument()
+    expect(screen.getByText('Priority support')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: activate ? 'Deploy and activate' : 'Deploy as draft',
+      }),
+    )
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'The deployed stage was cleared.',
+    )
+    expect(requests).toEqual([
+      { body: { expected_revision: 3, activate }, organization: 'org' },
+    ])
+    expect(await screen.findByText('No staged changes')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Deploy and activate' }),
+    ).toBeDisabled()
+    expect(screen.queryByText('Priority support')).not.toBeInTheDocument()
+  },
+)
+
+it('keeps the stage visible when activation fails', async () => {
   server.use(
-    http.post('*/v1/void/stage/deploy', async ({ request }) => {
-      requests.push({
-        body: await request.json(),
-        organization: request.headers.get('Polar-Organization-ID'),
-      })
-      return HttpResponse.json(draft)
-    }),
+    http.post('*/v1/void/stage/deploy', () =>
+      HttpResponse.json(
+        { detail: 'Organization must pass review.' },
+        { status: 403 },
+      ),
+    ),
   )
   render(
     <QueryClientProvider client={new QueryClient()}>
       <VoidStagePage />
     </QueryClientProvider>,
   )
-  expect(await screen.findByText('Basic support')).toBeInTheDocument()
+  await screen.findByText('Priority support')
+  fireEvent.click(screen.getByRole('button', { name: 'Deploy and activate' }))
+  expect(
+    await screen.findByText('Organization must pass review.'),
+  ).toBeInTheDocument()
   expect(screen.getByText('Priority support')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Deploy as draft' }))
-  expect(await screen.findByRole('status')).toHaveTextContent(
-    'The staged configuration remains saved.',
-  )
-  expect(requests).toEqual([
-    { body: { expected_revision: 3 }, organization: 'org' },
-  ])
-  expect(screen.getByRole('button', { name: 'Deployed' })).toBeDisabled()
+  expect(screen.queryByText('No staged changes')).not.toBeInTheDocument()
 })
 
 it('requires a refreshed review after a revision conflict', async () => {

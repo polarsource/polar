@@ -13,7 +13,11 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.void.auth import VoidRead, VoidWrite
-from polar.void.deploy.exceptions import DeploymentConflict, InvalidDeployment
+from polar.void.deploy.exceptions import (
+    DeploymentConflict,
+    DeploymentNotActivatable,
+    InvalidDeployment,
+)
 from polar.void.deploy.schemas import Deploy
 
 from .exceptions import StageConflict
@@ -73,10 +77,11 @@ async def delete(
     response_model=Deploy,
     status_code=201,
     operation_id="stage:deploy",
-    description="Plan or deploy the staged configuration as a draft. "
-    "The stage is retained; activation is separate.",
+    description="Plan or deploy the staged configuration, optionally activating it. "
+    "Successful deployments clear the stage; dry runs and failures retain it.",
     responses={
         400: {"model": InvalidDeployment.schema()},
+        403: {"model": DeploymentNotActivatable.schema()},
         404: {"model": ResourceNotFound.schema()},
         409: {"model": StageConflict.schema() | DeploymentConflict.schema()},
     },

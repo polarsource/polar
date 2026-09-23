@@ -31,3 +31,4 @@ class StageDeploy(BaseModel):
 
     expected_revision: StageRevision
     dry_run: bool = Field(False, description="Plan the deployment without writing.")
+    activate: bool = Field(False, description="Make the deployed configuration active.")

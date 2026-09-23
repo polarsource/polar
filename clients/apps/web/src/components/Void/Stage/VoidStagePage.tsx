@@ -41,8 +41,7 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
   const error = stage.error ?? deploys.error ?? configuration.error
   const unavailable = !!applied && !applied.has_configuration
   const labels = versionLabels(deploys.data ?? [])
-  const deployed =
-    deploy.variables === stage.data?.revision ? deploy.data : undefined
+  const deployed = deploy.data
   const conflict =
     deploy.error instanceof VoidRequestError && deploy.error.status === 409
   const refreshPage = async () => {
@@ -64,32 +63,49 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
           >
             Refresh
           </Button>
-          <Button
-            onClick={() => stage.data && deploy.mutate(stage.data.revision)}
-            loading={deploy.isPending}
-            disabled={
-              loading ||
-              stage.isFetching ||
-              deploys.isFetching ||
-              configuration.isFetching ||
-              conflict ||
-              !!error ||
-              unavailable ||
-              !stage.data ||
-              changes.length === 0 ||
-              !!deployed
-            }
-          >
-            {deployed ? 'Deployed' : 'Deploy as draft'}
-          </Button>
+          {[false, true].map((activate) => (
+            <Button
+              key={String(activate)}
+              variant={activate ? 'default' : 'secondary'}
+              onClick={() =>
+                stage.data &&
+                deploy.mutate({ revision: stage.data.revision, activate })
+              }
+              loading={
+                deploy.isPending && deploy.variables?.activate === activate
+              }
+              disabled={
+                loading ||
+                stage.isFetching ||
+                deploys.isFetching ||
+                configuration.isFetching ||
+                conflict ||
+                !!error ||
+                unavailable ||
+                !stage.data ||
+                deploy.isPending
+              }
+            >
+              {activate ? 'Deploy and activate' : 'Deploy as draft'}
+            </Button>
+          ))}
         </Box>
       }
     >
       <Box flexDirection="column" rowGap="2xl">
         <Text color="muted">
-          Review staged changes against the active configuration, then create a
-          deployment.
+          Review staged changes against the active configuration, then deploy as
+          a draft or make them active immediately.
         </Text>
+        {deployed ? (
+          <Box role="status">
+            <Alert
+              variant="success"
+              title={`Deployment ${versionLabel(labels, deployed.version_id)} ${deployed.status === 'active' ? 'is active' : 'is ready'}`}
+              description={`${shortVersion(deployed.version_id)} · ${deployed.status}. The deployed stage was cleared.`}
+            />
+          </Box>
+        ) : null}
         {loading ? (
           <LoadingBox height={240} borderRadius="m" />
         ) : error ? (
@@ -166,15 +182,6 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
                 }
               />
             ) : null}
-            {deployed ? (
-              <Box role="status">
-                <Alert
-                  variant="success"
-                  title={`Deployment ${versionLabel(labels, deployed.version_id)} ${deployed.status === 'draft' ? 'is ready' : 'already exists'}`}
-                  description={`${shortVersion(deployed.version_id)} · ${deployed.status}. The staged configuration remains saved.`}
-                />
-              </Box>
-            ) : null}
             {changes.length === 0 ? (
               <EmptyState
                 icon={<Layers />}
@@ -185,11 +192,44 @@ const StagePage = ({ organizationId }: { organizationId: string }) => {
               <StageChanges changes={changes} />
             )}
             <Text color="muted" variant="caption">
-              Deploying creates a draft for separate activation. Removed
-              definitions remain available to existing subscriptions.
+              Successful deployments clear the stage. Removed definitions remain
+              available to existing subscriptions.
             </Text>
           </>
         )}
+        {stage.data && !stage.error ? (
+          <Box
+            as="section"
+            aria-label="Staged billing JSON"
+            flexDirection="column"
+            rowGap="m"
+            minWidth={0}
+          >
+            <Text as="h2" variant="heading-xs">
+              Staged billing JSON
+            </Text>
+            <Text color="muted" variant="caption">
+              Complete staged configuration · Revision {stage.data.revision} ·
+              Not active yet
+            </Text>
+            <Box
+              padding="l"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+              borderRadius="m"
+              backgroundColor="background-card"
+              overflow="auto"
+              maxHeight={480}
+            >
+              <pre>
+                <Text as="code" variant="caption" monospace>
+                  {JSON.stringify(stage.data.configuration, null, 2)}
+                </Text>
+              </pre>
+            </Box>
+          </Box>
+        ) : null}
       </Box>
     </DashboardBody>
   )

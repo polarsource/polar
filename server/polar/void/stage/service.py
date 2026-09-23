@@ -69,11 +69,18 @@ class StageService:
                     **stage.configuration,
                     "checksum": f"stage:{stage.id}:{stage.revision}",
                     "dry_run": body.dry_run,
+                    "activate": body.activate,
                 }
             )
         except ValidationError as error:
             raise InvalidDeployment(str(error)) from error
-        return await deploy_service.deploy(session, organization_id, configuration)
+        deployment = await deploy_service.deploy(
+            session, organization_id, configuration
+        )
+        if not body.dry_run:
+            stage.set_deleted_at()
+            await session.flush()
+        return deployment
 
 
 stage = StageService()

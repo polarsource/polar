@@ -3356,7 +3356,7 @@
           "private"
         ],
         "summary": "Deploy",
-        "description": "Plan or deploy the staged configuration as a draft. The stage is retained; activation is separate.\n\n**Scopes**: `void:write`",
+        "description": "Plan or deploy the staged configuration, optionally activating it. Successful deployments clear the stage; dry runs and failures retain it.\n\n**Scopes**: `void:write`",
         "operationId": "stage:deploy",
         "requestBody": {
           "content": {
@@ -3385,6 +3385,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidDeployment"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentNotActivatable"
                 }
               }
             }
@@ -10201,6 +10211,12 @@
             "type": "boolean",
             "title": "Dry Run",
             "description": "Plan the deployment without writing.",
+            "default": false
+          },
+          "activate": {
+            "type": "boolean",
+            "title": "Activate",
+            "description": "Make the deployed configuration active.",
             "default": false
           }
         },

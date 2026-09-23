@@ -17,7 +17,7 @@ it('exposes stage operations with revision checks through the Promise API', asyn
     version_id: 'a'.repeat(64),
     checksum: 'stage:test:1',
     applied: true,
-    status: 'draft' as const,
+    status: 'active' as const,
     has_configuration: true,
     entries: [],
     created_at: '2026-09-22T00:00:00Z',
@@ -27,7 +27,6 @@ it('exposes stage operations with revision checks through the Promise API', asyn
     Response.json(stage),
     Response.json({ ...deployment, id: null, applied: false, status: null }),
     Response.json(deployment),
-    new Response(null, { status: 204 }),
     Response.json(
       { error: 'StageConflict', detail: 'The stage changed.' },
       { status: 409 },
@@ -57,10 +56,12 @@ it('exposes stage operations with revision checks through the Promise API', asyn
     })
     assert.isFalse(plan.applied)
     assert.deepEqual(
-      await client.api.stage.deploy({ expected_revision: saved.revision }),
+      await client.api.stage.deploy({
+        expected_revision: saved.revision,
+        activate: true,
+      }),
       deployment,
     )
-    await client.api.stage.delete({ expected_revision: saved.revision })
     await nodeAssert.rejects(
       client.api.stage.save({ expected_revision: 1, configuration }),
       (error: unknown) =>
@@ -76,7 +77,6 @@ it('exposes stage operations with revision checks through the Promise API', asyn
         ['GET', '/v1/void/stage'],
         ['POST', '/v1/void/stage/deploy'],
         ['POST', '/v1/void/stage/deploy'],
-        ['DELETE', '/v1/void/stage?expected_revision=1'],
         ['PUT', '/v1/void/stage'],
       ],
     )
@@ -88,7 +88,10 @@ it('exposes stage operations with revision checks through the Promise API', asyn
       expected_revision: 1,
       dry_run: true,
     })
-    assert.deepEqual(await requests[3]!.json(), { expected_revision: 1 })
+    assert.deepEqual(await requests[3]!.json(), {
+      expected_revision: 1,
+      activate: true,
+    })
   } finally {
     await client.dispose()
   }

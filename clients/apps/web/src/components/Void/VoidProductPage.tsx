@@ -27,6 +27,7 @@ import {
   VoidProductMeter,
 } from './products'
 import { TableSection } from './VoidIdentityTables'
+import { DefinitionEditor } from './Stage/DefinitionEditor'
 import { VoidDetailShell } from './VoidShell'
 
 const LIMIT_COLOR: Record<string, 'red' | 'blue' | 'green'> = {
@@ -165,6 +166,7 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
       caption={[product.slug, billing, version].join(' · ')}
     >
       <Box flexDirection="column" rowGap="3xl">
+        <DefinitionEditor kind="products" slug={product.slug} />
         {product.description ? (
           <Text color="muted">{product.description}</Text>
         ) : null}

@@ -25,6 +25,7 @@ import {
   VoidMeterReducerRef,
 } from './meters'
 import { TableSection } from './VoidIdentityTables'
+import { DefinitionEditor } from './Stage/DefinitionEditor'
 import { VoidDetailShell, VoidErrorBox } from './VoidShell'
 
 const consumerColumns = (
@@ -123,6 +124,7 @@ export const VoidMeterPage = ({ meterId }: { meterId: string }) => {
       ].join(' · ')}
     >
       <Box flexDirection="column" rowGap="3xl">
+        <DefinitionEditor kind="meters" slug={meter.slug} />
         <Box
           display={{ base: 'grid', xl: 'flex' }}
           gridTemplateColumns="repeat(2, 1fr)"

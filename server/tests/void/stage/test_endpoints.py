@@ -5,6 +5,7 @@ from httpx import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.models import Organization
+from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.void.deploy.schemas import DeployConfiguration
 from tests.fixtures.database import SaveFixture
@@ -113,12 +114,14 @@ class TestStage:
         assert (await void_client.get(PATH, headers=HEADERS)).json() == saved
         assert await counts(session, organization) == [0] * 5
 
-    async def test_plan_deploy_and_repeat_retain_stage(
+    @pytest.mark.parametrize("activate", [False, True])
+    async def test_only_successful_deployments_clear_stage(
         self,
         void_client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         session: AsyncSession,
+        activate: bool,
     ) -> None:
         await create_token(save_fixture, organization, scopes={Scope.void_write})
         response = await void_client.put(
@@ -137,31 +140,74 @@ class TestStage:
         assert plan["applied"] is False
         assert plan["id"] is None
         assert await counts(session, organization) == [0] * 5
+        assert (await void_client.get(PATH, headers=HEADERS)).json() == saved
         response = await void_client.post(
-            f"{PATH}/deploy", headers=HEADERS, json={"expected_revision": 1}
+            f"{PATH}/deploy",
+            headers=HEADERS,
+            json={"expected_revision": 1, "activate": activate},
         )
         assert response.status_code == 201
         deployed = response.json()
         assert deployed["applied"] is True
-        assert deployed["status"] == "draft"
+        assert deployed["status"] == ("active" if activate else "draft")
         assert deployed["version_id"] == plan["version_id"]
-        assert (await void_client.get(PATH, headers=HEADERS)).json() == saved
+        assert (await void_client.get(PATH, headers=HEADERS)).status_code == 404
         resources = await counts(session, organization)
         assert resources == [2, 1, 1, 1, 1]
-        for dry_run in (False, True):
+        response = await void_client.put(
+            PATH,
+            headers=HEADERS,
+            json={"expected_revision": None, "configuration": CONFIGURATION},
+        )
+        recreated = response.json()
+        assert recreated["revision"] == 2
+        for dry_run in (True, False):
             response = await void_client.post(
                 f"{PATH}/deploy",
                 headers=HEADERS,
-                json={"expected_revision": 1, "dry_run": dry_run},
+                json={"expected_revision": 2, "dry_run": dry_run},
             )
             assert response.status_code == 201
             assert response.json() == deployed
+            current_stage = await void_client.get(PATH, headers=HEADERS)
+            if dry_run:
+                assert current_stage.json() == recreated
+            else:
+                assert current_stage.status_code == 404
         assert await counts(session, organization) == resources
-        assert (await void_client.get(PATH, headers=HEADERS)).json() == saved
         current = await void_client.get(
             "/v1/void/organizations/current", headers=HEADERS
         )
-        assert current.json()["active_version_id"] is None
+        assert current.json()["active_version_id"] == (
+            deployed["version_id"] if activate else None
+        )
+
+    async def test_failed_activation_preserves_stage(
+        self,
+        void_client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+    ) -> None:
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]}
+        await save_fixture(organization)
+        await create_token(save_fixture, organization, scopes={Scope.void_write})
+        saved = (
+            await void_client.put(
+                PATH,
+                headers=HEADERS,
+                json={"expected_revision": None, "configuration": CONFIGURATION},
+            )
+        ).json()
+        for dry_run, status in ((False, 403), (True, 400)):
+            response = await void_client.post(
+                f"{PATH}/deploy",
+                headers=HEADERS,
+                json={"expected_revision": 1, "activate": True, "dry_run": dry_run},
+            )
+            assert response.status_code == status
+            assert (await void_client.get(PATH, headers=HEADERS)).json() == saved
+            assert await counts(session, organization) == [0] * 5
 
     async def test_direct_deployment_is_independent_of_stage(
         self,

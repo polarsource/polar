@@ -154,8 +154,8 @@ export type InvalidScenario = { readonly "error": "InvalidScenario", readonly "d
 export const InvalidScenario = Schema.Struct({ "error": Schema.Literal("InvalidScenario").annotate({ "title": "Error", "examples": ["InvalidScenario"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "InvalidScenario", "identifier": "InvalidScenario" })
 export type StageConflict = { readonly "error": "StageConflict", readonly "detail": string }
 export const StageConflict = Schema.Struct({ "error": Schema.Literal("StageConflict").annotate({ "title": "Error", "examples": ["StageConflict"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "StageConflict", "identifier": "StageConflict" })
-export type StageDeploy = { readonly "expected_revision": number, readonly "dry_run"?: boolean }
-export const StageDeploy = Schema.Struct({ "expected_revision": Schema.Number.annotate({ "title": "Expected Revision" }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })).check(Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Plan the deployment without writing.", "default": false })) }).annotate({ "title": "StageDeploy", "identifier": "StageDeploy" })
+export type StageDeploy = { readonly "expected_revision": number, readonly "dry_run"?: boolean, readonly "activate"?: boolean }
+export const StageDeploy = Schema.Struct({ "expected_revision": Schema.Number.annotate({ "title": "Expected Revision" }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })).check(Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Plan the deployment without writing.", "default": false })), "activate": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Activate", "description": "Make the deployed configuration active.", "default": false })) }).annotate({ "title": "StageDeploy", "identifier": "StageDeploy" })
 export type Entitlement = { readonly "id": string, readonly "slug": string, readonly "name": string, readonly "description": string | null, readonly "created_at": string }
 export const Entitlement = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "slug": Schema.String.annotate({ "title": "Slug" }), "name": Schema.String.annotate({ "title": "Name" }), "description": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Entitlement", "identifier": "Entitlement" })
 export type EntitlementCreate = { readonly "slug": string, readonly "name"?: string | null, readonly "description"?: string | null }
@@ -604,6 +604,8 @@ export type StageDeploy201 = Deploy
 export const StageDeploy201 = Deploy
 export type StageDeploy400 = InvalidDeployment
 export const StageDeploy400 = InvalidDeployment
+export type StageDeploy403 = DeploymentNotActivatable
+export const StageDeploy403 = DeploymentNotActivatable
 export type StageDeploy404 = ResourceNotFound
 export const StageDeploy404 = ResourceNotFound
 export type StageDeploy409 = StageConflict | DeploymentConflict
@@ -1177,6 +1179,7 @@ export const make = (
     withResponse(options.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(StageDeploy201),
       "400": decodeError("StageDeploy400", StageDeploy400),
+      "403": decodeError("StageDeploy403", StageDeploy403),
       "404": decodeError("StageDeploy404", StageDeploy404),
       "409": decodeError("StageDeploy409", StageDeploy409),
       "422": decodeError("StageDeploy422", StageDeploy422),
@@ -1517,11 +1520,11 @@ readonly "stageSave": <Config extends OperationConfig>(options: { readonly paylo
 */
 readonly "stageDelete": <Config extends OperationConfig>(options: { readonly params: typeof StageDeleteParams.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<void, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageDelete404", typeof StageDelete404.Type> | VoidApiError<"StageDelete409", typeof StageDelete409.Type> | VoidApiError<"StageDelete422", typeof StageDelete422.Type>>
   /**
-* Plan or deploy the staged configuration as a draft. The stage is retained; activation is separate.
+* Plan or deploy the staged configuration, optionally activating it. Successful deployments clear the stage; dry runs and failures retain it.
 *
 * **Scopes**: `void:write`
 */
-readonly "stageDeploy": <Config extends OperationConfig>(options: { readonly payload: typeof StageDeployRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof StageDeploy201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageDeploy400", typeof StageDeploy400.Type> | VoidApiError<"StageDeploy404", typeof StageDeploy404.Type> | VoidApiError<"StageDeploy409", typeof StageDeploy409.Type> | VoidApiError<"StageDeploy422", typeof StageDeploy422.Type>>
+readonly "stageDeploy": <Config extends OperationConfig>(options: { readonly payload: typeof StageDeployRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof StageDeploy201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageDeploy400", typeof StageDeploy400.Type> | VoidApiError<"StageDeploy403", typeof StageDeploy403.Type> | VoidApiError<"StageDeploy404", typeof StageDeploy404.Type> | VoidApiError<"StageDeploy409", typeof StageDeploy409.Type> | VoidApiError<"StageDeploy422", typeof StageDeploy422.Type>>
   /**
 * **Scopes**: `void:read` `void:write`
 */

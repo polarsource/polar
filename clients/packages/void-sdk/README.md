@@ -313,10 +313,9 @@ const plan = await client.api.stage.deploy({
 })
 const deployment = await client.api.stage.deploy({
   expected_revision: stage.revision,
+  activate: true,
 })
-// Activate separately when ready.
-await client.api.deploys.activate(deployment.id!)
-await client.api.stage.delete({ expected_revision: stage.revision })
+// The deployment is active and the stage has been cleared.
 ```
 
 `client.api.stage.get()` reads the saved stage and returns 404 if none exists.
@@ -326,7 +325,10 @@ Revisions keep increasing after discard and recreation, so an old tab cannot
 overwrite a newly created stage.
 
 Saving validates the configuration's shape; references and deployment rules are
-checked when planning or deploying. Draft deployment retains the stage unchanged.
+checked when planning or deploying. Successful deployment clears the stage, including
+draft deployment (omit `activate` or set it to `false`). Dry runs and failures retain
+the stage. Activation requires an organization that has passed review and cannot be
+combined with a dry run.
 Like direct deployment, submitting a configuration that already exists returns
 that deployment, including on a dry run. A CLI deployment never changes the stage.
 

@@ -1002,3 +1002,22 @@ resource "tfe_variable" "linear_payout_amount_mismatch_template_id_production" {
     ignore_changes = [value]
   }
 }
+
+# Render assigns the host once the private link is wired, so the value is
+# entered on the workspace and Terraform only registers the variable.
+resource "tfe_variable" "redis_private_link_host_production" {
+  key          = "redis_private_link_host"
+  category     = "terraform"
+  description  = "DNS name of the Render private link to the production worker Redis"
+  sensitive    = false
+  workspace_id = data.tfe_workspace_ids.aws.ids["polar"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+import {
+  to = tfe_variable.redis_private_link_host_production
+  id = "polar-sh/polar/var-DiQgRaQF7rQwsxsw"
+}

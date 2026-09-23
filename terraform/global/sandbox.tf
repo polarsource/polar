@@ -832,3 +832,22 @@ resource "tfe_variable" "postgres_password_sandbox" {
     ignore_changes = [value]
   }
 }
+
+# Render assigns the host once the private link is wired, so the value is
+# entered on the workspace and Terraform only registers the variable.
+resource "tfe_variable" "redis_private_link_host_sandbox" {
+  key          = "redis_private_link_host"
+  category     = "terraform"
+  description  = "DNS name of the Render private link to the sandbox Redis"
+  sensitive    = false
+  workspace_id = data.tfe_workspace_ids.aws.ids["sandbox"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+import {
+  to = tfe_variable.redis_private_link_host_sandbox
+  id = "polar-sh/sandbox/var-Cxg5oRhNbMmtkPsH"
+}

@@ -14,6 +14,10 @@ Usage:
     uv run python -m scripts.classify_organization_taxonomy --slug stilla --skip-website
     uv run python -m scripts.classify_organization_taxonomy --input case.json --print-request
 
+``TYPESAFE_BASE_URL`` overrides the API host. A root such as
+``https://api.example.com`` is called at ``/v1/systemone``. A URL that already
+ends with that path is used as-is.
+
 ``case.json`` fields: name, slug, about, product_description, website,
 selling_categories, pricing_models, products (name, description, billing_type),
 website_text. Website text already in the file is sent as-is. A website URL
@@ -34,6 +38,7 @@ from polar.kit.db.postgres import create_async_sessionmaker
 from polar.organization.repository import OrganizationRepository
 from polar.organization_review.collectors.organization import collect_organization_data
 from polar.organization_review.collectors.products import collect_products_data
+from polar.organization_review.collectors.website import collect_website_data
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import OrganizationData, ProductsData
 from scripts.helper import configure_script_console_logging, read_engine, typer_async
@@ -502,7 +507,6 @@ async def load_case_from_slug(slug: str) -> Case:
 async def attach_website(case: Case) -> Case:
     if case.website or not case.website_url:
         return case
-    from polar.organization_review.collectors.website import collect_website_data
 
     fetched = await collect_website_data(
         case.website_url,

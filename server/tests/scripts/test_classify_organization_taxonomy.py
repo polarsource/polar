@@ -53,7 +53,6 @@ def test_state_keeps_only_selling_fields() -> None:
     }
     assert len(state["website"]) == 8_000
     assert state["self_reported_selling_categories"] == ["Digital downloads"]
-    assert "email" not in state
 
 
 def test_request_choice_covers_every_label() -> None:

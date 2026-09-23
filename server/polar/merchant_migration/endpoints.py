@@ -5,7 +5,6 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
-from polar.kit.address import CountryAlpha2
 from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -573,5 +572,5 @@ async def update_customer_billing_country(
         auth_subject,
         id,
         record_id,
-        CountryAlpha2(str(update.country)),
+        update.country,
     )

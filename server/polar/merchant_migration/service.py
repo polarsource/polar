@@ -13,7 +13,7 @@ from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TaxBehavior
-from polar.kit.address import Address, CountryAlpha2
+from polar.kit.address import Address, CountryAlpha2, CountryAlpha2Input
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -1467,7 +1467,7 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         record_id: UUID,
-        country: CountryAlpha2,
+        country: CountryAlpha2Input,
     ) -> MerchantMigrationBillingCountryUpdate:
         migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
@@ -1508,12 +1508,13 @@ class MerchantMigrationService:
                 customer_record.target_id
             )
             if polar_customer is not None:
+                billing_country = CountryAlpha2(country.value)
                 billing_address = polar_customer.billing_address
                 if billing_address is None:
-                    billing_address = Address(country=country)
+                    billing_address = Address(country=billing_country)
                 else:
                     billing_address = billing_address.model_copy(
-                        update={"country": country}
+                        update={"country": billing_country}
                     )
                 await customer_repository.update(
                     polar_customer, update_dict={"billing_address": billing_address}

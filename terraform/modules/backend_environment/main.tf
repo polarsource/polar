@@ -86,7 +86,6 @@ locals {
   } : {}
 
   backend_production_secrets = var.environment == "production" ? {
-    POLAR_DISCORD_WEBHOOK_URL            = var.backend_secrets.discord_webhook_url
     POLAR_POSTHOG_PROJECT_API_KEY        = var.backend_secrets.posthog_project_api_key
     POLAR_PLAIN_REQUEST_SIGNING_SECRET   = var.backend_secrets.plain_request_signing_secret
     POLAR_PLAIN_TOKEN                    = var.backend_secrets.plain_token

@@ -142,7 +142,6 @@ variable "environment_groups" {
     })
     backend_production = object({
       POLAR_CHECKOUT_LINK_HOST             = string
-      POLAR_DISCORD_WEBHOOK_URL            = string
       POLAR_POSTHOG_PROJECT_API_KEY        = string
       POLAR_PLAIN_REQUEST_SIGNING_SECRET   = string
       POLAR_PLAIN_TOKEN                    = string

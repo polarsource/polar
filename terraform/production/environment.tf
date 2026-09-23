@@ -73,7 +73,6 @@ locals {
     discord_client_id              = var.backend_discord_client_id_production
     discord_client_secret          = var.backend_discord_client_secret_production
     discord_proxy_url              = var.backend_discord_proxy_url
-    discord_webhook_url            = var.backend_discord_webhook_url_production
     posthog_project_api_key        = var.backend_posthog_project_api_key_production
     resend_api_key                 = var.backend_resend_api_key_production
     resend_active_users_segment_id = var.resend_active_users_segment_id

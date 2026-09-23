@@ -125,18 +125,6 @@ resource "tfe_variable" "backend_discord_proxy_url_production" {
   }
 }
 
-resource "tfe_variable" "backend_discord_webhook_url_production" {
-  key             = "backend_discord_webhook_url_production"
-  category        = "terraform"
-  description     = "Discord Webhook URL for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "backend_posthog_project_api_key_production" {
   key             = "backend_posthog_project_api_key_production"
   category        = "terraform"

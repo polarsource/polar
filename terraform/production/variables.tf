@@ -72,12 +72,6 @@ variable "backend_discord_proxy_url" {
   sensitive   = true
 }
 
-variable "backend_discord_webhook_url_production" {
-  description = "Discord Webhook URL for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_posthog_project_api_key_production" {
   description = "PostHog Project API Key for production"
   type        = string

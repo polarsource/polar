@@ -17,7 +17,6 @@ locals {
       POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN = var.backend_config.authentication_session_cookie_domain
       POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = var.backend_config.oauth2_session_state_cookie_domain
       POLAR_BASE_URL                             = var.backend_config.base_url
-      POLAR_DEBUG                                = var.backend_config.debug
       POLAR_EMAIL_SENDER                         = var.backend_config.email_sender
       POLAR_EMAIL_FROM_NAME                      = var.backend_config.email_from_name
       POLAR_EMAIL_FROM_DOMAIN                    = var.backend_config.email_from_domain
@@ -26,7 +25,6 @@ locals {
       POLAR_CHECKOUT_BASE_URL                    = var.backend_config.checkout_base_url
       POLAR_LOG_LEVEL                            = var.backend_config.log_level
       POLAR_TESTING                              = var.backend_config.testing
-      POLAR_AUTH_COOKIE_DOMAIN                   = var.backend_config.auth_cookie_domain
       POLAR_INVOICES_ADDITIONAL_INFO             = var.backend_config.invoices_additional_info
       POLAR_INVOICES_VAT_NUMBERS                 = var.backend_config.invoices_vat_numbers
       POLAR_STRIPE_PUBLISHABLE_KEY               = var.backend_secrets.stripe_publishable_key
@@ -144,13 +142,7 @@ locals {
     POLAR_STRIPE_SECRET_KEY                  = var.stripe_secrets.secret_key
     POLAR_STRIPE_WEBHOOK_SECRET              = var.stripe_secrets.webhook_secret
     POLAR_STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET = var.stripe_secrets.account_risk_webhook_secret
-    POLAR_STRIPE_APP_CLIENT_ID               = var.stripe_secrets.app_client_id
-    POLAR_STRIPE_APP_CLIENT_LINK_ID          = var.stripe_secrets.app_client_link_id
   }
-
-  logfire_environment_variables = var.logfire_config != null ? {
-    POLAR_LOGFIRE_PROJECT_NAME = var.logfire_config.project_name
-  } : {}
 
   logfire_secrets = var.logfire_config != null ? {
     POLAR_LOGFIRE_TOKEN = var.logfire_config.token
@@ -230,7 +222,7 @@ locals {
     worker_sqs         = var.worker_sqs_config != null ? local.worker_sqs_environment_variables : null
     github             = local.github_secrets
     stripe             = local.stripe_secrets
-    logfire            = var.logfire_config != null ? merge(local.logfire_environment_variables, local.logfire_secrets) : null
+    logfire            = var.logfire_config != null ? local.logfire_secrets : null
     apple              = local.apple_secrets
     prometheus         = var.prometheus_config != null ? merge(local.prometheus_environment_variables, local.prometheus_secrets) : null
     slo_report         = var.slo_report_config != null ? merge(local.slo_report_environment_variables, local.slo_report_secrets) : null
@@ -244,7 +236,6 @@ locals {
     local.aws_s3_environment_variables,
     local.secrets_kms_environment_variables,
     local.worker_sqs_environment_variables,
-    local.logfire_environment_variables,
     local.prometheus_environment_variables,
     local.slo_report_environment_variables,
     local.tinybird_environment_variables,

@@ -32,7 +32,6 @@ variable "backend_config" {
     user_session_cookie_key                          = optional(string, "")
     authentication_session_cookie_domain             = string
     oauth2_session_state_cookie_domain               = string
-    debug                                            = string
     email_sender                                     = string
     email_from_name                                  = string
     email_from_domain                                = string
@@ -40,7 +39,6 @@ variable "backend_config" {
     checkout_base_url                                = string
     log_level                                        = string
     testing                                          = string
-    auth_cookie_domain                               = string
     auth_cookie_key                                  = optional(string, "")
     invoices_additional_info                         = optional(string, "")
     invoices_vat_numbers                             = optional(string, "{}")
@@ -147,16 +145,13 @@ variable "stripe_secrets" {
     secret_key                  = string
     webhook_secret              = string
     account_risk_webhook_secret = optional(string, "")
-    app_client_id               = optional(string, "")
-    app_client_link_id          = optional(string, "")
   })
   sensitive = true
 }
 
 variable "logfire_config" {
   type = object({
-    project_name = optional(string, "polar")
-    token        = string
+    token = string
   })
   default   = null
   sensitive = true

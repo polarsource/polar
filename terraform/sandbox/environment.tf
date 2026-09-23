@@ -9,7 +9,6 @@ locals {
     user_session_cookie_key                          = "polar_sandbox_session"
     authentication_session_cookie_domain             = "polar.sh"
     oauth2_session_state_cookie_domain               = "polar.sh"
-    debug                                            = "0"
     email_sender                                     = "resend"
     email_from_name                                  = "[SANDBOX] Polar"
     email_from_domain                                = "notifications.sandbox.polar.sh"
@@ -17,7 +16,6 @@ locals {
     checkout_base_url                                = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
     log_level                                        = "INFO"
     testing                                          = "0"
-    auth_cookie_domain                               = "polar.sh"
     auth_cookie_key                                  = "polar_sandbox_session"
     tax_processors                                   = "[\"numeral\",\"stripe\"]"
     tax_record_processor                             = "numeral"
@@ -82,8 +80,6 @@ locals {
     secret_key                  = var.stripe_secret_key_sandbox
     webhook_secret              = var.stripe_webhook_secret_sandbox
     account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_sandbox
-    app_client_id               = var.stripe_app_client_id
-    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = { token = var.logfire_token }

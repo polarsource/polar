@@ -684,30 +684,6 @@ resource "tfe_variable" "worker_sqs_actors_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
-resource "tfe_variable" "stripe_app_client_id_sandbox" {
-  key             = "stripe_app_client_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client ID for sandbox"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_link_id_sandbox" {
-  key             = "stripe_app_client_link_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client link ID for sandbox"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "turnstile_secret_sandbox" {
   key             = "turnstile_secret"
   category        = "terraform"

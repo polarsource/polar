@@ -798,30 +798,6 @@ resource "tfe_variable" "worker_sqs_actors_production" {
   }
 }
 
-resource "tfe_variable" "stripe_app_client_id_production" {
-  key             = "stripe_app_client_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client ID for production"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_link_id_production" {
-  key             = "stripe_app_client_link_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client link ID for production"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "turnstile_secret_production" {
   key             = "turnstile_secret"
   category        = "terraform"

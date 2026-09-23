@@ -497,18 +497,6 @@ variable "worker_sqs_actors" {
   default     = "[\"dummy\"]"
 }
 
-variable "stripe_app_client_id" {
-  description = "Stripe App OAuth client ID"
-  type        = string
-  default     = ""
-}
-
-variable "stripe_app_client_link_id" {
-  description = "Stripe App OAuth client link ID"
-  type        = string
-  default     = ""
-}
-
 variable "turnstile_secret" {
   description = "Cloudflare Turnstile secret"
   type        = string

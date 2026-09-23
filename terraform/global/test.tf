@@ -698,30 +698,6 @@ resource "tfe_variable" "worker_sqs_actors_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
-resource "tfe_variable" "stripe_app_client_id_test" {
-  key             = "stripe_app_client_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client ID for test"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_link_id_test" {
-  key             = "stripe_app_client_link_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client link ID for test"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "turnstile_secret_test" {
   key             = "turnstile_secret"
   category        = "terraform"

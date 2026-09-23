@@ -9,7 +9,6 @@ locals {
     user_session_cookie_domain           = "polar.sh"
     authentication_session_cookie_domain = "polar.sh"
     oauth2_session_state_cookie_domain   = "polar.sh"
-    debug                                = "0"
     email_sender                         = "resend"
     email_from_name                      = "Polar"
     email_from_domain                    = "notifications.polar.sh"
@@ -17,7 +16,6 @@ locals {
     checkout_base_url                    = "https://buy.polar.sh/{client_secret}"
     log_level                            = "INFO"
     testing                              = "0"
-    auth_cookie_domain                   = "polar.sh"
     invoices_additional_info             = "[support@polar.sh](mailto:support@polar.sh)"
     invoices_vat_numbers = jsonencode({
       AT = "EU372061545"
@@ -129,8 +127,6 @@ locals {
     secret_key                  = var.stripe_secret_key_production
     webhook_secret              = var.stripe_webhook_secret_production
     account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_production
-    app_client_id               = var.stripe_app_client_id
-    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = { token = var.logfire_token }

@@ -116,10 +116,6 @@ locals {
       value     = "test"
       sensitive = false
     }
-    POLAR_DEBUG = {
-      value     = "0"
-      sensitive = false
-    }
     POLAR_TESTING = {
       value     = "0"
       sensitive = false
@@ -264,12 +260,6 @@ locals {
     POLAR_STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET = {
       value = var.stripe_account_risk_webhook_secret
     }
-    POLAR_STRIPE_APP_CLIENT_ID = {
-      value = var.stripe_app_client_id
-    }
-    POLAR_STRIPE_APP_CLIENT_LINK_ID = {
-      value = var.stripe_app_client_link_id
-    }
     POLAR_APPLE_CLIENT_ID = {
       value = var.apple_client_id
     }
@@ -335,10 +325,6 @@ locals {
     }
     POLAR_S3_FILES_DOWNLOAD_SECRET = {
       value = var.s3_files_download_secret
-    }
-    POLAR_LOGFIRE_PROJECT_NAME = {
-      value     = "polar"
-      sensitive = false
     }
     POLAR_LOGFIRE_TOKEN = {
       value = var.logfire_token

@@ -86,7 +86,7 @@ export function ReviewRecordModal({
           </Box>
         )}
         <ProductFields row={row} />
-        <CustomerFields row={row} migrationId={migrationId} />
+        <CustomerFields row={row} />
       </Box>
     </Box>
   )

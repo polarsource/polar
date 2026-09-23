@@ -6,7 +6,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
-import { BillingAddressEditor } from './BillingAddressEditor'
 import { ReviewRow, rowAmount } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -81,13 +80,7 @@ export function ProductFields({ row }: { row: ReviewRow }) {
   )
 }
 
-export function CustomerFields({
-  row,
-  migrationId,
-}: {
-  row: ReviewRow
-  migrationId: string
-}) {
+export function CustomerFields({ row }: { row: ReviewRow }) {
   if (!row.customer_email && !row.customer_name && !row.customer_source_id) {
     return null
   }
@@ -100,20 +93,7 @@ export function CustomerFields({
       {row.customer_email ? (
         <DetailCell label="Email" value={row.customer_email} />
       ) : null}
-      <DetailCell
-        label="Billing country"
-        value={
-          row.entity === 'subscriptions' && row.record_id ? (
-            <BillingAddressEditor
-              key={row.record_id}
-              migrationId={migrationId}
-              row={row}
-            />
-          ) : (
-            row.customer_country
-          )
-        }
-      />
+      <DetailCell label="Country" value={row.customer_country} />
       {row.customer_source_id ? (
         <DetailCell
           label="Stripe customer ID"

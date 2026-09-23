@@ -80,7 +80,10 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
             OAuth2Token.issued_at + OAuth2Token.expires_in < int(cutoff.timestamp()),
             or_(
                 OAuth2Token.refresh_token.is_(None),
-                OAuth2Token.refresh_token_revoked_at != 0,
+                and_(
+                    OAuth2Token.refresh_token_revoked_at != 0,
+                    OAuth2Token.refresh_token_revoked_at < int(cutoff.timestamp()),
+                ),
             ),
         ),
     ),
@@ -93,7 +96,7 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         "external_event.prune",
         ExternalEvent,
         lambda cutoff: and_(
-            ExternalEvent.handled_at.is_not(None),
+            ExternalEvent.handled_at < cutoff,
             ExternalEvent.created_at
             < cutoff - settings.EXTERNAL_EVENT_RETENTION_PERIOD,
         ),

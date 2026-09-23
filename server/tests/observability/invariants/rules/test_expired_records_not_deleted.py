@@ -150,7 +150,7 @@ async def create_deletable_records(
             task_name="task_name",
             external_id="handled_event",
             data={},
-            handled_at=utc_now(),
+            handled_at=deletable_at,
             created_at=deletable_at - settings.EXTERNAL_EVENT_RETENTION_PERIOD,
         )
     )

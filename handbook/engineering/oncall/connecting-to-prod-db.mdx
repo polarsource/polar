@@ -34,10 +34,10 @@ Copy the `dpg-` id from the internal host on the Render page. `db-test` and each
 
 ## 3. Connect
 
-Use the internal port, `5432`. This path is the private network, so TLS is not required. Leave SSH tunneling off.
+Use the internal port, `5432`. Leave SSH tunneling off.
 
 ```bash
-psql "host=dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE sslmode=disable"
+psql "host=dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE"
 ```
 
 `psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.

@@ -818,6 +818,10 @@ resource "tfe_variable" "linear_api_key_test" {
   description     = "Linear API key for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "linear_team_id_test" {
@@ -826,6 +830,10 @@ resource "tfe_variable" "linear_team_id_test" {
   description     = "Linear team ID for test"
   sensitive       = false
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "linear_payout_amount_mismatch_template_id_test" {
@@ -834,4 +842,8 @@ resource "tfe_variable" "linear_payout_amount_mismatch_template_id_test" {
   description     = "Linear payout amount mismatch issue template ID for test"
   sensitive       = false
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

@@ -1002,6 +1002,10 @@ resource "tfe_variable" "linear_api_key_production" {
   description     = "Linear API key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "linear_team_id_production" {
@@ -1010,6 +1014,10 @@ resource "tfe_variable" "linear_team_id_production" {
   description     = "Linear team ID for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "linear_payout_amount_mismatch_template_id_production" {
@@ -1018,4 +1026,8 @@ resource "tfe_variable" "linear_payout_amount_mismatch_template_id_production" {
   description     = "Linear payout amount mismatch issue template ID for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

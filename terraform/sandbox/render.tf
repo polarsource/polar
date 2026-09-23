@@ -56,8 +56,10 @@ locals {
   db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string)[0])
   db_port          = "5432"
   # db_name          = data.render_postgres.db.database_name
-  db_user     = data.render_postgres.db.database_user
-  db_password = data.render_postgres.db.connection_info.password
+
+  # Sandbox shares the production Postgres instance, but connects with its own role.
+  db_user     = var.postgres_user
+  db_password = var.postgres_password
 
   # Read replica connection info
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]

@@ -1,0 +1,30 @@
+handbook/engineering/introduction.mdx
+  s_528cf431c19c3a::t_e5844119c238b6 26,28,30,32,38
+  s_528cf431c19c3a::t_1437a42e453196 25,27,31,33-37
+  s_528cf431c19c3a::t_50c62cc4d9dbdf 8-9
+  s_0ac1876792975c::t_46f78bf60552aa 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8ddea08bdfb25116a1b829a2607cd8b7e2c0e5ab",
+  "prompts": {},
+  "sessions": {
+    "s_0ac1876792975c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c7e9-ffd7-7db1-b42e-fdbf64bbd4d4",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_528cf431c19c3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "64875a8b-9de9-4f10-a6d3-40e2f4a60d57",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

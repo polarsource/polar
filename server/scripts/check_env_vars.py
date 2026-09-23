@@ -4,7 +4,8 @@ The drift starts when a reader goes away: the setting leaves `config.py`, the
 Terraform that provisions it stays, and `extra="allow"` means the app never
 complains. A credential nobody reads is a credential nobody watches.
 
-Warning only. Run it from `server/`:
+Exit codes follow the linter convention: 0 clean, 1 orphans found, 2 the check
+itself failed. Run it from `server/`:
 
     uv run python -m scripts.check_env_vars
 """
@@ -50,7 +51,7 @@ def read() -> set[str]:
         None,
     )
     if settings is None:
-        raise SystemExit(f"No Settings class in {CONFIG}")
+        raise RuntimeError(f"No Settings class in {CONFIG}")
     fields = {
         f"POLAR_{statement.target.id}"
         for statement in settings.body
@@ -77,4 +78,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as error:
+        # 2 separates "the check broke" from "the check found something".
+        print(f"check_env_vars failed: {error}", file=sys.stderr)
+        sys.exit(2)

@@ -49,10 +49,8 @@ jobs:
               - 'server/tinybird/**'
             env_vars:
               - 'terraform/**'
-              - 'server/polar/config.py'
-              - 'server/scripts/check_env_vars.py'
-              - 'clients/apps/**'
-              - 'clients/packages/**'
+              - 'server/**'
+              - 'clients/**'
 
   linters:
     name: "Server: Linters 📝"
@@ -251,7 +249,15 @@ jobs:
       - name: Find POLAR_* variables nothing reads
         id: check
         run: |
-          if OUTPUT=$(python3 server/scripts/check_env_vars.py); then
+          STATUS=0
+          OUTPUT=$(python3 server/scripts/check_env_vars.py) || STATUS=$?
+
+          if [ "$STATUS" -gt 1 ]; then
+            echo "check_env_vars exited $STATUS" >&2
+            exit "$STATUS"
+          fi
+
+          if [ "$STATUS" -eq 0 ]; then
             echo "has_orphans=false" >> $GITHUB_OUTPUT
           else
             echo "has_orphans=true" >> $GITHUB_OUTPUT

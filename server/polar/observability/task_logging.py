@@ -76,6 +76,8 @@ class TaskLogFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if record.msg == "Received args=%r kwargs=%r.":
             return False
+        if not record.name.startswith("dramatiq."):
+            return True
         if isinstance(record.args, tuple):
             record.args = tuple(
                 task_log_context(value)

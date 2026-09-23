@@ -94,6 +94,7 @@ class Logging[RendererType]:
                         "level": level,
                         "class": "logging.StreamHandler",
                         "formatter": "polar",
+                        "filters": ["task_message"],
                     },
                 },
                 "loggers": {
@@ -116,17 +117,6 @@ class Logging[RendererType]:
                             "logfire",
                             "apscheduler",
                             "reauth",
-                        ]
-                    },
-                    **{
-                        logger: {
-                            "handlers": [],
-                            "filters": ["task_message"],
-                            "propagate": True,
-                        }
-                        for logger in [
-                            "dramatiq.worker.WorkerThread",
-                            "dramatiq.worker.ConsumerThread",
                         ]
                     },
                 },

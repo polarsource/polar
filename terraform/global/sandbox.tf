@@ -845,3 +845,26 @@ resource "tfe_variable" "linear_payout_amount_mismatch_template_id_sandbox" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "postgres_user_sandbox" {
+  key             = "postgres_user"
+  category        = "terraform"
+  description     = "Sandbox Postgres user"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "postgres_password_sandbox" {
+  key             = "postgres_password"
+  category        = "terraform"
+  description     = "Sandbox Postgres password"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

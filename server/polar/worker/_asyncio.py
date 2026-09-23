@@ -12,7 +12,7 @@ from dramatiq.asyncio import get_event_loop_thread
 from dramatiq.middleware.asyncio import AsyncIO
 
 from polar.config import settings
-from polar.logging import Logger, scrub_log_text
+from polar.logging import Logger
 
 log: Logger = structlog.get_logger()
 
@@ -176,14 +176,6 @@ class _EventLoopWatchdog(threading.Thread):
             self.heartbeat_interval + self.heartbeat_timeout
         )
 
-        try:
-            sys.stderr.write(
-                f"{scrub_log_text(thread_stacks, preserve_oversized=True)}\n"
-            )
-            sys.stderr.flush()
-        except OSError, ValueError:
-            pass
-
         log.error(
             "event_loop_unresponsive",
             timeout_seconds=self.heartbeat_timeout,
@@ -193,6 +185,13 @@ class _EventLoopWatchdog(threading.Thread):
             asyncio_tasks=asyncio_tasks,
             thread_stacks=thread_stacks,
         )
+        # Also write it raw. The log field above gets scrubbed and cut
+        # short, and this dump is the whole point.
+        try:
+            sys.stderr.write(f"{thread_stacks}\n")
+            sys.stderr.flush()
+        except OSError, ValueError:
+            pass
 
 
 class MonitoredAsyncIO(AsyncIO):

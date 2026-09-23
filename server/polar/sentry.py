@@ -16,11 +16,9 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.modules import ModulesIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.integrations.threading import ThreadingIntegration
-from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
-from polar.logging import SENSITIVE_LOG_FIELDS, LogScrubBudget, _scrub_log_value
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
@@ -47,31 +45,6 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
         return None
-    budget = LogScrubBudget()
-    exceptions = event.get("exception")
-    if exceptions is not None:
-        for exception in reversed(exceptions.get("values", [])):
-            value = exception.get("value")
-            if isinstance(value, str):
-                exception["value"] = budget.scrub_text(value)
-    message = event.get("message")
-    if isinstance(message, str):
-        event["message"] = budget.scrub_text(message)
-    logentry = event.get("logentry")
-    if logentry is not None:
-        scrubbed = _scrub_log_value(
-            {key: value for key, value in logentry.items() if key != "params"},
-            budget=budget,
-        )
-        event["logentry"] = (
-            scrubbed if isinstance(scrubbed, dict) else {"formatted": scrubbed}
-        )
-    breadcrumbs = event.get("breadcrumbs")
-    if isinstance(breadcrumbs, dict):
-        for breadcrumb in breadcrumbs.get("values", []):
-            message = breadcrumb.get("message")
-            if isinstance(message, str):
-                breadcrumb["message"] = budget.scrub_text(message)
     return event
 
 
@@ -85,11 +58,6 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
         environment=settings.ENV,
         # Stack frame locals here carry customer, order and payment objects.
         include_local_variables=False,
-        send_default_pii=False,
-        event_scrubber=EventScrubber(
-            denylist=[*DEFAULT_DENYLIST, *SENSITIVE_LOG_FIELDS],
-            recursive=True,
-        ),
         default_integrations=False,
         auto_enabling_integrations=False,
         before_send=before_send,

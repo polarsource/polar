@@ -1,0 +1,21 @@
+infra/pgbouncer/entrypoint.sh
+  s_b12b6d33629e94::t_ce80f821f059ad 7-9
+terraform/modules/services/pgbouncer/main.tf
+  s_b12b6d33629e94::t_f9c3082d75cabf 124-126,129-133,136-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ffbc6db97a46120a7864d315aec9931e5de0df71",
+  "prompts": {},
+  "sessions": {
+    "s_b12b6d33629e94": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b3c1f0d-d2b9-427f-9010-948d9c170904",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

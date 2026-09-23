@@ -57,7 +57,6 @@ locals {
     { key = "S3_PUBLIC_IMAGES_BUCKET_PATHNAME", value = var.config.s3_public_images_bucket_pathname },
     { key = "S3_UPLOAD_ORIGINS", value = var.config.s3_upload_origins },
     { key = "POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS", value = var.config.polar_checkout_embed_script_allowed_origins },
-    { key = "POLAR_OPENAPI_SCHEMA_URL", value = var.config.polar_openapi_schema_url },
     { key = "ENABLE_EXPERIMENTAL_COREPACK", value = var.config.enable_experimental_corepack },
   ]
 

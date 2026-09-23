@@ -90,9 +90,6 @@ variable "environment_groups" {
       POLAR_GOOGLE_CLIENT_SECRET        = string
       POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = string
     })
-    openai = object({
-      POLAR_OPENAI_API_KEY = string
-    })
     pydantic_ai_gateway = object({
       POLAR_PYDANTIC_AI_GATEWAY_API_KEY = string
     })
@@ -102,7 +99,6 @@ variable "environment_groups" {
       POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = string
       POLAR_BASE_URL                             = string
       POLAR_BACKOFFICE_HOST                      = optional(string)
-      POLAR_DEBUG                                = string
       POLAR_EMAIL_SENDER                         = string
       POLAR_EMAIL_FROM_NAME                      = string
       POLAR_EMAIL_FROM_DOMAIN                    = string
@@ -111,7 +107,6 @@ variable "environment_groups" {
       POLAR_CHECKOUT_BASE_URL                    = string
       POLAR_LOG_LEVEL                            = string
       POLAR_TESTING                              = string
-      POLAR_AUTH_COOKIE_DOMAIN                   = string
       POLAR_INVOICES_ADDITIONAL_INFO             = string
       POLAR_INVOICES_VAT_NUMBERS                 = string
       POLAR_STRIPE_PUBLISHABLE_KEY               = string
@@ -142,7 +137,6 @@ variable "environment_groups" {
     })
     backend_production = object({
       POLAR_CHECKOUT_LINK_HOST             = string
-      POLAR_DISCORD_WEBHOOK_URL            = string
       POLAR_POSTHOG_PROJECT_API_KEY        = string
       POLAR_PLAIN_REQUEST_SIGNING_SECRET   = string
       POLAR_PLAIN_TOKEN                    = string
@@ -192,12 +186,9 @@ variable "environment_groups" {
       POLAR_STRIPE_SECRET_KEY                  = string
       POLAR_STRIPE_WEBHOOK_SECRET              = string
       POLAR_STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET = string
-      POLAR_STRIPE_APP_CLIENT_ID               = string
-      POLAR_STRIPE_APP_CLIENT_LINK_ID          = string
     })
     logfire = object({
-      POLAR_LOGFIRE_PROJECT_NAME = string
-      POLAR_LOGFIRE_TOKEN        = string
+      POLAR_LOGFIRE_TOKEN = string
     })
     apple = object({
       POLAR_APPLE_CLIENT_ID = string

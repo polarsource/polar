@@ -34,11 +34,6 @@ import {
 }
 
 import {
-  to = module.sandbox.render_env_group.openai
-  id = "evg-d2at9pje5dus73c0lun0"
-}
-
-import {
   to = module.sandbox.render_env_group.stripe
   id = "evg-crkocfrtq21c73ddsc9g"
 }
@@ -71,11 +66,6 @@ import {
 import {
   to = module.sandbox.render_env_group_link.google
   id = "evg-crkocfrtq21c73ddsbv0"
-}
-
-import {
-  to = module.sandbox.render_env_group_link.openai
-  id = "evg-d2at9pje5dus73c0lun0"
 }
 
 import {

@@ -53,18 +53,6 @@ resource "tfe_variable" "google_service_account_json_production" {
   }
 }
 
-resource "tfe_variable" "openai_api_key_production" {
-  key             = "openai_api_key_production"
-  category        = "terraform"
-  description     = "OpenAI API Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
   key             = "pydantic_ai_gateway_api_key_production"
   category        = "terraform"
@@ -117,18 +105,6 @@ resource "tfe_variable" "backend_discord_proxy_url_production" {
   key             = "backend_discord_proxy_url"
   category        = "terraform"
   description     = "Discord Proxy URL for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "backend_discord_webhook_url_production" {
-  key             = "backend_discord_webhook_url_production"
-  category        = "terraform"
-  description     = "Discord Webhook URL for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 
@@ -815,30 +791,6 @@ resource "tfe_variable" "worker_sqs_actors_production" {
   description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for production"
   sensitive       = false
   value           = "[\"dummy\"]"
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_id_production" {
-  key             = "stripe_app_client_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client ID for production"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_link_id_production" {
-  key             = "stripe_app_client_link_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client link ID for production"
-  sensitive       = false
   variable_set_id = tfe_variable_set.production.id
 
   lifecycle {

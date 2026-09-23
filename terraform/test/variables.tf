@@ -29,13 +29,6 @@ variable "google_service_account_json" {
   sensitive   = true
 }
 
-# OpenAI
-variable "openai_api_key" {
-  description = "OpenAI API Key for production"
-  type        = string
-  sensitive   = true
-}
-
 # Pydantic AI Gateway
 variable "pydantic_ai_gateway_api_key" {
   description = "Pydantic AI Gateway API Key for test"
@@ -421,18 +414,6 @@ variable "worker_sqs_actors" {
   description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
   type        = string
   default     = "[\"dummy\"]"
-}
-
-variable "stripe_app_client_id" {
-  description = "Stripe App OAuth client ID"
-  type        = string
-  default     = ""
-}
-
-variable "stripe_app_client_link_id" {
-  description = "Stripe App OAuth client link ID"
-  type        = string
-  default     = ""
 }
 
 variable "turnstile_secret" {

@@ -9,7 +9,6 @@ locals {
     user_session_cookie_domain           = "polar.sh"
     authentication_session_cookie_domain = "polar.sh"
     oauth2_session_state_cookie_domain   = "polar.sh"
-    debug                                = "0"
     email_sender                         = "resend"
     email_from_name                      = "Polar"
     email_from_domain                    = "notifications.polar.sh"
@@ -17,7 +16,6 @@ locals {
     checkout_base_url                    = "https://buy.polar.sh/{client_secret}"
     log_level                            = "INFO"
     testing                              = "0"
-    auth_cookie_domain                   = "polar.sh"
     invoices_additional_info             = "[support@polar.sh](mailto:support@polar.sh)"
     invoices_vat_numbers = jsonencode({
       AT = "EU372061545"
@@ -73,7 +71,6 @@ locals {
     discord_client_id              = var.backend_discord_client_id_production
     discord_client_secret          = var.backend_discord_client_secret_production
     discord_proxy_url              = var.backend_discord_proxy_url
-    discord_webhook_url            = var.backend_discord_webhook_url_production
     posthog_project_api_key        = var.backend_posthog_project_api_key_production
     resend_api_key                 = var.backend_resend_api_key_production
     resend_active_users_segment_id = var.resend_active_users_segment_id
@@ -97,7 +94,6 @@ locals {
     service_account_json = var.google_service_account_json
   }
 
-  openai_secrets              = { api_key = var.openai_api_key_production }
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_production }
 
   aws_s3_config = {
@@ -131,8 +127,6 @@ locals {
     secret_key                  = var.stripe_secret_key_production
     webhook_secret              = var.stripe_webhook_secret_production
     account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_production
-    app_client_id               = var.stripe_app_client_id
-    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = { token = var.logfire_token }
@@ -183,7 +177,6 @@ module "backend_environment" {
   backend_config              = local.backend_config
   backend_secrets             = local.backend_secrets
   google_secrets              = local.google_secrets
-  openai_secrets              = local.openai_secrets
   pydantic_ai_gateway_secrets = local.pydantic_ai_gateway_secrets
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets

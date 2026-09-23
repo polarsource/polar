@@ -10,7 +10,6 @@ locals {
     user_session_cookie_key              = "polar_test_session"
     authentication_session_cookie_domain = "polar.sh"
     oauth2_session_state_cookie_domain   = "polar.sh"
-    debug                                = "0"
     email_sender                         = "resend"
     email_from_name                      = "[TEST] Polar"
     email_from_domain                    = "notifications.test.polar.sh"
@@ -18,7 +17,6 @@ locals {
     checkout_base_url                    = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
     log_level                            = "INFO"
     testing                              = "0"
-    auth_cookie_domain                   = "test.polar.sh"
     tax_processors                       = "[\"numeral\",\"stripe\"]"
     tax_record_processor                 = "numeral"
     customer_portal_url_overrides        = var.customer_portal_url_overrides
@@ -48,7 +46,6 @@ locals {
     service_account_json = var.google_service_account_json
   }
 
-  openai_secrets              = { api_key = var.openai_api_key }
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key }
 
   aws_s3_config = {
@@ -84,8 +81,6 @@ locals {
     secret_key                  = var.stripe_secret_key
     webhook_secret              = var.stripe_webhook_secret
     account_risk_webhook_secret = var.stripe_account_risk_webhook_secret
-    app_client_id               = var.stripe_app_client_id
-    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = { token = var.logfire_token }
@@ -131,7 +126,6 @@ module "backend_environment" {
   backend_config              = local.backend_config
   backend_secrets             = local.backend_secrets
   google_secrets              = local.google_secrets
-  openai_secrets              = local.openai_secrets
   pydantic_ai_gateway_secrets = local.pydantic_ai_gateway_secrets
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets

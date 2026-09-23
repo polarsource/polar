@@ -33,13 +33,6 @@ variable "google_service_account_json" {
   sensitive   = true
 }
 
-# OpenAI
-variable "openai_api_key_production" {
-  description = "OpenAI API Key for production"
-  type        = string
-  sensitive   = true
-}
-
 # Pydantic AI Gateway
 variable "pydantic_ai_gateway_api_key_production" {
   description = "Pydantic AI Gateway API Key for production"

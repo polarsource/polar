@@ -53,18 +53,6 @@ resource "tfe_variable" "google_service_account_json_production" {
   }
 }
 
-resource "tfe_variable" "openai_api_key_production" {
-  key             = "openai_api_key_production"
-  category        = "terraform"
-  description     = "OpenAI API Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
   key             = "pydantic_ai_gateway_api_key_production"
   category        = "terraform"

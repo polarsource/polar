@@ -7,10 +7,6 @@ locals {
     POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = var.google_secrets.service_account_json
   }
 
-  openai_secrets = {
-    POLAR_OPENAI_API_KEY = var.openai_secrets.api_key
-  }
-
   pydantic_ai_gateway_secrets = {
     POLAR_PYDANTIC_AI_GATEWAY_API_KEY = var.pydantic_ai_gateway_secrets.api_key
   }
@@ -223,7 +219,6 @@ locals {
 
   environment_groups = {
     google              = local.google_secrets
-    openai              = local.openai_secrets
     pydantic_ai_gateway = local.pydantic_ai_gateway_secrets
     backend = merge(
       local.backend_environment_variables,
@@ -258,7 +253,6 @@ locals {
 
   secret_environment_variables = merge(
     local.google_secrets,
-    local.openai_secrets,
     local.pydantic_ai_gateway_secrets,
     local.backend_secrets,
     local.backend_production_secrets,

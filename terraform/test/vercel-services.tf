@@ -224,9 +224,6 @@ locals {
     POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = {
       value = var.google_service_account_json
     }
-    POLAR_OPENAI_API_KEY = {
-      value = var.openai_api_key
-    }
     POLAR_PYDANTIC_AI_GATEWAY_API_KEY = {
       value = var.pydantic_ai_gateway_api_key
     }

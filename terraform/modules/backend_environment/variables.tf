@@ -17,11 +17,6 @@ variable "google_secrets" {
   sensitive = true
 }
 
-variable "openai_secrets" {
-  type      = object({ api_key = string })
-  sensitive = true
-}
-
 variable "pydantic_ai_gateway_secrets" {
   type      = object({ api_key = string })
   sensitive = true

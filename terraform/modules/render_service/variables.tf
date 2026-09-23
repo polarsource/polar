@@ -90,9 +90,6 @@ variable "environment_groups" {
       POLAR_GOOGLE_CLIENT_SECRET        = string
       POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = string
     })
-    openai = object({
-      POLAR_OPENAI_API_KEY = string
-    })
     pydantic_ai_gateway = object({
       POLAR_PYDANTIC_AI_GATEWAY_API_KEY = string
     })

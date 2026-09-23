@@ -32,12 +32,6 @@ variable "google_service_account_json" {
   sensitive   = true
 }
 
-variable "openai_api_key_sandbox" {
-  description = "OpenAI API Key for sandbox"
-  type        = string
-  sensitive   = true
-}
-
 variable "pydantic_ai_gateway_api_key_sandbox" {
   description = "Pydantic AI Gateway API Key for sandbox"
   type        = string

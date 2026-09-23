@@ -53,18 +53,6 @@ resource "tfe_variable" "google_service_account_json_sandbox" {
   }
 }
 
-resource "tfe_variable" "openai_api_key_sandbox" {
-  key             = "openai_api_key_sandbox"
-  category        = "terraform"
-  description     = "OpenAI API Key for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "pydantic_ai_gateway_api_key_sandbox" {
   key             = "pydantic_ai_gateway_api_key_sandbox"
   category        = "terraform"

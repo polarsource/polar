@@ -53,18 +53,6 @@ resource "tfe_variable" "google_service_account_json_test" {
   }
 }
 
-resource "tfe_variable" "openai_api_key_test" {
-  key             = "openai_api_key"
-  category        = "terraform"
-  description     = "OpenAI API Key for test"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "pydantic_ai_gateway_api_key_test" {
   key             = "pydantic_ai_gateway_api_key"
   category        = "terraform"

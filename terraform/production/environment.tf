@@ -96,7 +96,6 @@ locals {
     service_account_json = var.google_service_account_json
   }
 
-  openai_secrets              = { api_key = var.openai_api_key_production }
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_production }
 
   aws_s3_config = {
@@ -182,7 +181,6 @@ module "backend_environment" {
   backend_config              = local.backend_config
   backend_secrets             = local.backend_secrets
   google_secrets              = local.google_secrets
-  openai_secrets              = local.openai_secrets
   pydantic_ai_gateway_secrets = local.pydantic_ai_gateway_secrets
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets

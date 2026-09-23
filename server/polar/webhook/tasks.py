@@ -62,6 +62,7 @@ _webhook_max_retries = _ordering_max_retries + settings.WEBHOOK_MAX_RETRIES
 
 @actor(
     actor_name="webhook_event.send",
+    log_fields=("webhook_event_id", "redeliver"),
     max_retries=_webhook_max_retries,
     queue_name=TaskQueue.WEBHOOKS,
 )

@@ -46,6 +46,7 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
 
 @actor(
     actor_name="subscription.cycle",
+    log_fields=("subscription_id", "force"),
     priority=TaskPriority.LOW,
     # The meter-only branch links pending billing entries inline; doesn't fit 60s.
     time_limit=600_000,

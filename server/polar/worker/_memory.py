@@ -7,6 +7,8 @@ import dramatiq
 import logfire
 import structlog
 
+from polar.observability.task_logging import task_log_context
+
 log = structlog.get_logger()
 
 RENDER_CPU_TO_RAM_MB: dict[str, int] = {
@@ -65,8 +67,7 @@ class MemoryMonitorMiddleware(dramatiq.Middleware):
                 "memory_limit_exceeded",
                 actor=message.actor_name,
                 message_id=message.message_id,
-                args=message.args,
-                kwargs=message.kwargs,
+                message=task_log_context(message),
                 stacktrace=traceback.format_exc(),
             )
             logfire.force_flush()

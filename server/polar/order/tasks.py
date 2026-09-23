@@ -113,7 +113,11 @@ async def create_subscription_order(
             pass
 
 
-@actor(actor_name="order.trigger_payment", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.trigger_payment",
+    priority=TaskPriority.LOW,
+    log_fields=("order_id", "payment_method_id", "payment_trigger"),
+)
 async def trigger_payment(
     order_id: uuid.UUID,
     payment_method_id: uuid.UUID,

@@ -20,6 +20,7 @@ from dramatiq.middleware.retries import DEFAULT_MAX_BACKOFF
 from polar import tasks  # noqa: F401  (registers all actors with the broker)
 from polar.config import settings
 from polar.logging import CorrelationID, Logger
+from polar.observability.task_logging import task_log_context
 
 from . import _sqs
 from ._broker import TASK_TIME_LIMIT_DEFAULT_MS
@@ -173,7 +174,7 @@ def _task_span(
         with logfire.span(
             "TASK {actor}",
             actor=actor_name,
-            message=message.asdict(),
+            message=task_log_context(message),
             correlation_id=correlation_id,
             source_correlation_id=source_correlation_id,
         ):
@@ -221,6 +222,8 @@ async def run_task(
         if message_timestamp is not None
         else int(time.time() * 1000),
     )
+    if message_id is not None:
+        message = message.copy(message_id=message_id)
 
     max_age = actor_obj.options.get("max_age")
     if max_age and int(time.time() * 1000) - message.message_timestamp >= max_age:

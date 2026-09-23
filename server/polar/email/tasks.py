@@ -26,7 +26,7 @@ def _build_tags(template: str | None, email_props: dict[str, Any]) -> dict[str, 
     return tags
 
 
-@actor(actor_name="email.send", priority=TaskPriority.HIGH)
+@actor(actor_name="email.send", priority=TaskPriority.HIGH, log_fields=("template",))
 async def email_send(
     to_email_addr: str,
     subject: str,

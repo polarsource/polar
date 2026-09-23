@@ -37,7 +37,11 @@ from .exceptions import PolarSelfInvoiceNotReady, PolarSelfOrderNotEligible
 from .service import polar_self
 
 
-@actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.create_customer",
+    priority=TaskPriority.LOW,
+    log_fields=("external_id", "owner_external_id"),
+)
 async def create_customer(
     external_id: str,
     name: str,
@@ -70,7 +74,11 @@ async def create_customer(
     )
 
 
-@actor(actor_name="polar_self.add_member", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.add_member",
+    priority=TaskPriority.LOW,
+    log_fields=("external_customer_id", "external_id", "role"),
+)
 async def add_member(
     external_customer_id: str,
     email: str,
@@ -103,7 +111,11 @@ async def add_member(
     )
 
 
-@actor(actor_name="polar_self.update_member", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.update_member",
+    priority=TaskPriority.LOW,
+    log_fields=("external_customer_id", "external_id", "role"),
+)
 async def update_member(
     external_customer_id: str, external_id: str, name: str, role: str | None = None
 ) -> None:

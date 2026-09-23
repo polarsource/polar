@@ -12,6 +12,7 @@ from polar.config import settings
 
 # Import metrics FIRST to set PROMETHEUS_MULTIPROC_DIR before prometheus_client is imported
 from polar.observability import metrics as _prometheus_metrics
+from polar.observability.task_logging import register_task_logging
 
 from ._broker import get_broker
 from ._encoder import JSONEncoder
@@ -77,6 +78,7 @@ def actor[**P, R](
     queue_name: TaskQueue | None = None,
     priority: TaskPriority = TaskPriority.LOW,
     broker: dramatiq.Broker | None = None,
+    log_fields: tuple[str, ...] = (),
     **options: Any,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     if queue_name is None:
@@ -98,7 +100,7 @@ def actor[**P, R](
             ):
                 return await fn(*args, **kwargs)
 
-        _actor(
+        declared_actor = _actor(
             _wrapped_fn,  # type: ignore
             actor_class=actor_class,
             actor_name=actor_name,
@@ -107,6 +109,7 @@ def actor[**P, R](
             broker=broker,
             **options,
         )
+        register_task_logging(declared_actor, log_fields)
 
         return _wrapped_fn
 

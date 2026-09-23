@@ -29,6 +29,9 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         if token is None:
             return None
 
+        if token.client is None or token.client.is_deleted:
+            return None
+
         if cast(bool, token.is_revoked()):
             return None
 

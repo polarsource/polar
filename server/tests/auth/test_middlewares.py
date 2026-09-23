@@ -7,7 +7,7 @@ from polar.auth.middlewares import get_auth_subject
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
-from polar.models import OAuth2Token, Organization, User, UserOrganization
+from polar.models import OAuth2Client, OAuth2Token, Organization, User, UserOrganization
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.models.user_session_organization import UserSessionOrganization
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
@@ -33,8 +33,10 @@ async def _create_oauth2_token(
     user: User | None = None,
     organization: Organization | None = None,
 ) -> OAuth2Token:
+    client = OAuth2Client(client_id="polar_ci_test")
+    await save_fixture(client)
     token = OAuth2Token(
-        client_id="polar_ci_test",
+        client_id=client.client_id,
         token_type="bearer",
         access_token=get_token_hash(access_token),
         scope="",

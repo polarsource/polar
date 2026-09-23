@@ -254,6 +254,23 @@ async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
 
 
 @actor(
+    actor_name="subscription.scan_grace_expired_revocations",
+    cron_trigger=CronTrigger.from_crontab("0 * * * *"),
+    priority=TaskPriority.LOW,
+)
+async def scan_grace_expired_revocations() -> None:
+    """Check grace expiry even when no dunning retry is scheduled."""
+    now = utc_now()
+
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription_ids = await repository.get_grace_expired_past_due_ids(now)
+
+    for subscription_id in subscription_ids:
+        enqueue_job("subscription.enqueue_benefits_grants", subscription_id)
+
+
+@actor(
     actor_name="subscription.scan_trial_conversion_reminders",
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,

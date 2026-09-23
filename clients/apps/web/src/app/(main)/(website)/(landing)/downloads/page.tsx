@@ -94,7 +94,7 @@ const DownloadCard = ({ title, description, href, icon }: Download) => (
         <Text variant="heading-xs" as="h3">
           {title}
         </Text>
-        <Text variant="heading-xxs" color="muted" wrap="pretty">
+        <Text variant="heading-xxs" as="p" color="muted" wrap="pretty">
           {description}
         </Text>
       </Box>

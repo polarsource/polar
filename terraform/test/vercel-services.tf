@@ -82,10 +82,6 @@ locals {
       value     = "https://polar.sh,https://sandbox.polar.sh,https://test.polar.sh"
       sensitive = false
     }
-    POLAR_OPENAPI_SCHEMA_URL = {
-      value     = "https://api.polar.sh/openapi.json"
-      sensitive = false
-    }
     ENABLE_EXPERIMENTAL_COREPACK = {
       value     = "1"
       sensitive = false

@@ -49,7 +49,6 @@ module "vercel" {
     s3_public_images_bucket_pathname                = "/product_media/**"
     s3_upload_origins                               = "https://polar-sandbox-files.s3.amazonaws.com https://polar-public-sandbox-files.s3.amazonaws.com"
     polar_checkout_embed_script_allowed_origins     = "https://polar.sh,https://sandbox.polar.sh"
-    polar_openapi_schema_url                        = "https://api.polar.sh/openapi.json"
     enable_experimental_corepack                    = "1"
   }
 

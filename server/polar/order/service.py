@@ -3175,31 +3175,15 @@ class OrderService:
                 order, update_dict={"next_payment_attempt_at": None}
             )
 
-        # Mark subscription as past_due first so past_due_deadline is available
         await subscription_service.mark_past_due(session, subscription)
-
-        payment_repository = PaymentRepository.from_session(session)
-        latest_payment = await payment_repository.get_latest_for_order(order.id)
-
-        if latest_payment is not None and latest_payment.is_non_recoverable:
-            log.info(
-                "Non-recoverable decline code detected, "
-                "scheduling retry at past_due_deadline",
-                order_id=order.id,
-                decline_reason=latest_payment.decline_reason,
-            )
-            # Immediately schedule retry at past_due_deadline for non-recoverable decline codes.
-            # The next dunning attempt will then move this subscription from
-            # past_due to revoked in the same vein as if all payment attempts failed.
-            # This ensures the same behavior as dunning retries, we just don't retry
-            # for payment methods that will just fail again.
-            next_retry_date = subscription.past_due_deadline
-        else:
-            next_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(
-            order, update_dict={"next_payment_attempt_at": next_retry_date}
+            order,
+            update_dict={
+                "next_payment_attempt_at": utc_now()
+                + settings.DUNNING_RETRY_INTERVALS[0]
+            },
         )
 
         # Re-enqueue benefit revocation to check if grace period has expired
@@ -3235,18 +3219,7 @@ class OrderService:
             )
             or order.is_void
         ):
-            # No more retries, mark subscription as unpaid and clear retry date
-            order = await repository.update(
-                order, update_dict={"next_payment_attempt_at": None}
-            )
-
-            if subscription is not None and subscription.can_cancel(immediately=True):
-                async with SubscriptionUpdateContext(
-                    session, subscription, subscription_service
-                ) as ctx:
-                    await subscription_service.revoke(session, ctx, subscription)
-
-            return order
+            return await self._end_dunning(session, order)
 
         # Schedule next retry using the appropriate interval
         next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts - 1]
@@ -3262,6 +3235,42 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
+
+    async def _end_dunning(self, session: AsyncSession, order: Order) -> Order:
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order, update_dict={"next_payment_attempt_at": None}
+        )
+
+        subscription = order.subscription
+        if subscription is not None and subscription.can_cancel(immediately=True):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.revoke(session, ctx, subscription)
+
+        return order
+
+    async def _skip_dunning_payment(self, session: AsyncSession, order: Order) -> Order:
+        subscription = order.subscription
+        assert subscription is not None
+        assert subscription.past_due_at is not None
+
+        next_retry_date = subscription.past_due_at
+        now = utc_now()
+        for interval in settings.DUNNING_RETRY_INTERVALS:
+            next_retry_date += interval
+            if next_retry_date > now:
+                repository = OrderRepository.from_session(session)
+                order = await repository.update(
+                    order, update_dict={"next_payment_attempt_at": next_retry_date}
+                )
+                await subscription_service.enqueue_benefits_grants(
+                    session, subscription
+                )
+                return order
+
+        return await self._end_dunning(session, order)
 
     async def _handle_meter_cycle_dunning_attempt(
         self, session: AsyncSession, order: Order
@@ -3369,6 +3378,22 @@ class OrderService:
             return await repository.update(
                 order, update_dict={"next_payment_attempt_at": None}
             )
+
+        payment_repository = PaymentRepository.from_session(session)
+        latest_payment = await payment_repository.get_latest_for_order(order.id)
+        if (
+            order.billing_reason != OrderBillingReasonInternal.subscription_meter_cycle
+            and latest_payment is not None
+            and latest_payment.is_failed
+            and latest_payment.is_non_recoverable
+            and order.subscription.past_due_at is not None
+        ):
+            log.info(
+                "Skipping dunning payment after non-recoverable decline",
+                order_id=order.id,
+                decline_reason=latest_payment.decline_reason,
+            )
+            return await self._skip_dunning_payment(session, order)
 
         payment_method_repository = PaymentMethodRepository.from_session(session)
         if (

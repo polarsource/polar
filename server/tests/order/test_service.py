@@ -4493,7 +4493,7 @@ class TestHandlePaymentFailure:
         assert result_order.status == OrderStatus.void
 
     @freeze_time("2024-01-01 12:00:00")
-    async def test_non_recoverable_decline_code_skips_dunning(
+    async def test_non_recoverable_decline_uses_normal_dunning_schedule(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -4501,9 +4501,7 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """When a payment fails with a non-recoverable decline code (e.g., stolen_card),
-        the subscription should be marked as past_due and next_payment_attempt_at
-        set to the past_due_deadline so the dunning worker can revoke it."""
+        """A non-recoverable decline keeps the first dunning date."""
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -4549,9 +4547,7 @@ class TestHandlePaymentFailure:
         # When
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Then — next attempt at past_due_deadline so worker can revoke
-        assert result_order.next_payment_attempt_at == subscription.past_due_deadline
-        assert result_order.next_payment_attempt_at is not None
+        assert result_order.next_payment_attempt_at == utc_now() + timedelta(days=2)
         # Subscription marked as past_due
         mock_mark_past_due.assert_called_once_with(session, subscription)
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
@@ -4659,6 +4655,107 @@ class TestHandlePaymentFailure:
 @pytest.mark.asyncio
 class TestProcessDunningOrder:
     """Test order service process dunning order functionality"""
+
+    async def test_non_recoverable_decline_advances_dunning_without_payment(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        past_due_at = datetime(2024, 1, 1, tzinfo=UTC)
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.past_due,
+            past_due_at=past_due_at,
+            product=product,
+            customer=customer,
+        )
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription.payment_method = payment_method
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = past_due_at + timedelta(days=2)
+        await save_fixture(order)
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="stolen_card",
+            trigger=PaymentTrigger.subscription_cycle,
+            order=order,
+        )
+        enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+        revoke = mocker.patch("polar.subscription.service.subscription.revoke")
+
+        for due_day, next_day in ((2, 7), (7, 14), (14, 21)):
+            with freeze_time(past_due_at + timedelta(days=due_day)):
+                order = await order_service.process_dunning_order(session, order)
+                assert order.next_payment_attempt_at == past_due_at + timedelta(
+                    days=next_day
+                )
+
+        with freeze_time(past_due_at + timedelta(days=21)):
+            order = await order_service.process_dunning_order(session, order)
+
+        assert order.next_payment_attempt_at is None
+        assert enqueue_benefits_grants.call_count == 3
+        revoke.assert_called_once_with(session, ANY, subscription)
+        enqueue_job_mock.assert_not_called()
+
+    @freeze_time("2024-01-03 00:00:00")
+    async def test_recoverable_decline_triggers_dunning_payment(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 1, tzinfo=UTC),
+            product=product,
+            customer=customer,
+        )
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription.payment_method = payment_method
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = utc_now()
+        await save_fixture(order)
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="insufficient_funds",
+            trigger=PaymentTrigger.subscription_cycle,
+            order=order,
+        )
+
+        await order_service.process_dunning_order(session, order)
+
+        enqueue_job_mock.assert_called_once_with(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=payment_method.id,
+            payment_trigger=PaymentTrigger.retry_dunning,
+        )
 
     async def test_process_dunning_order_no_subscription(
         self,

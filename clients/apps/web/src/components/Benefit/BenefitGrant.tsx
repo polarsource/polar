@@ -147,10 +147,7 @@ const BenefitGrantOAuth = ({
   /* oxlint-enable react-hooks/set-state-in-effect */
 
   const accounts = useMemo(() => {
-    const oauthAccounts = {
-      ...customer?.oauth_accounts,
-      ...member?.oauth_accounts,
-    }
+    const oauthAccounts = (member ?? customer)?.oauth_accounts ?? {}
     return Object.keys(oauthAccounts)
       .filter((key) => key.startsWith(platform))
       .map((key) => oauthAccounts[key])

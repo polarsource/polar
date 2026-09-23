@@ -224,3 +224,46 @@ class TestGitHubRepositoryRevoke:
                 grant_properties,
                 member=None,
             )
+
+
+@pytest.mark.asyncio
+class TestGitHubRepositoryGrantUpdate:
+    async def test_account_reset_revokes_member_oauth_account(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        service = BenefitGitHubRepositoryService(session, redis)
+
+        customer = _make_customer(organization)
+        await save_fixture(customer)
+        member = _make_member(organization, customer)
+        await save_fixture(member)
+
+        benefit = _make_benefit(organization)
+        await save_fixture(benefit)
+
+        grant_properties: BenefitGrantGitHubRepositoryProperties = {
+            "account_id": None,
+            "repository_owner": "test-owner",
+            "repository_name": "test-repo",
+            "permission": "pull",
+            "granted_account_id": "11111",
+        }
+
+        mock_client, remove_collaborator_mock = _mock_github_client()
+        _patch_client(service, mock_client)
+
+        with pytest.raises(BenefitActionRequiredError):
+            await service.grant(
+                benefit,
+                customer,
+                grant_properties,
+                update=True,
+                member=member,
+            )
+
+        remove_collaborator_mock.assert_awaited_once()
+        assert remove_collaborator_mock.call_args.args[2] == "member-github-user"

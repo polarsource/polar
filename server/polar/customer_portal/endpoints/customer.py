@@ -75,9 +75,9 @@ async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
 
 @router.get(
     "/me/embed-policy",
-    summary="Get Embed Policy",
     response_model=CustomerPortalEmbedPolicy,
     tags=[APITag.private],
+    include_in_schema=False,
 )
 async def get_embed_policy(
     auth_subject: auth.CustomerPortalUnionRead,

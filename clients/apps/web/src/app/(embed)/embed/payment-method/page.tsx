@@ -1,5 +1,6 @@
 import { getPublicServerURL } from '@/utils/api'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { POLAR_EMBED_ORIGIN_HEADER } from '@/utils/embed'
 import {
   DEFAULT_LOCALE,
   isAcceptedLocale,
@@ -7,6 +8,7 @@ import {
 } from '@polar-sh/i18n'
 import { unwrap, UnauthorizedResponseError } from '@polar-sh/client'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { EmbedError } from './EmbedError'
 import { PaymentMethodEmbed } from './PaymentMethodEmbed'
 
@@ -67,19 +69,10 @@ export default async function Page(props: {
 
   const api = await getServerSideAPI(sessionToken)
   let customer
-  let embedPolicy
   try {
-    ;[customer, embedPolicy] = await Promise.all([
-      unwrap(
-        api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
-      ),
-      unwrap(
-        api.GET('/v1/customer-portal/customers/me/embed-policy', {
-          params: { query: { embed_origin } },
-          cache: 'no-store',
-        }),
-      ),
-    ])
+    customer = await unwrap(
+      api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
+    )
   } catch (error) {
     return (
       <EmbedError
@@ -93,7 +86,7 @@ export default async function Page(props: {
     )
   }
 
-  const embedOrigin = embedPolicy.embed_origin
+  const embedOrigin = (await headers()).get(POLAR_EMBED_ORIGIN_HEADER)
   if (!embedOrigin) {
     return <EmbedError code="invalid_request" locale={locale} />
   }

@@ -13,6 +13,7 @@ import { getServerURL } from './utils/api'
 import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
 import { POLAR_ENV_COOKIE } from './utils/cookies'
+import { POLAR_EMBED_ORIGIN_HEADER } from './utils/embed'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -106,29 +107,35 @@ const isFramed = (request: NextRequest): boolean => {
   return destination === null || FRAMING_DESTINATIONS.includes(destination)
 }
 
-const fetchFrameAncestors = async (
+interface EmbedPolicy {
+  frame_ancestors: string[]
+  embed_origin?: string | null
+}
+
+const NO_EMBED_POLICY: EmbedPolicy = { frame_ancestors: NO_FRAME_ANCESTORS }
+
+const fetchEmbedPolicy = async (
   path: string,
   headers: Record<string, string>,
-): Promise<string[]> => {
+): Promise<EmbedPolicy> => {
   try {
     const response = await fetch(getServerURL(path), {
       headers,
       cache: 'no-store',
     })
     if (!response.ok) {
-      return NO_FRAME_ANCESTORS
+      return NO_EMBED_POLICY
     }
-    const { frame_ancestors } = await response.json()
-    return frame_ancestors
+    return await response.json()
   } catch {
-    return NO_FRAME_ANCESTORS
+    return NO_EMBED_POLICY
   }
 }
 
-const getCheckoutFrameAncestors = (
+const getCheckoutEmbedPolicy = (
   request: NextRequest,
   clientSecret: string,
-): Promise<string[]> => {
+): Promise<EmbedPolicy> => {
   const headers: Record<string, string> = {}
   for (const header of ['Referer', 'Sec-Fetch-Dest']) {
     const value = request.headers.get(header)
@@ -137,34 +144,46 @@ const getCheckoutFrameAncestors = (
     }
   }
 
-  return fetchFrameAncestors(
+  return fetchEmbedPolicy(
     `/v1/checkouts/client/${encodeURIComponent(clientSecret)}/embed-policy`,
     headers,
   )
 }
 
-const getPaymentMethodEmbedFrameAncestors = async (
+const getPaymentMethodEmbedPolicy = async (
   request: NextRequest,
-): Promise<string[]> => {
-  const sessionToken = request.nextUrl.searchParams.get('session_token')
+): Promise<EmbedPolicy> => {
+  const { searchParams } = request.nextUrl
+  const sessionToken = searchParams.get('session_token')
   if (!sessionToken) {
-    return NO_FRAME_ANCESTORS
+    return NO_EMBED_POLICY
   }
 
-  return fetchFrameAncestors('/v1/customer-portal/customers/me/embed-policy', {
-    Authorization: `Bearer ${sessionToken}`,
-  })
+  const embedOrigin = searchParams.get('embed_origin')
+  const query = embedOrigin
+    ? `?${new URLSearchParams({ embed_origin: embedOrigin })}`
+    : ''
+  const policy = await fetchEmbedPolicy(
+    `/v1/customer-portal/customers/me/embed-policy${query}`,
+    { Authorization: `Bearer ${sessionToken}` },
+  )
+
+  return isFramed(request)
+    ? policy
+    : { ...policy, frame_ancestors: NO_FRAME_ANCESTORS }
 }
 
-const getFrameAncestorsResolver = (
+const getEmbedPolicy = async (
   request: NextRequest,
-): (() => Promise<string[]>) | undefined => {
+): Promise<EmbedPolicy | undefined> => {
   const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
   if (checkout) {
-    return () => getCheckoutFrameAncestors(request, checkout[1])
+    return isFramed(request)
+      ? getCheckoutEmbedPolicy(request, checkout[1])
+      : NO_EMBED_POLICY
   }
   if (PAYMENT_METHOD_EMBED.test(request.nextUrl.pathname)) {
-    return () => getPaymentMethodEmbedFrameAncestors(request)
+    return getPaymentMethodEmbedPolicy(request)
   }
   return undefined
 }
@@ -181,6 +200,7 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.delete(POLAR_USER_HEADER)
+  requestHeaders.delete(POLAR_EMBED_ORIGIN_HEADER)
 
   // Do not run middleware for forwarded routes
   // @pieterbeulque added this because the `config.matcher` behavior below
@@ -364,20 +384,21 @@ export async function proxy(request: NextRequest) {
     )
   }
 
+  const embedPolicy = await getEmbedPolicy(request)
+  if (embedPolicy?.embed_origin) {
+    requestHeaders.set(POLAR_EMBED_ORIGIN_HEADER, embedPolicy.embed_origin)
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   })
 
-  const resolveFrameAncestors = getFrameAncestorsResolver(request)
-  if (resolveFrameAncestors) {
-    const frameAncestors = isFramed(request)
-      ? await resolveFrameAncestors()
-      : NO_FRAME_ANCESTORS
+  if (embedPolicy) {
     response.headers.set(
       'Content-Security-Policy',
-      frameAncestorsCSP(frameAncestors.join(' ')),
+      frameAncestorsCSP(embedPolicy.frame_ancestors.join(' ')),
     )
   }
 

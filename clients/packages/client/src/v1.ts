@@ -4288,28 +4288,6 @@ export interface paths {
     patch: operations['customer_portal:customers:update']
     trace?: never
   }
-  '/v1/customer-portal/customers/me/embed-policy': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Embed Policy
-     * @description Get the hosts allowed to embed the customer's portal.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
-     */
-    get: operations['customer_portal:customers:get_embed_policy']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/customer-portal/customers/me/export': {
     parameters: {
       query?: never
@@ -18863,19 +18841,6 @@ export interface components {
       tax_id?: string | null
       /** Default Payment Method Id */
       default_payment_method_id?: string | null
-    }
-    /** CustomerPortalEmbedPolicy */
-    CustomerPortalEmbedPolicy: {
-      /**
-       * Frame Ancestors
-       * @description The `frame-ancestors` sources admitting the hosts allowed to embed.
-       */
-      frame_ancestors: string[]
-      /**
-       * Embed Origin
-       * @description The requested embed origin, normalized, when the organization allows it to embed.
-       */
-      embed_origin: string | null
     }
     /**
      * CustomerPortalMember
@@ -53604,38 +53569,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerPortalCustomer']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customer_portal:customers:get_embed_policy': {
-    parameters: {
-      query?: {
-        /** @description The origin of the page embedding the customer portal. */
-        embed_origin?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerPortalEmbedPolicy']
         }
       }
       /** @description Validation Error */

@@ -5,6 +5,8 @@ description: "How we build software and work as an engineering team"
 
 Welcome to the engineering team at Polar! This handbook covers our engineering practices, principles, and processes.
 
+**Last reviewed:** 2026-09-23. Review this page at least once a year. When you do, read the [architecture decisions](/engineering/decisions/index) and check that the links below still match how we build.
+
 ## Our Tech Stack
 
 ### Core Technologies
@@ -19,6 +21,20 @@ Welcome to the engineering team at Polar! This handbook covers our engineering p
 3. **Review**: If the change [needs a design document](/engineering/design-documents/index), review that pull request first, then the code pull request. Other changes are a normal pull request.
 4. **Testing**: Automated tests + manual QA
 5. **Deployment**: A CI and CD pipeline for automated deployment.
+
+## Standards we follow
+
+Standing rules live in [architecture decision records](/engineering/decisions/index). An accepted ADR is binding. Before you change a pattern an ADR covers, read that ADR.
+
+Cubic and `/polar-code-review` check each pull request against these ADRs. A teammate may still approve the change if it's low risk. For a larger change, write a [design document](/engineering/design-documents/index) first and fill in **Security considerations**.
+
+Request and response bodies are validated with Pydantic schemas, as described in the [REST API guidelines](/engineering/backend-development/rest-api-guidelines). React and the API serializers encode output. Protected endpoints use a typed `AuthSubject` and scopes. See [authorization](/engineering/backend-development/authorization) and [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes). Give the caller the minimum access they need. A failed auth check denies the request.
+
+Secrets are envelope-encrypted ([ADR-0008](/engineering/decisions/0008-encrypt-secrets-at-rest)). Signing keys live in KMS ([ADR-0010](/engineering/decisions/0010-jwks-signing-keys-in-kms)).
+
+## Dependencies
+
+[Dependabot](https://github.com/polarsource/polar/blob/main/.github/dependabot.yml) opens update pull requests every week. Review them. Do not add or keep a dependency with a known vulnerability you are not fixing. A new dependency must use a license compatible with Apache 2.0.
 
 ## Resources
 

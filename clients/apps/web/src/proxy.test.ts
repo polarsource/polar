@@ -509,9 +509,7 @@ describe('checkout frame ancestors', () => {
   })
 
   it('leaves other pages to the static policy', async () => {
-    const response = await proxy(
-      framedRequest('https://polar.sh/embed/payment-method'),
-    )
+    const response = await proxy(framedRequest('https://polar.sh/acme'))
 
     expect(response.headers.get('Content-Security-Policy')).toBeNull()
   })
@@ -536,7 +534,7 @@ describe('checkout frame ancestors', () => {
   })
 
   it('asks nothing outside checkout', async () => {
-    await proxy(framedRequest('https://polar.sh/embed/payment-method'))
+    await proxy(framedRequest('https://polar.sh/acme'))
 
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -549,6 +547,66 @@ describe('checkout frame ancestors', () => {
     )
 
     expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
+  })
+})
+
+describe('payment method embed frame ancestors', () => {
+  let mockFetch: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ frame_ancestors: ['https://example.com'] }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const framedRequest = (url: string) =>
+    new NextRequest(url, { headers: { 'Sec-Fetch-Dest': 'iframe' } })
+
+  it('asks for the policy with the session token', async () => {
+    const response = await proxy(
+      framedRequest(
+        'https://polar.sh/embed/payment-method?session_token=polar_cst_123',
+      ),
+    )
+
+    expect(mockFetch).toHaveBeenCalledOnce()
+    const [url, init] = mockFetch.mock.calls[0]
+    expect(url).toContain('/v1/customer-portal/customers/me/embed-policy')
+    expect(init.headers).toEqual({ Authorization: 'Bearer polar_cst_123' })
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      'frame-ancestors https://example.com;',
+    )
+  })
+
+  it('refuses framing without a session token', async () => {
+    const response = await proxy(
+      framedRequest('https://polar.sh/embed/payment-method'),
+    )
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
+  })
+
+  it('refuses framing when the session is rejected', async () => {
+    mockFetch.mockResolvedValue({ ok: false })
+
+    const response = await proxy(
+      framedRequest(
+        'https://polar.sh/embed/payment-method?session_token=polar_cst_123',
+      ),
+    )
+
     expect(response.headers.get('Content-Security-Policy')).toContain(
       "frame-ancestors 'none';",
     )

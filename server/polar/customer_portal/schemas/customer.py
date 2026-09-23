@@ -40,6 +40,20 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     locale: str | None = None
 
 
+class CustomerPortalCustomerOrganization(Schema):
+    embed_hosts: list[str]
+
+
+class CustomerPortalCustomerWithOrganization(CustomerPortalCustomer):
+    organization: CustomerPortalCustomerOrganization
+
+
+class CustomerPortalEmbedPolicy(Schema):
+    """The `frame-ancestors` sources admitting the hosts allowed to embed."""
+
+    frame_ancestors: list[str]
+
+
 class CustomerPortalCustomerUpdate(Schema):
     billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     billing_address: AddressInput | None = None

@@ -18827,6 +18827,11 @@ export interface components {
       /** Locale */
       locale?: string | null
     }
+    /** CustomerPortalCustomerOrganization */
+    CustomerPortalCustomerOrganization: {
+      /** Embed Hosts */
+      embed_hosts: string[]
+    }
     /** CustomerPortalCustomerSettings */
     CustomerPortalCustomerSettings: {
       /** Allow Email Change */
@@ -18841,6 +18846,48 @@ export interface components {
       tax_id?: string | null
       /** Default Payment Method Id */
       default_payment_method_id?: string | null
+    }
+    /** CustomerPortalCustomerWithOrganization */
+    CustomerPortalCustomerWithOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Email */
+      email: string | null
+      /** Email Verified */
+      email_verified: boolean
+      /** Name */
+      name: string | null
+      /** Billing Name */
+      billing_name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Oauth Accounts */
+      oauth_accounts: {
+        [key: string]: components['schemas']['CustomerPortalOAuthAccount']
+      }
+      /** Default Payment Method Id */
+      default_payment_method_id?: string | null
+      type?: components['schemas']['CustomerType'] | null
+      /** Locale */
+      locale?: string | null
+      organization: components['schemas']['CustomerPortalCustomerOrganization']
     }
     /**
      * CustomerPortalMember
@@ -53544,7 +53591,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerPortalCustomer']
+          'application/json': components['schemas']['CustomerPortalCustomerWithOrganization']
         }
       }
     }

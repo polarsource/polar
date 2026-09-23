@@ -27,12 +27,6 @@ export const nonEmbeddedCSP = () =>
   form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
   frame-ancestors 'none';
 `)
-export const embeddedCSP = () =>
-  flatten(`
-  ${baseCSP()}
-  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
-  frame-ancestors *;
-`)
 // Don't add form-action to the OAuth2 authorize page, as it blocks the OAuth2 redirection
 // 10-years old debate about whether to block redirects with form-action or not: https://github.com/w3c/webappsec-csp/issues/8
 export const oauth2CSP = () =>
@@ -57,7 +51,7 @@ export const docsCSP = () =>
   frame-src 'self' *.mintlify.dev https://polar-public-assets.s3.us-east-2.amazonaws.com;
 `)
 
-export const checkoutCSP = (frameAncestors) =>
+export const frameAncestorsCSP = (frameAncestors) =>
   flatten(`
   ${baseCSP()}
   form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;

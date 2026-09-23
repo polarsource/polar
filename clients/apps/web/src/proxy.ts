@@ -8,7 +8,7 @@ import {
   DISTINCT_ID_COOKIE,
   DISTINCT_ID_HEADER,
 } from './experiments/constants'
-import { checkoutCSP } from './csp.mjs'
+import { frameAncestorsCSP } from './csp.mjs'
 import { getServerURL } from './utils/api'
 import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
@@ -96,6 +96,7 @@ const requiresAuthentication = (request: NextRequest): boolean => {
 }
 
 const CHECKOUT_CLIENT_SECRET = /^\/checkout\/([^/]+)/
+const PAYMENT_METHOD_EMBED = /^\/embed\/payment-method\/?$/
 const NO_FRAME_ANCESTORS = ["'none'"]
 
 const FRAMING_DESTINATIONS = ['iframe', 'frame', 'object', 'embed']
@@ -105,7 +106,26 @@ const isFramed = (request: NextRequest): boolean => {
   return destination === null || FRAMING_DESTINATIONS.includes(destination)
 }
 
-const getFrameAncestors = async (
+const fetchFrameAncestors = async (
+  path: string,
+  headers: Record<string, string>,
+): Promise<string[]> => {
+  try {
+    const response = await fetch(getServerURL(path), {
+      headers,
+      cache: 'no-store',
+    })
+    if (!response.ok) {
+      return NO_FRAME_ANCESTORS
+    }
+    const { frame_ancestors } = await response.json()
+    return frame_ancestors
+  } catch {
+    return NO_FRAME_ANCESTORS
+  }
+}
+
+const getCheckoutFrameAncestors = (
   request: NextRequest,
   clientSecret: string,
 ): Promise<string[]> => {
@@ -117,21 +137,36 @@ const getFrameAncestors = async (
     }
   }
 
-  try {
-    const response = await fetch(
-      getServerURL(
-        `/v1/checkouts/client/${encodeURIComponent(clientSecret)}/embed-policy`,
-      ),
-      { headers, cache: 'no-store' },
-    )
-    if (!response.ok) {
-      return NO_FRAME_ANCESTORS
-    }
-    const { frame_ancestors } = await response.json()
-    return frame_ancestors
-  } catch {
+  return fetchFrameAncestors(
+    `/v1/checkouts/client/${encodeURIComponent(clientSecret)}/embed-policy`,
+    headers,
+  )
+}
+
+const getPaymentMethodEmbedFrameAncestors = async (
+  request: NextRequest,
+): Promise<string[]> => {
+  const sessionToken = request.nextUrl.searchParams.get('session_token')
+  if (!sessionToken) {
     return NO_FRAME_ANCESTORS
   }
+
+  return fetchFrameAncestors('/v1/customer-portal/customers/me/embed-policy', {
+    Authorization: `Bearer ${sessionToken}`,
+  })
+}
+
+const getFrameAncestorsResolver = (
+  request: NextRequest,
+): (() => Promise<string[]>) | undefined => {
+  const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
+  if (checkout) {
+    return () => getCheckoutFrameAncestors(request, checkout[1])
+  }
+  if (PAYMENT_METHOD_EMBED.test(request.nextUrl.pathname)) {
+    return () => getPaymentMethodEmbedFrameAncestors(request)
+  }
+  return undefined
 }
 
 const getLoginResponse = (request: NextRequest): NextResponse => {
@@ -335,14 +370,14 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
-  if (checkout) {
+  const resolveFrameAncestors = getFrameAncestorsResolver(request)
+  if (resolveFrameAncestors) {
     const frameAncestors = isFramed(request)
-      ? await getFrameAncestors(request, checkout[1])
+      ? await resolveFrameAncestors()
       : NO_FRAME_ANCESTORS
     response.headers.set(
       'Content-Security-Policy',
-      checkoutCSP(frameAncestors.join(' ')),
+      frameAncestorsCSP(frameAncestors.join(' ')),
     )
   }
 

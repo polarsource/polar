@@ -15,6 +15,7 @@ from polar.kit.http import get_content_disposition
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
+from polar.organization.embed_hosts import csp_frame_ancestors
 from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
 from polar.postgres import (
     AsyncReadSession,
@@ -34,6 +35,8 @@ from ..schemas.customer import (
     CustomerPaymentMethodTypeAdapter,
     CustomerPortalCustomer,
     CustomerPortalCustomerUpdate,
+    CustomerPortalCustomerWithOrganization,
+    CustomerPortalEmbedPolicy,
 )
 from ..service.customer import CustomerNotReady, PaymentMethodSetupFailed
 from ..service.customer import customer as customer_service
@@ -65,10 +68,30 @@ async def stream(
     return EventSourceResponse(subscribe(redis, channels, request))
 
 
-@router.get("/me", summary="Get Customer", response_model=CustomerPortalCustomer)
+@router.get(
+    "/me", summary="Get Customer", response_model=CustomerPortalCustomerWithOrganization
+)
 async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
     """Get authenticated customer."""
     return get_customer(auth_subject)
+
+
+@router.get(
+    "/me/embed-policy",
+    response_model=CustomerPortalEmbedPolicy,
+    tags=[APITag.private],
+    include_in_schema=False,
+)
+async def get_embed_policy(
+    auth_subject: auth.CustomerPortalUnionRead,
+) -> CustomerPortalEmbedPolicy:
+    """Get the hosts allowed to embed the customer's portal, as CSP sources."""
+    organization = get_customer(auth_subject).organization
+    return CustomerPortalEmbedPolicy(
+        frame_ancestors=csp_frame_ancestors(organization.embed_hosts)
+        if organization.is_frame_ancestors_enforced
+        else ["*"]
+    )
 
 
 @router.get(

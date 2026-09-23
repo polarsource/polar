@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, cast
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -208,12 +208,11 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
         """
         Whether the product can be permanently deleted.
 
-        Only archived products without orders, subscriptions, trials or discounts
-        can be deleted; the others can only be archived.
+        Only products without orders, subscriptions, trials or discounts can be
+        deleted; the others can only be archived.
         """
         return column_property(
             and_(
-                cast(ColumnElement[bool], cls.is_archived),
                 ~exists()
                 .where(_orders.c.product_id == cls.id)
                 .correlate_except(_orders),
@@ -309,7 +308,7 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
 def _set_new_product_deletable(target: Product, args: Any, kwargs: Any) -> None:
     # `is_deletable` is only loaded from the database on query: a product
     # instantiated in-session has no sales yet, so populate it upfront.
-    set_committed_value(target, "is_deletable", kwargs.get("is_archived", False))
+    set_committed_value(target, "is_deletable", True)
 
 
 products_search_vector_update_function = PGFunction(

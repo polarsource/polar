@@ -602,25 +602,8 @@ class TestDeleteProduct:
         customer: Customer,
         user_organization: UserOrganization,
     ) -> None:
-        product.is_archived = True
-        await save_fixture(product)
         await create_order(save_fixture, customer=customer, product=product)
 
-        response = await client.get(f"/v1/products/{product.id}")
-        assert response.status_code == 200
-        assert response.json()["is_deletable"] is False
-
-        response = await client.delete(f"/v1/products/{product.id}")
-
-        assert response.status_code == 409
-
-    @pytest.mark.auth
-    async def test_not_archived(
-        self,
-        client: AsyncClient,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
         response = await client.get(f"/v1/products/{product.id}")
         assert response.status_code == 200
         assert response.json()["is_deletable"] is False
@@ -636,9 +619,7 @@ class TestDeleteProduct:
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.patch(
-            f"/v1/products/{product.id}", json={"is_archived": True}
-        )
+        response = await client.get(f"/v1/products/{product.id}")
         assert response.status_code == 200
         assert response.json()["is_deletable"] is True
 

@@ -1,5 +1,8 @@
 import gzip
 import json
+import subprocess
+import sys
+import textwrap
 from collections.abc import Iterator
 from typing import Any
 from unittest.mock import patch
@@ -13,6 +16,61 @@ from polar.config import settings
 from polar.observability.s3_span_exporter import REDACTED, S3SpanExporter
 
 BUCKET_NAME = "testing-s3-span-exporter"
+
+
+class TestExportFailure:
+    @pytest.mark.parametrize("warm_log_tracer", [False, True])
+    def test_flush_returns_after_s3_access_denied(self, warm_log_tracer: bool) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                textwrap.dedent(
+                    """
+                    import sys
+                    from unittest.mock import Mock, patch
+
+                    import logfire
+                    from botocore.exceptions import ClientError
+                    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+                    from polar.logging import Production
+                    from polar.observability.s3_span_exporter import S3SpanExporter
+
+                    client = Mock()
+                    client.put_object.side_effect = ClientError(
+                        {"Error": {"Code": "AccessDenied", "Message": "Denied"}},
+                        "PutObject",
+                    )
+                    with patch("boto3.client", return_value=client):
+                        exporter = S3SpanExporter(bucket_name="unused", service_name="test")
+                    logfire.configure(
+                        send_to_logfire=False,
+                        console=False,
+                        inspect_arguments=False,
+                        additional_span_processors=[
+                            BatchSpanProcessor(exporter, schedule_delay_millis=60000)
+                        ],
+                    )
+                    Production.configure(logfire=True)
+                    if sys.argv[1] == "True":
+                        logfire.info("Existing application log")
+                    with logfire.span("Completed task"):
+                        pass
+                    assert logfire.force_flush(timeout_millis=100)
+                    assert client.put_object.call_count == 1
+                    """
+                ),
+                str(warm_log_tracer),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+        assert "AccessDenied" in result.stderr
 
 
 def _empty_bucket(minio_client: Minio) -> None:

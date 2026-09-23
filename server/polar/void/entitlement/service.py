@@ -4,9 +4,12 @@ from uuid import UUID
 
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import VoidEntitlement, VoidEvent
+from polar.kit.visibility import Visibility
+from polar.models import Benefit
+from polar.models import Event as EventModel
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.void.event.schemas import EventCreate, EventSource
+from polar.void.event.schemas import EventCreate, EventSource, event_payload
 from polar.void.event.service import event as event_service
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.repository import MeterRepository
@@ -27,12 +30,14 @@ class EntitlementSlugTaken(PolarError):
 
 
 def classify(
-    current: VoidEntitlement | None, create_schema: EntitlementCreate
+    current: Benefit | None, create_schema: EntitlementCreate
 ) -> Literal["create", "update", "unchanged"]:
     name = create_schema.name or create_schema.slug
     if current is None:
         return "create"
-    if current.name == name and current.description == create_schema.description:
+    if current.name == name and current.description == (
+        create_schema.description or ""
+    ):
         return "unchanged"
     return "update"
 
@@ -48,17 +53,17 @@ class EntitlementAssignmentConflict(PolarError):
 
 
 def persisted_assignment(
-    event: VoidEvent, external_identity_id: str
+    event: EventModel, external_identity_id: str
 ) -> EntitlementAssignment:
     if (
-        event.payload["name"] != "identity.entitlements.updated"
-        or event.payload["external_identity_id"] != external_identity_id
-        or event.payload["source"] != "system"
+        event_payload(event)["name"] != "identity.entitlements.updated"
+        or event_payload(event)["external_identity_id"] != external_identity_id
+        or event_payload(event)["source"] != "system"
     ):
         raise EntitlementAssignmentConflict(
             "This event id belongs to another operation"
         )
-    return EntitlementAssignment.model_validate_json(event.payload["metadata"])
+    return EntitlementAssignment.model_validate_json(event_payload(event)["metadata"])
 
 
 class EntitlementService:
@@ -166,12 +171,12 @@ class EntitlementService:
 
     async def list(
         self, session: AsyncReadSession, organization_id: UUID
-    ) -> Sequence[VoidEntitlement]:
+    ) -> Sequence[Benefit]:
         return await EntitlementRepository.from_session(session).list(organization_id)
 
     async def get(
         self, session: AsyncReadSession, organization_id: UUID, id: UUID
-    ) -> VoidEntitlement:
+    ) -> Benefit:
         entitlement = await EntitlementRepository.from_session(session).get(
             organization_id, id
         )
@@ -181,7 +186,7 @@ class EntitlementService:
 
     async def get_by_slug(
         self, session: AsyncReadSession, organization_id: UUID, slug: str
-    ) -> VoidEntitlement | None:
+    ) -> Benefit | None:
         return await EntitlementRepository.from_session(session).get_by_slug(
             organization_id, slug
         )
@@ -191,7 +196,7 @@ class EntitlementService:
         session: AsyncSession,
         organization_id: UUID,
         create_schema: EntitlementCreate,
-    ) -> tuple[VoidEntitlement, Literal["create", "update", "unchanged"]]:
+    ) -> tuple[Benefit, Literal["create", "update", "unchanged"]]:
         organization = await organization_service.lock(session, organization_id)
         repository = EntitlementRepository.from_session(session)
         current = await repository.get_by_slug(
@@ -201,16 +206,18 @@ class EntitlementService:
             raise EntitlementSlugTaken()
         action = classify(current, create_schema)
         if current is None:
-            current = VoidEntitlement(
+            current = Benefit(
                 slug=create_schema.slug,
                 name=create_schema.name or create_schema.slug,
-                description=create_schema.description,
+                description=create_schema.description or "",
+                type=BenefitType.feature_flag,
+                visibility=Visibility.private,
                 organization=organization,
             )
             await repository.create(current, flush=True)
         elif action == "update":
             current.name = create_schema.name or create_schema.slug
-            current.description = create_schema.description
+            current.description = create_schema.description or ""
             await session.flush()
         return current, action
 

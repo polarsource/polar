@@ -5,7 +5,7 @@ from decimal import Decimal
 from pydantic import AwareDatetime, Field, field_validator
 
 from polar.kit.schemas import Schema
-from polar.models import VoidSubscriptionStatus as SubscriptionStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.void.event.schemas import EventCreate
 from polar.void.product.schemas import Product
 from polar.void.schemas import PlainDecimal

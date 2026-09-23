@@ -8,7 +8,8 @@ from temporalio.exceptions import ApplicationError
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Organization, VoidEvent, VoidReducerBucket, VoidReducerJob
+from polar.models import Event as EventModel
+from polar.models import Organization, VoidReducerBucket, VoidReducerJob
 from polar.postgres import AsyncSession
 from polar.void.reducer.activities import ReducerActivities
 from polar.void.reducer.exceptions import InvalidReducer
@@ -77,11 +78,12 @@ class TestCreation:
             )
         ):
             await save_fixture(
-                VoidEvent(
+                EventModel(
                     organization=org,
                     external_id=str(index),
                     timestamp=timestamp,
-                    payload={},
+                    name="usage",
+                    user_metadata={},
                 )
             )
         source = await reducer_service.create(

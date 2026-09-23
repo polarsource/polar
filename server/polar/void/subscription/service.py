@@ -6,22 +6,21 @@ from decimal import Decimal
 from typing import Any
 
 from polar.exceptions import PolarError, ResourceNotFound
+from polar.kit.currency import get_currency_decimal_factor
+from polar.kit.math import polar_round
 from polar.kit.utils import utc_now
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    Meter,
+    Product,
+    Subscription,
+    SubscriptionProductPrice,
+)
 from polar.models import (
     VoidBillingIdentity as BillingIdentity,
 )
-from polar.models import (
-    VoidMeter as Meter,
-)
-from polar.models import (
-    VoidProduct as Product,
-)
-from polar.models import (
-    VoidSubscription as Subscription,
-)
-from polar.models import (
-    VoidSubscriptionStatus as SubscriptionStatus,
-)
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.void.entitlement.schemas import (
     EntitlementAssignment,
@@ -34,10 +33,12 @@ from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.balance import step
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import EPOCH
 from polar.void.meter.service import meter as meter_service
 from polar.void.metric.schemas import TimeInterval
 from polar.void.organization.service import organization as organization_service
+from polar.void.product.schemas import meters_of, price_of
 from polar.void.product.schemas import to_schema as product_schema
 from polar.void.product.service import product as product_service
 from polar.void.tinybird import TinybirdApi
@@ -63,14 +64,16 @@ class SubscriptionConflict(PolarError):
 
 
 def _interval(product: Product) -> TimeInterval:
-    assert product.interval is not None
-    return TimeInterval(product.interval)
+    assert product.recurring_interval is not None
+    return TimeInterval(product.recurring_interval)
 
 
 def period_at(subscription: Subscription, at: datetime) -> tuple[datetime, datetime]:
     """The boundaries around `at`, on the product's cadence from `started_at`."""
     product = subscription.product
-    interval, count = _interval(product), product.interval_count
+    assert subscription.started_at is not None
+    assert product.recurring_interval_count is not None
+    interval, count = _interval(product), product.recurring_interval_count
     k = 0
     while step(subscription.started_at, interval, (k + 1) * count) <= at:
         k += 1
@@ -81,6 +84,7 @@ def period_at(subscription: Subscription, at: datetime) -> tuple[datetime, datet
 
 
 def to_schema(subscription: Subscription, at: datetime) -> SubscriptionSchema:
+    assert subscription.started_at is not None
     period: tuple[datetime, datetime] | None = None
     if subscription.product.is_recurring and subscription.active_at(at):
         period = period_at(subscription, at)
@@ -127,6 +131,7 @@ def _product_metadata(subscription: Subscription) -> dict[str, object]:
 def _lifecycle_metadata(subscription: Subscription) -> dict[str, object]:
     """Everything the row projection needs beyond the event's own timestamp,
     so a rebuild from the stream is lossless."""
+    assert subscription.started_at is not None
     data: dict[str, object] = {
         "external_identity_id": subscription.billing_identity.external_id,
         "started_at": subscription.started_at.isoformat(),
@@ -157,15 +162,19 @@ def project(row: Subscription, name: str, at: datetime, data: dict[str, Any]) ->
         row.status = SubscriptionStatus.active
         row.canceled_at = None
         row.ends_at = None
+        row.ended_at = None
+        row.cancel_at_period_end = False
         return
     if action not in ("canceled", "revoked"):
         return
-    row.status = (
-        SubscriptionStatus.canceled
-        if action == "canceled"
-        else SubscriptionStatus.revoked
-    )
     row.ends_at = datetime.fromisoformat(data.get("ends_at", at.isoformat()))
+    row.cancel_at_period_end = action == "canceled" and row.ends_at > utc_now()
+    row.status = (
+        SubscriptionStatus.active
+        if row.cancel_at_period_end
+        else SubscriptionStatus.canceled
+    )
+    row.ended_at = None if row.cancel_at_period_end else row.ends_at
     canceled_at = data.get("canceled_at")
     row.canceled_at = (
         datetime.fromisoformat(canceled_at) if canceled_at is not None else row.ends_at
@@ -181,8 +190,8 @@ def _meter_metadata(subscription: Subscription, meter: Meter) -> dict[str, objec
         "id": str(subscription.id),
         "meter_id": str(meter.id),
         "meter_version_id": meter.version_id,
-        "meter_interval": product.interval,
-        "meter_interval_count": product.interval_count,
+        "meter_interval": product.recurring_interval,
+        "meter_interval_count": product.recurring_interval_count,
         **(product.meter_terms or {}).get(meter.slug, {}),
     }
 
@@ -227,7 +236,7 @@ def lifecycle_events(
             )
         )
     entitlement_action = "granted" if action == "created" else "revoked"
-    for entitlement in product.entitlements:
+    for entitlement in product.benefits:
         events.append(
             _event(
                 f"entitlement.{entitlement_action}",
@@ -241,7 +250,7 @@ def lifecycle_events(
                 },
             )
         )
-    for meter in product.meters:
+    for meter in meters_of(product):
         events.append(
             _event(
                 f"subscription.{action}",
@@ -252,6 +261,70 @@ def lifecycle_events(
             )
         )
     return events
+
+
+async def new_subscription(
+    session: AsyncSession,
+    product: Product,
+    identity: BillingIdentity,
+    started_at: datetime,
+    *,
+    id: uuid.UUID | None = None,
+    ends_at: datetime | None = None,
+) -> Subscription:
+    if not product.is_recurring:
+        raise SubscriptionInvalid("One-time products use Polar checkout and orders")
+    organization = await organization_service.lock(session, product.organization_id)
+    customer = await SubscriptionRepository.from_session(session).customer_for_identity(
+        identity
+    )
+    if customer is None:
+        customer = Customer(
+            organization=organization,
+            external_id=identity.external_id,
+            root_identity=identity,
+        )
+    elif customer.root_identity_id is None:
+        customer.root_identity = identity
+    elif customer.root_identity_id != identity.id:
+        raise SubscriptionConflict("Customer is bound to another identity")
+    price = price_of(product)
+    amount = polar_round(price.amount * get_currency_decimal_factor(price.currency))
+    subscription = Subscription(
+        id=id or uuid.uuid4(),
+        product=product,
+        organization=organization,
+        customer=customer,
+        billing_identity=identity,
+        started_at=started_at,
+        status=SubscriptionStatus.canceled if ends_at else SubscriptionStatus.active,
+        amount=amount,
+        net_amount=amount,
+        currency=price.currency,
+        recurring_interval=product.recurring_interval,
+        recurring_interval_count=product.recurring_interval_count,
+        anchor_day=started_at.day,
+        cancel_at_period_end=False,
+        canceled_at=ends_at,
+        ends_at=ends_at,
+        ended_at=ends_at,
+        subscription_product_prices=[
+            SubscriptionProductPrice.from_price(price) for price in product.prices
+        ],
+        grants=[
+            BenefitGrant(
+                benefit=benefit,
+                customer=customer,
+                granted_at=started_at if ends_at is None else None,
+                revoked_at=ends_at,
+            )
+            for benefit in product.benefits
+        ],
+    )
+    subscription.current_period_start, subscription.current_period_end = period_at(
+        subscription, ends_at or utc_now()
+    )
+    return subscription
 
 
 class SubscriptionService:
@@ -344,20 +417,9 @@ class SubscriptionService:
                         f"{identity.external_id} already holds {product.slug!r} "
                         f"as subscription {existing.id}"
                     )
-        subscription = Subscription(
-            id=uuid.uuid4(),
-            status=(
-                SubscriptionStatus.active
-                if ends_at is None
-                else SubscriptionStatus.canceled
-            ),
-            started_at=started_at,
-            canceled_at=ends_at,
-            ends_at=ends_at,
-            organization=organization,
+        subscription = await new_subscription(
+            session, product, identity, started_at, ends_at=ends_at
         )
-        subscription.product = product
-        subscription.billing_identity = identity
         events = lifecycle_events(subscription, "created", started_at)
         if ends_at is not None:
             events += lifecycle_events(subscription, "canceled", ends_at)
@@ -378,14 +440,27 @@ class SubscriptionService:
         await organization_service.lock(session, organization_id)
         now = utc_now()
         subscription = await self.get(session, organization_id, id)
-        if subscription.status != SubscriptionStatus.active:
+        if (
+            subscription.status != SubscriptionStatus.active
+            or subscription.cancel_at_period_end
+        ):
             raise SubscriptionConflict(
                 f"Subscription {id} is already {subscription.status}"
             )
         ends_at = now
         if at_period_end and subscription.product.is_recurring:
             ends_at = period_at(subscription, now)[1]
-        subscription.status = SubscriptionStatus.canceled
+        subscription.cancel_at_period_end = ends_at > now
+        subscription.status = (
+            SubscriptionStatus.active
+            if subscription.cancel_at_period_end
+            else SubscriptionStatus.canceled
+        )
+        subscription.ended_at = None if subscription.cancel_at_period_end else now
+        if not subscription.cancel_at_period_end:
+            for grant in subscription.grants:
+                grant.granted_at = None
+                grant.revoked_at = now
         subscription.canceled_at = now
         subscription.ends_at = ends_at
         await self._ingest_lifecycle(
@@ -405,11 +480,16 @@ class SubscriptionService:
         await organization_service.lock(session, organization_id)
         now = utc_now()
         subscription = await self.get(session, organization_id, id)
-        if subscription.status == SubscriptionStatus.revoked or (
+        if subscription.status == SubscriptionStatus.canceled or (
             subscription.ends_at is not None and subscription.ends_at <= now
         ):
             raise SubscriptionConflict(f"Subscription {id} has already ended")
-        subscription.status = SubscriptionStatus.revoked
+        subscription.status = SubscriptionStatus.canceled
+        subscription.cancel_at_period_end = False
+        subscription.ended_at = now
+        for grant in subscription.grants:
+            grant.granted_at = None
+            grant.revoked_at = now
         subscription.canceled_at = subscription.canceled_at or now
         subscription.ends_at = now
         await self._ingest_lifecycle(
@@ -451,12 +531,11 @@ class SubscriptionService:
                 identity = await identity_service.get(
                     session, organization_id, external_id
                 )
-                row = Subscription(
-                    id=sid,
-                    billing_identity=identity,
-                    organization=organization,
-                    status=SubscriptionStatus.active,
-                    started_at=event.timestamp,
+                product = await product_service.get(
+                    session, organization_id, uuid.UUID(event.metadata["product_id"])
+                )
+                row = await new_subscription(
+                    session, product, identity, event.timestamp, id=sid
                 )
                 row.billing_identity_id = identity.id
                 projected[sid] = row
@@ -465,11 +544,18 @@ class SubscriptionService:
                 session, organization_id, row.product_id
             )
 
+        for row in projected.values():
+            for grant in row.grants:
+                grant.granted_at = row.started_at if row.active_at(utc_now()) else None
+                grant.revoked_at = None if row.active_at(utc_now()) else row.ends_at
+
         existing = {row.id: row for row in await self.list(session, organization_id)}
         fields = (
             "product_id",
             "billing_identity_id",
             "status",
+            "cancel_at_period_end",
+            "ended_at",
             "started_at",
             "canceled_at",
             "ends_at",
@@ -491,6 +577,13 @@ class SubscriptionService:
                     setattr(current, f, getattr(wanted, f))
                 current.product = wanted.product
                 current.billing_identity = wanted.billing_identity
+                for grant in current.grants:
+                    grant.granted_at = (
+                        current.started_at if current.active_at(utc_now()) else None
+                    )
+                    grant.revoked_at = (
+                        None if current.active_at(utc_now()) else current.ends_at
+                    )
         if apply:
             await session.flush()
         return SubscriptionRebuild(
@@ -520,7 +613,7 @@ class SubscriptionService:
         by_period: dict[tuple[datetime, datetime], list[SubscriptionCycleMeter]] = (
             defaultdict(list)
         )
-        for meter in product.meters:
+        for meter in meters_of(product):
             events = await meter_service._events(
                 tinybird, meter, [identity.external_id], EPOCH, now
             )
@@ -531,7 +624,7 @@ class SubscriptionService:
                     continue
                 usage = float(event.data.get("overage", event.data.get("usage", 0)))
                 unit_amount = Decimal(
-                    str(event.data.get("unit_amount", meter.unit_amount))
+                    str(event.data.get("unit_amount", meter_schema(meter).unit_amount))
                 )
                 period = (
                     datetime.fromisoformat(event.data["period_start"]),
@@ -553,10 +646,10 @@ class SubscriptionService:
                 SubscriptionCycle(
                     period_start=start,
                     period_end=end,
-                    currency=product.currency,
-                    fixed_amount=product.amount,
+                    currency=price_of(product).currency,
+                    fixed_amount=price_of(product).amount,
                     meters=sorted(meters, key=lambda m: m.slug),
-                    total=product.amount + metered,
+                    total=price_of(product).amount + metered,
                 )
             )
         return cycles
@@ -588,7 +681,7 @@ class SubscriptionService:
                 external_identity_id=subscription.billing_identity.external_id,
             )
             for subscription in subscriptions
-            for entitlement in subscription.product.entitlements
+            for entitlement in subscription.product.benefits
         ]
         assignments = await entitlement_service.assignments(session, organization_id)
         grants = [

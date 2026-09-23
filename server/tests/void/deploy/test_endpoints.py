@@ -87,7 +87,14 @@ class TestDeployEndpoints:
         )
         assert response.status_code == 200
         configuration = response.json()
-        assert set(configuration) == {"reducers", "meters", "entitlements", "products"}
+        assert set(configuration) == {
+            "reducers",
+            "meters",
+            "entitlements",
+            "products",
+            "activities",
+            "signals",
+        }
         assert [m["slug"] for m in configuration["meters"]] == ["tokens"]
         assert configuration["products"][0]["meters"] == [
             {"slug": "tokens", "included": 100, "limit": "hard", "rollover_cap": 0}

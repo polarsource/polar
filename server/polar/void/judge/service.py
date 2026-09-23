@@ -14,12 +14,15 @@ from uuid import UUID
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import VoidDeployment, VoidEvent, VoidJudgment
+from polar.models import Event as EventModel
+from polar.models import VoidDeployment, VoidJudgment
 from polar.postgres import AsyncSession
 from polar.void.activity.service import event_metadata, state_hash
 from polar.void.deploy.repository import DeployRepository
 from polar.void.event.repository import EventRepository
+from polar.void.event.schemas import event_payload
 from polar.void.identity.service import identity as identity_service
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import meter as meter_service
 from polar.void.meter.versions import meters_in_version
 from polar.void.reducer.filter import EventMatcher
@@ -36,7 +39,7 @@ VALUE_CAP = 8
 KEY_CAP = 16
 STRING_CAP = 120
 
-Matched = tuple[VoidEvent, Mapping[str, Any]]
+Matched = tuple[EventModel, Mapping[str, Any]]
 
 
 def _number(value: Any) -> float | None:
@@ -73,7 +76,7 @@ def summarize(matched: Sequence[Matched]) -> Evidence:
     previous: datetime | None = None
     for event, raw in ordered:
         metadata = _compact(raw)
-        identity = event.payload.get("external_identity_id")
+        identity = event_payload(event).get("external_identity_id")
         if isinstance(identity, str):
             identities.add(identity)
         for key, value in metadata.items():
@@ -203,8 +206,8 @@ class JudgeService:
             matcher.event_names,
             EVENT_FETCH_CAP,
         ):
-            metadata = event_metadata(event.payload)
-            if matcher.matches(str(event.payload.get("name")), metadata):
+            metadata = event_metadata(event_payload(event))
+            if matcher.matches(str(event_payload(event).get("name")), metadata):
                 matched.append((event, metadata))
         evidence = summarize(matched)
         dumped = evidence.model_dump(mode="json")
@@ -274,8 +277,8 @@ class JudgeService:
                         },
                         "meter": {
                             "slug": meter.slug,
-                            "unit_amount": str(meter.unit_amount),
-                            "currency": meter.currency,
+                            "unit_amount": str(meter_schema(meter).unit_amount),
+                            "currency": meter_schema(meter).currency,
                         },
                         "evidence": dumped,
                     },

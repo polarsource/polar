@@ -7,13 +7,16 @@ import pytest_asyncio
 from sqlalchemy import delete, select
 
 from polar.exceptions import ResourceNotFound
-from polar.models import Organization, VoidEvent, VoidProduct, VoidSubscription
+from polar.models import Event as EventModel
+from polar.models import Organization
+from polar.models import Product as ProductModel
+from polar.models import Subscription as SubscriptionModel
 from polar.postgres import AsyncSession
 from polar.void.entitlement.repository import EntitlementRepository
 from polar.void.entitlement.schemas import EntitlementCreate, EntitlementUpdate
 from polar.void.entitlement.service import EntitlementAssignmentConflict
 from polar.void.entitlement.service import entitlement as entitlement_service
-from polar.void.event.schemas import EventCreate, EventSource
+from polar.void.event.schemas import EventCreate, EventSource, event_payload
 from polar.void.event.service import event as event_service
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import identity as identity_service
@@ -35,7 +38,7 @@ FEB = datetime(2026, 2, 1, tzinfo=UTC)
 @pytest_asyncio.fixture
 async def product(
     session: AsyncSession, organization: Organization, save_fixture: SaveFixture
-) -> VoidProduct:
+) -> ProductModel:
     await activate_version(save_fixture, organization)
     root, _ = await identity_service.ensure(
         session, organization, IdentityCreate(external_id="root")
@@ -74,7 +77,7 @@ class TestLifecycle:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(subscription_module, "utc_now", lambda: NOW)
@@ -105,7 +108,7 @@ class TestLifecycle:
             await subscription_service.rebuild(session, organization.id, apply=False)
         ).unchanged == 1
         await session.execute(
-            delete(VoidSubscription).where(VoidSubscription.id == sid)
+            delete(SubscriptionModel).where(SubscriptionModel.id == sid)
         )
         result = await subscription_service.rebuild(session, organization.id)
         assert result.created == 1
@@ -115,7 +118,7 @@ class TestLifecycle:
             restored.started_at,
             restored.canceled_at,
             restored.ends_at,
-        ) == ("revoked", JAN, NOW, NOW)
+        ) == ("canceled", JAN, NOW, NOW)
         assert (
             await subscription_service.rebuild(session, organization.id)
         ).unchanged == 1
@@ -125,7 +128,7 @@ class TestLifecycle:
         session: AsyncSession,
         organization: Organization,
         organization_second: Organization,
-        product: VoidProduct,
+        product: ProductModel,
     ) -> None:
         create = SubscriptionCreate(product_id=product.id, external_identity_id="root")
         item = await subscription_service.create(session, organization.id, create)
@@ -168,7 +171,7 @@ class TestLifecycle:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(subscription_module, "utc_now", lambda: NOW)
@@ -203,7 +206,7 @@ class TestLifecycle:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
     ) -> None:
         await event_service.ingest(
             session,
@@ -229,7 +232,7 @@ class TestAssignments:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
     ) -> None:
         first = await entitlement_service.assign(
             session,
@@ -247,11 +250,11 @@ class TestAssignments:
         assert replay.features == []
         events = (
             await session.scalars(
-                select(VoidEvent).where(VoidEvent.organization_id == organization.id)
+                select(EventModel).where(EventModel.organization_id == organization.id)
             )
         ).all()
         assert len(events) == 1
-        assert json.loads(events[0].payload["metadata"]) == {
+        assert json.loads(event_payload(events[0])["metadata"]) == {
             "features": [],
             "meters": None,
         }
@@ -268,7 +271,7 @@ class TestAssignments:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
     ) -> None:
         await subscription_service.create(
             session,
@@ -316,7 +319,7 @@ class TestLifecycleEventCollisions:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
         action: str,
     ) -> None:
         subscription = await subscription_service.create(
@@ -336,8 +339,8 @@ class TestLifecycleEventCollisions:
         before = set(
             (
                 await session.scalars(
-                    select(VoidEvent.id).where(
-                        VoidEvent.organization_id == organization_id
+                    select(EventModel.id).where(
+                        EventModel.organization_id == organization_id
                     )
                 )
             ).all()
@@ -357,8 +360,8 @@ class TestLifecycleEventCollisions:
             set(
                 (
                     await session.scalars(
-                        select(VoidEvent.id).where(
-                            VoidEvent.organization_id == organization_id
+                        select(EventModel.id).where(
+                            EventModel.organization_id == organization_id
                         )
                     )
                 ).all()
@@ -374,7 +377,7 @@ class TestLifecycleEventCollisions:
         self,
         session: AsyncSession,
         organization: Organization,
-        product: VoidProduct,
+        product: ProductModel,
         monkeypatch: pytest.MonkeyPatch,
         owned: bool,
     ) -> None:
@@ -397,7 +400,7 @@ class TestLifecycleEventCollisions:
 
         async def stale_preflight(
             self: EntitlementRepository, org_id: UUID, external_id: str
-        ) -> VoidEvent | None:
+        ) -> EventModel | None:
             nonlocal first
             if first:
                 first = False
@@ -427,8 +430,8 @@ class TestLifecycleEventCollisions:
             len(
                 (
                     await session.scalars(
-                        select(VoidEvent).where(
-                            VoidEvent.organization_id == organization_id
+                        select(EventModel).where(
+                            EventModel.organization_id == organization_id
                         )
                     )
                 ).all()

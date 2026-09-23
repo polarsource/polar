@@ -45,6 +45,7 @@ class TestGetVoidOpenAPI:
             "/v1/void/meters",
             "/v1/void/metrics",
             "/v1/void/events",
+            "/v1/void/events/types",
             "/v1/void/activities",
             "/v1/void/activities/spans/{span_key}",
             "/v1/void/subscriptions/{id}",

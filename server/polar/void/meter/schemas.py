@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import Field
 
 from polar.kit.schemas import Schema
+from polar.models import Meter as MeterModel
 from polar.void.entitlement.schemas import SLUG_PATTERN, MeterEntitlementState
 from polar.void.metric.schemas import TimeInterval
 from polar.void.schemas import PlainDecimal
@@ -79,3 +80,21 @@ class Check(Schema):
     overage: float
     period_start: datetime | None
     period_end: datetime | None
+
+
+def to_schema(meter: MeterModel) -> Meter:
+    configuration = meter.deployment.configuration or {}
+    definition = next(
+        item for item in configuration["meters"] if item["slug"] == meter.slug
+    )
+    return Meter(
+        id=meter.id,
+        version_id=meter.version_id,
+        name=meter.name,
+        slug=meter.slug,
+        usage_reducer_id=meter.usage_reducer_id,
+        credit_reducer_id=meter.credit_reducer_id,
+        unit_amount=Decimal(str(definition["unit_amount"])),
+        currency=definition.get("currency", "usd"),
+        created_at=meter.created_at,
+    )

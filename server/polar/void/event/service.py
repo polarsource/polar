@@ -9,9 +9,10 @@ from temporalio.client import Client
 
 from polar.exceptions import PolarError
 from polar.kit.utils import utc_now
-from polar.models import VoidEvent
+from polar.models import Event as EventModel
 from polar.postgres import AsyncSession
 from polar.void.activity.service import activity as activity_service
+from polar.void.event.schemas import event_payload
 from polar.void.identity.service import identity as identity_service
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
@@ -125,22 +126,22 @@ class EventService:
         for event in fresh:
             event_id = uuid4()
             records.append(
-                VoidEvent(
+                EventModel(
                     id=event_id,
                     organization_id=organization_id,
                     external_id=event.external_id,
                     timestamp=event.timestamp,
-                    payload={
-                        **event.model_dump(mode="json", exclude={"metadata"}),
-                        "id": str(event_id),
-                        "organization_id": str(organization_id),
-                        "source": source.value,
-                        "ingested_at": now.isoformat(),
-                        "external_root_id": roots.get(event.external_identity_id)
-                        if event.external_identity_id is not None
-                        else None,
-                        "metadata": json.dumps(event.metadata, allow_nan=False),
-                    },
+                    ingested_at=now,
+                    name=event.name,
+                    source=source.value,
+                    external_identity_id=event.external_identity_id,
+                    external_root_id=roots.get(event.external_identity_id)
+                    if event.external_identity_id
+                    else None,
+                    external_customer_id=roots.get(event.external_identity_id)
+                    if event.external_identity_id
+                    else None,
+                    user_metadata=event.metadata,
                 )
             )
         saved = await repository.insert_events(records)
@@ -160,7 +161,9 @@ class EventService:
         if not pending:
             return 0
         await asyncio.to_thread(
-            tinybird.ingest_batch, "void_events", [event.payload for event in pending]
+            tinybird.ingest_batch,
+            "void_events",
+            [event_payload(event) for event in pending],
         )
         timestamps: dict[UUID, list[datetime]] = defaultdict(list)
         for event in pending:

@@ -7,12 +7,16 @@ from typing import TYPE_CHECKING, Annotated, Literal
 
 from pydantic import BaseModel, Field
 
+from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.schemas import Schema
+from polar.models import Meter as MeterModel
+from polar.models import ProductPriceFixed, ProductPriceMeteredUnit
 from polar.void.entitlement.schemas import SLUG_PATTERN, Entitlement
 from polar.void.meter.schemas import Meter
+from polar.void.meter.schemas import to_schema as meter_schema
 
 if TYPE_CHECKING:
-    from polar.models import VoidProduct as ProductModel
+    from polar.models import Product as ProductModel
 
 BillingInterval = Literal["day", "week", "month", "year"]
 
@@ -94,19 +98,35 @@ class Product(Schema):
     created_at: datetime
 
 
+def meters_of(product: ProductModel) -> list[MeterModel]:
+    return [
+        price.meter
+        for price in product.prices
+        if isinstance(price, ProductPriceMeteredUnit)
+    ]
+
+
 def price_of(product: ProductModel) -> RecurringPriceRead | OneTimePriceRead:
-    """The wire price of a product row."""
-    if product.price_type == "recurring":
-        assert product.interval is not None
-        return RecurringPriceRead(
-            type="recurring",
-            interval=product.interval,  # type: ignore[arg-type]
-            interval_count=product.interval_count,
-            amount=product.amount,
-            currency=product.currency,
+    price = next(
+        price for price in product.prices if isinstance(price, ProductPriceFixed)
+    )
+    amount = Decimal(price.price_amount) / get_currency_decimal_factor(
+        price.price_currency
+    )
+    if product.is_recurring:
+        assert product.recurring_interval is not None
+        assert product.recurring_interval_count is not None
+        return RecurringPriceRead.model_validate(
+            {
+                "type": "recurring",
+                "interval": product.recurring_interval,
+                "interval_count": product.recurring_interval_count,
+                "amount": amount,
+                "currency": price.price_currency,
+            }
         )
     return OneTimePriceRead(
-        type="one_time", amount=product.amount, currency=product.currency
+        type="one_time", amount=amount, currency=price.price_currency
     )
 
 
@@ -118,14 +138,14 @@ def to_schema(product: ProductModel) -> Product:
         name=product.name,
         description=product.description,
         price=price_of(product),
-        meters=[Meter.model_validate(m, from_attributes=True) for m in product.meters],
+        meters=[meter_schema(meter) for meter in meters_of(product)],
         meter_terms={
             key: MeterTermsRead.model_validate(value)
             for key, value in product.meter_terms.items()
         },
         entitlements=[
-            Entitlement.model_validate(e, from_attributes=True)
-            for e in product.entitlements
+            Entitlement.model_validate(benefit, from_attributes=True)
+            for benefit in product.benefits
         ],
         created_at=product.created_at,
     )

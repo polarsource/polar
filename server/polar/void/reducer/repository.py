@@ -9,7 +9,9 @@ from sqlalchemy.dialects.postgresql import insert
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.models import (
-    VoidEvent,
+    Event as EventModel,
+)
+from polar.models import (
     VoidReducer,
     VoidReducerBucket,
     VoidReducerDependency,
@@ -104,10 +106,10 @@ class ReducerRepository(RepositoryBase[VoidReducer]):
                 literal(reducer.id, type_=Uuid),
                 literal(reducer.organization_id, type_=Uuid),
                 func.date_bin(
-                    BUCKET_SIZE, VoidEvent.timestamp, datetime(1970, 1, 1, tzinfo=UTC)
+                    BUCKET_SIZE, EventModel.timestamp, datetime(1970, 1, 1, tzinfo=UTC)
                 ),
             )
-            .where(VoidEvent.organization_id == reducer.organization_id)
+            .where(EventModel.organization_id == reducer.organization_id)
             .distinct()
         )
         statement = insert(VoidReducerJob).from_select(

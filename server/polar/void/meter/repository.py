@@ -4,30 +4,37 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ColumnElement, Select, func, literal, select
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidEvent, VoidMeter, VoidReducer, VoidReducerBucket
+from polar.models import Event as EventModel
+from polar.models import Meter as MeterModel
+from polar.models import VoidReducer, VoidReducerBucket
 from polar.void.metric.repository import SQL_MERGE
 
 
-class MeterRepository(RepositoryBase[VoidMeter]):
-    model = VoidMeter
+class MeterRepository(RepositoryBase[MeterModel]):
+    model = MeterModel
 
-    def scoped_statement(self, organization_id: UUID) -> Select[tuple[VoidMeter]]:
+    def get_base_statement(self) -> Select[tuple[MeterModel]]:
+        return select(MeterModel).options(selectinload(MeterModel.deployment))
+
+    def scoped_statement(self, organization_id: UUID) -> Select[tuple[MeterModel]]:
         return self.get_base_statement().where(
-            VoidMeter.organization_id == organization_id,
-            VoidMeter.deleted_at.is_(None),
+            MeterModel.organization_id == organization_id,
+            MeterModel.deleted_at.is_(None),
+            MeterModel.version_id.is_not(None),
         )
 
-    async def list(self, organization_id: UUID) -> Sequence[VoidMeter]:
+    async def list(self, organization_id: UUID) -> Sequence[MeterModel]:
         statement = self.scoped_statement(organization_id)
         return await self.get_all(
-            statement.order_by(VoidMeter.created_at, VoidMeter.id)
+            statement.order_by(MeterModel.created_at, MeterModel.id)
         )
 
-    async def get(self, organization_id: UUID, id: UUID) -> VoidMeter | None:
+    async def get(self, organization_id: UUID, id: UUID) -> MeterModel | None:
         return await self.get_one_or_none(
-            self.scoped_statement(organization_id).where(VoidMeter.id == id)
+            self.scoped_statement(organization_id).where(MeterModel.id == id)
         )
 
     async def reducer_values(
@@ -64,10 +71,10 @@ class MeterRepository(RepositoryBase[VoidMeter]):
         return bool(
             await self.session.scalar(
                 select(
-                    select(VoidEvent.id)
+                    select(EventModel.id)
                     .where(
-                        VoidEvent.organization_id == organization_id,
-                        VoidEvent.delivered_at.is_(None),
+                        EventModel.organization_id == organization_id,
+                        EventModel.delivered_at.is_(None),
                     )
                     .exists()
                 )

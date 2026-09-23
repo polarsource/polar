@@ -4,38 +4,40 @@ from uuid import UUID
 from sqlalchemy import Select, select
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidEntitlement, VoidEvent, VoidReducer
+from polar.models import Benefit, VoidReducer
+from polar.models import Event as EventModel
+from polar.models.benefit import BenefitType
 
 
-class EntitlementRepository(RepositoryBase[VoidEntitlement]):
-    model = VoidEntitlement
+class EntitlementRepository(RepositoryBase[Benefit]):
+    model = Benefit
 
-    def scoped_statement(self, organization_id: UUID) -> Select[tuple[VoidEntitlement]]:
+    def scoped_statement(self, organization_id: UUID) -> Select[tuple[Benefit]]:
         return self.get_base_statement().where(
-            VoidEntitlement.organization_id == organization_id,
-            VoidEntitlement.deleted_at.is_(None),
+            Benefit.organization_id == organization_id,
+            Benefit.deleted_at.is_(None),
+            Benefit.type == BenefitType.feature_flag,
+            Benefit.slug.is_not(None),
         )
 
-    async def list(self, organization_id: UUID) -> Sequence[VoidEntitlement]:
+    async def list(self, organization_id: UUID) -> Sequence[Benefit]:
         statement = self.scoped_statement(organization_id)
-        return await self.get_all(
-            statement.order_by(VoidEntitlement.slug, VoidEntitlement.id)
-        )
+        return await self.get_all(statement.order_by(Benefit.slug, Benefit.id))
 
-    async def get(self, organization_id: UUID, id: UUID) -> VoidEntitlement | None:
+    async def get(self, organization_id: UUID, id: UUID) -> Benefit | None:
         return await self.get_one_or_none(
-            self.scoped_statement(organization_id).where(VoidEntitlement.id == id)
+            self.scoped_statement(organization_id).where(Benefit.id == id)
         )
 
     async def get_by_slug(
         self, organization_id: UUID, slug: str, *, include_deleted: bool = False
-    ) -> VoidEntitlement | None:
+    ) -> Benefit | None:
         statement = self.get_base_statement().where(
-            VoidEntitlement.organization_id == organization_id,
-            VoidEntitlement.slug == slug,
+            Benefit.organization_id == organization_id,
+            Benefit.slug == slug,
         )
         if not include_deleted:
-            statement = statement.where(VoidEntitlement.deleted_at.is_(None))
+            statement = statement.where(Benefit.deleted_at.is_(None))
         return await self.get_one_or_none(statement)
 
     async def assignment_reducer(self, organization_id: UUID) -> VoidReducer | None:
@@ -49,10 +51,10 @@ class EntitlementRepository(RepositoryBase[VoidEntitlement]):
 
     async def assignment_event(
         self, organization_id: UUID, external_id: str
-    ) -> VoidEvent | None:
+    ) -> EventModel | None:
         return await self.session.scalar(
-            select(VoidEvent).where(
-                VoidEvent.organization_id == organization_id,
-                VoidEvent.external_id == external_id,
+            select(EventModel).where(
+                EventModel.organization_id == organization_id,
+                EventModel.external_id == external_id,
             )
         )

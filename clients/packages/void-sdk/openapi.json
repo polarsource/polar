@@ -1105,6 +1105,82 @@
         "x-speakeasy-name-override": "state"
       }
     },
+    "/v1/void/events/types": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "events"
+        ],
+        "summary": "Event Types",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "events:types",
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "external_identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this actor",
+              "title": "External Identity Id"
+            },
+            "description": "Only this actor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventType"
+                  },
+                  "title": "Response Events:Types"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "events",
+        "x-speakeasy-name-override": "event_types"
+      }
+    },
     "/v1/void/events": {
       "get": {
         "tags": [
@@ -6775,6 +6851,28 @@
         ],
         "title": "EventSource"
       },
+      "EventType": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EventSource"
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "source",
+          "occurrences"
+        ],
+        "title": "EventType"
+      },
       "EventsIngestResponse": {
         "properties": {
           "saved": {
@@ -8805,7 +8903,7 @@
             "title": "External Identity Id"
           },
           "status": {
-            "$ref": "#/components/schemas/VoidSubscriptionStatus"
+            "$ref": "#/components/schemas/SubscriptionStatus"
           },
           "started_at": {
             "type": "string",
@@ -10026,6 +10124,20 @@
         "title": "SubscriptionRebuild",
         "description": "What re-projecting rows from the lifecycle events changed."
       },
+      "SubscriptionStatus": {
+        "type": "string",
+        "enum": [
+          "incomplete",
+          "incomplete_expired",
+          "trialing",
+          "active",
+          "past_due",
+          "canceled",
+          "unpaid",
+          "paused"
+        ],
+        "title": "SubscriptionStatus"
+      },
       "TimeInterval": {
         "type": "string",
         "enum": [
@@ -10155,15 +10267,6 @@
           "can_activate"
         ],
         "title": "VoidOrganization"
-      },
-      "VoidSubscriptionStatus": {
-        "type": "string",
-        "enum": [
-          "active",
-          "canceled",
-          "revoked"
-        ],
-        "title": "VoidSubscriptionStatus"
       }
     },
     "securitySchemes": {

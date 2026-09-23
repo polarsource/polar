@@ -6,13 +6,13 @@ import { DataTable, DataTableColumnDef, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { shortDate } from './identities'
-import { VoidMeterBalance } from './identityLive'
+import { VoidLiveSubscriptionStatus, VoidMeterBalance } from './identityLive'
 import { VoidEntitlement, VoidEvent } from './types'
 
 export type SubscriptionRow = {
   id: string
   product: string
-  status: 'active' | 'canceled' | 'trialing' | 'revoked'
+  status: VoidLiveSubscriptionStatus
   started_at: string
   current_period_end: string | null
   ends_at: string | null
@@ -45,7 +45,16 @@ export const TableSection = ({
 export const SUBSCRIPTION_STATUS_COLOR: Record<
   SubscriptionRow['status'],
   'green' | 'red' | 'blue'
-> = { active: 'green', canceled: 'red', trialing: 'blue', revoked: 'red' }
+> = {
+  active: 'green',
+  canceled: 'red',
+  trialing: 'blue',
+  incomplete: 'blue',
+  incomplete_expired: 'red',
+  past_due: 'red',
+  unpaid: 'red',
+  paused: 'blue',
+}
 
 const subscriptionColumns: DataTableColumnDef<SubscriptionRow>[] = [
   {

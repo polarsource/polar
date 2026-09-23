@@ -9,9 +9,11 @@ import pytest_asyncio
 from sqlalchemy import select
 
 from polar.exceptions import ResourceNotFound
-from polar.models import Organization, VoidEvent, VoidMeter, VoidReducerBucket
+from polar.models import Event as EventModel
+from polar.models import Meter as MeterModel
+from polar.models import Organization, VoidReducerBucket
 from polar.postgres import AsyncSession
-from polar.void.event.schemas import EventCreate, EventSource
+from polar.void.event.schemas import EventCreate, EventSource, event_payload
 from polar.void.event.service import event as event_service
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import identity as identity_service
@@ -20,6 +22,7 @@ from polar.void.meter.service import meter as meter_service
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
+from tests.void.factories import create_meter
 
 JAN1 = datetime(2026, 1, 1, tzinfo=UTC)
 FEB1 = datetime(2026, 2, 1, tzinfo=UTC)
@@ -27,7 +30,7 @@ FEB10 = datetime(2026, 2, 10, tzinfo=UTC)
 
 
 @pytest_asyncio.fixture
-async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
+async def meter(session: AsyncSession, organization: Organization) -> MeterModel:
     reducers = []
     for slug, aggregation in [
         ("usage", {"func": "count"}),
@@ -46,7 +49,7 @@ async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
                 ),
             )
         )
-    return await meter_service.create(
+    return await create_meter(
         session,
         organization.id,
         MeterCreate(
@@ -67,7 +70,7 @@ class TestRuntime:
         session: AsyncSession,
         organization: Organization,
         organization_second: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
     ) -> None:
         root, _ = await identity_service.ensure(
             session, organization, IdentityCreate(external_id="root")
@@ -127,7 +130,7 @@ class TestRuntime:
         self,
         session: AsyncSession,
         organization: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
     ) -> None:
         root, _ = await identity_service.ensure(
             session, organization, IdentityCreate(external_id="root")
@@ -181,7 +184,7 @@ class TestRuntime:
         self,
         session: AsyncSession,
         organization: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         await identity_service.ensure(
@@ -240,12 +243,12 @@ class TestRuntime:
         assert await meter_service.cycle(session, tinybird, organization.id) == 0
         events = (
             await session.scalars(
-                select(VoidEvent).where(VoidEvent.organization_id == organization.id)
+                select(EventModel).where(EventModel.organization_id == organization.id)
             )
         ).all()
         assert len(events) == 1
         assert events[0].delivered_at is None
-        metadata = json.loads(events[0].payload["metadata"])
+        metadata = json.loads(event_payload(events[0])["metadata"])
         assert metadata["credits"] == 100
         assert metadata["usage"] == 135
         assert metadata["overage"] == 35

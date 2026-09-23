@@ -14,21 +14,23 @@ from polar.models import (
     Customer,
     Organization,
     VoidBillingIdentity,
-    VoidMeter,
     VoidReducer,
     VoidReducerBucket,
+)
+from polar.models import (
+    Meter as MeterModel,
 )
 from polar.postgres import AsyncSession
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.schemas import MeterCreate
-from polar.void.meter.service import meter as meter_service
 from polar.void.postgres import get_snapshot_session
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi, get_client
 from tests.fixtures.database import SaveFixture
 from tests.void.conftest import VERSION, activate_version
+from tests.void.factories import create_meter
 from tests.void.test_endpoints import TOKEN, create_token
 
 AT = datetime(2026, 9, 15, 12, 4, tzinfo=UTC)
@@ -42,7 +44,7 @@ class Graph:
     sibling: VoidBillingIdentity
     usage: VoidReducer
     credit: VoidReducer
-    meter: VoidMeter
+    meter: MeterModel
 
 
 @pytest.fixture
@@ -128,7 +130,7 @@ async def graph(
             }
         ),
     )
-    meter = await meter_service.create(
+    meter = await create_meter(
         session,
         organization.id,
         MeterCreate(

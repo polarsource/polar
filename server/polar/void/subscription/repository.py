@@ -5,41 +5,66 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_polymorphic
 
 from polar.kit.repository import RepositoryBase
 from polar.models import (
-    VoidEntitlement,
-    VoidEvent,
-    VoidMeter,
-    VoidProduct,
-    VoidSubscription,
+    Customer,
+    ProductPrice,
+    VoidBillingIdentity,
 )
-from polar.void.event.schemas import Event
+from polar.models import (
+    Event as EventModel,
+)
+from polar.models import (
+    Meter as MeterModel,
+)
+from polar.models import (
+    Product as ProductModel,
+)
+from polar.models import (
+    Subscription as SubscriptionModel,
+)
+from polar.void.event.schemas import Event, event_payload
+
+PRICES = with_polymorphic(ProductPrice, "*")
 
 
-class SubscriptionRepository(RepositoryBase[VoidSubscription]):
-    model = VoidSubscription
+class SubscriptionRepository(RepositoryBase[SubscriptionModel]):
+    model = SubscriptionModel
 
     def scoped_statement(
         self, organization_id: UUID
-    ) -> Select[tuple[VoidSubscription]]:
+    ) -> Select[tuple[SubscriptionModel]]:
         return (
-            select(VoidSubscription)
+            select(SubscriptionModel)
             .where(
-                VoidSubscription.organization_id == organization_id,
-                VoidSubscription.deleted_at.is_(None),
+                SubscriptionModel.organization_id == organization_id,
+                SubscriptionModel.deleted_at.is_(None),
+                SubscriptionModel.billing_identity_id.is_not(None),
             )
             .options(
-                selectinload(VoidSubscription.billing_identity),
-                selectinload(VoidSubscription.product).selectinload(
-                    VoidProduct.meters.and_(VoidMeter.deleted_at.is_(None))
-                ),
-                selectinload(VoidSubscription.product).selectinload(
-                    VoidProduct.entitlements.and_(VoidEntitlement.deleted_at.is_(None))
-                ),
+                selectinload(SubscriptionModel.billing_identity),
+                selectinload(SubscriptionModel.product)
+                .selectinload(ProductModel.prices.of_type(PRICES))
+                .selectinload(PRICES.ProductPriceMeteredUnit.meter)
+                .selectinload(MeterModel.deployment),
+                selectinload(SubscriptionModel.customer),
+                selectinload(SubscriptionModel.grants),
             )
             .execution_options(populate_existing=True)
+        )
+
+    async def customer_for_identity(
+        self, identity: VoidBillingIdentity
+    ) -> Customer | None:
+        return await self.session.scalar(
+            select(Customer).where(
+                Customer.organization_id == identity.organization_id,
+                Customer.deleted_at.is_(None),
+                (Customer.root_identity_id == identity.id)
+                | (Customer.external_id == identity.external_id),
+            )
         )
 
     async def list(
@@ -48,25 +73,25 @@ class SubscriptionRepository(RepositoryBase[VoidSubscription]):
         *,
         identity_ids: Sequence[UUID] | None = None,
         active_at: datetime | None = None,
-    ) -> Sequence[VoidSubscription]:
+    ) -> Sequence[SubscriptionModel]:
         statement = self.scoped_statement(organization_id)
         if identity_ids is not None:
             statement = statement.where(
-                VoidSubscription.billing_identity_id.in_(identity_ids)
+                SubscriptionModel.billing_identity_id.in_(identity_ids)
             )
         if active_at is not None:
             statement = statement.where(
-                VoidSubscription.started_at <= active_at,
-                VoidSubscription.ends_at.is_(None)
-                | (VoidSubscription.ends_at > active_at),
+                SubscriptionModel.started_at <= active_at,
+                SubscriptionModel.ends_at.is_(None)
+                | (SubscriptionModel.ends_at > active_at),
             )
         return await self.get_all(
-            statement.order_by(VoidSubscription.created_at, VoidSubscription.id)
+            statement.order_by(SubscriptionModel.created_at, SubscriptionModel.id)
         )
 
-    async def get(self, organization_id: UUID, id: UUID) -> VoidSubscription | None:
+    async def get(self, organization_id: UUID, id: UUID) -> SubscriptionModel | None:
         return await self.get_one_or_none(
-            self.scoped_statement(organization_id).where(VoidSubscription.id == id)
+            self.scoped_statement(organization_id).where(SubscriptionModel.id == id)
         )
 
     async def lifecycle_events(
@@ -74,18 +99,21 @@ class SubscriptionRepository(RepositoryBase[VoidSubscription]):
     ) -> builtins.list[Event]:
         rows = (
             await self.session.scalars(
-                select(VoidEvent)
+                select(EventModel)
                 .where(
-                    VoidEvent.organization_id == organization_id,
-                    VoidEvent.payload["source"].astext == "system",
-                    VoidEvent.payload["name"].astext.in_(names),
+                    EventModel.organization_id == organization_id,
+                    EventModel.source == "system",
+                    EventModel.name.in_(names),
                 )
-                .order_by(VoidEvent.timestamp, VoidEvent.created_at, VoidEvent.id)
+                .order_by(EventModel.timestamp, EventModel.ingested_at, EventModel.id)
             )
         ).all()
         return [
             Event.model_validate(
-                {**row.payload, "metadata": json.loads(row.payload["metadata"])}
+                {
+                    **event_payload(row),
+                    "metadata": json.loads(event_payload(row)["metadata"]),
+                }
             )
             for row in rows
         ]

@@ -184,6 +184,7 @@ class TestSignalResolution:
         )
         assert deployment is not None
         deployment.configuration = {
+            **(deployment.configuration or {}),
             "signals": [
                 {
                     "slug": "abuse",
@@ -195,7 +196,7 @@ class TestSignalResolution:
                     "exit_below": 0.4,
                     **signal,
                 }
-            ]
+            ],
         }
         await session.flush()
 

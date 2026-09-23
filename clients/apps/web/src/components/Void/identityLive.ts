@@ -1,3 +1,4 @@
+import type { schemas } from '@polar-sh/client'
 import { VoidIdentity } from './types'
 
 export interface VoidIdentityRecord {
@@ -48,7 +49,7 @@ export interface VoidIdentitySnapshot {
   entitlements: string[]
 }
 
-export type VoidLiveSubscriptionStatus = 'active' | 'canceled' | 'revoked'
+export type VoidLiveSubscriptionStatus = schemas['SubscriptionStatus']
 
 export interface VoidProductSubscriptionRecord {
   id: string

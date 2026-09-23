@@ -74,7 +74,7 @@ external id and never matches by email. Children inherit entitlements and are
 constrained by parent assignments.
 
 **Events and reducers.** `POST /events` stores up to 1,000 canonical events in
-`void_events` and returns 202; the first payload per external id wins. The
+Polar's `events` table and returns 202; the first payload per external id wins. The
 worker ships pending rows to Tinybird, then folds five-minute reducer buckets,
 marking delivery only after both succeed, so a crash means a retry, not a loss.
 Rows stay for idempotency and backfills. Derived reducers merge input states
@@ -83,8 +83,9 @@ before computing.
 **Subscriptions and cycles.** Subscription writes commit their projection and
 lifecycle events together; `rebuild` replays them. A five-minute schedule
 settles cycles per organization from Tinybird usage, waiting while accepted
-events are undelivered. Rows are Void projections, not Polar's payment-backed
-subscriptions; nothing touches Stripe.
+events are undelivered. Subscriptions use Polar's customers, subscriptions,
+prices, and benefit grants. The POC creates recurring subscriptions directly;
+one-time purchases use Polar's checkout/order flow.
 
 ## API
 
@@ -132,11 +133,15 @@ Roll out migrations, then Tinybird, then API and worker, then set
 worker; pause the `polar-void-dispatch-*` schedules to stop queued work. A schema
 downgrade drops the `void_*` tables and is not a disable mechanism.
 
-All Void tables carry `organization_id`; composite foreign keys reject
-cross-organization references. Meters and products are unique by
+Products, prices, subscriptions, meters, feature-flag benefits, and events use
+the regular Polar tables. Identity trees, reducers, deployments, scenarios,
+activity spans, and judgments remain in Void. Meters and products are unique by
 `(organization_id, slug, version_id)`; a partial unique index keeps one active
-deployment per organization. `customers.root_identity_id` is the only change to
-an existing Polar table.
+deployment per organization. Deployed meter definitions supply preview rates;
+sellable rates are stored as native product prices in minor currency units.
+
+After applying the entity-consolidation migration, recreate POC data with
+`uv run task void_seed_demo -- --reset`.
 
 Tests: `POLAR_ENV=testing uv run python -m pytest tests/void -n 6`.
 `.github/workflows/test_void.yaml` runs them with the SDK tests, OpenAPI parity

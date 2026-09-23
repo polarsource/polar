@@ -18,7 +18,7 @@ from polar.void.entitlement.schemas import (
 from polar.void.entitlement.service import entitlement as entitlement_service
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.balance import MeterEvent, State, _next_boundary
-from polar.void.meter.schemas import Meter as MeterSchema
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import EPOCH, _parse_time
 from polar.void.meter.service import meter as meter_service
 from polar.void.meter.versions import meters_in_version
@@ -244,7 +244,7 @@ async def customer_state(
             )
         states.append(
             CustomerMeterState(
-                meter=MeterSchema.model_validate(meter, from_attributes=True),
+                meter=meter_schema(meter),
                 holders=holders,
                 usage_last_processed_event=last_processed.get(meter.usage_reducer_id),
                 credit_last_processed_event=last_processed.get(meter.credit_reducer_id),

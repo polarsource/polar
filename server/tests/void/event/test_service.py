@@ -7,10 +7,10 @@ from pytest_mock import MockerFixture
 from temporalio.client import Client
 
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidBillingIdentity
+from polar.models import Event, Organization, VoidBillingIdentity
 from polar.postgres import AsyncSession
 from polar.void.event.repository import EventRepository
-from polar.void.event.schemas import EventCreate, EventSource
+from polar.void.event.schemas import EventCreate, EventSource, event_payload
 from polar.void.event.service import InvalidAttribution, ReservedEventName
 from polar.void.event.service import event as event_service
 from polar.void.tinybird import TinybirdApi
@@ -48,7 +48,7 @@ class TestIngest:
         repository = EventRepository.from_session(session)
         records = await repository.pending({organization.id}, limit=50)
         assert len(records) == 1
-        canonical = dict(records[0].payload)
+        canonical = dict(event_payload(records[0]))
         assert records[0].timestamp == timestamp
         assert canonical["external_root_id"] == "root"
         assert canonical["external_identity_id"] == "actor"
@@ -59,9 +59,10 @@ class TestIngest:
         assert await event_service.ingest(
             session, organization.id, [different], EventSource.user
         ) == (0, 1)
-        assert (await repository.pending({organization.id}, limit=50))[
-            0
-        ].payload == canonical
+        assert (
+            event_payload((await repository.pending({organization.id}, limit=50))[0])
+            == canonical
+        )
 
     @pytest.mark.parametrize("state", ["missing", "other_organization", "deleted_root"])
     async def test_invalid_attribution_is_atomic(
@@ -118,8 +119,8 @@ class TestIngest:
             {organization.id}, limit=50
         )
         assert len(records) == 1
-        assert records[0].payload["organization_id"] == str(organization.id)
-        assert records[0].payload["external_root_id"] is None
+        assert event_payload(records[0])["organization_id"] == str(organization.id)
+        assert event_payload(records[0])["external_root_id"] is None
 
     async def test_reserved_system_events(
         self, session: AsyncSession, organization: Organization
@@ -136,6 +137,47 @@ class TestIngest:
 
 @pytest.mark.asyncio
 class TestDelivery:
+    async def test_native_event_without_external_id(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        event = Event(
+            organization=organization,
+            name="customer.created",
+            source=EventSource.system,
+            user_metadata={},
+        )
+        await save_fixture(event)
+        tinybird = MagicMock(spec=TinybirdApi)
+        temporal = MagicMock(spec=Client)
+        mocker.patch(
+            "polar.void.event.service.reducer_service.touch_buckets",
+            new_callable=AsyncMock,
+        )
+        mocker.patch(
+            "polar.void.event.service.activity_service.touch_events",
+            new_callable=AsyncMock,
+        )
+
+        assert (
+            await event_service.deliver_pending(
+                session, tinybird, temporal, {organization.id}
+            )
+            == 1
+        )
+        assert tinybird.ingest_batch.call_args.args[1][0]["external_id"] == str(
+            event.id
+        )
+        assert (
+            await EventRepository.from_session(session).pending(
+                {organization.id}, limit=50
+            )
+            == []
+        )
+
     @pytest.mark.parametrize("failure", ["tinybird", "notification"])
     async def test_failed_delivery_recovers_without_reingestion(
         self,
@@ -169,7 +211,7 @@ class TestDelivery:
             {organization.id}, limit=50
         )
         assert len(pending) == 1
-        canonical = dict(pending[0].payload)
+        canonical = dict(event_payload(pending[0]))
         tinybird.ingest_batch.side_effect = None
         touch.side_effect = None
         assert (

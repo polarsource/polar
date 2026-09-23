@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from typing import Annotated
 from uuid import UUID
 
@@ -6,7 +5,6 @@ from fastapi import Depends, Query
 from pydantic import AwareDatetime
 
 from polar.exceptions import ResourceNotFound
-from polar.models import VoidMeter
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -18,7 +16,7 @@ from polar.void.auth import VoidRead
 from polar.void.reducer.exceptions import InvalidReducer
 from polar.void.tinybird import TinybirdClient
 
-from .schemas import Balance, Check, Meter
+from .schemas import Balance, Check, Meter, to_schema
 from .service import meter as meter_service
 
 router = APIRouter(prefix="/meters", tags=["meters"], include_in_schema=False)
@@ -28,8 +26,11 @@ router = APIRouter(prefix="/meters", tags=["meters"], include_in_schema=False)
 async def list_meters(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Sequence[VoidMeter]:
-    return await meter_service.list(session, auth.organization.id)
+) -> list[Meter]:
+    return [
+        to_schema(meter)
+        for meter in await meter_service.list(session, auth.organization.id)
+    ]
 
 
 @router.get(
@@ -42,8 +43,8 @@ async def get_meter(
     id: UUID,
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> VoidMeter:
-    return await meter_service.get(session, auth.organization.id, id)
+) -> Meter:
+    return to_schema(await meter_service.get(session, auth.organization.id, id))
 
 
 @router.get(

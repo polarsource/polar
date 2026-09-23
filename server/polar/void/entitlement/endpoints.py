@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from polar.exceptions import ResourceNotFound
-from polar.models import VoidEntitlement
+from polar.models import Benefit
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -27,7 +27,7 @@ router = APIRouter(
 async def list_entitlements(
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Sequence[VoidEntitlement]:
+) -> Sequence[Benefit]:
     return await entitlement_service.list(session, auth.organization.id)
 
 
@@ -45,7 +45,7 @@ async def create_entitlement(
     body: EntitlementCreate,
     auth: VoidWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> VoidEntitlement:
+) -> Benefit:
     entitlement, _ = await entitlement_service.upsert(
         session, auth.organization.id, body
     )
@@ -62,5 +62,5 @@ async def get_entitlement(
     id: UUID,
     auth: VoidRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> VoidEntitlement:
+) -> Benefit:
     return await entitlement_service.get(session, auth.organization.id, id)

@@ -10,19 +10,19 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from sqlalchemy.dialects import sqlite
 
-from polar.models import VoidBillingIdentity
-from polar.models import VoidMeter as Meter
+from polar.models import Meter, VoidBillingIdentity
 from polar.postgres import AsyncSession
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter import service as meter_service_module
 from polar.void.meter.balance import MeterCycle, MeterEvent
 from polar.void.meter.service import MeterService, build_meter_cycle_event
 from polar.void.tinybird import TinybirdApi
+from tests.void.factories import meter_model
 
 
 def test_build_meter_cycle_event_contains_complete_settlement() -> None:
     meter_id = uuid.uuid4()
-    meter = Meter(
+    meter = meter_model(
         id=meter_id,
         name="Tokens",
         slug="tokens",

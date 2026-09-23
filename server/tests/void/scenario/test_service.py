@@ -5,11 +5,13 @@ from typing import Any
 import pytest
 
 from polar.exceptions import ResourceNotFound
-from polar.models import Organization, VoidDeployment, VoidProduct
+from polar.models import Organization, VoidDeployment
+from polar.models import Product as ProductModel
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncSession
 from polar.void.deploy.schemas import DeployCreate
 from polar.void.deploy.service import deploy as deploy_service
+from polar.void.product.schemas import price_of
 from polar.void.product.service import product as product_service
 from polar.void.scenario.exceptions import InvalidScenario, ScenarioBaseUnavailable
 from polar.void.scenario.schemas import ScenarioCreate, ScenarioPatch, ScenarioUpdate
@@ -114,8 +116,8 @@ class TestScenarioService:
         products = await product_service.list(session, organization.id)
         by_version = {p.version_id: p for p in products}
         assert set(by_version) == {base_version, promoted.version_id}
-        assert Decimal(by_version[promoted.version_id].amount) == Decimal(30)
-        assert isinstance(by_version[base_version], VoidProduct)
+        assert Decimal(price_of(by_version[promoted.version_id]).amount) == Decimal(30)
+        assert isinstance(by_version[base_version], ProductModel)
 
         again = await scenario_service.promote(session, organization.id, created.id)
         assert again.id == promoted.id

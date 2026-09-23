@@ -56,6 +56,7 @@ if TYPE_CHECKING:
         Product,
         SubscriptionUpdate,
     )
+    from .void_billing_identity import VoidBillingIdentity
 
 PP = TypeVar("PP", bound="ProductPrice")
 
@@ -142,6 +143,18 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             ),
         ),
     )
+
+    billing_identity_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("void_identities.id"), nullable=True, index=True
+    )
+    billing_identity: Mapped["VoidBillingIdentity"] = relationship(lazy="raise")
+
+    def active_at(self, at: datetime) -> bool:
+        return (
+            self.started_at is not None
+            and at >= self.started_at
+            and (self.ends_at is None or at < self.ends_at)
+        )
 
     amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)
     net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=False)

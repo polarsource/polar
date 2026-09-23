@@ -8,16 +8,20 @@ from sqlalchemy import select
 
 from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidEvent, VoidSubscription
+from polar.models import Event as EventModel
+from polar.models import Organization
 from polar.postgres import AsyncSession
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import entitlement as entitlement_service
+from polar.void.event.schemas import event_payload
 from polar.void.meter.schemas import MeterCreate
-from polar.void.meter.service import meter as meter_service
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.product.schemas import ProductCreate
 from polar.void.product.service import product as product_service
+from polar.void.subscription.service import new_subscription
 from tests.fixtures.database import SaveFixture
 from tests.void.conftest import VERSION
+from tests.void.factories import create_meter
 from tests.void.test_endpoints import TOKEN, create_token
 
 from .conftest import AT, START, Graph
@@ -85,8 +89,8 @@ class TestCustomerState:
         mocker: MockerFixture,
     ) -> None:
         mocker.patch("polar.void.customer.state.utc_now", return_value=AT)
-        definition = MeterCreate.model_validate(graph.meter, from_attributes=True)
-        draft = await meter_service.create(
+        definition = MeterCreate.model_validate(meter_schema(graph.meter).model_dump())
+        draft = await create_meter(
             session,
             organization.id,
             definition.model_copy(update={"version_id": "b" * 64}),
@@ -125,21 +129,21 @@ class TestCustomerState:
                     "version_id": VERSION,
                     "slug": "future",
                     "name": "Future",
-                    "price": {"type": "one_time", "amount": "10", "currency": "usd"},
+                    "price": {
+                        "type": "recurring",
+                        "interval": "month",
+                        "amount": "10",
+                        "currency": "usd",
+                    },
                 }
             ),
         )
         for hours, deleted in ((1, True), (2, False)):
-            await save_fixture(
-                VoidSubscription(
-                    organization=organization,
-                    billing_identity=graph.root,
-                    product=product,
-                    status="active",
-                    started_at=AT + timedelta(hours=hours),
-                    deleted_at=utc_now() if deleted else None,
-                )
+            subscription = await new_subscription(
+                session, product, graph.root, AT + timedelta(hours=hours)
             )
+            subscription.deleted_at = utc_now() if deleted else None
+            await save_fixture(subscription)
         response = await state_client.get("/v1/void/customers/root/state")
         assert response.status_code == 200, response.text
         assert response.json()["next_change_at"] == (
@@ -170,20 +174,17 @@ class TestIdentitySnapshot:
                     "version_id": VERSION,
                     "slug": "pro",
                     "name": "Pro",
-                    "price": {"type": "one_time", "amount": "10", "currency": "usd"},
+                    "price": {
+                        "type": "recurring",
+                        "interval": "month",
+                        "amount": "10",
+                        "currency": "usd",
+                    },
                     "entitlement_ids": [entitlement.id],
                 }
             ),
         )
-        await save_fixture(
-            VoidSubscription(
-                organization=organization,
-                billing_identity=graph.root,
-                product=product,
-                status="active",
-                started_at=START,
-            )
-        )
+        await save_fixture(await new_subscription(session, product, graph.root, START))
         response = await state_client.get("/v1/void/identities/child/snapshot")
         assert response.status_code == 200, response.text
         snapshot = response.json()
@@ -271,14 +272,14 @@ class TestIdentityEntitlementRoutes:
         assert repeated.json() == response.json()
         rows = (
             await session.scalars(
-                select(VoidEvent).where(
-                    VoidEvent.organization_id == organization.id,
-                    VoidEvent.external_id == "assignment-1",
+                select(EventModel).where(
+                    EventModel.organization_id == organization.id,
+                    EventModel.external_id == "assignment-1",
                 )
             )
         ).all()
         assert len(rows) == 1
-        assert rows[0].payload["name"] == "identity.entitlements.updated"
+        assert event_payload(rows[0])["name"] == "identity.entitlements.updated"
         response = await state_client.get("/v1/void/identities/child/entitlements")
         assert response.status_code == 200, response.text
         assert response.json()["external_identity_id"] == "child"

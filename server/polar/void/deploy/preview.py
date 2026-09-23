@@ -1,3 +1,5 @@
+from polar.void.meter.schemas import to_schema as meter_schema
+
 """Reprice existing meter usage. No reducer processing or billing writes."""
 
 import uuid
@@ -80,14 +82,14 @@ async def preview_prices(
         proposed = wanted[entry.key]
         if (
             history is None
-            and current.unit_amount == proposed.unit_amount
-            and current.currency == proposed.currency
+            and meter_schema(current).unit_amount == proposed.unit_amount
+            and meter_schema(current).currency == proposed.currency
         ):
             continue
         preview = MeterPricePreview(
             window=window,
-            currency=current.currency,
-            current_unit_amount=current.unit_amount,
+            currency=meter_schema(current).currency,
+            current_unit_amount=meter_schema(current).unit_amount,
             proposed_unit_amount=proposed.unit_amount,
             customers=[],
             billable_units=Decimal(0),
@@ -100,7 +102,7 @@ async def preview_prices(
         entry.price_preview = preview
         usage = reducers.get(proposed.reducer)
         credits = reducers.get(proposed.credit_reducer or f"{proposed.reducer}-credits")
-        if current.currency != proposed.currency:
+        if meter_schema(current).currency != proposed.currency:
             preview.unavailable = (
                 "Currency changes cannot be compared as a price-only change."
             )
@@ -203,7 +205,7 @@ async def preview_prices(
                     )
                 continue
             units = accrued_units(after) - accrued_units(before)
-            current_amount = units * Decimal(current.unit_amount)
+            current_amount = units * Decimal(meter_schema(current).unit_amount)
             proposed_amount = units * proposed.unit_amount
             preview.customers.append(
                 PricePreviewCustomer(

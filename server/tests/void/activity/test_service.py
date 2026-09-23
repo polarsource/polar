@@ -1,6 +1,5 @@
-import json
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from pytest_mock import MockerFixture
@@ -8,7 +7,8 @@ from sqlalchemy import select
 
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidActivitySpan, VoidDeployment, VoidEvent
+from polar.models import Event as EventModel
+from polar.models import Organization, VoidActivitySpan, VoidDeployment
 from polar.postgres import AsyncSession
 from polar.void.activity.repository import ActivitySpanRepository
 from polar.void.activity.service import (
@@ -93,12 +93,12 @@ async def deploy_classifier(
 
 async def ingest(
     session: AsyncSession, organization: Organization, *events: EventCreate
-) -> list[VoidEvent]:
+) -> list[EventModel]:
     await event_service.ingest(session, organization.id, list(events), EventSource.user)
     return list(
         (
             await session.execute(
-                select(VoidEvent).where(VoidEvent.organization_id == organization.id)
+                select(EventModel).where(EventModel.organization_id == organization.id)
             )
         )
         .scalars()
@@ -293,19 +293,17 @@ class TestSweep:
 
 def test_summarize_rolls_up_tools_not_arguments() -> None:
     def event(external_id: str, metadata: dict[str, object]) -> object:
-        return type(
-            "E",
-            (),
-            {
-                "external_id": external_id,
-                "payload": {
-                    "name": "llm.completion",
-                    "external_id": external_id,
-                    "external_identity_id": "agent-1",
-                    "metadata": json.dumps(metadata),
-                },
-            },
-        )()
+        return EventModel(
+            id=uuid4(),
+            organization_id=uuid4(),
+            external_id=external_id,
+            name="llm.completion",
+            source="user",
+            external_identity_id="agent-1",
+            timestamp=utc_now(),
+            ingested_at=utc_now(),
+            user_metadata=metadata,
+        )
 
     events = [
         event(

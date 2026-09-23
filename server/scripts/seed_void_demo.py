@@ -1,3 +1,7 @@
+from polar.models.subscription import SubscriptionStatus
+from polar.void.event.schemas import event_payload
+from polar.void.product.schemas import meters_of, price_of
+
 """Seed the Void demo; edit CUSTOMERS below to control its timelines."""
 
 import argparse
@@ -21,23 +25,30 @@ from polar.event.system import SystemEvent
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.models import (
+    Benefit,
     Customer,
     Organization,
     User,
     VoidActivitySpan,
     VoidBillingIdentity,
     VoidDeployment,
-    VoidEntitlement,
-    VoidEvent,
-    VoidMeter,
-    VoidProduct,
     VoidReducer,
     VoidReducerBucket,
     VoidReducerDependency,
     VoidReducerJob,
     VoidScenario,
-    VoidSubscription,
-    VoidSubscriptionStatus,
+)
+from polar.models import (
+    Event as EventModel,
+)
+from polar.models import (
+    Meter as MeterModel,
+)
+from polar.models import (
+    Product as ProductModel,
+)
+from polar.models import (
+    Subscription as SubscriptionModel,
 )
 from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import create_redis
@@ -79,7 +90,7 @@ from polar.void.reducer.service import derived_bucket_rows, event_bucket_rows
 from polar.void.scenario.schemas import ScenarioCreate, ScenarioPatch
 from polar.void.scenario.service import scenario as scenario_service
 from polar.void.subscription.repository import SubscriptionRepository
-from polar.void.subscription.service import lifecycle_events
+from polar.void.subscription.service import lifecycle_events, new_subscription
 from polar.void.tinybird import TinybirdApi, create_client
 from polar.worker import JobQueueManager
 
@@ -471,24 +482,26 @@ def customer_event(customer: CustomerSchema) -> EventCreate:
 
 def subscription_events(
     customer: CustomerSchema,
-    subscription: VoidSubscription,
+    subscription: SubscriptionModel,
     timeline: SubscriptionSeed,
     until: datetime,
 ) -> list[EventCreate]:
     product = subscription.product
-    assert product.interval is not None
-    amount = int(product.amount * 100)
+    assert subscription.started_at is not None
+    assert product.recurring_interval_count is not None
+    assert product.recurring_interval is not None
+    amount = int(price_of(product).amount * 100)
     common = {
         "seed_dataset": DATASET,
         "customer_id": str(customer.id),
         "subscription_id": str(subscription.id),
         "product_id": str(product.id),
-        "currency": product.currency,
+        "currency": price_of(product).currency,
     }
     recurring = {
         "amount": amount,
-        "recurring_interval": product.interval,
-        "recurring_interval_count": product.interval_count,
+        "recurring_interval": product.recurring_interval,
+        "recurring_interval_count": product.recurring_interval_count,
     }
     events: list[EventCreate] = []
 
@@ -517,8 +530,8 @@ def subscription_events(
     while (
         at := step(
             subscription.started_at,
-            TimeInterval(product.interval),
-            cycle * product.interval_count,
+            TimeInterval(product.recurring_interval),
+            cycle * product.recurring_interval_count,
         )
     ) <= until:
         if subscription.ends_at is not None and at >= subscription.ends_at:
@@ -532,7 +545,7 @@ def subscription_events(
         }
         if cycle:
             emit(SystemEvent.subscription_cycled, str(cycle), at, recurring)
-            for meter in product.meters:
+            for meter in meters_of(product):
                 emit(
                     SystemEvent.meter_reset,
                     f"{cycle}:{meter.id}",
@@ -553,7 +566,7 @@ def subscription_events(
                 **order,
                 "transaction_id": str(uuid5(subscription.id, f"balance:{cycle}")),
                 "presentment_amount": amount,
-                "presentment_currency": product.currency,
+                "presentment_currency": price_of(product).currency,
                 "fee": amount * 4 // 100,
             },
         )
@@ -839,17 +852,17 @@ class DemoSeeder:
             .values(root_identity_id=None)
         )
         for model in (
-            VoidEvent,
-            VoidSubscription,
+            EventModel,
+            SubscriptionModel,
             VoidScenario,
             VoidReducerJob,
             VoidReducerDependency,
             VoidReducerBucket,
             VoidActivitySpan,
-            VoidProduct,
-            VoidMeter,
+            ProductModel,
+            MeterModel,
             VoidDeployment,
-            VoidEntitlement,
+            Benefit,
             VoidReducer,
         ):
             await self.session.execute(
@@ -890,7 +903,7 @@ class DemoSeeder:
             )
             # Meters and products inherit the version's age so their pages
             # read as history too.
-            for model in (VoidMeter, VoidProduct):
+            for model in (MeterModel, ProductModel):
                 await self.session.execute(
                     update(model)
                     .where(
@@ -974,30 +987,31 @@ class DemoSeeder:
             await self.seed_subscription(timeline, products[plan.plan])
 
     async def seed_subscription(
-        self, timeline: CustomerSeed, product: VoidProduct
+        self, timeline: CustomerSeed, product: ProductModel
     ) -> None:
         plan = timeline.subscription
         assert plan is not None
         canceled_at = plan.cancellation_at(self.now)
-        subscription = VoidSubscription(
-            id=uuid5(self.organization.id, f"demo:subscription:{timeline.external_id}"),
-            organization=self.organization,
-            product=product,
-            billing_identity=await identity_service.get(
+        subscription = await new_subscription(
+            self.session,
+            product,
+            await identity_service.get(
                 self.session, self.organization.id, timeline.external_id
             ),
-            created_at=plan.starts_at,
-            started_at=plan.starts_at,
-            status=VoidSubscriptionStatus.canceled
-            if canceled_at
-            else VoidSubscriptionStatus.active,
-            canceled_at=canceled_at,
+            plan.starts_at,
+            id=uuid5(self.organization.id, f"demo:subscription:{timeline.external_id}"),
             ends_at=plan.ends_at if canceled_at else None,
         )
-        await SubscriptionRepository.from_session(self.session).create(subscription)
-        self.history.extend(
-            lifecycle_events(subscription, "created", subscription.started_at)
+        subscription.created_at = plan.starts_at
+        subscription.canceled_at = canceled_at
+        subscription.cancel_at_period_end = bool(
+            canceled_at and subscription.ends_at and subscription.ends_at > self.now
         )
+        if subscription.cancel_at_period_end:
+            subscription.status = SubscriptionStatus.active
+            subscription.ended_at = None
+        await SubscriptionRepository.from_session(self.session).create(subscription)
+        self.history.extend(lifecycle_events(subscription, "created", plan.starts_at))
         if subscription.ends_at is not None:
             self.history.extend(
                 lifecycle_events(subscription, "canceled", subscription.ends_at)
@@ -1112,7 +1126,7 @@ class DemoSeeder:
             await asyncio.to_thread(
                 tinybird.ingest_batch,
                 "void_events",
-                [event.payload for event in pending],
+                [event_payload(event) for event in pending],
             )
             await activity_service.touch_events(self.session, pending)
             await repository.mark_delivered(pending, utc_now())

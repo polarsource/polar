@@ -4,29 +4,37 @@ from decimal import Decimal
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.orm import selectinload
 
 from polar.models import (
+    Benefit,
     Customer,
     Meter,
     Model,
     Organization,
     Product,
+    ProductBenefit,
+    ProductPriceMeteredUnit,
     Subscription,
     VoidBillingIdentity,
     VoidDeployment,
-    VoidEntitlement,
-    VoidMeter,
-    VoidProduct,
     VoidReducer,
     VoidReducerBucket,
     VoidReducerDependency,
     VoidReducerJob,
-    VoidSubscription,
 )
+from polar.models import (
+    Meter as MeterModel,
+)
+from polar.models import (
+    Product as ProductModel,
+)
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
+from polar.void.meter.repository import MeterRepository
+from polar.void.meter.schemas import to_schema as meter_schema
+from polar.void.product.repository import ProductRepository
+from polar.void.product.schemas import meters_of, price_of
 from polar.void.reducer.aggregation import (
     CountAggregation,
     DerivedAggregation,
@@ -39,7 +47,9 @@ from polar.void.reducer.filter import (
     FilterConjunction,
     FilterOperator,
 )
+from polar.void.subscription.service import new_subscription
 from tests.fixtures.database import SaveFixture
+from tests.void.factories import meter_model, product_model
 
 
 @pytest_asyncio.fixture
@@ -70,8 +80,8 @@ def create_meter(
     reducer: VoidReducer,
     *,
     version: str = VERSION,
-) -> VoidMeter:
-    return VoidMeter(
+) -> MeterModel:
+    return meter_model(
         organization=organization,
         name="Requests",
         slug="requests",
@@ -85,8 +95,8 @@ def create_meter(
 
 def create_product(
     organization: Organization, *, version: str = VERSION
-) -> VoidProduct:
-    return VoidProduct(
+) -> ProductModel:
+    return product_model(
         organization=organization,
         name="Pro",
         slug="pro",
@@ -118,8 +128,12 @@ class TestOrganizationKeys:
                 id="reducer",
             ),
             pytest.param(
-                lambda organization: VoidEntitlement(
-                    organization=organization, slug="shared", name="Shared"
+                lambda organization: Benefit(
+                    organization=organization,
+                    slug="shared",
+                    name="Shared",
+                    description="",
+                    type=BenefitType.feature_flag,
                 ),
                 id="entitlement",
             ),
@@ -287,25 +301,19 @@ class TestForeignKeys:
                     )
                 )
 
-    async def test_subscription_requires_a_void_product(
+    async def test_subscription_uses_a_native_product(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        organization: Organization,
         product: Product,
         void_identity: VoidBillingIdentity,
     ) -> None:
-        with pytest.raises(IntegrityError):
-            async with session.begin_nested():
-                await save_fixture(
-                    VoidSubscription(
-                        organization=organization,
-                        product_id=product.id,
-                        billing_identity=void_identity,
-                        status="active",
-                        started_at=datetime(2026, 9, 1, tzinfo=UTC),
-                    )
-                )
+        subscription = await new_subscription(
+            session, product, void_identity, datetime(2026, 9, 1, tzinfo=UTC)
+        )
+        await save_fixture(subscription)
+        assert subscription.product_id == product.id
+        assert await session.get(Subscription, subscription.id) is subscription
 
 
 @pytest.mark.asyncio
@@ -367,7 +375,7 @@ class TestPersistence:
         assert reducer.filter == filter
         assert reducer.map == {"tokens": {"expression": "value * 2"}}
 
-    async def test_void_graph_coexists_with_polar_billing(
+    async def test_void_graph_uses_polar_billing_entities(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -380,14 +388,26 @@ class TestPersistence:
         void_identity: VoidBillingIdentity,
     ) -> None:
         void_meter = create_meter(organization, void_reducer)
-        entitlement = VoidEntitlement(
-            organization=organization, slug="exports", name="Exports"
+        entitlement = Benefit(
+            organization=organization,
+            slug="exports",
+            name="Exports",
+            description="",
+            type=BenefitType.feature_flag,
         )
         await save_fixture(void_meter)
         await save_fixture(entitlement)
         void_product = create_product(organization)
-        void_product.meter_ids = [void_meter.id]
-        void_product.entitlement_ids = [entitlement.id]
+        void_product.all_prices.append(
+            ProductPriceMeteredUnit(
+                meter=void_meter,
+                unit_amount=Decimal("12.3456789012"),
+                price_currency="usd",
+            )
+        )
+        void_product.product_benefits.append(
+            ProductBenefit(benefit=entitlement, order=0)
+        )
         void_product.meter_terms = {
             str(void_meter.id): {"included": 100, "limit": None}
         }
@@ -395,12 +415,8 @@ class TestPersistence:
         customer.root_identity = void_identity
         await save_fixture(customer)
         started_at = datetime(2026, 9, 1, tzinfo=UTC)
-        void_subscription = VoidSubscription(
-            organization=organization,
-            product=void_product,
-            billing_identity=void_identity,
-            status="active",
-            started_at=started_at,
+        void_subscription = await new_subscription(
+            session, void_product, void_identity, started_at
         )
         await save_fixture(void_subscription)
         derived_reducer = VoidReducer(
@@ -438,25 +454,22 @@ class TestPersistence:
         assert deployment.entries == [
             {"resource": "product", "id": str(void_product.id)}
         ]
-        await session.refresh(void_meter)
-        assert void_meter.unit_amount == Decimal("0.123456789012")
+        loaded_meter = await MeterRepository.from_session(session).get(
+            organization.id, void_meter.id
+        )
+        assert loaded_meter is not None
+        assert meter_schema(loaded_meter).unit_amount == Decimal("0.123456789012")
         await session.refresh(void_product)
-        assert void_product.amount == Decimal("1234567890123.123456")
+        assert price_of(void_product).amount == Decimal("1234567890123.12")
         assert void_product.meter_terms == {
             str(void_meter.id): {"included": 100, "limit": None}
         }
-        with pytest.raises(InvalidRequestError, match="lazy='raise'"):
-            _ = void_product.meters
-        loaded_product = await session.scalar(
-            select(VoidProduct)
-            .where(VoidProduct.id == void_product.id)
-            .options(
-                selectinload(VoidProduct.meters), selectinload(VoidProduct.entitlements)
-            )
+        loaded_product = await ProductRepository.from_session(session).get(
+            organization.id, void_product.id
         )
         assert loaded_product is not None
-        assert [item.id for item in loaded_product.meters] == [void_meter.id]
-        assert [item.id for item in loaded_product.entitlements] == [entitlement.id]
+        assert [item.id for item in meters_of(loaded_product)] == [void_meter.id]
+        assert [item.id for item in loaded_product.benefits] == [entitlement.id]
         await session.refresh(void_subscription)
         with pytest.raises(InvalidRequestError, match="lazy='raise'"):
             _ = void_subscription.product

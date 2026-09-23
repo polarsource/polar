@@ -11,14 +11,15 @@ import pytest
 from pydantic import ValidationError
 
 from polar.exceptions import ResourceNotFound
-from polar.models import VoidMeter as Meter
 from polar.postgres import AsyncSession
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.metric import compare as module
 from polar.void.metric.compare import CompareQuery
 from polar.void.metric.schemas import Metrics, MetricSeries, MetricsQuery
 from polar.void.metric.service import metric as metric_service
 from polar.void.tinybird import TinybirdApi
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.void.factories import meter_model
 
 pytestmark = pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 
@@ -39,7 +40,7 @@ def test_compare_uses_baseline_subscriptions_and_candidate_prices(
     scenario: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     scenario.current.version_id = "a" * 64
-    candidate = Meter(
+    candidate = meter_model(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="tokens",
@@ -100,7 +101,7 @@ def test_compare_uses_baseline_subscriptions_and_candidate_prices(
     assert [customer.external_id for customer in preview.customers] == ["acme"]
     session.add.assert_not_called()
     session.flush.assert_not_called()
-    assert scenario.current.unit_amount == Decimal("0.002")
+    assert meter_schema(scenario.current).unit_amount == Decimal("0.002")
 
 
 def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
@@ -120,7 +121,7 @@ def test_same_version_compares_unchanged_meter_and_exposes_missing_matches(
     assert result.meters[0].price_preview is not None
     assert result.meters[0].price_preview.difference == 0
     assert result.meters[0].price_preview.billable_units == 35000
-    candidate = Meter(
+    candidate = meter_model(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="other",

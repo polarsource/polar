@@ -6,19 +6,19 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidEvent
+from polar.models import Event as EventModel
 
 
-class EventRepository(RepositoryBase[VoidEvent]):
-    model = VoidEvent
+class EventRepository(RepositoryBase[EventModel]):
+    model = EventModel
 
     async def timestamp_range(
         self, organization_id: UUID
     ) -> tuple[datetime | None, datetime | None]:
         result = await self.session.execute(
-            select(func.min(VoidEvent.timestamp), func.max(VoidEvent.timestamp)).where(
-                VoidEvent.organization_id == organization_id
-            )
+            select(
+                func.min(EventModel.timestamp), func.max(EventModel.timestamp)
+            ).where(EventModel.organization_id == organization_id)
         )
         start, end = result.one()
         return start, end
@@ -27,18 +27,20 @@ class EventRepository(RepositoryBase[VoidEvent]):
         self, organization_id: UUID, external_ids: Sequence[str]
     ) -> set[str]:
         result = await self.session.execute(
-            select(VoidEvent.external_id).where(
-                VoidEvent.organization_id == organization_id,
-                VoidEvent.external_id.in_(external_ids),
+            select(EventModel.external_id).where(
+                EventModel.organization_id == organization_id,
+                EventModel.external_id.in_(external_ids),
             )
         )
-        return set(result.scalars())
+        return {
+            external_id for external_id in result.scalars() if external_id is not None
+        }
 
-    async def insert_events(self, events: Sequence[VoidEvent]) -> int:
+    async def insert_events(self, events: Sequence[EventModel]) -> int:
         if not events:
             return 0
         result = await self.session.execute(
-            insert(VoidEvent)
+            insert(EventModel)
             .values(
                 [
                     {
@@ -46,34 +48,42 @@ class EventRepository(RepositoryBase[VoidEvent]):
                         "organization_id": event.organization_id,
                         "external_id": event.external_id,
                         "timestamp": event.timestamp,
-                        "payload": event.payload,
+                        "ingested_at": event.ingested_at,
+                        "name": event.name,
+                        "source": event.source,
+                        "external_identity_id": event.external_identity_id,
+                        "external_root_id": event.external_root_id,
+                        "external_customer_id": event.external_customer_id,
+                        "user_metadata": event.user_metadata,
                     }
-                    for event in sorted(events, key=lambda event: event.external_id)
+                    for event in sorted(
+                        events, key=lambda event: event.external_id or ""
+                    )
                 ]
             )
             .on_conflict_do_nothing(index_elements=["organization_id", "external_id"])
-            .returning(VoidEvent.id)
+            .returning(EventModel.id)
         )
         return len(result.scalars().all())
 
     async def pending(
         self, organization_ids: set[UUID], *, limit: int
-    ) -> Sequence[VoidEvent]:
+    ) -> Sequence[EventModel]:
         return await self.get_all(
-            select(VoidEvent)
+            select(EventModel)
             .where(
-                VoidEvent.organization_id.in_(organization_ids),
-                VoidEvent.delivered_at.is_(None),
+                EventModel.organization_id.in_(organization_ids),
+                EventModel.delivered_at.is_(None),
             )
-            .order_by(VoidEvent.created_at, VoidEvent.id)
+            .order_by(EventModel.ingested_at, EventModel.id)
             .limit(limit)
             .with_for_update(skip_locked=True)
         )
 
-    async def mark_delivered(self, events: Sequence[VoidEvent], at: datetime) -> None:
+    async def mark_delivered(self, events: Sequence[EventModel], at: datetime) -> None:
         await self.session.execute(
-            update(VoidEvent)
-            .where(VoidEvent.id.in_([event.id for event in events]))
+            update(EventModel)
+            .where(EventModel.id.in_([event.id for event in events]))
             .values(delivered_at=at)
         )
 
@@ -85,25 +95,21 @@ class EventRepository(RepositoryBase[VoidEvent]):
         end: datetime,
         event_names: Sequence[str] | None,
         limit: int,
-    ) -> Sequence[VoidEvent]:
+    ) -> Sequence[EventModel]:
         """Newest first, so the cap keeps the most recent events of a busy window."""
         if not identities:
             return []
         statement = (
-            select(VoidEvent)
+            select(EventModel)
             .where(
-                VoidEvent.organization_id == organization_id,
-                VoidEvent.payload["external_identity_id"]
-                .as_string()
-                .in_(list(identities)),
-                VoidEvent.timestamp >= start,
-                VoidEvent.timestamp <= end,
+                EventModel.organization_id == organization_id,
+                EventModel.external_identity_id.in_(list(identities)),
+                EventModel.timestamp >= start,
+                EventModel.timestamp <= end,
             )
-            .order_by(VoidEvent.timestamp.desc(), VoidEvent.id.desc())
+            .order_by(EventModel.timestamp.desc(), EventModel.id.desc())
             .limit(limit)
         )
         if event_names is not None:
-            statement = statement.where(
-                VoidEvent.payload["name"].as_string().in_(list(event_names))
-            )
+            statement = statement.where(EventModel.name.in_(list(event_names)))
         return await self.get_all(statement)

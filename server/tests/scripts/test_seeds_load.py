@@ -42,10 +42,7 @@ from polar.models import (
     User,
     UserOrganization,
     VoidBillingIdentity,
-    VoidMeter,
-    VoidProduct,
     VoidReducer,
-    VoidSubscription,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.redis import Redis
@@ -115,10 +112,8 @@ class TestSeedsLoad:
                 Meter,
                 Event,
                 VoidBillingIdentity,
-                VoidMeter,
-                VoidProduct,
                 VoidReducer,
-                VoidSubscription,
+                Subscription,
             ):
                 assert (
                     await session.scalar(

@@ -2,11 +2,11 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, cast, or_, select, update
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Select, or_, select, update
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidActivitySpan, VoidEvent
+from polar.models import Event as EventModel
+from polar.models import VoidActivitySpan
 
 
 class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
@@ -93,8 +93,8 @@ class ActivitySpanRepository(RepositoryBase[VoidActivitySpan]):
         await self.session.refresh(span, attribute_names=["due_at"])
 
 
-class ActivityEventRepository(RepositoryBase[VoidEvent]):
-    model = VoidEvent
+class ActivityEventRepository(RepositoryBase[EventModel]):
+    model = EventModel
 
     async def list_for_span(
         self,
@@ -102,19 +102,19 @@ class ActivityEventRepository(RepositoryBase[VoidEvent]):
         event_name: str,
         group_by: str,
         span_key: str,
-    ) -> Sequence[VoidEvent]:
+    ) -> Sequence[EventModel]:
         """The events of one span. The containment test and the external id
         are both indexed, so this stays a lookup as events accumulate."""
-        metadata = cast(VoidEvent.payload["metadata"].as_string(), JSONB)
+        metadata = EventModel.user_metadata
         return await self.get_all(
-            select(VoidEvent)
+            select(EventModel)
             .where(
-                VoidEvent.organization_id == organization_id,
-                VoidEvent.payload["name"].as_string() == event_name,
+                EventModel.organization_id == organization_id,
+                EventModel.name == event_name,
                 or_(
                     metadata.contains({group_by: span_key}),
-                    VoidEvent.external_id == span_key,
+                    EventModel.external_id == span_key,
                 ),
             )
-            .order_by(VoidEvent.timestamp, VoidEvent.id)
+            .order_by(EventModel.timestamp, EventModel.id)
         )

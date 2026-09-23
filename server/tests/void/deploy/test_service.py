@@ -10,15 +10,21 @@ from sqlalchemy import func, select
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import (
+    Benefit,
     Organization,
     VoidDeployment,
-    VoidEntitlement,
-    VoidEvent,
-    VoidMeter,
-    VoidProduct,
     VoidReducer,
     VoidReducerDependency,
     VoidReducerJob,
+)
+from polar.models import (
+    Event as EventModel,
+)
+from polar.models import (
+    Meter as MeterModel,
+)
+from polar.models import (
+    Product as ProductModel,
 )
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.void_deployment import VoidDeploymentStatus
@@ -75,9 +81,9 @@ async def counts(session: AsyncSession, organization: Organization) -> list[int]
         )
         for model in (
             VoidReducer,
-            VoidMeter,
-            VoidEntitlement,
-            VoidProduct,
+            MeterModel,
+            Benefit,
+            ProductModel,
             VoidDeployment,
         )
     ]
@@ -390,11 +396,12 @@ class TestDeploy:
     ) -> None:
         start = datetime(2026, 1, 1, tzinfo=UTC)
         await save_fixture(
-            VoidEvent(
+            EventModel(
                 organization=organization,
                 external_id="old",
                 timestamp=start,
-                payload={},
+                name="usage",
+                user_metadata={},
             )
         )
         body = deepcopy(CONFIG)

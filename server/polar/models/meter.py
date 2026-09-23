@@ -2,7 +2,15 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String, Uuid
+from sqlalchemy import (
+    TIMESTAMP,
+    BigInteger,
+    ForeignKey,
+    ForeignKeyConstraint,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -15,10 +23,38 @@ from polar.meter.unit import MeterUnit
 if TYPE_CHECKING:
     from .event import Event
     from .organization import Organization
+    from .void_deployment import VoidDeployment
+    from .void_reducer import VoidReducer
 
 
 class Meter(RecordModel, MetadataMixin):
     __tablename__ = "meters"
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "slug", "version_id"),
+        ForeignKeyConstraint(
+            ["organization_id", "usage_reducer_id"],
+            ["void_reducers.organization_id", "void_reducers.id"],
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "credit_reducer_id"],
+            ["void_reducers.organization_id", "void_reducers.id"],
+        ),
+    )
+    slug: Mapped[str] = mapped_column(String, nullable=True)
+    version_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
+    deployment_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("void_deployments.id"), nullable=True
+    )
+    usage_reducer_id: Mapped[UUID] = mapped_column(Uuid, nullable=True, index=True)
+    credit_reducer_id: Mapped[UUID] = mapped_column(Uuid, nullable=True, index=True)
+    deployment: Mapped["VoidDeployment"] = relationship(lazy="raise")
+    usage_reducer: Mapped["VoidReducer"] = relationship(
+        foreign_keys=[usage_reducer_id], lazy="raise"
+    )
+    credit_reducer: Mapped["VoidReducer"] = relationship(
+        foreign_keys=[credit_reducer_id], lazy="raise"
+    )
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     unit: Mapped[MeterUnit] = mapped_column(

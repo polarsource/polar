@@ -12,8 +12,7 @@ from pydantic import ValidationError
 
 from polar.auth.models import AuthSubject
 from polar.authz.dependencies import AuthzContext
-from polar.models import Organization
-from polar.models import VoidMeter as Meter
+from polar.models import Meter, Organization
 from polar.postgres import AsyncSession
 from polar.void.customer.service import customer as customer_service
 from polar.void.deploy import preview as module
@@ -26,10 +25,12 @@ from polar.void.deploy.schemas import (
 )
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.balance import MeterEvent
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import meter as meter_service
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.tinybird import TinybirdApi
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.void.factories import meter_model
 
 pytestmark = pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 
@@ -45,7 +46,7 @@ def scenario(
     auth = AuthzContext(organization=auth_subject.subject, auth_subject=auth_subject)
     org = auth.organization.id
     usage_id, credit_id = uuid.uuid4(), uuid.uuid4()
-    current = Meter(
+    current = meter_model(
         id=uuid.uuid4(),
         organization_id=org,
         name="Tokens",
@@ -211,7 +212,7 @@ def test_reprices_same_processed_usage_without_writes(
         ("acme", 10000),
     ]
     assert scenario.buckets == original
-    assert scenario.current.unit_amount == Decimal("0.002")
+    assert meter_schema(scenario.current).unit_amount == Decimal("0.002")
     assert scenario.read_buckets.await_count == 4  # Two reducers per customer, once.
 
 
@@ -258,7 +259,7 @@ def test_zero_decreased_and_subcent_prices(
 def test_other_versions_are_neither_reference_price_nor_usage_source(
     scenario: SimpleNamespace,
 ) -> None:
-    other = Meter(
+    other = meter_model(
         id=uuid.uuid4(),
         organization_id=scenario.current.organization_id,
         slug="tokens",

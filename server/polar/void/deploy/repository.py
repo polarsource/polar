@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 
 from polar.kit.repository import RepositoryBase
-from polar.models import VoidDeployment, VoidEntitlement, VoidReducer
+from polar.models import Benefit, VoidDeployment, VoidReducer
 from polar.models.void_deployment import VoidDeploymentStatus
 
 
@@ -60,10 +60,10 @@ class DeployRepository(RepositoryBase[VoidDeployment]):
             )
         )
         entitlements = await self.session.scalars(
-            select(VoidEntitlement.slug).where(
-                VoidEntitlement.organization_id == organization_id,
-                VoidEntitlement.slug.in_(entitlement_slugs),
-                VoidEntitlement.deleted_at.is_not(None),
+            select(Benefit.slug).where(
+                Benefit.organization_id == organization_id,
+                Benefit.slug.in_(entitlement_slugs),
+                Benefit.deleted_at.is_not(None),
             )
         )
         return [("reducer", slug) for slug in reducers] + [

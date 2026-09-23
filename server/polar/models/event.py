@@ -181,7 +181,7 @@ class Event(Model, MetadataMixin):
     timestamp: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
-    name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     source: Mapped[EventSource] = mapped_column(
         String, nullable=False, default=EventSource.system, index=True
     )
@@ -201,6 +201,12 @@ class Event(Model, MetadataMixin):
     )
 
     external_member_id: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    external_identity_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    external_root_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    delivered_at: Mapped[datetime.datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True)
 

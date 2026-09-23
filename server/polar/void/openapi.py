@@ -69,6 +69,7 @@ def get_void_openapi(version: APIVersion = CURRENT_API_VERSION) -> dict[str, Any
         version_route = context.original_route
         if not isinstance(version_route, APIRoute):
             continue
+        assert context.path is not None
         # FastAPI merges scopes; our authenticators accept any scope within each group.
         scope_groups = _scope_groups(version_route.dependant)
         for method in context.methods or ():

@@ -13,7 +13,7 @@ PREFIX = "/v1/void"
 
 @pytest.mark.asyncio
 class TestSubscriptionRoutes:
-    async def test_one_time_purchase_revoke_and_rebuild(
+    async def test_recurring_subscription_revoke_and_rebuild(
         self,
         void_client: AsyncClient,
         organization: Organization,
@@ -36,7 +36,8 @@ class TestSubscriptionRoutes:
                         "slug": "license",
                         "name": "License",
                         "price": {
-                            "type": "one_time",
+                            "type": "recurring",
+                            "interval": "month",
                             "amount": "99",
                             "currency": "usd",
                         },
@@ -58,10 +59,13 @@ class TestSubscriptionRoutes:
         assert created.status_code == 201, created.text
         item = created.json()
         assert item["status"] == "active"
-        assert item["current_period_start"] is item["current_period_end"] is None
+        assert item["current_period_start"] is not None
+        assert item["current_period_end"] is not None
         assert item["product"]["price"] == {
-            "type": "one_time",
-            "amount": "99.000000",
+            "type": "recurring",
+            "interval": "month",
+            "amount": "99",
+            "interval_count": 1,
             "currency": "usd",
         }
         listing = await void_client.get(
@@ -77,7 +81,7 @@ class TestSubscriptionRoutes:
             f"{PREFIX}/subscriptions/{item['id']}/revoke", headers=headers
         )
         assert revoked.status_code == 200, revoked.text
-        assert revoked.json()["status"] == "revoked"
+        assert revoked.json()["status"] == "canceled"
         duplicate = await void_client.post(
             f"{PREFIX}/subscriptions/{item['id']}/revoke", headers=headers
         )

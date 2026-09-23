@@ -1,10 +1,15 @@
 import uuid
 from collections.abc import Sequence
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError, ResourceNotFound
-from polar.models import VoidProduct
+from polar.kit.currency import get_currency_decimal_factor
+from polar.kit.math import polar_round
+from polar.models import Product as ProductModel
+from polar.models import ProductBenefit, ProductPriceFixed, ProductPriceMeteredUnit
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.entitlement.service import entitlement as entitlement_service
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import meter as meter_service
 from polar.void.organization.service import organization as organization_service
 
@@ -18,8 +23,8 @@ class ProductInvalid(PolarError):
 
 
 def products_in_version(
-    products: Sequence[VoidProduct], version_id: str | None
-) -> dict[str, VoidProduct]:
+    products: Sequence[ProductModel], version_id: str | None
+) -> dict[str, ProductModel]:
     """The products of one configuration version by slug; empty without a version."""
     return {
         product.slug: product
@@ -31,12 +36,12 @@ def products_in_version(
 class ProductService:
     async def list(
         self, session: AsyncReadSession, organization_id: uuid.UUID
-    ) -> Sequence[VoidProduct]:
+    ) -> Sequence[ProductModel]:
         return await ProductRepository.from_session(session).list(organization_id)
 
     async def get(
         self, session: AsyncReadSession, organization_id: uuid.UUID, id: uuid.UUID
-    ) -> VoidProduct:
+    ) -> ProductModel:
         product = await ProductRepository.from_session(session).get(organization_id, id)
         if product is None:
             raise ResourceNotFound()
@@ -47,7 +52,7 @@ class ProductService:
         session: AsyncSession,
         organization_id: uuid.UUID,
         create_schema: ProductCreate,
-    ) -> VoidProduct:
+    ) -> ProductModel:
         organization = await organization_service.lock(session, organization_id)
         price = create_schema.price
         if price.type == "one_time" and create_schema.meter_ids:
@@ -59,9 +64,9 @@ class ProductService:
             for meter_id in dict.fromkeys(create_schema.meter_ids)
         ]
         for meter in meters:
-            if meter.currency != price.currency:
+            if meter_schema(meter).currency != price.currency:
                 raise ProductInvalid(
-                    f"Meter {meter.slug!r} bills in {meter.currency}, "
+                    f"Meter {meter.slug!r} bills in {meter_schema(meter).currency}, "
                     f"product {create_schema.slug!r} in {price.currency}"
                 )
         if set(create_schema.meter_terms) - {m.slug for m in meters}:
@@ -70,22 +75,42 @@ class ProductService:
             await entitlement_service.get(session, organization_id, entitlement_id)
             for entitlement_id in dict.fromkeys(create_schema.entitlement_ids)
         ]
-        product = VoidProduct(
+        product = ProductModel(
             slug=create_schema.slug,
             version_id=create_schema.version_id,
             name=create_schema.name,
             description=create_schema.description,
-            price_type=price.type,
-            interval=price.interval if price.type == "recurring" else None,
-            interval_count=price.interval_count if price.type == "recurring" else 1,
-            amount=price.amount,
-            currency=price.currency,
-            meter_ids=[m.id for m in meters],
+            recurring_interval=SubscriptionRecurringInterval(price.interval)
+            if price.type == "recurring"
+            else None,
+            recurring_interval_count=price.interval_count
+            if price.type == "recurring"
+            else None,
+            all_prices=[
+                ProductPriceFixed(
+                    price_amount=polar_round(
+                        price.amount * get_currency_decimal_factor(price.currency)
+                    ),
+                    price_currency=price.currency,
+                ),
+                *[
+                    ProductPriceMeteredUnit(
+                        meter=meter,
+                        unit_amount=meter_schema(meter).unit_amount
+                        * get_currency_decimal_factor(price.currency),
+                        price_currency=price.currency,
+                    )
+                    for meter in meters
+                ],
+            ],
+            product_benefits=[
+                ProductBenefit(benefit=benefit, order=index)
+                for index, benefit in enumerate(entitlements)
+            ],
             meter_terms={
                 key: value.model_dump(mode="json")
                 for key, value in create_schema.meter_terms.items()
             },
-            entitlement_ids=[e.id for e in entitlements],
             organization=organization,
         )
         await ProductRepository.from_session(session).create(product, flush=True)

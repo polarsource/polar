@@ -8,6 +8,7 @@ from pydantic import AwareDatetime, Field, field_validator
 
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
+from polar.models import Event as EventModel
 
 
 class EventSource(StrEnum):
@@ -79,3 +80,18 @@ class Pagination(Schema):
 class EventsList(Schema):
     items: list[Event]
     pagination: Pagination
+
+
+def event_payload(event: EventModel) -> dict[str, Any]:
+    return {
+        "id": str(event.id),
+        "organization_id": str(event.organization_id),
+        "external_id": event.external_id or str(event.id),
+        "timestamp": event.timestamp.isoformat(),
+        "ingested_at": event.ingested_at.isoformat(),
+        "name": event.name,
+        "source": event.source,
+        "external_identity_id": event.external_identity_id,
+        "external_root_id": event.external_root_id,
+        "metadata": json.dumps(event.user_metadata, allow_nan=False),
+    }

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -11,13 +11,15 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    String,
     Text,
+    UniqueConstraint,
     Uuid,
     case,
     or_,
     select,
 )
-from sqlalchemy.dialects.postgresql import CITEXT, TSVECTOR
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB, TSVECTOR
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -58,6 +60,7 @@ ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility"
 class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
     __table_args__ = (
+        UniqueConstraint("organization_id", "slug", "version_id"),
         Index(
             "ix_products_search_vector",
             "search_vector",
@@ -66,6 +69,12 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
     )
 
     search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
+
+    slug: Mapped[str] = mapped_column(String, nullable=True)
+    version_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
+    meter_terms: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -2,26 +2,18 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy.orm.attributes import set_committed_value
-
+from polar.models import (
+    Benefit as Entitlement,
+)
+from polar.models import (
+    Meter,
+    Product,
+    Subscription,
+)
 from polar.models import (
     VoidBillingIdentity as BillingIdentity,
 )
-from polar.models import (
-    VoidEntitlement as Entitlement,
-)
-from polar.models import (
-    VoidMeter as Meter,
-)
-from polar.models import (
-    VoidProduct as Product,
-)
-from polar.models import (
-    VoidSubscription as Subscription,
-)
-from polar.models import (
-    VoidSubscriptionStatus as SubscriptionStatus,
-)
+from polar.models.subscription import SubscriptionStatus
 from polar.void.event.schemas import EventCreate
 from polar.void.meter.balance import MeterEvent, State, fold
 from polar.void.subscription.service import (
@@ -29,13 +21,14 @@ from polar.void.subscription.service import (
     period_at,
     to_schema,
 )
+from tests.void.factories import meter_model, product_model
 
 ORG = uuid.uuid4()
 NOW = datetime(2026, 9, 8, 9, tzinfo=UTC)
 
 
 def _meter(slug: str) -> Meter:
-    return Meter(
+    return meter_model(
         id=uuid.uuid4(),
         name=slug,
         slug=slug,
@@ -55,7 +48,7 @@ def _product(
     meters: list[Meter] | None = None,
     entitlements: list[Entitlement] | None = None,
 ) -> Product:
-    product = Product(
+    product = product_model(
         id=uuid.uuid4(),
         slug="pro",
         version_id="a" * 64,
@@ -66,15 +59,12 @@ def _product(
         interval_count=1,
         amount=Decimal(49),
         currency="usd",
-        meter_ids=[m.id for m in meters or []],
-        entitlement_ids=[e.id for e in entitlements or []],
+        meters=meters or [],
+        entitlements=entitlements or [],
         meter_terms={},
         organization_id=ORG,
         created_at=NOW,
     )
-    # The pinned sets are view-only relationships resolved from the id arrays.
-    set_committed_value(product, "meters", meters or [])
-    set_committed_value(product, "entitlements", entitlements or [])
     return product
 
 
@@ -156,6 +146,7 @@ def test_derived_meter_events_drive_the_existing_fold() -> None:
     subscription = _subscription(
         _product(meters=[tokens]), _identity("acme"), datetime(2026, 1, 15, tzinfo=UTC)
     )
+    assert subscription.started_at is not None
     created = next(
         e
         for e in lifecycle_events(subscription, "created", subscription.started_at)

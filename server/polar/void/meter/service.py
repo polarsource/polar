@@ -10,13 +10,18 @@ from sqlalchemy import ColumnElement
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import VoidBillingIdentity, VoidMeter, VoidReducer, VoidReducerBucket
+from polar.meter.aggregation import AggregationTypeAdapter
+from polar.meter.filter import Filter as NativeFilter
+from polar.models import Meter as MeterModel
+from polar.models import VoidBillingIdentity, VoidReducer, VoidReducerBucket
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.void.deploy.repository import DeployRepository
 from polar.void.entitlement.schemas import EntitlementAssignment, MeterEntitlementState
 from polar.void.entitlement.service import entitlement as entitlement_service
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from polar.void.identity.service import identity as identity_service
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.metric.service import MERGE
 from polar.void.organization.service import organization as organization_service
 from polar.void.reducer.buckets import bucket_start
@@ -41,7 +46,7 @@ def _parse_time(value: str) -> datetime:
 
 
 def build_meter_cycle_event(
-    meter: VoidMeter,
+    meter: MeterModel,
     external_identity_id: str,
     cycle: MeterCycle,
 ) -> EventCreate:
@@ -56,8 +61,8 @@ def build_meter_cycle_event(
             "meter_id": str(meter.id),
             "meter_version_id": meter.version_id,
             # Pinned so a later reprice cannot rewrite what this period cost.
-            "unit_amount": str(meter.unit_amount),
-            "currency": meter.currency,
+            "unit_amount": str(meter_schema(meter).unit_amount),
+            "currency": meter_schema(meter).currency,
             **cycle.model_dump(mode="json"),
         },
     )
@@ -75,12 +80,12 @@ def validate_reducers(usage: VoidReducer, credit: VoidReducer) -> None:
 class MeterService:
     async def list(
         self, session: AsyncReadSession, organization_id: UUID
-    ) -> Sequence[VoidMeter]:
+    ) -> Sequence[MeterModel]:
         return await MeterRepository.from_session(session).list(organization_id)
 
     async def get(
         self, session: AsyncReadSession, organization_id: UUID, id: UUID
-    ) -> VoidMeter:
+    ) -> MeterModel:
         meter = await MeterRepository.from_session(session).get(organization_id, id)
         if meter is None:
             raise ResourceNotFound()
@@ -88,7 +93,7 @@ class MeterService:
 
     async def create(
         self, session: AsyncSession, organization_id: UUID, create_schema: MeterCreate
-    ) -> VoidMeter:
+    ) -> MeterModel:
         organization = await organization_service.lock(session, organization_id)
         usage = await reducer_service.get(
             session, organization_id, create_schema.usage_reducer_id
@@ -97,9 +102,26 @@ class MeterService:
             session, organization_id, create_schema.credit_reducer_id
         )
         validate_reducers(usage, credit)
-        meter = VoidMeter(
+        deployment = await DeployRepository.from_session(session).by_version(
+            organization_id, create_schema.version_id
+        )
+        if deployment is None:
+            raise ResourceNotFound("No deployment for this meter version")
+        meter = MeterModel(
             **create_schema.model_dump(
-                exclude={"usage_reducer_id", "credit_reducer_id"}
+                exclude={
+                    "usage_reducer_id",
+                    "credit_reducer_id",
+                    "unit_amount",
+                    "currency",
+                }
+            ),
+            deployment=deployment,
+            filter=NativeFilter.model_validate(usage.filter.model_dump())
+            if usage.filter
+            else NativeFilter.model_validate({"conjunction": "and", "clauses": []}),
+            aggregation=AggregationTypeAdapter.validate_python(
+                usage.aggregation.model_dump(exclude={"type"})
             ),
             usage_reducer=usage,
             credit_reducer=credit,
@@ -166,7 +188,7 @@ class MeterService:
         session: AsyncSession,
         tinybird: TinybirdApi,
         organization_id: UUID,
-        meter: VoidMeter,
+        meter: MeterModel,
         identity: VoidBillingIdentity,
         size: float,
         now: datetime,
@@ -301,7 +323,7 @@ class MeterService:
     async def entitlement_state(
         self,
         session: AsyncSession,
-        meter: VoidMeter,
+        meter: MeterModel,
         identity: VoidBillingIdentity,
         root_state: State,
         cap: float,
@@ -410,7 +432,7 @@ class MeterService:
         self,
         session: AsyncSession,
         tinybird: TinybirdApi,
-        meter: VoidMeter,
+        meter: MeterModel,
         identity: VoidBillingIdentity,
     ) -> Callable[
         [UUID, Sequence[datetime], datetime, datetime],
@@ -461,7 +483,7 @@ class MeterService:
         self,
         session: AsyncSession,
         tinybird: TinybirdApi,
-        meter: VoidMeter,
+        meter: MeterModel,
         identity: VoidBillingIdentity,
         at: datetime,
         *,
@@ -534,7 +556,7 @@ class MeterService:
         self,
         tinybird: TinybirdApi,
         pipe: str,
-        meter: VoidMeter,
+        meter: MeterModel,
         external_identity_ids: Sequence[str],
         start: datetime,
         end: datetime,
@@ -557,7 +579,7 @@ class MeterService:
     async def _events(
         self,
         tinybird: TinybirdApi,
-        meter: VoidMeter,
+        meter: MeterModel,
         external_identity_ids: Sequence[str],
         start: datetime,
         end: datetime,
@@ -583,7 +605,7 @@ class MeterService:
     async def _reducer_values(
         self,
         session: AsyncSession,
-        meter: VoidMeter,
+        meter: MeterModel,
         reducer_id: UUID,
         condition: ColumnElement[bool],
         edges: Sequence[datetime],

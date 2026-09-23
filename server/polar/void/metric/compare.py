@@ -1,3 +1,5 @@
+from polar.void.meter.schemas import to_schema as meter_schema
+
 """Read-only POC: one version's subscription history, another's meter prices."""
 
 import uuid
@@ -142,8 +144,8 @@ async def compare(
                 slug=meter.slug,
                 reducer=by_id[meter.usage_reducer_id].slug,
                 credit_reducer=by_id[meter.credit_reducer_id].slug,
-                unit_amount=meter.unit_amount,
-                currency=meter.currency,
+                unit_amount=meter_schema(meter).unit_amount,
+                currency=meter_schema(meter).currency,
             )
             for meter in candidate.values()
         ],

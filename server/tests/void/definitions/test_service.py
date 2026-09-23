@@ -8,12 +8,14 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidEntitlement, VoidMeter
+from polar.models import Benefit, Organization
+from polar.models import Meter as MeterModel
 from polar.postgres import AsyncSession
 from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import EntitlementSlugTaken
 from polar.void.entitlement.service import entitlement as entitlement_service
 from polar.void.meter.schemas import MeterCreate
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import meter as meter_service
 from polar.void.product.schemas import ProductCreate, to_schema
 from polar.void.product.service import ProductInvalid, products_in_version
@@ -22,10 +24,11 @@ from polar.void.reducer.exceptions import InvalidReducer
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 from tests.void.conftest import VERSION
+from tests.void.factories import create_meter
 
 
 @pytest_asyncio.fixture
-async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
+async def meter(session: AsyncSession, organization: Organization) -> MeterModel:
     usage = await reducer_service.create(
         session,
         organization.id,
@@ -48,7 +51,7 @@ async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
             }
         ),
     )
-    return await meter_service.create(
+    return await create_meter(
         session,
         organization.id,
         MeterCreate(
@@ -62,7 +65,7 @@ async def meter(session: AsyncSession, organization: Organization) -> VoidMeter:
     )
 
 
-def product_definition(meter: VoidMeter, **changes: object) -> ProductCreate:
+def product_definition(meter: MeterModel, **changes: object) -> ProductCreate:
     return ProductCreate.model_validate(
         {
             "version_id": VERSION,
@@ -87,21 +90,21 @@ class TestMeterDefinitions:
         self,
         session: AsyncSession,
         organization: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
     ) -> None:
-        original = MeterCreate.model_validate(meter, from_attributes=True)
-        other = await meter_service.create(
+        original = MeterCreate.model_validate(meter_schema(meter).model_dump())
+        other = await create_meter(
             session,
             organization.id,
             original.model_copy(
                 update={"version_id": "b" * 64, "unit_amount": Decimal("0.02")}
             ),
         )
-        assert meter.unit_amount == Decimal("0.01")
-        assert other.unit_amount == Decimal("0.02")
+        assert meter_schema(meter).unit_amount == Decimal("0.01")
+        assert meter_schema(other).unit_amount == Decimal("0.02")
         with pytest.raises(IntegrityError):
             async with session.begin_nested():
-                await meter_service.create(session, organization.id, original)
+                await create_meter(session, organization.id, original)
         other.deleted_at = utc_now()
         await session.flush()
         assert other.id not in {
@@ -115,28 +118,28 @@ class TestMeterDefinitions:
         session: AsyncSession,
         organization: Organization,
         organization_second: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
     ) -> None:
-        original = MeterCreate.model_validate(meter, from_attributes=True)
+        original = MeterCreate.model_validate(meter_schema(meter).model_dump())
         with pytest.raises(ResourceNotFound):
-            await meter_service.create(session, organization_second.id, original)
+            await create_meter(session, organization_second.id, original)
         credit = await reducer_service.get(
             session, organization.id, meter.credit_reducer_id
         )
         credit.deleted_at = utc_now()
         await session.flush()
         with pytest.raises(ResourceNotFound):
-            await meter_service.create(session, organization.id, original)
+            await create_meter(session, organization.id, original)
 
     async def test_rejects_nonadditive_credit_and_derived_usage(
         self,
         session: AsyncSession,
         organization: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
     ) -> None:
-        original = MeterCreate.model_validate(meter, from_attributes=True)
+        original = MeterCreate.model_validate(meter_schema(meter).model_dump())
         with pytest.raises(InvalidReducer, match="additive"):
-            await meter_service.create(
+            await create_meter(
                 session,
                 organization.id,
                 original.model_copy(
@@ -158,7 +161,7 @@ class TestMeterDefinitions:
             ),
         )
         with pytest.raises(InvalidReducer, match="metrics only"):
-            await meter_service.create(
+            await create_meter(
                 session,
                 organization.id,
                 original.model_copy(update={"usage_reducer_id": derived.id}),
@@ -175,7 +178,7 @@ class TestMeterDefinitions:
             ),
         )
         with pytest.raises(InvalidReducer, match="scalar"):
-            await meter_service.create(
+            await create_meter(
                 session,
                 organization.id,
                 original.model_copy(update={"usage_reducer_id": records.id}),
@@ -231,7 +234,7 @@ class TestProductDefinitions:
         self,
         session: AsyncSession,
         organization: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
     ) -> None:
         entitlement, _ = await entitlement_service.upsert(
             session, organization.id, EntitlementCreate(slug="export")
@@ -272,13 +275,13 @@ class TestProductDefinitions:
         session: AsyncSession,
         organization: Organization,
         organization_second: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
         resource: str,
     ) -> None:
         entitlement, _ = await entitlement_service.upsert(
             session, organization_second.id, EntitlementCreate(slug="foreign")
         )
-        removed: VoidMeter | VoidEntitlement
+        removed: MeterModel | Benefit
         if resource == "meter":
             definition = product_definition(meter)
             target_org = organization_second.id
@@ -325,7 +328,7 @@ class TestProductDefinitions:
         self,
         session: AsyncSession,
         organization: Organization,
-        meter: VoidMeter,
+        meter: MeterModel,
         changes: dict[str, object],
         message: str,
     ) -> None:

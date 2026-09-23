@@ -6,19 +6,20 @@ from typing import Any
 import pytest_asyncio
 
 from polar.kit.utils import utc_now
-from polar.models import Organization, VoidBillingIdentity, VoidMeter
+from polar.models import Meter as MeterModel
+from polar.models import Organization, VoidBillingIdentity
 from polar.postgres import AsyncSession
 from polar.void.event.schemas import EventCreate, EventSource
 from polar.void.event.service import event as event_service
 from polar.void.identity.schemas import IdentityCreate
 from polar.void.identity.service import identity as identity_service
 from polar.void.meter.schemas import MeterCreate
-from polar.void.meter.service import meter as meter_service
 from polar.void.reducer.schemas import ReducerCreate
 from polar.void.reducer.service import reducer as reducer_service
 from polar.void.typesafe import Judgment as JevJudgment
 from tests.fixtures.database import SaveFixture
 from tests.void.conftest import VERSION, activate_version
+from tests.void.factories import create_meter
 
 WHEN = "most recent spend is retries or loops, not progress"
 
@@ -40,7 +41,7 @@ class FixedJudge:
 class Tree:
     root: VoidBillingIdentity
     child: VoidBillingIdentity
-    meter: VoidMeter
+    meter: MeterModel
 
 
 @pytest_asyncio.fixture
@@ -87,7 +88,7 @@ async def tree(
             }
         ),
     )
-    meter = await meter_service.create(
+    meter = await create_meter(
         session,
         organization.id,
         MeterCreate(

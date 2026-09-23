@@ -11,7 +11,9 @@ from polar.models import (
     VoidBillingIdentity,
     VoidReducer,
     VoidReducerBucket,
-    VoidSubscription,
+)
+from polar.models import (
+    Subscription as SubscriptionModel,
 )
 
 
@@ -89,11 +91,11 @@ class CustomerStateRepository(RepositoryBase[VoidReducerBucket]):
         self, organization_id: UUID, identity_ids: Sequence[UUID], at: datetime
     ) -> Sequence[datetime]:
         rows = await self.session.execute(
-            select(VoidSubscription.started_at, VoidSubscription.ends_at).where(
-                VoidSubscription.organization_id == organization_id,
-                VoidSubscription.deleted_at.is_(None),
-                VoidSubscription.billing_identity_id.in_(identity_ids),
-                or_(VoidSubscription.started_at > at, VoidSubscription.ends_at > at),
+            select(SubscriptionModel.started_at, SubscriptionModel.ends_at).where(
+                SubscriptionModel.organization_id == organization_id,
+                SubscriptionModel.deleted_at.is_(None),
+                SubscriptionModel.billing_identity_id.in_(identity_ids),
+                or_(SubscriptionModel.started_at > at, SubscriptionModel.ends_at > at),
             )
         )
         return [

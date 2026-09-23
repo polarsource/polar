@@ -5,7 +5,7 @@ from uuid import UUID
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
-from sqlalchemy import Boolean, ForeignKey, Index, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -100,6 +100,7 @@ VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
 class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
     __tablename__ = "benefits"
     __table_args__ = (
+        UniqueConstraint("organization_id", "slug"),
         Index(
             "ix_benefits_search_vector",
             "search_vector",
@@ -112,6 +113,8 @@ class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
     type: Mapped[BenefitType] = mapped_column(
         StringEnum(BenefitType), nullable=False, index=True
     )
+    slug: Mapped[str] = mapped_column(String, nullable=True)
+    name: Mapped[str] = mapped_column(String, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

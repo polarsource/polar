@@ -5,9 +5,8 @@ from decimal import Decimal
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
+from polar.models import Meter, Product
 from polar.models import VoidDeployment as Deployment
-from polar.models import VoidMeter as Meter
-from polar.models import VoidProduct as Product
 from polar.models import VoidReducer as Reducer
 from polar.models.void_deployment import VoidDeploymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -16,10 +15,11 @@ from polar.void.entitlement.schemas import EntitlementCreate
 from polar.void.entitlement.service import classify as entitlement_action
 from polar.void.entitlement.service import entitlement as entitlement_service
 from polar.void.meter.schemas import MeterCreate
+from polar.void.meter.schemas import to_schema as meter_schema
 from polar.void.meter.service import meter as meter_service
 from polar.void.meter.versions import meters_in_version
 from polar.void.organization.service import organization as organization_service
-from polar.void.product.schemas import MeterTerms, ProductCreate
+from polar.void.product.schemas import MeterTerms, ProductCreate, meters_of, price_of
 from polar.void.product.service import ProductInvalid, products_in_version
 from polar.void.product.service import product as product_service
 from polar.void.reducer.aggregation import PropertyAggregation
@@ -78,8 +78,8 @@ def _same_meter(
     return (
         current.usage_reducer_id == usage_reducer_id
         and current.credit_reducer_id == credit_reducer_id
-        and Decimal(current.unit_amount) == wanted.unit_amount
-        and current.currency == wanted.currency
+        and Decimal(meter_schema(current).unit_amount) == wanted.unit_amount
+        and meter_schema(current).currency == wanted.currency
     )
 
 
@@ -100,15 +100,16 @@ def _same_product(wanted: DeployProduct, current: Product) -> bool:
     return (
         current.name == wanted.name
         and current.description == wanted.description
-        and current.price_type == price.type
-        and current.interval == (price.interval if price.type == "recurring" else None)
-        and current.interval_count
+        and price_of(current).type == price.type
+        and current.recurring_interval
+        == (price.interval if price.type == "recurring" else None)
+        and (current.recurring_interval_count or 1)
         == (price.interval_count if price.type == "recurring" else 1)
-        and Decimal(current.amount) == price.amount
-        and current.currency == price.currency
+        and Decimal(price_of(current).amount) == price.amount
+        and price_of(current).currency == price.currency
         and (current.meter_terms or {}) == wanted_terms
-        and sorted(m.slug for m in current.meters) == wanted_meters
-        and sorted(e.slug for e in current.entitlements) == sorted(wanted.entitlements)
+        and sorted(m.slug for m in meters_of(current)) == wanted_meters
+        and sorted(e.slug for e in current.benefits) == sorted(wanted.entitlements)
     )
 
 
@@ -362,6 +363,19 @@ class DeployService:
     ) -> Deploy:
         apply = not create_schema.dry_run
         version_id = create_schema.version_id
+        deployment = None
+        if apply:
+            deployment = Deployment(
+                version_id=version_id,
+                checksum=create_schema.checksum,
+                status=VoidDeploymentStatus.draft,
+                entries=[],
+                configuration=configuration_payload(create_schema),
+                organization=await organization_service.lock(session, organization_id),
+            )
+            session.add(deployment)
+            await session.flush()
+
         baseline = await organization_service.active_deployment(
             session, organization_id
         )
@@ -580,15 +594,8 @@ class DeployService:
                 entries=entries,
                 created_at=utc_now(),
             )
-        deployment = Deployment(
-            version_id=version_id,
-            checksum=create_schema.checksum,
-            status=VoidDeploymentStatus.draft,
-            entries=[entry.model_dump(mode="json") for entry in entries],
-            configuration=configuration_payload(create_schema),
-            organization=await organization_service.lock(session, organization_id),
-        )
-        session.add(deployment)
+        assert deployment is not None
+        deployment.entries = [entry.model_dump(mode="json") for entry in entries]
         await session.flush()
         if create_schema.activate:
             await self._activate(session, organization_id, deployment)

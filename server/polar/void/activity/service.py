@@ -12,9 +12,11 @@ import structlog
 
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.models import VoidActivitySpan, VoidEvent
+from polar.models import Event as EventModel
+from polar.models import VoidActivitySpan
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.void.deploy.schemas import DeployConfiguration
+from polar.void.event.schemas import event_payload
 from polar.void.organization.service import organization as organization_service
 
 from .repository import ActivityEventRepository, ActivitySpanRepository
@@ -74,10 +76,10 @@ def span_key_of(payload: Mapping[str, Any], group_by: str) -> str:
     return value if isinstance(value, str) and value else payload["external_id"]
 
 
-def summarize_events(events: Sequence[VoidEvent]) -> dict[str, Any]:
+def summarize_events(events: Sequence[EventModel]) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for event in events:
-        meta = event_metadata(event.payload)
+        meta = event_metadata(event_payload(event))
         rows.append(
             {
                 "external_id": event.external_id,
@@ -117,13 +119,13 @@ def summarize_events(events: Sequence[VoidEvent]) -> dict[str, Any]:
         shape = "tools"
     else:
         shape = "empty"
-    meta = event_metadata(first.payload)
+    meta = event_metadata(event_payload(first))
     return {
         "taxonomy": TAXONOMY,
         "span": {
-            "call_id": span_key_of(first.payload, "call_id"),
-            "external_identity_id": first.payload.get("external_identity_id"),
-            "event_name": first.payload.get("name"),
+            "call_id": span_key_of(event_payload(first), "call_id"),
+            "external_identity_id": event_payload(first).get("external_identity_id"),
+            "event_name": event_payload(first).get("name"),
             "event_count": len(events),
             "models": sorted({row["model"] for row in rows if row["model"]}),
             "finish_reasons": [
@@ -245,18 +247,18 @@ class ActivityService:
             first_event_at=span.first_event_at,
             last_event_at=span.last_event_at,
             classified_at=span.classified_at,
-            event_ids=[event.external_id for event in events],
+            event_ids=[event.external_id or str(event.id) for event in events],
         )
 
     async def touch_events(
-        self, session: AsyncSession, events: Sequence[VoidEvent]
+        self, session: AsyncSession, events: Sequence[EventModel]
     ) -> None:
         """Mark every span these events belong to as due for classification.
         The span row is the job: its ``due_at`` debounces, the sweep drains."""
         if not settings.VOID_ACTIVITY_ENABLED:
             return
         due_at = utc_now() + DEBOUNCE
-        by_org: dict[UUID, list[VoidEvent]] = defaultdict(list)
+        by_org: dict[UUID, list[EventModel]] = defaultdict(list)
         for event in events:
             by_org[event.organization_id].append(event)
         repository = ActivitySpanRepository.from_session(session)
@@ -272,13 +274,13 @@ class ActivityService:
             }
             if not by_name:
                 continue
-            touched: dict[str, tuple[DeployActivity, VoidEvent]] = {}
+            touched: dict[str, tuple[DeployActivity, EventModel]] = {}
             for event in org_events:
-                name = event.payload.get("name")
+                name = event_payload(event).get("name")
                 definition = by_name.get(name) if isinstance(name, str) else None
                 if definition is None:
                     continue
-                key = span_key_of(event.payload, definition.group_by)
+                key = span_key_of(event_payload(event), definition.group_by)
                 touched.setdefault(key, (definition, event))
             if not touched:
                 continue
@@ -303,9 +305,9 @@ class ActivityService:
         version_id: str,
         definition: DeployActivity,
         span_key: str,
-        event: VoidEvent,
+        event: EventModel,
     ) -> VoidActivitySpan:
-        meta = event_metadata(event.payload)
+        meta = event_metadata(event_payload(event))
         cost = meta.get("cost")
         return VoidActivitySpan(
             version_id=version_id,
@@ -313,8 +315,8 @@ class ActivityService:
             event_name=definition.event,
             group_by=definition.group_by,
             organization_id=organization_id,
-            external_identity_id=event.payload.get("external_identity_id"),
-            external_root_id=event.payload.get("external_root_id"),
+            external_identity_id=event_payload(event).get("external_identity_id"),
+            external_root_id=event_payload(event).get("external_root_id"),
             first_event_at=event.timestamp,
             last_event_at=event.timestamp,
             state_hash="",
@@ -362,8 +364,8 @@ class ActivityService:
             return
         first, last = events[0], events[-1]
         totals = state["span"]
-        span.external_identity_id = first.payload.get("external_identity_id")
-        span.external_root_id = first.payload.get("external_root_id")
+        span.external_identity_id = event_payload(first).get("external_identity_id")
+        span.external_root_id = event_payload(first).get("external_root_id")
         span.cost = totals["cost"]
         span.input_tokens = totals["input_tokens"]
         span.output_tokens = totals["output_tokens"]

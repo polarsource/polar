@@ -358,41 +358,48 @@ class TestSubscriptionCycle:
         assert refreshed.current_period_end > old_period_end
 
 
-async def _set_grace_period(
-    save_fixture: SaveFixture, organization: Organization, days: int
-) -> None:
-    organization.subscription_settings = {
-        **organization.subscription_settings,
-        "benefit_revocation_grace_period": days,
-    }
-    await save_fixture(organization)
-
-
 @pytest.mark.asyncio
 class TestScanGraceExpiredRevocations:
-    async def test_past_due_beyond_grace_is_enqueued(
+    @pytest.mark.parametrize(
+        ("grace_period_days", "past_due_days", "grant_active", "should_enqueue"),
+        [
+            pytest.param(2, 3, True, True, id="grace-expired"),
+            pytest.param(2, 1, True, False, id="within-grace"),
+            pytest.param(0, 5, True, False, id="no-grace-period"),
+            pytest.param(2, 3, False, False, id="grant-revoked"),
+        ],
+    )
+    async def test_past_due_subscription(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
+        grace_period_days: int,
+        past_due_days: int,
+        grant_active: bool,
+        should_enqueue: bool,
     ) -> None:
-        now = utc_now()
-        await _set_grace_period(save_fixture, product.organization, 2)
+        organization = product.organization
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "benefit_revocation_grace_period": grace_period_days,
+        }
+        await save_fixture(organization)
         subscription = await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            past_due_at=now - timedelta(days=3),
+            past_due_at=utc_now() - timedelta(days=past_due_days),
         )
-        benefit = await create_benefit(save_fixture, organization=product.organization)
+        benefit = await create_benefit(save_fixture, organization=organization)
         await create_benefit_grant(
             save_fixture,
             customer=customer,
             benefit=benefit,
-            granted=True,
+            granted=grant_active,
             subscription=subscription,
         )
         enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
@@ -401,105 +408,9 @@ class TestScanGraceExpiredRevocations:
 
         await scan_grace_expired_revocations()
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.enqueue_benefits_grants", subscription.id
-        )
-
-    async def test_past_due_within_grace_is_not_enqueued(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        now = utc_now()
-        await _set_grace_period(save_fixture, product.organization, 2)
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.past_due,
-            past_due_at=now - timedelta(days=1),
-        )
-        benefit = await create_benefit(save_fixture, organization=product.organization)
-        await create_benefit_grant(
-            save_fixture,
-            customer=customer,
-            benefit=benefit,
-            granted=True,
-            subscription=subscription,
-        )
-        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
-
-        session.expunge_all()
-
-        await scan_grace_expired_revocations()
-
-        enqueue_job_mock.assert_not_called()
-
-    async def test_zero_grace_is_not_enqueued(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        now = utc_now()
-        await _set_grace_period(save_fixture, product.organization, 0)
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.past_due,
-            past_due_at=now - timedelta(days=5),
-        )
-        benefit = await create_benefit(save_fixture, organization=product.organization)
-        await create_benefit_grant(
-            save_fixture,
-            customer=customer,
-            benefit=benefit,
-            granted=True,
-            subscription=subscription,
-        )
-        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
-
-        session.expunge_all()
-
-        await scan_grace_expired_revocations()
-
-        enqueue_job_mock.assert_not_called()
-
-    async def test_already_revoked_grant_is_not_enqueued(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        now = utc_now()
-        await _set_grace_period(save_fixture, product.organization, 2)
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.past_due,
-            past_due_at=now - timedelta(days=3),
-        )
-        benefit = await create_benefit(save_fixture, organization=product.organization)
-        await create_benefit_grant(
-            save_fixture,
-            customer=customer,
-            benefit=benefit,
-            granted=False,
-            subscription=subscription,
-        )
-        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
-
-        session.expunge_all()
-
-        await scan_grace_expired_revocations()
-
-        enqueue_job_mock.assert_not_called()
+        if should_enqueue:
+            enqueue_job_mock.assert_called_once_with(
+                "subscription.enqueue_benefits_grants", subscription.id
+            )
+        else:
+            enqueue_job_mock.assert_not_called()

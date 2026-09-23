@@ -259,14 +259,7 @@ async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
     priority=TaskPriority.LOW,
 )
 async def scan_grace_expired_revocations() -> None:
-    """Re-enqueue benefit revocation for past_due/unpaid subscriptions whose grace
-    period has expired.
-
-    The grace gate is otherwise only re-evaluated as a side effect of dunning
-    payment-retry events, and non-recoverable declines skip straight to the past_due
-    deadline without firing one. This hourly safety net ensures benefits are revoked
-    once the configured grace period elapses, independently of the dunning schedule.
-    """
+    """Check grace expiry even when no dunning retry is scheduled."""
     now = utc_now()
 
     async with AsyncSessionMaker() as session:

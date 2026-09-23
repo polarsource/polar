@@ -552,11 +552,6 @@ class SubscriptionRepository(
         return await self.get_all(statement)
 
     async def get_grace_expired_past_due_ids(self, now: datetime) -> Sequence[UUID]:
-        """
-        Find past_due/unpaid subscriptions whose organization benefit revocation
-        grace period has expired but which still have at least one active grant,
-        so their benefits can be re-evaluated for revocation.
-        """
         grace_period_days = Organization.subscription_settings[
             "benefit_revocation_grace_period"
         ].as_integer()

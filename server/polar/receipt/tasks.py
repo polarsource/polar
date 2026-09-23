@@ -56,6 +56,7 @@ async def _run_receipt_render(order_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="receipt.render",
+    log_fields=("order_id",),
     priority=TaskPriority.LOW,
     queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
     time_limit=180_000,  # 3 min: 120s lock TTL + 60s render budget + headroom

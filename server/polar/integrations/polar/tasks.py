@@ -140,7 +140,11 @@ async def update_member(
     )
 
 
-@actor(actor_name="polar_self.update_customer_slug", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.update_customer_slug",
+    priority=TaskPriority.LOW,
+    log_fields=("external_id",),
+)
 async def update_customer_slug(external_id: str, slug: str) -> None:
     client = get_client()
     customer = await client.get_customer_by_external_id_or_none(external_id)
@@ -151,7 +155,11 @@ async def update_customer_slug(external_id: str, slug: str) -> None:
     await client.update_customer_metadata(external_id=external_id, metadata=metadata)
 
 
-@actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.remove_member",
+    priority=TaskPriority.LOW,
+    log_fields=("external_customer_id", "external_id"),
+)
 async def remove_member(external_customer_id: str, external_id: str) -> None:
     client = get_client()
 
@@ -165,13 +173,18 @@ async def remove_member(external_customer_id: str, external_id: str) -> None:
     )
 
 
-@actor(actor_name="polar_self.delete_customer", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.delete_customer",
+    priority=TaskPriority.LOW,
+    log_fields=("external_id",),
+)
 async def delete_customer(external_id: str) -> None:
     await get_client().delete_customer(external_id=external_id)
 
 
 @actor(
     actor_name="polar_self.track_event_ingestion_v2",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -197,6 +210,16 @@ async def track_event_ingestion() -> None:
 
 @actor(
     actor_name="polar_self.track_organization_review_usage",
+    log_fields=(
+        "external_customer_id",
+        "review_context",
+        "vendor",
+        "model",
+        "input_tokens",
+        "output_tokens",
+        "cost_usd",
+        "usage_id",
+    ),
     priority=TaskPriority.LOW,
 )
 async def track_organization_review_usage(
@@ -223,6 +246,15 @@ async def track_organization_review_usage(
 
 @actor(
     actor_name="polar_self.track_compass_assistant_usage",
+    log_fields=(
+        "external_customer_id",
+        "vendor",
+        "model",
+        "input_tokens",
+        "output_tokens",
+        "cost_usd",
+        "usage_id",
+    ),
     priority=TaskPriority.LOW,
 )
 async def track_compass_assistant_usage(
@@ -245,7 +277,11 @@ async def track_compass_assistant_usage(
     )
 
 
-@actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.benefit_grant.created",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -255,7 +291,11 @@ async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.benefit_grant.updated", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.benefit_grant.updated",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -265,7 +305,11 @@ async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.benefit_grant.revoked", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.benefit_grant.revoked",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -275,7 +319,11 @@ async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.order.created", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.order.created",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_order_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -294,7 +342,11 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
                 return
 
 
-@actor(actor_name="polar_self.webhook.subscription.canceled", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.subscription.canceled",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -304,7 +356,11 @@ async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
             await polar_self.handle_subscription_canceled_event(payload)
 
 
-@actor(actor_name="polar_self.webhook.subscription.past_due", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.subscription.past_due",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_subscription_past_due(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -314,7 +370,11 @@ async def webhook_subscription_past_due(event_id: uuid.UUID) -> None:
             await polar_self.handle_subscription_past_due_event(payload)
 
 
-@actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.webhook.subscription.revoked",
+    priority=TaskPriority.LOW,
+    log_fields=("event_id",),
+)
 async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(

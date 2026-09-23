@@ -29,6 +29,7 @@ MAX_AGE_MILLISECONDS = 5 * 60 * 1000  # 5 minutes
 
 @actor(
     actor_name="meter.enqueue_billing",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
     priority=TaskPriority.LOW,
     max_age=MAX_AGE_MILLISECONDS,
@@ -38,7 +39,12 @@ async def meter_enqueue_billing() -> None:
         await meter_service.enqueue_billing(session)
 
 
-@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW, max_retries=0)
+@actor(
+    actor_name="meter.billing_entries",
+    priority=TaskPriority.LOW,
+    max_retries=0,
+    log_fields=("meter_id",),
+)
 async def meter_billing_entries(meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)
@@ -63,7 +69,11 @@ BACKFILL_BATCH_SIZE = 1000
 BACKFILL_INSERT_CHUNK_SIZE = 500
 
 
-@actor(actor_name="meter.backfill_events", priority=TaskPriority.LOW)
+@actor(
+    actor_name="meter.backfill_events",
+    priority=TaskPriority.LOW,
+    log_fields=("meter_id", "last_ingested_at", "last_event_id"),
+)
 async def meter_backfill_events(
     meter_id: uuid.UUID,
     last_ingested_at: str | None = None,

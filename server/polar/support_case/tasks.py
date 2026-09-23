@@ -64,7 +64,10 @@ def _case_dashboard_path(case: SupportCase, organization: Organization) -> str:
     return f"/dashboard/{organization.slug}/finance/account"
 
 
-@actor(actor_name="support_case.notify_organization_of_new_message")
+@actor(
+    actor_name="support_case.notify_organization_of_new_message",
+    log_fields=("message_id",),
+)
 async def notify_organization_of_new_message(message_id: UUID) -> None:
     """Email an organization's members when a new staff message is posted on
     their case — a reply or a decision (a decision is just another message).
@@ -127,7 +130,11 @@ def _read_attachment(service: FileServiceTypes, path: str) -> bytes:
     return S3_SERVICES[service].get_object_or_raise(path)["Body"].read()
 
 
-@actor(actor_name="support_case.merge_attachments", priority=TaskPriority.LOW)
+@actor(
+    actor_name="support_case.merge_attachments",
+    priority=TaskPriority.LOW,
+    log_fields=("case_id", "attachment_ids"),
+)
 async def merge_case_attachments(case_id: UUID, attachment_ids: list[UUID]) -> None:
     """Merge the selected case attachments into one PDF stored back on the
     case as an internal, case-level attachment (no message)."""

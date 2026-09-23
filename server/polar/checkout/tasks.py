@@ -24,7 +24,11 @@ class CheckoutDoesNotExist(CheckoutTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="checkout.handle_free_success", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="checkout.handle_free_success",
+    priority=TaskPriority.HIGH,
+    log_fields=("checkout_id",),
+)
 async def handle_free_success(checkout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)
@@ -38,6 +42,7 @@ async def handle_free_success(checkout_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="checkout.expire_open_checkouts",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0,15,30,45 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -51,7 +56,11 @@ async def expire_open_checkouts() -> None:
         enqueue_job("checkout.expired", checkout_id=checkout_id)
 
 
-@actor(actor_name="checkout.expired", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="checkout.expired",
+    priority=TaskPriority.HIGH,
+    log_fields=("checkout_id",),
+)
 async def checkout_expired(checkout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)

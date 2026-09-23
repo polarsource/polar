@@ -244,7 +244,11 @@ async def _webhook_event_send(
         await session.commit()
 
 
-@actor(actor_name="webhook_event.success", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="webhook_event.success",
+    priority=TaskPriority.HIGH,
+    log_fields=("webhook_event_id",),
+)
 async def webhook_event_success(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)
@@ -260,6 +264,7 @@ def _webhook_event_failed_debounce_key(
 
 @actor(
     actor_name="webhook_event.failed",
+    log_fields=("webhook_event_id", "webhook_endpoint_id"),
     priority=TaskPriority.HIGH,
     debounce_key=_webhook_event_failed_debounce_key,
 )
@@ -272,6 +277,7 @@ async def webhook_event_failed(
 
 @actor(
     actor_name="webhook_event.archive",
+    log_fields=(),
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
 )
@@ -282,7 +288,11 @@ async def webhook_event_archive() -> None:
         )
 
 
-@actor(actor_name="webhook_event.publish", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="webhook_event.publish",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("webhook_event_id", "organization_id"),
+)
 async def webhook_event_publish(webhook_event_id: UUID, organization_id: UUID) -> None:
     """
     Publish a webhook event to the eventstream for CLI listeners.

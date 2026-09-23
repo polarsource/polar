@@ -69,7 +69,11 @@ class UserDoesNotExist(OrganizationTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="organization.created", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.created",
+    priority=TaskPriority.LOW,
+    log_fields=("organization_id",),
+)
 async def organization_created(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -80,6 +84,7 @@ async def organization_created(organization_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="organization.unsnooze_expired",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0 * * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
@@ -92,6 +97,7 @@ async def organization_unsnooze_expired() -> None:
 
 @actor(
     actor_name="organization.offboard_expired",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0 4 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
@@ -104,6 +110,7 @@ async def organization_offboard_expired() -> None:
 
 @actor(
     actor_name="organization.offboard_expired_one",
+    log_fields=("organization_id",),
     priority=TaskPriority.LOW,
 )
 async def organization_offboard_expired_one(organization_id: uuid.UUID) -> None:
@@ -116,6 +123,7 @@ async def organization_offboard_expired_one(organization_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="organization.cancel_expired_subscriptions",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0 5 * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
@@ -127,7 +135,11 @@ async def organization_cancel_expired_subscriptions() -> None:
         await organization_service.cancel_expired_organizations_subscriptions(session)
 
 
-@actor(actor_name="organization.offboarded", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.offboarded",
+    priority=TaskPriority.LOW,
+    log_fields=("organization_id",),
+)
 async def organization_offboarded(organization_id: uuid.UUID) -> None:
     """Notify an organization's members that it has been offboarded."""
     async with AsyncSessionMaker() as session:
@@ -162,6 +174,7 @@ def _check_threshold_debounce_key(account_id: uuid.UUID) -> str:
 
 @actor(
     actor_name="organization.check_threshold",
+    log_fields=("account_id",),
     priority=TaskPriority.LOW,
     debounce_key=_check_threshold_debounce_key,
 )
@@ -189,7 +202,11 @@ async def organization_check_threshold(account_id: uuid.UUID) -> None:
         await organization_service.check_review_threshold(session, organization)
 
 
-@actor(actor_name="organization.under_review", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.under_review",
+    priority=TaskPriority.LOW,
+    log_fields=("organization_id",),
+)
 async def organization_under_review(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -210,7 +227,11 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
         )
 
 
-@actor(actor_name="organization.deletion_requested", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="organization.deletion_requested",
+    priority=TaskPriority.HIGH,
+    log_fields=("organization_id", "user_id", "blocked_reasons"),
+)
 async def organization_deletion_requested(
     organization_id: uuid.UUID,
     user_id: uuid.UUID,
@@ -236,6 +257,7 @@ async def organization_deletion_requested(
 
 @actor(
     actor_name="organization.backfill_members",
+    log_fields=("organization_id",),
     priority=TaskPriority.LOW,
     time_limit=600_000,  # 10 min timeout
     max_retries=0,
@@ -895,6 +917,7 @@ _PREPARE_BATCH_SIZE = 100
 
 @actor(
     actor_name="organization.prepare_members",
+    log_fields=("organization_id",),
     priority=TaskPriority.LOW,
     time_limit=600_000,  # 10 min timeout
     max_retries=0,
@@ -1212,7 +1235,11 @@ async def _prepare_benefit_grants(
     return count
 
 
-@actor(actor_name="organization.evaluate_website_risk", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.evaluate_website_risk",
+    priority=TaskPriority.LOW,
+    log_fields=("organization_id",),
+)
 async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -1223,7 +1250,11 @@ async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
         await organization_service.evaluate_website_risk(session, organization)
 
 
-@actor(actor_name="organization.sync_payout_account_website", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.sync_payout_account_website",
+    priority=TaskPriority.LOW,
+    log_fields=("organization_id", "payout_account_id"),
+)
 async def sync_payout_account_website(
     organization_id: uuid.UUID, payout_account_id: uuid.UUID | None = None
 ) -> None:

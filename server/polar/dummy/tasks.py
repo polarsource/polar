@@ -3,7 +3,7 @@ from sqlalchemy import text
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 
-@actor(actor_name="dummy", priority=TaskPriority.LOW)
+@actor(actor_name="dummy", priority=TaskPriority.LOW, log_fields=("failure",))
 async def dummy_task(*, redis_key: str = "dummy", failure: bool = False) -> None:
     if failure:
         raise RuntimeError("Dummy task failure requested.")

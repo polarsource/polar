@@ -65,7 +65,11 @@ def send_push_message(
         raise
 
 
-@actor(actor_name="notifications.push", priority=TaskPriority.LOW)
+@actor(
+    actor_name="notifications.push",
+    priority=TaskPriority.LOW,
+    log_fields=("notification_id",),
+)
 async def notifications_push(notification_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         notif = await notifications.get(session, notification_id)

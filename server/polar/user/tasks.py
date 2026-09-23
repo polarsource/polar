@@ -17,7 +17,11 @@ class UserDoesNotExist(UserTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="user.on_after_signup", priority=TaskPriority.LOW)
+@actor(
+    actor_name="user.on_after_signup",
+    priority=TaskPriority.LOW,
+    log_fields=("user_id",),
+)
 async def user_on_after_signup(user_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = UserRepository.from_session(session)

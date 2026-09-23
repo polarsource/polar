@@ -6,7 +6,11 @@ from polar.models.external_event import ExternalEventSource
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 
-@actor(actor_name="chargeback_stop.webhook.alert.created", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="chargeback_stop.webhook.alert.created",
+    priority=TaskPriority.HIGH,
+    log_fields=("event_id",),
+)
 async def alert_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
@@ -17,7 +21,11 @@ async def alert_created(event_id: uuid.UUID) -> None:
             )
 
 
-@actor(actor_name="chargeback_stop.webhook.alert.updated", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="chargeback_stop.webhook.alert.updated",
+    priority=TaskPriority.HIGH,
+    log_fields=("event_id",),
+)
 async def alert_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(

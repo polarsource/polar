@@ -21,6 +21,7 @@ EXPIRATION_REMINDER_WINDOW = timedelta(days=20)
 
 @actor(
     actor_name="payment_method.scan_expiration_reminders",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("45 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -39,7 +40,11 @@ async def scan_expiration_reminders() -> None:
         enqueue_job("payment_method.send_expiration_reminder", payment_method.id)
 
 
-@actor(actor_name="payment_method.send_expiration_reminder", priority=TaskPriority.LOW)
+@actor(
+    actor_name="payment_method.send_expiration_reminder",
+    priority=TaskPriority.LOW,
+    log_fields=("payment_method_id",),
+)
 async def send_expiration_reminder(payment_method_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentMethodRepository.from_session(session)

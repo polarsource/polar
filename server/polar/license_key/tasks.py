@@ -28,7 +28,11 @@ class LicenseKeyDoesNotExist(LicenseKeyTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="license_key.sync_benefit_grant", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="license_key.sync_benefit_grant",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("license_key_id",),
+)
 async def sync_benefit_grant(license_key_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         license_key_repository = LicenseKeyRepository.from_session(session)

@@ -10,7 +10,11 @@ from polar.worker import AsyncSessionMaker, TaskPriority, actor
 from .repository import FeedbackRepository
 
 
-@actor(actor_name="feedback.reply_in_plain", priority=TaskPriority.LOW)
+@actor(
+    actor_name="feedback.reply_in_plain",
+    priority=TaskPriority.LOW,
+    log_fields=("feedback_id",),
+)
 async def feedback_reply_in_plain(feedback_id: UUID) -> None:
     """
     Automatically open a Plain support thread for a freshly submitted question.

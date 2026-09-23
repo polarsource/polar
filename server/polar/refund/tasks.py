@@ -21,6 +21,7 @@ _NOTICE_RECIPIENT_ROLES = (OrganizationRole.owner, OrganizationRole.admin)
 
 @actor(
     actor_name="refund.send_chargeback_prevention_notice",
+    log_fields=("refund_id",),
     priority=TaskPriority.LOW,
 )
 async def send_chargeback_prevention_notice(refund_id: uuid.UUID) -> None:

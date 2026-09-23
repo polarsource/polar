@@ -21,6 +21,7 @@ log: Logger = structlog.get_logger()
 
 @actor(
     actor_name="slo_report.send_weekly",
+    log_fields=(),
     cron_trigger=CronTrigger(day_of_week="mon", hour=9, minute=0),
     priority=TaskPriority.LOW,
 )

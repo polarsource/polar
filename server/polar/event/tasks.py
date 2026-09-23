@@ -8,6 +8,7 @@ from .service import event as event_service
 
 @actor(
     actor_name="event.ingested",
+    log_fields=("event_ids",),
     priority=TaskPriority.LOW,
     max_retries=5,
     min_backoff=30_000,

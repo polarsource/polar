@@ -6,7 +6,11 @@ from polar.worker import AsyncSessionMaker, TaskPriority, actor
 from .service import payout_account as payout_account_service
 
 
-@actor(actor_name="payout_account.reject_stripe_account", priority=TaskPriority.LOW)
+@actor(
+    actor_name="payout_account.reject_stripe_account",
+    priority=TaskPriority.LOW,
+    log_fields=("payout_account_id", "reason"),
+)
 async def reject_stripe_account(
     payout_account_id: uuid.UUID, reason: StripeAccountRejectReason
 ) -> None:

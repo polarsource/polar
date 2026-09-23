@@ -5,6 +5,7 @@ from .service import processor_transaction as processor_transaction_service
 
 @actor(
     actor_name="processor_transaction.sync_stripe",
+    log_fields=(),
     cron_trigger=CronTrigger(minute=5),
     priority=TaskPriority.LOW,
 )

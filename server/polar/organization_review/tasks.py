@@ -128,6 +128,12 @@ async def _persist_agent_result(
 
 @actor(
     actor_name="organization_review.run_agent",
+    log_fields=(
+        "organization_id",
+        "context",
+        "auto_approve_eligible",
+        "plain_thread_id",
+    ),
     priority=TaskPriority.LOW,
     time_limit=180_000,  # 3 min timeout
     max_retries=4,
@@ -354,6 +360,7 @@ async def run_review_agent(
 
 @actor(
     actor_name="organization_review.appeal_submitted",
+    log_fields=("organization_id",),
     priority=TaskPriority.LOW,
     time_limit=180_000,
     max_retries=4,
@@ -425,6 +432,7 @@ async def review_appeal(organization_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="organization_review.post_appeal_greeting",
+    log_fields=("case_id",),
     priority=TaskPriority.LOW,
 )
 async def post_appeal_greeting(case_id: uuid.UUID) -> None:

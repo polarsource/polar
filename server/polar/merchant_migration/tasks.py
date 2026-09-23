@@ -7,6 +7,7 @@ from .service import merchant_migration as merchant_migration_service
 
 @actor(
     actor_name="merchant_migration.precheck",
+    log_fields=("merchant_migration_id",),
     priority=TaskPriority.LOW,
     time_limit=600_000,
 )
@@ -17,7 +18,11 @@ async def merchant_migration_precheck(merchant_migration_id: UUID) -> None:
         )
 
 
-@actor(actor_name="merchant_migration.verify_cards", priority=TaskPriority.LOW)
+@actor(
+    actor_name="merchant_migration.verify_cards",
+    priority=TaskPriority.LOW,
+    log_fields=("merchant_migration_id", "offset"),
+)
 async def merchant_migration_verify_cards(
     merchant_migration_id: UUID, offset: int = 0
 ) -> None:
@@ -28,7 +33,11 @@ async def merchant_migration_verify_cards(
         )
 
 
-@actor(actor_name="merchant_migration.cutover", priority=TaskPriority.LOW)
+@actor(
+    actor_name="merchant_migration.cutover",
+    priority=TaskPriority.LOW,
+    log_fields=("merchant_migration_id",),
+)
 async def merchant_migration_cutover(merchant_migration_id: UUID) -> None:
     """Switch billing over to Polar, one subscription per run.
 

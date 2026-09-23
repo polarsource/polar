@@ -9,7 +9,11 @@ from polar.worker import AsyncSessionMaker, TaskPriority, actor
 log = structlog.get_logger()
 
 
-@actor(actor_name="notifications.send", priority=TaskPriority.LOW)
+@actor(
+    actor_name="notifications.send",
+    priority=TaskPriority.LOW,
+    log_fields=("notification_id",),
+)
 async def notifications_send(notification_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         notif = await notifications.get(session, notification_id)

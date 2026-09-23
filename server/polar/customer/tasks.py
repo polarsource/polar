@@ -26,7 +26,11 @@ class CustomerDoesNotExist(CustomerTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="customer.state_changed", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="customer.state_changed",
+    priority=TaskPriority.HIGH,
+    log_fields=("customer_id",),
+)
 async def customer_state_changed(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
@@ -48,6 +52,7 @@ def _customer_resolve_first_user_event_at_debounce_key(customer_id: uuid.UUID) -
 
 @actor(
     actor_name="customer.resolve_first_user_event_at",
+    log_fields=("customer_id",),
     priority=TaskPriority.LOW,
     debounce_key=_customer_resolve_first_user_event_at_debounce_key,
 )
@@ -90,6 +95,7 @@ def _customer_webhook_debounce_key(
 
 @actor(
     actor_name="customer.webhook",
+    log_fields=("event_type", "customer_id"),
     priority=TaskPriority.MEDIUM,
     debounce_key=_customer_webhook_debounce_key,
     debounce_min_threshold=1,
@@ -114,7 +120,11 @@ async def customer_webhook(
         )
 
 
-@actor(actor_name="customer.event", priority=TaskPriority.LOW)
+@actor(
+    actor_name="customer.event",
+    priority=TaskPriority.LOW,
+    log_fields=("customer_id", "event_name"),
+)
 async def customer_event(
     customer_id: uuid.UUID,
     event_name: Literal[

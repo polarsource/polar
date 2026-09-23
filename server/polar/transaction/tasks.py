@@ -28,6 +28,7 @@ class PaymentTransactionDoesNotExist(TransactionTaskError):
 
 @actor(
     actor_name="processor_fee.sync_stripe_fees",
+    log_fields=(),
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
 )
@@ -36,7 +37,11 @@ async def sync_stripe_fees() -> None:
         await processor_fee_transaction_service.sync_stripe_fees(session)
 
 
-@actor(actor_name="processor_fee.create_payment_fees", priority=TaskPriority.LOW)
+@actor(
+    actor_name="processor_fee.create_payment_fees",
+    priority=TaskPriority.LOW,
+    log_fields=("payment_transaction_id",),
+)
 async def create_payment_fees(payment_transaction_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentTransactionRepository.from_session(session)

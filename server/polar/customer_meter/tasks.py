@@ -26,6 +26,7 @@ def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
 
 @actor(
     actor_name="customer_meter.update_customer",
+    log_fields=("customer_id",),
     priority=TaskPriority.LOW,
     max_retries=1,
     min_backoff=30_000,

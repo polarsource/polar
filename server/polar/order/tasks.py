@@ -62,7 +62,7 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="order.created", priority=TaskPriority.LOW)
+@actor(actor_name="order.created", priority=TaskPriority.LOW, log_fields=("order_id",))
 async def order_created(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -75,6 +75,7 @@ async def order_created(order_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="order.create_subscription_order",
+    log_fields=("subscription_id", "order_reason", "cutoff"),
     priority=TaskPriority.LOW,
     # Linking a whole cycle of pending billing entries doesn't fit the default 60s.
     time_limit=600_000,
@@ -185,7 +186,11 @@ async def trigger_payment(
                 raise
 
 
-@actor(actor_name="order.balance", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.balance",
+    priority=TaskPriority.LOW,
+    log_fields=("order_id", "charge_id"),
+)
 async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -208,7 +213,11 @@ async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
                 raise
 
 
-@actor(actor_name="order.update_product_benefits_grants", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="order.update_product_benefits_grants",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("product_id",),
+)
 async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)
@@ -219,7 +228,11 @@ async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
         await order_service.update_product_benefits_grants(session, product)
 
 
-@actor(actor_name="order.confirmation_email", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.confirmation_email",
+    priority=TaskPriority.LOW,
+    log_fields=("order_id",),
+)
 async def order_confirmation_email(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -232,7 +245,11 @@ async def order_confirmation_email(order_id: uuid.UUID) -> None:
         await order_service.send_confirmation_email(session, order)
 
 
-@actor(actor_name="order.subscription_renewal_notification", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.subscription_renewal_notification",
+    priority=TaskPriority.LOW,
+    log_fields=("order_id",),
+)
 async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -245,7 +262,11 @@ async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
         await order_service.send_subscription_renewal_notification(session, order)
 
 
-@actor(actor_name="order.admin_notification", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.admin_notification",
+    priority=TaskPriority.LOW,
+    log_fields=("order_id",),
+)
 async def order_admin_notification(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -277,6 +298,7 @@ async def _run_order_invoice(order_id: uuid.UUID, force: bool = False) -> None:
 
 @actor(
     actor_name="order.invoice",
+    log_fields=("order_id", "force"),
     priority=TaskPriority.LOW,
     queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
 )
@@ -286,6 +308,7 @@ async def order_invoice(order_id: uuid.UUID, force: bool = False) -> None:
 
 @actor(
     actor_name="order.process_dunning",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0 * * * *"),
     priority=TaskPriority.MEDIUM,
 )
@@ -299,7 +322,11 @@ async def process_dunning() -> None:
         enqueue_job("order.process_dunning_order", order.id)
 
 
-@actor(actor_name="order.process_dunning_order", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="order.process_dunning_order",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("order_id",),
+)
 async def process_dunning_order(order_id: uuid.UUID) -> None:
     """Process a single order due for dunning (payment retry)."""
     async with AsyncSessionMaker() as session:
@@ -315,6 +342,7 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="order.enqueue_stale_payment_locks",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("15 * * * *"),
     priority=TaskPriority.MEDIUM,
 )
@@ -325,7 +353,11 @@ async def enqueue_stale_payment_locks() -> None:
             enqueue_job("order.process_stale_payment_lock", order.id)
 
 
-@actor(actor_name="order.process_stale_payment_lock", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="order.process_stale_payment_lock",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("order_id",),
+)
 async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
@@ -351,7 +383,9 @@ async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
 
 
 @actor(
-    actor_name="order.void_pending_orders_for_subscription", priority=TaskPriority.LOW
+    actor_name="order.void_pending_orders_for_subscription",
+    priority=TaskPriority.LOW,
+    log_fields=("subscription_id",),
 )
 async def void_pending_orders_for_subscription(subscription_id: uuid.UUID) -> None:
     """Void all pending orders for a subscription when it's revoked."""

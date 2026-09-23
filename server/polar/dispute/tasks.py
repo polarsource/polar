@@ -24,7 +24,11 @@ from .service import DISPUTE_AUTO_ACCEPT_DELAY
 from .service import dispute as dispute_service
 
 
-@actor(actor_name="dispute.post_dispute_greeting", priority=TaskPriority.LOW)
+@actor(
+    actor_name="dispute.post_dispute_greeting",
+    priority=TaskPriority.LOW,
+    log_fields=("case_id",),
+)
 async def post_dispute_greeting(case_id: uuid.UUID) -> None:
     """Post the automated greeting after the merchant's first dispute reply."""
     async with AsyncSessionMaker() as session:
@@ -51,6 +55,7 @@ async def post_dispute_greeting(case_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="dispute.enqueue_auto_accepts",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -63,7 +68,11 @@ async def enqueue_auto_accepts() -> None:
             enqueue_job("dispute.auto_accept", dispute.id)
 
 
-@actor(actor_name="dispute.auto_accept", priority=TaskPriority.LOW)
+@actor(
+    actor_name="dispute.auto_accept",
+    priority=TaskPriority.LOW,
+    log_fields=("dispute_id",),
+)
 async def auto_accept(dispute_id: uuid.UUID) -> None:
     """Concede a single dispute. The sweep only narrows, so re-check first."""
     async with AsyncSessionMaker() as session:

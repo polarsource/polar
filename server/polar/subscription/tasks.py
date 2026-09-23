@@ -106,6 +106,7 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
 
 @actor(
     actor_name="subscription.cancel_for_organization",
+    log_fields=("organization_id",),
     priority=TaskPriority.LOW,
 )
 async def subscription_cancel_for_organization(organization_id: uuid.UUID) -> None:
@@ -129,6 +130,7 @@ async def subscription_cancel_for_organization(organization_id: uuid.UUID) -> No
 
 @actor(
     actor_name="subscription.subscription.update_product_benefits_grants",
+    log_fields=("subscription_tier_id",),
     priority=TaskPriority.MEDIUM,
 )
 async def subscription_update_product_benefits_grants(
@@ -145,6 +147,7 @@ async def subscription_update_product_benefits_grants(
 
 @actor(
     actor_name="subscription.enqueue_benefits_grants",
+    log_fields=("subscription_id",),
     priority=TaskPriority.MEDIUM,
 )
 async def subscription_enqueue_benefits_grants(subscription_id: uuid.UUID) -> None:
@@ -157,7 +160,11 @@ async def subscription_enqueue_benefits_grants(subscription_id: uuid.UUID) -> No
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
 
-@actor(actor_name="subscription.update_meters", priority=TaskPriority.LOW)
+@actor(
+    actor_name="subscription.update_meters",
+    priority=TaskPriority.LOW,
+    log_fields=("subscription_id",),
+)
 async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -172,13 +179,21 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
         await subscription_service.update_meters(session, subscription)
 
 
-@actor(actor_name="subscription.cancel_customer", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="subscription.cancel_customer",
+    priority=TaskPriority.HIGH,
+    log_fields=("customer_id",),
+)
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)
 
 
-@actor(actor_name="subscription.resume", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="subscription.resume",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("subscription_id",),
+)
 async def subscription_resume(subscription_id: uuid.UUID) -> None:
     """Resume a paused subscription. Enqueued by the resume scheduler once its
     ``resumes_at`` is reached (see ``SubscriptionResumeJobStore``)."""
@@ -216,6 +231,7 @@ async def subscription_resume(subscription_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="subscription.scan_renewal_reminders",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -234,7 +250,11 @@ async def scan_renewal_reminders() -> None:
         enqueue_job("subscription.send_renewal_reminder", sub.id)
 
 
-@actor(actor_name="subscription.send_renewal_reminder", priority=TaskPriority.LOW)
+@actor(
+    actor_name="subscription.send_renewal_reminder",
+    priority=TaskPriority.LOW,
+    log_fields=("subscription_id",),
+)
 async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -256,6 +276,7 @@ async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="subscription.scan_grace_expired_revocations",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("0 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -273,6 +294,7 @@ async def scan_grace_expired_revocations() -> None:
 
 @actor(
     actor_name="subscription.scan_trial_conversion_reminders",
+    log_fields=(),
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,
 )
@@ -293,7 +315,9 @@ async def scan_trial_conversion_reminders() -> None:
 
 
 @actor(
-    actor_name="subscription.send_trial_conversion_reminder", priority=TaskPriority.LOW
+    actor_name="subscription.send_trial_conversion_reminder",
+    priority=TaskPriority.LOW,
+    log_fields=("subscription_id",),
 )
 async def send_trial_conversion_reminder(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

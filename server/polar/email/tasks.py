@@ -93,6 +93,7 @@ async def email_send(
 
 @actor(
     actor_name="email_log.prune",
+    log_fields=(),
     cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
     max_retries=0,

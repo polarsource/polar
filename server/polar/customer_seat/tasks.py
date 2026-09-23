@@ -25,7 +25,11 @@ class ProductDoesNotExist(SeatTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="customer_seat.revoke_seats_for_member", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="customer_seat.revoke_seats_for_member",
+    priority=TaskPriority.MEDIUM,
+    log_fields=("member_id",),
+)
 async def revoke_seats_for_member(member_id: uuid.UUID) -> None:
     """Revoke all active seats for a member."""
     async with AsyncSessionMaker() as session:
@@ -58,6 +62,7 @@ async def revoke_seats_for_member(member_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="customer_seat.update_product_benefits_grants",
+    log_fields=("product_id",),
     priority=TaskPriority.MEDIUM,
 )
 async def update_product_benefits_grants(product_id: uuid.UUID) -> None:

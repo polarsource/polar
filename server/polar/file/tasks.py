@@ -11,7 +11,18 @@ from .service import file as file_service
 log = structlog.get_logger()
 
 
-@actor(actor_name="file.guardduty_scan_result", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="file.guardduty_scan_result",
+    priority=TaskPriority.MEDIUM,
+    log_fields=(
+        "scan_result.schemaVersion",
+        "scan_result.scanStatus",
+        "scan_result.resourceType",
+        "scan_result.s3ObjectDetails.bucketName",
+        "scan_result.s3ObjectDetails.versionId",
+        "scan_result.scanResultDetails.scanResultStatus",
+    ),
+)
 async def guardduty_scan_result(scan_result: dict[str, Any]) -> None:
     s3_object = scan_result["s3ObjectDetails"]
     bucket_name = s3_object["bucketName"]

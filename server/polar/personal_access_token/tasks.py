@@ -14,6 +14,7 @@ def _record_usage_debounce_key(
 
 @actor(
     actor_name="personal_access_token.record_usage",
+    log_fields=("personal_access_token_id", "last_used_at"),
     priority=TaskPriority.LOW,
     max_retries=1,
     min_backoff=5_000,

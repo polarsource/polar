@@ -148,24 +148,30 @@ class ResendEmailSender(EmailSender):
         except httpx.RequestError as e:
             log.warning(
                 "resend.send_network_error",
-                to_email_addr=to_email_addr_ascii,
-                subject=subject,
-                error=e,
+                template=tags.get("category") if tags else None,
+                organization_id=tags.get("tenant_id") if tags else None,
+                attachment_count=len(payload["attachments"]),
+                error_type=type(e).__name__,
             )
             raise EmailSenderOperationalError(str(e)) from e
         except httpx.HTTPError as e:
             log.warning(
                 "resend.send_error",
-                to_email_addr=to_email_addr_ascii,
-                subject=subject,
-                error=e,
+                template=tags.get("category") if tags else None,
+                organization_id=tags.get("tenant_id") if tags else None,
+                attachment_count=len(payload["attachments"]),
+                error_type=type(e).__name__,
+                status_code=e.response.status_code
+                if isinstance(e, httpx.HTTPStatusError)
+                else None,
             )
             raise SendEmailError(str(e)) from e
 
         log.info(
             "resend.send",
-            to_email_addr=to_email_addr_ascii,
-            subject=subject,
+            template=tags.get("category") if tags else None,
+            organization_id=tags.get("tenant_id") if tags else None,
+            attachment_count=len(payload["attachments"]),
             email_id=email["id"],
         )
 

@@ -121,15 +121,20 @@ module "service" {
     arn = var.repository_credentials_arn
   }
 
+  # ECS resolves the secret ARNs at task start, so a new secret version alone leaves the
+  # task definition identical and running containers keep the old password. Carrying the
+  # version ids forces a new revision, and PgBouncer ignores the extra variables.
   environment_variables = merge(
     {
-      DB_HOST            = var.database.host
-      DB_PORT            = var.database.port
-      DB_USER            = var.database.user
-      SERVER_TLS_SSLMODE = "verify-full"
+      DB_HOST             = var.database.host
+      DB_PORT             = var.database.port
+      DB_USER             = var.database.user
+      DB_PASSWORD_VERSION = aws_secretsmanager_secret_version.database_password.version_id
+      SERVER_TLS_SSLMODE  = "verify-full"
     },
     var.database.additional_user == null ? {} : {
-      DB_USER_2 = var.database.additional_user
+      DB_USER_2             = var.database.additional_user
+      DB_PASSWORD_2_VERSION = aws_secretsmanager_secret_version.database_password_additional[0].version_id
     },
   )
 

@@ -6,7 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
-import { BillingCountryPicker } from './BillingCountryPicker'
+import { BillingAddressEditor } from './BillingAddressEditor'
 import { ReviewRow, rowAmount } from './reviewRows'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -104,7 +104,7 @@ export function CustomerFields({
         label="Billing country"
         value={
           row.entity === 'subscriptions' && row.record_id ? (
-            <BillingCountryPicker
+            <BillingAddressEditor
               key={row.record_id}
               migrationId={migrationId}
               row={row}

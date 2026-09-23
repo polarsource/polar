@@ -1,12 +1,12 @@
 from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Self
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, model_validator
 
 from polar.enums import TaxBehavior
-from polar.kit.address import CountryAlpha2Input
+from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -142,6 +142,12 @@ class MerchantMigrationRecordItem(Schema):
             "the imported customer billing address."
         ),
     )
+    customer_billing_address: Address | None = Field(
+        description=(
+            "The billing address Polar will import for the customer. None when "
+            "only a payment-method country fallback or no address is available."
+        ),
+    )
     amount: int | None = Field(
         description=(
             "Recurring price in the currency's smallest unit (cents for USD), for "
@@ -235,10 +241,24 @@ class MerchantMigrationRecordUpdate(Schema):
     )
 
 
-class MerchantMigrationBillingCountryUpdate(Schema):
-    country: CountryAlpha2Input = Field(
-        description="Billing country Polar will store on the imported customer.",
+class MerchantMigrationBillingAddressUpdate(Schema):
+    billing_address: AddressInput = Field(
+        description="Billing address Polar will store on the imported customer.",
     )
+
+    @model_validator(mode="after")
+    def validate_billing_address(self) -> Self:
+        address = self.billing_address
+        if address.country == "US" and not all(
+            (address.line1, address.city, address.postal_code, address.state)
+        ):
+            raise ValueError(
+                "United States billing addresses require line 1, city, "
+                "postal code, and state."
+            )
+        if address.country == "CA" and not address.state:
+            raise ValueError("Canadian billing addresses require a province.")
+        return self
 
 
 class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):

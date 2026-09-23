@@ -500,6 +500,8 @@ class CatalogImporter:
     def _billing_address(
         self, customer: CanonicalCustomer, country_fallback: str | None
     ) -> Address | None:
+        if customer.billing_address is not None:
+            return customer.billing_address
         country_code = customer.country or country_fallback
         if not country_code:
             return None

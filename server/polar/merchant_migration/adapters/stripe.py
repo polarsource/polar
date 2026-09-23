@@ -10,6 +10,7 @@ from typing import Any
 import stripe as stripe_lib
 
 from polar.enums import TaxBehavior
+from polar.kit.address import Address
 from polar.kit.schemas import Schema
 
 from ..canonical import (
@@ -454,12 +455,27 @@ class StripeAdapter:
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
         address = customer.address
         country = address.country if address is not None else None
+        billing_address = (
+            Address.model_validate(
+                {
+                    "line1": address.get("line1"),
+                    "line2": address.get("line2"),
+                    "postal_code": address.get("postal_code"),
+                    "city": address.get("city"),
+                    "state": address.get("state"),
+                    "country": country,
+                }
+            )
+            if address is not None and country is not None
+            else None
+        )
         return CanonicalCustomer(
             source_id=customer.id,
             email=customer.email or "",
             name=customer.name,
             country=country,
             country_hint=None if country else self._customer_country_hint(customer),
+            billing_address=billing_address,
         )
 
     def _customer_country_hint(self, customer: stripe_lib.Customer) -> str | None:

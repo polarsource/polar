@@ -30,7 +30,7 @@ from .pan_transfer import (
 )
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
-    MerchantMigrationBillingCountryUpdate,
+    MerchantMigrationBillingAddressUpdate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
@@ -541,12 +541,12 @@ async def update_record(
 
 
 @router.patch(
-    "/{id}/records/{record_id}/billing-country",
-    response_model=MerchantMigrationBillingCountryUpdate,
-    summary="Update Merchant Migration Customer Billing Country",
+    "/{id}/records/{record_id}/billing-address",
+    response_model=MerchantMigrationBillingAddressUpdate,
+    summary="Update Merchant Migration Customer Billing Address",
     responses={
         400: {
-            "description": "Billing country can only be set through a subscription.",
+            "description": "Billing address can only be set through a subscription.",
             "model": RecordNotSubscription.schema(),
         },
         403: {
@@ -560,17 +560,17 @@ async def update_record(
         },
     },
 )
-async def update_customer_billing_country(
+async def update_customer_billing_address(
     id: UUID4,
     record_id: UUID4,
-    update: MerchantMigrationBillingCountryUpdate,
+    update: MerchantMigrationBillingAddressUpdate,
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> MerchantMigrationBillingCountryUpdate:
-    return await merchant_migration_service.update_customer_billing_country(
+) -> MerchantMigrationBillingAddressUpdate:
+    return await merchant_migration_service.update_customer_billing_address(
         session,
         auth_subject,
         id,
         record_id,
-        update.country,
+        update.billing_address,
     )

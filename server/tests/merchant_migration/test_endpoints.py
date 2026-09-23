@@ -1147,7 +1147,7 @@ class TestUpdateRecord:
 
 
 @pytest.mark.asyncio
-class TestUpdateBillingCountry:
+class TestUpdateBillingAddress:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_updates_staged_customer(
         self,
@@ -1185,18 +1185,41 @@ class TestUpdateBillingCountry:
 
         response = await client.patch(
             f"/v1/merchant-migrations/{migration.id}/records/"
-            f"{subscription.id}/billing-country",
-            json={"country": "FR"},
+            f"{subscription.id}/billing-address",
+            json={
+                "billing_address": {
+                    "line1": "123 Main Street",
+                    "city": "New York",
+                    "state": "NY",
+                    "postal_code": "10001",
+                    "country": "US",
+                }
+            },
         )
 
         assert response.status_code == 200
-        assert response.json() == {"country": "FR"}
+        assert response.json()["billing_address"] == {
+            "line1": "123 Main Street",
+            "line2": None,
+            "city": "New York",
+            "state": "US-NY",
+            "postal_code": "10001",
+            "country": "US",
+        }
         reloaded = await MerchantMigrationRecordRepository.from_session(
             session
         ).get_by_id(customer.id)
         assert reloaded is not None
-        assert reloaded.canonical["country"] == "FR"
+        assert reloaded.canonical["country"] == "US"
         assert reloaded.canonical["country_hint"] is None
+        assert reloaded.canonical["billing_address"] == {
+            "line1": "123 Main Street",
+            "line2": None,
+            "city": "New York",
+            "state": "US-NY",
+            "postal_code": "10001",
+            "country": "US",
+        }
 
 
 async def _create_migration(

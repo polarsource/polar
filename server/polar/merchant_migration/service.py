@@ -13,7 +13,7 @@ from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TaxBehavior
-from polar.kit.address import Address, CountryAlpha2, CountryAlpha2Input
+from polar.kit.address import Address, AddressInput
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -89,7 +89,7 @@ from .repository import (
     MerchantMigrationRepository,
 )
 from .schemas import (
-    MerchantMigrationBillingCountryUpdate,
+    MerchantMigrationBillingAddressUpdate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
@@ -1461,14 +1461,14 @@ class MerchantMigrationService:
         )
         return MerchantMigrationRecordUpdate(tax_behavior=tax_behavior)
 
-    async def update_customer_billing_country(
+    async def update_customer_billing_address(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         record_id: UUID,
-        country: CountryAlpha2Input,
-    ) -> MerchantMigrationBillingCountryUpdate:
+        billing_address_input: AddressInput,
+    ) -> MerchantMigrationBillingAddressUpdate:
         migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
         subscription_record = await repository.get_by_id(record_id, for_update=True)
@@ -1494,11 +1494,19 @@ class MerchantMigrationService:
         customer = deserialize(customer_record.type, customer_record.canonical)
         if not isinstance(customer, CanonicalCustomer):
             raise MerchantMigrationRecordNotFound()
+        billing_address = Address.model_validate(
+            billing_address_input.model_dump(exclude_none=True)
+        )
         await repository.update(
             customer_record,
             update_dict={
                 "canonical": serialize(
-                    replace(customer, country=country.value, country_hint=None)
+                    replace(
+                        customer,
+                        country=billing_address.country.value,
+                        country_hint=None,
+                        billing_address=billing_address,
+                    )
                 )
             },
         )
@@ -1508,18 +1516,12 @@ class MerchantMigrationService:
                 customer_record.target_id
             )
             if polar_customer is not None:
-                billing_country = CountryAlpha2(country.value)
-                billing_address = polar_customer.billing_address
-                if billing_address is None:
-                    billing_address = Address(country=billing_country)
-                else:
-                    billing_address = billing_address.model_copy(
-                        update={"country": billing_country}
-                    )
                 await customer_repository.update(
                     polar_customer, update_dict={"billing_address": billing_address}
                 )
-        return MerchantMigrationBillingCountryUpdate(country=country)
+        return MerchantMigrationBillingAddressUpdate(
+            billing_address=billing_address_input
+        )
 
     async def list_records(
         self,

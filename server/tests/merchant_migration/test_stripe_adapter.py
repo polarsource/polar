@@ -976,6 +976,8 @@ class TestMapCustomer:
 
         assert mapped.country == "FR"
         assert mapped.country_hint is None
+        assert mapped.billing_address is not None
+        assert mapped.billing_address.country == "FR"
 
     def test_payment_method_billing_country_is_preferred(
         self, mocker: MockerFixture

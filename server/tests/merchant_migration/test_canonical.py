@@ -108,6 +108,8 @@ class TestSerialize:
             "email": "a@example.com",
             "name": None,
             "country": None,
+            "country_hint": None,
+            "billing_address": None,
         }
 
 

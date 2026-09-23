@@ -9,6 +9,7 @@ from typing import Any
 from fastapi.encoders import jsonable_encoder
 
 from polar.enums import TaxBehavior
+from polar.kit.address import Address
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 
 
@@ -108,6 +109,7 @@ class CanonicalCustomer:
     # writes it to Polar billing_address, while retaining this field so the
     # review UI can disclose its provenance.
     country_hint: str | None = None
+    billing_address: Address | None = None
 
     type = MerchantMigrationRecordType.customer
 
@@ -251,12 +253,18 @@ def deserialize(
                 archived=data.get("archived", False),
             )
         case MerchantMigrationRecordType.customer:
+            billing_address = data.get("billing_address")
             return CanonicalCustomer(
                 source_id=data["source_id"],
                 email=data["email"],
                 name=data["name"],
                 country=data["country"],
                 country_hint=data.get("country_hint"),
+                billing_address=(
+                    Address.model_validate(billing_address)
+                    if billing_address is not None
+                    else None
+                ),
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]

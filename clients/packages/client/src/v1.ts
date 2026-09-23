@@ -5580,7 +5580,7 @@ export interface paths {
     patch: operations['merchant-migrations:update_record']
     trace?: never
   }
-  '/v1/merchant-migrations/{id}/records/{record_id}/billing-country': {
+  '/v1/merchant-migrations/{id}/records/{record_id}/billing-address': {
     parameters: {
       query?: never
       header?: never
@@ -5594,10 +5594,10 @@ export interface paths {
     options?: never
     head?: never
     /**
-     * Update Merchant Migration Customer Billing Country
+     * Update Merchant Migration Customer Billing Address
      * @description **Scopes**: `organizations:write`
      */
-    patch: operations['merchant-migrations:update_customer_billing_country']
+    patch: operations['merchant-migrations:update_customer_billing_address']
     trace?: never
   }
   '/v1/email-update/request': {
@@ -25053,258 +25053,10 @@ export interface components {
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
     }
-    /** MerchantMigrationBillingCountryUpdate */
-    MerchantMigrationBillingCountryUpdate: {
-      /**
-       * CountryAlpha2Input
-       * @description Billing country Polar will store on the imported customer.
-       * @enum {string}
-       */
-      country:
-        | 'AD'
-        | 'AE'
-        | 'AF'
-        | 'AG'
-        | 'AI'
-        | 'AL'
-        | 'AM'
-        | 'AO'
-        | 'AQ'
-        | 'AR'
-        | 'AS'
-        | 'AT'
-        | 'AU'
-        | 'AW'
-        | 'AX'
-        | 'AZ'
-        | 'BA'
-        | 'BB'
-        | 'BD'
-        | 'BE'
-        | 'BF'
-        | 'BG'
-        | 'BH'
-        | 'BI'
-        | 'BJ'
-        | 'BL'
-        | 'BM'
-        | 'BN'
-        | 'BO'
-        | 'BQ'
-        | 'BR'
-        | 'BS'
-        | 'BT'
-        | 'BV'
-        | 'BW'
-        | 'BY'
-        | 'BZ'
-        | 'CA'
-        | 'CC'
-        | 'CD'
-        | 'CF'
-        | 'CG'
-        | 'CH'
-        | 'CI'
-        | 'CK'
-        | 'CL'
-        | 'CM'
-        | 'CN'
-        | 'CO'
-        | 'CR'
-        | 'CV'
-        | 'CW'
-        | 'CX'
-        | 'CY'
-        | 'CZ'
-        | 'DE'
-        | 'DJ'
-        | 'DK'
-        | 'DM'
-        | 'DO'
-        | 'DZ'
-        | 'EC'
-        | 'EE'
-        | 'EG'
-        | 'EH'
-        | 'ER'
-        | 'ES'
-        | 'ET'
-        | 'FI'
-        | 'FJ'
-        | 'FK'
-        | 'FM'
-        | 'FO'
-        | 'FR'
-        | 'GA'
-        | 'GB'
-        | 'GD'
-        | 'GE'
-        | 'GF'
-        | 'GG'
-        | 'GH'
-        | 'GI'
-        | 'GL'
-        | 'GM'
-        | 'GN'
-        | 'GP'
-        | 'GQ'
-        | 'GR'
-        | 'GS'
-        | 'GT'
-        | 'GU'
-        | 'GW'
-        | 'GY'
-        | 'HK'
-        | 'HM'
-        | 'HN'
-        | 'HR'
-        | 'HT'
-        | 'HU'
-        | 'ID'
-        | 'IE'
-        | 'IL'
-        | 'IM'
-        | 'IN'
-        | 'IO'
-        | 'IQ'
-        | 'IS'
-        | 'IT'
-        | 'JE'
-        | 'JM'
-        | 'JO'
-        | 'JP'
-        | 'KE'
-        | 'KG'
-        | 'KH'
-        | 'KI'
-        | 'KM'
-        | 'KN'
-        | 'KR'
-        | 'KW'
-        | 'KY'
-        | 'KZ'
-        | 'LA'
-        | 'LB'
-        | 'LC'
-        | 'LI'
-        | 'LK'
-        | 'LR'
-        | 'LS'
-        | 'LT'
-        | 'LU'
-        | 'LV'
-        | 'LY'
-        | 'MA'
-        | 'MC'
-        | 'MD'
-        | 'ME'
-        | 'MF'
-        | 'MG'
-        | 'MH'
-        | 'MK'
-        | 'ML'
-        | 'MM'
-        | 'MN'
-        | 'MO'
-        | 'MP'
-        | 'MQ'
-        | 'MR'
-        | 'MS'
-        | 'MT'
-        | 'MU'
-        | 'MV'
-        | 'MW'
-        | 'MX'
-        | 'MY'
-        | 'MZ'
-        | 'NA'
-        | 'NC'
-        | 'NE'
-        | 'NF'
-        | 'NG'
-        | 'NI'
-        | 'NL'
-        | 'NO'
-        | 'NP'
-        | 'NR'
-        | 'NU'
-        | 'NZ'
-        | 'OM'
-        | 'PA'
-        | 'PE'
-        | 'PF'
-        | 'PG'
-        | 'PH'
-        | 'PK'
-        | 'PL'
-        | 'PM'
-        | 'PN'
-        | 'PR'
-        | 'PS'
-        | 'PT'
-        | 'PW'
-        | 'PY'
-        | 'QA'
-        | 'RE'
-        | 'RO'
-        | 'RS'
-        | 'RW'
-        | 'SA'
-        | 'SB'
-        | 'SC'
-        | 'SD'
-        | 'SE'
-        | 'SG'
-        | 'SH'
-        | 'SI'
-        | 'SJ'
-        | 'SK'
-        | 'SL'
-        | 'SM'
-        | 'SN'
-        | 'SO'
-        | 'SR'
-        | 'SS'
-        | 'ST'
-        | 'SV'
-        | 'SX'
-        | 'SZ'
-        | 'TC'
-        | 'TD'
-        | 'TF'
-        | 'TG'
-        | 'TH'
-        | 'TJ'
-        | 'TK'
-        | 'TL'
-        | 'TM'
-        | 'TN'
-        | 'TO'
-        | 'TR'
-        | 'TT'
-        | 'TV'
-        | 'TW'
-        | 'TZ'
-        | 'UA'
-        | 'UG'
-        | 'UM'
-        | 'US'
-        | 'UY'
-        | 'UZ'
-        | 'VA'
-        | 'VC'
-        | 'VE'
-        | 'VG'
-        | 'VI'
-        | 'VN'
-        | 'VU'
-        | 'WF'
-        | 'WS'
-        | 'YE'
-        | 'YT'
-        | 'ZA'
-        | 'ZM'
-        | 'ZW'
+    /** MerchantMigrationBillingAddressUpdate */
+    MerchantMigrationBillingAddressUpdate: {
+      /** @description Billing address Polar will store on the imported customer. */
+      billing_address: components['schemas']['AddressInput']
     }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
@@ -25533,6 +25285,8 @@ export interface components {
        * @description The payment-method country used as the billing-country fallback. Present only to disclose fallback provenance; Polar tax still uses the imported customer billing address.
        */
       customer_country_hint: string | null
+      /** @description The billing address Polar will import for the customer. None when only a payment-method country fallback or no address is available. */
+      customer_billing_address: components['schemas']['Address'] | null
       /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
@@ -57400,7 +57154,7 @@ export interface operations {
       }
     }
   }
-  'merchant-migrations:update_customer_billing_country': {
+  'merchant-migrations:update_customer_billing_address': {
     parameters: {
       query?: never
       header?: never
@@ -57412,7 +57166,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MerchantMigrationBillingCountryUpdate']
+        'application/json': components['schemas']['MerchantMigrationBillingAddressUpdate']
       }
     }
     responses: {
@@ -57422,10 +57176,10 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MerchantMigrationBillingCountryUpdate']
+          'application/json': components['schemas']['MerchantMigrationBillingAddressUpdate']
         }
       }
-      /** @description Billing country can only be set through a subscription. */
+      /** @description Billing address can only be set through a subscription. */
       400: {
         headers: {
           [name: string]: unknown
@@ -70818,254 +70572,6 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
-export const merchantMigrationBillingCountryUpdateCountryValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['MerchantMigrationBillingCountryUpdate']['country']
-> = [
-  'AD',
-  'AE',
-  'AF',
-  'AG',
-  'AI',
-  'AL',
-  'AM',
-  'AO',
-  'AQ',
-  'AR',
-  'AS',
-  'AT',
-  'AU',
-  'AW',
-  'AX',
-  'AZ',
-  'BA',
-  'BB',
-  'BD',
-  'BE',
-  'BF',
-  'BG',
-  'BH',
-  'BI',
-  'BJ',
-  'BL',
-  'BM',
-  'BN',
-  'BO',
-  'BQ',
-  'BR',
-  'BS',
-  'BT',
-  'BV',
-  'BW',
-  'BY',
-  'BZ',
-  'CA',
-  'CC',
-  'CD',
-  'CF',
-  'CG',
-  'CH',
-  'CI',
-  'CK',
-  'CL',
-  'CM',
-  'CN',
-  'CO',
-  'CR',
-  'CV',
-  'CW',
-  'CX',
-  'CY',
-  'CZ',
-  'DE',
-  'DJ',
-  'DK',
-  'DM',
-  'DO',
-  'DZ',
-  'EC',
-  'EE',
-  'EG',
-  'EH',
-  'ER',
-  'ES',
-  'ET',
-  'FI',
-  'FJ',
-  'FK',
-  'FM',
-  'FO',
-  'FR',
-  'GA',
-  'GB',
-  'GD',
-  'GE',
-  'GF',
-  'GG',
-  'GH',
-  'GI',
-  'GL',
-  'GM',
-  'GN',
-  'GP',
-  'GQ',
-  'GR',
-  'GS',
-  'GT',
-  'GU',
-  'GW',
-  'GY',
-  'HK',
-  'HM',
-  'HN',
-  'HR',
-  'HT',
-  'HU',
-  'ID',
-  'IE',
-  'IL',
-  'IM',
-  'IN',
-  'IO',
-  'IQ',
-  'IS',
-  'IT',
-  'JE',
-  'JM',
-  'JO',
-  'JP',
-  'KE',
-  'KG',
-  'KH',
-  'KI',
-  'KM',
-  'KN',
-  'KR',
-  'KW',
-  'KY',
-  'KZ',
-  'LA',
-  'LB',
-  'LC',
-  'LI',
-  'LK',
-  'LR',
-  'LS',
-  'LT',
-  'LU',
-  'LV',
-  'LY',
-  'MA',
-  'MC',
-  'MD',
-  'ME',
-  'MF',
-  'MG',
-  'MH',
-  'MK',
-  'ML',
-  'MM',
-  'MN',
-  'MO',
-  'MP',
-  'MQ',
-  'MR',
-  'MS',
-  'MT',
-  'MU',
-  'MV',
-  'MW',
-  'MX',
-  'MY',
-  'MZ',
-  'NA',
-  'NC',
-  'NE',
-  'NF',
-  'NG',
-  'NI',
-  'NL',
-  'NO',
-  'NP',
-  'NR',
-  'NU',
-  'NZ',
-  'OM',
-  'PA',
-  'PE',
-  'PF',
-  'PG',
-  'PH',
-  'PK',
-  'PL',
-  'PM',
-  'PN',
-  'PR',
-  'PS',
-  'PT',
-  'PW',
-  'PY',
-  'QA',
-  'RE',
-  'RO',
-  'RS',
-  'RW',
-  'SA',
-  'SB',
-  'SC',
-  'SD',
-  'SE',
-  'SG',
-  'SH',
-  'SI',
-  'SJ',
-  'SK',
-  'SL',
-  'SM',
-  'SN',
-  'SO',
-  'SR',
-  'SS',
-  'ST',
-  'SV',
-  'SX',
-  'SZ',
-  'TC',
-  'TD',
-  'TF',
-  'TG',
-  'TH',
-  'TJ',
-  'TK',
-  'TL',
-  'TM',
-  'TN',
-  'TO',
-  'TR',
-  'TT',
-  'TV',
-  'TW',
-  'TZ',
-  'UA',
-  'UG',
-  'UM',
-  'US',
-  'UY',
-  'UZ',
-  'VA',
-  'VC',
-  'VE',
-  'VG',
-  'VI',
-  'VN',
-  'VU',
-  'WF',
-  'WS',
-  'YE',
-  'YT',
-  'ZA',
-  'ZM',
-  'ZW',
-]
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']

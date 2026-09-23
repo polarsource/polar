@@ -1,3 +1,4 @@
+import { schemas } from '@polar-sh/client'
 import { VoidEventRecord } from './identityLive'
 
 export type VoidEventSource = 'user' | 'system'
@@ -118,6 +119,31 @@ export const toCatalogEvent = (event: VoidEventRecord): VoidCatalogEvent => ({
   external_root_id: event.external_root_id ?? null,
   metadata: event.metadata ?? {},
 })
+
+/**
+ * Presents a Void event through Polar's `EventRow`. Void event names are open,
+ * unlike Polar's closed system-event union, so the shape is asserted once here.
+ * The identity stands in for the external customer; there are no children to
+ * expand and no Polar event page to link to.
+ */
+export const toPolarEvent = (
+  event: VoidCatalogEvent,
+  organizationId: string,
+): schemas['Event'] =>
+  ({
+    id: event.id,
+    timestamp: event.timestamp,
+    organization_id: organizationId,
+    customer_id: null,
+    customer: null,
+    external_customer_id: event.external_identity_id,
+    child_count: 0,
+    parent_id: event.external_root_id,
+    label: event.name,
+    name: event.name,
+    source: event.source,
+    metadata: event.metadata,
+  }) as schemas['Event']
 
 export const filterFixtureEvents = (
   events: VoidCatalogEvent[],

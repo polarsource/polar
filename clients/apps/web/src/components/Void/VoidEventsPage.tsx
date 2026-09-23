@@ -29,7 +29,6 @@ export const PAGE_SIZE = 25
 export const VoidEventsPage = () => {
   const { organization } = useContext(OrganizationContext)
   const live = useVoidDataSource() === 'live'
-  const base = `/void/dashboard/${organization.slug}`
   const searchParams = useSearchParams()
   const [query, setQuery] = useQueryState('query', parseAsString)
   const [identity, setIdentity] = useQueryState('identity', parseAsString)
@@ -182,11 +181,7 @@ export const VoidEventsPage = () => {
         </Box>
       ) : (
         <Box flexDirection="column" rowGap="l">
-          <VoidEvents
-            events={events}
-            base={base}
-            identityNames={identityNames}
-          />
+          <VoidEvents events={events} organization={organization} />
           <Pagination
             className="self-end"
             totalCount={totalCount}

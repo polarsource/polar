@@ -1,23 +1,23 @@
+import { EventRow } from '@/components/Events/EventRow'
+import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { VoidCatalogEvent } from './events'
-import { VoidEventRow } from './VoidEventRow'
+import { toPolarEvent, VoidCatalogEvent } from './events'
 
 export const VoidEvents = ({
   events,
-  base,
-  identityNames,
+  organization,
 }: {
   events: VoidCatalogEvent[]
-  base: string
-  identityNames: Map<string, string>
+  organization: schemas['Organization']
 }) => (
   <Box flexDirection="column" rowGap="m">
     {events.map((event) => (
-      <VoidEventRow
+      <EventRow
         key={event.id}
-        event={event}
-        base={base}
-        identityNames={identityNames}
+        event={toPolarEvent(event, organization.id)}
+        organization={organization}
+        renderChildren={false}
+        renderEventLink={false}
       />
     ))}
   </Box>

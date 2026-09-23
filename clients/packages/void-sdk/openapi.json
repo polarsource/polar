@@ -3146,6 +3146,303 @@
         "x-speakeasy-name-override": "preview"
       }
     },
+    "/v1/void/stage": {
+      "get": {
+        "tags": [
+          "void",
+          "private",
+          "stage",
+          "private"
+        ],
+        "summary": "Get",
+        "description": "**Scopes**: `void:read` `void:write`",
+        "operationId": "stage:get",
+        "security": [
+          {
+            "oat": [
+              "void:read"
+            ]
+          },
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stage"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "stage",
+        "x-speakeasy-name-override": "get"
+      },
+      "put": {
+        "tags": [
+          "void",
+          "private",
+          "stage",
+          "private"
+        ],
+        "summary": "Save",
+        "description": "Save the complete staged configuration without deploying it. Use expected_revision=None when no stage exists. Revisions increase across discards.\n\n**Scopes**: `void:write`",
+        "operationId": "stage:save",
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stage"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "stage",
+        "x-speakeasy-name-override": "save"
+      },
+      "delete": {
+        "tags": [
+          "void",
+          "private",
+          "stage",
+          "private"
+        ],
+        "summary": "Delete",
+        "description": "**Scopes**: `void:write`",
+        "operationId": "stage:delete",
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "expected_revision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Expected Revision"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "stage",
+        "x-speakeasy-name-override": "delete"
+      }
+    },
+    "/v1/void/stage/deploy": {
+      "post": {
+        "tags": [
+          "void",
+          "private",
+          "stage",
+          "private"
+        ],
+        "summary": "Deploy",
+        "description": "Plan or deploy the staged configuration as a draft. The stage is retained; activation is separate.\n\n**Scopes**: `void:write`",
+        "operationId": "stage:deploy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageDeploy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deploy"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidDeployment"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/StageConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DeploymentConflict"
+                    }
+                  ],
+                  "title": "Response 409 Stage:Deploy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oat": [
+              "void:write"
+            ]
+          }
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "stage",
+        "x-speakeasy-name-override": "deploy"
+      }
+    },
     "/v1/void/entitlements": {
       "get": {
         "tags": [
@@ -9781,6 +10078,166 @@
           "detail"
         ],
         "title": "SlugTaken"
+      },
+      "Stage": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/DeployConfiguration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "configuration"
+        ],
+        "title": "Stage"
+      },
+      "StageConfiguration": {
+        "properties": {
+          "reducers": {
+            "items": {
+              "$ref": "#/components/schemas/DeployReducer-Input"
+            },
+            "type": "array",
+            "title": "Reducers",
+            "default": []
+          },
+          "meters": {
+            "items": {
+              "$ref": "#/components/schemas/DeployMeter-Input"
+            },
+            "type": "array",
+            "title": "Meters",
+            "default": []
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/DeployEntitlement"
+            },
+            "type": "array",
+            "title": "Entitlements",
+            "default": []
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/DeployProduct-Input"
+            },
+            "type": "array",
+            "title": "Products",
+            "default": []
+          },
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/DeployActivity"
+            },
+            "type": "array",
+            "title": "Activities",
+            "default": []
+          },
+          "signals": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DeployMeterSignal"
+                },
+                {
+                  "$ref": "#/components/schemas/DeploySemanticSignal"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "meter": "#/components/schemas/DeployMeterSignal",
+                  "semantic": "#/components/schemas/DeploySemanticSignal"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Signals",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StageConfiguration"
+      },
+      "StageConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "StageConflict",
+            "title": "Error",
+            "examples": [
+              "StageConflict"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "StageConflict"
+      },
+      "StageDeploy": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Plan the deployment without writing.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "StageDeploy"
+      },
+      "StageSave": {
+        "properties": {
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision",
+            "description": "The last read revision, or None to create a stage."
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/StageConfiguration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision",
+          "configuration"
+        ],
+        "title": "StageSave"
       },
       "StateIdentity": {
         "properties": {

@@ -131,6 +131,7 @@ from .void_reducer import VoidReducer
 from .void_reducer_bucket import VoidReducerBucket
 from .void_reducer_dependency import VoidReducerDependency, VoidReducerJob
 from .void_scenario import VoidScenario
+from .void_stage import VoidStage
 from .wallet import Wallet
 from .wallet_transaction import WalletTransaction
 from .webhook_delivery import WebhookDelivery
@@ -269,6 +270,7 @@ __all__ = [
     "VoidReducerDependency",
     "VoidReducerJob",
     "VoidScenario",
+    "VoidStage",
     "Wallet",
     "WalletTransaction",
     "WebhookDelivery",

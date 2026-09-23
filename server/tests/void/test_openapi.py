@@ -25,6 +25,8 @@ class TestGetVoidOpenAPI:
             "/v1/void/customers",
             "/v1/void/entitlements",
             "/v1/void/deploys",
+            "/v1/void/stage",
+            "/v1/void/stage/deploy",
             "/v1/void/entitlements/{id}",
             "/v1/void/subscriptions/rebuild",
             "/v1/void/identities",

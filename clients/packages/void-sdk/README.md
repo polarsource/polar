@@ -286,6 +286,50 @@ current.active_version_id // the hash every product, subscription and meter carr
 Runtime lookups follow the active version. `versionId` on `defineConfig` pins a
 deployed draft instead, for testing before activation.
 
+### Stage configuration changes
+
+Each organization can save one complete configuration before deploying it.
+The stage is independent of CLI deployments: it has no base version and never
+merges changes from another deployment.
+
+```ts
+const configuration = await client.api.deploys.configuration(deploymentId)
+let stage = await client.api.stage.save({
+  expected_revision: null,
+  configuration,
+})
+
+stage = await client.api.stage.save({
+  expected_revision: stage.revision,
+  configuration: {
+    ...stage.configuration,
+    signals: [],
+  },
+})
+
+const plan = await client.api.stage.deploy({
+  expected_revision: stage.revision,
+  dry_run: true,
+})
+const deployment = await client.api.stage.deploy({
+  expected_revision: stage.revision,
+})
+// Activate separately when ready.
+await client.api.deploys.activate(deployment.id!)
+await client.api.stage.delete({ expected_revision: stage.revision })
+```
+
+`client.api.stage.get()` reads the saved stage and returns 404 if none exists.
+Saving replaces the whole configuration; use `expected_revision: null` only when
+creating a stage. A stale revision returns 409 on save, discard, or deployment.
+Revisions keep increasing after discard and recreation, so an old tab cannot
+overwrite a newly created stage.
+
+Saving validates the configuration's shape; references and deployment rules are
+checked when planning or deploying. Draft deployment retains the stage unchanged.
+Like direct deployment, submitting a configuration that already exists returns
+that deployment, including on a dry run. A CLI deployment never changes the stage.
+
 ### Pull a deployed configuration
 
 `void pull` writes the active deployment's configuration to `void.json`: the

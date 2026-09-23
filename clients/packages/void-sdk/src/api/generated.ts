@@ -152,6 +152,10 @@ export type ScenarioBaseUnavailable = { readonly "error": "ScenarioBaseUnavailab
 export const ScenarioBaseUnavailable = Schema.Struct({ "error": Schema.Literal("ScenarioBaseUnavailable").annotate({ "title": "Error", "examples": ["ScenarioBaseUnavailable"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "ScenarioBaseUnavailable", "identifier": "ScenarioBaseUnavailable" })
 export type InvalidScenario = { readonly "error": "InvalidScenario", readonly "detail": string }
 export const InvalidScenario = Schema.Struct({ "error": Schema.Literal("InvalidScenario").annotate({ "title": "Error", "examples": ["InvalidScenario"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "InvalidScenario", "identifier": "InvalidScenario" })
+export type StageConflict = { readonly "error": "StageConflict", readonly "detail": string }
+export const StageConflict = Schema.Struct({ "error": Schema.Literal("StageConflict").annotate({ "title": "Error", "examples": ["StageConflict"] }), "detail": Schema.String.annotate({ "title": "Detail" }) }).annotate({ "title": "StageConflict", "identifier": "StageConflict" })
+export type StageDeploy = { readonly "expected_revision": number, readonly "dry_run"?: boolean }
+export const StageDeploy = Schema.Struct({ "expected_revision": Schema.Number.annotate({ "title": "Expected Revision" }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })).check(Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Plan the deployment without writing.", "default": false })) }).annotate({ "title": "StageDeploy", "identifier": "StageDeploy" })
 export type Entitlement = { readonly "id": string, readonly "slug": string, readonly "name": string, readonly "description": string | null, readonly "created_at": string }
 export const Entitlement = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "slug": Schema.String.annotate({ "title": "Slug" }), "name": Schema.String.annotate({ "title": "Name" }), "description": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Description" }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }) }).annotate({ "title": "Entitlement", "identifier": "Entitlement" })
 export type EntitlementCreate = { readonly "slug": string, readonly "name"?: string | null, readonly "description"?: string | null }
@@ -248,6 +252,8 @@ export type DeployEntry = { readonly "kind": "reducer" | "meter" | "entitlement"
 export const DeployEntry = Schema.Struct({ "kind": Schema.Literals(["reducer", "meter", "entitlement", "product", "activity"]).annotate({ "title": "Kind" }), "key": Schema.String.annotate({ "title": "Key" }), "action": Schema.Literals(["create", "replace", "update", "unchanged", "orphan"]).annotate({ "title": "Action" }), "reason": Schema.Union([Schema.String, Schema.Null]).annotate({ "title": "Reason" }), "id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Id", "description": "The server id after apply. Unset on a dry run create." }), "price_preview": Schema.Union([MeterPricePreview, Schema.Null]) }).annotate({ "title": "DeployEntry", "identifier": "DeployEntry" })
 export type DeployCreate_Input = { readonly "reducers"?: ReadonlyArray<DeployReducer_Input>, readonly "meters"?: ReadonlyArray<DeployMeter_Input>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Input>, readonly "activities"?: ReadonlyArray<DeployActivity>, readonly "signals"?: ReadonlyArray<DeployMeterSignal | DeploySemanticSignal>, readonly "checksum": string, readonly "dry_run"?: boolean, readonly "activate"?: boolean, readonly "preview"?: PricePreviewWindow | null }
 export const DeployCreate_Input = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Input).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Input).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Input).annotate({ "title": "Products", "default": [] })), "activities": Schema.optionalKey(Schema.Array(DeployActivity).annotate({ "title": "Activities", "default": [] })), "signals": Schema.optionalKey(Schema.Array(Schema.Union([DeployMeterSignal, DeploySemanticSignal], { mode: "oneOf" })).annotate({ "title": "Signals", "default": [] })), "checksum": Schema.String.annotate({ "title": "Checksum", "description": "Hash of the config this was compiled from. Stored with the deployment; clients send it back on every request." }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })), "dry_run": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Dry Run", "description": "Compute the plan against current state; write nothing.", "default": false })), "activate": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Activate", "description": "Activate the deployment once applied. Requires an organization that has passed review.", "default": false })), "preview": Schema.optionalKey(Schema.Union([PricePreviewWindow, Schema.Null]).annotate({ "description": "Compare changed usage prices without applying them." })) }).annotate({ "title": "DeployCreate", "identifier": "DeployCreate-Input" })
+export type StageConfiguration = { readonly "reducers"?: ReadonlyArray<DeployReducer_Input>, readonly "meters"?: ReadonlyArray<DeployMeter_Input>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Input>, readonly "activities"?: ReadonlyArray<DeployActivity>, readonly "signals"?: ReadonlyArray<DeployMeterSignal | DeploySemanticSignal> }
+export const StageConfiguration = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Input).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Input).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Input).annotate({ "title": "Products", "default": [] })), "activities": Schema.optionalKey(Schema.Array(DeployActivity).annotate({ "title": "Activities", "default": [] })), "signals": Schema.optionalKey(Schema.Array(Schema.Union([DeployMeterSignal, DeploySemanticSignal], { mode: "oneOf" })).annotate({ "title": "Signals", "default": [] })) }).annotate({ "title": "StageConfiguration", "identifier": "StageConfiguration" })
 export type DeployConfiguration = { readonly "reducers"?: ReadonlyArray<DeployReducer_Output>, readonly "meters"?: ReadonlyArray<DeployMeter_Output>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Output>, readonly "activities"?: ReadonlyArray<DeployActivity>, readonly "signals"?: ReadonlyArray<DeployMeterSignal | DeploySemanticSignal> }
 export const DeployConfiguration = Schema.Struct({ "reducers": Schema.optionalKey(Schema.Array(DeployReducer_Output).annotate({ "title": "Reducers", "default": [] })), "meters": Schema.optionalKey(Schema.Array(DeployMeter_Output).annotate({ "title": "Meters", "default": [] })), "entitlements": Schema.optionalKey(Schema.Array(DeployEntitlement).annotate({ "title": "Entitlements", "default": [] })), "products": Schema.optionalKey(Schema.Array(DeployProduct_Output).annotate({ "title": "Products", "default": [] })), "activities": Schema.optionalKey(Schema.Array(DeployActivity).annotate({ "title": "Activities", "default": [] })), "signals": Schema.optionalKey(Schema.Array(Schema.Union([DeployMeterSignal, DeploySemanticSignal], { mode: "oneOf" })).annotate({ "title": "Signals", "default": [] })) }).annotate({ "title": "DeployConfiguration", "description": "The deployable definitions alone, as stored on a deployment.", "identifier": "DeployConfiguration" })
 export type DeployCreate_Output = { readonly "reducers"?: ReadonlyArray<DeployReducer_Output>, readonly "meters"?: ReadonlyArray<DeployMeter_Output>, readonly "entitlements"?: ReadonlyArray<DeployEntitlement>, readonly "products"?: ReadonlyArray<DeployProduct_Output>, readonly "activities"?: ReadonlyArray<DeployActivity>, readonly "signals"?: ReadonlyArray<DeployMeterSignal | DeploySemanticSignal>, readonly "checksum": string, readonly "dry_run"?: boolean, readonly "activate"?: boolean, readonly "preview"?: PricePreviewWindow | null }
@@ -266,6 +272,10 @@ export type ComparisonMetric = { readonly "slug": string, readonly "func": strin
 export const ComparisonMetric = Schema.Struct({ "slug": Schema.String.annotate({ "title": "Slug" }), "func": Schema.String.annotate({ "title": "Func" }), "metrics": Metrics }).annotate({ "title": "ComparisonMetric", "identifier": "ComparisonMetric" })
 export type Deploy = { readonly "version_id": string, readonly "id": string | null, readonly "checksum": string, readonly "applied": boolean, readonly "status": VoidDeploymentStatus | null, readonly "has_configuration": boolean, readonly "entries": ReadonlyArray<DeployEntry>, readonly "created_at": string }
 export const Deploy = Schema.Struct({ "version_id": Schema.String.annotate({ "title": "Version Id", "description": "SHA-256 of the normalized configuration." }), "id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Id", "description": "Unset on a dry run." }), "checksum": Schema.String.annotate({ "title": "Checksum" }), "applied": Schema.Boolean.annotate({ "title": "Applied" }), "status": Schema.Union([VoidDeploymentStatus, Schema.Null]).annotate({ "description": "Unset on a dry run." }), "has_configuration": Schema.Boolean.annotate({ "title": "Has Configuration", "description": "Whether the configuration is stored, so the version can be used as a scenario base. False for deployments created before configurations were kept." }), "entries": Schema.Array(DeployEntry).annotate({ "title": "Entries" }), "created_at": Schema.String.annotate({ "title": "Created At", "format": "date-time" }) }).annotate({ "title": "Deploy", "identifier": "Deploy" })
+export type StageSave = { readonly "expected_revision": number | null, readonly "configuration": StageConfiguration }
+export const StageSave = Schema.Struct({ "expected_revision": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })).check(Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })), Schema.Null]).annotate({ "title": "Expected Revision", "description": "The last read revision, or None to create a stage." }), "configuration": StageConfiguration }).annotate({ "title": "StageSave", "identifier": "StageSave" })
+export type Stage = { readonly "revision": number, readonly "configuration": DeployConfiguration }
+export const Stage = Schema.Struct({ "revision": Schema.Number.annotate({ "title": "Revision" }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })).check(Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })), "configuration": DeployConfiguration }).annotate({ "title": "Stage", "identifier": "Stage" })
 export type Scenario = { readonly "id": string, readonly "name": string, readonly "base_version_id": string, readonly "base_deployment_id": string, readonly "patch": ScenarioPatch_Output, readonly "version_id": string, readonly "deployment_id": string | null, readonly "promoted_deployment_id": string | null, readonly "base_configuration": DeployCreate_Output, readonly "configuration": DeployCreate_Output, readonly "created_at": string, readonly "modified_at": string | null }
 export const Scenario = Schema.Struct({ "id": Schema.String.annotate({ "title": "Id", "format": "uuid" }), "name": Schema.String.annotate({ "title": "Name" }), "base_version_id": Schema.String.annotate({ "title": "Base Version Id" }), "base_deployment_id": Schema.String.annotate({ "title": "Base Deployment Id", "format": "uuid" }), "patch": ScenarioPatch_Output, "version_id": Schema.String.annotate({ "title": "Version Id", "description": "SHA-256 of the resolved configuration: the version this scenario would become when promoted." }), "deployment_id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Deployment Id", "description": "The deployment that already has this resolved version, if any." }), "promoted_deployment_id": Schema.Union([Schema.String.annotate({ "format": "uuid" }), Schema.Null]).annotate({ "title": "Promoted Deployment Id" }), "base_configuration": Schema.suspend((): Schema.Codec<DeployCreate_Output> => DeployCreate_Output).annotate({ "description": "The configuration of the base version." }), "configuration": Schema.suspend((): Schema.Codec<DeployCreate_Output> => DeployCreate_Output).annotate({ "description": "The base configuration with the patch applied." }), "created_at": Schema.String.annotate({ "title": "Created At", "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), "modified_at": Schema.Union([Schema.String.annotate({ "examples": ["2026-01-01T00:00:00.000000Z"], "format": "date-time" }), Schema.Null]).annotate({ "title": "Modified At" }) }).annotate({ "title": "Scenario", "identifier": "Scenario" })
 export type ScenarioCreate = { readonly "name": string, readonly "base_version_id": string, readonly "patch"?: ScenarioPatch_Input }
@@ -566,6 +576,40 @@ export type ScenariosPreview404 = ResourceNotFound
 export const ScenariosPreview404 = ResourceNotFound
 export type ScenariosPreview422 = HTTPValidationError
 export const ScenariosPreview422 = HTTPValidationError
+export type StageGet200 = Stage
+export const StageGet200 = Stage
+export type StageGet404 = ResourceNotFound
+export const StageGet404 = ResourceNotFound
+export type StageGet422 = HTTPValidationError
+export const StageGet422 = HTTPValidationError
+export type StageSaveRequestJson = StageSave
+export const StageSaveRequestJson = StageSave
+export type StageSave200 = Stage
+export const StageSave200 = Stage
+export type StageSave409 = StageConflict
+export const StageSave409 = StageConflict
+export type StageSave422 = HTTPValidationError
+export const StageSave422 = HTTPValidationError
+export type StageDeleteParams = { readonly "expected_revision": number }
+export const StageDeleteParams = Schema.Struct({ "expected_revision": Schema.Number.annotate({ "title": "Expected Revision" }).check(Schema.isInt().annotate({ "expected": "an integer" })).check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })).check(Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })) })
+export type StageDelete404 = ResourceNotFound
+export const StageDelete404 = ResourceNotFound
+export type StageDelete409 = StageConflict
+export const StageDelete409 = StageConflict
+export type StageDelete422 = HTTPValidationError
+export const StageDelete422 = HTTPValidationError
+export type StageDeployRequestJson = StageDeploy
+export const StageDeployRequestJson = StageDeploy
+export type StageDeploy201 = Deploy
+export const StageDeploy201 = Deploy
+export type StageDeploy400 = InvalidDeployment
+export const StageDeploy400 = InvalidDeployment
+export type StageDeploy404 = ResourceNotFound
+export const StageDeploy404 = ResourceNotFound
+export type StageDeploy409 = StageConflict | DeploymentConflict
+export const StageDeploy409 = Schema.Union([StageConflict, DeploymentConflict]).annotate({ "title": "Response 409 Stage:Deploy" })
+export type StageDeploy422 = HTTPValidationError
+export const StageDeploy422 = HTTPValidationError
 export type EntitlementsList200 = ReadonlyArray<Entitlement>
 export const EntitlementsList200 = Schema.Array(Entitlement).annotate({ "title": "Response Entitlements:List" })
 export type EntitlementsList422 = HTTPValidationError
@@ -1101,6 +1145,44 @@ export const make = (
       orElse: unexpectedStatus
     }))
   ),
+    "stageGet": (options) => HttpClientRequest.get(`/v1/void/stage`).pipe(
+    withResponse(options?.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(StageGet200),
+      "404": decodeError("StageGet404", StageGet404),
+      "422": decodeError("StageGet422", StageGet422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "stageSave": (options) => HttpClientRequest.put(`/v1/void/stage`).pipe(
+    HttpClientRequest.bodyJsonUnsafe(options.payload),
+    withResponse(options.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(StageSave200),
+      "409": decodeError("StageSave409", StageSave409),
+      "422": decodeError("StageSave422", StageSave422),
+      orElse: unexpectedStatus
+    }))
+  ),
+    "stageDelete": (options) => HttpClientRequest.delete(`/v1/void/stage`).pipe(
+    HttpClientRequest.setUrlParams({ "expected_revision": options.params["expected_revision"] as any }),
+    withResponse(options.config)(HttpClientResponse.matchStatus({
+      "404": decodeError("StageDelete404", StageDelete404),
+      "409": decodeError("StageDelete409", StageDelete409),
+      "422": decodeError("StageDelete422", StageDelete422),
+      "204": () => Effect.void,
+      orElse: unexpectedStatus
+    }))
+  ),
+    "stageDeploy": (options) => HttpClientRequest.post(`/v1/void/stage/deploy`).pipe(
+    HttpClientRequest.bodyJsonUnsafe(options.payload),
+    withResponse(options.config)(HttpClientResponse.matchStatus({
+      "2xx": decodeSuccess(StageDeploy201),
+      "400": decodeError("StageDeploy400", StageDeploy400),
+      "404": decodeError("StageDeploy404", StageDeploy404),
+      "409": decodeError("StageDeploy409", StageDeploy409),
+      "422": decodeError("StageDeploy422", StageDeploy422),
+      orElse: unexpectedStatus
+    }))
+  ),
     "entitlementsList": (options) => HttpClientRequest.get(`/v1/void/entitlements`).pipe(
     withResponse(options?.config)(HttpClientResponse.matchStatus({
       "2xx": decodeSuccess(EntitlementsList200),
@@ -1423,6 +1505,26 @@ readonly "scenariosPreview": <Config extends OperationConfig>(id: string, option
   /**
 * **Scopes**: `void:read` `void:write`
 */
+readonly "stageGet": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof StageGet200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageGet404", typeof StageGet404.Type> | VoidApiError<"StageGet422", typeof StageGet422.Type>>
+  /**
+* Save the complete staged configuration without deploying it. Use expected_revision=None when no stage exists. Revisions increase across discards.
+*
+* **Scopes**: `void:write`
+*/
+readonly "stageSave": <Config extends OperationConfig>(options: { readonly payload: typeof StageSaveRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof StageSave200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageSave409", typeof StageSave409.Type> | VoidApiError<"StageSave422", typeof StageSave422.Type>>
+  /**
+* **Scopes**: `void:write`
+*/
+readonly "stageDelete": <Config extends OperationConfig>(options: { readonly params: typeof StageDeleteParams.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<void, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageDelete404", typeof StageDelete404.Type> | VoidApiError<"StageDelete409", typeof StageDelete409.Type> | VoidApiError<"StageDelete422", typeof StageDelete422.Type>>
+  /**
+* Plan or deploy the staged configuration as a draft. The stage is retained; activation is separate.
+*
+* **Scopes**: `void:write`
+*/
+readonly "stageDeploy": <Config extends OperationConfig>(options: { readonly payload: typeof StageDeployRequestJson.Encoded; readonly config?: Config | undefined }) => Effect.Effect<WithOptionalResponse<typeof StageDeploy201.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"StageDeploy400", typeof StageDeploy400.Type> | VoidApiError<"StageDeploy404", typeof StageDeploy404.Type> | VoidApiError<"StageDeploy409", typeof StageDeploy409.Type> | VoidApiError<"StageDeploy422", typeof StageDeploy422.Type>>
+  /**
+* **Scopes**: `void:read` `void:write`
+*/
 readonly "entitlementsList": <Config extends OperationConfig>(options: { readonly config?: Config | undefined } | undefined) => Effect.Effect<WithOptionalResponse<typeof EntitlementsList200.Type, Config>, HttpClientError.HttpClientError | SchemaError | VoidApiError<"EntitlementsList422", typeof EntitlementsList422.Type>>
   /**
 * **Scopes**: `void:write`
@@ -1584,6 +1686,12 @@ export const makePromiseClient = (api: Client, run: Run) => ({
     "delete": (arg0: Parameters<Client["scenariosDelete"]>[0]) => run(api["scenariosDelete"](arg0, undefined)),
     "promote": (arg0: Parameters<Client["scenariosPromote"]>[0]) => run(api["scenariosPromote"](arg0, undefined)),
     "preview": (arg0: Parameters<Client["scenariosPreview"]>[0], payload: NonNullable<Parameters<Client["scenariosPreview"]>[1]>['payload']) => run(api["scenariosPreview"](arg0, { payload })),
+  },
+  "stage": {
+    "get": () => run(api["stageGet"](undefined)),
+    "save": (payload: NonNullable<Parameters<Client["stageSave"]>[0]>['payload']) => run(api["stageSave"]({ payload })),
+    "delete": (params: NonNullable<NonNullable<Parameters<Client["stageDelete"]>[0]>['params']>) => run(api["stageDelete"]({ params })),
+    "deploy": (payload: NonNullable<Parameters<Client["stageDeploy"]>[0]>['payload']) => run(api["stageDeploy"]({ payload })),
   },
   "entitlements": {
     "list": () => run(api["entitlementsList"](undefined)),

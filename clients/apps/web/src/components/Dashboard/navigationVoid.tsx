@@ -5,6 +5,7 @@ import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
 import FunctionsOutlined from '@mui/icons-material/FunctionsOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import LayersOutlined from '@mui/icons-material/LayersOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import SensorsOutlined from '@mui/icons-material/SensorsOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
@@ -41,6 +42,11 @@ const voidRoutesList = (org?: schemas['Organization']): Route[] => {
       link: `${base}/definition`,
       if: true,
       subs: [
+        {
+          title: 'Stage',
+          link: `${base}/definition/stage`,
+          icon: <LayersOutlined fontSize="inherit" />,
+        },
         {
           title: 'Products',
           link: `${base}/definition/products`,

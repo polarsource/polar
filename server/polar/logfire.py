@@ -222,11 +222,16 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         ),
         scrubbing=logfire.ScrubbingOptions(
             callback=_scrubbing_callback,
-            # Logfire's defaults cover secrets, keys and credentials, but not
-            # access and refresh tokens.
             extra_patterns=[
                 r"access_?token",
                 r"refresh_?token",
+                # JSON key boundaries also trigger scrubbing of serialized attributes.
+                r'(?:^|[._"])(?:customer_?)?email(?=$|")',
+                r'(?:^|[._"])(?:to|from|reply_to)_email_addr(?=$|")',
+                r'(?:^|[._"])(?:user|full|first|last)[._]?name(?=$|")',
+                r'(?:^|[._"])phone(?=$|")',
+                r'(?:^|[._"])address(?=$|")',
+                r'(?:^|[._"])ip_?address(?=$|")',
             ],
         ),
         additional_span_processors=additional_span_processors or None,

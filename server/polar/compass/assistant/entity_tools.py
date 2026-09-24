@@ -894,8 +894,14 @@ async def top_customers_by_revenue(
         window = f"the last {days} days"
     else:
         window = "all time"
+    organization = await OrganizationRepository.from_session(deps.session).get_by_id(
+        deps.organization_id
+    )
+    if organization is None:
+        return "Organization not found."
     ranked = await OrderRepository.from_session(deps.session).get_revenue_by_customer(
         deps.organization_id,
+        currency=organization.default_presentment_currency,
         start=start_dt,
         end=end_dt,
         limit=max(1, min(_MAX_LIMIT, limit)),

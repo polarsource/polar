@@ -80,7 +80,10 @@ export const TopCustomersList = ({
             }
           />
           <ToplistValue
-            value={formatCurrency('statistics')(customer.net_revenue, 'usd')}
+            value={formatCurrency('statistics')(
+              customer.net_revenue,
+              customer.currency,
+            )}
             caption={`${customer.order_count} ${
               customer.order_count === 1 ? 'order' : 'orders'
             }`}

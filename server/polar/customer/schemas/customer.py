@@ -294,9 +294,16 @@ class TopCustomer(Schema):
     order_count: int = Field(description="The number of paid orders in the period.")
     net_revenue: int = Field(
         description=(
-            "The net revenue from this customer in the period, in cents, "
-            "with refunded amounts subtracted."
+            "The net revenue from this customer in the period, in the smallest "
+            "unit of `currency`, with refunded amounts subtracted."
         )
+    )
+    currency: str = Field(
+        description=(
+            "The currency of `net_revenue`. Only orders in the organization's "
+            "default presentment currency are counted."
+        ),
+        examples=["usd"],
     )
 
 

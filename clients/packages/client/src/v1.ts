@@ -38036,9 +38036,15 @@ export interface components {
       order_count: number
       /**
        * Net Revenue
-       * @description The net revenue from this customer in the period, in cents, with refunded amounts subtracted.
+       * @description The net revenue from this customer in the period, in the smallest unit of `currency`, with refunded amounts subtracted.
        */
       net_revenue: number
+      /**
+       * Currency
+       * @description The currency of `net_revenue`. Only orders in the organization's default presentment currency are counted.
+       * @example usd
+       */
+      currency: string
     }
     /** Transaction */
     Transaction: {

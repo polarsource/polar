@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from httpx import AsyncClient
 
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.models import (
@@ -471,6 +472,58 @@ class TestTopCustomers:
         assert json[0]["avatar_url"] == _avatar_url_for_email("best@example.com")
         assert json[1]["net_revenue"] == 4_000
         assert json[1]["order_count"] == 1
+        assert all(item["currency"] == "usd" for item in json)
+
+    @pytest.mark.auth
+    async def test_default_presentment_currency(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        organization.default_presentment_currency = PresentmentCurrency.krw
+        await save_fixture(organization)
+        krw_customer = await create_customer(
+            save_fixture, organization=organization, email="krw@example.com"
+        )
+        usd_customer = await create_customer(
+            save_fixture, organization=organization, email="usd@example.com"
+        )
+        await create_order(
+            save_fixture,
+            customer=krw_customer,
+            product=product,
+            subtotal_amount=826_090,
+            currency="krw",
+        )
+        await create_order(
+            save_fixture,
+            customer=krw_customer,
+            product=product,
+            subtotal_amount=5_000_000,
+            currency="usd",
+        )
+        await create_order(
+            save_fixture,
+            customer=usd_customer,
+            product=product,
+            subtotal_amount=5_000_000,
+            currency="usd",
+        )
+
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json) == 1
+        assert json[0]["id"] == str(krw_customer.id)
+        assert json[0]["net_revenue"] == 826_090
+        assert json[0]["order_count"] == 1
+        assert json[0]["currency"] == "krw"
 
     @pytest.mark.auth
     async def test_team_customer_without_email_uses_owner_avatar(

@@ -39,8 +39,8 @@ const columns: DataTableColumnDef<schemas['TopCustomer']>[] = [
     accessorKey: 'net_revenue',
     enableSorting: false,
     header: 'Net Revenue',
-    cell: ({ getValue }) =>
-      formatCurrency('statistics')(getValue() as number, 'usd'),
+    cell: ({ row: { original: customer } }) =>
+      formatCurrency('statistics')(customer.net_revenue, customer.currency),
   },
 ]
 

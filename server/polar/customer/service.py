@@ -48,6 +48,7 @@ from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.order.repository import OrderRepository
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -181,17 +182,23 @@ class CustomerService:
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
-    ) -> Sequence[tuple[Customer, int, int]]:
+    ) -> tuple[str, Sequence[tuple[Customer, int, int]]]:
         await assert_organization_permission(
             session,
             auth_subject,
             organization_id,
             OrganizationPermission.customers_read,
         )
-        order_repository = OrderRepository.from_session(session)
-        return await order_repository.get_revenue_by_customer(
-            organization_id, start=start, end=end, limit=limit
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
         )
+        assert organization is not None
+        currency = organization.default_presentment_currency
+        order_repository = OrderRepository.from_session(session)
+        ranked = await order_repository.get_revenue_by_customer(
+            organization_id, currency=currency, start=start, end=end, limit=limit
+        )
+        return currency, ranked
 
     async def get(
         self,

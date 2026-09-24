@@ -58,12 +58,16 @@ class OrderRepository(
         self,
         organization_id: UUID,
         *,
+        currency: str,
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
     ) -> Sequence[tuple[Customer, int, int]]:
-        """Customers ranked by paid net revenue: (customer, order count, net
-        revenue in cents), descending.
+        """Customers ranked by paid net revenue in `currency`: (customer, order
+        count, net revenue in the currency's smallest unit), descending.
+
+        Only orders in `currency` count: amounts in different currencies
+        cannot be summed or compared.
 
         Partially refunded orders count with the refunded portion subtracted,
         so the ranking reflects money actually kept.
@@ -85,6 +89,7 @@ class OrderRepository(
             .join(Customer, Customer.id == Order.customer_id)
             .where(
                 Order.organization_id == organization_id,
+                Order.currency == currency,
                 Order.status.in_(OrderStatus.paid_statuses()),
                 ~Order.is_deleted,
             )

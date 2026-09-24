@@ -10,7 +10,7 @@
   "dependencies": {
     "@polar-sh/better-auth": "workspace:*",
     "@polar-sh/sdk": "1.0.0-alpha.20",
-    "better-auth": "1.4.6",
+    "better-auth": "1.7.5",
     "better-sqlite3": "^11.10.0",
     "next": "16.0.8",
     "react": "^19.2.1",

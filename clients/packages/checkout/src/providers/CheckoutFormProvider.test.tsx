@@ -372,6 +372,122 @@ describe('CheckoutFormProvider', () => {
     })
   })
 
+  describe('confirm (Stripe path)', () => {
+    const confirmedResult = {
+      ok: true,
+      value: {
+        id: 'ch_confirmed',
+        status: 'confirmed',
+        payment_processor_metadata: {
+          intent_status: 'requires_action',
+          intent_client_secret: 'pi_secret',
+        },
+      },
+    } as unknown as ConfirmResult
+
+    const stripeMocks = (intentStatuses: string[]) => {
+      const handleNextAction = vi.fn(async () => ({
+        paymentIntent: { status: intentStatuses.shift() ?? 'succeeded' },
+      }))
+      const stripe = {
+        createConfirmationToken: vi.fn(async () => ({
+          confirmationToken: { id: 'ctoken_1' },
+        })),
+        handleNextAction,
+      } as unknown as Stripe
+      const elements = {
+        submit: vi.fn(async () => ({})),
+      } as unknown as StripeElements
+      return { stripe, elements, handleNextAction }
+    }
+
+    it('re-prompts the payment action once per attempt when the buyer dismisses it', async () => {
+      const confirm = vi.fn<CheckoutContextProps['confirm']>(
+        async () => confirmedResult,
+      )
+      const getCtx = renderWithCheckout({
+        checkout: { status: 'confirmed' },
+        update: vi.fn(),
+        confirm,
+      })
+      const { stripe, elements, handleNextAction } = stripeMocks([
+        'requires_action',
+        'requires_action',
+        'succeeded',
+      ])
+      const attempt = () =>
+        getCtx().confirm({ customer_email: 'ok@example.com' }, stripe, elements)
+
+      await act(async () => {
+        await expect(attempt()).rejects.toSatisfy(isShownToBuyer)
+      })
+      expect(handleNextAction).toHaveBeenCalledTimes(1)
+      expect(getCtx().loading).toBe(false)
+      expect(getCtx().form.formState.errors.root?.message).toBe(
+        "The payment wasn't completed. Try again when you're ready.",
+      )
+
+      await act(async () => {
+        await expect(attempt()).rejects.toSatisfy(isShownToBuyer)
+      })
+      expect(handleNextAction).toHaveBeenCalledTimes(2)
+      expect(confirm).toHaveBeenCalledTimes(1)
+
+      let result: unknown = null
+      await act(async () => {
+        result = await attempt()
+      })
+      expect(result).toMatchObject({ id: 'ch_confirmed' })
+      expect(handleNextAction).toHaveBeenCalledTimes(3)
+      expect(confirm).toHaveBeenCalledTimes(1)
+      expect(getCtx().loading).toBe(false)
+    })
+
+    it('confirms afresh when the checkout is open again after a dismissed action', async () => {
+      const confirm = vi.fn<CheckoutContextProps['confirm']>(
+        async () => confirmedResult,
+      )
+      const getCtx = renderWithCheckout({ update: vi.fn(), confirm })
+      const { stripe, elements, handleNextAction } = stripeMocks([
+        'requires_action',
+        'succeeded',
+      ])
+      const attempt = () =>
+        getCtx().confirm({ customer_email: 'ok@example.com' }, stripe, elements)
+
+      await act(async () => {
+        await expect(attempt()).rejects.toSatisfy(isShownToBuyer)
+      })
+      await act(async () => {
+        await attempt()
+      })
+      expect(confirm).toHaveBeenCalledTimes(2)
+      expect(handleNextAction).toHaveBeenCalledTimes(2)
+    })
+
+    it('completes the payment when the action succeeds', async () => {
+      const getCtx = renderWithCheckout({
+        update: vi.fn(),
+        confirm: vi.fn<CheckoutContextProps['confirm']>(
+          async () => confirmedResult,
+        ),
+      })
+      const { stripe, elements, handleNextAction } = stripeMocks(['succeeded'])
+
+      let result: unknown = null
+      await act(async () => {
+        result = await getCtx().confirm(
+          { customer_email: 'ok@example.com' },
+          stripe,
+          elements,
+        )
+      })
+      expect(result).toMatchObject({ id: 'ch_confirmed' })
+      expect(handleNextAction).toHaveBeenCalledTimes(1)
+      expect(getCtx().form.formState.errors).toEqual({})
+    })
+  })
+
   describe('confirm (free checkout path)', () => {
     const freeCheckout = {
       is_payment_form_required: false,

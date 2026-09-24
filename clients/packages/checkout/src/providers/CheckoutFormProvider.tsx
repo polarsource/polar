@@ -240,6 +240,39 @@ export const CheckoutFormProvider = ({
     [confirmOuter, setError, setDiscountError, update, setTrialUnavailable],
   )
 
+  const pendingActionRef = useRef<schemas['CheckoutPublicConfirmed'] | null>(
+    null,
+  )
+
+  const completeNextAction = useCallback(
+    async (
+      stripe: Stripe,
+      confirmed: schemas['CheckoutPublicConfirmed'],
+    ): Promise<void> => {
+      pendingActionRef.current = null
+      const { intent_status, intent_client_secret } =
+        confirmed.payment_processor_metadata
+      if (intent_status !== 'requires_action') {
+        return
+      }
+      const { error, paymentIntent, setupIntent } =
+        await stripe.handleNextAction({ clientSecret: intent_client_secret })
+      if (error) {
+        setError('root', { message: error.message })
+        throw shownToBuyer(new Error(error.message))
+      }
+      if (
+        (paymentIntent?.status ?? setupIntent?.status) === 'requires_action'
+      ) {
+        pendingActionRef.current = confirmed
+        const message = t('checkout.loading.paymentNotCompleted')
+        setError('root', { message })
+        throw shownToBuyer(new Error(message))
+      }
+    },
+    [setError, t],
+  )
+
   const confirm = useCallback(
     async (
       data: schemas['CheckoutConfirmStripe'],
@@ -265,6 +298,17 @@ export const CheckoutFormProvider = ({
       }
 
       setLoadingLabel(t('checkout.loading.processingPayment'))
+
+      const pendingAction = pendingActionRef.current
+      if (pendingAction && checkout.status === 'confirmed') {
+        try {
+          await completeNextAction(stripe, pendingAction)
+          setLoadingLabel(t('checkout.loading.paymentSuccessful'))
+        } finally {
+          setLoading(false)
+        }
+        return pendingAction
+      }
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
@@ -328,30 +372,15 @@ export const CheckoutFormProvider = ({
         throw error
       }
 
-      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
-
-      const { intent_status, intent_client_secret } =
-        updatedCheckout.payment_processor_metadata
-
-      let currentIntentStatus = intent_status
-      while (currentIntentStatus === 'requires_action') {
-        const { error, paymentIntent, setupIntent } =
-          await stripe.handleNextAction({
-            clientSecret: intent_client_secret,
-          })
-        if (error) {
-          setLoading(false)
-          setError('root', { message: error.message })
-          throw shownToBuyer(new Error(error.message))
-        }
-        currentIntentStatus =
-          paymentIntent?.status || setupIntent?.status || intent_status
+      try {
+        await completeNextAction(stripe, updatedCheckout)
+        setLoadingLabel(t('checkout.loading.paymentSuccessful'))
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
       return updatedCheckout
     },
-    [checkout, setError, _confirm, t, setTrialUnavailable],
+    [checkout, setError, _confirm, t, setTrialUnavailable, completeNextAction],
   )
 
   return (

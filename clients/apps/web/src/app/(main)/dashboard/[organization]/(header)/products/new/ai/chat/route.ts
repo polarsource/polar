@@ -245,13 +245,13 @@ export async function POST(req: Request) {
     return new Response('No user message found', { status: 400 })
   }
 
-  const sonnet = phClient
-    ? withTracing(anthropic('claude-sonnet-4-6'), phClient, {
+  const model = phClient
+    ? withTracing(anthropic('claude-opus-5-5'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
       })
-    : anthropic('claude-sonnet-4-6')
+    : anthropic('claude-opus-5-5')
 
   const tools = {
     [TOOL_SEARCH_NAME]: anthropic.tools.toolSearchBm25_20251119(),
@@ -293,7 +293,11 @@ based on the conversation history whether you're done.
     getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
-    model: sonnet,
+    model,
+    maxOutputTokens: 16_000,
+    providerOptions: {
+      anthropic: { effort: 'low' },
+    },
     tools: {
       redirectToManualSetup,
       markAsDone,

@@ -295,8 +295,7 @@ class TopCustomer(Schema):
     net_revenue: int = Field(
         description=(
             "The net revenue from this customer in the period, in USD cents, "
-            "with refunded amounts subtracted. Orders in other currencies are "
-            "converted to USD at their payment's exchange rate."
+            "with refunded amounts subtracted."
         )
     )
 

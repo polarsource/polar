@@ -3770,7 +3770,7 @@ export interface paths {
     }
     /**
      * Top Customers
-     * @description Rank the organization's customers by paid net revenue, converted to USD.
+     * @description Rank the organization's customers by paid net revenue.
      *
      *     **Scopes**: `customers:read` `customers:write`
      */
@@ -38036,7 +38036,7 @@ export interface components {
       order_count: number
       /**
        * Net Revenue
-       * @description The net revenue from this customer in the period, in USD cents, with refunded amounts subtracted. Orders in other currencies are converted to USD at their payment's exchange rate.
+       * @description The net revenue from this customer in the period, in USD cents, with refunded amounts subtracted.
        */
       net_revenue: number
     }

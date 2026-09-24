@@ -470,6 +470,23 @@ class MemberService:
                 )
                 return existing_owner
 
+            # A member already holds the customer's own email, so that member is
+            # the customer: promote it instead of inserting a second row.
+            colliding_member = await repository.get_by_customer_id_and_email(
+                customer.id, email
+            )
+            if colliding_member is not None:
+                await repository.update(
+                    colliding_member, update_dict={"role": MemberRole.owner}
+                )
+                customer.owner = colliding_member
+                log.info(
+                    "member.create_owner_member.promoted_existing",
+                    customer_id=customer.id,
+                    member_id=colliding_member.id,
+                )
+                return colliding_member
+
             # Weird state: IntegrityError but no owner exists
             # Re-raise to fail customer creation and maintain data consistency
             log.error(

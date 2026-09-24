@@ -415,6 +415,41 @@ class TestCreateOwnerMember:
         members = await repository.list_by_customer(customer.id)
         assert len([m for m in members if m.role == MemberRole.owner]) == 1
 
+    async def test_promotes_existing_member_holding_the_customer_email(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A member holding the customer's own email is the customer, so it is
+        promoted rather than colliding with a second insert."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="buyer@example.com",
+        )
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="Buyer@Example.com",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.create_owner_member(
+            session, customer, organization
+        )
+
+        assert member is not None
+        assert member.id == existing.id
+        assert member.role == MemberRole.owner
+        repository = MemberRepository.from_session(session)
+        members = await repository.list_by_customer(customer.id)
+        assert len(members) == 1
+
     async def test_concurrent_duplicate_returns_existing_without_pending_rollback(
         self,
         mocker: MockerFixture,

@@ -20,7 +20,12 @@ def request_path_template(scope: Scope) -> str:
     if isinstance(route, str):
         return route
     span = scope.get("logfire.span")
-    if isinstance(span, ReadableSpan) and span.attributes:
+    if (
+        isinstance(span, APISpan)
+        and span.is_recording()
+        and isinstance(span, ReadableSpan)
+        and span.attributes
+    ):
         route = span.attributes.get("http.route")
         if isinstance(route, str):
             return route
@@ -28,7 +33,11 @@ def request_path_template(scope: Scope) -> str:
 
 
 def sanitize_http_span(span: APISpan) -> None:
-    if not isinstance(span, ReadableSpan) or not span.attributes:
+    if (
+        not span.is_recording()
+        or not isinstance(span, ReadableSpan)
+        or not span.attributes
+    ):
         return
     attributes = span.attributes
     route = attributes.get("http.route")

@@ -240,6 +240,44 @@ export const CheckoutFormProvider = ({
     [confirmOuter, setError, setDiscountError, update, setTrialUnavailable],
   )
 
+  const pendingNextActionCheckout =
+    useRef<schemas['CheckoutPublicConfirmed']>(null)
+
+  const handleNextAction = useCallback(
+    async (
+      stripe: Stripe,
+      confirmedCheckout: schemas['CheckoutPublicConfirmed'],
+    ): Promise<void> => {
+      const { intent_status, intent_client_secret } =
+        confirmedCheckout.payment_processor_metadata
+      if (intent_status !== 'requires_action') {
+        return
+      }
+
+      const { error, paymentIntent, setupIntent } =
+        await stripe.handleNextAction({ clientSecret: intent_client_secret })
+      if (error) {
+        pendingNextActionCheckout.current = null
+        setLoading(false)
+        setError('root', { message: error.message })
+        throw shownToBuyer(new Error(error.message))
+      }
+
+      // Buyer dismissed the action (e.g. closed the Cash App Pay QR code): resume it on next submit
+      const status = (paymentIntent ?? setupIntent)?.status ?? intent_status
+      if (status === 'requires_action') {
+        pendingNextActionCheckout.current = confirmedCheckout
+        const message = t('checkout.loading.paymentNotCompleted')
+        setLoading(false)
+        setError('root', { message })
+        throw shownToBuyer(new Error(message))
+      }
+
+      pendingNextActionCheckout.current = null
+    },
+    [setError, t],
+  )
+
   const confirm = useCallback(
     async (
       data: schemas['CheckoutConfirmStripe'],
@@ -265,6 +303,13 @@ export const CheckoutFormProvider = ({
       }
 
       setLoadingLabel(t('checkout.loading.processingPayment'))
+
+      const pendingCheckout = pendingNextActionCheckout.current
+      if (pendingCheckout) {
+        await handleNextAction(stripe, pendingCheckout)
+        setLoading(false)
+        return pendingCheckout
+      }
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
@@ -329,29 +374,12 @@ export const CheckoutFormProvider = ({
       }
 
       setLoadingLabel(t('checkout.loading.paymentSuccessful'))
-
-      const { intent_status, intent_client_secret } =
-        updatedCheckout.payment_processor_metadata
-
-      let currentIntentStatus = intent_status
-      while (currentIntentStatus === 'requires_action') {
-        const { error, paymentIntent, setupIntent } =
-          await stripe.handleNextAction({
-            clientSecret: intent_client_secret,
-          })
-        if (error) {
-          setLoading(false)
-          setError('root', { message: error.message })
-          throw shownToBuyer(new Error(error.message))
-        }
-        currentIntentStatus =
-          paymentIntent?.status || setupIntent?.status || intent_status
-      }
+      await handleNextAction(stripe, updatedCheckout)
 
       setLoading(false)
       return updatedCheckout
     },
-    [checkout, setError, _confirm, t, setTrialUnavailable],
+    [checkout, setError, _confirm, t, setTrialUnavailable, handleNextAction],
   )
 
   return (

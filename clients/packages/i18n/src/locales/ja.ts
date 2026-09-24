@@ -249,6 +249,8 @@ export default {
       paymentSuccessful: '支払いが完了しました。商品を準備しています...',
       confirmationTokenFailed:
         '確認トークンの作成に失敗しました。後でもう一度お試しください。',
+      paymentNotCompleted:
+        'お支払いが完了しませんでした。もう一度お試しください。',
     },
     cta: {
       startTrial: 'トライアルを開始',

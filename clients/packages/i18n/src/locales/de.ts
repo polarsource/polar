@@ -250,6 +250,8 @@ export default {
         'Zahlung erfolgreich! Ihre Produkte werden vorbereitet...',
       confirmationTokenFailed:
         'Bestätigungstoken konnte nicht erstellt werden, bitte versuchen Sie es später erneut.',
+      paymentNotCompleted:
+        'Die Zahlung wurde nicht abgeschlossen. Bitte versuchen Sie es erneut.',
     },
     cta: {
       startTrial: 'Testphase starten',

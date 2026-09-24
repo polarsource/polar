@@ -247,6 +247,7 @@ export default {
       paymentSuccessful: 'Ödeme başarılı! Ürünleriniz hazırlanıyor...',
       confirmationTokenFailed:
         'Onay anahtarı oluşturulamadı, lütfen daha sonra tekrar deneyin.',
+      paymentNotCompleted: 'Ödeme tamamlanmadı. Lütfen tekrar deneyin.',
     },
     cta: {
       startTrial: 'Denemeyi başlat',

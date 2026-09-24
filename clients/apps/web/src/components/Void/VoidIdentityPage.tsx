@@ -206,9 +206,7 @@ const VoidIdentityPageFixture = ({ identityId }: { identityId: string }) => {
         <TableSection
           title="Identities"
           caption={
-            treeSize === 1
-              ? 'Just this identity'
-              : `${treeSize} identities, rolled up figures include every identity below`
+            treeSize === 1 ? 'Only this one' : `${treeSize}, figures rolled up`
           }
         >
           <VoidIdentityTree

@@ -8,6 +8,7 @@ import { ReactNode } from 'react'
 import { shortDate } from './identities'
 import { VoidLiveSubscriptionStatus, VoidMeterBalance } from './identityLive'
 import { VoidEntitlement, VoidEvent } from './types'
+import { VoidSectionHeading } from './VoidShell'
 
 export type SubscriptionRow = {
   id: string
@@ -28,16 +29,7 @@ export const TableSection = ({
   children: ReactNode
 }) => (
   <Box flexDirection="column" rowGap="l">
-    <Box alignItems="baseline" columnGap="m">
-      <Text variant="heading-xxs" as="h3">
-        {title}
-      </Text>
-      {caption ? (
-        <Text color="muted" variant="caption">
-          {caption}
-        </Text>
-      ) : null}
-    </Box>
+    <VoidSectionHeading title={title} caption={caption} />
     {children}
   </Box>
 )

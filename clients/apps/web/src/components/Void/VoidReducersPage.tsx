@@ -1,34 +1,22 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { DataTable, DataTableColumnDef, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { ReactNode, useContext, useMemo } from 'react'
-import { useVoidDataSource } from './dataSource'
-import { VoidReducerMetric } from './identityLive'
-import { useVoidReducerMetrics } from './metricQueries'
-import { getVoidReducerMetrics } from './mock'
-import { FIXTURE_REDUCERS } from './reducerFixtures'
-import { useVoidReducers } from './reducerQueries'
+import { ReactNode, useContext } from 'react'
+import { ReducerRow, useVoidReducerRows } from './reducerRows'
 import {
   capitalize,
   dayLabel,
   describeAggregation,
   formatReducerTotal,
   reducerHref,
-  VoidReducerDefinition,
 } from './reducers'
-import { VoidErrorBox } from './VoidShell'
+import { VoidDetailShell, VoidErrorBox } from './VoidShell'
 import { VoidSparkline } from './VoidSparkline'
-
-interface ReducerRow {
-  reducer: VoidReducerDefinition
-  metric: VoidReducerMetric | undefined
-}
 
 const TYPE_COLOR = {
   scalar: 'blue',
@@ -94,28 +82,13 @@ const reducerColumns: DataTableColumnDef<ReducerRow>[] = [
 
 export function VoidReducersPage(): ReactNode {
   const { organization } = useContext(OrganizationContext)
-  const live = useVoidDataSource() === 'live'
   const base = `/void/dashboard/${organization.slug}`
   const router = useRouter()
-  const reducersQuery = useVoidReducers(organization.id, { enabled: live })
-  const metricsQuery = useVoidReducerMetrics(organization.id, { enabled: live })
-  const fixtures = useMemo(() => getVoidReducerMetrics(), [])
-  const reducers = useMemo(
-    () => (live ? (reducersQuery.data ?? []) : FIXTURE_REDUCERS),
-    [live, reducersQuery.data],
-  )
-  const metrics = useMemo(
-    () => (live ? (metricsQuery.data ?? []) : fixtures),
-    [live, metricsQuery.data, fixtures],
-  )
-  const rows = useMemo(() => toRows(reducers, metrics), [reducers, metrics])
+  const { rows, loading, error } = useVoidReducerRows()
   const active = rows.filter((row) => (row.metric?.total ?? 0) > 0).length
 
-  const loading = live && (reducersQuery.isLoading || metricsQuery.isLoading)
-  const error = live ? (reducersQuery.error ?? metricsQuery.error) : null
-
   return (
-    <DashboardBody title="Reducers">
+    <VoidDetailShell title="Reducers">
       {loading ? (
         <LoadingBox height={128} borderRadius="m" />
       ) : error ? (
@@ -169,23 +142,6 @@ export function VoidReducersPage(): ReactNode {
           )}
         </Box>
       )}
-    </DashboardBody>
+    </VoidDetailShell>
   )
-}
-
-function toRows(
-  reducers: VoidReducerDefinition[],
-  metrics: VoidReducerMetric[],
-): ReducerRow[] {
-  const metricsById = new Map(metrics.map((metric) => [metric.id, metric]))
-  return [...reducers]
-    .sort(
-      (left, right) =>
-        (metricsById.get(right.id)?.total ?? 0) -
-        (metricsById.get(left.id)?.total ?? 0),
-    )
-    .map((reducer) => ({
-      reducer,
-      metric: metricsById.get(reducer.id),
-    }))
 }

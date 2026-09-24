@@ -297,8 +297,8 @@ export const VoidIdentityPageLive = ({
             title="Identities"
             caption={
               treeSize === 1
-                ? 'Just this identity'
-                : `${treeSize} identities, rolled up figures include every identity below`
+                ? 'Only this one'
+                : `${treeSize}, figures rolled up`
             }
           >
             <VoidIdentityTree

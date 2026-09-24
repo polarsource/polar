@@ -3,7 +3,6 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode, useContext, useMemo } from 'react'
 import { useVoidDataSource } from './dataSource'
@@ -11,7 +10,7 @@ import { useVoidHomeData } from './homeQueries'
 import { getVoidData } from './mock'
 import { VoidHomeData } from './types'
 import { VoidMetricGrid } from './VoidMetricGrid'
-import { VoidErrorBox } from './VoidShell'
+import { VoidErrorBox, VoidSectionHeading } from './VoidShell'
 import { VoidToplists } from './VoidToplists'
 import { VoidWidgets } from './VoidWidgets'
 
@@ -25,16 +24,13 @@ const Section = ({
   children: ReactNode
 }) => (
   <Box flexDirection="column" rowGap="xl">
-    <Box alignItems="baseline" justifyContent="between" columnGap="l">
-      <Text variant="heading-xs" as="h2">
-        {title}
-      </Text>
-      {caption ? (
-        <Text color="muted" variant="body">
-          {caption}
-        </Text>
-      ) : null}
-    </Box>
+    <VoidSectionHeading
+      title={title}
+      caption={caption}
+      as="h2"
+      variant="heading-xs"
+      spread
+    />
     {children}
   </Box>
 )

@@ -84,10 +84,7 @@ export const VoidSignalPage = ({ slug }: { slug: string }) => {
       <Box flexDirection="column" rowGap="3xl">
         <Stats signal={signal} />
         {signal.kind === 'semantic' ? (
-          <TableSection
-            title="Question"
-            caption="Sent to Jev verbatim with the events in the window"
-          >
+          <TableSection title="Question" caption="Asked once per window">
             <Box
               padding="l"
               borderRadius="m"
@@ -99,10 +96,7 @@ export const VoidSignalPage = ({ slug }: { slug: string }) => {
             </Box>
           </TableSection>
         ) : null}
-        <TableSection
-          title="Hysteresis"
-          caption="Two thresholds, so the status latches instead of flapping"
-        >
+        <TableSection title="Hysteresis" caption="Two thresholds, no flapping">
           <VoidSignalHysteresis signal={signal} />
         </TableSection>
         <TableSection title="Fields">
@@ -113,16 +107,10 @@ export const VoidSignalPage = ({ slug }: { slug: string }) => {
             getRowId={(row) => row.key}
           />
         </TableSection>
-        <TableSection
-          title="Definition"
-          caption="As declared in your Void config"
-        >
+        <TableSection title="Definition" caption="From your Void config">
           <CodeBlock code={signalDefinition(signal)} />
         </TableSection>
-        <TableSection
-          title="Reading it"
-          caption="Status is evaluated client-side, so a read never waits on Polar"
-        >
+        <TableSection title="Reading it" caption="Evaluated client-side">
           <CodeBlock code={signalUsage(signal)} />
         </TableSection>
       </Box>

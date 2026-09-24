@@ -11,6 +11,7 @@ import { IdentityNode, IdentityRef, walk } from './identities'
 import { VoidIdentity } from './types'
 import { VoidUsageByMember } from './VoidUsageByMember'
 import { VoidUsageChart } from './VoidUsageChart'
+import { VoidSectionHeading } from './VoidShell'
 
 const count = (value: number) => value.toLocaleString('en-US')
 
@@ -21,16 +22,13 @@ const Subheading = ({
   title: string
   caption?: string
 }) => (
-  <Box alignItems="baseline" justifyContent="between" columnGap="l">
-    <Text variant="body" as="h4">
-      {title}
-    </Text>
-    {caption ? (
-      <Text color="muted" variant="caption">
-        {caption}
-      </Text>
-    ) : null}
-  </Box>
+  <VoidSectionHeading
+    title={title}
+    caption={caption}
+    as="h4"
+    variant="body"
+    spread
+  />
 )
 
 export const VoidIdentityUsage = ({

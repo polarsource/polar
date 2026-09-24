@@ -1,14 +1,16 @@
+import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 import { shortDate } from './identities'
-import { dayLabel, formatReducerTotal, VoidReducerSeries } from './reducers'
+import { meterSeriesToChart } from './meters'
+import { formatReducerTotal, VoidReducerSeries } from './reducers'
 import { TableSection } from './VoidIdentityTables'
 import { VoidLoading } from './voidStatus'
-import { VoidSparkline } from './VoidSparkline'
 
 interface VoidReducerActivityProps {
+  name: string
   createdAt: string
   type: 'scalar' | 'dict'
   series?: VoidReducerSeries
@@ -16,14 +18,13 @@ interface VoidReducerActivityProps {
 }
 
 export function VoidReducerActivity({
+  name,
   createdAt,
   type,
   series,
   loading,
 }: VoidReducerActivityProps): ReactNode {
   const activeDays = countActiveDays(series)
-  const labels =
-    series?.periods.map((period) => dayLabel(period.timestamp)) ?? []
   const stats = [
     ['Total / 30 days', formatReducerTotal(series?.total)],
     ['All time', formatReducerTotal(series?.allTime)],
@@ -34,21 +35,22 @@ export function VoidReducerActivity({
   let chart: ReactNode
   if (series && series.periods.length > 0) {
     chart = (
-      <Box flexDirection="column" rowGap="l">
-        <VoidSparkline
-          values={series.periods.map((period) => period.value)}
-          labels={labels}
-          height={100}
-        />
-        <Box justifyContent="between">
-          <Text variant="caption" color="muted">
-            {labels[0]}
-          </Text>
-          <Text variant="caption" color="muted">
-            {labels[labels.length - 1]}
-          </Text>
-        </Box>
-      </Box>
+      <MetricChartBox
+        data={meterSeriesToChart(
+          {
+            total: series.total ?? 0,
+            allTime: series.allTime ?? 0,
+            periods: series.periods,
+          },
+          name,
+        )}
+        interval="day"
+        metric="orders"
+        height={200}
+        chartType="line"
+        shareable={false}
+        exportable={false}
+      />
     )
   } else if (type === 'scalar') {
     chart = <Text color="muted">No values in the last 30 days</Text>
@@ -57,7 +59,7 @@ export function VoidReducerActivity({
   }
 
   return (
-    <TableSection title="Activity" caption="Last 30 days, daily · UTC">
+    <TableSection title="Activity" caption="Daily, last 30 days">
       {loading ? (
         <VoidLoading />
       ) : (

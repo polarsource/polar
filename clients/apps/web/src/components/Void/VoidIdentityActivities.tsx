@@ -4,6 +4,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { DataTable, DataTableColumnDef, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { VoidActivityMix, VoidActivityShare } from './types'
+import { VoidSectionHeading } from './VoidShell'
 
 const usd = (cents: number) => formatCurrency('statistics')(cents, 'usd')
 
@@ -51,9 +52,7 @@ const columns = (
     enableSorting: false,
     header: 'Retry / waste',
     cell: ({ getValue }) => (
-      <Text color="muted">
-        {formatCost(getValue() as number, asCurrency)}
-      </Text>
+      <Text color="muted">{formatCost(getValue() as number, asCurrency)}</Text>
     ),
   },
 ]
@@ -66,14 +65,7 @@ export const VoidIdentityActivities = ({
   costAsCurrency?: boolean
 }) => (
   <Box flexDirection="column" rowGap="l">
-    <Box alignItems="baseline" columnGap="m">
-      <Text variant="heading-xxs" as="h3">
-        Activities
-      </Text>
-      <Text color="muted" variant="caption">
-        How this identity spent model calls, labeled after ingest
-      </Text>
-    </Box>
+    <VoidSectionHeading title="Activities" caption="Model calls by label" />
     <DataTable
       columns={columns(costAsCurrency)}
       data={mix.by_activity}

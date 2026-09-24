@@ -159,7 +159,7 @@ export const VoidMeterPage = ({ meterId }: { meterId: string }) => {
             {formatHumanFriendlyScalar(meter.usage.allTime)}
           </StatisticCard>
         </Box>
-        <TableSection title="Activity" caption="Last 30 days, daily · UTC">
+        <TableSection title="Activity" caption="Daily, last 30 days">
           {meter.usage.periods.length > 0 ? (
             <MetricChartBox
               data={meterSeriesToChart(meter.usage, meter.name)}
@@ -178,8 +178,8 @@ export const VoidMeterPage = ({ meterId }: { meterId: string }) => {
           title="Consumers"
           caption={
             meter.consumers.length > 0
-              ? `Top ${meter.consumers.length} by units / 30d`
-              : 'By customer, last 30 days'
+              ? `Top ${meter.consumers.length}, last 30 days`
+              : 'Last 30 days'
           }
         >
           {meter.consumers.length === 0 ? (
@@ -198,7 +198,7 @@ export const VoidMeterPage = ({ meterId }: { meterId: string }) => {
             />
           )}
         </TableSection>
-        <TableSection title="Fed by" caption="The reducers behind this meter">
+        <TableSection title="Fed by" caption="Reducers behind it">
           <DataTable
             columns={sourceColumns}
             data={sources}

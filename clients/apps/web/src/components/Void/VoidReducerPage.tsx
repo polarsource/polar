@@ -1,6 +1,5 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
@@ -26,12 +25,11 @@ import {
   metersUsing,
   seriesFromMetrics,
   usedByMetersLabel,
-  VoidReducerDefinition,
 } from './reducers'
 import { TableSection } from './VoidIdentityTables'
 import { VoidReducerActivity } from './VoidReducerActivity'
-import { VoidReducerClauses } from './VoidReducerClauses'
-import { VoidErrorBox } from './VoidShell'
+import { VoidReducerDefinition } from './VoidReducerDefinition'
+import { VoidDetailShell, VoidErrorBox } from './VoidShell'
 
 interface VoidReducerPageProps {
   reducerId: string
@@ -89,29 +87,29 @@ export function VoidReducerPage({
 
   if (live && query.isLoading) {
     return (
-      <DashboardBody title="Reducer">
+      <VoidDetailShell title="Reducer">
         <LoadingBox height={128} borderRadius="m" />
-      </DashboardBody>
+      </VoidDetailShell>
     )
   }
 
   if (live && query.error && !notFound) {
     return (
-      <DashboardBody title="Reducer">
+      <VoidDetailShell title="Reducer">
         <VoidErrorBox message={query.error.message} />
-      </DashboardBody>
+      </VoidDetailShell>
     )
   }
 
   if (!reducer || notFound) {
     return (
-      <DashboardBody title="Reducer">
+      <VoidDetailShell title="Reducer">
         <EmptyState
           icon={<FunctionsOutlined fontSize="inherit" />}
           title="Unknown reducer"
           description="No reducer with this id exists."
         />
-      </DashboardBody>
+      </VoidDetailShell>
     )
   }
 
@@ -121,22 +119,20 @@ export function VoidReducerPage({
     live && reducer.type === 'scalar' && seriesQuery.isLoading
 
   return (
-    <DashboardBody
+    <VoidDetailShell
       title={reducer.slug}
-      header={
-        <Text color="muted">
-          {[
-            capitalize(describeAggregation(reducer.aggregation)),
-            reducer.type,
-            usedByMetersLabel(used.length),
-          ].join(' · ')}
-        </Text>
-      }
+      caption={[
+        capitalize(describeAggregation(reducer.aggregation)),
+        reducer.type,
+        usedByMetersLabel(used.length),
+      ].join(' · ')}
     >
       <Box flexDirection="column" rowGap="3xl">
-        <ReducerSource reducer={reducer} />
-        <ReducerMap map={reducer.map} />
+        <TableSection title="Definition" caption="Events in, value out">
+          <VoidReducerDefinition reducer={reducer} base={base} />
+        </TableSection>
         <VoidReducerActivity
+          name={reducer.slug}
           createdAt={reducer.created_at}
           type={reducer.type}
           series={series}
@@ -152,55 +148,7 @@ export function VoidReducerPage({
           {reducer.id}
         </Text>
       </Box>
-    </DashboardBody>
-  )
-}
-
-function ReducerSource({
-  reducer,
-}: {
-  reducer: VoidReducerDefinition
-}): ReactNode {
-  if (reducer.aggregation.func === 'derive') {
-    return (
-      <TableSection
-        title="Inputs"
-        caption="Event reducers that feed this formula"
-      >
-        <Box flexDirection="column" rowGap="s">
-          {Object.entries(reducer.aggregation.inputs ?? {}).map(
-            ([name, slug]) => (
-              <Text key={name}>
-                {name}: {slug}
-              </Text>
-            ),
-          )}
-        </Box>
-      </TableSection>
-    )
-  }
-  if (reducer.filter) {
-    return (
-      <TableSection title="Matches" caption="Events that feed this reducer">
-        <VoidReducerClauses filter={reducer.filter} />
-      </TableSection>
-    )
-  }
-  return null
-}
-
-function ReducerMap({
-  map,
-}: {
-  map: Record<string, unknown> | null | undefined
-}): ReactNode {
-  if (map == null) return null
-  return (
-    <TableSection title="Map" caption="Metadata passed to the aggregation">
-      <Text variant="caption" monospace>
-        {JSON.stringify(map, null, 2)}
-      </Text>
-    </TableSection>
+    </VoidDetailShell>
   )
 }
 
@@ -213,7 +161,7 @@ function ReducerMeters({
 }): ReactNode {
   if (used.length === 0) return null
   return (
-    <TableSection title="Meters" caption={`${used.length} using this reducer`}>
+    <TableSection title="Meters" caption={`${used.length} in use`}>
       <DataTable
         columns={meterColumns}
         data={used}

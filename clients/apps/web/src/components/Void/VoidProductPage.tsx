@@ -194,11 +194,7 @@ export const VoidProductPage = ({ productId }: { productId: string }) => {
         </Box>
         <TableSection
           title="Meters"
-          caption={
-            product.meters.length === 0
-              ? 'This product does not bill any meters'
-              : undefined
-          }
+          caption={product.meters.length === 0 ? 'None billed' : undefined}
         >
           {product.meters.length === 0 ? (
             <Text color="muted">None</Text>

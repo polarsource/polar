@@ -202,16 +202,16 @@ class GitHubRepositoryBenefitUserService:
             ):
                 installations.append(install)
         except RequestFailed as e:
-            with logfire.span(
+            logfire.error(
                 "github_repository_benefit.list_installations.unauthorized",
                 oauth_account_id=str(oauth.id),
                 user_id=str(oauth.user_id),
-                account_username=oauth.account_username,
+                account_id=oauth.account_id,
                 token_expires_at=str(oauth.expires_at),
-            ) as span:
-                span.set_attribute("response_status", e.response.status_code)
-                span.set_attribute("response_body", e.response.text)
-                raise
+                response_status=e.response.status_code,
+                error_type=type(e).__name__,
+            )
+            raise
 
         return installations
 
@@ -332,18 +332,18 @@ class GitHubRepositoryBenefitUserService:
                     )
             except RequestFailed as e:
                 if e.response.status_code == 401:
-                    with logfire.span(
+                    logfire.error(
                         "github_repository_benefit.list_repos.unauthorized",
                         oauth_account_id=str(oauth.id),
                         user_id=str(oauth.user_id),
-                        account_username=oauth.account_username,
+                        account_id=oauth.account_id,
                         installation_id=install.id,
-                        installation_owner=install.account.login,
+                        installation_owner_id=install.account.id,
                         token_expires_at=str(oauth.expires_at),
-                    ) as span:
-                        span.set_attribute("response_status", e.response.status_code)
-                        span.set_attribute("response_body", e.response.text)
-                        raise
+                        response_status=e.response.status_code,
+                        error_type=type(e).__name__,
+                    )
+                    raise
 
         return res
 

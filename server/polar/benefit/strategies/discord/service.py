@@ -92,9 +92,11 @@ class BenefitDiscordService(
         except httpx.HTTPStatusError as e:
             bound_logger.warning(
                 "HTTP error while adding member",
-                error=str(e),
+                error_type=type(e).__name__,
                 status_code=e.response.status_code,
-                body=e.response.text,
+                guild_id=guild_id,
+                role_id=role_id,
+                account_id=account_id,
             )
             if e.response.status_code == 429:
                 raise BenefitRetriableError() from e
@@ -104,7 +106,13 @@ class BenefitDiscordService(
                 ) from e
             raise BenefitRetriableError() from e
         except httpx.HTTPError as e:
-            bound_logger.warning("HTTP error while adding member", error=str(e))
+            bound_logger.warning(
+                "HTTP error while adding member",
+                error_type=type(e).__name__,
+                guild_id=guild_id,
+                role_id=role_id,
+                account_id=account_id,
+            )
             raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit granted")
@@ -161,9 +169,11 @@ class BenefitDiscordService(
         except httpx.HTTPStatusError as e:
             bound_logger.warning(
                 "HTTP error while removing member",
-                error=str(e),
+                error_type=type(e).__name__,
                 status_code=e.response.status_code,
-                body=e.response.text,
+                guild_id=guild_id,
+                role_id=role_id,
+                account_id=account_id,
             )
             if e.response.status_code == 429:
                 raise BenefitRetriableError() from e
@@ -173,7 +183,13 @@ class BenefitDiscordService(
                 ) from e
             raise BenefitRetriableError() from e
         except httpx.HTTPError as e:
-            bound_logger.warning("HTTP error while removing member", error=str(e))
+            bound_logger.warning(
+                "HTTP error while removing member",
+                error_type=type(e).__name__,
+                guild_id=guild_id,
+                role_id=role_id,
+                account_id=account_id,
+            )
             raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit revoked")

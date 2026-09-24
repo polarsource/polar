@@ -54,18 +54,6 @@ Sentry.init({
       return null
     }
 
-    // Group fetch errors by page URL so they don't all pile into one issue
-    const message = event.exception?.values?.[0]?.value ?? ''
-    if (/Failed to fetch|Load failed/i.test(message)) {
-      const page =
-        event.request?.url?.replace(/https?:\/\/[^/]+/, '') ?? 'unknown'
-      const normalized = page.replace(
-        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
-        ':id',
-      )
-      event.fingerprint = ['fetch-error', normalized]
-    }
-
     return event
   },
 })

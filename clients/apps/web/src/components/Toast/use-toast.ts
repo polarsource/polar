@@ -146,7 +146,13 @@ function toast({ ...props }: Toast) {
   ) {
     Sentry.captureMessage('Toast displayed with [object Object]', {
       level: 'warning',
-      extra: { title: props.title, description: String(desc) },
+      extra: {
+        titleType: typeof props.title,
+        hasTitle: props.title != null,
+        descriptionType: typeof desc,
+        descriptionIsArray: Array.isArray(desc),
+        variant: props.variant,
+      },
     })
   }
 

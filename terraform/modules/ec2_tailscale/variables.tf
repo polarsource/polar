@@ -13,6 +13,11 @@ variable "subnet_id" {
   type        = string
 }
 
+variable "vpc_id" {
+  description = "VPC the subnet belongs to."
+  type        = string
+}
+
 variable "tailscale_oauth_secret_arn" {
   description = "ARN of a Secrets Manager secret in the provider region whose SecretString is the raw Tailscale OAuth client secret."
   type        = string

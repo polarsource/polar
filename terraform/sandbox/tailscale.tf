@@ -17,6 +17,7 @@ module "ec2_tailscale" {
 
   name                       = "polar-sandbox-aws-router"
   subnet_id                  = module.vpc.secondary_private_subnet_ids[0]
+  vpc_id                     = module.vpc.vpc_id
   advertise_routes           = module.vpc.secondary_private_subnet_cidr_blocks
   advertise_tags             = ["tag:router", "tag:sandbox"]
   tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale.arn

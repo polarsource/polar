@@ -24,6 +24,7 @@ module "ec2_tailscale" {
 
   name                       = "polar-test-aws-router"
   subnet_id                  = module.vpc[0].secondary_private_subnet_ids[0]
+  vpc_id                     = module.vpc[0].vpc_id
   advertise_routes           = module.vpc[0].secondary_private_subnet_cidr_blocks
   advertise_tags             = ["tag:router", "tag:test"]
   tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale[0].arn

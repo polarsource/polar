@@ -1,9 +1,5 @@
 data "aws_region" "current" {}
 
-data "aws_subnet" "this" {
-  id = var.subnet_id
-}
-
 data "aws_ssm_parameter" "ami" {
   count = var.ami_id == null ? 1 : 0
   name  = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
@@ -58,7 +54,7 @@ resource "aws_iam_instance_profile" "this" {
 resource "aws_security_group" "this" {
   name_prefix = "${var.name}-"
   description = "Outbound access for Tailscale and package installation."
-  vpc_id      = data.aws_subnet.this.vpc_id
+  vpc_id      = var.vpc_id
 
   egress {
     from_port   = 0

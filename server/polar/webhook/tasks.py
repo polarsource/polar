@@ -91,8 +91,8 @@ async def _webhook_event_send(
         webhook_endpoint_id=event.webhook_endpoint_id,
     )
 
-    if not event.webhook_endpoint.enabled:
-        bound_log.info("Webhook endpoint is disabled, skipping")
+    if event.webhook_endpoint.is_deleted or not event.webhook_endpoint.enabled:
+        bound_log.info("Webhook endpoint is deleted or disabled, skipping")
         event.skipped = True
         session.add(event)
         return

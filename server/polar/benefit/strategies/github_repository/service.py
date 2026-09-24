@@ -136,7 +136,7 @@ class BenefitGitHubRepositoryService(
                         user_id=int(oauth_account.account_id),
                     )
                     if invitation is not None and invitation.expired:
-                        bound_logger.debug("Removing expired invitation")
+                        bound_logger.info("Removing expired invitation")
                         await client.rest.repos.async_delete_invitation(
                             repository_owner, repository_name, invitation.id
                         )

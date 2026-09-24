@@ -1,7 +1,6 @@
 import contextlib
 import uuid
 from collections.abc import Generator
-from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import structlog
@@ -323,26 +322,16 @@ async def delete(
     if request.method == "POST":
         data = await request.form()
         try:
-            form = DeletePayoutAccountForm.model_validate_form(data)
+            DeletePayoutAccountForm.model_validate_form(data)
 
             account_type = payout_account.type
-            stripe_id = payout_account.stripe_id
 
             await payout_account_service.delete(session, payout_account)
-
-            timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
-            note = (
-                f"[{timestamp}] Payout account deleted.\nType: {account_type.value}\n"
-            )
-            if account_type == PayoutAccountType.stripe and stripe_id:
-                note += f"Stripe ID: {stripe_id}\n"
-            note += f"Reason: {form.reason.strip()}"
 
             logger.info(
                 "Payout account deleted from backoffice",
                 payout_account_id=str(payout_account.id),
                 account_type=account_type.value,
-                note=note,
             )
 
             await add_toast(request, "Payout account deleted", variant="success")

@@ -95,11 +95,9 @@ async def _persist_agent_result(
     log.info(
         "organization_review.task.complete",
         organization_id=str(organization.id),
-        slug=organization.slug,
         context=review_context.value,
         verdict=report.verdict.value,
         overall_risk_score=report.overall_risk_score,
-        summary=report.summary,
         model_used=result.model_used,
         duration_seconds=result.duration_seconds,
         estimated_cost_usd=result.usage.estimated_cost_usd,

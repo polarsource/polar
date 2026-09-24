@@ -10,6 +10,8 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
+from polar.version import CURRENT_API_VERSION
+
 WEBHOOK_SECRET = "test_polar_webhook_secret"
 WEBHOOK_URL = "/v1/integrations/polar/webhook"
 
@@ -63,6 +65,7 @@ def _benefit_grant_event(event_type: str) -> dict[str, Any]:
     return {
         "type": event_type,
         "timestamp": "2026-01-01T00:00:00Z",
+        "api_version": str(CURRENT_API_VERSION),
         "data": _BENEFIT_GRANT,
     }
 
@@ -149,6 +152,7 @@ def _subscription_event(event_type: str) -> dict[str, Any]:
     return {
         "type": event_type,
         "timestamp": "2026-01-01T00:00:00Z",
+        "api_version": str(CURRENT_API_VERSION),
         "data": _SUBSCRIPTION,
     }
 
@@ -199,6 +203,7 @@ def _order_event(event_type: str) -> dict[str, Any]:
     return {
         "type": event_type,
         "timestamp": "2026-01-01T00:00:00Z",
+        "api_version": str(CURRENT_API_VERSION),
         "data": _ORDER,
     }
 

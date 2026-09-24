@@ -212,7 +212,7 @@ importers:
         specifier: ^22.0.0
         version: 22.19.17
       better-auth:
-        specifier: 1.7.5
+        specifier: ^1.7.0
         version: 1.7.5(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.49(crossws@0.4.12(srvx@0.12.7))(esbuild@0.27.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(rollup@4.63.1)(vite@7.3.6(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(webpack@5.102.1(esbuild@0.27.1)(lightningcss@1.32.0)(postcss@8.5.26)))(next@16.3.1(@opentelemetry/api@1.9.1)(@playwright/test@1.61.0)(@types/node@22.19.17)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vitest@5.0.0)(vue@3.5.42(typescript@5.9.3))
       tsup:
         specifier: 'catalog:'

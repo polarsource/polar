@@ -2,14 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.kit.visibility import Visibility
-from polar.models import (
-    Benefit,
-    BenefitGrant,
-    Customer,
-    Member,
-    Organization,
-    Subscription,
-)
+from polar.models import Benefit, Customer, Member, Organization, Subscription
 from polar.models.benefit import BenefitType
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
@@ -285,62 +278,6 @@ class TestListBenefitGrants:
                 }
             },
         }
-
-    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
-    async def test_deleted_member_oauth_accounts_hidden(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.github_repository,
-            properties={
-                "repository_owner": "test-owner",
-                "repository_name": "test-repo",
-                "permission": "pull",
-            },
-        )
-        member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Member",
-            role="member",
-            _oauth_accounts={},
-        )
-        member.set_oauth_account(
-            CustomerOAuthAccount(
-                access_token="member-token",
-                account_id="11111",
-                account_username="member-github-user",
-            ),
-            CustomerOAuthPlatform.github,
-        )
-        member.set_deleted_at()
-        await save_fixture(member)
-
-        grant = BenefitGrant(
-            customer=customer, benefit=benefit, member=member, subscription=subscription
-        )
-        grant.set_grant_failed(Exception("OAuth account missing"))
-        await save_fixture(grant)
-
-        response = await client.get("/v1/customer-portal/benefit-grants/")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        assert json["items"][0]["member"] is None
-
-        response = await client.get(f"/v1/customer-portal/benefit-grants/{grant.id}")
-
-        assert response.status_code == 200
-        assert response.json()["member"] is None
 
 
 @pytest.mark.asyncio

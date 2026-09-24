@@ -163,8 +163,8 @@ module "lambda_worker" {
   kms_key_arn        = module.secrets_kms[0].key_arn
 
   additional_policy_documents = [
+    data.aws_iam_policy_document.s3_access.json,
     module.hash_secret[0].read_policy_json,
-    data.aws_iam_policy_document.worker_logs.json,
   ]
 }
 
@@ -193,12 +193,51 @@ module "lambda_worker_queue" {
   kms_key_arn        = module.secrets_kms[0].key_arn
 
   additional_policy_documents = [
+    data.aws_iam_policy_document.s3_access.json,
     module.hash_secret[0].read_policy_json,
-    data.aws_iam_policy_document.worker_logs.json,
   ]
 }
 
-data "aws_iam_policy_document" "worker_logs" {
+# =============================================================================
+# S3 access policy (attached to the worker Lambdas)
+# The buckets live in the management account, which grants the polar-test-*
+# roles in its bucket policies.
+# =============================================================================
+
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    sid = "FilesReadWriteDelete"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAttributes",
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+    ]
+    resources = [
+      "arn:aws:s3:::${local.files_bucket_name}/*",
+      "arn:aws:s3:::${local.files_public_bucket_name}/*",
+    ]
+  }
+
+  statement {
+    sid = "DocumentsReadWrite"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAttributes",
+    ]
+    resources = [
+      "arn:aws:s3:::${local.aws_s3_config.customer_invoices_bucket_name}/*",
+      "arn:aws:s3:::${local.aws_s3_config.customer_receipts_bucket_name}/*",
+      "arn:aws:s3:::${local.aws_s3_config.payout_invoices_bucket_name}/*",
+    ]
+  }
+
   statement {
     sid       = "LogsWrite"
     actions   = ["s3:PutObject"]

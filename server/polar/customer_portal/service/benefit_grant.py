@@ -61,7 +61,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         ),
     ) -> tuple[Sequence[BenefitGrant], int]:
         statement = self._get_readable_benefit_grant_statement(auth_subject).options(
-            joinedload(BenefitGrant.customer)
+            joinedload(BenefitGrant.customer), joinedload(BenefitGrant.member)
         )
 
         if query is not None:
@@ -147,7 +147,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         statement = (
             self._get_readable_benefit_grant_statement(auth_subject)
             .where(BenefitGrant.id == id)
-            .options(joinedload(BenefitGrant.customer))
+            .options(joinedload(BenefitGrant.customer), joinedload(BenefitGrant.member))
         )
 
         result = await session.execute(statement)

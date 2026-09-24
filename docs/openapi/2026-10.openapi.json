@@ -1442,17 +1442,25 @@
             }
           },
           "402": {
-            "description": "Payment required to apply the subscription update.",
+            "description": "The charge failed, or requires customer authentication that can't be completed off-session.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaymentFailed"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PaymentFailed"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PaymentActionRequired"
+                    }
+                  ],
+                  "title": "Response 402 Subscriptions:Update"
                 }
               }
             }
           },
           "403": {
-            "description": "Subscription is already canceled or will be at the end of the period, or is not active.",
+            "description": "Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1462,6 +1470,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/InactiveSubscription"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PaymentNotReady"
                     }
                   ],
                   "title": "Response 403 Subscriptions:Update"
@@ -5018,6 +5029,108 @@
           {
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "products",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Delete Product",
+        "description": "Delete a product.\n\nOnly products without orders, subscriptions, trials or discounts can be deleted.\nProducts that are in use can only be archived.\n\n**Scopes**: `products:write`",
+        "operationId": "products:delete",
+        "security": [
+          {
+            "oidc": [
+              "products:write"
+            ]
+          },
+          {
+            "pat": [
+              "products:write"
+            ]
+          },
+          {
+            "oat": [
+              "products:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The product ID.",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Product deleted."
+          },
+          "403": {
+            "description": "You don't have the permission to delete this product.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Product is in use and cannot be deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductNotDeletable"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "products",
+        "x-speakeasy-name-override": "delete",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.products.delete(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.products.delete(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
       }
@@ -11680,7 +11793,7 @@
             }
           },
           "404": {
-            "description": "License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match.",
+            "description": "License key not found, revoked, disabled, or expired, or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18926,7 +19039,7 @@
             }
           },
           "404": {
-            "description": "License key not found, revoked, disabled, or expired, or the supplied activation, conditions, benefit, or customer do not match.",
+            "description": "License key not found, revoked, disabled, or expired, or the supplied activation is missing or does not match, or the conditions, benefit, or customer do not match.",
             "content": {
               "application/json": {
                 "schema": {
@@ -29121,6 +29234,28 @@
         ],
         "title": "BackupCodesVerify"
       },
+      "BadRequest": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "BadRequest",
+            "title": "Error",
+            "examples": [
+              "BadRequest"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "BadRequest"
+      },
       "BalanceCreditOrderEvent": {
         "properties": {
           "id": {
@@ -31254,9 +31389,10 @@
       },
       "BenefitDiscordCreateProperties": {
         "properties": {
-          "guild_token": {
+          "guild_id": {
             "type": "string",
-            "title": "Guild Token"
+            "title": "Guild Id",
+            "description": "The ID of the Discord server."
           },
           "role_id": {
             "type": "string",
@@ -31271,7 +31407,7 @@
         },
         "type": "object",
         "required": [
-          "guild_token",
+          "guild_id",
           "role_id",
           "kick_member"
         ],
@@ -31294,19 +31430,13 @@
             "type": "boolean",
             "title": "Kick Member",
             "description": "Whether to kick the member from the Discord server on revocation."
-          },
-          "guild_token": {
-            "type": "string",
-            "title": "Guild Token",
-            "readOnly": true
           }
         },
         "type": "object",
         "required": [
           "guild_id",
           "role_id",
-          "kick_member",
-          "guild_token"
+          "kick_member"
         ],
         "title": "BenefitDiscordProperties",
         "description": "Properties for a benefit of type `discord`."
@@ -60461,6 +60591,177 @@
         ],
         "title": "GitHubInvitesBenefitRepository"
       },
+      "GrantedLicenseKey": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/LicenseKeyCustomer"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The benefit ID."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_key": {
+            "type": "string",
+            "title": "Display Key"
+          },
+          "status": {
+            "type": "string",
+            "const": "granted",
+            "title": "Status"
+          },
+          "limit_activations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Activations"
+          },
+          "usage": {
+            "type": "integer",
+            "title": "Usage"
+          },
+          "limit_usage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Usage"
+          },
+          "validations": {
+            "type": "integer",
+            "title": "Validations"
+          },
+          "last_validated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Validated At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "benefit_id",
+          "key",
+          "display_key",
+          "status",
+          "limit_activations",
+          "usage",
+          "limit_usage",
+          "validations",
+          "last_validated_at",
+          "expires_at"
+        ],
+        "title": "GrantedLicenseKey"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -61596,6 +61897,81 @@
           "modified_at"
         ],
         "title": "LicenseKeyActivationBase"
+      },
+      "LicenseKeyActivationCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "license_key_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "License Key Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "meta": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Meta"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          },
+          "license_key": {
+            "$ref": "#/components/schemas/GrantedLicenseKey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "license_key_id",
+          "label",
+          "meta",
+          "created_at",
+          "modified_at",
+          "license_key"
+        ],
+        "title": "LicenseKeyActivationCreated"
       },
       "LicenseKeyActivationRead": {
         "properties": {
@@ -65274,6 +65650,17 @@
             "title": "Automatic Tax",
             "description": "Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Polar tax after the switch. Defaults from the source when Stripe was collecting tax on an inclusive or exclusive price; otherwise inclusive. None for non-subscription rows."
+          },
           "status": {
             "$ref": "#/components/schemas/PrecheckRecordStatus",
             "description": "Whether this record will be imported or stays on the source."
@@ -65323,6 +65710,19 @@
               }
             ],
             "description": "How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason."
+          },
+          "conflicting_customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflicting Customer Id",
+            "description": "The Polar customer that already exists for this email, when the skip reason is a Stripe id conflict. None otherwise."
           },
           "cutover_status": {
             "anyOf": [
@@ -65406,11 +65806,13 @@
           "recurring_interval",
           "recurring_interval_count",
           "automatic_tax",
+          "tax_behavior",
           "status",
           "import_status",
           "reason",
           "reason_code",
           "reason_level",
+          "conflicting_customer_id",
           "cutover_status",
           "cutover_error",
           "renews_at",
@@ -65418,6 +65820,28 @@
           "dependencies_imported"
         ],
         "title": "MerchantMigrationRecordItem"
+      },
+      "MerchantMigrationRecordNotFound": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "MerchantMigrationRecordNotFound",
+            "title": "Error",
+            "examples": [
+              "MerchantMigrationRecordNotFound"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "MerchantMigrationRecordNotFound"
       },
       "MerchantMigrationRecordStatus": {
         "type": "string",
@@ -65508,6 +65932,19 @@
         ],
         "title": "MerchantMigrationRecordSummaryEntity",
         "description": "The pre-check's per-entity counts, plus where the ledger has got to."
+      },
+      "MerchantMigrationRecordUpdate": {
+        "properties": {
+          "tax_behavior": {
+            "$ref": "#/components/schemas/TaxBehavior",
+            "description": "Polar tax after the switch: `inclusive` or `exclusive`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tax_behavior"
+        ],
+        "title": "MerchantMigrationRecordUpdate"
       },
       "MerchantMigrationSourcePlatform": {
         "type": "string",
@@ -69258,10 +69695,6 @@
             "type": "string",
             "title": "Client Id"
           },
-          "client_secret": {
-            "type": "string",
-            "title": "Client Secret"
-          },
           "client_id_issued_at": {
             "type": "integer",
             "title": "Client Id Issued At"
@@ -69278,7 +69711,6 @@
           "created_at",
           "modified_at",
           "client_id",
-          "client_secret",
           "client_id_issued_at",
           "client_secret_expires_at"
         ],
@@ -81294,6 +81726,11 @@
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
+          "is_deletable": {
+            "type": "boolean",
+            "title": "Is Deletable",
+            "description": "Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted."
+          },
           "prices": {
             "items": {
               "oneOf": [
@@ -81353,6 +81790,7 @@
           "is_archived",
           "organization_id",
           "metadata",
+          "is_deletable",
           "prices",
           "benefits",
           "medias",
@@ -81981,6 +82419,28 @@
         ],
         "title": "ProductMediaFileRead",
         "description": "File to be used as a product media file."
+      },
+      "ProductNotDeletable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ProductNotDeletable",
+            "title": "Error",
+            "examples": [
+              "ProductNotDeletable"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ProductNotDeletable"
       },
       "ProductPrice": {
         "oneOf": [
@@ -83505,6 +83965,50 @@
         "title": "PropertyGroupStat",
         "description": "Aggregate statistics for events grouped by a metadata property value."
       },
+      "RecordNotSubscription": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "RecordNotSubscription",
+            "title": "Error",
+            "examples": [
+              "RecordNotSubscription"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "RecordNotSubscription"
+      },
+      "RecordTaxLocked": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "RecordTaxLocked",
+            "title": "Error",
+            "examples": [
+              "RecordTaxLocked"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "RecordTaxLocked"
+      },
       "RecurringInterval": {
         "type": "string",
         "enum": [
@@ -84081,6 +84585,180 @@
           "detail"
         ],
         "title": "RotateNotPermitted"
+      },
+      "RotatedLicenseKey": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/LicenseKeyCustomer"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the seat member holding this key, if any."
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyMember"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The benefit ID."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "display_key": {
+            "type": "string",
+            "title": "Display Key"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "disabled"
+            ],
+            "title": "Status"
+          },
+          "limit_activations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Activations"
+          },
+          "usage": {
+            "type": "integer",
+            "title": "Usage"
+          },
+          "limit_usage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Usage"
+          },
+          "validations": {
+            "type": "integer",
+            "title": "Validations"
+          },
+          "last_validated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Validated At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "benefit_id",
+          "key",
+          "display_key",
+          "status",
+          "limit_activations",
+          "usage",
+          "limit_usage",
+          "validations",
+          "last_validated_at",
+          "expires_at"
+        ],
+        "title": "RotatedLicenseKey"
       },
       "S3DownloadURL": {
         "properties": {
@@ -87687,6 +88365,91 @@
         ],
         "title": "SubscriptionLocked"
       },
+      "SubscriptionMeter": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "consumed_units": {
+            "type": "number",
+            "title": "Consumed Units",
+            "description": "The number of consumed units so far in this billing period.",
+            "examples": [
+              25.0
+            ]
+          },
+          "credited_units": {
+            "type": "integer",
+            "title": "Credited Units",
+            "description": "The number of credited units so far in this billing period.",
+            "examples": [
+              100
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount",
+            "description": "The amount due in cents so far in this billing period.",
+            "examples": [
+              0
+            ]
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id",
+            "description": "The ID of the meter.",
+            "examples": [
+              "d498a884-e2cd-4d3e-8002-f536468a8b22"
+            ]
+          },
+          "meter": {
+            "$ref": "#/components/schemas/Meter",
+            "description": "The meter associated with this subscription."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "consumed_units",
+          "credited_units",
+          "amount",
+          "meter_id",
+          "meter"
+        ],
+        "title": "SubscriptionMeter",
+        "description": "Current consumption and spending for a subscription meter."
+      },
       "SubscriptionMigratedEvent": {
         "properties": {
           "id": {
@@ -87857,91 +88620,6 @@
           "product_id"
         ],
         "title": "SubscriptionMigratedMetadata"
-      },
-      "SubscriptionMeter": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object.",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "consumed_units": {
-            "type": "number",
-            "title": "Consumed Units",
-            "description": "The number of consumed units so far in this billing period.",
-            "examples": [
-              25.0
-            ]
-          },
-          "credited_units": {
-            "type": "integer",
-            "title": "Credited Units",
-            "description": "The number of credited units so far in this billing period.",
-            "examples": [
-              100
-            ]
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "description": "The amount due in cents so far in this billing period.",
-            "examples": [
-              0
-            ]
-          },
-          "meter_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Meter Id",
-            "description": "The ID of the meter.",
-            "examples": [
-              "d498a884-e2cd-4d3e-8002-f536468a8b22"
-            ]
-          },
-          "meter": {
-            "$ref": "#/components/schemas/Meter",
-            "description": "The meter associated with this subscription."
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "consumed_units",
-          "credited_units",
-          "amount",
-          "meter_id",
-          "meter"
-        ],
-        "title": "SubscriptionMeter",
-        "description": "Current consumption and spending for a subscription meter."
       },
       "SubscriptionNotScheduledToCancel": {
         "properties": {
@@ -89977,7 +90655,7 @@
               }
             ],
             "title": "Trial End",
-            "description": "Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately."
+            "description": "Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails."
           }
         },
         "additionalProperties": false,
@@ -96762,426 +97440,6 @@
         ],
         "title": "IntrospectTokenRequest",
         "type": "object"
-      },
-      "GrantedLicenseKey": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object.",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id"
-          },
-          "customer_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Customer Id"
-          },
-          "customer": {
-            "$ref": "#/components/schemas/LicenseKeyCustomer"
-          },
-          "member_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Member Id",
-            "description": "The ID of the seat member holding this key, if any."
-          },
-          "member": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LicenseKeyMember"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
-          },
-          "benefit_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Benefit Id",
-            "description": "The benefit ID."
-          },
-          "key": {
-            "type": "string",
-            "title": "Key"
-          },
-          "display_key": {
-            "type": "string",
-            "title": "Display Key"
-          },
-          "status": {
-            "type": "string",
-            "const": "granted",
-            "title": "Status"
-          },
-          "limit_activations": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Limit Activations"
-          },
-          "usage": {
-            "type": "integer",
-            "title": "Usage"
-          },
-          "limit_usage": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Limit Usage"
-          },
-          "validations": {
-            "type": "integer",
-            "title": "Validations"
-          },
-          "last_validated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Validated At"
-          },
-          "expires_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expires At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "created_at",
-          "modified_at",
-          "organization_id",
-          "customer_id",
-          "customer",
-          "benefit_id",
-          "key",
-          "display_key",
-          "status",
-          "limit_activations",
-          "usage",
-          "limit_usage",
-          "validations",
-          "last_validated_at",
-          "expires_at"
-        ],
-        "title": "GrantedLicenseKey"
-      },
-      "RotatedLicenseKey": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object.",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id"
-          },
-          "customer_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Customer Id"
-          },
-          "customer": {
-            "$ref": "#/components/schemas/LicenseKeyCustomer"
-          },
-          "member_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Member Id",
-            "description": "The ID of the seat member holding this key, if any."
-          },
-          "member": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LicenseKeyMember"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."
-          },
-          "benefit_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Benefit Id",
-            "description": "The benefit ID."
-          },
-          "key": {
-            "type": "string",
-            "title": "Key"
-          },
-          "display_key": {
-            "type": "string",
-            "title": "Display Key"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "granted",
-              "disabled"
-            ],
-            "title": "Status"
-          },
-          "limit_activations": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Limit Activations"
-          },
-          "usage": {
-            "type": "integer",
-            "title": "Usage"
-          },
-          "limit_usage": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Limit Usage"
-          },
-          "validations": {
-            "type": "integer",
-            "title": "Validations"
-          },
-          "last_validated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Validated At"
-          },
-          "expires_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expires At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "created_at",
-          "modified_at",
-          "organization_id",
-          "customer_id",
-          "customer",
-          "benefit_id",
-          "key",
-          "display_key",
-          "status",
-          "limit_activations",
-          "usage",
-          "limit_usage",
-          "validations",
-          "last_validated_at",
-          "expires_at"
-        ],
-        "title": "RotatedLicenseKey"
-      },
-      "LicenseKeyActivationCreated": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
-          },
-          "license_key_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "License Key Id"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label"
-          },
-          "meta": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Meta"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At"
-          },
-          "license_key": {
-            "$ref": "#/components/schemas/GrantedLicenseKey"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "license_key_id",
-          "label",
-          "meta",
-          "created_at",
-          "modified_at",
-          "license_key"
-        ],
-        "title": "LicenseKeyActivationCreated"
       }
     },
     "securitySchemes": {

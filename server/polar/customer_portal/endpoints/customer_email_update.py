@@ -60,7 +60,6 @@ async def request_email_update(
 
     log.info(
         "customer_portal.email_update.request",
-        new_email=body.email,
         **get_audit_context(auth_subject),
     )
 

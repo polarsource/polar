@@ -30,10 +30,10 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@effect/platform-bun": "4.0.0-rc.112",
+    "@effect/platform-bun": "4.0.0-rc.117",
     "@napi-rs/keyring": "2.0.0",
     "@polar-sh/sdk": "1.0.0-alpha.20",
-    "effect": "4.0.0-rc.112",
+    "effect": "4.0.0-rc.117",
     "open": "^10.2.0",
     "picocolors": "^1.1.1"
   },

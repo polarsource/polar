@@ -29,17 +29,11 @@
     "turbo": "^2.9.12",
     "typescript": "6.0.3"
   },
-  "resolutions": {
-    "sharp": "0.33.3"
-  },
   "pnpm": {
     "overrides": {
       "@types/react": "19.2.13",
       "@types/react-dom": "19.2.3",
       "nuxi": "3.28.0"
-    },
-    "patchedDependencies": {
-      "openapi-typescript@7.10.1": "patches/openapi-typescript@7.10.1.patch"
     }
   },
   "packageManager": "pnpm@10.29.3",

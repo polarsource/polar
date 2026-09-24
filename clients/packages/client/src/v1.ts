@@ -17033,6 +17033,7 @@ export interface components {
       is_revoked: boolean
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
+      member?: components['schemas']['CustomerBenefitGrantMember'] | null
       benefit: components['schemas']['BenefitDiscordSubscriber']
       properties: components['schemas']['BenefitGrantDiscordProperties']
     }
@@ -17210,6 +17211,7 @@ export interface components {
       is_revoked: boolean
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
+      member?: components['schemas']['CustomerBenefitGrantMember'] | null
       benefit: components['schemas']['BenefitGitHubRepositorySubscriber']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
     }
@@ -17283,6 +17285,19 @@ export interface components {
        * @enum {string}
        */
       benefit_type: 'license_keys'
+    }
+    /** CustomerBenefitGrantMember */
+    CustomerBenefitGrantMember: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Oauth Accounts */
+      oauth_accounts: {
+        [key: string]: components['schemas']['CustomerPortalOAuthAccount']
+      }
     }
     /** CustomerBenefitGrantMeterCredit */
     CustomerBenefitGrantMeterCredit: {

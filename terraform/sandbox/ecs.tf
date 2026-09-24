@@ -44,10 +44,12 @@ module "pgbouncer_aws" {
   }
 
   database = {
-    host     = local.db_external_host
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
+    host                = local.db_external_host
+    port                = local.db_port
+    user                = local.db_user
+    password            = local.db_password
+    additional_user     = local.db_user_additional
+    additional_password = local.db_password_additional
   }
 
   depends_on = [aws_secretsmanager_secret_version.ghcr_pull]

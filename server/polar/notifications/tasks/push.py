@@ -53,7 +53,10 @@ def send_push_message(
         log.error("notifications.push.server_error", error=str(exc))
         raise
     except DeviceNotRegisteredError:
-        log.warning("notifications.push.device_not_registered", token=token)
+        log.warning(
+            "notifications.push.device_not_registered",
+            notification_id=extra.get("notification_id") if extra else None,
+        )
         raise
     except Exception as exc:
         log.error("notifications.push.unknown_error", error=str(exc))

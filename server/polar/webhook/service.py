@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import datetime
 import json
@@ -966,6 +967,36 @@ class WebhookService:
 
             if updated_count < batch_size:
                 break
+
+    async def archive_delivery_payloads(
+        self,
+        session: AsyncSession,
+        older_than: datetime.datetime,
+        batch_size: int = 5000,
+        sleep_seconds: float = 0.1,
+    ) -> int:
+        repository = WebhookDeliveryRepository.from_session(session)
+        cursor: tuple[datetime.datetime, UUID] | None = None
+        total_scrubbed = 0
+
+        while True:
+            page = await repository.get_scrubbable_response_page(
+                older_than=older_than, limit=batch_size, after=cursor
+            )
+            if not page:
+                break
+
+            await repository.scrub_responses([id for id, _ in page])
+            await session.commit()
+
+            total_scrubbed += len(page)
+            last_id, last_created_at = page[-1]
+            cursor = (last_created_at, last_id)
+
+            if sleep_seconds > 0:
+                await asyncio.sleep(sleep_seconds)
+
+        return total_scrubbed
 
     async def _get_event_target_endpoints(
         self,

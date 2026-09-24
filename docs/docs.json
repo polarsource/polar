@@ -343,6 +343,7 @@
                       "GET /v1/products/",
                       "POST /v1/products/",
                       "PATCH /v1/products/{id}",
+                      "DELETE /v1/products/{id}",
                       "POST /v1/products/{id}/benefits"
                     ]
                   },
@@ -752,6 +753,7 @@
                       "GET /v1/products/",
                       "POST /v1/products/",
                       "PATCH /v1/products/{id}",
+                      "DELETE /v1/products/{id}",
                       "POST /v1/products/{id}/benefits"
                     ]
                   },

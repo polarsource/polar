@@ -53,6 +53,7 @@
         "group": "Engineering",
         "pages": [
           "engineering/introduction",
+          "engineering/api-tokens-and-system-credentials",
           {
             "group": "Guides",
             "pages": [

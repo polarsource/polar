@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Numeric, Select, case, func, select, update
+from sqlalchemy import CursorResult, Select, case, func, select, update
 from sqlalchemy.orm import aliased, joinedload, selectinload
 
 from polar.auth.models import (
@@ -27,6 +27,11 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.utils import utc_now
+from polar.metrics.fx import (
+    closest_global_daily_rate,
+    global_daily_exchange_rates,
+    payment_exchange_rate,
+)
 from polar.models import (
     Customer,
     Discount,
@@ -79,13 +84,7 @@ class OrderRepository(
         across all customers cannot be expressed as bounded per-entity metric
         queries the way products can.
         """
-        exchange_rate = func.coalesce(
-            func.nullif(func.cast(Transaction.exchange_rate, Numeric(30, 12)), 0),
-            func.cast(Transaction.amount, Numeric(30, 12))
-            / func.nullif(
-                func.cast(Transaction.presentment_amount, Numeric(30, 12)), 0
-            ),
-        )
+        exchange_rate = payment_exchange_rate()
         payment_transaction_clauses = (
             Transaction.type == TransactionType.payment,
             Transaction.presentment_currency.is_not(None),
@@ -115,15 +114,7 @@ class OrderRepository(
                 func.date_trunc("day", payment_order.created_at), payment_currency
             )
         )
-        global_fx_statement = (
-            select(
-                func.date_trunc("day", Transaction.created_at).label("day"),
-                payment_currency.label("currency"),
-                func.avg(exchange_rate).label("rate"),
-            )
-            .where(*payment_transaction_clauses)
-            .group_by(func.date_trunc("day", Transaction.created_at), payment_currency)
-        )
+        global_fx_statement = global_daily_exchange_rates()
         if start is not None:
             organization_fx_statement = organization_fx_statement.where(
                 payment_order.created_at >= start
@@ -151,12 +142,7 @@ class OrderRepository(
             .scalar_subquery()
         )
         closest_global_exchange_rate = (
-            select(global_fx_daily.c.rate)
-            .where(global_fx_daily.c.currency == order_currency)
-            .order_by(
-                func.abs(func.extract("epoch", global_fx_daily.c.day - order_day))
-            )
-            .limit(1)
+            closest_global_daily_rate(global_fx_daily, order_currency, order_day)
             .correlate(Order)
             .scalar_subquery()
         )

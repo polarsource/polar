@@ -42,6 +42,12 @@ from polar.models import (
 from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 
+from .fx import (
+    closest_global_daily_rate,
+    global_daily_exchange_rates,
+    payment_exchange_rate,
+)
+
 if TYPE_CHECKING:
     from .metrics import SQLMetric
 
@@ -161,11 +167,7 @@ def get_active_subscriptions_cte(
         customer_id=customer_id,
     )
 
-    fx_value = func.coalesce(
-        func.nullif(func.cast(Transaction.exchange_rate, Numeric(30, 12)), 0),
-        func.cast(Transaction.amount, Numeric(30, 12))
-        / func.nullif(func.cast(Transaction.presentment_amount, Numeric(30, 12)), 0),
-    )
+    fx_value = payment_exchange_rate()
     fx_day = interval.sql_date_trunc(Order.created_at)
     fx_currency = func.lower(Transaction.presentment_currency)
 
@@ -187,37 +189,17 @@ def get_active_subscriptions_cte(
         .group_by(fx_day, fx_currency)
     )
 
-    global_fx_day = func.date_trunc("day", Transaction.created_at)
     global_fx_daily = cte(
-        select(
-            global_fx_day.label("day"),
-            fx_currency.label("presentment_currency"),
-            func.avg(fx_value).label("avg_exchange_rate"),
-        )
-        .select_from(Transaction)
-        .where(
-            Transaction.type == TransactionType.payment,
-            Transaction.presentment_currency.is_not(None),
+        global_daily_exchange_rates().where(
             Transaction.created_at >= start_timestamp,
             Transaction.created_at <= end_timestamp,
         )
-        .group_by(global_fx_day, fx_currency)
     )
 
     closest_global_fx_rate = (
-        select(global_fx_daily.c.avg_exchange_rate)
-        .where(
-            global_fx_daily.c.presentment_currency == func.lower(Subscription.currency),
+        closest_global_daily_rate(
+            global_fx_daily, func.lower(Subscription.currency), timestamp_column
         )
-        .order_by(
-            func.abs(
-                func.extract(
-                    "epoch",
-                    global_fx_daily.c.day - timestamp_column,
-                )
-            )
-        )
-        .limit(1)
         .correlate(Subscription, timestamp_series)
         .scalar_subquery()
     )

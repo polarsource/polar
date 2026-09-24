@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 from sqlalchemy import CursorResult, Numeric, Select, case, func, select, update
@@ -48,13 +48,6 @@ if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 
-class CustomerRevenue(NamedTuple):
-    customer: Customer
-    order_count: int
-    net_revenue: int
-    """Net revenue converted to USD cents."""
-
-
 class OrderRepository(
     RepositorySortingMixin[Order, OrderSortProperty],
     RepositorySoftDeletionIDMixin[Order, UUID],
@@ -70,8 +63,9 @@ class OrderRepository(
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
-    ) -> Sequence[CustomerRevenue]:
-        """Customers ranked by paid net revenue converted to USD, descending.
+    ) -> Sequence[tuple[Customer, int, int]]:
+        """Customers ranked by paid net revenue: (customer, order count, net
+        revenue in USD cents), descending.
 
         Partially refunded orders count with the refunded portion subtracted,
         so the ranking reflects money actually kept.
@@ -152,14 +146,7 @@ class OrderRepository(
         if end is not None:
             statement = statement.where(Order.created_at < end)
         result = await self.session.execute(statement)
-        return [
-            CustomerRevenue(
-                customer=row[0],
-                order_count=int(row[1]),
-                net_revenue=int(row[2]),
-            )
-            for row in result.all()
-        ]
+        return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
 
     async def get_paid_revenue_by_country(
         self,

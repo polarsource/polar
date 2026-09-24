@@ -47,7 +47,7 @@ from polar.models import (
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
-from polar.order.repository import CustomerRevenue, OrderRepository
+from polar.order.repository import OrderRepository
 from polar.organization.resolver import get_payload_organization
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -181,7 +181,7 @@ class CustomerService:
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
-    ) -> Sequence[CustomerRevenue]:
+    ) -> Sequence[tuple[Customer, int, int]]:
         await assert_organization_permission(
             session,
             auth_subject,

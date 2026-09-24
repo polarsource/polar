@@ -120,12 +120,7 @@ export async function POST(req: Request) {
       name: data.startupName,
       website: data.website,
     })
-    console.log(
-      '[startup-program] upserted Company:',
-      company.id.record_id,
-      'name:',
-      data.startupName,
-    )
+    console.log('[startup-program] upserted Company:', company.id.record_id)
 
     const person = await createPerson({
       firstName: data.firstName,
@@ -135,12 +130,7 @@ export async function POST(req: Request) {
       linkedinUrl: data.linkedin,
       companyRecordId: company.id.record_id,
     })
-    console.log(
-      '[startup-program] upserted Person:',
-      person.id.record_id,
-      'email:',
-      data.email,
-    )
+    console.log('[startup-program] upserted Person:', person.id.record_id)
 
     const entry = await addToList({
       listId,

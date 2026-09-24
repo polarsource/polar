@@ -1,0 +1,23 @@
+terraform/sandbox/render.tf
+  s_b12b6d33629e94::t_f156a0313f4aa2 198-199,221-222
+  s_b12b6d33629e94::t_d401f46d3e6365 196-197,219-220
+terraform/sandbox/ecs.tf
+  s_b12b6d33629e94::t_f156a0313f4aa2 49-50
+  s_b12b6d33629e94::t_d401f46d3e6365 47-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6e9e30193ee00fa1f7a3e202cd798804c64258c4",
+  "prompts": {},
+  "sessions": {
+    "s_b12b6d33629e94": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b3c1f0d-d2b9-427f-9010-948d9c170904",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}

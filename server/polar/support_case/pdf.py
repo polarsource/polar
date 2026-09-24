@@ -27,10 +27,7 @@ def merge_attachments(files: Sequence[tuple[str, str, bytes]]) -> bytes:
         if mime_type == "application/pdf":
             # pypdf raises non-PyPdfError exceptions on some malformed inputs.
             try:
-                reader = PdfReader(BytesIO(content))
-                if not reader.pages:
-                    raise ValueError("PDF has no readable pages")
-                writer.append(reader)
+                writer.append(PdfReader(BytesIO(content)))
             except Exception:
                 note = (
                     f"Could not include {name}: the PDF is unreadable "

@@ -2,7 +2,10 @@ import { act } from '@testing-library/react'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithCheckout } from '../test-utils/renderWithCheckout'
-import type { CheckoutFormContextProps } from './CheckoutFormProvider'
+import {
+  isShownToBuyer,
+  type CheckoutFormContextProps,
+} from './CheckoutFormProvider'
 import type { CheckoutContextProps } from './CheckoutProvider'
 
 type CheckoutResult = Awaited<ReturnType<CheckoutFormContextProps['update']>>
@@ -463,6 +466,36 @@ describe('CheckoutFormProvider', () => {
         `${errorCode} detail`,
       )
     })
+
+    it.each([
+      ['PaymentError', true],
+      ['ResourceNotFound', false],
+      ['ExpiredCheckoutError', false],
+      ['UnexpectedError', false],
+    ] as const)(
+      'marks a %s rejection as displayed: %s',
+      async (errorCode, displayed) => {
+        const getCtx = renderWithCheckout({
+          checkout: freeCheckout,
+          update: vi.fn(),
+          confirm: vi.fn<CheckoutContextProps['confirm']>(async () =>
+            confirmErrorResult({
+              error: errorCode,
+              detail: 'detail',
+            } as ConfirmError),
+          ),
+        })
+
+        let rejection: unknown
+        await act(async () => {
+          rejection = await getCtx()
+            .confirm({ customer_email: 'a@b.com' }, null, null)
+            .catch((error: unknown) => error)
+        })
+
+        expect(isShownToBuyer(rejection)).toBe(displayed)
+      },
+    )
 
     it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {
       const getCtx = renderWithCheckout({

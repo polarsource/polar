@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import httpx
 import logfire
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, WebSocket
 from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
@@ -236,8 +236,27 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
         HTTPXClientInstrumentor().instrument()
 
 
+def _request_attributes_mapper(
+    request: Request | WebSocket, attributes: dict[str, Any]
+) -> dict[str, Any] | None:
+    errors = attributes["errors"]
+    if not errors:
+        return None
+    return {
+        "fastapi.validation_error_count": len(errors),
+        "fastapi.validation_error_types": [error["type"] for error in errors],
+    }
+
+
 def instrument_fastapi(app: FastAPI) -> None:
-    logfire.instrument_fastapi(app, capture_headers=True)
+    logfire.instrument_fastapi(
+        app,
+        capture_headers=False,
+        request_attributes_mapper=_request_attributes_mapper,
+        # Empty lists fall back to OTEL environment settings; match no headers instead.
+        http_capture_headers_server_request=[r"(?!)"],
+        http_capture_headers_server_response=[r"(?!)"],
+    )
 
 
 _meter_provider = PrometheusMeterProvider()

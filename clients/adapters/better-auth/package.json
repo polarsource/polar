@@ -70,7 +70,7 @@
     "zod": "^3.25.0 || ^4.0.0"
   },
   "peerDependencies": {
-    "@polar-sh/sdk": "1.0.0-alpha.20",
+    "@polar-sh/sdk": "1.0.0-alpha.22",
     "better-auth": "^1.7.0",
     "zod": "^3.25.0 || ^4.0.0"
   },

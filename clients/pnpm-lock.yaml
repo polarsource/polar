@@ -151,7 +151,6 @@ overrides:
   nuxi: 3.28.0
   uuid@<11.1.1: '>=11.1.1'
   webpack@>=5.49.0 <=5.104.0: '>=5.104.1'
-  webpack@5.102.1: '>=5.104.1'
   webpack@>=5.49.0 <5.104.0: '>=5.104.0'
 
 packageExtensionsChecksum: sha256-9W0nP86QgDkp36XFcZlDbQwdqnjJus9oi7c87rYAf8I=

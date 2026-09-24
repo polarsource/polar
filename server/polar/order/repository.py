@@ -1,9 +1,9 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, NamedTuple, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, func, select, update
+from sqlalchemy import CursorResult, Numeric, Select, case, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
@@ -36,14 +36,26 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
+    Transaction,
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.models.transaction import TransactionType
 
 from .sorting import OrderSortProperty
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
+
+
+class CustomerRevenue(NamedTuple):
+    customer: Customer
+    currency: str
+    order_count: int
+    net_revenue: int
+    """Net revenue in `currency`'s smallest unit."""
+    usd_net_revenue: int
+    """Net revenue converted to USD cents."""
 
 
 class OrderRepository(
@@ -58,43 +70,90 @@ class OrderRepository(
         self,
         organization_id: UUID,
         *,
-        currency: str,
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
-    ) -> Sequence[tuple[Customer, int, int]]:
-        """Customers ranked by paid net revenue in `currency`: (customer, order
-        count, net revenue in the currency's smallest unit), descending.
+    ) -> Sequence[CustomerRevenue]:
+        """Customers ranked by paid net revenue converted to USD, descending.
 
-        Only orders in `currency` count: amounts in different currencies
-        cannot be summed or compared.
+        Rows are per customer *and* order currency, so each row's
+        `net_revenue` is a single-currency amount that can be displayed as
+        is; a customer paying in two currencies appears twice.
 
         Partially refunded orders count with the refunded portion subtracted,
         so the ranking reflects money actually kept.
+
+        Each order converts at the exchange rate of its payment transaction.
+        Orders without one (e.g. paid from customer balance) fall back to the
+        organization's average rate for that currency.
 
         A repository aggregation (not the metrics layer) on purpose: ranking
         across all customers cannot be expressed as bounded per-entity metric
         queries the way products can.
         """
-        net_revenue = func.coalesce(
-            func.sum(Order.net_amount - Order.refunded_amount), 0
+        exchange_rate = func.coalesce(
+            func.nullif(func.cast(Transaction.exchange_rate, Numeric(30, 12)), 0),
+            func.cast(Transaction.amount, Numeric(30, 12))
+            / func.nullif(
+                func.cast(Transaction.presentment_amount, Numeric(30, 12)), 0
+            ),
         )
+        payment_transaction_clauses = (
+            Transaction.type == TransactionType.payment,
+            Transaction.presentment_currency.is_not(None),
+        )
+        order_exchange_rate = (
+            select(func.avg(exchange_rate))
+            .where(Transaction.order_id == Order.id, *payment_transaction_clauses)
+            .correlate(Order)
+            .scalar_subquery()
+        )
+        currency_exchange_rates = (
+            select(
+                func.lower(Transaction.presentment_currency).label("currency"),
+                func.avg(exchange_rate).label("exchange_rate"),
+            )
+            .join(Order, Order.id == Transaction.order_id)
+            .where(
+                Order.organization_id == organization_id, *payment_transaction_clauses
+            )
+            .group_by(func.lower(Transaction.presentment_currency))
+            .cte("currency_exchange_rates")
+        )
+        order_currency = func.lower(Order.currency)
+        kept_amount = Order.net_amount - Order.refunded_amount
+        kept_usd_amount = case(
+            (order_currency == "usd", kept_amount),
+            else_=func.round(
+                kept_amount
+                * func.coalesce(
+                    order_exchange_rate, currency_exchange_rates.c.exchange_rate, 0
+                )
+            ),
+        )
+        net_revenue = func.coalesce(func.sum(kept_amount), 0)
+        usd_net_revenue = func.coalesce(func.sum(kept_usd_amount), 0)
         statement = (
             select(
                 Customer,
+                order_currency,
                 func.count(Order.id),
                 net_revenue,
+                usd_net_revenue,
             )
             .select_from(Order)
             .join(Customer, Customer.id == Order.customer_id)
+            .outerjoin(
+                currency_exchange_rates,
+                currency_exchange_rates.c.currency == order_currency,
+            )
             .where(
                 Order.organization_id == organization_id,
-                Order.currency == currency,
                 Order.status.in_(OrderStatus.paid_statuses()),
                 ~Order.is_deleted,
             )
-            .group_by(Customer.id)
-            .order_by(net_revenue.desc())
+            .group_by(Customer.id, order_currency)
+            .order_by(usd_net_revenue.desc(), net_revenue.desc())
             .limit(limit)
         )
         if start is not None:
@@ -102,7 +161,16 @@ class OrderRepository(
         if end is not None:
             statement = statement.where(Order.created_at < end)
         result = await self.session.execute(statement)
-        return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
+        return [
+            CustomerRevenue(
+                customer=row[0],
+                currency=row[1],
+                order_count=int(row[2]),
+                net_revenue=int(row[3]),
+                usd_net_revenue=int(row[4]),
+            )
+            for row in result.all()
+        ]
 
     async def get_paid_revenue_by_country(
         self,

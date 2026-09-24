@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from httpx import AsyncClient
 
-from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.models import (
@@ -30,6 +29,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_order,
     create_payment_method,
+    create_payment_transaction,
     create_subscription,
 )
 
@@ -475,7 +475,7 @@ class TestTopCustomers:
         assert all(item["currency"] == "usd" for item in json)
 
     @pytest.mark.auth
-    async def test_default_presentment_currency(
+    async def test_ranked_by_usd_value_across_currencies(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -483,34 +483,42 @@ class TestTopCustomers:
         user_organization: UserOrganization,
         product: Product,
     ) -> None:
-        organization.default_presentment_currency = PresentmentCurrency.krw
-        await save_fixture(organization)
-        krw_customer = await create_customer(
-            save_fixture, organization=organization, email="krw@example.com"
-        )
         usd_customer = await create_customer(
             save_fixture, organization=organization, email="usd@example.com"
         )
+        krw_customer = await create_customer(
+            save_fixture, organization=organization, email="krw@example.com"
+        )
+        no_payment_customer = await create_customer(
+            save_fixture, organization=organization, email="balance@example.com"
+        )
         await create_order(
+            save_fixture, customer=usd_customer, product=product, subtotal_amount=70_000
+        )
+        krw_order = await create_order(
             save_fixture,
             customer=krw_customer,
             product=product,
             subtotal_amount=826_090,
             currency="krw",
         )
-        await create_order(
+        await create_payment_transaction(
             save_fixture,
-            customer=krw_customer,
-            product=product,
-            subtotal_amount=5_000_000,
-            currency="usd",
+            order=krw_order,
+            amount=59_478,
+            presentment_currency="krw",
+            presentment_amount=826_090,
+            charge_id="KRW_CHARGE",
+        )
+        await create_order(
+            save_fixture, customer=krw_customer, product=product, subtotal_amount=10_000
         )
         await create_order(
             save_fixture,
-            customer=usd_customer,
+            customer=no_payment_customer,
             product=product,
-            subtotal_amount=5_000_000,
-            currency="usd",
+            subtotal_amount=500_000,
+            currency="krw",
         )
 
         response = await client.get(
@@ -519,11 +527,14 @@ class TestTopCustomers:
 
         assert response.status_code == 200
         json = response.json()
-        assert len(json) == 1
-        assert json[0]["id"] == str(krw_customer.id)
-        assert json[0]["net_revenue"] == 826_090
-        assert json[0]["order_count"] == 1
-        assert json[0]["currency"] == "krw"
+        assert [
+            (item["id"], item["currency"], item["net_revenue"]) for item in json
+        ] == [
+            (str(usd_customer.id), "usd", 70_000),
+            (str(krw_customer.id), "krw", 826_090),
+            (str(no_payment_customer.id), "krw", 500_000),
+            (str(krw_customer.id), "usd", 10_000),
+        ]
 
     @pytest.mark.auth
     async def test_team_customer_without_email_uses_owner_avatar(

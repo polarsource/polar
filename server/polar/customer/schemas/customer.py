@@ -291,17 +291,21 @@ class TopCustomer(Schema):
     avatar_url: str | None = Field(
         examples=["https://www.gravatar.com/avatar/xxx?d=404"],
     )
-    order_count: int = Field(description="The number of paid orders in the period.")
+    order_count: int = Field(
+        description="The number of paid orders in `currency` in the period."
+    )
     net_revenue: int = Field(
         description=(
-            "The net revenue from this customer in the period, in the smallest "
-            "unit of `currency`, with refunded amounts subtracted."
+            "The net revenue from this customer's orders in `currency` in the "
+            "period, in the currency's smallest unit, with refunded amounts "
+            "subtracted."
         )
     )
     currency: str = Field(
         description=(
-            "The currency of `net_revenue`. Only orders in the organization's "
-            "default presentment currency are counted."
+            "The currency of the orders. A customer who paid in several "
+            "currencies has one entry per currency; entries are ranked by "
+            "their net revenue converted to USD."
         ),
         examples=["usd"],
     )

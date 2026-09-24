@@ -106,7 +106,7 @@ export const TopCustomersPage = ({ organization }: TopCustomersPageProps) => {
           pageCount={pageCount}
           pagination={pagination}
           onPaginationChange={setPagination}
-          getRowId={(customer) => customer.id}
+          getRowId={(customer) => `${customer.id}-${customer.currency}`}
           onRowClick={(row) =>
             router.push(
               `/dashboard/${organization.slug}/customers/${row.original.id}`,

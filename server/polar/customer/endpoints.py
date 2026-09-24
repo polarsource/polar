@@ -235,8 +235,8 @@ async def top(
     limit: int = Query(10, ge=1, le=50, description="How many customers to rank."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> TopCustomerList:
-    """Rank the organization's customers by paid net revenue."""
-    currency, ranked = await customer_service.get_top_by_revenue(
+    """Rank the organization's customers by paid net revenue, converted to USD."""
+    ranked = await customer_service.get_top_by_revenue(
         session,
         auth_subject,
         organization_id=organization_id,
@@ -246,15 +246,15 @@ async def top(
     )
     return [
         TopCustomer(
-            id=customer.id,
-            email=customer.email,
-            name=customer.name,
-            avatar_url=customer.avatar_url,
-            order_count=order_count,
-            net_revenue=net_revenue,
-            currency=currency,
+            id=row.customer.id,
+            email=row.customer.email,
+            name=row.customer.name,
+            avatar_url=row.customer.avatar_url,
+            order_count=row.order_count,
+            net_revenue=row.net_revenue,
+            currency=row.currency,
         )
-        for customer, order_count, net_revenue in ranked
+        for row in ranked
     ]
 
 

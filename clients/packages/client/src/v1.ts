@@ -3770,7 +3770,7 @@ export interface paths {
     }
     /**
      * Top Customers
-     * @description Rank the organization's customers by paid net revenue.
+     * @description Rank the organization's customers by paid net revenue, converted to USD.
      *
      *     **Scopes**: `customers:read` `customers:write`
      */
@@ -38031,17 +38031,17 @@ export interface components {
       avatar_url: string | null
       /**
        * Order Count
-       * @description The number of paid orders in the period.
+       * @description The number of paid orders in `currency` in the period.
        */
       order_count: number
       /**
        * Net Revenue
-       * @description The net revenue from this customer in the period, in the smallest unit of `currency`, with refunded amounts subtracted.
+       * @description The net revenue from this customer's orders in `currency` in the period, in the currency's smallest unit, with refunded amounts subtracted.
        */
       net_revenue: number
       /**
        * Currency
-       * @description The currency of `net_revenue`. Only orders in the organization's default presentment currency are counted.
+       * @description The currency of the orders. A customer who paid in several currencies has one entry per currency; entries are ranked by their net revenue converted to USD.
        * @example usd
        */
       currency: string

@@ -390,6 +390,27 @@ resource "aws_s3_bucket_object_lock_configuration" "logs" {
   }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  bucket = aws_s3_bucket_versioning.logs.id
+
+  rule {
+    id     = "memory-profiles-14-days-expiration-rule"
+    status = "Enabled"
+    filter {
+      prefix = "memory-profiles/"
+    }
+    expiration {
+      days = 14
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
   bucket = aws_s3_bucket.logs.id
 

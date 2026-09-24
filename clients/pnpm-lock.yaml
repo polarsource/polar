@@ -135,6 +135,9 @@ catalogs:
     vitest:
       specifier: ^5.0.0
       version: 5.0.0
+    zod:
+      specifier: ^4.6.5
+      version: 4.6.5
 
 overrides:
   '@types/react': 19.2.13
@@ -273,6 +276,9 @@ importers:
       '@polar-sh/sdk':
         specifier: 1.0.0-alpha.20
         version: 1.0.0-alpha.20
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@nuxt/devtools':
         specifier: ^3.4.2
@@ -301,9 +307,6 @@ importers:
       vue-tsc:
         specifier: 3.3.11
         version: 3.3.11(typescript@6.0.3)
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.5
 
   adapters/tanstack-start:
     dependencies:
@@ -18149,7 +18152,7 @@ snapshots:
   '@jridgewell/trace-mapping@0.3.9':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
     optional: true
 
   '@kwsites/file-exists@1.1.1':

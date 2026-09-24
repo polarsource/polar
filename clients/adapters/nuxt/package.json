@@ -48,7 +48,8 @@
   "dependencies": {
     "@nuxt/kit": "^4.5.2",
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0-alpha.20"
+    "@polar-sh/sdk": "1.0.0-alpha.20",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nuxt/devtools": "^3.4.2",
@@ -59,7 +60,6 @@
     "nuxt": "^4.5.2",
     "typescript": "6.0.3",
     "vitest": "catalog:",
-    "vue-tsc": "3.3.11",
-    "zod": "^4.6.5"
+    "vue-tsc": "3.3.11"
   }
 }

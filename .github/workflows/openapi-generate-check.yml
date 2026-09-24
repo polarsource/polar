@@ -30,7 +30,6 @@ jobs:
               - 'server/emails/package.json'
               - 'server/emails/pnpm-lock.yaml'
               - 'clients/packages/client/src/v1.ts'
-              - 'clients/packages/client/src/openapi.json'
               - 'clients/packages/client/package.json'
               - '.github/workflows/openapi-generate-check.yml'
 
@@ -120,10 +119,10 @@ jobs:
           stale=false
           client_stale=false
           emails_stale=false
-          if [[ -n "$(git status --porcelain clients/packages/client/src/v1.ts clients/packages/client/src/openapi.json)" ]]; then
+          if [[ -n "$(git status --porcelain clients/packages/client/src/v1.ts)" ]]; then
             client_stale=true
             stale=true
-            echo "::warning::Generated client (clients/packages/client/src/v1.ts or openapi.json) is out of date. Run 'pnpm generate' in clients/."
+            echo "::warning::Generated client (clients/packages/client/src/v1.ts) is out of date. Run 'pnpm generate' in clients/."
           fi
           if [[ -n "$(git status --porcelain server/emails/src/types/openapi.ts)" ]]; then
             emails_stale=true
@@ -138,7 +137,7 @@ jobs:
               echo '## Generated OpenAPI Client'
               if [[ "$client_stale" == "true" ]]; then
                 echo ''
-                echo '⚠️ **The generated client in `clients/packages/client/src/` is out of date.**'
+                echo '⚠️ **`clients/packages/client/src/v1.ts` is out of date.**'
                 echo ''
                 echo 'The OpenAPI schema has changed but the generated client has not been regenerated. Please run:'
                 echo ''
@@ -146,12 +145,11 @@ jobs:
                 echo 'cd clients && pnpm generate'
                 echo '```'
                 echo ''
-                echo 'and commit the updated `v1.ts` and `openapi.json` in `clients/packages/client/src/`.'
+                echo 'and commit the updated `clients/packages/client/src/v1.ts`.'
                 echo ''
                 echo '<details><summary>Diff stat</summary>'
                 echo ''
                 echo '```'
-                git diff --stat -- clients/packages/client/src/openapi.json
                 git diff -- clients/packages/client/src/v1.ts
                 echo '```'
                 echo ''

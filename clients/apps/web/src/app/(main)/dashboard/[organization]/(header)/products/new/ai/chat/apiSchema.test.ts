@@ -1,6 +1,5 @@
-import openAPISpec from '@polar-sh/client/openapi.json'
 import { describe, expect, it } from 'vitest'
-import { buildCatalog, findOperation, OpenAPISpec } from './apiCatalog'
+import { buildCatalog, findOperation } from './apiCatalog'
 import {
   buildToolInputSchema,
   compactSchemas,
@@ -74,47 +73,119 @@ describe('shortenDescription', () => {
 })
 
 describe('buildToolInputSchema', () => {
-  const catalog = buildCatalog(openAPISpec as unknown as OpenAPISpec)
+  const jsonBody = (schema: Record<string, unknown>) => ({
+    content: { 'application/json': { schema } },
+  })
+  const catalog = buildCatalog({
+    paths: {
+      '/v1/products/': {
+        get: {
+          operationId: 'products:list',
+          parameters: [
+            {
+              name: 'organization_id',
+              in: 'query',
+              schema: { type: 'string' },
+            },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+          ],
+        },
+        post: {
+          operationId: 'products:create',
+          requestBody: jsonBody(ref('ProductCreate')),
+        },
+      },
+      '/v1/products/{id}': {
+        patch: {
+          operationId: 'products:update',
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'The product ID.',
+              schema: { type: 'string' },
+            },
+          ],
+          requestBody: jsonBody(ref('ProductUpdate')),
+        },
+      },
+      '/v1/benefits/': {
+        post: {
+          operationId: 'benefits:create',
+          requestBody: jsonBody({
+            oneOf: [ref('BenefitCustomCreate'), ref('BenefitDiscordCreate')],
+          }),
+        },
+      },
+    },
+    components: {
+      schemas: {
+        ProductCreate: {
+          properties: {
+            name: { type: 'string' },
+            organization_id: { type: 'string' },
+          },
+          required: ['name', 'organization_id'],
+        },
+        ProductUpdate: { properties: { name: { type: 'string' } } },
+        BenefitCustomCreate: {
+          properties: { type: { type: 'string', const: 'custom' } },
+        },
+        BenefitDiscordCreate: {
+          properties: { type: { type: 'string', const: 'discord' } },
+        },
+      },
+    },
+  })
   const inputSchemaFor = (operationId: string) =>
     buildToolInputSchema(catalog, findOperation(catalog, operationId)!)
 
   it('requires path parameters', () => {
-    expect(inputSchemaFor('products:update')).toMatchObject({
+    expect(inputSchemaFor('products:update')).toEqual({
+      type: 'object',
       properties: {
         path: {
           type: 'object',
-          properties: { id: { type: 'string' } },
+          properties: {
+            id: { type: 'string', description: 'The product ID.' },
+          },
           required: ['id'],
         },
+        body: { properties: { name: { type: 'string' } } },
       },
       required: ['path', 'body'],
     })
   })
 
   it('leaves the organization out of queries and bodies', () => {
-    const listSchema = inputSchemaFor('products:list') as {
-      properties: { query: { properties: Record<string, unknown> } }
-    }
-    expect(listSchema.properties.query.properties).not.toHaveProperty(
-      'organization_id',
-    )
-    expect(JSON.stringify(inputSchemaFor('products:create'))).not.toContain(
-      'organization_id',
-    )
+    expect(inputSchemaFor('products:list')).toEqual({
+      type: 'object',
+      properties: {
+        query: {
+          type: 'object',
+          properties: { limit: { type: 'integer' } },
+          required: [],
+        },
+      },
+      required: [],
+    })
+    expect(inputSchemaFor('products:create')).toMatchObject({
+      properties: {
+        body: { properties: { name: { type: 'string' } }, required: ['name'] },
+      },
+    })
   })
 
   it('drops unsupported variants from request body unions', () => {
-    const schema = inputSchemaFor('benefits:create') as {
-      properties: { body: { oneOf: { properties: { type: unknown } }[] } }
-    }
-
-    expect(
-      schema.properties.body.oneOf.map(({ properties }) => properties.type),
-    ).toEqual([
-      { type: 'string', const: 'custom' },
-      { type: 'string', const: 'license_keys' },
-      { type: 'string', const: 'meter_credit' },
-      { type: 'string', const: 'feature_flag' },
-    ])
+    expect(inputSchemaFor('benefits:create')).toMatchObject({
+      properties: {
+        body: {
+          oneOf: [
+            { properties: { type: { type: 'string', const: 'custom' } } },
+          ],
+        },
+      },
+    })
   })
 })

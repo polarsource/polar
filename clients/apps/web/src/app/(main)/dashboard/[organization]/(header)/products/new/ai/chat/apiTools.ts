@@ -1,5 +1,5 @@
+import { NEXT_API_VERSION } from '@/utils/client'
 import { Client } from '@polar-sh/client'
-import openAPISpec from '@polar-sh/client/openapi.json'
 import { jsonSchema, tool, Tool } from 'ai'
 import {
   buildCatalog,
@@ -11,6 +11,7 @@ import {
 import { buildToolInputSchema, shortenDescription } from './apiSchema'
 
 const MAX_RESPONSE_LENGTH = 30_000
+const TOOL_DEFINITIONS_TTL_MS = 60 * 60 * 1000
 
 type ToolInput = {
   path?: ExecuteInput['pathParams']
@@ -28,27 +29,57 @@ interface ApiToolDefinition {
 const getToolName = (operation: CatalogOperation) =>
   operation.operationId.replace(/[^a-zA-Z0-9_-]/g, '_')
 
-let apiToolDefinitions: ApiToolDefinition[] | null = null
-
-const getApiToolDefinitions = (): ApiToolDefinition[] => {
-  if (!apiToolDefinitions) {
-    const catalog = buildCatalog(openAPISpec as unknown as OpenAPISpec)
-    apiToolDefinitions = catalog.operations.map((operation) => ({
-      name: getToolName(operation),
-      description: [
-        operation.summary,
-        shortenDescription(operation.description),
-        `${operation.method} ${operation.path}`,
-      ]
-        .filter(Boolean)
-        .join('\n'),
-      inputSchema: jsonSchema<ToolInput>(
-        buildToolInputSchema(catalog, operation),
-      ),
-      operation,
-    }))
+const fetchApiToolDefinitions = async (
+  baseUrl: string,
+): Promise<ApiToolDefinition[]> => {
+  // The schema is close to the Next.js data cache's 2 MB entry limit, so the
+  // tool definitions built from it are cached in memory instead.
+  const response = await fetch(`${baseUrl}/${NEXT_API_VERSION}/openapi.json`, {
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to load the OpenAPI schema: ${response.status}`)
   }
-  return apiToolDefinitions
+
+  const catalog = buildCatalog((await response.json()) as OpenAPISpec)
+  return catalog.operations.map((operation) => ({
+    name: getToolName(operation),
+    description: [
+      operation.summary,
+      shortenDescription(operation.description),
+      `${operation.method} ${operation.path}`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    inputSchema: jsonSchema<ToolInput>(
+      buildToolInputSchema(catalog, operation),
+    ),
+    operation,
+  }))
+}
+
+let cachedToolDefinitions: {
+  definitions: Promise<ApiToolDefinition[]>
+  expiresAt: number
+} | null = null
+
+const getApiToolDefinitions = (
+  baseUrl: string,
+): Promise<ApiToolDefinition[]> => {
+  if (!cachedToolDefinitions || cachedToolDefinitions.expiresAt <= Date.now()) {
+    const definitions = fetchApiToolDefinitions(baseUrl)
+    const entry = {
+      definitions,
+      expiresAt: Date.now() + TOOL_DEFINITIONS_TTL_MS,
+    }
+    cachedToolDefinitions = entry
+    definitions.catch(() => {
+      if (cachedToolDefinitions === entry) {
+        cachedToolDefinitions = null
+      }
+    })
+  }
+  return cachedToolDefinitions.definitions
 }
 
 const truncate = (data: unknown) => {
@@ -62,15 +93,15 @@ const truncate = (data: unknown) => {
   }
 }
 
-export const createApiTools = ({
+export const createApiTools = async ({
   api,
   organizationId,
 }: {
   api: Client
   organizationId: string
-}): Record<string, Tool> =>
+}): Promise<Record<string, Tool>> =>
   Object.fromEntries(
-    getApiToolDefinitions().map(
+    (await getApiToolDefinitions(api.baseUrl)).map(
       ({ name, description, inputSchema, operation }) => [
         name,
         tool({

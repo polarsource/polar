@@ -13,7 +13,7 @@
     "dist"
   ],
   "scripts": {
-    "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi generate 2026-10 > ./src/openapi.json && openapi-typescript ./src/openapi.json --enum-values -o ./src/v1.ts && oxfmt ./src && pnpm run build",
+    "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi generate 2026-10 | openapi-typescript --enum-values -o ./src/v1.ts && oxfmt ./src && pnpm run build",
     "build": "rm -rf dist/ && tsup",
     "typecheck": "tsc --noEmit"
   },
@@ -21,8 +21,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./openapi.json": "./src/openapi.json"
+    }
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

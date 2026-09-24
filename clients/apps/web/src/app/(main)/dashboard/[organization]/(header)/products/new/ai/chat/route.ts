@@ -242,7 +242,7 @@ export async function POST(req: Request) {
 
   const apiTools = {
     [TOOL_SEARCH_NAME]: anthropic.tools.toolSearchBm25_20251119(),
-    ...createApiTools({ api, organizationId }),
+    ...(await createApiTools({ api, organizationId })),
   }
 
   const redirectToManualSetup = tool({

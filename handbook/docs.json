@@ -113,7 +113,8 @@
               "engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates",
               "engineering/decisions/0010-jwks-signing-keys-in-kms",
               "engineering/decisions/0011-specialized-webhooks-also-emit-updated",
-              "engineering/decisions/0012-minimize-data-in-ai-api-calls"
+              "engineering/decisions/0012-minimize-data-in-ai-api-calls",
+              "engineering/decisions/0013-minimize-personal-data-in-telemetry"
             ]
           },
           "engineering/data-flows",

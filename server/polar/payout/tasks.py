@@ -9,6 +9,7 @@ from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
     TaskPriority,
+    TaskQueue,
     actor,
 )
 
@@ -94,7 +95,11 @@ async def trigger_payout(
             pass
 
 
-@actor(actor_name="payout.invoice", priority=TaskPriority.LOW)
+@actor(
+    actor_name="payout.invoice",
+    priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
+)
 async def order_invoice(payout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)

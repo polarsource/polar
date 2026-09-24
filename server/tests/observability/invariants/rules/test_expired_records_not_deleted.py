@@ -43,6 +43,26 @@ OVERDUE = (
 )
 
 
+async def create_webhook_event(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    payload: str | None,
+    created_at: datetime,
+) -> None:
+    webhook_endpoint = await create_webhook_endpoint(
+        save_fixture, organization=organization
+    )
+    await save_fixture(
+        WebhookEvent(
+            webhook_endpoint=webhook_endpoint,
+            type=WebhookEventType.customer_created,
+            payload=payload,
+            created_at=created_at,
+        )
+    )
+
+
 async def create_webhook_delivery(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -190,6 +210,12 @@ async def create_deletable_records(
     await create_email_log(
         save_fixture,
         created_at=deletable_at - settings.EMAIL_LOG_RETENTION_PERIOD,
+    )
+    await create_webhook_event(
+        save_fixture,
+        organization,
+        payload="{}",
+        created_at=deletable_at - settings.WEBHOOK_EVENT_RETENTION_PERIOD,
     )
     await create_webhook_delivery(
         save_fixture,

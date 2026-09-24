@@ -1,0 +1,23 @@
+handbook/engineering/guides/sandbox-database-role.mdx
+  s_b12b6d33629e94::t_3826208d4144dd 1-143
+handbook/engineering/guides.mdx
+  s_b12b6d33629e94::t_e448cce0e7ba57 10-12
+handbook/docs.json
+  s_b12b6d33629e94::t_5ab044f2022d73 61-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b178faddb6ecdd3624f2acdd4f57e1bb72e463c0",
+  "prompts": {},
+  "sessions": {
+    "s_b12b6d33629e94": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b3c1f0d-d2b9-427f-9010-948d9c170904",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

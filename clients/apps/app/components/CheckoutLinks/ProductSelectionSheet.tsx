@@ -113,7 +113,7 @@ export const ProductSelectionSheet = ({
           disappearsOnIndex={-1}
           style={[
             { backgroundColor: theme.colors.overlay },
-            StyleSheet.absoluteFillObject,
+            StyleSheet.absoluteFill,
           ]}
         />
       )}

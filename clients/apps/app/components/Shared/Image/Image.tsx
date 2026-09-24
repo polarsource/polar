@@ -42,7 +42,7 @@ export const Image = ({ onLoad, onLayout, style, ...props }: ImageProps) => {
           alignItems="center"
           opacity={0.8}
           style={{
-            ...StyleSheet.absoluteFillObject,
+            ...StyleSheet.absoluteFill,
             zIndex: 999999,
           }}
         >

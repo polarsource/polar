@@ -8,8 +8,6 @@ const defaults = {
     process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
   BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
   AUTH_COOKIE_KEY: process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session',
-  AUTH_MCP_COOKIE_KEY:
-    process.env.POLAR_AUTH_MCP_COOKIE_KEY || 'polar_mcp_session',
   GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || undefined,
   SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
   POSTHOG_TOKEN: process.env.NEXT_PUBLIC_POSTHOG_TOKEN || '',

@@ -1,12 +1,9 @@
 'use server'
 
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { experimental_createMCPClient } from '@ai-sdk/mcp'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { withTracing } from '@posthog/ai'
 import {
   convertToModelMessages,
@@ -17,9 +14,9 @@ import {
   tool,
   UIMessage,
 } from 'ai'
-import { cookies } from 'next/headers'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
+import { API_TOOL_NAMES, createApiTools, loadApiCatalog } from './apiTools'
 
 const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
   ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
@@ -71,7 +68,7 @@ In general, Polar has the concept of "Products" and "Benefits". Customers buy pr
 they are granted benefits. Most often, people will conflate the two, and you should not require them to be explicit
 in their distinction. Instead, you will do translate their requirements into products with benefits.
 
-It can be helpful to use your List tools to search what benefits and products the user has already mentioned in the conversation,
+It can be helpful to list existing products and benefits through the API to find what benefits and products the user has already mentioned in the conversation,
 and use that information to fill in the blanks when they are not explicit about what they want.
 
 ## Usage-based billing
@@ -163,7 +160,7 @@ ${getSharedSystemPrompt()}
 
 # Your task
 Your task is to determine whether the user request requires manual setup, follow-up questions, and if the subsequent LLM call
-will require MCP tool access to act on the users request.
+will require API tool access to act on the users request.
 
 At the very least, we need both a specific price and a name for the product to be able to create it.
 As long as these two data points are not mentioned, follow-up questions will be needed.
@@ -176,7 +173,25 @@ Always respond in JSON format with the JSON object ONLY and do not include any e
 Do not return Markdown formatting or code fences.
 `
 
-const getConversationalSystemPrompt = (currency: string) => {
+const API_TOOLS_PROMPT = `
+# Using the Polar API
+
+You act on behalf of the user by calling the Polar API with these tools:
+
+ - "searchApi": find the operations you need, e.g. "create benefit" or "list meters".
+ - "describeApi": get the parameters and request body schema of operations. Always describe an operation before executing it for the first time, and describe several at once when you can.
+ - "executeApi": call an operation. Follow the schema from "describeApi" exactly.
+
+The organization is set automatically on every request, so never ask for or pass an organization ID.
+Amounts are expressed in cents in the API, e.g. 10.00 is 1000.
+If an operation fails with a validation error, read the error, fix the input and try again.
+If it keeps failing, use the "redirectToManualSetup" tool with the "tool_call_error" reason.
+`
+
+const getConversationalSystemPrompt = (
+  currency: string,
+  withApiTools: boolean,
+) => {
   const currencyCode = currency.toUpperCase()
 
   return `
@@ -220,88 +235,9 @@ So, in general, you should follow this order:
 - If a benefit type is unsupported, immediately use the "redirectToManualSetup" tool to redirect the user to the manual setup page. There is no use in collecting more information in that case since they'll have to manually re-enter everything anyway.
 - Be friendly and helpful if people ask questions like "What is Polar?" or "What can I sell?".
 
+${withApiTools ? API_TOOLS_PROMPT : ''}
 The user will now describe their product and you will start the configuration assistant.
 `
-}
-
-async function generateOAT(
-  userId: string,
-  organizationId: string,
-): Promise<string> {
-  const requestCookies = await cookies()
-
-  if (requestCookies.has(CONFIG.AUTH_MCP_COOKIE_KEY)) {
-    return requestCookies.get(CONFIG.AUTH_MCP_COOKIE_KEY)!.value
-  }
-
-  const userSessionToken = requestCookies.get(CONFIG.AUTH_COOKIE_KEY)
-  if (!userSessionToken) {
-    throw new Error('No user session cookie found')
-  }
-
-  const client = await getServerSideAPI()
-  const { data, error } = await client.POST('/v1/oauth2/token', {
-    body: {
-      grant_type: 'web',
-      client_id: process.env.MCP_OAUTH2_CLIENT_ID!,
-      client_secret: process.env.MCP_OAUTH2_CLIENT_SECRET!,
-      session_token: userSessionToken.value,
-      sub_type: 'organization',
-      sub: organizationId,
-      scope: null,
-    },
-    bodySerializer(body) {
-      const fd = new FormData()
-      for (const [key, value] of Object.entries(body)) {
-        if (value) {
-          fd.append(key, value)
-        }
-      }
-      return fd
-    },
-  })
-
-  if (error) {
-    throw new Error('Failed to generate OAT')
-  }
-
-  const accessToken = data.access_token
-
-  if (!accessToken) {
-    throw new Error('Failed to generate OAT')
-  }
-
-  requestCookies.set(CONFIG.AUTH_MCP_COOKIE_KEY, accessToken, {
-    httpOnly: true,
-    secure: true,
-    expires: new Date(Date.now() + data.expires_in * 1000),
-  })
-
-  return accessToken
-}
-
-async function getMCPClient(userId: string, organizationId: string) {
-  const oat = await generateOAT(userId, organizationId)
-
-  const httpTransport = new StreamableHTTPClientTransport(
-    new URL('https://app.getgram.ai/mcp/polar-onboarding-assistant'),
-    {
-      requestInit: {
-        headers: {
-          Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
-          'MCP-POLAR-SERVER-URL':
-            process.env.GRAM_API_URL ?? process.env.NEXT_PUBLIC_API_URL!,
-          'MCP-POLAR-ACCESS-TOKEN': oat,
-        },
-      },
-    },
-  )
-
-  const mcpClient = await experimental_createMCPClient({
-    transport: httpTransport,
-  })
-
-  return mcpClient
 }
 
 export async function POST(req: Request) {
@@ -317,7 +253,11 @@ export async function POST(req: Request) {
   }: { messages: UIMessage[]; organizationId: string; conversationId: string } =
     await req.json()
 
-  const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
+  const hasUsedApiTools = messages.some((message) =>
+    message.parts.some((part) =>
+      API_TOOL_NAMES.some((name) => part.type === `tool-${name}`),
+    ),
+  )
   let requiresToolAccess = false
   let requiresManualSetup = false
   let isRelevant = true
@@ -400,7 +340,7 @@ export async function POST(req: Request) {
       requiresToolAccess: z
         .boolean()
         .describe(
-          'Whether MCP access is required to act on the user request (get, create, update, delete products, meters or benefits)',
+          'Whether API access is required to act on the user request (get, create, update, delete products, meters or benefits)',
         ),
       requiresClarification: z
         .boolean()
@@ -425,14 +365,17 @@ export async function POST(req: Request) {
   if (isRelevant && !requiresManualSetup && requiresToolAccess) {
     if (!requiresClarification) {
       shouldSetupTools = true
-    } else if (lastUserMessages.length >= 5 && hasToolAccess) {
+    } else if (lastUserMessages.length >= 5 && hasUsedApiTools) {
       shouldSetupTools = true
     }
   }
 
   if (shouldSetupTools) {
-    const mcpClient = await getMCPClient(user.id, organizationId)
-    tools = await mcpClient.tools()
+    tools = createApiTools({
+      api,
+      catalog: await loadApiCatalog(api),
+      organizationId,
+    })
   }
 
   const redirectToManualSetup = tool({
@@ -466,8 +409,10 @@ based on the conversation history whether you're done.
 
   let streamStarted = false
 
-  const conversationalSystemPrompt =
-    getConversationalSystemPrompt(defaultCurrency)
+  const conversationalSystemPrompt = getConversationalSystemPrompt(
+    defaultCurrency,
+    shouldSetupTools,
+  )
 
   const result = streamText({
     model: shouldSetupTools ? sonnet : gemini,
@@ -493,7 +438,7 @@ based on the conversation history whether you're done.
       },
       ...(await convertToModelMessages(messages)),
     ],
-    stopWhen: stepCountIs(15),
+    stopWhen: stepCountIs(30),
     experimental_transform: smoothStream(),
     onChunk: () => {
       if (!streamStarted) {

@@ -22,7 +22,6 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.70",
     "@ai-sdk/google": "^3.0.64",
-    "@ai-sdk/mcp": "^1.0.36",
     "@ai-sdk/openai": "catalog:",
     "@ai-sdk/react": "^3.0.169",
     "@cloudflare/stream-react": "^1.9.3",
@@ -32,7 +31,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@mdx-js/loader": "^3.1.1",
     "@mdx-js/react": "^3.1.1",
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "@mui/icons-material": "^7.3.10",
     "@next/mdx": "^16.3.6",
     "@next/third-parties": "^16.3.6",
@@ -118,13 +116,13 @@
     "autoprefixer": "^10.5.0",
     "jsdom": "catalog:",
     "msw": "^2.12.10",
+    "playwright": "1.61.0",
     "postcss": "^8.5.10",
     "remark": "^15.0.1",
     "remark-mdx": "^3.1.1",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite-tsconfig-paths": "^5.1.4",
-    "playwright": "1.61.0",
     "vitest": "catalog:"
   }
 }

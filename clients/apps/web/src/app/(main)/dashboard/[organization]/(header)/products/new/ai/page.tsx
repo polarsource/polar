@@ -9,12 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-const isAssistantEnabled = Boolean(
-  process.env.MCP_OAUTH2_CLIENT_ID &&
-  process.env.MCP_OAUTH2_CLIENT_SECRET &&
-  process.env.GRAM_API_KEY &&
-  process.env.PYDANTIC_AI_GATEWAY_API_KEY,
-)
+const isAssistantEnabled = Boolean(process.env.PYDANTIC_AI_GATEWAY_API_KEY)
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>

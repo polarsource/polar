@@ -1,11 +1,10 @@
 import { getAuthenticatedUser } from '@/utils/user'
 import { createOpenAI } from '@ai-sdk/openai'
-import { withTracing } from '@posthog/ai'
 import { generateText, Output } from 'ai'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { NextResponse } from 'next/server'
-import { PostHog } from 'posthog-node'
+import { aiTracing, flushAITracing } from '@/utils/ai/tracing'
 import { z } from 'zod'
 import * as Sentry from '@sentry/nextjs'
 
@@ -18,12 +17,6 @@ const openai = createOpenAI({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
   baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
 })
-
-const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
-  ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
-      host: 'https://us.i.posthog.com',
-    })
-  : null
 
 // Loaded from the local copy of the canonical MDX file.
 // The file is created by `scripts/copy-aup.mjs` (run via `prebuild`).
@@ -86,16 +79,10 @@ export async function POST(req: Request) {
     history,
   } = parsed.data
 
-  const model = phClient
-    ? withTracing(openai('gpt-5.4-mini'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversation_id,
-      })
-    : openai('gpt-5.4-mini')
-
   try {
     const { output } = await generateText({
-      model,
+      model: openai('gpt-5.4-mini'),
+      ...aiTracing({ userId: user.id, conversationId: conversation_id }),
       maxOutputTokens: 256,
       output: Output.object({
         schema: z.object({
@@ -109,7 +96,7 @@ export async function POST(req: Request) {
             ),
         }),
       }),
-      system: `You are a compliance reviewer for Polar, a Merchant of Record (MoR) platform for digital products only.
+      instructions: `You are a compliance reviewer for Polar, a Merchant of Record (MoR) platform for digital products only.
 
 Your job is to review a seller's product description against Polar's Acceptable Use Policy and determine if it complies.
 
@@ -199,9 +186,7 @@ Pricing models: ${pricing_models.join(', ') || 'Not specified'}
 Product description: <user_input>${product_description}</user_input>`,
     })
 
-    if (phClient) {
-      await phClient.flush()
-    }
+    await flushAITracing()
 
     return NextResponse.json(output)
   } catch (error) {

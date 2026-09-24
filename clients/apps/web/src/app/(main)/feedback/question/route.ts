@@ -3,11 +3,14 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import * as Sentry from '@sentry/nextjs'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   hasToolCall,
   smoothStream,
-  stepCountIs,
+  isStepCount,
   streamText,
+  toUIMessageStream,
   tool,
+  type ToolSet,
   type UIMessage,
 } from 'ai'
 import { NextResponse } from 'next/server'
@@ -15,7 +18,7 @@ import { z } from 'zod'
 
 import { ALLOWED_DASHBOARD_PATHS } from './dashboardPaths'
 import { fetchMintlifyPageContent, searchMintlify } from './mintlify'
-import { flushPostHog, wrapWithTracing } from './posthog'
+import { feedbackTracing, flushPostHog } from './posthog'
 
 const MAX_STEPS = 10
 const MAX_BODY_BYTES = 256 * 1024
@@ -128,12 +131,6 @@ export async function POST(req: Request) {
     }
   }
 
-  const sonnet = wrapWithTracing(anthropic('claude-sonnet-4-6'), {
-    userId: user.id,
-    conversationId,
-    organizationId: trustedOrganizationId,
-  })
-
   try {
     const search = tool({
       description:
@@ -192,32 +189,39 @@ export async function POST(req: Request) {
     // force it — the model writes a brief handoff message before the call.
     const forceEscalation = messages.length >= MAX_MESSAGES - 1
 
+    const tools: ToolSet = forceEscalation
+      ? { escalateToHuman }
+      : { search, fetchPageContent, escalateToHuman }
+
     const result = streamText({
-      model: sonnet,
-      messages: [
-        {
-          role: 'system',
-          content: ANSWER_SYSTEM_PROMPT,
-          providerOptions: {
-            anthropic: {
-              cacheControl: { type: 'ephemeral' },
-            },
+      model: anthropic('claude-sonnet-4-6'),
+      ...feedbackTracing({
+        userId: user.id,
+        conversationId,
+        organizationId: trustedOrganizationId,
+      }),
+      instructions: {
+        role: 'system',
+        content: ANSWER_SYSTEM_PROMPT,
+        providerOptions: {
+          anthropic: {
+            cacheControl: { type: 'ephemeral' },
           },
         },
-        ...modelMessages,
-      ],
-      tools: forceEscalation
-        ? { escalateToHuman }
-        : { search, fetchPageContent, escalateToHuman },
+      },
+      messages: modelMessages,
+      tools,
       toolChoice: forceEscalation
         ? { type: 'tool', toolName: 'escalateToHuman' }
         : 'auto',
-      stopWhen: [stepCountIs(MAX_STEPS), hasToolCall('escalateToHuman')],
+      stopWhen: [isStepCount(MAX_STEPS), hasToolCall('escalateToHuman')],
       experimental_transform: smoothStream(),
-      onFinish: () => flushPostHog(),
+      onEnd: () => flushPostHog(),
     })
 
-    return result.toUIMessageStreamResponse()
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({ stream: result.stream, tools }),
+    })
   } catch (error) {
     Sentry.captureException(error)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 502 })

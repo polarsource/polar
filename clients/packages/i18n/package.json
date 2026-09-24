@@ -38,7 +38,7 @@
     "dist"
   ],
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.69",
+    "@ai-sdk/google": "^4.0.78",
     "@ai-sdk/openai": "catalog:",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",

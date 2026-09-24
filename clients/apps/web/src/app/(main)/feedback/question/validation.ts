@@ -1,9 +1,9 @@
 import { POLAR_DESCRIPTION } from '@/components/Feedback/constants'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createGoogle } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
-import { flushPostHog, type TracingContext, wrapWithTracing } from './posthog'
+import { feedbackTracing, flushPostHog, type TracingContext } from './posthog'
 
 export const validationSchema = z.object({
   status: z
@@ -35,7 +35,7 @@ Return one of:
 
 When in doubt between "answerable" and "off_topic", prefer "answerable" — we will search the docs and let the answer step decide.`
 
-const google = createGoogleGenerativeAI({
+const google = createGoogle({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
   headers: {
     Authorization: `Bearer ${process.env.PYDANTIC_AI_GATEWAY_API_KEY}`,
@@ -47,12 +47,12 @@ export const validateFeedbackQuestion = async (
   question: string,
   tracing: TracingContext,
 ): Promise<ValidationStatus> => {
-  const model = wrapWithTracing(google('gemini-3.1-flash-lite'), tracing)
   try {
     const result = await generateObject({
-      model,
+      model: google('gemini-3.1-flash-lite'),
+      ...feedbackTracing(tracing),
       schema: validationSchema,
-      system: VALIDATION_SYSTEM_PROMPT,
+      instructions: VALIDATION_SYSTEM_PROMPT,
       prompt: question,
     })
     return result.object.status

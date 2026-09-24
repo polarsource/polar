@@ -3,25 +3,20 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
-import { withTracing } from '@posthog/ai'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   smoothStream,
-  stepCountIs,
+  isStepCount,
   streamText,
+  toUIMessageStream,
   tool,
   UIMessage,
 } from 'ai'
-import { PostHog } from 'posthog-node'
+import { aiTracing, flushAITracing } from '@/utils/ai/tracing'
 import { z } from 'zod'
 import { TOOL_SEARCH_NAME } from '../toolParts'
 import { createApiTools } from './apiTools'
-
-const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
-  ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
-      host: 'https://us.i.posthog.com',
-    })
-  : null
 
 const anthropic = createAnthropic({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
@@ -245,15 +240,7 @@ export async function POST(req: Request) {
     return new Response('No user message found', { status: 400 })
   }
 
-  const model = phClient
-    ? withTracing(anthropic('claude-opus-5-5'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      })
-    : anthropic('claude-opus-5-5')
-
-  const tools = {
+  const apiTools = {
     [TOOL_SEARCH_NAME]: anthropic.tools.toolSearchBm25_20251119(),
     ...createApiTools({ api, organizationId }),
   }
@@ -287,47 +274,44 @@ based on the conversation history whether you're done.
     },
   })
 
+  const tools = { redirectToManualSetup, markAsDone, ...apiTools }
+
   let streamStarted = false
 
   const conversationalSystemPrompt =
     getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
-    model,
+    model: anthropic('claude-opus-5-5'),
+    ...aiTracing({ userId: user.id, conversationId, organizationId }),
     maxOutputTokens: 16_000,
     providerOptions: {
       anthropic: { effort: 'low' },
     },
-    tools: {
-      redirectToManualSetup,
-      markAsDone,
-      ...tools,
-    },
-    messages: [
-      {
-        role: 'system',
-        content: conversationalSystemPrompt,
-        providerOptions: {
-          anthropic: {
-            cacheControl: { type: 'ephemeral' },
-          },
+    tools,
+    instructions: {
+      role: 'system',
+      content: conversationalSystemPrompt,
+      providerOptions: {
+        anthropic: {
+          cacheControl: { type: 'ephemeral' },
         },
       },
-      ...(await convertToModelMessages(messages)),
-    ],
-    stopWhen: stepCountIs(30),
+    },
+    messages: await convertToModelMessages(messages),
+    stopWhen: isStepCount(30),
     experimental_transform: smoothStream(),
     onChunk: () => {
       if (!streamStarted) {
         streamStarted = true
       }
     },
-    onFinish: () => {
-      if (phClient) {
-        phClient.flush()
-      }
+    onEnd: () => {
+      void flushAITracing()
     },
   })
 
-  return result.toUIMessageStreamResponse()
+  return createUIMessageStreamResponse({
+    stream: toUIMessageStream({ stream: result.stream, tools }),
+  })
 }

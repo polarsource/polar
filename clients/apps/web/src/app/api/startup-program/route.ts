@@ -120,7 +120,12 @@ export async function POST(req: Request) {
       name: data.startupName,
       website: data.website,
     })
-    console.log('[startup-program] upserted Company:', company.id.record_id)
+    console.log(
+      '[startup-program] upserted Company:',
+      company.id.record_id,
+      'name:',
+      data.startupName,
+    )
 
     const person = await createPerson({
       firstName: data.firstName,

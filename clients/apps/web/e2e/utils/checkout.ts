@@ -1,60 +1,28 @@
 import type { schemas } from '@polar-sh/client'
-import { createHash } from 'node:crypto'
+import type { Frame } from 'playwright'
 import { expect } from 'vitest'
 import type { App } from './app'
-import { BILLING_ADDRESS, CARD, ORG_TOKEN } from './constants'
+import { BILLING_ADDRESS, CARD, WEBHOOK_TIMEOUT } from './constants'
+import { orgApi } from './api'
+import { ensureProduct } from './org'
 import type { ProductSpec } from './products'
 
 type Checkout = schemas['CheckoutPublic']
+type Card = typeof CARD
 export type Subscription = schemas['CustomerSubscription']
 export type Order = schemas['CustomerOrder']
 
-const orgApi = <T>(
-  app: App,
-  path: string,
-  init: { method?: string; body?: unknown } = {},
-): Promise<T> => {
-  if (!ORG_TOKEN) {
-    throw new Error('E2E_ORG_TOKEN is not set: run `dev e2e setup`')
-  }
-  return app.api<T>(path, { ...init, token: ORG_TOKEN })
-}
-
-const specHash = (spec: ProductSpec) =>
-  createHash('sha256').update(JSON.stringify(spec)).digest('hex').slice(0, 12)
-
-const ensureProduct = async (app: App, spec: ProductSpec): Promise<string> => {
-  const hash = specHash(spec)
-  const { items } = await orgApi<schemas['ListResource_Product_']>(
-    app,
-    `/v1/products/?query=${encodeURIComponent(spec.name)}&is_archived=false&limit=100`,
-  )
-  const sameName = items.filter((product) => product.name === spec.name)
-  const current = sameName.find((product) => product.metadata.e2e_spec === hash)
-  for (const stale of sameName.filter((product) => product !== current)) {
-    await orgApi(app, `/v1/products/${stale.id}`, {
-      method: 'PATCH',
-      body: { is_archived: true },
-    })
-  }
-  if (current) return current.id
-  const created = await orgApi<schemas['Product']>(app, '/v1/products/', {
-    method: 'POST',
-    body: { ...spec, metadata: { e2e_spec: hash } },
-  })
-  return created.id
-}
-
 export const openCheckout = async (
   app: App,
-  spec: ProductSpec,
+  specs: ProductSpec | ProductSpec[],
 ): Promise<CheckoutPage> => {
-  const productId = await ensureProduct(app, spec)
+  const products = await Promise.all(
+    [specs].flat().map((spec) => ensureProduct(spec)),
+  )
   const body: Pick<schemas['CheckoutProductsCreate'], 'products'> = {
-    products: [productId],
+    products,
   }
   const { url, client_secret } = await orgApi<schemas['Checkout']>(
-    app,
     '/v1/checkouts/',
     { method: 'POST', body },
   )
@@ -72,15 +40,24 @@ export class CheckoutPage {
   state = (): Promise<Checkout> =>
     this.app.api<Checkout>(`/v1/checkouts/client/${this.clientSecret}`)
 
+  hasMessage = (text: string): Promise<boolean> =>
+    this.app.page.getByText(text).isVisible()
+
+  awaitStatus = (status: Checkout['status']): Promise<void> =>
+    expect
+      .poll(async () => (await this.state()).status, {
+        timeout: WEBHOOK_TIMEOUT,
+        message: 'checkout status',
+      })
+      .toBe(status)
+
   private address = async () => (await this.state()).customer_billing_address
 
   private input = (autocomplete: string) =>
     this.app.page.locator(`input[autocomplete="${autocomplete}"]`)
 
-  private dropdown = (autocomplete: string) =>
-    this.app.page
-      .locator(`select[autocomplete="${autocomplete}"]`)
-      .locator('xpath=preceding-sibling::button[@role="combobox"][1]')
+  private submitButton = () =>
+    this.app.page.locator('form button[type="submit"]')
 
   async fillEmail(email = `e2e+${Date.now()}@polar.sh`): Promise<string> {
     await this.app.fill(
@@ -91,6 +68,14 @@ export class CheckoutPage {
     return email
   }
 
+  async enterRejectedAmount(cents: number, reason: string): Promise<void> {
+    await this.app.fill(
+      this.app.page.locator('input[name="amount"]'),
+      String(cents / 100),
+      () => this.hasMessage(reason),
+    )
+  }
+
   async setAmount(cents: number): Promise<void> {
     await this.app.fill(
       this.app.page.locator('input[name="amount"]'),
@@ -99,34 +84,97 @@ export class CheckoutPage {
     )
   }
 
-  async setSeats(seats: number): Promise<void> {
-    const increase = this.app.page.getByRole('button', {
-      name: 'Increase seats',
-    })
-    const decrease = this.app.page.getByRole('button', {
-      name: 'Decrease seats',
-    })
-    let current = (await this.state()).seats ?? 1
-    while (current !== seats) {
-      const next = current + Math.sign(seats - current)
+  setSeats = (seats: number): Promise<void> => this.count('seats', seats)
+
+  setUnits = (units: number): Promise<void> => this.count('units', units)
+
+  private async count(key: 'seats' | 'units', target: number): Promise<void> {
+    const button = (direction: string) =>
+      this.app.page.getByRole('button', { name: `${direction} ${key}` })
+    let current = (await this.state())[key] ?? 1
+    while (current !== target) {
+      const next = current + Math.sign(target - current)
       await this.app.click(
-        next > current ? increase : decrease,
-        async () => (await this.state()).seats === next,
+        button(next > current ? 'Increase' : 'Decrease'),
+        async () => (await this.state())[key] === next,
       )
       current = next
     }
   }
 
-  async payWithCard(name = 'E2E Tester'): Promise<void> {
+  async applyDiscount(code: string): Promise<void> {
+    const input = this.app.page.getByPlaceholder('Discount code')
+    await this.app.click(
+      this.app.page.getByRole('button', { name: 'Add discount code' }),
+      () => input.isVisible(),
+    )
+    await this.app.fill(
+      input,
+      code,
+      async () => (await this.state()).discount?.code === code,
+      () => this.apply(),
+    )
+  }
+
+  private apply = (): Promise<void> =>
+    this.app.page.getByRole('button', { name: 'Apply' }).click()
+
+  async chooseProduct(name: string): Promise<void> {
+    await this.app.click(
+      this.app.page.getByRole('radio', { name }),
+      async () => (await this.state()).product?.name === name,
+    )
+  }
+
+  async fillCustomField(label: string, value: string): Promise<void> {
+    const slug = (await this.state()).attached_custom_fields?.find(
+      (attached) => attached.custom_field?.name === label,
+    )?.custom_field?.slug
+    expect(slug, `custom field "${label}" attached to the product`).toBeTruthy()
+    const input = this.app.page.locator(
+      `input[name="custom_field_data.${slug}"]`,
+    )
+    await this.app.fill(
+      input,
+      value,
+      async () => (await input.inputValue()) === value,
+    )
+  }
+
+  async purchaseAsBusiness(business: {
+    name: string
+    taxId: string
+  }): Promise<void> {
+    await this.app.click(
+      this.app.page.getByRole('checkbox', {
+        name: "I'm purchasing as a business",
+      }),
+      async () => (await this.state()).is_business_customer,
+    )
+    const name = this.app.page.getByTestId('business-name')
+    await this.app.fill(
+      name,
+      business.name,
+      async () => (await name.inputValue()) === business.name,
+    )
+    await this.app.fill(
+      this.app.page.getByTestId('tax-id'),
+      business.taxId,
+      async () => (await this.state()).customer_tax_id !== null,
+      () => this.apply(),
+    )
+  }
+
+  async payWithCard(card: Card = CARD, name = 'E2E Tester'): Promise<void> {
     await this.app.fill(
       this.app.page.getByRole('textbox', { name: 'Cardholder name' }),
       name,
       async () => (await this.state()).customer_name === name,
     )
     await this.fillBillingAddress()
-    await this.app.type(this.app.stripeField('number'), CARD.number)
-    await this.app.type(this.app.stripeField('expiry'), CARD.expiry)
-    await this.app.type(this.app.stripeField('cvc'), CARD.cvc)
+    await this.app.type(this.app.stripeField('number'), card.number)
+    await this.app.type(this.app.stripeField('expiry'), card.expiry)
+    await this.app.type(this.app.stripeField('cvc'), card.cvc)
   }
 
   private async fillBillingAddress(): Promise<void> {
@@ -136,7 +184,7 @@ export class CheckoutPage {
         country,
       )
       await this.app.select(
-        this.dropdown('billing country'),
+        this.app.page.getByTestId('billing-country'),
         countryName!,
         async () => (await this.address())?.country === country,
       )
@@ -157,7 +205,7 @@ export class CheckoutPage {
       async () => (await this.address())?.city === city,
     )
     await this.app.select(
-      this.dropdown('billing address-level1'),
+      this.app.page.getByTestId('billing-state'),
       state.name,
       async () => (await this.address())?.state === `${country}-${state.code}`,
     )
@@ -165,9 +213,27 @@ export class CheckoutPage {
 
   async submit(): Promise<Portal> {
     await this.app.click(
-      this.app.page.locator('form button[type="submit"]'),
+      this.submitButton(),
       async () => (await this.state()).status !== 'open',
     )
+    return this.confirmation()
+  }
+
+  async submitExpectingError(message: string): Promise<void> {
+    await this.submitButton().click()
+    await expect
+      .poll(() => this.hasMessage(message), { message: `"${message}" shown` })
+      .toBe(true)
+    await this.app.snap('rejected')
+  }
+
+  async submitFor3ds(): Promise<ThreeDSecure> {
+    const challenge = new ThreeDSecure(this.app)
+    await this.app.click(this.submitButton(), () => challenge.isOpen())
+    return challenge
+  }
+
+  async confirmation(): Promise<Portal> {
     await expect
       .poll(() => this.app.url(), { message: 'confirmation page' })
       .toContain('/confirmation')
@@ -177,12 +243,33 @@ export class CheckoutPage {
     expect(token, 'customer session token in the confirmation URL').toBeTruthy()
     const portal = new Portal(this.app, token!)
     this.app.onCleanup(() => portal.cancelSubscriptions())
-    await expect
-      .poll(async () => (await this.state()).status, {
-        message: 'checkout status',
-      })
-      .toBe('succeeded')
+    await this.awaitStatus('succeeded')
     return portal
+  }
+}
+
+export class ThreeDSecure {
+  constructor(private readonly app: App) {}
+
+  private testPage = () =>
+    this.app.frame(/^https:\/\/testmode-acs\.stripe\.com\//)
+
+  isOpen = async (): Promise<boolean> =>
+    (await this.testPage()
+      ?.getByRole('button', { name: 'Complete' })
+      .isVisible()) ?? false
+
+  complete = (): Promise<void> => this.press(this.testPage(), 'Complete')
+
+  cancel = (): Promise<void> =>
+    this.press(this.app.frame(/three-ds-2-challenge/), 'Cancel')
+
+  private async press(frame: Frame | undefined, name: string): Promise<void> {
+    expect(frame, '3D Secure challenge').toBeDefined()
+    await this.app.click(
+      frame!.getByRole('button', { name }),
+      async () => !(await this.isOpen()),
+    )
   }
 }
 

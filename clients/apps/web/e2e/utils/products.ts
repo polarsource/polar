@@ -26,6 +26,30 @@ export const PRODUCTS = {
       { amount_type: 'fixed', price_amount: 1000, price_currency: 'usd' },
     ],
   },
+  bundlePurchase: {
+    name: 'E2E Bundle purchase',
+    visibility: 'public',
+    description: 'Pricier one-time purchase for the product switcher',
+    prices: [
+      { amount_type: 'fixed', price_amount: 2000, price_currency: 'usd' },
+    ],
+  },
+  unitBasedSubscription: {
+    name: 'E2E Unit-based subscription',
+    visibility: 'public',
+    description:
+      'Monthly subscription priced per unit, created by the E2E tests',
+    prices: [
+      {
+        amount_type: 'unit_based',
+        price_currency: 'usd',
+        tiers: { type: 'volume', tiers: [{ bound: null, unit_amount: 200 }] },
+        minimum_units: 1,
+      },
+    ],
+    recurring_interval: 'month',
+    recurring_interval_count: 1,
+  },
   freeProduct: {
     name: 'E2E Free product',
     visibility: 'public',
@@ -64,3 +88,28 @@ export const PRODUCTS = {
     ],
   },
 } satisfies Record<string, ProductSpec>
+
+export const meteredSubscription = (meterId: string): ProductSpec => ({
+  name: 'E2E Metered subscription',
+  visibility: 'public',
+  description: 'Usage-based monthly subscription, created by the E2E tests',
+  prices: [
+    {
+      amount_type: 'metered_unit',
+      price_currency: 'usd',
+      meter_id: meterId,
+      unit_amount: 100,
+    },
+  ],
+  recurring_interval: 'month',
+  recurring_interval_count: 1,
+})
+
+export const withRequiredCustomField = (
+  spec: ProductSpec,
+  customFieldId: string,
+): ProductSpec => ({
+  ...spec,
+  name: `${spec.name} with a custom field`,
+  attached_custom_fields: [{ custom_field_id: customFieldId, required: true }],
+})

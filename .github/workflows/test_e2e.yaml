@@ -58,6 +58,20 @@ jobs:
         run: pnpm --filter web test:e2e
         working-directory: ./clients
 
+      - name: Redact session tokens from traces and logs
+        if: always()
+        run: |
+          redact() { perl -pi -e 's/polar_cst_[A-Za-z0-9_-]+/polar_cst_REDACTED/g; s/Bearer [A-Za-z0-9._~+\/=-]+/Bearer REDACTED/g' "$@"; }
+          shopt -s nullglob
+          for trace in clients/apps/web/e2e/artifacts/*/*/trace.zip; do
+            unpacked=$(mktemp -d)
+            unzip -q "$trace" -d "$unpacked"
+            grep -rlI -E 'polar_cst_|Bearer ' "$unpacked" | while read -r file; do redact "$file"; done
+            (cd "$unpacked" && zip -qr "$OLDPWD/$trace" .)
+            rm -rf "$unpacked"
+          done
+          for log in clients/apps/web/e2e/artifacts/*/*/browser.log; do redact "$log"; done
+
       - name: Upload artifacts
         id: artifacts
         if: always()
@@ -100,9 +114,14 @@ jobs:
                   + "```\(.error)```\n• <\(.source)|Test source>"
                   + (if .checkout == "" then "" else " · <\(.checkout)|Open the checkout>" end)),
                 "• <\($run)|View run>" + (if $artifacts == "" then "" else " · <\($artifacts)|Screenshots and browser logs>" end)
+                  + " · Trace: drop the zip from this thread on <https://trace.playwright.dev|trace.playwright.dev>"
               ] | { channel: $channel, text: join("\n") }' > slack-message.json
           screenshot=$(ls clients/apps/web/e2e/artifacts/*/*/*.png 2>/dev/null | sort | tail -1)
           echo "screenshot=$screenshot" >> "$GITHUB_OUTPUT"
+          trace="$(dirname "${screenshot:-/nonexistent}")/trace.zip"
+          if [ -f "$trace" ]; then
+            echo "trace=$trace" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Notify Slack on failure
         id: slack
@@ -128,6 +147,21 @@ jobs:
             initial_comment: "Last screenshot before the failure"
             file: ${{ steps.failure.outputs.screenshot }}
             filename: e2e-${{ github.run_id }}.png
+
+      - name: Attach the trace
+        if: failure() && steps.failure.outputs.trace != ''
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: files.uploadV2
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            channel_id: ${{ env.SLACK_CHANNEL_ID }}
+            thread_ts: "${{ steps.slack.outputs.ts }}"
+            initial_comment: "Playwright trace of the failing attempt: open https://trace.playwright.dev and drop this file on it, or run `pnpm exec playwright show-trace <file>`"
+            file: ${{ steps.failure.outputs.trace }}
+            filename: e2e-${{ github.run_id }}-trace.zip
 
       - name: Suggest a re-run
         if: failure()

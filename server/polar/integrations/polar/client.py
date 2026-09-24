@@ -1,10 +1,11 @@
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, NoReturn, Unpack, cast
+from typing import Any, NoReturn, Unpack, cast, get_args
 from uuid import UUID
 
 import logfire
+from pydantic_core.core_schema import ErrorType
 
 from polar.base import (
     PolarClientError,
@@ -15,7 +16,11 @@ from polar.base import (
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 from polar.v2026_04 import PolarAsync as PolarSDK
-from polar.v2026_04.errors import OrderNotEligibleForInvoice, ResourceNotFound
+from polar.v2026_04.errors import (
+    HTTPValidationError,
+    OrderNotEligibleForInvoice,
+    ResourceNotFound,
+)
 from polar.v2026_04.inputs import (
     CostMetadataInput,
     CustomerBenefitGrantUpdate,
@@ -67,7 +72,35 @@ class PolarSelfClientOperationalError(PolarSelfClientError):
 
 class PolarSelfClientValidationError(InternalPolarError):
     def __init__(self, body: str) -> None:
-        super().__init__(body, status_code=422)
+        super().__init__("Polar API request validation failed", status_code=422)
+        self.message = body
+
+
+def _raise_validation_error(
+    span: Any, error: PolarClientError | PolarServerError, allowed_fields: set[str]
+) -> NoReturn:
+    span.set_attribute("http.status_code", 422)
+    span.set_attribute("error.type", type(error).__name__)
+    if isinstance(error, HTTPValidationError):
+        errors = error.error.detail or []
+        span.set_attribute("validation.error_count", len(errors))
+        span.set_attribute(
+            "validation.fields",
+            sorted(
+                {
+                    item.loc[1]
+                    for item in errors
+                    if len(item.loc) > 1
+                    and item.loc[0] == "body"
+                    and item.loc[1] in allowed_fields
+                }
+            ),
+        )
+        span.set_attribute(
+            "validation.error_types",
+            sorted({item.type for item in errors if item.type in get_args(ErrorType)}),
+        )
+    raise PolarSelfClientValidationError(str(getattr(error, "error", error))) from None
 
 
 def _raise_error(
@@ -936,10 +969,9 @@ class PolarSelfClient:
                     return await portal_sdk.customer_portal.customers.update(**update)
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 422:
-                    span.set_attribute("http.status_code", 422)
-                    body = str(getattr(e, "error", e))
-                    span.set_attribute("error.type", type(e).__name__)
-                    raise PolarSelfClientValidationError(body) from e
+                    _raise_validation_error(
+                        span, e, set(CustomerPortalCustomerUpdate.__annotations__)
+                    )
                 _raise_error(span, e, "polar.portal.update_customer")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.update_customer")
@@ -1005,10 +1037,7 @@ class PolarSelfClient:
                     span.set_attribute("not_found", True)
                     raise PolarSelfBenefitGrantNotFound(benefit_grant_id) from e
                 if e.status_code == 422:
-                    span.set_attribute("http.status_code", 422)
-                    body = str(getattr(e, "error", e))
-                    span.set_attribute("error.type", type(e).__name__)
-                    raise PolarSelfClientValidationError(body) from e
+                    _raise_validation_error(span, e, {"benefit_type", "properties"})
                 _raise_error(span, e, "polar.portal.update_benefit_grant")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.update_benefit_grant")

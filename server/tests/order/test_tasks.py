@@ -145,6 +145,34 @@ class TestProcessDunning:
         # Then
         enqueue_job_mock.assert_not_called()
 
+    async def test_deleted_customer_skipped(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(hours=1)
+        await save_fixture(order)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_dunning()
+
+        # Then
+        enqueue_job_mock.assert_not_called()
+
     async def test_enqueues_multiple_due_orders(
         self,
         save_fixture: SaveFixture,

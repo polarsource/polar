@@ -280,16 +280,21 @@ class OrderRepository(
 
         Skips orders for organizations whose ``subscription_renewals`` capability
         is disabled — recurring billing pause covers both cycle and dunning.
+
+        Skips orders of deleted customers: their pending orders are voided by
+        ``subscription.cancel_customer``, which may not have run yet.
         """
 
         statement = (
             self.get_base_statement()
             .join(Organization, Organization.id == Order.organization_id)
+            .join(Customer, Customer.id == Order.customer_id)
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
                 ~Order.is_void,
                 ~Organization.is_deleted,
+                ~Customer.is_deleted,
                 Organization.can_renew_subscriptions,
             )
             .order_by(Order.next_payment_attempt_at.asc())

@@ -1,8 +1,9 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import CursorResult, Select, func, select, tuple_, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -139,6 +140,46 @@ class WebhookDeliveryRepository(
         )
         res = await self.session.execute(statement)
         return res.scalar_one()
+
+    async def get_scrubbable_response_page(
+        self,
+        *,
+        older_than: datetime,
+        limit: int,
+        after: tuple[datetime, UUID] | None = None,
+    ) -> Sequence[tuple[UUID, datetime]]:
+        statement = (
+            select(WebhookDelivery.id, WebhookDelivery.created_at)
+            .where(
+                WebhookDelivery.created_at < older_than,
+                WebhookDelivery.response.is_not(None),
+            )
+            .order_by(WebhookDelivery.created_at.asc(), WebhookDelivery.id.asc())
+            .limit(limit)
+        )
+        if after is not None:
+            statement = statement.where(
+                tuple_(WebhookDelivery.created_at, WebhookDelivery.id) > after
+            )
+        result = await self.session.execute(statement)
+        return [(id, created_at) for id, created_at in result.all()]
+
+    async def count_scrubbable_responses(self, *, older_than: datetime) -> int:
+        statement = select(func.count(WebhookDelivery.id)).where(
+            WebhookDelivery.created_at < older_than,
+            WebhookDelivery.response.is_not(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    async def scrub_responses(self, ids: Sequence[UUID]) -> int:
+        statement = (
+            update(WebhookDelivery)
+            .where(WebhookDelivery.id.in_(ids))
+            .values(response=None)
+        )
+        result = cast(CursorResult[Any], await self.session.execute(statement))
+        return result.rowcount
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

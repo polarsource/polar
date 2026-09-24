@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -21,6 +22,7 @@ from polar.models import (
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.postgres import AsyncSession
 from polar.version import CURRENT_API_VERSION
+from polar.webhook.repository import WebhookDeliveryRepository
 from polar.webhook.schemas import (
     DeprecatedWebhookEndpointCreateWithSecret,
     DeprecatedWebhookEndpointUpdateWithSecret,
@@ -454,3 +456,178 @@ class TestCountEarlierPendingEvents:
         await save_fixture(event)
 
         assert await webhook_service.count_earlier_pending_events(session, event) == 0
+
+
+@pytest.mark.asyncio
+class TestArchiveDeliveryPayloads:
+    async def _delivery(
+        self,
+        save_fixture: SaveFixture,
+        endpoint: WebhookEndpoint,
+        event: WebhookEvent,
+        *,
+        created_at: datetime,
+        response: str | None = "response body",
+    ) -> WebhookDelivery:
+        delivery = WebhookDelivery(
+            webhook_endpoint=endpoint,
+            webhook_event=event,
+            succeeded=True,
+            http_code=200,
+            response=response,
+            created_at=created_at,
+        )
+        await save_fixture(delivery)
+        return delivery
+
+    async def test_scrubs_only_old_responses(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        now = utc_now()
+        old = await self._delivery(
+            save_fixture,
+            webhook_endpoint_organization,
+            webhook_event_organization,
+            created_at=now - timedelta(days=91),
+            response="old response",
+        )
+        recent = await self._delivery(
+            save_fixture,
+            webhook_endpoint_organization,
+            webhook_event_organization,
+            created_at=now - timedelta(days=89),
+            response="recent response",
+        )
+
+        scrubbed = await webhook_service.archive_delivery_payloads(
+            session, older_than=now - timedelta(days=90), sleep_seconds=0
+        )
+
+        assert scrubbed == 1
+        await session.refresh(old)
+        await session.refresh(recent)
+        assert old.response is None
+        assert recent.response == "recent response"
+
+    async def test_scrubs_across_batches(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        now = utc_now()
+        deliveries = [
+            await self._delivery(
+                save_fixture,
+                webhook_endpoint_organization,
+                webhook_event_organization,
+                created_at=now - timedelta(days=91, minutes=offset),
+            )
+            for offset in range(5)
+        ]
+
+        scrubbed = await webhook_service.archive_delivery_payloads(
+            session,
+            older_than=now - timedelta(days=90),
+            batch_size=2,
+            sleep_seconds=0,
+        )
+
+        assert scrubbed == len(deliveries)
+        for delivery in deliveries:
+            await session.refresh(delivery)
+            assert delivery.response is None
+
+    async def test_scrubs_rows_sharing_a_timestamp(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        """The keyset cursor is `(created_at, id)`, so a batch boundary falling
+        inside a group of rows sharing a timestamp must not skip the rest."""
+        now = utc_now()
+        created_at = now - timedelta(days=91)
+        deliveries = [
+            await self._delivery(
+                save_fixture,
+                webhook_endpoint_organization,
+                webhook_event_organization,
+                created_at=created_at,
+            )
+            for _ in range(4)
+        ]
+
+        scrubbed = await webhook_service.archive_delivery_payloads(
+            session,
+            older_than=now - timedelta(days=90),
+            batch_size=1,
+            sleep_seconds=0,
+        )
+
+        assert scrubbed == len(deliveries)
+        for delivery in deliveries:
+            await session.refresh(delivery)
+            assert delivery.response is None
+
+    async def test_leaves_empty_responses_alone(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        now = utc_now()
+        await self._delivery(
+            save_fixture,
+            webhook_endpoint_organization,
+            webhook_event_organization,
+            created_at=now - timedelta(days=91),
+            response=None,
+        )
+
+        scrubbed = await webhook_service.archive_delivery_payloads(
+            session, older_than=now - timedelta(days=90), sleep_seconds=0
+        )
+
+        assert scrubbed == 0
+
+
+@pytest.mark.asyncio
+class TestCountScrubbableResponses:
+    async def test_counts_only_stored_old_responses(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_event_organization: WebhookEvent,
+    ) -> None:
+        now = utc_now()
+        for created_at, response in (
+            (now - timedelta(days=91), "old"),
+            (now - timedelta(days=91), None),
+            (now - timedelta(days=89), "recent"),
+        ):
+            await save_fixture(
+                WebhookDelivery(
+                    webhook_endpoint=webhook_endpoint_organization,
+                    webhook_event=webhook_event_organization,
+                    succeeded=True,
+                    http_code=200,
+                    response=response,
+                    created_at=created_at,
+                )
+            )
+
+        repository = WebhookDeliveryRepository.from_session(session)
+        count = await repository.count_scrubbable_responses(
+            older_than=now - timedelta(days=90)
+        )
+
+        assert count == 1

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -17,11 +17,15 @@ from polar.models import (
     MemberSession,
     OAuth2State,
     OAuth2Token,
+    Organization,
     User,
     UserSession,
+    WebhookDelivery,
+    WebhookEvent,
 )
 from polar.models.email_log import EmailLogStatus
 from polar.models.external_event import ExternalEventSource
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.sub_type import SubType
 from polar.observability.invariants.rules.expired_records_not_deleted import (
     CLEANUP_TASKS,
@@ -30,7 +34,7 @@ from polar.observability.invariants.rules.expired_records_not_deleted import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_email_log
+from tests.fixtures.random_objects import create_email_log, create_webhook_endpoint
 
 OVERDUE = (
     ExpiredRecordsNotDeletedInvariant.CLEANUP_INTERVAL
@@ -39,11 +43,40 @@ OVERDUE = (
 )
 
 
+async def create_webhook_delivery(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    response: str | None,
+    created_at: datetime,
+) -> None:
+    webhook_endpoint = await create_webhook_endpoint(
+        save_fixture, organization=organization
+    )
+    webhook_event = WebhookEvent(
+        webhook_endpoint=webhook_endpoint,
+        type=WebhookEventType.customer_created,
+        payload="{}",
+    )
+    await save_fixture(webhook_event)
+    await save_fixture(
+        WebhookDelivery(
+            webhook_endpoint=webhook_endpoint,
+            webhook_event=webhook_event,
+            succeeded=True,
+            http_code=200,
+            response=response,
+            created_at=created_at,
+        )
+    )
+
+
 async def create_deletable_records(
     save_fixture: SaveFixture,
     user: User,
     customer: Customer,
     member: Member,
+    organization: Organization,
     *,
     deletable_for: timedelta,
 ) -> None:
@@ -158,6 +191,12 @@ async def create_deletable_records(
         save_fixture,
         created_at=deletable_at - settings.EMAIL_LOG_RETENTION_PERIOD,
     )
+    await create_webhook_delivery(
+        save_fixture,
+        organization,
+        response="response body",
+        created_at=deletable_at - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+    )
 
 
 @pytest.mark.asyncio
@@ -172,10 +211,16 @@ class TestCheck:
         user: User,
         customer: Customer,
         member: Member,
+        organization: Organization,
         deletable_for: timedelta,
     ) -> None:
         await create_deletable_records(
-            save_fixture, user, customer, member, deletable_for=deletable_for
+            save_fixture,
+            user,
+            customer,
+            member,
+            organization,
+            deletable_for=deletable_for,
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)
@@ -188,9 +233,10 @@ class TestCheck:
         user: User,
         customer: Customer,
         member: Member,
+        organization: Organization,
     ) -> None:
         await create_deletable_records(
-            save_fixture, user, customer, member, deletable_for=OVERDUE
+            save_fixture, user, customer, member, organization, deletable_for=OVERDUE
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)
@@ -206,6 +252,7 @@ class TestCheck:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
+        organization: Organization,
     ) -> None:
         deletable_at = utc_now() - OVERDUE
         await save_fixture(
@@ -237,6 +284,13 @@ class TestCheck:
             - settings.EMAIL_LOG_RETENTION_PERIOD
             + timedelta(days=1),
             status=EmailLogStatus.failed,
+        )
+        await create_webhook_delivery(
+            save_fixture,
+            organization,
+            response=None,
+            created_at=deletable_at
+            - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)

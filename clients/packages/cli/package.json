@@ -38,13 +38,14 @@
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@effect/language-service": "^0.87.2",
+    "@effect/tsgo": "0.45.0",
     "@sindresorhus/tsconfig": "^8.0.1",
     "@types/bun": "^1.4.1",
     "@types/node": "^24.2.1",
+    "@typescript/native": "catalog:",
     "@vitest/coverage-istanbul": "^5.0.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.9.2",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   }
 }

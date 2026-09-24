@@ -97,11 +97,12 @@
     "@types/jest": "^29.5.14",
     "@types/react": "19.2.3",
     "@types/react-test-renderer": "^18.3.1",
+    "@typescript/native": "catalog:",
     "eas-cli": "^20.3.0",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.16",
     "react-test-renderer": "18.3.1",
-    "typescript": "^5.9.3"
+    "typescript": "catalog:"
   },
   "private": true,
   "expo": {

@@ -42,12 +42,13 @@
     "@ai-sdk/openai": "catalog:",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
+    "@typescript/native": "catalog:",
     "ai": "catalog:",
     "dotenv": "^16.6.1",
     "react": "^19.2.5",
     "tsup": "catalog:",
     "tsx": "^4.21.0",
-    "typescript": "latest",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {

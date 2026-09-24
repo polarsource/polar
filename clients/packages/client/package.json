@@ -25,9 +25,10 @@
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
+    "@typescript/native": "catalog:",
     "openapi-typescript": "^7.13.0",
     "tsup": "catalog:",
-    "typescript": "latest"
+    "typescript": "catalog:"
   },
   "publishConfig": {
     "access": "public"

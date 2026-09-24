@@ -810,6 +810,39 @@ class TestExtractCoupons:
 
         assert page.records == []
 
+    async def test_invalid_promotion_code_is_not_staged(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        id="promo_short",
+                        code="AB",
+                        coupon=_stripe_coupon(max_redemptions=100),
+                        max_redemptions=1,
+                        expires_at=1_700_000_000,
+                    ),
+                    _stripe_promotion_code(
+                        id="promo_ok",
+                        code="LAUNCH-10",
+                        coupon=_stripe_coupon(max_redemptions=100),
+                        max_redemptions=10,
+                    ),
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        assert len(page.records) == 1
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.code == "LAUNCH10"
+        assert discount.max_redemptions == 10
+
     async def test_promotion_code_caps_ends_at_with_expires_at(
         self, mocker: MockerFixture
     ) -> None:

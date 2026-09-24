@@ -619,9 +619,12 @@ class StripeAdapter:
         mapped = self._map_coupon(coupon)
         if mapped is None:
             return None
+        code = polar_discount_code(promotion_code.code)
+        if code is None:
+            return None
         return replace(
             mapped,
-            code=polar_discount_code(promotion_code.code),
+            code=code,
             max_redemptions=tighter_cap(
                 mapped.max_redemptions,
                 self._remaining_redemptions(

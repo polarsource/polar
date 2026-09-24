@@ -159,8 +159,23 @@ class TestDeserialize:
         assert isinstance(result, CanonicalDiscount)
         assert result.code == "LAUNCH"
         assert result.extra_codes == 1
+        assert result.max_redemptions == 5
         assert result.product_source_ids == ["prod_1"]
         assert result.ends_at == datetime(2027, 1, 1, tzinfo=UTC)
+
+        exhausted = deserialize(
+            MerchantMigrationRecordType.discount,
+            serialize(canonical_discount(max_redemptions=0)),
+        )
+        uncapped = deserialize(
+            MerchantMigrationRecordType.discount,
+            serialize(canonical_discount(max_redemptions=None)),
+        )
+
+        assert isinstance(exhausted, CanonicalDiscount)
+        assert isinstance(uncapped, CanonicalDiscount)
+        assert exhausted.max_redemptions == 0
+        assert uncapped.max_redemptions is None
 
     def test_legacy_subscription_blob_without_discount_ids_still_skips(self) -> None:
         data = serialize(canonical_subscription(has_discount=True))

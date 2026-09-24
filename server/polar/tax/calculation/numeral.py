@@ -244,14 +244,18 @@ class NumeralTaxService(TaxServiceProtocol):
                 log.debug(
                     "Numeral tax calculation server error",
                     status_code=e.response.status_code,
-                    text=e.response.text,
+                    identifier=identifier,
                 )
                 raise TaxCalculationTechnicalError("Numeral server error") from e
             if e.response.status_code == 429:
                 log.debug("Numeral rate limit exceeded")
                 raise TaxCalculationTechnicalError("Rate limit exceeded") from e
 
-            log.debug("Numeral tax calculation error: %s", e.response.text)
+            log.debug(
+                "Numeral tax calculation error",
+                status_code=e.response.status_code,
+                identifier=identifier,
+            )
             error_response: NumeralTaxCalculationErrorResponse = e.response.json()
             error_code = error_response["error"].get("error_code")
             if error_code == "invalid_country_code":
@@ -345,14 +349,20 @@ class NumeralTaxService(TaxServiceProtocol):
                 log.warning(
                     "Numeral tax record server error",
                     status_code=e.response.status_code,
-                    text=e.response.text,
+                    calculation_id=calculation_id,
+                    reference=reference,
                 )
                 raise TaxRecordError() from e
             error_json = e.response.json()
             error_code = error_json.get("error", {}).get("error_code")
             if error_code == "calculation_expired":
                 raise CalculationExpiredError() from e
-            log.warning("Numeral tax record error: %s", e.response.text)
+            log.warning(
+                "Numeral tax record error",
+                status_code=e.response.status_code,
+                calculation_id=calculation_id,
+                reference=reference,
+            )
             raise TaxRecordError() from e
 
         transaction: NumeralTaxTransactionResponse = response.json()
@@ -421,7 +431,10 @@ class NumeralTaxService(TaxServiceProtocol):
         span.set_attribute("numeral.refund_id", refund["id"])
         return refund["id"]
 
-    @logfire.instrument("numeral.backfill")
+    @logfire.instrument(
+        "numeral.backfill",
+        extract_args=["amount", "tax_amount", "currency", "reference"],
+    )
     async def backfill(
         self,
         amount: int,

@@ -364,9 +364,12 @@ class SeatService:
         if immediate_claim:
             log.info(
                 "Seat immediately claimed",
+                seat_id=seat.id,
+                organization_id=organization_id,
+                product_id=product.id,
+                member_id=seat.member_id,
                 subscription_id=seat.subscription_id,
                 order_id=seat.order_id,
-                email=target.seat_member_email,
                 customer_id=seat.customer_id,
             )
             await self._publish_seat_claimed_event(seat, product.id)
@@ -375,11 +378,13 @@ class SeatService:
         else:
             log.info(
                 "Seat assigned",
+                seat_id=seat.id,
+                organization_id=organization_id,
+                product_id=product.id,
+                member_id=seat.member_id,
                 subscription_id=seat.subscription_id,
                 order_id=seat.order_id,
-                email=target.seat_member_email,
                 customer_id=seat.customer_id,
-                invitation_token=invitation_token or "none",
             )
             if organization:
                 if target.seat_member_email is not None:

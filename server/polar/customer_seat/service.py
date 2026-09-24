@@ -428,7 +428,6 @@ class SeatService:
         self,
         session: AsyncSession,
         invitation_token: str,
-        request_metadata: dict[str, Any] | None = None,
     ) -> tuple[CustomerSeat, str]:
         repository = CustomerSeatRepository.from_session(session)
 
@@ -548,8 +547,9 @@ class SeatService:
             customer_id=seat.customer_id,
             member_id=seat.member_id,
             subscription_id=seat.subscription_id,
+            order_id=seat.order_id,
+            organization_id=organization_id,
             member_model_enabled=member_model_enabled,
-            **(request_metadata or {}),
         )
 
         await self._send_seat_claimed_webhook(session, organization_id, seat)
@@ -981,8 +981,6 @@ class SeatService:
                 member_id=member.id,
                 customer_id=billing_customer_id,
                 organization_id=organization_id,
-                email=email,
-                external_id=external_member_id,
             )
         elif member.external_id != external_member_id:
             raise MemberEmailMismatch(external_member_id, email)

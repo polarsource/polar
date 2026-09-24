@@ -708,4 +708,97 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().trialUnavailable).toBe(false)
     })
   })
+
+  describe('confirm (payment next action)', () => {
+    const paidCheckout = { is_payment_form_required: true }
+
+    const confirmedCheckout = {
+      id: 'ch_confirmed',
+      status: 'confirmed',
+      payment_processor_metadata: {
+        intent_status: 'requires_action',
+        intent_client_secret: 'pi_secret',
+      },
+    }
+
+    const elements = {
+      submit: vi.fn(async () => ({})),
+    } as unknown as StripeElements
+
+    const makeStripe = (handleNextAction: ReturnType<typeof vi.fn>): Stripe =>
+      ({
+        createConfirmationToken: vi.fn(async () => ({
+          confirmationToken: { id: 'ctoken_1' },
+        })),
+        handleNextAction,
+      }) as unknown as Stripe
+
+    const makeConfirm = () =>
+      vi.fn<CheckoutContextProps['confirm']>(
+        async () =>
+          ({ ok: true, value: confirmedCheckout }) as unknown as ConfirmResult,
+      )
+
+    it('stops and shows an error when the buyer dismisses the next action', async () => {
+      const handleNextAction = vi.fn(async () => ({
+        paymentIntent: { status: 'requires_action' },
+      }))
+      const stripe = makeStripe(handleNextAction)
+
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm: makeConfirm(),
+      })
+
+      await act(async () => {
+        const error = await getCtx()
+          .confirm({ customer_email: 'a@b.com' }, stripe, elements)
+          .catch((e) => e)
+        expect(isShownToBuyer(error)).toBe(true)
+      })
+
+      expect(handleNextAction).toHaveBeenCalledTimes(1)
+      expect(getCtx().loading).toBe(false)
+      expect(getCtx().form.formState.errors.root?.message).toBeDefined()
+    })
+
+    it('resumes the pending next action on the next submit without confirming again', async () => {
+      const handleNextAction = vi
+        .fn()
+        .mockResolvedValueOnce({ paymentIntent: { status: 'requires_action' } })
+        .mockResolvedValueOnce({ paymentIntent: { status: 'succeeded' } })
+      const stripe = makeStripe(handleNextAction)
+      const confirm = makeConfirm()
+
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm,
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
+        ).rejects.toBeDefined()
+      })
+
+      let result: unknown
+      await act(async () => {
+        result = await getCtx().confirm(
+          { customer_email: 'a@b.com' },
+          stripe,
+          elements,
+        )
+      })
+
+      expect(result).toEqual(confirmedCheckout)
+      expect(confirm).toHaveBeenCalledTimes(1)
+      expect(stripe.createConfirmationToken).toHaveBeenCalledTimes(1)
+      expect(handleNextAction).toHaveBeenCalledTimes(2)
+      expect(handleNextAction).toHaveBeenLastCalledWith({
+        clientSecret: 'pi_secret',
+      })
+    })
+  })
 })

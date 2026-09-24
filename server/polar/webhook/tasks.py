@@ -180,15 +180,10 @@ async def _webhook_event_send(
             and e.response.status_code == 429
             and "discord" in event.webhook_endpoint.url.lower()
         ):
-            rate_limit_headers = {
-                k: v
-                for k, v in e.response.headers.items()
-                if k.lower().startswith("x-ratelimit-") or k.lower() == "retry-after"
-            }
             bound_log.warning(
                 "Discord rate limit exceeded",
-                rate_limit_headers=rate_limit_headers,
-                response_body=e.response.text[:2048] if e.response.text else None,
+                status_code=e.response.status_code,
+                error_type=type(e).__name__,
             )
 
         delivery.succeeded = False

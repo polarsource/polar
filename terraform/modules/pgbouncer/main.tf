@@ -17,16 +17,22 @@ resource "render_private_service" "pgbouncer" {
     }
   }
 
-  env_vars = {
-    DB_HOST                 = { value = var.database.host }
-    DB_PORT                 = { value = var.database.port }
-    DB_USER                 = { value = var.database.user }
-    DB_PASSWORD             = { value = var.database.password }
-    POOL_MODE               = { value = var.pool_config.pool_mode }
-    MAX_CLIENT_CONN         = { value = var.pool_config.max_client_conn }
-    DEFAULT_POOL_SIZE       = { value = var.pool_config.default_pool_size }
-    MIN_POOL_SIZE           = { value = var.pool_config.min_pool_size }
-    RESERVE_POOL_SIZE       = { value = var.pool_config.reserve_pool_size }
-    MAX_PREPARED_STATEMENTS = { value = var.pool_config.max_prepared_statements }
-  }
+  env_vars = merge(
+    {
+      DB_HOST                 = { value = var.database.host }
+      DB_PORT                 = { value = var.database.port }
+      DB_USER                 = { value = var.database.user }
+      DB_PASSWORD             = { value = var.database.password }
+      POOL_MODE               = { value = var.pool_config.pool_mode }
+      MAX_CLIENT_CONN         = { value = var.pool_config.max_client_conn }
+      DEFAULT_POOL_SIZE       = { value = var.pool_config.default_pool_size }
+      MIN_POOL_SIZE           = { value = var.pool_config.min_pool_size }
+      RESERVE_POOL_SIZE       = { value = var.pool_config.reserve_pool_size }
+      MAX_PREPARED_STATEMENTS = { value = var.pool_config.max_prepared_statements }
+    },
+    var.database.additional_user == null ? {} : {
+      DB_USER_2     = { value = var.database.additional_user }
+      DB_PASSWORD_2 = { value = var.database.additional_password }
+    },
+  )
 }

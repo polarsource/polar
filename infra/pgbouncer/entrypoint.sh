@@ -4,10 +4,20 @@ set -e
 : "${DB_HOST:?DB_HOST is required}"
 : "${DB_USER:?DB_USER is required}"
 : "${DB_PASSWORD:?DB_PASSWORD is required}"
+if [ -n "${DB_USER_2:-}" ]; then
+  : "${DB_PASSWORD_2:?DB_PASSWORD_2 is required when DB_USER_2 is set}"
+fi
 
+# DB_USER_2 lets a credential rotation run without downtime: both the old and the new
+# role are accepted while services redeploy onto the new one, in either order. No user=
+# is set in [databases], so PgBouncer connects to Postgres as whichever of them the
+# client authenticated as, giving each its own server pool.
 cat > /etc/pgbouncer/userlist.txt <<EOF
 "${DB_USER}" "${DB_PASSWORD}"
 EOF
+if [ -n "${DB_USER_2:-}" ]; then
+  printf '"%s" "%s"\n' "${DB_USER_2}" "${DB_PASSWORD_2}" >> /etc/pgbouncer/userlist.txt
+fi
 chmod 600 /etc/pgbouncer/userlist.txt
 
 cat > /etc/pgbouncer/pgbouncer.ini <<EOF

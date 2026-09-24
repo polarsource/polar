@@ -56,8 +56,15 @@ locals {
   db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string)[0])
   db_port          = "5432"
   # db_name          = data.render_postgres.db.database_name
+
   db_user     = data.render_postgres.db.database_user
   db_password = data.render_postgres.db.connection_info.password
+
+  # Sandbox is moving onto its own role, polar_sandbox. PgBouncer accepts both this pair
+  # and the one above, so the services can switch over in any order without a window
+  # where one side is rejected. Drop once every service is on the new role.
+  db_user_additional     = var.postgres_user
+  db_password_additional = var.postgres_password
 
   # Read replica connection info
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
@@ -191,10 +198,12 @@ module "pgbouncer" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   database = {
-    host     = local.db_internal_host
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
+    host                = local.db_internal_host
+    port                = local.db_port
+    user                = local.db_user
+    password            = local.db_password
+    additional_user     = local.db_user_additional
+    additional_password = local.db_password_additional
   }
 
   pool_config = {
@@ -214,10 +223,12 @@ module "pgbouncer_read" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   database = {
-    host     = local.read_replica.id
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
+    host                = local.read_replica.id
+    port                = local.db_port
+    user                = local.db_user
+    password            = local.db_password
+    additional_user     = local.db_user_additional
+    additional_password = local.db_password_additional
   }
 
   pool_config = {

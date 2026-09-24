@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import delete, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
@@ -20,12 +20,14 @@ class CustomerEmailVerificationRepository(
     async def get_valid_by_token(self, token: str) -> CustomerEmailVerification | None:
         statement = (
             select(CustomerEmailVerification)
+            .join(CustomerEmailVerification.customer)
             .where(
                 self.token_hash_clause(get_token_hash_candidates(token)),
                 CustomerEmailVerification.expires_at > utc_now(),
+                Customer.deleted_at.is_(None),
             )
             .options(
-                joinedload(CustomerEmailVerification.customer).joinedload(
+                contains_eager(CustomerEmailVerification.customer).joinedload(
                     Customer.organization
                 )
             )

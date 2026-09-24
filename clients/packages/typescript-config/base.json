@@ -4,6 +4,7 @@
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
+    "ignoreDeprecations": "6.0",
     "incremental": false,
     "isolatedModules": true,
     "lib": ["es2023", "DOM", "DOM.Iterable"],

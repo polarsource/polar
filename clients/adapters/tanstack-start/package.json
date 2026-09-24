@@ -44,8 +44,9 @@
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
+    "@typescript/native": "npm:typescript@7.0.2",
     "tsup": "catalog:",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "catalog:"
   },
   "ava": {

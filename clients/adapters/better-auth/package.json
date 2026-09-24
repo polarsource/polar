@@ -62,9 +62,10 @@
     "@polar-sh/sdk": "1.0.0-alpha.20",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "^22.0.0",
+    "@typescript/native": "npm:typescript@7.0.2",
     "better-auth": "^1.7.0",
     "tsup": "catalog:",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "catalog:",
     "zod": "^3.25.0 || ^4.0.0"
   },

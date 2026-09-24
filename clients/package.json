@@ -15,7 +15,7 @@
     "knip": "knip",
     "box-codemod": "pnpm --filter @polar-sh/box-codemod box-codemod",
     "preinstall": "npx only-allow pnpm",
-    "prepare": "pnpm --filter polar-cli exec effect-language-service patch && turbo run build --filter='./packages/*'",
+    "prepare": "pnpm --filter polar-cli exec effect-tsgo patch && turbo run build --filter='./packages/*'",
     "release-packages": "turbo run build test --filter='./packages/*' --filter='./adapters/*' --filter='!polar-cli' && turbo run lint --filter='!polar-cli' && changeset publish"
   },
   "devDependencies": {
@@ -27,7 +27,7 @@
     "oxlint": "^1.80.0",
     "oxlint-tsgolint": "^7.0.2001",
     "turbo": "^2.9.12",
-    "typescript": "6.0.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "pnpm": {
     "overrides": {

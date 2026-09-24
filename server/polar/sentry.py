@@ -19,6 +19,7 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
+from polar.observability.http_telemetry import url_without_request_values
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
@@ -45,6 +46,13 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
         return None
+    request = event.get("request")
+    if request is not None:
+        url = request.get("url")
+        if isinstance(url, str):
+            request["url"] = url_without_request_values(url)
+        request.pop("query_string", None)
+        request.pop("fragment", None)
     return event
 
 

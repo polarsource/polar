@@ -417,6 +417,7 @@ class TestCreateOwnerMember:
 
     async def test_promotes_existing_member_holding_the_customer_email(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -439,6 +440,8 @@ class TestCreateOwnerMember:
         )
         await save_fixture(existing)
 
+        webhook_send_mock = mocker.patch("polar.member.service.webhook_service.send")
+
         member = await member_service.create_owner_member(
             session, customer, organization
         )
@@ -449,6 +452,8 @@ class TestCreateOwnerMember:
         repository = MemberRepository.from_session(session)
         members = await repository.list_by_customer(customer.id)
         assert len(members) == 1
+        assert webhook_send_mock.call_args.args[2] == WebhookEventType.member_updated
+        assert webhook_send_mock.call_args.args[3].id == existing.id
 
     async def test_concurrent_duplicate_returns_existing_without_pending_rollback(
         self,

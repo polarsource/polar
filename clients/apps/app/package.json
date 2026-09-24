@@ -28,8 +28,8 @@
   },
   "dependencies": {
     "@bacons/apple-targets": "^3.0.7",
-    "@dev-plugins/react-navigation": "^0.3.1",
-    "@dev-plugins/react-query": "^0.1.0",
+    "@dev-plugins/react-navigation": "^0.4.0",
+    "@dev-plugins/react-query": "^0.4.0",
     "@expo-google-fonts/instrument-serif": "^0.4.1",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "57.0.20",

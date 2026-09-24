@@ -151,6 +151,7 @@ overrides:
   nuxi: 3.28.0
   uuid@<11.1.1: '>=11.1.1'
   webpack@>=5.49.0 <=5.104.0: '>=5.104.1'
+  webpack@5.102.1: '>=5.104.1'
   webpack@>=5.49.0 <5.104.0: '>=5.104.0'
 
 packageExtensionsChecksum: sha256-9W0nP86QgDkp36XFcZlDbQwdqnjJus9oi7c87rYAf8I=
@@ -351,11 +352,11 @@ importers:
         specifier: ^3.0.7
         version: 3.0.7
       '@dev-plugins/react-navigation':
-        specifier: ^0.3.1
-        version: 0.3.1(@react-navigation/core@7.22.1(react@19.2.3))(expo@57.0.25)(react@19.2.3)
+        specifier: ^0.4.0
+        version: 0.4.0(@react-navigation/core@7.22.1(react@19.2.3))(expo@57.0.25)(react@19.2.3)
       '@dev-plugins/react-query':
-        specifier: ^0.1.0
-        version: 0.1.0(@tanstack/react-query@5.103.2(react@19.2.3))(expo@57.0.25)
+        specifier: ^0.4.0
+        version: 0.4.0(@tanstack/react-query@5.103.2(react@19.2.3))(expo@57.0.25)(react@19.2.3)
       '@expo-google-fonts/instrument-serif':
         specifier: ^0.4.1
         version: 0.4.1
@@ -945,8 +946,8 @@ importers:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
       vite-tsconfig-paths:
-        specifier: ^5.1.4
-        version: 5.1.4(@typescript/typescript6@6.0.2)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+        specifier: ^6.1.1
+        version: 6.1.1(@typescript/typescript6@6.0.2)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       vitest:
         specifier: 'catalog:'
         version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.6)(@vitest/coverage-istanbul@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@24.13.6)(@typescript/typescript6@6.0.2))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
@@ -2214,17 +2215,19 @@ packages:
   '@date-fns/utc@2.1.1':
     resolution: {integrity: sha512-SlJDfG6RPeEX8wEVv6ZB3kak4MmbtyiI2qX/5zuKdordbrhB/iaJ58GVMZgJ6P1sJaM1gMgENFYYeg1JWrCFrA==}
 
-  '@dev-plugins/react-navigation@0.3.1':
-    resolution: {integrity: sha512-M8b1lzzlC1TjYqe9QvjnzNuUyd0GPL/ZxB8GJjJtTv9eQRYqnq/E4mt5xdllHZJSl5ExvZ528sPZKozir1MlRQ==}
+  '@dev-plugins/react-navigation@0.4.0':
+    resolution: {integrity: sha512-Z/QoRL1a1uU4i6wEnP/tzbplO3BiahEakQgjqIu7Uw0z9ZtsTKSHn7qTqTDpxVlItyyzmrsnBGEXeHTUYKnJ/g==}
     peerDependencies:
       '@react-navigation/core': '*'
-      expo: ^53.0.5
+      expo: '>=53.0.5'
+      react: '*'
 
-  '@dev-plugins/react-query@0.1.0':
-    resolution: {integrity: sha512-GZeF9+AHI98DjUuga6YCwbhlq2BpaQ3rGUc7o9weO4oEXNFF7rv2asWpMDdBa0BXvVZjdERSW7HrRx2JAWF+6w==}
+  '@dev-plugins/react-query@0.4.0':
+    resolution: {integrity: sha512-/8M2a7DlVTjcdhb4D/E+aHUCOqSS6s53y3fFrOoCyLPxhhhkMujS91pARH6XbF/GRr6p6RBNBJQpWasI6uj7GA==}
     peerDependencies:
       '@tanstack/react-query': '*'
-      expo: ^52.0.0
+      expo: '>=53.0.5'
+      react: '*'
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -13986,13 +13989,10 @@ packages:
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0-0
       vue: ^3.5.0
 
-  vite-tsconfig-paths@5.1.4:
-    resolution: {integrity: sha512-cYj0LRuLV2c2sMqhqhGpaO3LretdtMn/BVX4cPLanIZuwwrkVl+lK84E/miEXkCHWXuq65rhNN4rXsBcOB3S4w==}
+  vite-tsconfig-paths@6.1.1:
+    resolution: {integrity: sha512-2cihq7zliibCCZ8P9cKJrQBkfgdvcFkOOc3Y02o3GWUDLgqjWsZudaoiuOwO/gzTzy17cS5F7ZPo4bsnS4DGkg==}
     peerDependencies:
       vite: '*'
-    peerDependenciesMeta:
-      vite:
-        optional: true
 
   vite@8.3.0:
     resolution: {integrity: sha512-lhZBVvEHefgE+HQZC9O7EBJgCU/nVzFNl7vkS4RE0APtWLP02/8QVIkQtzBxPquh7lq5/78NHipTj7ODQ6XuyQ==}
@@ -15501,20 +15501,20 @@ snapshots:
 
   '@date-fns/utc@2.1.1': {}
 
-  '@dev-plugins/react-navigation@0.3.1(@react-navigation/core@7.22.1(react@19.2.3))(expo@57.0.25)(react@19.2.3)':
+  '@dev-plugins/react-navigation@0.4.0(@react-navigation/core@7.22.1(react@19.2.3))(expo@57.0.25)(react@19.2.3)':
     dependencies:
       '@react-navigation/core': 7.22.1(react@19.2.3)
       '@react-navigation/devtools': 7.1.15(react@19.2.3)
       expo: 57.0.25(c121b159616bce3edf931f7d800a7470)
       nanoid: 5.1.16
-    transitivePeerDependencies:
-      - react
+      react: 19.2.3
 
-  '@dev-plugins/react-query@0.1.0(@tanstack/react-query@5.103.2(react@19.2.3))(expo@57.0.25)':
+  '@dev-plugins/react-query@0.4.0(@tanstack/react-query@5.103.2(react@19.2.3))(expo@57.0.25)(react@19.2.3)':
     dependencies:
       '@tanstack/react-query': 5.103.2(react@19.2.3)
       expo: 57.0.25(c121b159616bce3edf931f7d800a7470)
       flatted: 3.4.4
+      react: 19.2.3
 
   '@dnd-kit/accessibility@3.1.1(react@19.3.0)':
     dependencies:
@@ -29821,12 +29821,11 @@ snapshots:
       vite: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.43(typescript@6.0.3)
 
-  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
+  vite-tsconfig-paths@6.1.1(@typescript/typescript6@6.0.2)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       globrex: 0.1.2
       tsconfck: 3.1.6(@typescript/typescript6@6.0.2)
-    optionalDependencies:
       vite: 8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color

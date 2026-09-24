@@ -105,6 +105,11 @@
   },
   "private": true,
   "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    },
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false

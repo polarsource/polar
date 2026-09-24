@@ -119,9 +119,10 @@ class S3Service:
         if not multipart_upload_id:
             log.error(
                 "aws.s3",
+                operation="create_multipart_upload",
+                bucket=self.bucket,
                 organization_id=file.organization_id,
-                filename=file.name,
-                mime_type=file.mime_type,
+                file_id=file.id,
                 size=file.size,
                 error="No upload ID returned from S3",
             )

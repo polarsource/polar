@@ -1,5 +1,5 @@
-import { NEXT_API_VERSION } from '@/utils/client'
 import { Client } from '@polar-sh/client'
+import openAPISpec from '@polar-sh/client/openapi.json'
 import { tool } from 'ai'
 import { z } from 'zod'
 import {
@@ -11,30 +11,13 @@ import {
   searchOperations,
 } from './apiCatalog'
 
-const CATALOG_TTL_MS = 10 * 60 * 1000
 const MAX_RESPONSE_LENGTH = 30_000
 
-let cachedCatalog: { catalog: CatalogOperation[]; expiresAt: number } | null =
-  null
+let cachedCatalog: CatalogOperation[] | null = null
 
-export const loadApiCatalog = async (
-  api: Client,
-): Promise<CatalogOperation[]> => {
-  if (cachedCatalog && cachedCatalog.expiresAt > Date.now()) {
-    return cachedCatalog.catalog
-  }
-
-  const response = await fetch(
-    `${api.baseUrl}/${NEXT_API_VERSION}/openapi.json`,
-    { cache: 'no-store' },
-  )
-  if (!response.ok) {
-    throw new Error(`Failed to load OpenAPI schema: ${response.status}`)
-  }
-
-  const catalog = buildCatalog((await response.json()) as OpenAPISpec)
-  cachedCatalog = { catalog, expiresAt: Date.now() + CATALOG_TTL_MS }
-  return catalog
+export const getApiCatalog = (): CatalogOperation[] => {
+  cachedCatalog ??= buildCatalog(openAPISpec as unknown as OpenAPISpec)
+  return cachedCatalog
 }
 
 const truncate = (data: unknown) => {

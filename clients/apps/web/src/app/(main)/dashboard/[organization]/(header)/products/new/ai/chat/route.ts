@@ -16,7 +16,7 @@ import {
 } from 'ai'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
-import { API_TOOL_NAMES, createApiTools, loadApiCatalog } from './apiTools'
+import { API_TOOL_NAMES, createApiTools, getApiCatalog } from './apiTools'
 
 const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
   ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
@@ -373,7 +373,7 @@ export async function POST(req: Request) {
   if (shouldSetupTools) {
     tools = createApiTools({
       api,
-      catalog: await loadApiCatalog(api),
+      catalog: getApiCatalog(),
       organizationId,
     })
   }

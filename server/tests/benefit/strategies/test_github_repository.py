@@ -267,3 +267,82 @@ class TestGitHubRepositoryGrantUpdate:
 
         remove_collaborator_mock.assert_awaited_once()
         assert remove_collaborator_mock.call_args.args[2] == "member-github-user"
+
+
+class _AsyncPaginator:
+    def __init__(self, items: list[MagicMock]) -> None:
+        self._items = iter(items)
+
+    def __aiter__(self) -> "_AsyncPaginator":
+        return self
+
+    async def __anext__(self) -> MagicMock:
+        try:
+            return next(self._items)
+        except StopIteration:
+            raise StopAsyncIteration
+
+
+def _make_invitation(invitee_id: int, *, expired: bool) -> MagicMock:
+    invitation = MagicMock()
+    invitation.id = 42
+    invitation.invitee.id = invitee_id
+    invitation.expired = expired
+    return invitation
+
+
+@pytest.mark.asyncio
+class TestGitHubRepositoryGrantExpiredInvitation:
+    @pytest.mark.parametrize(
+        ("expired", "update", "should_delete"),
+        [
+            (True, True, True),
+            (False, True, False),
+            (True, False, False),
+        ],
+    )
+    async def test_expired_invitation(
+        self,
+        expired: bool,
+        update: bool,
+        should_delete: bool,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        service = BenefitGitHubRepositoryService(session, redis)
+
+        customer = _make_customer(organization)
+        await save_fixture(customer)
+
+        benefit = _make_benefit(organization)
+        await save_fixture(benefit)
+
+        grant_properties: BenefitGrantGitHubRepositoryProperties = {
+            "account_id": "99999",
+            "repository_owner": "test-owner",
+            "repository_name": "test-repo",
+            "permission": "pull",
+            "granted_account_id": "99999",
+        }
+
+        mock_client = MagicMock()
+        mock_client.paginate.return_value = _AsyncPaginator(
+            [_make_invitation(99999, expired=expired)]
+        )
+        delete_invitation_mock = AsyncMock()
+        mock_client.rest.repos.async_delete_invitation = delete_invitation_mock
+        add_collaborator_mock = AsyncMock()
+        mock_client.rest.repos.async_add_collaborator = add_collaborator_mock
+        _patch_client(service, mock_client)
+
+        await service.grant(benefit, customer, grant_properties, update=update)
+
+        if should_delete:
+            delete_invitation_mock.assert_awaited_once_with(
+                "test-owner", "test-repo", 42
+            )
+        else:
+            delete_invitation_mock.assert_not_awaited()
+        add_collaborator_mock.assert_awaited_once()

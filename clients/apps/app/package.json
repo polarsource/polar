@@ -112,7 +112,10 @@
     },
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "listUnknownPackages": false
+        "listUnknownPackages": false,
+        "exclude": [
+          "@dev-plugins/react-navigation"
+        ]
       }
     }
   }

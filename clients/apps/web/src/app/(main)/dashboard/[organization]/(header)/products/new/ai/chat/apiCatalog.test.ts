@@ -4,7 +4,6 @@ import {
   findOperation,
   OpenAPISpec,
   prepareRequest,
-  searchOperations,
 } from './apiCatalog'
 
 const spec: OpenAPISpec = {
@@ -83,7 +82,9 @@ const catalog = buildCatalog(spec)
 
 describe('buildCatalog', () => {
   it('only includes allowed operations', () => {
-    expect(catalog.map(({ operationId }) => operationId).sort()).toEqual([
+    expect(
+      catalog.operations.map(({ operationId }) => operationId).sort(),
+    ).toEqual([
       'meters:list',
       'products:create',
       'products:list',
@@ -91,28 +92,13 @@ describe('buildCatalog', () => {
     ])
   })
 
-  it('dereferences schemas without dropping properties named like stripped keys', () => {
-    const [variant] = findOperation(catalog, 'products:create')!.requestBody!
-      .oneOf as Record<string, Record<string, Record<string, unknown>>>[]
-
-    expect(variant.title).toBeUndefined()
-    expect(variant.properties.title).toEqual({ type: 'string' })
-    expect(variant.properties.name).toEqual({ type: 'string' })
-    expect(variant.properties.parent).toEqual({
-      type: 'object',
-      description: 'A ProductCreateOneTime object.',
-    })
-  })
-})
-
-describe('searchOperations', () => {
-  it('ranks matching operations first', () => {
-    const [first] = searchOperations(catalog, 'create a product')
-    expect(first.operationId).toBe('products:create')
-  })
-
-  it('returns all operations when nothing matches', () => {
-    expect(searchOperations(catalog, 'zzz')).toHaveLength(catalog.length)
+  it('detects request bodies that accept an organization through references', () => {
+    expect(
+      findOperation(catalog, 'products:create')?.bodyAcceptsOrganizationId,
+    ).toBe(true)
+    expect(
+      findOperation(catalog, 'products:update')?.bodyAcceptsOrganizationId,
+    ).toBe(false)
   })
 })
 

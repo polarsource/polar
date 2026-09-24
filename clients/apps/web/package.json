@@ -34,6 +34,7 @@
     "@mui/icons-material": "^7.3.10",
     "@next/mdx": "^16.3.6",
     "@next/third-parties": "^16.3.6",
+    "@orama/orama": "^3.1.18",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/currency": "workspace:^",

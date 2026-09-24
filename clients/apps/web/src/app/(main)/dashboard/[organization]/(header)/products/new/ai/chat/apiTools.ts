@@ -4,20 +4,30 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import {
   buildCatalog,
-  CatalogOperation,
+  Catalog,
   findOperation,
   OpenAPISpec,
   prepareRequest,
-  searchOperations,
 } from './apiCatalog'
+import { describeOperation } from './apiSchema'
+import { ApiSearchIndex, buildSearchIndex, searchOperations } from './apiSearch'
 
 const MAX_RESPONSE_LENGTH = 30_000
 
-let cachedCatalog: CatalogOperation[] | null = null
+interface ApiContext {
+  catalog: Catalog
+  searchIndex: ApiSearchIndex
+}
 
-export const getApiCatalog = (): CatalogOperation[] => {
-  cachedCatalog ??= buildCatalog(openAPISpec as unknown as OpenAPISpec)
-  return cachedCatalog
+let apiContext: Promise<ApiContext> | null = null
+
+export const getApiContext = (): Promise<ApiContext> => {
+  apiContext ??= (async () => {
+    const catalog = buildCatalog(openAPISpec as unknown as OpenAPISpec)
+    const searchIndex = await buildSearchIndex(catalog.operations)
+    return { catalog, searchIndex }
+  })()
+  return apiContext
 }
 
 const truncate = (data: unknown) => {
@@ -33,13 +43,16 @@ const truncate = (data: unknown) => {
 
 export const API_TOOL_NAMES = ['searchApi', 'describeApi', 'executeApi']
 
+const UNKNOWN_OPERATION_ERROR =
+  'Unknown operation. Use searchApi to find valid operations.'
+
 export const createApiTools = ({
   api,
-  catalog,
+  context: { catalog, searchIndex },
   organizationId,
 }: {
   api: Client
-  catalog: CatalogOperation[]
+  context: ApiContext
   organizationId: string
 }) => ({
   searchApi: tool({
@@ -52,28 +65,43 @@ export const createApiTools = ({
           'Keywords describing what you want to do, e.g. "create product"',
         ),
     }),
-    execute: async ({ query }) => ({
-      operations: searchOperations(catalog, query),
-    }),
+    execute: async ({ query }) => {
+      const operations = await searchOperations(
+        searchIndex,
+        catalog.operations,
+        query,
+      )
+      return operations.length > 0
+        ? { operations }
+        : { operations, hint: 'No operations matched. Try other keywords.' }
+    },
   }),
   describeApi: tool({
     description:
-      'Get the full definition of one or more API operations: path and query parameters, and the JSON schema of the request body. Always describe an operation before executing it.',
+      'Get the definition of one or more API operations: path and query parameters, and the JSON schema of the request body. Schemas used in several places are listed once under "$defs". When a request body has several variants and no variant is given, only the variant names are returned: describe the operation again with the variant you need. Always describe an operation before executing it.',
     inputSchema: z.object({
-      operationIds: z
-        .array(z.string())
+      operations: z
+        .array(
+          z.object({
+            operationId: z
+              .string()
+              .describe('Operation ID returned by searchApi'),
+            variant: z
+              .string()
+              .optional()
+              .describe('Request body variant, e.g. "feature_flag"'),
+          }),
+        )
         .min(1)
-        .max(5)
-        .describe('Operation IDs returned by searchApi'),
+        .max(5),
     }),
-    execute: async ({ operationIds }) => ({
-      operations: operationIds.map(
-        (operationId) =>
-          findOperation(catalog, operationId) ?? {
-            operationId,
-            error: 'Unknown operation. Use searchApi to find valid operations.',
-          },
-      ),
+    execute: async ({ operations }) => ({
+      operations: operations.map(({ operationId, variant }) => {
+        const operation = findOperation(catalog, operationId)
+        return operation
+          ? describeOperation(catalog, operation, variant)
+          : { operationId, error: UNKNOWN_OPERATION_ERROR }
+      }),
     }),
   }),
   executeApi: tool({
@@ -97,9 +125,7 @@ export const createApiTools = ({
     execute: async ({ operationId, ...input }) => {
       const operation = findOperation(catalog, operationId)
       if (!operation) {
-        return {
-          error: 'Unknown operation. Use searchApi to find valid operations.',
-        }
+        return { error: UNKNOWN_OPERATION_ERROR }
       }
 
       let request

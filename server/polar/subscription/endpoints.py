@@ -458,7 +458,20 @@ async def update(
         "subscription.update",
         id=id,
         customer_id=auth_subject.subject.id,
-        updates=subscription_update,
+        updated_fields=sorted(subscription_update.model_fields_set),
+        updates=subscription_update.model_dump(
+            include={
+                "product_id",
+                "discount_id",
+                "proration_behavior",
+                "cancel_at_period_end",
+                "customer_cancellation_reason",
+                "revoke",
+                "pause_at_period_end",
+                "resume",
+            },
+            exclude_unset=True,
+        ),
     )
     async with SubscriptionUpdateContext(
         session, subscription, subscription_service

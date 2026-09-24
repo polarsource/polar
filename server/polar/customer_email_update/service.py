@@ -182,8 +182,7 @@ class CustomerEmailUpdateService:
         log.info(
             "customer_email_update.verified",
             customer_id=customer.id,
-            old_email=old_email,
-            new_email=customer.email,
+            organization_id=customer.organization_id,
         )
 
         return customer

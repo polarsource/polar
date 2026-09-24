@@ -3794,8 +3794,8 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
-  undici@8.11.2:
-    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
+  undici@8.11.0:
+    resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
     engines: {node: '>=22.19.0'}
 
   unified@11.0.5:
@@ -4990,7 +4990,7 @@ snapshots:
     dependencies:
       '@scalar/helpers': 0.13.0
       pathe: 2.0.3
-      undici: 8.11.2
+      undici: 8.11.0
       yaml: 2.9.1
 
   '@scalar/json-schema-validator@0.1.4':
@@ -9140,7 +9140,7 @@ snapshots:
 
   undici-types@7.18.2: {}
 
-  undici@8.11.2: {}
+  undici@8.11.0: {}
 
   unified@11.0.5:
     dependencies:

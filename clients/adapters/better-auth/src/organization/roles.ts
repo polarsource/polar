@@ -14,11 +14,16 @@ type BetterAuthOrganizationPlugin = BetterAuthPlugin & {
 export const DEFAULT_BETTER_AUTH_CREATOR_ROLE = 'owner'
 const DEFAULT_BILLING_MANAGER_ROLES = ['admin'] as const
 
+export const getBetterAuthOrganizationPlugin = (
+  authContext: Pick<AuthContext, 'getPlugin'>,
+): BetterAuthOrganizationPlugin | null =>
+  authContext.getPlugin('organization') as BetterAuthOrganizationPlugin | null
+
 export const getBetterAuthCreatorRole = (
   authContext: Pick<AuthContext, 'getPlugin'>,
 ): string =>
-  authContext.getPlugin<BetterAuthOrganizationPlugin>('organization')?.options
-    .creatorRole ?? DEFAULT_BETTER_AUTH_CREATOR_ROLE
+  getBetterAuthOrganizationPlugin(authContext)?.options.creatorRole ??
+  DEFAULT_BETTER_AUTH_CREATOR_ROLE
 
 /**
  * Parse Better Auth's comma-separated member role representation.

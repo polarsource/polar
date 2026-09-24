@@ -1,11 +1,14 @@
-import type { AuthContext, BetterAuthPlugin } from 'better-auth'
+import type { AuthContext } from 'better-auth'
 import type { OrganizationOptions } from 'better-auth/plugins/organization'
 import type { PolarOptions } from '../types'
 import {
   BetterAuthOrganizationStateError,
   removeOrganizationMemberMirror,
 } from './lifecycle'
-import { DEFAULT_BETTER_AUTH_CREATOR_ROLE } from './roles'
+import {
+  DEFAULT_BETTER_AUTH_CREATOR_ROLE,
+  getBetterAuthOrganizationPlugin,
+} from './roles'
 import { getOrganizationRoster, synchronizeOrganizationSeats } from './seats'
 import {
   ensureMemberMirror,
@@ -15,11 +18,6 @@ import {
   updateTeamCustomer,
 } from './sync'
 import type { PolarOrganizationRoleSyncOptions } from './types'
-
-type BetterAuthOrganizationPlugin = BetterAuthPlugin & {
-  id: 'organization'
-  options: OrganizationOptions
-}
 
 type OrganizationHooks = NonNullable<OrganizationOptions['organizationHooks']>
 type AfterCreateOrganizationData = Parameters<
@@ -55,8 +53,7 @@ export const installOrganizationHooks = (
     return
   }
 
-  const organizationPlugin =
-    ctx.getPlugin<BetterAuthOrganizationPlugin>('organization')
+  const organizationPlugin = getBetterAuthOrganizationPlugin(ctx)
 
   if (!organizationPlugin) {
     throw new Error(

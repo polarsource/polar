@@ -1,0 +1,19 @@
+terraform/sandbox/ecs.tf
+  s_1a55f25d91596e::t_33ee18d0ffe8e5 51-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1810646075226db88f49490979519fd695e7917d",
+  "prompts": {},
+  "sessions": {
+    "s_1a55f25d91596e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca7df00f-86ea-42b3-965b-1e5acc08ffdc",
+        "model": "unknown"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

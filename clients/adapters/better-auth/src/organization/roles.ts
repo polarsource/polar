@@ -1,23 +1,16 @@
-import type { AuthContext, BetterAuthPlugin } from 'better-auth'
-import type { OrganizationOptions } from 'better-auth/plugins/organization'
+import type { AuthContext } from 'better-auth'
 import type {
   BetterAuthRoleMappingInput,
   BetterAuthRoleMappingOptions,
   PolarMemberRole,
 } from './types'
 
-type BetterAuthOrganizationPlugin = BetterAuthPlugin & {
-  id: 'organization'
-  options: OrganizationOptions
-}
-
 export const DEFAULT_BETTER_AUTH_CREATOR_ROLE = 'owner'
 const DEFAULT_BILLING_MANAGER_ROLES = ['admin'] as const
 
 export const getBetterAuthOrganizationPlugin = (
   authContext: Pick<AuthContext, 'getPlugin'>,
-): BetterAuthOrganizationPlugin | null =>
-  authContext.getPlugin('organization') as BetterAuthOrganizationPlugin | null
+) => authContext.getPlugin('organization')
 
 export const getBetterAuthCreatorRole = (
   authContext: Pick<AuthContext, 'getPlugin'>,

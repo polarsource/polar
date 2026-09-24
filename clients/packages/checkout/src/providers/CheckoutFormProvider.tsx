@@ -41,6 +41,16 @@ const createDeferred = <T,>(): Deferred<T> => {
   return { promise, resolve, reject }
 }
 
+const errorsShownToBuyer = new WeakSet<object>()
+
+const shownToBuyer = (error: object) => {
+  errorsShownToBuyer.add(error)
+  return error
+}
+
+export const isShownToBuyer = (error: unknown) =>
+  errorsShownToBuyer.has(error as object)
+
 export interface CheckoutFormContextProps {
   checkout: schemas['CheckoutPublic']
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>
@@ -219,10 +229,10 @@ export const CheckoutFormProvider = ({
             setTrialUnavailable(true)
             await update({ allow_trial: false })
             break
-          case 'ResourceNotFound':
-          case 'ExpiredCheckoutError':
-            break
+          default:
+            throw error
         }
+        throw shownToBuyer(error)
       }
 
       throw error
@@ -263,7 +273,7 @@ export const CheckoutFormProvider = ({
           setError('root', { message: submitError.message })
         }
         setLoading(false)
-        throw new Error(submitError.message)
+        throw shownToBuyer(new Error(submitError.message))
       }
 
       let confirmationToken: ConfirmationToken | undefined
@@ -304,7 +314,7 @@ export const CheckoutFormProvider = ({
           message: error?.message || fallbackMessage,
         })
         setLoading(false)
-        throw new Error(error?.message || fallbackMessage)
+        throw shownToBuyer(new Error(error?.message || fallbackMessage))
       }
 
       let updatedCheckout: schemas['CheckoutPublicConfirmed']
@@ -332,7 +342,7 @@ export const CheckoutFormProvider = ({
         if (error) {
           setLoading(false)
           setError('root', { message: error.message })
-          throw new Error(error.message)
+          throw shownToBuyer(new Error(error.message))
         }
         currentIntentStatus =
           paymentIntent?.status || setupIntent?.status || intent_status

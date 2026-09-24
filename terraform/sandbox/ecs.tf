@@ -48,6 +48,10 @@ module "pgbouncer_aws" {
     port     = local.db_port
     user     = local.db_user
     password = local.db_password
+
+    # Bogus: our SCP prohibits deleting secrets, so these remain with bogus values for now
+    additional_user     = "bogus"
+    additional_password = "bogus"
   }
 
   depends_on = [aws_secretsmanager_secret_version.ghcr_pull]

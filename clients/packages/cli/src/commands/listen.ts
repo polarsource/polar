@@ -257,7 +257,7 @@ export const startListening = ({
     ),
   )
 
-const url = Argument.string('url').pipe(
+const url = Argument.String('url').pipe(
   Argument.withDescription(
     'Local URL to forward webhook events to, e.g. http://localhost:3000/api/webhooks',
   ),

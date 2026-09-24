@@ -38036,7 +38036,7 @@ export interface components {
       order_count: number
       /**
        * Net Revenue
-       * @description The net revenue from this customer in the period, in cents, with refunded amounts subtracted.
+       * @description The net revenue from this customer in the period, in USD cents, with refunded amounts subtracted.
        */
       net_revenue: number
     }

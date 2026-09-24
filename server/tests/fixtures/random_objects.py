@@ -2112,6 +2112,9 @@ async def create_payment_transaction(
     order: Order | None = None,
     issue_reward: IssueReward | None = None,
     created_at: datetime | None = None,
+    presentment_currency: str = "usd",
+    presentment_amount: int | None = None,
+    exchange_rate: float | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.payment,
@@ -2126,8 +2129,9 @@ async def create_payment_transaction(
         pledge=pledge,
         order=order,
         issue_reward=issue_reward,
-        presentment_currency="usd",
-        presentment_amount=amount,
+        presentment_currency=presentment_currency,
+        presentment_amount=amount if presentment_amount is None else presentment_amount,
+        exchange_rate=exchange_rate,
         created_at=created_at,
     )
     await save_fixture(transaction)

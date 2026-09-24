@@ -246,6 +246,7 @@ class TestCreate:
             incoming_balance_1.id,
         ]
         assert first_call[1]["amount"] == refund.amount * 0.75
+        assert first_call[1]["refund"] == refund
 
         second_call = (
             balance_transaction_service_mock.create_reversal_balance.call_args_list[1]
@@ -553,6 +554,7 @@ class TestRevert:
             order=order,
             balance_correlation_key="REFUND_BALANCE",
             balance_reversal_transaction=incoming_balance,
+            refund=refund,
         )
         refund_incoming_balance = Transaction(
             type=TransactionType.balance,
@@ -565,6 +567,7 @@ class TestRevert:
             order=order,
             balance_correlation_key="REFUND_BALANCE",
             balance_reversal_transaction=outgoing_balance,
+            refund=refund,
         )
         await save_fixture(refund_outgoing_balance)
         await save_fixture(refund_incoming_balance)
@@ -623,6 +626,130 @@ class TestRevert:
         assert reverse_balance_polar.balance_reversal_transaction == incoming_balance
         assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
         assert reverse_balance_polar.payment_transaction is None
+
+    async def test_only_restores_reverted_refund_balances(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        account: Account,
+    ) -> None:
+        charge = build_stripe_charge(amount=1000)
+        reverted_refund, order, payment = await create_order_and_refund(
+            save_fixture,
+            customer,
+            status=RefundStatus.succeeded,
+            subtotal_amount=charge.amount,
+            refund_subtotal_amount=400,
+        )
+        other_refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            status=RefundStatus.succeeded,
+            amount=300,
+            tax_amount=0,
+            processor_id="STRIPE_OTHER_REFUND_ID",
+        )
+
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=charge.amount,
+            account_currency=charge.currency,
+            account_amount=charge.amount,
+            tax_amount=0,
+            charge_id=charge.id,
+            order=order,
+            payment_customer=customer,
+        )
+        await save_fixture(payment_transaction)
+
+        outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=-750,
+            account_currency=charge.currency,
+            account_amount=-750,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            balance_correlation_key="BALANCE",
+        )
+        incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=charge.currency,
+            amount=750,
+            account_currency=charge.currency,
+            account_amount=750,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            balance_correlation_key="BALANCE",
+        )
+        await save_fixture(outgoing_balance)
+        await save_fixture(incoming_balance)
+
+        for refund, reversal_amount in ((reverted_refund, 300), (other_refund, 225)):
+            await create_transaction(
+                save_fixture,
+                type=TransactionType.refund,
+                refund=refund,
+                amount=-refund.amount,
+            )
+            await save_fixture(
+                Transaction(
+                    type=TransactionType.balance,
+                    processor=Processor.stripe,
+                    account=account,
+                    currency=charge.currency,
+                    amount=-reversal_amount,
+                    account_currency=charge.currency,
+                    account_amount=-reversal_amount,
+                    tax_amount=0,
+                    order=order,
+                    balance_correlation_key=f"REFUND_BALANCE_{refund.id}",
+                    balance_reversal_transaction=incoming_balance,
+                    refund=refund,
+                )
+            )
+            await save_fixture(
+                Transaction(
+                    type=TransactionType.balance,
+                    processor=Processor.stripe,
+                    currency=charge.currency,
+                    amount=reversal_amount,
+                    account_currency=charge.currency,
+                    account_amount=reversal_amount,
+                    tax_amount=0,
+                    order=order,
+                    balance_correlation_key=f"REFUND_BALANCE_{refund.id}",
+                    balance_reversal_transaction=outgoing_balance,
+                    refund=refund,
+                )
+            )
+
+        reverted_refund.status = RefundStatus.failed
+        await refund_transaction_service.revert(session, reverted_refund)
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        account_balance_transactions = await balance_transaction_repository.get_all(
+            balance_transaction_repository.get_base_statement().where(
+                Transaction.account_id == account.id
+            )
+        )
+        assert sorted(t.amount for t in account_balance_transactions) == [
+            -300,
+            -225,
+            300,
+            750,
+        ]
 
     @pytest.mark.parametrize(
         ("refund_amount", "refund_tax_amount"),
@@ -733,6 +860,7 @@ class TestRevert:
             order=order,
             balance_correlation_key="REFUND_BALANCE",
             balance_reversal_transaction=incoming_balance,
+            refund=refund,
         )
         refund_incoming_balance = Transaction(
             type=TransactionType.balance,
@@ -745,6 +873,7 @@ class TestRevert:
             order=order,
             balance_correlation_key="REFUND_BALANCE",
             balance_reversal_transaction=outgoing_balance,
+            refund=refund,
         )
         await save_fixture(refund_outgoing_balance)
         await save_fixture(refund_incoming_balance)

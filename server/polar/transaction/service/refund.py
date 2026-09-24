@@ -130,6 +130,7 @@ class RefundTransactionService(BaseTransactionService):
         await self._create_reversal_balances(
             session,
             payment_transaction=payment_transaction,
+            refund=refund,
             refund_amount=settlement_amount - settlement_tax_amount,
         )
 
@@ -274,6 +275,7 @@ class RefundTransactionService(BaseTransactionService):
         await self._create_revert_reversal_balances(
             session,
             payment_transaction=payment_transaction,
+            refund=refund,
         )
         return refund_reversal_transaction
 
@@ -282,6 +284,7 @@ class RefundTransactionService(BaseTransactionService):
         session: AsyncSession,
         *,
         payment_transaction: Transaction,
+        refund: Refund,
         refund_amount: int,
     ) -> list[tuple[Transaction, Transaction]]:
         total_amount = payment_transaction.amount
@@ -301,6 +304,7 @@ class RefundTransactionService(BaseTransactionService):
                     session,
                     balance_transactions=balance_transactions_couple,
                     amount=balance_refund_amount,
+                    refund=refund,
                 )
             )
         return reversal_balances
@@ -310,11 +314,12 @@ class RefundTransactionService(BaseTransactionService):
         session: AsyncSession,
         *,
         payment_transaction: Transaction,
+        refund: Refund,
     ) -> list[tuple[Transaction, Transaction]]:
         revert_reversal_balances: list[tuple[Transaction, Transaction]] = []
         reverse_balance_transactions_couples = (
             await self._get_reverse_balance_transactions_for_payment(
-                session, payment_transaction=payment_transaction
+                session, payment_transaction=payment_transaction, refund=refund
             )
         )
         for reverse_balance_transactions_couple in reverse_balance_transactions_couples:
@@ -352,7 +357,11 @@ class RefundTransactionService(BaseTransactionService):
         return revert_reversal_balances
 
     async def _get_reverse_balance_transactions_for_payment(
-        self, session: AsyncSession, *, payment_transaction: Transaction
+        self,
+        session: AsyncSession,
+        *,
+        payment_transaction: Transaction,
+        refund: Refund,
     ) -> list[tuple[Transaction, Transaction]]:
         """
         Get the balance transactions that have been reversed by the refund.
@@ -372,6 +381,7 @@ class RefundTransactionService(BaseTransactionService):
                 # In most cases, reversal balances should either be platform fees or refunds,
                 # but other situations may appear in the future.
                 Transaction.platform_fee_type.is_(None),
+                Transaction.refund_id == refund.id,
             )
             .order_by(
                 Transaction.balance_correlation_key,

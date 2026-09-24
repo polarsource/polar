@@ -17,7 +17,7 @@ EAS (Expo Application Services) is used to compile and sign Android/iOS apps wit
 ### Install the EAS CLI
 
 ```bash
-npm install eas-cli -g
+pnpm add -g eas-cli
 ```
 
 ### Build profiles

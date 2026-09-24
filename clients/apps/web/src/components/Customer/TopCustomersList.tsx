@@ -65,7 +65,7 @@ export const TopCustomersList = ({
     <Toplist>
       {topCustomers.map((customer) => (
         <ToplistItem
-          key={`${customer.id}-${customer.currency}`}
+          key={customer.id}
           href={`/dashboard/${organization.slug}/customers/${customer.id}`}
         >
           <Avatar
@@ -80,10 +80,7 @@ export const TopCustomersList = ({
             }
           />
           <ToplistValue
-            value={formatCurrency('statistics')(
-              customer.net_revenue,
-              customer.currency,
-            )}
+            value={formatCurrency('statistics')(customer.net_revenue, 'usd')}
             caption={`${customer.order_count} ${
               customer.order_count === 1 ? 'order' : 'orders'
             }`}

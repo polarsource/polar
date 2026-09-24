@@ -906,7 +906,7 @@ async def top_customers_by_revenue(
         {
             "avatar": row.customer.avatar_url,
             "customer": row.customer.email or row.customer.name,
-            "revenue": row.usd_net_revenue,
+            "revenue": row.net_revenue,
             "orders": row.order_count,
         }
         for row in ranked

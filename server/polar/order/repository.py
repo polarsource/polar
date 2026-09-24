@@ -50,11 +50,8 @@ if TYPE_CHECKING:
 
 class CustomerRevenue(NamedTuple):
     customer: Customer
-    currency: str
     order_count: int
     net_revenue: int
-    """Net revenue in `currency`'s smallest unit."""
-    usd_net_revenue: int
     """Net revenue converted to USD cents."""
 
 
@@ -76,16 +73,13 @@ class OrderRepository(
     ) -> Sequence[CustomerRevenue]:
         """Customers ranked by paid net revenue converted to USD, descending.
 
-        Rows are per customer *and* order currency, so each row's
-        `net_revenue` is a single-currency amount that can be displayed as
-        is; a customer paying in two currencies appears twice.
-
         Partially refunded orders count with the refunded portion subtracted,
         so the ranking reflects money actually kept.
 
-        Each order converts at the exchange rate of its payment transaction.
-        Orders without one (e.g. paid from customer balance) fall back to the
-        organization's average rate for that currency.
+        Orders in every currency count: each converts at the exchange rate of
+        its payment transaction. Orders without one (e.g. paid from customer
+        balance) fall back to the organization's average rate for that
+        currency.
 
         A repository aggregation (not the metrics layer) on purpose: ranking
         across all customers cannot be expressed as bounded per-entity metric
@@ -131,15 +125,12 @@ class OrderRepository(
                 )
             ),
         )
-        net_revenue = func.coalesce(func.sum(kept_amount), 0)
-        usd_net_revenue = func.coalesce(func.sum(kept_usd_amount), 0)
+        net_revenue = func.coalesce(func.sum(kept_usd_amount), 0)
         statement = (
             select(
                 Customer,
-                order_currency,
                 func.count(Order.id),
                 net_revenue,
-                usd_net_revenue,
             )
             .select_from(Order)
             .join(Customer, Customer.id == Order.customer_id)
@@ -152,8 +143,8 @@ class OrderRepository(
                 Order.status.in_(OrderStatus.paid_statuses()),
                 ~Order.is_deleted,
             )
-            .group_by(Customer.id, order_currency)
-            .order_by(usd_net_revenue.desc(), net_revenue.desc())
+            .group_by(Customer.id)
+            .order_by(net_revenue.desc())
             .limit(limit)
         )
         if start is not None:
@@ -164,10 +155,8 @@ class OrderRepository(
         return [
             CustomerRevenue(
                 customer=row[0],
-                currency=row[1],
-                order_count=int(row[2]),
-                net_revenue=int(row[3]),
-                usd_net_revenue=int(row[4]),
+                order_count=int(row[1]),
+                net_revenue=int(row[2]),
             )
             for row in result.all()
         ]

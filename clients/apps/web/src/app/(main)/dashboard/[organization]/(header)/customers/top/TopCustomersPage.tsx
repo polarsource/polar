@@ -39,8 +39,8 @@ const columns: DataTableColumnDef<schemas['TopCustomer']>[] = [
     accessorKey: 'net_revenue',
     enableSorting: false,
     header: 'Net Revenue',
-    cell: ({ row: { original: customer } }) =>
-      formatCurrency('statistics')(customer.net_revenue, customer.currency),
+    cell: ({ getValue }) =>
+      formatCurrency('statistics')(getValue() as number, 'usd'),
   },
 ]
 
@@ -106,7 +106,7 @@ export const TopCustomersPage = ({ organization }: TopCustomersPageProps) => {
           pageCount={pageCount}
           pagination={pagination}
           onPaginationChange={setPagination}
-          getRowId={(customer) => `${customer.id}-${customer.currency}`}
+          getRowId={(customer) => customer.id}
           onRowClick={(row) =>
             router.push(
               `/dashboard/${organization.slug}/customers/${row.original.id}`,

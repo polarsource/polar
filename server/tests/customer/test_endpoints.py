@@ -472,10 +472,9 @@ class TestTopCustomers:
         assert json[0]["avatar_url"] == _avatar_url_for_email("best@example.com")
         assert json[1]["net_revenue"] == 4_000
         assert json[1]["order_count"] == 1
-        assert all(item["currency"] == "usd" for item in json)
 
     @pytest.mark.auth
-    async def test_ranked_by_usd_value_across_currencies(
+    async def test_multi_currency_converted_to_usd(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -486,8 +485,8 @@ class TestTopCustomers:
         usd_customer = await create_customer(
             save_fixture, organization=organization, email="usd@example.com"
         )
-        krw_customer = await create_customer(
-            save_fixture, organization=organization, email="krw@example.com"
+        multi_currency_customer = await create_customer(
+            save_fixture, organization=organization, email="multi@example.com"
         )
         no_payment_customer = await create_customer(
             save_fixture, organization=organization, email="balance@example.com"
@@ -497,7 +496,7 @@ class TestTopCustomers:
         )
         krw_order = await create_order(
             save_fixture,
-            customer=krw_customer,
+            customer=multi_currency_customer,
             product=product,
             subtotal_amount=826_090,
             currency="krw",
@@ -510,8 +509,21 @@ class TestTopCustomers:
             presentment_amount=826_090,
             charge_id="KRW_CHARGE",
         )
-        await create_order(
-            save_fixture, customer=krw_customer, product=product, subtotal_amount=10_000
+        eur_order = await create_order(
+            save_fixture,
+            customer=multi_currency_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="eur",
+        )
+        await create_payment_transaction(
+            save_fixture,
+            order=eur_order,
+            amount=11_000,
+            presentment_currency="eur",
+            presentment_amount=10_000,
+            exchange_rate=1.1,
+            charge_id="EUR_CHARGE",
         )
         await create_order(
             save_fixture,
@@ -528,12 +540,11 @@ class TestTopCustomers:
         assert response.status_code == 200
         json = response.json()
         assert [
-            (item["id"], item["currency"], item["net_revenue"]) for item in json
+            (item["id"], item["net_revenue"], item["order_count"]) for item in json
         ] == [
-            (str(usd_customer.id), "usd", 70_000),
-            (str(krw_customer.id), "krw", 826_090),
-            (str(no_payment_customer.id), "krw", 500_000),
-            (str(krw_customer.id), "usd", 10_000),
+            (str(multi_currency_customer.id), 59_478 + 11_000, 2),
+            (str(usd_customer.id), 70_000, 1),
+            (str(no_payment_customer.id), 36_000, 1),
         ]
 
     @pytest.mark.auth

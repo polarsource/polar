@@ -252,7 +252,6 @@ async def top(
             avatar_url=row.customer.avatar_url,
             order_count=row.order_count,
             net_revenue=row.net_revenue,
-            currency=row.currency,
         )
         for row in ranked
     ]

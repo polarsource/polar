@@ -38031,20 +38031,14 @@ export interface components {
       avatar_url: string | null
       /**
        * Order Count
-       * @description The number of paid orders in `currency` in the period.
+       * @description The number of paid orders in the period.
        */
       order_count: number
       /**
        * Net Revenue
-       * @description The net revenue from this customer's orders in `currency` in the period, in the currency's smallest unit, with refunded amounts subtracted.
+       * @description The net revenue from this customer in the period, in USD cents, with refunded amounts subtracted. Orders in other currencies are converted to USD at their payment's exchange rate.
        */
       net_revenue: number
-      /**
-       * Currency
-       * @description The currency of the orders. A customer who paid in several currencies has one entry per currency; entries are ranked by their net revenue converted to USD.
-       * @example usd
-       */
-      currency: string
     }
     /** Transaction */
     Transaction: {

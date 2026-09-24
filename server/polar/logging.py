@@ -116,6 +116,12 @@ class Logging[RendererType]:
                             "reauth",
                         ]
                     },
+                    # Access messages contain raw request targets; use HTTP spans.
+                    "uvicorn.access": {
+                        "level": "WARNING",
+                        "handlers": [],
+                        "propagate": False,
+                    },
                 },
             }
         )

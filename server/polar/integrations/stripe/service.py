@@ -103,20 +103,9 @@ class StripeService:
         if country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
 
-        log.info(
-            "stripe.account.create",
-            country=country,
-            account_type=create_params["type"],
-            requested_capabilities=list(create_params.get("capabilities", {})),
-            provided_fields=list(create_params),
-        )
         return await stripe_lib.Account.create_async(**create_params)
 
     async def update_account(self, id: str, name: str | None) -> None:
-        log.info(
-            "stripe.account.update",
-            account_id=id,
-        )
         obj = {}
         if name:
             obj["business_profile"] = {"name": name}
@@ -436,10 +425,6 @@ class StripeService:
     async def create_customer(
         self, **params: Unpack[CustomerCreateParams]
     ) -> stripe_lib.Customer:
-        log.info(
-            "stripe.customer.create",
-            provided_fields=list(params),
-        )
         return await stripe_lib.Customer.create_async(**params)
 
     async def update_customer(
@@ -448,12 +433,6 @@ class StripeService:
         tax_id: CustomerCreateParamsTaxIdDatum | None = None,
         **params: Unpack[CustomerModifyParams],
     ) -> stripe_lib.Customer:
-        log.info(
-            "stripe.customer.update",
-            customer_id=id,
-            updated_fields=list(params),
-            tax_id_type=tax_id.get("type") if tax_id else None,
-        )
         params = {**params, "expand": ["tax_ids"]}
         customer = await stripe_lib.Customer.modify_async(id, **params)
         if tax_id is None:

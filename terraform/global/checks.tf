@@ -1,10 +1,18 @@
-data "tfe_workspace_ids" "all" {
-  names        = ["*"]
+# The workspaces this module already provisions variables on, plus itself. A
+# wildcard would also reach workspaces it has no authority over.
+data "tfe_workspace_ids" "checked" {
+  names = concat(
+    [for workspace in local.terraform_cloud_aws_workspaces : workspace.workspace],
+    ["global"],
+  )
   organization = "polar-sh"
 }
 
+# Terraform records a data source in state whole, so the non-sensitive values
+# these workspaces hold land in this workspace's state. The provider offers no
+# metadata-only read.
 data "tfe_variables" "workspaces" {
-  for_each = data.tfe_workspace_ids.all.ids
+  for_each = data.tfe_workspace_ids.checked.ids
 
   workspace_id = each.value
 }

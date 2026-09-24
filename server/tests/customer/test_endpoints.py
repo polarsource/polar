@@ -522,7 +522,7 @@ class TestTopCustomers:
             amount=11_000,
             presentment_currency="eur",
             presentment_amount=10_000,
-            exchange_rate=1.1,
+            exchange_rate=1.2,
             charge_id="EUR_CHARGE",
         )
         await create_order(
@@ -542,7 +542,7 @@ class TestTopCustomers:
         assert [
             (item["id"], item["net_revenue"], item["order_count"]) for item in json
         ] == [
-            (str(multi_currency_customer.id), 59_478 + 11_000, 2),
+            (str(multi_currency_customer.id), 59_478 + 12_000, 2),
             (str(usd_customer.id), 70_000, 1),
             (str(no_payment_customer.id), 36_000, 1),
         ]

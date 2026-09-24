@@ -2,8 +2,10 @@ import { CLIENT_ID, discovery, scopes } from '@/auth/oauthConfig'
 import { useSession } from '@/providers/SessionProvider'
 import * as Sentry from '@sentry/react-native'
 import {
+  AuthError,
   exchangeCodeAsync,
   makeRedirectUri,
+  TokenError,
   useAuthRequest,
 } from 'expo-auth-session'
 import * as WebBrowser from 'expo-web-browser'
@@ -53,7 +55,7 @@ export const useOAuth = () => {
       if (response?.type !== 'success') {
         Sentry.captureMessage('[OAuth] auth session failed', {
           level: 'warning',
-          extra: { responseType: response?.type, response },
+          extra: { responseType: response?.type },
         })
         return
       }
@@ -82,10 +84,20 @@ export const useOAuth = () => {
             : null,
       })
     } catch (error) {
-      Sentry.captureException(error, {
-        extra: { context: 'oauth_authenticate' },
+      const errorType =
+        error instanceof TokenError
+          ? 'TokenError'
+          : error instanceof AuthError
+            ? 'AuthError'
+            : error instanceof TypeError
+              ? 'TypeError'
+              : error instanceof Error
+                ? 'Error'
+                : 'UnknownError'
+      Sentry.captureException(new Error('[OAuth] authentication failed'), {
+        extra: { context: 'oauth_authenticate', errorType },
       })
-      console.error('[OAuth] Error:', error)
+      console.error('[OAuth] Error:', { errorType })
     }
   }
 

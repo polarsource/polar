@@ -299,13 +299,15 @@ export async function proxy(request: NextRequest) {
     // transient rate-limit into a hard 500 for the user. It's still logged so
     // we keep visibility on how often this happens.
     if (response.status === 429) {
-      console.error(
-        `Rate limited while fetching authenticated user: status=429, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
+      console.error('Rate limited while fetching authenticated user', {
+        status: response.status,
+        outcome: 'anonymous',
+      })
     } else if (!response.ok && response.status !== 401) {
-      console.error(
-        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
+      console.error('Unexpected response while fetching authenticated user', {
+        status: response.status,
+        outcome: 'error',
+      })
       throw new Error(
         'Unexpected response status while fetching authenticated user',
       )

@@ -995,9 +995,8 @@ class EventService:
         log.debug(
             "Event created",
             id=event.id,
-            name=event.name,
-            source=event.source,
-            metadata=event.user_metadata,
+            organization_id=event.organization_id,
+            event_type_id=event.event_type_id,
         )
         return event
 

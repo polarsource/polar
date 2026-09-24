@@ -98,10 +98,11 @@ class OrderRepository(
         payment_order = aliased(Order)
         order_currency = func.lower(Order.currency)
         order_day = func.date_trunc("day", Order.created_at)
+        payment_day = func.date_trunc("day", payment_order.created_at)
         payment_currency = func.lower(Transaction.presentment_currency)
         organization_fx_statement = (
             select(
-                func.date_trunc("day", payment_order.created_at).label("day"),
+                payment_day.label("day"),
                 payment_currency.label("currency"),
                 func.avg(exchange_rate).label("rate"),
             )
@@ -110,9 +111,7 @@ class OrderRepository(
                 payment_order.organization_id == organization_id,
                 *payment_transaction_clauses,
             )
-            .group_by(
-                func.date_trunc("day", payment_order.created_at), payment_currency
-            )
+            .group_by(payment_day, payment_currency)
         )
         global_fx_statement = global_daily_exchange_rates()
         if start is not None:

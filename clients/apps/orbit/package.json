@@ -19,7 +19,7 @@
     "@polar-sh/ui": "workspace:*",
     "@stylexjs/stylex": "catalog:",
     "lucide-react": "catalog:",
-    "next": "^16.2.6",
+    "next": "^16.3.6",
     "next-themes": "catalog:",
     "react": "19.2.5",
     "react-dom": "19.2.5",

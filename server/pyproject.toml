@@ -66,7 +66,7 @@ dependencies = [
   "anyio==4.14.2", # Potential culprit for Sep 23-24 memory leak
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
-  "reauth==0.4.0",
+  "reauth==0.4.1",
   "langcodes>=3.5.1",
   "pypdf>=6.14.2",
   "google-auth[requests]>=2.38.0",

@@ -44,6 +44,7 @@
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
     "@typescript/native": "catalog:",
+    "next": "^16.3.6",
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

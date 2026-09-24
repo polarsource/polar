@@ -1,5 +1,5 @@
 ---
-'@polar-sh/better-auth': minor
+'@polar-sh/better-auth': major
 ---
 
 Support Better Auth 1.7. The `better-auth` peer dependency is now `^1.7.0`.

@@ -14,13 +14,18 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/module.mjs",
-      "require": "./dist/module.cjs"
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
     }
   },
-  "main": "./dist/module.cjs",
-  "types": "./dist/types.d.ts",
+  "main": "./dist/module.mjs",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types.d.mts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],
@@ -41,20 +46,20 @@
     "typecheck": "nuxi prepare playground && pnpm test:types"
   },
   "dependencies": {
-    "@nuxt/kit": "^3.15.4",
+    "@nuxt/kit": "^4.5.2",
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0-alpha.20"
+    "@polar-sh/sdk": "1.0.0-alpha.20",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@nuxt/devtools": "^2.6.5",
-    "@nuxt/module-builder": "^0.8.4",
-    "@nuxt/schema": "^3.15.4",
-    "@nuxt/test-utils": "^4.2.0",
+    "@nuxt/devtools": "^3.4.2",
+    "@nuxt/module-builder": "^1.0.3",
+    "@nuxt/schema": "^4.5.2",
+    "@nuxt/test-utils": "^4.3.2",
     "@types/node": "latest",
-    "nuxt": "^3.15.4",
+    "nuxt": "^4.5.2",
     "typescript": "6.0.3",
     "vitest": "catalog:",
-    "vue-tsc": "2.1.6",
-    "zod": "^3.24.2"
+    "vue-tsc": "3.3.11"
   }
 }

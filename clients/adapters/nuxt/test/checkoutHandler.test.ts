@@ -70,7 +70,7 @@ describe('Checkout', () => {
       })
       await checkout(makeEvent('/api/checkout?products=prod_123'))
 
-      const { success_url, return_url } = mockCheckoutCreate.mock.calls[0][0]
+      const { success_url, return_url } = mockCheckoutCreate.mock.calls[0]![0]
       expect(success_url).toBe(
         `https://example.com/success?data=${encoded}&checkout_id={CHECKOUT_ID}`,
       )
@@ -89,7 +89,7 @@ describe('Checkout', () => {
       await checkout(event)
 
       expect(mockCheckoutCreate).toHaveBeenCalledTimes(1)
-      expect(mockCheckoutCreate.mock.calls[0][0]).toMatchObject({
+      expect(mockCheckoutCreate.mock.calls[0]![0]).toMatchObject({
         products: ['prod_123'],
         seats: 5,
       })
@@ -101,21 +101,21 @@ describe('Checkout', () => {
       await checkout(event)
 
       expect(mockCheckoutCreate).toHaveBeenCalledTimes(1)
-      expect(mockCheckoutCreate.mock.calls[0][0].seats).toBeUndefined()
+      expect(mockCheckoutCreate.mock.calls[0]![0].seats).toBeUndefined()
     })
 
     it('forwards seats=1', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })
       await checkout(makeEvent('/api/checkout?products=prod_123&seats=1'))
 
-      expect(mockCheckoutCreate.mock.calls[0][0].seats).toBe(1)
+      expect(mockCheckoutCreate.mock.calls[0]![0].seats).toBe(1)
     })
 
     it('forwards seats=0 (parity with nextjs: no positive/int guard)', async () => {
       const checkout = Checkout({ accessToken: 'test-token' })
       await checkout(makeEvent('/api/checkout?products=prod_123&seats=0'))
 
-      expect(mockCheckoutCreate.mock.calls[0][0].seats).toBe(0)
+      expect(mockCheckoutCreate.mock.calls[0]![0].seats).toBe(0)
     })
 
     it('forwards NaN for non-numeric seats (parity with nextjs)', async () => {
@@ -126,7 +126,9 @@ describe('Checkout', () => {
       // rather than 422/500-ing on garbage input.
       await checkout(makeEvent('/api/checkout?products=prod_123&seats=garbage'))
 
-      expect(Number.isNaN(mockCheckoutCreate.mock.calls[0][0].seats)).toBe(true)
+      expect(Number.isNaN(mockCheckoutCreate.mock.calls[0]![0].seats)).toBe(
+        true,
+      )
     })
   })
 
@@ -147,7 +149,7 @@ describe('Checkout', () => {
 
       await checkout(makeEvent(url))
 
-      expect(mockCheckoutCreate.mock.calls[0][0]).toMatchObject({
+      expect(mockCheckoutCreate.mock.calls[0]![0]).toMatchObject({
         products: ['prod_1', 'prod_2'],
         customer_id: 'cust_1',
         external_customer_id: 'ext_1',
@@ -172,7 +174,7 @@ describe('Checkout', () => {
 
       await checkout(makeEvent(url))
 
-      expect(mockCheckoutCreate.mock.calls[0][0]).toMatchObject({
+      expect(mockCheckoutCreate.mock.calls[0]![0]).toMatchObject({
         customer_billing_address: { country: 'US' },
         customer_metadata: { plan: 'pro' },
         metadata: { ref: 'xyz' },
@@ -186,7 +188,7 @@ describe('Checkout', () => {
         makeEvent('/api/checkout?products=prod_123&allow_discount_codes=false'),
       )
 
-      expect(mockCheckoutCreate.mock.calls[0][0].allow_discount_codes).toBe(
+      expect(mockCheckoutCreate.mock.calls[0]![0].allow_discount_codes).toBe(
         false,
       )
     })
@@ -216,7 +218,7 @@ describe('Checkout', () => {
       } else {
         expect(mockCheckoutUpdate).not.toHaveBeenCalled()
       }
-      expect(mockSendRedirect.mock.calls[0][1]).toBe(
+      expect(mockSendRedirect.mock.calls[0]![1]).toBe(
         'https://polar.sh/checkout/123?theme=dark',
       )
     })
@@ -243,7 +245,7 @@ describe('Checkout', () => {
       await checkout(event)
 
       expect(mockSendRedirect).toHaveBeenCalledTimes(1)
-      const [redirectedEvent, location] = mockSendRedirect.mock.calls[0]
+      const [redirectedEvent, location] = mockSendRedirect.mock.calls[0]!
       // The same H3Event is forwarded to sendRedirect.
       expect(redirectedEvent).toBe(event)
       expect(location).toBe('https://polar.sh/checkout/checkout_123')
@@ -253,7 +255,7 @@ describe('Checkout', () => {
       const checkout = Checkout({ accessToken: 'test-token', theme: 'dark' })
       await checkout(makeEvent('/api/checkout?products=prod_123&seats=5'))
 
-      expect(mockSendRedirect.mock.calls[0][1]).toBe(
+      expect(mockSendRedirect.mock.calls[0]![1]).toBe(
         'https://polar.sh/checkout/checkout_123?theme=dark',
       )
     })
@@ -266,7 +268,7 @@ describe('Checkout', () => {
       })
       await checkout(makeEvent('/api/checkout?products=prod_123&seats=5'))
 
-      expect(mockCheckoutCreate.mock.calls[0][0].success_url).toBe(
+      expect(mockCheckoutCreate.mock.calls[0]![0].success_url).toBe(
         'https://example.com/success?checkout_id={CHECKOUT_ID}',
       )
     })

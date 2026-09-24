@@ -34,9 +34,9 @@
     "@types/node": "^22.10.5",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@typescript/native": "npm:typescript@7.0.2",
+    "@typescript/native": "catalog:",
     "tailwindcss": "catalog:",
     "ts-morph": "^25.0.1",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "catalog:"
   }
 }

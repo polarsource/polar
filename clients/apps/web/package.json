@@ -111,7 +111,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/web": "^0.0.345",
-    "@typescript/native": "npm:typescript@7.0.2",
+    "@typescript/native": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
@@ -122,7 +122,7 @@
     "remark": "^15.0.1",
     "remark-mdx": "^3.1.1",
     "tailwindcss": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript": "catalog:",
     "vite-tsconfig-paths": "^5.1.4",
     "playwright": "1.61.0",
     "vitest": "catalog:"

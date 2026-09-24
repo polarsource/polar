@@ -41,6 +41,7 @@ catalog:
   '@testing-library/react': '^16.3.2'
   '@types/react': '19.2.13'
   '@types/react-dom': '19.2.3'
+  '@typescript/native': 'npm:typescript@7.0.2'
   '@vitejs/plugin-react': '^5.2.0'
   '@vitest/coverage-v8': '^5.0.0'
   '@vitest/ui': '^5.0.0'
@@ -62,6 +63,7 @@ catalog:
   'tailwind-merge': '^3.5.0'
   'tailwindcss': '^4.2.2'
   'tsup': '^8.5.1'
+  'typescript': 'npm:@typescript/typescript6@6.0.2'
   'vitest': '^5.0.0'
 
 packageExtensions:

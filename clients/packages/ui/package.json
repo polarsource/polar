@@ -59,11 +59,11 @@
     "@stripe/stripe-js": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@typescript/native": "npm:typescript@7.0.2",
+    "@typescript/native": "catalog:",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "tsup": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

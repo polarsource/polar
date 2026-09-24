@@ -27,7 +27,7 @@
     "oxlint": "^1.80.0",
     "oxlint-tsgolint": "^7.0.2001",
     "turbo": "^2.9.12",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "catalog:"
   },
   "pnpm": {
     "overrides": {

@@ -98,7 +98,7 @@
     "react": "^19.2.5",
     "terser": "^5.46.1",
     "tsup": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript": "catalog:",
     "vitest": "catalog:",
     "@polar-sh/currency": "workspace:^",
     "@polar-sh/client": "workspace:*",
@@ -109,7 +109,7 @@
     "eventemitter3": "catalog:",
     "markdown-to-jsx": "catalog:",
     "react-hook-form": "catalog:",
-    "@typescript/native": "npm:typescript@7.0.2"
+    "@typescript/native": "catalog:"
   },
   "dependencies": {
     "date-fns": "catalog:"

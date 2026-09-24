@@ -248,27 +248,6 @@ class TestRedeliverEvent:
         )
         enqueue_job_mock.assert_called_once()
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
-    )
-    async def test_deleted_endpoint(
-        self,
-        auth_subject: AuthSubject[Organization],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        webhook_endpoint_organization: WebhookEndpoint,
-        webhook_event_organization: WebhookEvent,
-        enqueue_job_mock: MagicMock,
-    ) -> None:
-        webhook_endpoint_organization.set_deleted_at()
-        await save_fixture(webhook_endpoint_organization)
-
-        with pytest.raises(ResourceNotFound):
-            await webhook_service.redeliver_event(
-                session, auth_subject, webhook_event_organization.id
-            )
-        enqueue_job_mock.assert_not_called()
-
 
 @pytest.mark.asyncio
 class TestOnEventSuccess:

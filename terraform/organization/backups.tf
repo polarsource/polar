@@ -1,6 +1,12 @@
 provider "aws" {
   alias  = "us_west_2"
   region = "us-west-2"
+
+  default_tags {
+    tags = {
+      ManagedBy = "terraform"
+    }
+  }
 }
 
 module "production_backups" {

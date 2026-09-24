@@ -39,6 +39,12 @@ provider "aws" {
   assume_role {
     role_arn = "arn:aws:iam::${local.workload_accounts.production.id}:role/${var.member_account_bootstrap_role_name}"
   }
+
+  default_tags {
+    tags = {
+      ManagedBy = "terraform"
+    }
+  }
 }
 
 provider "aws" {
@@ -47,6 +53,12 @@ provider "aws" {
 
   assume_role {
     role_arn = "arn:aws:iam::${local.workload_accounts.sandbox.id}:role/${var.member_account_bootstrap_role_name}"
+  }
+
+  default_tags {
+    tags = {
+      ManagedBy = "terraform"
+    }
   }
 }
 
@@ -57,6 +69,12 @@ provider "aws" {
   assume_role {
     role_arn = "arn:aws:iam::${local.workload_accounts.test.id}:role/${var.member_account_bootstrap_role_name}"
   }
+
+  default_tags {
+    tags = {
+      ManagedBy = "terraform"
+    }
+  }
 }
 
 provider "aws" {
@@ -66,6 +84,12 @@ provider "aws" {
   assume_role {
     role_arn = "arn:aws:iam::${local.identity_account.id}:role/${var.member_account_bootstrap_role_name}"
   }
+
+  default_tags {
+    tags = {
+      ManagedBy = "terraform"
+    }
+  }
 }
 
 provider "aws" {
@@ -74,6 +98,12 @@ provider "aws" {
 
   assume_role {
     role_arn = "arn:aws:iam::${local.security_account.id}:role/${var.member_account_bootstrap_role_name}"
+  }
+
+  default_tags {
+    tags = {
+      ManagedBy = "terraform"
+    }
   }
 }
 

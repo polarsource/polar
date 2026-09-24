@@ -74,7 +74,8 @@ def _raise_error(
     span: Any, error: PolarClientError | PolarServerError, operation: str
 ) -> NoReturn:
     span.set_attribute("http.status_code", error.status_code)
-    span.set_attribute("error.body", str(getattr(error, "error", error)))
+    span.set_attribute("error.type", type(error).__name__)
+    span.set_attribute("operation", operation)
     message = f"{operation} failed with status {error.status_code}"
     if isinstance(error, (PolarRateLimitError, PolarServerError)):
         raise PolarSelfClientOperationalError(message) from error
@@ -254,7 +255,8 @@ class PolarSelfClient:
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409 and isinstance(e, OrderNotEligibleForInvoice):
                     span.set_attribute("order_not_eligible", True)
-                    span.set_attribute("error.body", str(getattr(e, "error", e)))
+                    span.set_attribute("http.status_code", e.status_code)
+                    span.set_attribute("error.type", type(e).__name__)
                     raise PolarSelfOrderNotEligible(order_id) from e
                 _raise_error(span, e, "trigger_order_invoice_generation")
             except PolarNetworkError as e:
@@ -883,7 +885,7 @@ class PolarSelfClient:
                     raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
                 if e.status_code == 400:
                     span.set_attribute("http.status_code", 400)
-                    span.set_attribute("error.body", str(getattr(e, "error", e)))
+                    span.set_attribute("error.type", type(e).__name__)
                     raise PolarSelfPaymentMethodInUse(payment_method_id) from e
                 _raise_error(span, e, "polar.portal.delete_payment_method")
             except PolarNetworkError as e:
@@ -936,7 +938,7 @@ class PolarSelfClient:
                 if e.status_code == 422:
                     span.set_attribute("http.status_code", 422)
                     body = str(getattr(e, "error", e))
-                    span.set_attribute("error.body", body)
+                    span.set_attribute("error.type", type(e).__name__)
                     raise PolarSelfClientValidationError(body) from e
                 _raise_error(span, e, "polar.portal.update_customer")
             except PolarNetworkError as e:
@@ -1005,7 +1007,7 @@ class PolarSelfClient:
                 if e.status_code == 422:
                     span.set_attribute("http.status_code", 422)
                     body = str(getattr(e, "error", e))
-                    span.set_attribute("error.body", body)
+                    span.set_attribute("error.type", type(e).__name__)
                     raise PolarSelfClientValidationError(body) from e
                 _raise_error(span, e, "polar.portal.update_benefit_grant")
             except PolarNetworkError as e:

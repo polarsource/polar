@@ -89,7 +89,10 @@ class WebhookEventRepository(
                 WebhookEndpoint, WebhookEvent.webhook_endpoint_id == WebhookEndpoint.id
             )
             .options(contains_eager(WebhookEvent.webhook_endpoint))
-            .where(WebhookEndpoint.organization_id.in_(org_ids))
+            .where(
+                WebhookEndpoint.organization_id.in_(org_ids),
+                ~WebhookEndpoint.is_deleted,
+            )
         )
 
     async def count_earlier_pending(

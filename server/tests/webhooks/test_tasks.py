@@ -50,6 +50,30 @@ class TestWebhookEventSend:
         await session.refresh(event)
         assert event.succeeded is None
 
+    async def test_deleted_endpoint_skips_send(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        webhook_endpoint_organization.set_deleted_at()
+        await save_fixture(webhook_endpoint_organization)
+
+        event = WebhookEvent(
+            webhook_endpoint_id=webhook_endpoint_organization.id,
+            type=WebhookEventType.customer_created,
+            api_version=CURRENT_API_VERSION,
+            payload='{"foo":"bar"}',
+        )
+        await save_fixture(event)
+
+        await _webhook_event_send(session, webhook_event_id=event.id, redeliver=True)
+
+        await session.flush()
+        await session.refresh(event)
+        assert event.succeeded is None
+        assert event.skipped is True
+
     async def test_missing_event_skips_send(self, session: AsyncSession) -> None:
         await _webhook_event_send(session, webhook_event_id=uuid.uuid4())
 

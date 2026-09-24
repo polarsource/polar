@@ -61,12 +61,6 @@ locals {
   db_user     = var.postgres_user
   db_password = var.postgres_password
 
-  # The Render default credentials. PgBouncer goes on accepting these alongside the pair
-  # above, and takes them as its primary, so switching db_user leaves its config
-  # untouched and does not redeploy it. Drop once every service is on the new role.
-  db_user_additional     = data.render_postgres.db.database_user
-  db_password_additional = data.render_postgres.db.connection_info.password
-
   # Read replica connection info
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
@@ -199,12 +193,10 @@ module "pgbouncer" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   database = {
-    host                = local.db_internal_host
-    port                = local.db_port
-    user                = local.db_user_additional
-    password            = local.db_password_additional
-    additional_user     = local.db_user
-    additional_password = local.db_password
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
   }
 
   pool_config = {
@@ -224,12 +216,10 @@ module "pgbouncer_read" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   database = {
-    host                = local.read_replica.id
-    port                = local.db_port
-    user                = local.db_user_additional
-    password            = local.db_password_additional
-    additional_user     = local.db_user
-    additional_password = local.db_password
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
   }
 
   pool_config = {

@@ -88,7 +88,6 @@ class StripeService:
     async def create_account(
         self, country: str, name: str | None
     ) -> stripe_lib.Account:
-        log.info("stripe.account.create", country=country)
         create_params: AccountCreateParams = {
             "country": country,
             "type": "express",
@@ -104,6 +103,13 @@ class StripeService:
         if country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
 
+        log.info(
+            "stripe.account.create",
+            country=country,
+            account_type=create_params["type"],
+            requested_capabilities=list(create_params.get("capabilities", {})),
+            provided_fields=list(create_params),
+        )
         return await stripe_lib.Account.create_async(**create_params)
 
     async def update_account(self, id: str, name: str | None) -> None:

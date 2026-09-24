@@ -31,6 +31,7 @@ import structlog
 import typer
 from sqlalchemy import or_, select
 
+from polar import tasks  # noqa: F401  -- registers dramatiq actors
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus

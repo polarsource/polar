@@ -3,11 +3,9 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { withTracing } from '@posthog/ai'
 import {
   convertToModelMessages,
-  generateObject,
   smoothStream,
   stepCountIs,
   streamText,
@@ -16,7 +14,7 @@ import {
 } from 'ai'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
-import { isApiToolPartType, TOOL_SEARCH_NAME } from '../toolParts'
+import { TOOL_SEARCH_NAME } from '../toolParts'
 import { createApiTools } from './apiTools'
 
 const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
@@ -24,14 +22,6 @@ const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
       host: 'https://us.i.posthog.com',
     })
   : null
-
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
-  headers: {
-    Authorization: `Bearer ${process.env.PYDANTIC_AI_GATEWAY_API_KEY}`,
-  },
-  baseURL: 'https://gateway-us.pydantic.dev/proxy/google-vertex/',
-})
 
 const anthropic = createAnthropic({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
@@ -156,24 +146,6 @@ default to a seat-based price with a fixed price per seat unless they explicitly
 
 Trials can be granted to any product for a number of days/weeks/months/years.`
 
-const getRouterSystemPrompt = () => `
-${getSharedSystemPrompt()}
-
-# Your task
-Your task is to determine whether the user request requires manual setup, follow-up questions, and if the subsequent LLM call
-will require API tool access to act on the users request.
-
-At the very least, we need both a specific price and a name for the product to be able to create it.
-As long as these two data points are not mentioned, follow-up questions will be needed.
-
-If you notice any frustration with the assistant from the user, immediately opt for manual setup.
-
-You will now be handed the last three user messages from the conversation, separated by "---", oldest message first.
-
-Always respond in JSON format with the JSON object ONLY and do not include any extra text.
-Do not return Markdown formatting or code fences.
-`
-
 const API_TOOLS_PROMPT = `
 # Using the Polar API
 
@@ -187,10 +159,7 @@ If an operation fails with a validation error, read the error, fix the input and
 If it keeps failing, use the "redirectToManualSetup" tool with the "tool_call_error" reason.
 `
 
-const getConversationalSystemPrompt = (
-  currency: string,
-  withApiTools: boolean,
-) => {
+const getConversationalSystemPrompt = (currency: string) => {
   const currencyCode = currency.toUpperCase()
 
   return `
@@ -233,8 +202,10 @@ So, in general, you should follow this order:
 - If you use the "renderProductsPreview" tool, do not repeat the preview in the text response after that.
 - If a benefit type is unsupported, immediately use the "redirectToManualSetup" tool to redirect the user to the manual setup page. There is no use in collecting more information in that case since they'll have to manually re-enter everything anyway.
 - Be friendly and helpful if people ask questions like "What is Polar?" or "What can I sell?".
+- At the very least, you need a price and a name to create a product. Ask for them until the user has given both.
+- If you notice any frustration with the assistant from the user, immediately use the "redirectToManualSetup" tool with the "user_requested" reason.
 
-${withApiTools ? API_TOOLS_PROMPT : ''}
+${API_TOOLS_PROMPT}
 The user will now describe their product and you will start the configuration assistant.
 `
 }
@@ -251,14 +222,6 @@ export async function POST(req: Request) {
     conversationId,
   }: { messages: UIMessage[]; organizationId: string; conversationId: string } =
     await req.json()
-
-  const hasUsedApiTools = messages.some((message) =>
-    message.parts.some((part) => isApiToolPartType(part.type)),
-  )
-  let requiresToolAccess = false
-  let requiresManualSetup = false
-  let isRelevant = true
-  let requiresClarification = true
 
   if (!organizationId) {
     return new Response('Organization ID is required', { status: 400 })
@@ -278,38 +241,9 @@ export async function POST(req: Request) {
 
   const defaultCurrency = organization.default_presentment_currency || 'usd'
 
-  const lastUserMessages = messages.filter((m) => m.role === 'user').reverse()
-
-  if (lastUserMessages.length === 0) {
+  if (!messages.some((m) => m.role === 'user')) {
     return new Response('No user message found', { status: 400 })
   }
-
-  const userMessage = lastUserMessages
-    .slice(0, 5)
-    .reverse()
-    .map((m) =>
-      m.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join(' '),
-    )
-    .join('\n---\n')
-
-  const geminiLite = phClient
-    ? withTracing(google('gemini-3.1-flash-lite'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      })
-    : google('gemini-3.1-flash-lite')
-
-  const gemini = phClient
-    ? withTracing(google('gemini-3-flash-preview'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      })
-    : google('gemini-3-flash-preview')
 
   const sonnet = phClient
     ? withTracing(anthropic('claude-sonnet-4-6'), phClient, {
@@ -319,58 +253,10 @@ export async function POST(req: Request) {
       })
     : anthropic('claude-sonnet-4-6')
 
-  const router = await generateObject({
-    model: geminiLite,
-    output: 'object',
-    schema: z.object({
-      isRelevant: z
-        .boolean()
-        .describe(
-          'Whether the user request is relevant to creating a product on Polar',
-        ),
-      requiresManualSetup: z
-        .boolean()
-        .describe(
-          'Whether the user request requires manual setup due to unsupported benefit types (file download, GitHub, Discord) or too complex configuration',
-        ),
-      requiresToolAccess: z
-        .boolean()
-        .describe(
-          'Whether API access is required to act on the user request (get, create, update, delete products, meters or benefits)',
-        ),
-      requiresClarification: z
-        .boolean()
-        .describe(
-          'Whether there is enough information to act on the user request or if we need further clarification',
-        ),
-    }),
-    system: getRouterSystemPrompt(),
-    prompt: userMessage,
-  })
-
-  if (!router.object.isRelevant) {
-    isRelevant = false
-  } else {
-    requiresManualSetup = router.object.requiresManualSetup
-    requiresToolAccess = router.object.requiresToolAccess
-    requiresClarification = router.object.requiresClarification
+  const tools = {
+    [TOOL_SEARCH_NAME]: anthropic.tools.toolSearchBm25_20251119(),
+    ...createApiTools({ api, organizationId }),
   }
-
-  // Tool search results in the history reference the API tools, so once they
-  // have been used, every following request must define them again.
-  const shouldSetupTools =
-    hasUsedApiTools ||
-    (isRelevant &&
-      !requiresManualSetup &&
-      requiresToolAccess &&
-      !requiresClarification)
-
-  const tools = shouldSetupTools
-    ? {
-        [TOOL_SEARCH_NAME]: anthropic.tools.toolSearchBm25_20251119(),
-        ...createApiTools({ api, organizationId }),
-      }
-    : {}
 
   const redirectToManualSetup = tool({
     description: 'Request the user to manually configure the product instead',
@@ -403,32 +289,25 @@ based on the conversation history whether you're done.
 
   let streamStarted = false
 
-  const conversationalSystemPrompt = getConversationalSystemPrompt(
-    defaultCurrency,
-    shouldSetupTools,
-  )
+  const conversationalSystemPrompt =
+    getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
-    model: shouldSetupTools ? sonnet : gemini,
+    model: sonnet,
     tools: {
       redirectToManualSetup,
-      ...(!requiresManualSetup ? { markAsDone } : {}),
+      markAsDone,
       ...tools,
     },
-    toolChoice: requiresManualSetup
-      ? { type: 'tool', toolName: 'redirectToManualSetup' }
-      : 'auto',
     messages: [
       {
         role: 'system',
         content: conversationalSystemPrompt,
-        providerOptions: shouldSetupTools
-          ? {
-              anthropic: {
-                cacheControl: { type: 'ephemeral' },
-              },
-            }
-          : {},
+        providerOptions: {
+          anthropic: {
+            cacheControl: { type: 'ephemeral' },
+          },
+        },
       },
       ...(await convertToModelMessages(messages)),
     ],

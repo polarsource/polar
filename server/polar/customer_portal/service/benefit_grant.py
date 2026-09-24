@@ -60,9 +60,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             (CustomerBenefitGrantSortProperty.granted_at, True),
         ),
     ) -> tuple[Sequence[BenefitGrant], int]:
-        statement = self._get_readable_benefit_grant_statement(auth_subject).options(
-            joinedload(BenefitGrant.customer), joinedload(BenefitGrant.member)
-        )
+        statement = self._get_readable_benefit_grant_statement(auth_subject)
 
         if query is not None:
             statement = statement.where(
@@ -144,10 +142,8 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
     ) -> BenefitGrant | None:
-        statement = (
-            self._get_readable_benefit_grant_statement(auth_subject)
-            .where(BenefitGrant.id == id)
-            .options(joinedload(BenefitGrant.customer), joinedload(BenefitGrant.member))
+        statement = self._get_readable_benefit_grant_statement(auth_subject).where(
+            BenefitGrant.id == id
         )
 
         result = await session.execute(statement)
@@ -263,6 +259,8 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 contains_eager(BenefitGrant.benefit).options(
                     contains_eager(Benefit.organization)
                 ),
+                joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.member.and_(~Member.is_deleted)),
             )
         )
 

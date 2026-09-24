@@ -548,7 +548,7 @@ class TestTopCustomers:
         ]
 
     @pytest.mark.auth
-    async def test_balance_order_uses_closest_global_daily_rate(
+    async def test_balance_order_skips_closest_day_without_rate(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -584,6 +584,23 @@ class TestTopCustomers:
                 created_at=datetime(2026, 1, day, 1, tzinfo=UTC),
                 charge_id=f"KRW_CHARGE_{day}",
             )
+        incomplete_order = await create_order(
+            save_fixture,
+            customer=paying_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="krw",
+            created_at=datetime(2026, 1, 5, tzinfo=UTC),
+        )
+        await create_payment_transaction(
+            save_fixture,
+            order=incomplete_order,
+            amount=1_000,
+            presentment_currency="krw",
+            presentment_amount=0,
+            created_at=datetime(2026, 1, 5, 1, tzinfo=UTC),
+            charge_id="KRW_CHARGE_INCOMPLETE",
+        )
         await create_order(
             save_fixture,
             customer=balance_customer,

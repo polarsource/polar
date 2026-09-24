@@ -39,7 +39,10 @@ def closest_global_daily_rate(
 ) -> Select[tuple[Decimal]]:
     return (
         select(daily_rates.c.rate)
-        .where(daily_rates.c.currency == currency)
+        .where(
+            daily_rates.c.currency == currency,
+            daily_rates.c.rate.is_not(None),
+        )
         .order_by(func.abs(func.extract("epoch", daily_rates.c.day - day)))
         .limit(1)
     )

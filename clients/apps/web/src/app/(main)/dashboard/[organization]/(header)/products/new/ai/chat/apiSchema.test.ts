@@ -2,8 +2,8 @@ import openAPISpec from '@polar-sh/client/openapi.json'
 import { describe, expect, it } from 'vitest'
 import { buildCatalog, findOperation, OpenAPISpec } from './apiCatalog'
 import {
+  buildToolInputSchema,
   compactSchemas,
-  describeOperation,
   shortenDescription,
 } from './apiSchema'
 
@@ -73,77 +73,48 @@ describe('shortenDescription', () => {
   })
 })
 
-describe('describeOperation', () => {
+describe('buildToolInputSchema', () => {
   const catalog = buildCatalog(openAPISpec as unknown as OpenAPISpec)
-  const describeById = (operationId: string, variant?: string) =>
-    describeOperation(catalog, findOperation(catalog, operationId)!, variant)
+  const inputSchemaFor = (operationId: string) =>
+    buildToolInputSchema(catalog, findOperation(catalog, operationId)!)
+
+  it('requires path parameters', () => {
+    expect(inputSchemaFor('products:update')).toMatchObject({
+      properties: {
+        path: {
+          type: 'object',
+          properties: { id: { type: 'string' } },
+          required: ['id'],
+        },
+      },
+      required: ['path', 'body'],
+    })
+  })
+
+  it('leaves the organization out of queries and bodies', () => {
+    const listSchema = inputSchemaFor('products:list') as {
+      properties: { query: { properties: Record<string, unknown> } }
+    }
+    expect(listSchema.properties.query.properties).not.toHaveProperty(
+      'organization_id',
+    )
+    expect(JSON.stringify(inputSchemaFor('products:create'))).not.toContain(
+      'organization_id',
+    )
+  })
 
   it('drops unsupported variants from request body unions', () => {
-    const description = describeById('benefits:create')
+    const schema = inputSchemaFor('benefits:create') as {
+      properties: { body: { oneOf: { properties: { type: unknown } }[] } }
+    }
 
     expect(
-      (description as { requestBody: { oneOf: unknown[] } }).requestBody.oneOf,
-    ).toHaveLength(4)
-  })
-
-  it('describes a single variant', () => {
-    expect(describeById('benefits:create', 'feature_flag')).toMatchObject({
-      variant: 'feature_flag',
-      requestBody: {
-        properties: { type: { const: 'feature_flag' } },
-      },
-    })
-  })
-
-  it('rejects unknown and unsupported variants', () => {
-    expect(describeById('benefits:create', 'discord')).toMatchObject({
-      error: expect.stringContaining('Unknown variant'),
-    })
-  })
-
-  it('only lists the variants of large request body unions', () => {
-    const variantNames = Array.from({ length: 20 }, (_, i) => `Variant${i}`)
-    const largeCatalog = buildCatalog(
-      {
-        paths: {
-          '/v1/things/': {
-            post: {
-              operationId: 'things:create',
-              requestBody: {
-                content: {
-                  'application/json': {
-                    schema: { oneOf: variantNames.map(ref) },
-                  },
-                },
-              },
-            },
-          },
-        },
-        components: {
-          schemas: Object.fromEntries(
-            variantNames.map((name) => [
-              name,
-              {
-                properties: Object.fromEntries(
-                  Array.from({ length: 20 }, (_, i) => [
-                    `${name}_field_${i}`,
-                    { type: 'string', description: 'x'.repeat(40) },
-                  ]),
-                ),
-              },
-            ]),
-          ),
-        },
-      },
-      new Set(['things:create']),
-    )
-
-    const description = describeOperation(
-      largeCatalog,
-      largeCatalog.operations[0],
-    )
-
-    expect(description).toMatchObject({ variants: variantNames })
-    expect(description).toHaveProperty('requestBody', undefined)
+      schema.properties.body.oneOf.map(({ properties }) => properties.type),
+    ).toEqual([
+      { type: 'string', const: 'custom' },
+      { type: 'string', const: 'license_keys' },
+      { type: 'string', const: 'meter_credit' },
+      { type: 'string', const: 'feature_flag' },
+    ])
   })
 })

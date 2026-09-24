@@ -1,6 +1,7 @@
 import {
   Catalog,
   CatalogOperation,
+  CatalogParameter,
   isObject,
   JSONSchema,
   refName,
@@ -9,9 +10,8 @@ import {
 const STRIPPED_SCHEMA_KEYS = new Set(['title', 'examples', 'example'])
 const UNION_KEYS = new Set(['oneOf', 'anyOf'])
 const MAX_DESCRIPTION_LENGTH = 300
-const VARIANT_SUMMARY_THRESHOLD = 16_000
 
-export const OMITTED_SCHEMAS: ReadonlySet<string> = new Set([
+const OMITTED_SCHEMAS: ReadonlySet<string> = new Set([
   'BenefitDiscordCreate',
   'BenefitDiscordUpdate',
   'BenefitGitHubRepositoryCreate',
@@ -22,7 +22,8 @@ export const OMITTED_SCHEMAS: ReadonlySet<string> = new Set([
   'BenefitSlackSharedChannelUpdate',
 ])
 
-export const OMITTED_PROPERTIES: ReadonlySet<string> = new Set([
+const OMITTED_PROPERTIES: ReadonlySet<string> = new Set([
+  'organization_id',
   'medias',
   'attached_custom_fields',
 ])
@@ -65,6 +66,8 @@ const trim = (value: unknown): unknown => {
           )
           .map(([name, property]) => [name, trim(property)]),
       )
+    } else if (key === 'required' && Array.isArray(child)) {
+      result.required = child.filter((name) => !OMITTED_PROPERTIES.has(name))
     } else if (key === 'discriminator' && isObject(child)) {
       result.discriminator = { propertyName: child.propertyName }
     } else if (UNION_KEYS.has(key) && Array.isArray(child)) {
@@ -148,98 +151,67 @@ export const compactSchemas = (
   }
 }
 
-const getBodyVariants = (
-  body: unknown,
-  schemas: Record<string, JSONSchema>,
-): Map<string, unknown> | undefined => {
-  const name = refName(body)
-  const schema = name ? schemas[name] : body
-  if (!isObject(schema)) {
-    return undefined
-  }
+const parametersSchema = (
+  parameters: CatalogParameter[],
+  schemas: unknown[],
+): JSONSchema => ({
+  type: 'object',
+  properties: Object.fromEntries(
+    parameters.map((parameter, index) => [
+      parameter.name,
+      parameter.description
+        ? {
+            ...(schemas[index] as JSONSchema),
+            description: shortenDescription(parameter.description),
+          }
+        : schemas[index],
+    ]),
+  ),
+  required: parameters
+    .filter((parameter) => parameter.required)
+    .map((parameter) => parameter.name),
+})
 
-  const union = schema.oneOf ?? schema.anyOf
-  if (!Array.isArray(union) || union.length < 2) {
-    return undefined
-  }
-
-  const discriminator = isObject(schema.discriminator)
-    ? schema.discriminator
-    : undefined
-  const mapping = isObject(discriminator?.mapping)
-    ? (discriminator.mapping as Record<string, string>)
-    : {}
-  const keyBySchemaName = new Map(
-    Object.entries(mapping).map(([key, ref]) => [ref.split('/').pop(), key]),
-  )
-
-  return new Map(
-    union
-      .filter((variant) => !isOmitted(variant))
-      .map((variant, index) => {
-        const variantName = refName(variant)
-        const key =
-          (variantName && keyBySchemaName.get(variantName)) ??
-          variantName ??
-          `variant_${index}`
-        return [key, variant]
-      }),
-  )
-}
-
-export const describeOperation = (
+export const buildToolInputSchema = (
   catalog: Catalog,
   operation: CatalogOperation,
-  variant?: string,
-) => {
-  const variants = getBodyVariants(operation.requestBody, catalog.schemas)
-  if (variant !== undefined && !variants?.has(variant)) {
-    return {
-      operationId: operation.operationId,
-      error: variants
-        ? `Unknown variant. Valid variants: ${[...variants.keys()].join(', ')}.`
-        : 'This operation has no request body variants.',
-    }
-  }
+): JSONSchema => {
+  const pathParameters = operation.parameters.filter(
+    (parameter) => parameter.in === 'path',
+  )
+  const queryParameters = operation.parameters.filter(
+    (parameter) =>
+      parameter.in === 'query' && !OMITTED_PROPERTIES.has(parameter.name),
+  )
+  const { roots, $defs } = compactSchemas(
+    [
+      ...[...pathParameters, ...queryParameters].map(({ schema }) => schema),
+      operation.requestBody,
+    ],
+    catalog.schemas,
+  )
 
-  const describe = (body: unknown) => {
-    const { roots, $defs } = compactSchemas(
-      [...operation.parameters.map(({ schema }) => schema), body],
-      catalog.schemas,
+  const properties: JSONSchema = {}
+  const required: string[] = []
+  if (pathParameters.length > 0) {
+    properties.path = parametersSchema(pathParameters, roots)
+    required.push('path')
+  }
+  if (queryParameters.length > 0) {
+    properties.query = parametersSchema(
+      queryParameters,
+      roots.slice(pathParameters.length),
     )
-    return {
-      operationId: operation.operationId,
-      method: operation.method,
-      path: operation.path,
-      summary: operation.summary,
-      description: shortenDescription(operation.description),
-      parameters: operation.parameters.map((parameter, index) => ({
-        name: parameter.name,
-        in: parameter.in,
-        required: parameter.required ?? false,
-        description: parameter.description
-          ? shortenDescription(parameter.description)
-          : undefined,
-        schema: roots[index],
-      })),
-      requestBody: roots[operation.parameters.length],
-      ...(Object.keys($defs).length > 0 ? { $defs } : {}),
-    }
   }
-
-  if (variant !== undefined) {
-    return { ...describe(variants?.get(variant)), variant }
-  }
-
-  const full = describe(operation.requestBody)
-  if (!variants || JSON.stringify(full).length <= VARIANT_SUMMARY_THRESHOLD) {
-    return full
+  if (operation.requestBody) {
+    properties.body = roots[roots.length - 1]
+    required.push('body')
   }
 
   return {
-    ...describe(undefined),
-    requestBody: undefined,
-    variants: [...variants.keys()],
-    note: 'The request body has several variants. Describe this operation again with one of these variants to get its schema.',
+    type: 'object',
+    properties,
+    required,
+    ...(Object.keys($defs).length > 0 ? { $defs } : {}),
   }
 }

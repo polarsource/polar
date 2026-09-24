@@ -1,18 +1,18 @@
 'use client'
 
+import { TOOL_SEARCH_NAME } from '@/app/(main)/dashboard/[organization]/(header)/products/new/ai/toolParts'
 import { Box } from '@polar-sh/orbit/Box'
 import { ToolUIPart } from 'ai'
 import { useState } from 'react'
 import LogoIcon from '../Brand/logos/LogoIcon'
 
-type ExecuteInput = {
-  operationId?: string
+type ApiToolInput = {
   body?: { name?: string; description?: string }
 }
 
 type OperationLabels = {
-  input: (body?: ExecuteInput['body']) => string
-  output: (body?: ExecuteInput['body']) => string
+  input: (body?: ApiToolInput['body']) => string
+  output: (body?: ApiToolInput['body']) => string
   error: () => string
 }
 
@@ -31,62 +31,62 @@ const namedLabels = (
 })
 
 const OPERATION_LABELS: Record<string, OperationLabels> = {
-  'products:list': {
+  products_list: {
     input: () => 'Listing products…',
     output: () => 'Products found.',
     error: () => 'Error listing products.',
   },
-  'products:create': namedLabels(
+  products_create: namedLabels(
     'name',
     'Creating product',
     'Created product',
     { pending: 'Creating product…', done: 'Created product.' },
     'Error creating product.',
   ),
-  'products:update': namedLabels(
+  products_update: namedLabels(
     'name',
     'Updating product',
     'Updated product',
     { pending: 'Updating product…', done: 'Product updated.' },
     'Error updating product.',
   ),
-  'products:update_benefits': {
+  products_update_benefits: {
     input: () => 'Assigning benefits to product…',
     output: () => 'Assigned benefits to product.',
     error: () => 'Error assigning benefits.',
   },
-  'benefits:list': {
+  benefits_list: {
     input: () => 'Listing benefits…',
     output: () => 'Benefits found.',
     error: () => 'Error listing benefits.',
   },
-  'benefits:create': namedLabels(
+  benefits_create: namedLabels(
     'description',
     'Creating benefit',
     'Created benefit',
     { pending: 'Creating benefit…', done: 'Created benefit.' },
     'Error creating benefit.',
   ),
-  'benefits:update': namedLabels(
+  benefits_update: namedLabels(
     'description',
     'Updating benefit',
     'Updated benefit',
     { pending: 'Updating benefit…', done: 'Benefit updated.' },
     'Error updating benefit.',
   ),
-  'meters:list': {
+  meters_list: {
     input: () => 'Listing meters…',
     output: () => 'Meters found.',
     error: () => 'Error listing meters.',
   },
-  'meters:create': namedLabels(
+  meters_create: namedLabels(
     'name',
     'Creating meter',
     'Created meter',
     { pending: 'Creating meter…', done: 'Created meter.' },
     'Error creating meter.',
   ),
-  'meters:update': namedLabels(
+  meters_update: namedLabels(
     'name',
     'Updating meter',
     'Meter updated',
@@ -95,18 +95,17 @@ const OPERATION_LABELS: Record<string, OperationLabels> = {
   ),
 }
 
-const API_REFERENCE_LABELS: OperationLabels = {
-  input: () => 'Reading the API reference…',
-  output: () => 'Read the API reference.',
-  error: () => 'Error reading the API reference.',
+const TOOL_SEARCH_LABELS: OperationLabels = {
+  input: () => 'Looking up the API…',
+  output: () => 'Looked up the API.',
+  error: () => 'Error looking up the API.',
 }
 
 const getLabels = (part: ToolUIPart): OperationLabels | undefined => {
-  if (part.type !== 'tool-executeApi') {
-    return API_REFERENCE_LABELS
-  }
-  const operationId = (part.input as ExecuteInput | undefined)?.operationId
-  return operationId ? OPERATION_LABELS[operationId] : undefined
+  const toolName = part.type.slice('tool-'.length)
+  return toolName === TOOL_SEARCH_NAME
+    ? TOOL_SEARCH_LABELS
+    : OPERATION_LABELS[toolName]
 }
 
 const isFailedExecution = (part: ToolUIPart): boolean => {
@@ -122,7 +121,7 @@ const isFailedExecution = (part: ToolUIPart): boolean => {
 
 const getToolLabel = (part: ToolUIPart): string => {
   const labels = getLabels(part)
-  const body = (part.input as ExecuteInput | undefined)?.body
+  const body = (part.input as ApiToolInput | undefined)?.body
 
   if (part.state === 'output-error' || isFailedExecution(part)) {
     return labels?.error() ?? 'Something went wrong.'

@@ -16,7 +16,8 @@ import {
 } from 'ai'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
-import { API_TOOL_NAMES, createApiTools, getApiContext } from './apiTools'
+import { isApiToolPartType, TOOL_SEARCH_NAME } from '../toolParts'
+import { createApiTools } from './apiTools'
 
 const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
   ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
@@ -176,11 +177,9 @@ Do not return Markdown formatting or code fences.
 const API_TOOLS_PROMPT = `
 # Using the Polar API
 
-You act on behalf of the user by calling the Polar API with these tools:
-
- - "searchApi": find the operations you need, e.g. "create benefit" or "list meters".
- - "describeApi": get the parameters and request body schema of operations. Always describe an operation before executing it for the first time, and describe several at once when you can.
- - "executeApi": call an operation. Follow the schema from "describeApi" exactly.
+You act on behalf of the user by calling the Polar API. Each API operation is a tool named after it, e.g. "products_create" or "benefits_list".
+These tools are not loaded upfront: use the tool search tool to find the ones you need, e.g. "create benefit", and look up all of them in one search when you can.
+Call independent operations in parallel, e.g. creating a meter and a benefit.
 
 The organization is set automatically on every request, so never ask for or pass an organization ID.
 Amounts are expressed in cents in the API, e.g. 10.00 is 1000.
@@ -254,9 +253,7 @@ export async function POST(req: Request) {
     await req.json()
 
   const hasUsedApiTools = messages.some((message) =>
-    message.parts.some((part) =>
-      API_TOOL_NAMES.some((name) => part.type === `tool-${name}`),
-    ),
+    message.parts.some((part) => isApiToolPartType(part.type)),
   )
   let requiresToolAccess = false
   let requiresManualSetup = false
@@ -280,7 +277,6 @@ export async function POST(req: Request) {
   }
 
   const defaultCurrency = organization.default_presentment_currency || 'usd'
-  let tools = {}
 
   const lastUserMessages = messages.filter((m) => m.role === 'user').reverse()
 
@@ -360,23 +356,21 @@ export async function POST(req: Request) {
     requiresClarification = router.object.requiresClarification
   }
 
-  let shouldSetupTools = false
+  // Tool search results in the history reference the API tools, so once they
+  // have been used, every following request must define them again.
+  const shouldSetupTools =
+    hasUsedApiTools ||
+    (isRelevant &&
+      !requiresManualSetup &&
+      requiresToolAccess &&
+      !requiresClarification)
 
-  if (isRelevant && !requiresManualSetup && requiresToolAccess) {
-    if (!requiresClarification) {
-      shouldSetupTools = true
-    } else if (lastUserMessages.length >= 5 && hasUsedApiTools) {
-      shouldSetupTools = true
-    }
-  }
-
-  if (shouldSetupTools) {
-    tools = createApiTools({
-      api,
-      context: await getApiContext(),
-      organizationId,
-    })
-  }
+  const tools = shouldSetupTools
+    ? {
+        [TOOL_SEARCH_NAME]: anthropic.tools.toolSearchBm25_20251119(),
+        ...createApiTools({ api, organizationId }),
+      }
+    : {}
 
   const redirectToManualSetup = tool({
     description: 'Request the user to manually configure the product instead',

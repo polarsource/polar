@@ -52,14 +52,14 @@ export interface ExecuteInput {
   body?: Record<string, unknown>
 }
 
-export interface PreparedRequest {
+interface PreparedRequest {
   method: HttpMethod
   path: string
   params: { path: Record<string, string>; query: Record<string, unknown> }
   body?: Record<string, unknown>
 }
 
-export const ALLOWED_OPERATIONS: ReadonlySet<string> = new Set([
+const ALLOWED_OPERATIONS: ReadonlySet<string> = new Set([
   'products:list',
   'products:get',
   'products:create',

@@ -7,17 +7,12 @@ import { Button } from '@polar-sh/orbit'
 import { ToolUIPart } from 'ai'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { isApiToolPartType } from './toolParts'
 
 type MessagePart = {
   type: string
   [key: string]: unknown
 }
-
-const API_TOOL_PART_TYPES = new Set([
-  'tool-searchApi',
-  'tool-describeApi',
-  'tool-executeApi',
-])
 
 type RenderableItem =
   | { type: 'single'; part: MessagePart; index: number }
@@ -31,7 +26,7 @@ export const groupMessageParts = (parts: MessagePart[]): RenderableItem[] => {
   parts
     .filter(({ type }) => type !== 'step-start')
     .forEach((part, index) => {
-      if (API_TOOL_PART_TYPES.has(part.type)) {
+      if (isApiToolPartType(part.type)) {
         if (currentGroup.length === 0) {
           groupStartIndex = index
         }

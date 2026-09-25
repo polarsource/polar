@@ -937,7 +937,7 @@ class SubscriptionService:
         current_period_end: datetime,
         trial_end: datetime | None,
         anchor_day: int | None = None,
-        payment_method: PaymentMethod,
+        payment_method: PaymentMethod | None,
         provider: str,
         provider_subscription_id: str,
     ) -> Subscription:
@@ -946,6 +946,9 @@ class SubscriptionService:
         Unlike ``resume``, this starts no fresh period and charges nothing: the
         customer already paid the old provider through ``current_period_end``. It
         skips the resumed side effects too, since nothing paused for them.
+
+        With no ``payment_method``, the first renewal falls back to the
+        customer's default, and goes to dunning when there is none.
         """
         assert subscription.status == SubscriptionStatus.paused
 

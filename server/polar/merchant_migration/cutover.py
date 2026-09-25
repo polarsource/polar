@@ -47,7 +47,7 @@ from .canonical import (
     deserialize,
     discount_started_at_for,
 )
-from .cards import AmbiguousCopiedCard, link_payment_method
+from .cards import CARD_TYPE, AmbiguousCopiedCard, link_payment_method
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
     create_imported_subscription,
@@ -99,16 +99,15 @@ _DISCOUNT_MISSING_START = (
     "The source doesn't say when this coupon was applied, so Polar can't "
     "continue its remaining duration. It stays on the source."
 )
-_NO_CARD = (
-    "No copied card has landed on Polar for this customer yet. They need to "
-    "enter their billing details again, or the copy has to pick them up."
+_NO_PAYMENT_METHOD = (
+    "No copied payment method has landed on Polar for this customer. Unless "
+    "they have a default one by the next renewal, it fails and goes to dunning."
+)
+_NOT_A_CARD = (
+    "It renews with a payment method that isn't a card, which Polar can't "
+    "check ahead of the first charge. If that renewal fails, it goes to dunning."
 )
 _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
-_STRANDED = (
-    "It was already stopped on the source, but no payment method has landed on "
-    "Polar for this customer, so nobody is billing them. They need to enter "
-    "their billing details, then run this again."
-)
 _CARD_EXPIRED = (
     "The copied card has expired, so the first Polar renewal will fail and go to "
     "dunning. The customer needs to enter a new one."
@@ -243,21 +242,10 @@ class SubscriptionCutover:
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
         payment_method = await self._resolve_payment_method(record, customer, source)
-        if already_stopped:
-            # An unproven card beats no biller at all: a failed first renewal
-            # goes to dunning, which is recoverable.
-            if payment_method is None or payment_method.type != "card":
-                log.error(
-                    "merchant_migration.cutover.stranded",
-                    migration_id=self.migration.id,
-                    record_id=record.id,
-                    source_id=record.source_id,
-                )
-                return _fail(_STRANDED)
-            if subscription.is_period_lapsed(self._period_end(source, subscription)):
-                return _fail(_LAPSED)
-        elif payment_method is None or payment_method.type != "card":
-            return _skip(_NO_CARD)
+        if already_stopped and subscription.is_period_lapsed(
+            self._period_end(source, subscription)
+        ):
+            return _fail(_LAPSED)
 
         # Locked only now: the portal takes this same row lock, and everything
         # above spends seconds in Stripe. Bailing here is still free.
@@ -374,17 +362,6 @@ class SubscriptionCutover:
             return _skip(imported.skip)
 
         payment_method = await self._resolve_payment_method(record, customer, source)
-        if already_stopped:
-            if payment_method is None or payment_method.type != "card":
-                log.error(
-                    "merchant_migration.cutover.stranded",
-                    migration_id=self.migration.id,
-                    record_id=record.id,
-                    source_id=record.source_id,
-                )
-                return _fail(_STRANDED)
-        elif payment_method is None or payment_method.type != "card":
-            return _skip(_NO_CARD)
 
         try:
             canonical_product = deserialize(
@@ -644,7 +621,7 @@ class SubscriptionCutover:
             self.session, customer, source_method=source.payment_method
         )
 
-    def _card_note(self, payment_method: PaymentMethod) -> str | None:
+    def _card_note(self, payment_method: PaymentMethod | None) -> str | None:
         """What the merchant should chase, not a reason to hold the switch back.
 
         A card only proves itself on a real charge, and a first renewal that
@@ -652,6 +629,10 @@ class SubscriptionCutover:
         the merchant is closing helps nobody, so the checks here stay free and
         the answer travels with a subscription that moved.
         """
+        if payment_method is None:
+            return _NO_PAYMENT_METHOD
+        if payment_method.type != CARD_TYPE:
+            return _NOT_A_CARD
         expires_at = payment_method.expires_at
         if expires_at is None or expires_at > utc_now():
             return None

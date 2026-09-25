@@ -37,6 +37,8 @@ from .canonical import (
     CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
+    CanonicalPaymentMethod,
+    CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -149,8 +151,18 @@ _TAX_ID_DROPPED_REASON = (
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
-    "The payment method can't be copied. Ask the customer to re-enter their "
-    "billing details."
+    "The payment method can't be copied. It still moves to Polar, but its next "
+    "renewal fails and goes to dunning unless the customer re-enters their "
+    "billing details first."
+)
+_PAYMENT_METHOD_MISSING_REASON = (
+    "The source has no payment method for this subscription. It still moves "
+    "to Polar, but its next renewal fails and goes to dunning unless the "
+    "customer adds one first."
+)
+_PAYMENT_METHOD_NOT_CARD_REASON = (
+    "Bank debits are copied without a card check, so the first Polar renewal is "
+    "their first real charge. If it fails, the subscription goes to dunning."
 )
 _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
@@ -624,15 +636,12 @@ class PrecheckEngine:
                 message="Subscription is on trial.",
                 source_id=source_id,
             )
-        payment_method = subscription.payment_method
-        if payment_method is not None and payment_method.type.requires_reentry:
+        payment_method_note = payment_method_reason(subscription.payment_method)
+        if payment_method_note is not None:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
-                code="payment_method_requires_reentry",
-                message=(
-                    f"Payment method ({payment_method.type.value}) can't be "
-                    "copied; the customer must re-enter their billing details."
-                ),
+                code=payment_method_note.code,
+                message=payment_method_note.message,
                 source_id=source_id,
             )
 
@@ -764,6 +773,22 @@ def subscription_import_reason(
     return _drop_reason(
         precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
     )
+
+
+def payment_method_reason(
+    payment_method: CanonicalPaymentMethod | None,
+) -> Reason | None:
+    """What to know about the method a subscription will renew with on Polar.
+
+    Never a reason to skip: the switch moves it either way, and a first renewal
+    that can't be charged goes to dunning like any other."""
+    if payment_method is None:
+        return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
+    if payment_method.type.requires_reentry:
+        return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
+    if payment_method.type != CanonicalPaymentMethodType.card:
+        return Reason("payment_method_not_card", _PAYMENT_METHOD_NOT_CARD_REASON)
+    return None
 
 
 def _drop_reason(issues: Iterable[PrecheckIssue], codes: set[str]) -> Reason | None:
@@ -1049,7 +1074,6 @@ def _subscription_items(
     importable_discount_ids = _importable_discount_source_ids(discount_plans)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
-        payment_method = subscription.payment_method
         customer = customer_by_source.get(subscription.customer_source_id)
         country_fallback = (
             hints.get(customer.source_id) if customer is not None else None
@@ -1070,9 +1094,7 @@ def _subscription_items(
             Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
             if customer is not None and customer.tax_id_dropped
             else None,
-            Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
-            if payment_method is not None and payment_method.type.requires_reentry
-            else None,
+            payment_method_reason(subscription.payment_method),
             Reason("subscription_trialing", _TRIALING_REASON)
             if subscription.trialing
             else None,

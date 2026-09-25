@@ -119,6 +119,9 @@ def build_product(
     )
 
 
+CARD = CanonicalPaymentMethod(source_id="pm_card", type=CanonicalPaymentMethodType.card)
+
+
 def build_subscription(
     *,
     source_id: str = "sub_1",
@@ -130,7 +133,7 @@ def build_subscription(
     paused_collection: bool = False,
     line_item_count: int = 1,
     quantity: int = 1,
-    payment_method: CanonicalPaymentMethod | None = None,
+    payment_method: CanonicalPaymentMethod | None = CARD,
     has_discount: bool = False,
     discount_source_ids: list[str] | None = None,
     discount_started_at: datetime | None = None,
@@ -454,6 +457,14 @@ class TestPrecheckEngine:
                 ),
                 build_subscription(source_id="sub_paused", paused_collection=True),
                 build_subscription(source_id="sub_trial", trialing=True),
+                build_subscription(source_id="sub_no_pm", payment_method=None),
+                build_subscription(
+                    source_id="sub_bank",
+                    payment_method=CanonicalPaymentMethod(
+                        source_id="pm_bank",
+                        type=CanonicalPaymentMethodType.sepa_debit,
+                    ),
+                ),
                 build_subscription(
                     source_id="sub_link",
                     payment_method=CanonicalPaymentMethod(
@@ -470,6 +481,8 @@ class TestPrecheckEngine:
         assert "subscription_paused_collection" in warnings
         assert "subscription_trialing" in warnings
         assert "payment_method_requires_reentry" in warnings
+        assert "payment_method_missing" in warnings
+        assert "payment_method_not_card" in warnings
         assert report.can_start is True
 
     async def test_copyable_payment_method_does_not_warn(self) -> None:
@@ -759,6 +772,35 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "subscription_trialing"
+        assert items[0].reason_level == PrecheckReasonLevel.info
+
+    @pytest.mark.parametrize(
+        ("payment_method", "reason_code"),
+        [
+            (None, "payment_method_missing"),
+            (
+                CanonicalPaymentMethod(
+                    source_id="pm_1", type=CanonicalPaymentMethodType.us_bank_account
+                ),
+                "payment_method_not_card",
+            ),
+        ],
+    )
+    def test_payment_method_the_switch_cant_check_is_importable_with_info(
+        self, payment_method: CanonicalPaymentMethod | None, reason_code: str
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1", payment_method=payment_method),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code == reason_code
         assert items[0].reason_level == PrecheckReasonLevel.info
 
     def test_payment_method_reentry_is_importable_with_info(self) -> None:

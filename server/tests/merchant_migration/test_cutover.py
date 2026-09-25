@@ -732,6 +732,7 @@ class TestRun:
     async def test_does_not_guess_when_a_mapping_was_uploaded(
         self,
         mocker: MockerFixture,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         migration: MerchantMigration,
         cutover: RunCutover,
@@ -746,8 +747,10 @@ class TestRun:
 
         outcome = await cutover(adapter)
 
-        assert outcome.status == MerchantMigrationCutoverStatus.skipped
-        _assert_left_alone(adapter, pending_record)
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert "No copied payment method" in (outcome.message or "")
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id is None
 
     async def test_uses_customer_default_for_an_uncovered_subscription(
         self,
@@ -956,21 +959,24 @@ class TestRun:
         subscription = await _created(session, pending_record)
         assert subscription.anchor_day == 31
 
-    async def test_a_stopped_move_with_no_card_at_all_fails_loudly(
+    async def test_finishes_a_stopped_move_with_no_card_at_all(
         self,
         mocker: MockerFixture,
+        session: AsyncSession,
         cutover: RunCutover,
         pending_record: MerchantMigrationRecord,
     ) -> None:
-        """Failed, not skipped: it needs chasing, and a retry can still finish."""
+        """Dunning chases the card; left paused, nobody would bill them."""
         copied_cards(mocker)
         adapter = _source(**STOPPED_BY_US)
 
         outcome = await cutover(adapter)
 
-        assert outcome.status == MerchantMigrationCutoverStatus.failed
-        assert outcome.message is not None
-        _assert_left_alone(adapter, pending_record)
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert "No copied payment method" in (outcome.message or "")
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.payment_method_id is None
 
     async def test_moves_an_expired_card_and_says_so(
         self,
@@ -995,6 +1001,47 @@ class TestRun:
         assert "has expired" in (outcome.message or "")
         subscription = await _created(session, pending_record)
         assert subscription.status == SubscriptionStatus.active
+
+    async def test_moves_without_a_card_and_leaves_it_to_dunning(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        """The precheck imports it with a warning, so the switch moves it too."""
+        copied_cards(mocker)
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert "No copied payment method" in (outcome.message or "")
+        assert adapter.stopped == ["sub_1"]
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.payment_method_id is None
+
+    async def test_moves_a_copied_bank_debit_and_says_so(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(
+            mocker,
+            build_stripe_payment_method(
+                customer="cus_1", type="us_bank_account", details={"last4": "6789"}
+            ),
+        )
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert "isn't a card" in (outcome.message or "")
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id is not None
 
     async def test_a_stopped_move_left_lapsed_for_months_fails(
         self,
@@ -1242,21 +1289,6 @@ class TestSkips:
 
         assert outcome.status == MerchantMigrationCutoverStatus.skipped
         assert "can't renew subscriptions" in (outcome.message or "")
-        _assert_left_alone(adapter, pending_record)
-
-    async def test_no_card_landed_on_polar(
-        self,
-        mocker: MockerFixture,
-        cutover: RunCutover,
-        pending_record: MerchantMigrationRecord,
-    ) -> None:
-        copied_cards(mocker)
-        adapter = _source()
-
-        outcome = await cutover(adapter)
-
-        assert outcome.status == MerchantMigrationCutoverStatus.skipped
-        assert "No copied card" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
 
     async def test_customer_deleted_on_polar(

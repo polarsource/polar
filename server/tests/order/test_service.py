@@ -4219,45 +4219,52 @@ class TestHandlePaymentFailure:
 
     @freeze_time("2024-01-01 12:00:00")
     @pytest.mark.parametrize(
-        ("past_due_days_ago", "next_retry_in_days"),
-        [(2, 5), (7, 7), (14, 7)],
+        ("past_due_days_ago", "failed_payments", "next_retry_in_days"),
+        [(2, 0, 5), (7, 0, 7), (14, 0, 7), (21, 0, None), (7, 1, 7)],
     )
-    async def test_consecutive_retry_without_payments_follows_schedule(
+    async def test_consecutive_retry_without_a_charge_follows_schedule(
         self,
         past_due_days_ago: int,
-        next_retry_in_days: int,
+        failed_payments: int,
+        next_retry_in_days: int | None,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
         product: Product,
     ) -> None:
-        """No payment method means no charge and no failed Payment rows, so the
-        retry is read off the time since the subscription went past due."""
         # Given
-        subscription = await create_active_subscription(
+        subscription = await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=utc_now() - timedelta(days=past_due_days_ago),
         )
-        subscription.status = SubscriptionStatus.past_due
-        subscription.past_due_at = utc_now() - timedelta(days=past_due_days_ago)
-        await save_fixture(subscription)
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
         )
-        order.next_payment_attempt_at = utc_now()
-        await save_fixture(order)
+        for _ in range(failed_payments):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
 
         # When
         result_order = await order_service.handle_payment_failure(session, order)
 
         # Then
-        assert result_order.next_payment_attempt_at == utc_now() + timedelta(
-            days=next_retry_in_days
+        assert result_order.next_payment_attempt_at == (
+            utc_now() + timedelta(days=next_retry_in_days)
+            if next_retry_in_days is not None
+            else None
         )
 
     @freeze_time("2024-01-01 12:00:00")

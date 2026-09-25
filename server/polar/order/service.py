@@ -3223,10 +3223,12 @@ class OrderService:
 
         now = utc_now()
         subscription = order.subscription
-        # With no payment method, no charge is ever attempted, so there is no
-        # Payment row to count; read the attempt off the schedule instead.
-        if failed_attempts == 0 and subscription is not None:
-            failed_attempts = self._scheduled_dunning_attempts(subscription, now)
+        # A retry with no payment method attempts no charge and leaves no
+        # Payment row, so the schedule is the floor for the attempt count.
+        if subscription is not None:
+            failed_attempts = max(
+                failed_attempts, self._scheduled_dunning_attempts(subscription, now)
+            )
 
         # failed_attempts includes the current failure (upserted by the Stripe
         # webhook handler before we get here) and the initial cycle failure
@@ -3271,7 +3273,7 @@ class OrderService:
     def _scheduled_dunning_attempts(
         self, subscription: Subscription, now: datetime
     ) -> int:
-        """Failed attempts so far, counting the initial one, per the schedule."""
+        """Counts the initial failure, like `count_failed_payments_for_order`."""
         if subscription.past_due_at is None:
             return 1
         elapsed = now - subscription.past_due_at

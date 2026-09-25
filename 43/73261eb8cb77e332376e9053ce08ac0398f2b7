@@ -1,0 +1,28 @@
+terraform/sandbox/aws.tf
+  s_5b3c63d959ed8e::t_a74c7226943303 269
+  s_5b3c63d959ed8e::t_36d09be462a208 107
+  s_5b3c63d959ed8e::t_bc29b4d63b945a 264-268
+terraform/production/aws.tf
+  s_5b3c63d959ed8e::t_a6d395969f593f 238
+  s_5b3c63d959ed8e::t_bc29b4d63b945a 233-237
+  s_5b3c63d959ed8e::t_1907ca4311605e 86
+terraform/modules/s3_buckets/main.tf
+  s_5b3c63d959ed8e::t_a2c040469fccc6 135,145,414-451,453
+  s_5b3c63d959ed8e::t_a4f809cfe8d345 452
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4373261eb8cb77e332376e9053ce08ac0398f2b7",
+  "prompts": {},
+  "sessions": {
+    "s_5b3c63d959ed8e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d68376a1-0396-4e28-93dd-6461500cabdb",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

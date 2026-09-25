@@ -74,7 +74,7 @@ Imported subscriptions are created `paused` (we considered a separate `migration
 
 1. Re-read it on the source. It must still be `active`/`trialing`, on the same price, single line item, no coupon, still charged automatically, and not already set to cancel at period end.
 2. Confirm the renewal date is far enough out (24h safety window), so we don't clash with the old billing provider renewal. The period we activate with is the one the source reports now, not the one captured at import.
-3. Confirm the card is valid on Polar (a zero-amount `SetupIntent`, cards only — a bank debit needs a mandate the copy doesn't carry, so we accept it as-is).
+3. Attach the copied payment method. It never holds the switch back: a missing method, one that couldn't be copied, or a bank debit (whose mandate the copy doesn't carry) still moves, flagged on the ledger row. The first Polar renewal that can't be charged goes to dunning. The precheck flags the same cases as warnings, so what it calls importable is what the switch moves.
 4. Cancel the subscription on the old billing provider.
 5. Activate on Polar, keeping the source's period so the first Polar charge lands on the renewal the customer already expects.
 
@@ -179,7 +179,7 @@ We can't test this on sandbox: PAN Copy and PAN Import only run on Stripe live, 
 1. Where and how should we store the API keys of Stripe, LS, Paddle? **Resolved**: Use the secrets encryption pattern from `secrets-encryption.mdx` — wrap secrets in `EncryptedString` and map columns with `EncryptedStringType`.
 2. Should we get notified when a migration is triggered?
 3. How do we trigger the cutover on live? Resolved: a manual action via the checklist's cutover step (merchant; Ops can too), gated on checklist completion.
-4. What happens with subscriptions we can't migrate? Resolved: the precheck flags them (`past_due`/`unpaid`/paused, uncopyable PMs); they stay on the old provider, staged as skipped, not imported.
+4. What happens with subscriptions we can't migrate? Resolved: the precheck flags them (`past_due`/`unpaid`/paused); they stay on the old provider, staged as skipped, not imported. Uncopyable or missing payment methods are warnings only: those subscriptions move, and the first renewal goes to dunning if no method was added.
 
 (Decided: store the source subscription id in `user_metadata`; the customer keeps its Stripe id in `stripe_customer_id`.)
 

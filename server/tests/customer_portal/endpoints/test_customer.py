@@ -14,7 +14,7 @@ from polar.models.customer_email_verification import CustomerEmailVerification
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -22,6 +22,97 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
+
+
+@pytest.mark.asyncio
+class TestGetEmbedPolicy:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/embed-policy")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT)
+    async def test_configured(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.embed_hosts = ["example.com", "*.shop.example.com"]
+        organization.feature_settings = {"frame_ancestors_enforced": True}
+        await save_fixture(organization)
+
+        response = await client.get("/v1/customer-portal/customers/me/embed-policy")
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == [
+            "https://example.com",
+            "https://*.shop.example.com",
+        ]
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_not_configured(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.feature_settings = {"frame_ancestors_enforced": True}
+        await save_fixture(organization)
+
+        response = await client.get("/v1/customer-portal/customers/me/embed-policy")
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == ["'none'"]
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_not_enforced(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+
+        response = await client.get("/v1/customer-portal/customers/me/embed-policy")
+
+        assert response.status_code == 200
+        assert response.json()["frame_ancestors"] == ["*"]
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT)
+    @pytest.mark.parametrize(
+        ("embed_hosts", "embed_origin", "expected"),
+        [
+            (["*.example.com"], "https://shop.example.com", "https://shop.example.com"),
+            (["*.example.com"], "https://example.com", None),
+            (
+                ["192.168.1.43:5500"],
+                "http://192.168.1.43:5500",
+                "http://192.168.1.43:5500",
+            ),
+            (["example.com"], "http://example.com", None),
+            ([], "https://example.com", None),
+        ],
+    )
+    async def test_embed_origin(
+        self,
+        embed_hosts: list[str],
+        embed_origin: str,
+        expected: str | None,
+        client: AsyncClient,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.embed_hosts = embed_hosts
+        await save_fixture(organization)
+
+        response = await client.get(
+            "/v1/customer-portal/customers/me/embed-policy",
+            params={"embed_origin": embed_origin},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["embed_origin"] == expected
 
 
 @pytest.fixture(autouse=True)

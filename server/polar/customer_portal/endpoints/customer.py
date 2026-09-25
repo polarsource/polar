@@ -2,7 +2,7 @@ import json
 from textwrap import dedent
 
 import structlog
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from fastapi.responses import Response
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
@@ -15,6 +15,7 @@ from polar.kit.http import get_content_disposition
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
+from polar.organization.embed_hosts import csp_frame_ancestors, match_origin
 from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
 from polar.postgres import (
     AsyncReadSession,
@@ -34,6 +35,7 @@ from ..schemas.customer import (
     CustomerPaymentMethodTypeAdapter,
     CustomerPortalCustomer,
     CustomerPortalCustomerUpdate,
+    CustomerPortalEmbedPolicy,
 )
 from ..service.customer import CustomerNotReady, PaymentMethodSetupFailed
 from ..service.customer import customer as customer_service
@@ -69,6 +71,30 @@ async def stream(
 async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
     """Get authenticated customer."""
     return get_customer(auth_subject)
+
+
+@router.get(
+    "/me/embed-policy",
+    response_model=CustomerPortalEmbedPolicy,
+    tags=[APITag.private],
+    include_in_schema=False,
+)
+async def get_embed_policy(
+    auth_subject: auth.CustomerPortalUnionRead,
+    embed_origin: str | None = Query(
+        None, description="The origin of the page embedding the customer portal."
+    ),
+) -> CustomerPortalEmbedPolicy:
+    """Get the hosts allowed to embed the customer's portal."""
+    organization = get_customer(auth_subject).organization
+    return CustomerPortalEmbedPolicy(
+        frame_ancestors=csp_frame_ancestors(organization.embed_hosts)
+        if organization.is_frame_ancestors_enforced
+        else ["*"],
+        embed_origin=match_origin(embed_origin, organization.embed_hosts)
+        if embed_origin is not None
+        else None,
+    )
 
 
 @router.get(

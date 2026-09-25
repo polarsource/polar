@@ -509,9 +509,7 @@ describe('checkout frame ancestors', () => {
   })
 
   it('leaves other pages to the static policy', async () => {
-    const response = await proxy(
-      framedRequest('https://polar.sh/embed/payment-method'),
-    )
+    const response = await proxy(framedRequest('https://polar.sh/acme'))
 
     expect(response.headers.get('Content-Security-Policy')).toBeNull()
   })
@@ -536,7 +534,7 @@ describe('checkout frame ancestors', () => {
   })
 
   it('asks nothing outside checkout', async () => {
-    await proxy(framedRequest('https://polar.sh/embed/payment-method'))
+    await proxy(framedRequest('https://polar.sh/acme'))
 
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -549,6 +547,103 @@ describe('checkout frame ancestors', () => {
     )
 
     expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
+  })
+})
+
+describe('payment method embed policy', () => {
+  let mockFetch: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        frame_ancestors: ['https://example.com'],
+        embed_origin: 'https://example.com',
+      }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const EMBED_URL =
+    'https://polar.sh/embed/payment-method?session_token=polar_cst_123&embed_origin=https%3A%2F%2Fexample.com'
+
+  const framedRequest = (url: string, headers: Record<string, string> = {}) =>
+    new NextRequest(url, {
+      headers: { 'Sec-Fetch-Dest': 'iframe', ...headers },
+    })
+
+  it('asks for the policy once, with the session token and embed origin', async () => {
+    const response = await proxy(framedRequest(EMBED_URL))
+
+    expect(mockFetch).toHaveBeenCalledOnce()
+    const [url, init] = mockFetch.mock.calls[0]
+    expect(url).toContain(
+      '/v1/customer-portal/customers/me/embed-policy?embed_origin=https%3A%2F%2Fexample.com',
+    )
+    expect(init.headers).toEqual({ Authorization: 'Bearer polar_cst_123' })
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      'frame-ancestors https://example.com;',
+    )
+    expect(getForwardedRequestHeader(response, 'x-polar-embed-origin')).toBe(
+      'https://example.com',
+    )
+  })
+
+  it('forwards no embed origin the organization refused', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ frame_ancestors: ['*'], embed_origin: null }),
+    })
+
+    const response = await proxy(framedRequest(EMBED_URL))
+
+    expect(
+      getForwardedRequestHeader(response, 'x-polar-embed-origin'),
+    ).toBeNull()
+  })
+
+  it('drops an embed origin sent by the client', async () => {
+    mockFetch.mockResolvedValue({ ok: false })
+
+    const response = await proxy(
+      framedRequest(EMBED_URL, { 'x-polar-embed-origin': 'https://evil.com' }),
+    )
+
+    expect(
+      getForwardedRequestHeader(response, 'x-polar-embed-origin'),
+    ).toBeNull()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
+  })
+
+  it('resolves the embed origin on a top-level navigation, and refuses framing', async () => {
+    const response = await proxy(
+      new NextRequest(EMBED_URL, { headers: { 'Sec-Fetch-Dest': 'document' } }),
+    )
+
+    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'none';",
+    )
+    expect(getForwardedRequestHeader(response, 'x-polar-embed-origin')).toBe(
+      'https://example.com',
+    )
+  })
+
+  it('refuses framing without a session token', async () => {
+    const response = await proxy(
+      framedRequest('https://polar.sh/embed/payment-method'),
+    )
+
+    expect(mockFetch).not.toHaveBeenCalled()
     expect(response.headers.get('Content-Security-Policy')).toContain(
       "frame-ancestors 'none';",
     )

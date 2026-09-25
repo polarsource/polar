@@ -2,13 +2,7 @@
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
-import {
-  docsCSP,
-  embeddedCSP,
-  ENVIRONMENT,
-  nonEmbeddedCSP,
-  oauth2CSP,
-} from './src/csp.mjs'
+import { docsCSP, ENVIRONMENT, nonEmbeddedCSP, oauth2CSP } from './src/csp.mjs'
 
 const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
 
@@ -456,10 +450,6 @@ const nextConfig = {
       {
         source: '/embed/:path*',
         headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: embeddedCSP(),
-          },
           {
             key: 'Permissions-Policy',
             value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,

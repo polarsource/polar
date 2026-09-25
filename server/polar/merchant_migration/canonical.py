@@ -157,8 +157,8 @@ class CanonicalSubscription:
     # Set when the source discount would change the charge if Polar kept one
     # coupon. The subscription stays on Stripe.
     discount_block: str | None = None
-    # The customer already asked to stop: the source won't renew it. Nothing left
-    # for Polar to take over, so the cutover leaves it where it is.
+    # The customer already asked to stop. A selected cutover takes it over and
+    # keeps this end instead of renewing it.
     cancel_at_period_end: bool = False
     # A fixed date the source stops it on. Stripe also fills it in for
     # ``cancel_at_period_end``, so only a date without that flag is its own end.

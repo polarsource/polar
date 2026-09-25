@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { assessmentFacts } from '../review/assessmentFacts'
 import { RecordCard, TaxAfterSwitchField } from '../review/ReviewRecordFields'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
+import { periodEndMoveNotice } from './switchCopy'
 import { needsAttention, SwitchRow } from './switchRows'
 
 export function SwitchRecordModal({
@@ -26,6 +27,7 @@ export function SwitchRecordModal({
   const showCustomer = Boolean(
     facts.customerName || row.customer_email || facts.customerId,
   )
+  const periodEndNotice = periodEndMoveNotice(row)
 
   return (
     <Box flexDirection="column" height="100%">
@@ -58,7 +60,15 @@ export function SwitchRecordModal({
             </Text>
             <SwitchStatusIndicator row={row} />
           </Box>
-          {row.cutover_error ? (
+          {periodEndNotice ? (
+            <Box>
+              <Alert
+                variant="warning"
+                title="Cancels at period end"
+                description={periodEndNotice}
+              />
+            </Box>
+          ) : row.cutover_error ? (
             <Box>
               <Alert
                 variant={needsAttention(row) ? 'warning' : 'info'}

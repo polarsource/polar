@@ -48,7 +48,7 @@ export function CatalogEmptyPanel({
         >
           {title}
         </Text>
-        <Text variant="caption" color={failed ? 'danger' : 'muted'}>
+        <Text variant="caption" color="muted">
           {description}
         </Text>
       </Box>

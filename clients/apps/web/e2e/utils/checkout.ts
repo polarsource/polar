@@ -179,7 +179,16 @@ export class CheckoutPage {
 
   private async fillBillingAddress(): Promise<void> {
     const { country, line1, postalCode, city, state } = BILLING_ADDRESS
-    if ((await this.address())?.country !== country) {
+    const address = await this.address()
+    if (
+      address?.line1 === line1 &&
+      address.postal_code === postalCode &&
+      address.city === city &&
+      address.state === `${country}-${state.code}`
+    ) {
+      return
+    }
+    if (address?.country !== country) {
       const countryName = new Intl.DisplayNames(['en'], { type: 'region' }).of(
         country,
       )

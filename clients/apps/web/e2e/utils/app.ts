@@ -189,7 +189,13 @@ export class App {
             .toBe(value)
           this.mark('option highlighted')
           await this.page.keyboard.press('Enter')
-          await expect.poll(chosen, SETTLE).toBe(true)
+          await expect
+            .poll(
+              async () =>
+                (await trigger.innerText()).includes(value) && (await chosen()),
+              SETTLE,
+            )
+            .toBe(true)
           this.mark('selection saved')
           return true
         },

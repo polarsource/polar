@@ -81,11 +81,20 @@ CheckoutPaymentError = {
     "description": "The payment failed.",
     "model": PaymentError.schema(),
 }
+CheckoutNotPermitted = {
+    "description": "The organization is not allowed to accept payments.",
+    "model": NotPermitted.schema(),
+}
+CheckoutLockedError = {
+    "description": "The checkout session is being processed.",
+    "model": CheckoutLocked.schema(),
+}
 CheckoutForbiddenError = {
     "description": "The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.",
     "model": Annotated[
         AlreadyActiveSubscriptionError.schema()
         | NotOpenCheckout.schema()
+        | NotPermitted.schema()
         | PaymentNotReady.schema()
         | TrialAlreadyRedeemed.schema()
         | DiscountRedemptionLimitReached.schema(),
@@ -225,7 +234,7 @@ async def update(
     "/client/{client_secret}",
     summary="Get Checkout Session from Client",
     response_model=CheckoutPublic,
-    responses={404: CheckoutNotFound, 410: CheckoutExpired},
+    responses={403: CheckoutNotPermitted, 404: CheckoutNotFound, 410: CheckoutExpired},
 )
 async def client_get(
     client_secret: CheckoutClientSecret,
@@ -243,6 +252,7 @@ async def client_get(
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        409: CheckoutLockedError,
         410: CheckoutExpired,
     },
 )
@@ -271,6 +281,7 @@ async def client_update(
         400: CheckoutPaymentError,
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        409: CheckoutLockedError,
         410: CheckoutExpired,
     },
 )

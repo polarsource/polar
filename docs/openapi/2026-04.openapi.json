@@ -8079,6 +8079,16 @@
               }
             }
           },
+          "403": {
+            "description": "The organization is not allowed to accept payments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Checkout session not found.",
             "content": {
@@ -8181,6 +8191,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CheckoutForbiddenError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The checkout session is being processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutLocked"
                 }
               }
             }
@@ -8297,6 +8317,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CheckoutForbiddenError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The checkout session is being processed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutLocked"
                 }
               }
             }
@@ -39454,6 +39484,9 @@
             "$ref": "#/components/schemas/NotOpenCheckout"
           },
           {
+            "$ref": "#/components/schemas/NotPermitted"
+          },
+          {
             "$ref": "#/components/schemas/PaymentNotReady"
           },
           {
@@ -40612,6 +40645,28 @@
         "type": "object",
         "title": "CheckoutLinkUpdate",
         "description": "Schema to update an existing checkout link."
+      },
+      "CheckoutLocked": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CheckoutLocked",
+            "title": "Error",
+            "examples": [
+              "CheckoutLocked"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CheckoutLocked"
       },
       "CheckoutOrganization": {
         "properties": {

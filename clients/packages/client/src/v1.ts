@@ -25166,16 +25166,6 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationCutoverStatus: 'moved' | 'skipped' | 'failed'
-    /** MerchantMigrationImportReport */
-    MerchantMigrationImportReport: {
-      /** @description The migration step after the import. */
-      step: components['schemas']['MerchantMigrationStep']
-      /**
-       * Results
-       * @description Per-entity counts of what was imported vs skipped.
-       */
-      results: components['schemas']['MerchantMigrationImportResult'][]
-    }
     /** MerchantMigrationImportRequest */
     MerchantMigrationImportRequest: {
       /**
@@ -25188,21 +25178,6 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
-    }
-    /** MerchantMigrationImportResult */
-    MerchantMigrationImportResult: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Imported
-       * @description How many were created or reused in Polar.
-       */
-      imported: number
-      /**
-       * Skipped
-       * @description How many were left on the source (not importable).
-       */
-      skipped: number
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -25233,6 +25208,8 @@ export interface components {
     MerchantMigrationOperation: {
       /** @description pending or running while Polar works; done or failed when it finishes. */
       status: components['schemas']['MerchantMigrationOperationStatus']
+      /** @description Which job this is: pre-check, catalog import, or cutover. None when the run has no recorded job type. */
+      kind: components['schemas']['MerchantMigrationOperationKind'] | null
       /**
        * Stalled
        * @description Whether an active operation has stopped making progress.
@@ -25244,6 +25221,11 @@ export interface components {
        */
       error: string | null
     }
+    /**
+     * MerchantMigrationOperationKind
+     * @enum {string}
+     */
+    MerchantMigrationOperationKind: 'precheck' | 'import' | 'cutover'
     /**
      * MerchantMigrationOperationStatus
      * @enum {string}
@@ -56649,7 +56631,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MerchantMigrationImportReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */
@@ -70626,6 +70608,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationOperationKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationKind']
+> = ['precheck', 'import', 'cutover']
 export const merchantMigrationOperationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
 > = ['pending', 'running', 'done', 'failed']

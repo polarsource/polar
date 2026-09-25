@@ -40,6 +40,7 @@ from polar.merchant_migration.cards import (
     AmbiguousCopiedCard,
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
+from polar.merchant_migration.errors import MerchantMigrationError
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
@@ -51,6 +52,7 @@ from polar.merchant_migration.repository import (
 )
 from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
@@ -89,6 +91,7 @@ from polar.models.merchant_migration import (
 from polar.models.merchant_migration_operation import (
     STALL_THRESHOLD,
     MerchantMigrationOperation,
+    MerchantMigrationOperationKind,
     MerchantMigrationOperationSelection,
     MerchantMigrationOperationStatus,
 )
@@ -1293,6 +1296,20 @@ async def _products(session: AsyncSession, organization: Organization) -> list[P
     return list(result.scalars().unique().all())
 
 
+async def _import_catalog(
+    session: AsyncSession,
+    auth_subject: AuthSubject[User],
+    migration_id: UUID,
+    **kwargs: Any,
+) -> MerchantMigrationImportReport:
+    await service.import_catalog(session, auth_subject, migration_id, **kwargs)
+    for _ in range(30):
+        report = await service.execute_import(session, migration_id)
+        if report is not None:
+            return report
+    raise AssertionError("catalog import did not finish")
+
+
 @pytest.mark.asyncio
 class TestImportCatalog:
     @pytest.mark.auth
@@ -1340,7 +1357,7 @@ class TestImportCatalog:
             records=records,
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.customers].imported == 1
@@ -1368,7 +1385,7 @@ class TestImportCatalog:
             mocker, session, save_fixture, auth_subject, organization
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         assert report.step == MerchantMigrationStep.create_catalog
         results = {result.entity: result for result in report.results}
@@ -1447,7 +1464,7 @@ class TestImportCatalog:
             records=records,
         )
 
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_email_and_organization(
@@ -1524,7 +1541,7 @@ class TestImportCatalog:
             records=records,
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 2
@@ -1574,7 +1591,7 @@ class TestImportCatalog:
         await save_fixture(migration)
 
         with pytest.raises(MigrationOperationInProgress):
-            await service.import_catalog(session, auth_subject, migration.id)
+            await _import_catalog(session, auth_subject, migration.id)
 
     @pytest.mark.auth
     async def test_blocked_organization_cannot_import(
@@ -1593,7 +1610,7 @@ class TestImportCatalog:
         await save_fixture(organization)
 
         with pytest.raises(CatalogImportBlocked):
-            await service.import_catalog(session, auth_subject, migration.id)
+            await _import_catalog(session, auth_subject, migration.id)
 
         assert await _products(session, organization) == []
 
@@ -1622,7 +1639,7 @@ class TestImportCatalog:
         )
 
         with pytest.raises(CatalogImportBlocked) as exc_info:
-            await service.import_catalog(session, auth_subject, migration.id)
+            await _import_catalog(session, auth_subject, migration.id)
 
         assert exc_info.value.blockers == ["source_has_connected_accounts"]
         assert await _products(session, organization) == []
@@ -1649,7 +1666,7 @@ class TestImportCatalog:
                     update_dict={"status": MerchantMigrationRecordStatus.skipped},
                 )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 0
@@ -1670,7 +1687,7 @@ class TestImportCatalog:
         )
         after_created = mocker.spy(product_service, "_after_product_created")
 
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         after_created.assert_not_called()
 
@@ -1694,7 +1711,7 @@ class TestImportCatalog:
         )
         send_webhook = mocker.spy(discount_service, "_send_webhook")
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.discounts].imported == 1
@@ -1736,7 +1753,7 @@ class TestImportCatalog:
             records=_catalog_with_discounted_subscription(max_redemptions=0),
         )
 
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         discounts = await _imported_discounts(session, organization)
         assert len(discounts) == 1
@@ -1777,7 +1794,7 @@ class TestImportCatalog:
                     update_dict={"status": MerchantMigrationRecordStatus.skipped},
                 )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.discounts].imported == 0
@@ -1831,7 +1848,7 @@ class TestImportCatalog:
             ],
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         kept = await record_repository.get_by_source(
             organization_id=organization.id,
@@ -1877,7 +1894,7 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         items, _ = await service.list_records(
             session,
@@ -1909,7 +1926,7 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         items, count = await service.list_records(
             session,
@@ -1956,7 +1973,7 @@ class TestImportCatalog:
             records=_catalog_with_subscription(),
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 1
@@ -2035,7 +2052,7 @@ class TestImportCatalog:
         )
         assert subscription_record is not None
 
-        report = await service.import_catalog(
+        report = await _import_catalog(
             session,
             auth_subject,
             migration.id,
@@ -2096,7 +2113,7 @@ class TestImportCatalog:
             mocker, session, save_fixture, auth_subject, organization, records=catalog
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 1
@@ -2145,7 +2162,7 @@ class TestImportCatalog:
             mocker, session, save_fixture, auth_subject, organization
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.customers].imported == 0
@@ -2185,7 +2202,7 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         # Re-running precheck after import must not push the step back to pre_check.
         await service.run_precheck(session, auth_subject, migration.id)
@@ -2209,7 +2226,7 @@ class TestImportCatalog:
             mocker, session, save_fixture, auth_subject, organization
         )
 
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         imported = await record_repository.get_by_source(
@@ -2251,7 +2268,7 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         customer_repository = CustomerRepository.from_session(session)
         matches = await session.execute(
@@ -2281,8 +2298,8 @@ class TestImportCatalog:
             mocker, session, save_fixture, auth_subject, organization
         )
 
-        first = await service.import_catalog(session, auth_subject, migration.id)
-        second = await service.import_catalog(session, auth_subject, migration.id)
+        first = await _import_catalog(session, auth_subject, migration.id)
+        second = await _import_catalog(session, auth_subject, migration.id)
 
         # the second run reports the same counts but creates nothing new
         assert second.results == first.results
@@ -2316,7 +2333,7 @@ class TestImportCatalog:
         )
         assert product_record is not None
 
-        report = await service.import_catalog(
+        report = await _import_catalog(
             session, auth_subject, migration.id, record_ids=[product_record.id]
         )
 
@@ -2351,7 +2368,7 @@ class TestImportCatalog:
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
         migration = await build_connected_migration(save_fixture, organization)
         await service.run_precheck(session, auth_subject, migration.id)
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         result = await session.execute(
             select(Subscription).where(Subscription.organization_id == organization.id)
@@ -2413,7 +2430,7 @@ class TestImportCatalog:
         )
         assert product_record is not None
 
-        report = await service.import_catalog(
+        report = await _import_catalog(
             session,
             auth_subject,
             migration.id,
@@ -2444,7 +2461,7 @@ class TestImportCatalog:
             organization,
             records=_importable_catalog(),
         )
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 0
@@ -2463,7 +2480,144 @@ class TestImportCatalog:
         migration = await build_connected_migration(save_fixture, organization)
 
         with pytest.raises(CatalogImportNotReady):
-            await service.import_catalog(session, auth_subject, migration.id)
+            await _import_catalog(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
+    async def test_queues_import_without_creating_records(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        started = await service.import_catalog(session, auth_subject, migration.id)
+
+        assert started.step == MerchantMigrationStep.pre_check
+        assert started.operation is not None
+        assert started.operation.status == MerchantMigrationOperationStatus.pending
+        assert started.operation.kind == MerchantMigrationOperationKind.import_catalog
+        enqueue.assert_called_once_with(
+            "merchant_migration.import_catalog",
+            merchant_migration_id=migration.id,
+        )
+        assert await _products(session, organization) == []
+
+    @pytest.mark.auth
+    async def test_import_continues_in_batches(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        mocker.patch("polar.merchant_migration.importer.IMPORT_BATCH_SIZE", 1)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.import_catalog(session, auth_subject, migration.id)
+        enqueue.reset_mock()
+        before = await session.execute(
+            select(Customer.email).where(Customer.organization_id == organization.id)
+        )
+        before_emails = set(before.scalars().all())
+
+        assert await service.execute_import(session, migration.id) is None
+
+        assert migration.operation is not None
+        assert migration.operation.is_active
+        assert migration.operation.cursor == {"phase": "products"}
+        assert migration.step.value == MerchantMigrationStep.pre_check.value
+        assert len(await _products(session, organization)) == 1
+        customers = await session.execute(
+            select(Customer.email).where(Customer.organization_id == organization.id)
+        )
+        assert set(customers.scalars().all()) == before_emails
+        assert "alice@example.com" not in before_emails
+        enqueue.assert_called_once_with(
+            "merchant_migration.import_catalog",
+            merchant_migration_id=migration.id,
+        )
+
+        assert await service.execute_import(session, migration.id) is None
+        report = await service.execute_import(session, migration.id)
+
+        assert report is not None
+        assert report.step == MerchantMigrationStep.create_catalog
+        await session.refresh(migration)
+        assert migration.step == MerchantMigrationStep.create_catalog
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+        assert migration.operation.kind == MerchantMigrationOperationKind.import_catalog
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        assert results[PrecheckEntity.customers].imported == 1
+
+    @pytest.mark.auth
+    async def test_import_failure_stays_on_review_and_keeps_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        mocker.patch(
+            "polar.merchant_migration.importer.product_service.create",
+            side_effect=MerchantMigrationError("alice@example.com"),
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        assert await service.execute_import(session, migration.id) is None
+
+        assert migration.step == MerchantMigrationStep.pre_check
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.failed
+        assert migration.operation.error == (
+            "We couldn't prepare these subscriptions. Please try again."
+        )
+        assert await _products(session, organization) == []
+
+    @pytest.mark.auth
+    async def test_unexpected_import_error_retries_without_keeping_the_batch(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        mocker.patch(
+            "polar.merchant_migration.importer.product_service.create",
+            side_effect=RuntimeError("boom"),
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        with pytest.raises(RuntimeError):
+            await service.execute_import(session, migration.id)
+
+        await session.refresh(migration)
+        assert migration.step == MerchantMigrationStep.pre_check
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.pending
+        assert await _products(session, organization) == []
 
     @pytest.mark.auth
     async def test_multi_currency_price_imports_every_currency(
@@ -2485,7 +2639,7 @@ class TestImportCatalog:
             records=records,
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 1
@@ -2575,7 +2729,7 @@ class TestImportCatalog:
         assert first_subscription is not None
         assert second_subscription is not None
 
-        first = await service.import_catalog(
+        first = await _import_catalog(
             session,
             auth_subject,
             migration.id,
@@ -2593,7 +2747,7 @@ class TestImportCatalog:
         assert discount_record is not None
         assert discount_record.status == MerchantMigrationRecordStatus.pending
 
-        second = await service.import_catalog(
+        second = await _import_catalog(
             session,
             auth_subject,
             migration.id,
@@ -2631,7 +2785,7 @@ class TestSummarizeRecords:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         summary = await service.summarize_records(session, auth_subject, migration.id)
 
@@ -2933,7 +3087,7 @@ class TestRunCardVerification:
             organization,
             records=_catalog_with_subscription(),
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, STEP_VERIFY_CARDS
         )

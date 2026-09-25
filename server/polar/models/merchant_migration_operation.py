@@ -33,6 +33,12 @@ class MerchantMigrationOperationStatus(StrEnum):
     failed = "failed"
 
 
+class MerchantMigrationOperationKind(StrEnum):
+    precheck = "precheck"
+    import_catalog = "import"
+    cutover = "cutover"
+
+
 class MerchantMigrationOperationSelection(Schema):
     """Compact import selection. Opt-in (``record_ids``) or opt-out
     (``exclude_record_ids``); never both. Workers filter batch queries with this
@@ -59,6 +65,10 @@ class MerchantMigrationOperation(Schema):
 
     status: MerchantMigrationOperationStatus = Field(
         description="pending → running → done, or failed."
+    )
+    kind: MerchantMigrationOperationKind | None = Field(
+        default=None,
+        description="Which job this operation is. None on older rows.",
     )
     cursor: dict[str, Any] | None = Field(
         default=None,

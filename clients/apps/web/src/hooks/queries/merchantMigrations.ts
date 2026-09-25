@@ -114,8 +114,14 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
         }),
         'Something went wrong. Please try again.',
       ),
-    onSuccess: () => {
-      invalidateMigrationRecords(id)
+    onSuccess: (migration) => {
+      // An older API returned the import report. Only the migration row is safe
+      // to cache; anything else is refetched.
+      if (migration.id === id) {
+        getQueryClient().setQueryData(['merchantMigration', { id }], migration)
+        return
+      }
+      invalidateMigration(id)
     },
   })
 

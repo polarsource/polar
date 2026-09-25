@@ -59,7 +59,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
   start_copy: {
     title: 'Start the copy in Stripe',
     description: 'Copy saved cards from your Stripe account to Polar.',
-    warning: 'Only the account owner can start a copy.',
+    warning: 'Only the Stripe account owner can start a copy.',
     inputs: [
       {
         ...STRIPE_MIGRATION_ID_INPUT,

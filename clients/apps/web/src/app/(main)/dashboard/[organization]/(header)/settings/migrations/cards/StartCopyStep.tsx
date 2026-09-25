@@ -40,7 +40,10 @@ export function StartCopyStep({
         borderStyle="solid"
         borderColor="border-secondary"
       >
-        <TaskRow title="Upload customer CSV in Stripe">
+        <TaskRow
+          title="Upload the customer CSV in Stripe"
+          description="Download it here, then open Stripe → Customers → Copy customers and choose Upload from file under Copy Method."
+        >
           <Box>
             <Button variant="secondary" size="sm" asChild>
               <a
@@ -55,8 +58,12 @@ export function StartCopyStep({
         </TaskRow>
 
         <TaskRow
-          title="Paste Polar account ID as recipient"
-          description="Stripe → Customers → Copy customers"
+          title="Paste the Polar account ID as the recipient"
+          description={
+            copy.warning
+              ? `On that same page, then start the copy. ${copy.warning}`
+              : 'On that same page, then start the copy.'
+          }
         >
           {destinationAccountId ? (
             <Box width="100%">
@@ -75,7 +82,10 @@ export function StartCopyStep({
           )}
         </TaskRow>
 
-        <TaskRow title="Track copy progress in Stripe">
+        <TaskRow
+          title="Come back and paste the migreq id"
+          description="Find it on Stripe copy status."
+        >
           <Box>
             <Button variant="secondary" size="sm" asChild>
               <a
@@ -90,7 +100,6 @@ export function StartCopyStep({
         </TaskRow>
       </Box>
 
-      {copy.warning && <Text variant="caption">Important: {copy.warning}</Text>}
       <OpsUpdate step={step} />
       {copy.action && (
         <PanTransferStepForm

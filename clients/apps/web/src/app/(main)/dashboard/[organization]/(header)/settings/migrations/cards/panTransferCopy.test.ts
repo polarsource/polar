@@ -44,7 +44,7 @@ describe('start copy', () => {
       required: true,
     })
     expect(STEP_COPY.start_copy.warning).toBe(
-      'Only the account owner can start a copy.',
+      'Only the Stripe account owner can start a copy.',
     )
   })
 

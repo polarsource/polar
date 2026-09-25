@@ -52,7 +52,7 @@ const step = {
   key: 'start_copy',
   owner: 'merchant',
   kind: 'input',
-  status: 'current',
+  status: 'in_progress',
   inputs: {},
   note: null,
   expected_at: null,

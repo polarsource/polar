@@ -90,16 +90,6 @@ vi.mock('@polar-sh/orbit', () => ({
     </button>
   ),
   Spinner: () => <div role="status" />,
-  Alert: ({ title }: { title: string }) => <div role="alert">{title}</div>,
-  DataTable: () => null,
-  InlineModal: () => null,
-  InlineModalHeader: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
-  Status: () => null,
-  SegmentedControl: () => null,
-  Grid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Input: () => null,
 }))
 
 vi.mock('@polar-sh/orbit/Box', () => ({

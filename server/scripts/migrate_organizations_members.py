@@ -30,6 +30,7 @@ from enum import StrEnum
 from functools import wraps
 from typing import Any, cast
 
+import dramatiq
 import structlog
 import typer
 from sqlalchemy import and_, func, or_, select
@@ -37,6 +38,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import aliased, joinedload
 from sqlalchemy.sql.expression import CTE
 
+from polar import tasks  # noqa: F401  -- registers dramatiq actors
 from polar.kit.db.postgres import AsyncReadSession, create_async_sessionmaker
 from polar.models import (
     Customer,
@@ -66,6 +68,8 @@ from polar.organization.tasks import (
     _prepare_seats,
 )
 from polar.postgres import AsyncSession, create_async_engine
+from polar.redis import create_redis
+from polar.worker import JobQueueManager, enqueue_job
 from scripts.helper import read_engine, run_batched_update
 
 cli = typer.Typer()
@@ -806,6 +810,67 @@ async def _count_customers_missing_owner(
     return counts
 
 
+async def _load_audits(
+    session: AsyncReadSession,
+    *,
+    slug: str | None,
+    chunk_size: int,
+) -> list[tuple[uuid.UUID, OrganizationAudit]]:
+    """Every organization still on the legacy model, with its bucket and gaps."""
+    statement = (
+        select(Organization.id, Organization.slug)
+        .where(
+            Organization.deleted_at.is_(None),
+            Organization.status != OrganizationStatus.BLOCKED,
+            or_(
+                Organization.feature_settings["member_model_enabled"].is_(None),
+                ~Organization.feature_settings["member_model_enabled"].as_boolean(),
+            ),
+        )
+        .order_by(Organization.slug.asc())
+    )
+    if slug is not None:
+        statement = statement.where(Organization.slug == slug)
+
+    organizations = list(await session.execute(statement))
+    if not organizations:
+        return []
+
+    organization_ids = [organization_id for organization_id, _ in organizations]
+    seat_products = _seat_products_cte(organization_ids)
+
+    seat_product_counts = await _count_seat_products(session, seat_products)
+    subscription_counts = await _count_seat_subscriptions(session, seat_products)
+    order_counts = await _count_seat_orders(session, seat_products)
+    seat_counts = await _count_seats(session, seat_products)
+    grant_gaps = await _count_grants_missing_member(
+        session, organization_ids, chunk_size
+    )
+    owner_gaps = await _count_customers_missing_owner(
+        session, organization_ids, chunk_size
+    )
+
+    return [
+        (
+            organization_id,
+            OrganizationAudit(
+                slug=organization_slug,
+                seat_products=seat_product_counts.get(organization_id, 0),
+                seat_subscriptions=subscription_counts.get(organization_id, (0, 0))[0],
+                active_seat_subscriptions=subscription_counts.get(
+                    organization_id, (0, 0)
+                )[1],
+                seat_orders=order_counts.get(organization_id, 0),
+                claimed_seats=seat_counts.get(organization_id, (0, 0))[0],
+                seats_missing_member=seat_counts.get(organization_id, (0, 0))[1],
+                grants_missing_member=grant_gaps.get(organization_id, 0),
+                customers_missing_owner=owner_gaps.get(organization_id, 0),
+            ),
+        )
+        for organization_id, organization_slug in organizations
+    ]
+
+
 @cli.command()
 @typer_async
 async def audit(
@@ -835,56 +900,11 @@ async def audit(
     sessionmaker = create_async_sessionmaker(engine)
 
     async with sessionmaker() as session:
-        statement = (
-            select(Organization.id, Organization.slug)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.status != OrganizationStatus.BLOCKED,
-                or_(
-                    Organization.feature_settings["member_model_enabled"].is_(None),
-                    ~Organization.feature_settings["member_model_enabled"].as_boolean(),
-                ),
-            )
-            .order_by(Organization.slug.asc())
-        )
-        if slug is not None:
-            statement = statement.where(Organization.slug == slug)
+        audits = await _load_audits(session, slug=slug, chunk_size=chunk_size)
 
-        organizations = list(await session.execute(statement))
-        if not organizations:
-            typer.echo("No organizations left on the legacy model.")
-            return
-
-        organization_ids = [organization_id for organization_id, _ in organizations]
-        seat_products = _seat_products_cte(organization_ids)
-
-        seat_product_counts = await _count_seat_products(session, seat_products)
-        subscription_counts = await _count_seat_subscriptions(session, seat_products)
-        order_counts = await _count_seat_orders(session, seat_products)
-        seat_counts = await _count_seats(session, seat_products)
-        grant_gaps = await _count_grants_missing_member(
-            session, organization_ids, chunk_size
-        )
-        owner_gaps = await _count_customers_missing_owner(
-            session, organization_ids, chunk_size
-        )
-
-    audits = [
-        OrganizationAudit(
-            slug=organization_slug,
-            seat_products=seat_product_counts.get(organization_id, 0),
-            seat_subscriptions=subscription_counts.get(organization_id, (0, 0))[0],
-            active_seat_subscriptions=subscription_counts.get(organization_id, (0, 0))[
-                1
-            ],
-            seat_orders=order_counts.get(organization_id, 0),
-            claimed_seats=seat_counts.get(organization_id, (0, 0))[0],
-            seats_missing_member=seat_counts.get(organization_id, (0, 0))[1],
-            grants_missing_member=grant_gaps.get(organization_id, 0),
-            customers_missing_owner=owner_gaps.get(organization_id, 0),
-        )
-        for organization_id, organization_slug in organizations
-    ]
+    if not audits:
+        typer.echo("No organizations left on the legacy model.")
+        return
 
     typer.echo(f"Organizations on the legacy model: {len(audits)}")
     typer.echo()
@@ -892,12 +912,12 @@ async def audit(
     typer.echo(f"{'Bucket':<32} {'Orgs':>6} {'Incomplete':>11}")
     typer.echo("-" * 51)
     for value in Bucket:
-        in_bucket = [a for a in audits if a.bucket is value]
+        in_bucket = [a for _, a in audits if a.bucket is value]
         incomplete = sum(1 for a in in_bucket if a.gaps > 0)
         typer.echo(f"{_BUCKET_LABELS[value]:<32} {len(in_bucket):>6} {incomplete:>11}")
     typer.echo()
 
-    listed = audits
+    listed = [a for _, a in audits]
     if bucket is not None:
         listed = [a for a in listed if a.bucket is bucket]
     if gaps_only:
@@ -921,6 +941,218 @@ async def audit(
         )
     typer.echo()
     typer.echo("Columns count what Phase 1 has not filled in, so 0 everywhere is done.")
+
+
+_SAFE_BUCKETS = (
+    Bucket.no_seat_product,
+    Bucket.no_sales,
+    Bucket.no_active_sale,
+    Bucket.seats_unclaimed,
+)
+
+
+@cli.command()
+@typer_async
+async def enable(
+    dry_run: bool = typer.Option(
+        True, help="If True, only show which organizations would be flipped"
+    ),
+    bucket: list[Bucket] = typer.Option(
+        None, help="Bucket to flip; repeat to add one. Defaults to the safe buckets"
+    ),
+    slug: str | None = typer.Option(None, help="Flip a single organization by slug"),
+    batch_size: int = typer.Option(
+        20, min=1, help="Organizations flipped before pausing"
+    ),
+    pause_seconds: float = typer.Option(
+        5.0, help="Seconds between batches, to let the backfill queue drain"
+    ),
+    chunk_size: int = typer.Option(
+        20, min=1, help="Organizations per query for the customer-wide counts"
+    ),
+) -> None:
+    """Turn on member_model_enabled, one backfill job per organization.
+
+    Reads the audit first and refuses any organization it reports as incomplete:
+    a grant carrying a live access with no member is the shape the flip would
+    soft-delete. The audit runs against the primary, not the replica, so the
+    decision is never made on lagged data.
+    """
+    buckets = tuple(bucket) if bucket else _SAFE_BUCKETS
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        audits = await _load_audits(session, slug=slug, chunk_size=chunk_size)
+
+    if not audits:
+        typer.echo("No organizations left on the legacy model.")
+        return
+
+    in_buckets = [(i, a) for i, a in audits if a.bucket in buckets]
+    eligible = [(i, a) for i, a in in_buckets if a.gaps == 0]
+    held_back = [a for _, a in in_buckets if a.gaps > 0]
+
+    typer.echo(f"Buckets: {', '.join(b.value for b in buckets)}")
+    typer.echo(f"In those buckets: {len(in_buckets)}")
+    typer.echo(f"Ready to flip: {len(eligible)}")
+    typer.echo(f"Held back as incomplete: {len(held_back)}")
+    typer.echo()
+
+    if held_back:
+        typer.echo(f"{'Held back':<40} {'Seats':>6} {'Grants':>7} {'Owners':>7}")
+        typer.echo("-" * 63)
+        for organization_audit in held_back:
+            typer.echo(
+                f"{organization_audit.slug:<40} "
+                f"{organization_audit.seats_missing_member:>6} "
+                f"{organization_audit.grants_missing_member:>7} "
+                f"{organization_audit.customers_missing_owner:>7}"
+            )
+        typer.echo()
+
+    if not eligible:
+        typer.echo("Nothing to flip.")
+        return
+
+    if dry_run:
+        typer.echo(f"{'Would flip':<40} {'Bucket'}")
+        typer.echo("-" * 63)
+        for _, organization_audit in eligible:
+            typer.echo(
+                f"{organization_audit.slug:<40} {organization_audit.bucket.value}"
+            )
+        typer.echo()
+        typer.echo("DRY RUN - No changes will be made.")
+        return
+
+    broker = dramatiq.get_broker()
+    flipped = 0
+    failed = 0
+
+    async with create_redis("script") as redis:
+        for batch_start in range(0, len(eligible), batch_size):
+            batch = eligible[batch_start : batch_start + batch_size]
+            try:
+                async with sessionmaker() as session:
+                    async with JobQueueManager.open(broker, redis):
+                        repository = OrganizationRepository.from_session(session)
+                        for organization_id, organization_audit in batch:
+                            organization = await repository.get_by_id(organization_id)
+                            if organization is None:
+                                continue
+                            await repository.update(
+                                organization,
+                                update_dict={
+                                    "feature_settings": {
+                                        **organization.feature_settings,
+                                        "member_model_enabled": True,
+                                    }
+                                },
+                            )
+                            enqueue_job(
+                                "organization.backfill_members",
+                                organization_id=organization.id,
+                            )
+                            flipped += 1
+                            typer.echo(
+                                f"  [{flipped}/{len(eligible)}] "
+                                f"{organization_audit.slug}"
+                            )
+                        # The commit lands before JobQueueManager flushes on exit,
+                        # so the worker never sees the job before the flag.
+                        await session.commit()
+            except Exception as e:
+                failed += len(batch)
+                typer.echo(f"  FAILED batch at {batch_start}: {e}", err=True)
+
+            if batch_start + batch_size < len(eligible):
+                await asyncio.sleep(pause_seconds)
+
+    typer.echo()
+    typer.echo("Flip complete:")
+    typer.echo(f"  - Flipped: {flipped}")
+    typer.echo(f"  - Failed: {failed}")
+
+
+@cli.command("repair-backfill")
+@typer_async
+async def repair_backfill(
+    dry_run: bool = typer.Option(
+        True, help="If True, only show which organizations would be re-enqueued"
+    ),
+    chunk_size: int = typer.Option(
+        20, min=1, help="Organizations per query for the owner-member count"
+    ),
+) -> None:
+    """Re-enqueue the backfill for organizations flipped without one.
+
+    `enable` commits the flag before the job reaches Redis, so a failed enqueue
+    leaves an organization on the member model with nothing migrated. It no
+    longer matches `enable`'s filter, so this is the only way back.
+
+    Customers of a flipped organization get their owner member on creation, so
+    customers without one mean the backfill never ran.
+    """
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        statement = (
+            select(Organization.id, Organization.slug)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
+                Organization.feature_settings["member_model_enabled"].as_boolean(),
+            )
+            .order_by(Organization.slug.asc())
+        )
+        organizations = list(await session.execute(statement))
+        if not organizations:
+            typer.echo("No organizations on the member model.")
+            return
+
+        owner_gaps = await _count_customers_missing_owner(
+            session,
+            [organization_id for organization_id, _ in organizations],
+            chunk_size,
+        )
+
+    unbackfilled = [
+        (organization_id, organization_slug)
+        for organization_id, organization_slug in organizations
+        if owner_gaps.get(organization_id, 0) > 0
+    ]
+
+    typer.echo(f"Organizations on the member model: {len(organizations)}")
+    typer.echo(f"Never backfilled: {len(unbackfilled)}")
+    typer.echo()
+
+    if not unbackfilled:
+        typer.echo("Nothing to repair.")
+        return
+
+    typer.echo(f"{'Slug':<40} {'Customers without owner':>24}")
+    typer.echo("-" * 65)
+    for organization_id, organization_slug in unbackfilled:
+        typer.echo(f"{organization_slug:<40} {owner_gaps[organization_id]:>24}")
+    typer.echo()
+
+    if dry_run:
+        typer.echo("DRY RUN - No changes will be made.")
+        return
+
+    broker = dramatiq.get_broker()
+    async with create_redis("script") as redis:
+        async with JobQueueManager.open(broker, redis):
+            for organization_id, organization_slug in unbackfilled:
+                enqueue_job(
+                    "organization.backfill_members", organization_id=organization_id
+                )
+                typer.echo(f"  {organization_slug}")
+
+    typer.echo()
+    typer.echo(f"Re-enqueued {len(unbackfilled)} backfill(s).")
 
 
 if __name__ == "__main__":

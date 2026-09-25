@@ -144,7 +144,11 @@ async def create(
 async def get(
     id: UUID4,
     auth_subject: MerchantMigrationRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    # The primary, like the record list below. A refresh deletes the catalog
+    # before the replica sees the new operation, and this page reads both. A
+    # lagged operation then looks like a finished scan that found nothing, and
+    # Refresh from Stripe will start a second one.
+    session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigration:
     migration = await merchant_migration_service.get(session, auth_subject, id)
     if migration is None:

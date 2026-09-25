@@ -93,6 +93,7 @@ export function AssessmentPanelFrame({
         padding="xl"
         flex={1}
         minWidth={0}
+        overflowY="auto"
       >
         {children}
       </Box>
@@ -119,20 +120,23 @@ export function AssessmentNotice({
   const attention = needsAttention(row)
 
   return (
-    <Alert
-      variant={attention ? 'warning' : 'info'}
-      title={attention ? labels.needsAttention : labels.goodToKnow}
-      description={
-        polarCustomerHref ? (
-          <>
-            {row.reason}{' '}
-            <Link href={polarCustomerHref}>{labels.viewPolarCustomer}</Link>
-          </>
-        ) : (
-          row.reason
-        )
-      }
-    />
+    // Alert grows to fill a column parent, so keep it in its own row.
+    <Box>
+      <Alert
+        variant={attention ? 'warning' : 'info'}
+        title={attention ? labels.needsAttention : labels.goodToKnow}
+        description={
+          polarCustomerHref ? (
+            <>
+              {row.reason}{' '}
+              <Link href={polarCustomerHref}>{labels.viewPolarCustomer}</Link>
+            </>
+          ) : (
+            row.reason
+          )
+        }
+      />
+    </Box>
   )
 }
 

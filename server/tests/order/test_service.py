@@ -4261,11 +4261,14 @@ class TestHandlePaymentFailure:
         result_order = await order_service.handle_payment_failure(session, order)
 
         # Then
-        assert result_order.next_payment_attempt_at == (
-            utc_now() + timedelta(days=next_retry_in_days)
-            if next_retry_in_days is not None
-            else None
-        )
+        if next_retry_in_days is None:
+            assert result_order.next_payment_attempt_at is None
+            assert subscription.status == SubscriptionStatus.canceled
+        else:
+            assert result_order.next_payment_attempt_at == utc_now() + timedelta(
+                days=next_retry_in_days
+            )
+            assert subscription.status == SubscriptionStatus.past_due
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_final_attempt_cancels_subscription(

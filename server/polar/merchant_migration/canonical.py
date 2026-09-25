@@ -2,10 +2,10 @@
 engine and importer don't need to know which billing provider data came from."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import TypeAdapter, ValidationError
@@ -148,6 +148,13 @@ class CanonicalSubscription:
     # Per-coupon apply times, so a later kept coupon doesn't inherit the first
     # (discarded) coupon's start.
     discount_starts: dict[str, datetime] = field(default_factory=dict)
+    # Coupon on the Stripe customer. It bills this subscription only when the
+    # subscription has no discounts of its own. Resolved before the row is stored.
+    customer_discount_source_id: str | None = None
+    customer_discount_started_at: datetime | None = None
+    # Set when the source discount would change the charge if Polar kept one
+    # coupon. The subscription stays on Stripe.
+    discount_block: str | None = None
     # The customer already asked to stop: the source won't renew it. Nothing left
     # for Polar to take over, so the cutover leaves it where it is.
     cancel_at_period_end: bool = False
@@ -196,6 +203,16 @@ class CanonicalDiscountDuration(StrEnum):
     once = "once"
     forever = "forever"
     repeating = "repeating"
+
+
+class SubscriptionDiscountBlock(StrEnum):
+    """Why a source discount can't be copied onto a Polar subscription."""
+
+    stacked = "subscription_stacked_discounts"
+    customer = "subscription_customer_discount"
+    item = "subscription_item_discount"
+    scheduled = "subscription_scheduled_discount"
+    invoice_item = "subscription_invoice_item_discount"
 
 
 @dataclass
@@ -291,6 +308,71 @@ def subscription_price_key_values(
 
 
 _AMOUNT = TypeAdapter(Amount)
+
+
+def customer_discount_action(
+    subscription_product_id: str | None,
+    applies_to_product_ids: list[str] | None,
+) -> Literal["apply", "ignore", "block"]:
+    """Whether a customer coupon can stand in for one subscription coupon.
+
+    Stripe puts a customer coupon on every recurring invoice. Polar can only
+    attach it to this subscription, so that matches only when the coupon is
+    limited to this product. An unrestricted coupon, or one that also lists
+    other products, would discount purchases this subscription doesn't cover.
+    A coupon that doesn't list this product doesn't change this charge.
+    """
+    if not applies_to_product_ids or subscription_product_id is None:
+        return "block"
+    if subscription_product_id not in applies_to_product_ids:
+        return "ignore"
+    if any(
+        product_id != subscription_product_id for product_id in applies_to_product_ids
+    ):
+        return "block"
+    return "apply"
+
+
+def apply_customer_discount(
+    subscription: CanonicalSubscription,
+    subscription_product_id: str | None,
+    applies_to_product_ids: list[str] | None,
+) -> CanonicalSubscription:
+    """Fold a customer coupon into ``discount_source_ids``, or block the import."""
+    coupon_id = subscription.customer_discount_source_id
+    if (
+        coupon_id is None
+        or subscription.discount_block is not None
+        or subscription.discount_source_ids
+    ):
+        return subscription
+    action = customer_discount_action(subscription_product_id, applies_to_product_ids)
+    if action == "ignore":
+        return replace(
+            subscription,
+            has_discount=False,
+            customer_discount_source_id=None,
+            customer_discount_started_at=None,
+        )
+    if action == "block":
+        return replace(
+            subscription,
+            has_discount=True,
+            discount_block=SubscriptionDiscountBlock.customer,
+        )
+    started_at = subscription.customer_discount_started_at
+    starts = dict(subscription.discount_starts)
+    if started_at is not None:
+        starts[coupon_id] = started_at
+    return replace(
+        subscription,
+        has_discount=True,
+        discount_source_ids=[coupon_id],
+        discount_started_at=started_at,
+        discount_starts=starts,
+        customer_discount_source_id=None,
+        customer_discount_started_at=None,
+    )
 
 
 def discount_started_at_for(
@@ -440,6 +522,11 @@ def deserialize(
                     for source_id, raw in (data.get("discount_starts") or {}).items()
                     if (started_at := _parse_datetime(raw)) is not None
                 },
+                customer_discount_source_id=data.get("customer_discount_source_id"),
+                customer_discount_started_at=_parse_datetime(
+                    data.get("customer_discount_started_at")
+                ),
+                discount_block=data.get("discount_block"),
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),

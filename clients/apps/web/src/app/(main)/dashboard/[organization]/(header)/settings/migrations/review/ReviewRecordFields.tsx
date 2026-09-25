@@ -8,6 +8,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { ReactNode, useContext } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
+import { migrationReasonNotice } from '../reasons'
 import { BillingAddressEditor } from './BillingAddressEditor'
 import { needsAttention, ReviewRow } from './reviewRows'
 
@@ -58,6 +59,7 @@ export function RecordReason({ row }: { row: ReviewRow }) {
       })
     : null
   const attention = needsAttention(row)
+  const reason = migrationReasonNotice(row.reason_code) ?? row.reason
 
   return (
     // Alert grows to fill a column parent, so keep it in its own row.
@@ -68,11 +70,11 @@ export function RecordReason({ row }: { row: ReviewRow }) {
         description={
           polarCustomerHref ? (
             <>
-              {row.reason}{' '}
+              {reason}{' '}
               <Link href={polarCustomerHref}>View Polar customer</Link>
             </>
           ) : (
-            row.reason
+            reason
           )
         }
       />

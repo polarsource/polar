@@ -46,6 +46,7 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     PriceKey,
+    SubscriptionDiscountBlock,
     canonical_price_key,
     customer_country_fallbacks,
     discount_started_at_for,
@@ -93,6 +94,11 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_stacked_discounts",
+    "subscription_customer_discount",
+    "subscription_item_discount",
+    "subscription_scheduled_discount",
+    "subscription_invoice_item_discount",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -168,6 +174,36 @@ _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
     "source rather than renewing at full price."
 )
+_DISCOUNT_BLOCK_NOTICES = {
+    SubscriptionDiscountBlock.stacked: (
+        "This subscription stacks discounts Polar can't combine into one coupon, "
+        "so the renewal amount wouldn't match. It stays on Stripe."
+    ),
+    SubscriptionDiscountBlock.customer: (
+        "This customer has a coupon that also applies to other purchases, not "
+        "just this subscription. Polar can't keep that without changing what "
+        "they pay. It stays on Stripe."
+    ),
+    SubscriptionDiscountBlock.item: (
+        "A discount applies to one item of this subscription, and Polar "
+        "discounts the whole subscription. Moving it would change the charge, "
+        "so it stays on Stripe."
+    ),
+    SubscriptionDiscountBlock.scheduled: (
+        "A future phase of this subscription changes its discount. Polar would "
+        "keep today's coupon, so a later invoice wouldn't match. It stays on "
+        "Stripe."
+    ),
+    SubscriptionDiscountBlock.invoice_item: (
+        "An invoice item on this subscription has its own discount. Polar "
+        "can't apply that to the renewal, so it stays on Stripe."
+    ),
+}
+_SUBSCRIPTION_DISCOUNT_CURRENCY_REASON = (
+    "This coupon takes a fixed amount off in a currency Polar can't apply to "
+    "this subscription. It stays on Stripe rather than renewing at a different "
+    "price."
+)
 _SUBSCRIPTION_DISCOUNT_START_REASON = (
     "The source doesn't say when this coupon was applied, so Polar can't "
     "continue its remaining duration. It stays on the source."
@@ -182,6 +218,23 @@ _EXTRA_PROMO_CODES_REASON = (
 )
 _BASIS_POINTS = TypeAdapter(BasisPoints)
 _DURATION_IN_MONTHS = TypeAdapter(DurationInMonths)
+
+
+def _discount_block_issue(
+    subscription: CanonicalSubscription,
+) -> PrecheckIssue | None:
+    if subscription.discount_block is None:
+        return None
+    try:
+        block = SubscriptionDiscountBlock(subscription.discount_block)
+    except ValueError:
+        return None
+    return PrecheckIssue(
+        level=PrecheckIssueLevel.warning,
+        code=block.value,
+        message=_DISCOUNT_BLOCK_NOTICES[block],
+        source_id=subscription.source_id,
+    )
 
 
 def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
@@ -577,6 +630,9 @@ class PrecheckEngine:
         self, subscription: CanonicalSubscription
     ) -> Iterable[PrecheckIssue]:
         source_id = subscription.source_id
+        block_issue = _discount_block_issue(subscription)
+        if block_issue is not None:
+            yield block_issue
         if subscription.line_item_count > 1:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -1488,7 +1544,8 @@ def _subscription_discount_skip(
         currency = subscription.currency.lower() if subscription.currency else None
         if currency is None or currency not in amounts:
             return Reason(
-                "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+                "subscription_discount_currency",
+                _SUBSCRIPTION_DISCOUNT_CURRENCY_REASON,
             )
     if (
         discount.duration != CanonicalDiscountDuration.forever

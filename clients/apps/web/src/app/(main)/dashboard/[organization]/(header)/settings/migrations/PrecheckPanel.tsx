@@ -35,7 +35,6 @@ export function PrecheckPanel({
           migrationId={migration.id}
           error={error}
           onRetry={() => precheck.mutate()}
-          retrying={running}
         />
       </Box>
     )

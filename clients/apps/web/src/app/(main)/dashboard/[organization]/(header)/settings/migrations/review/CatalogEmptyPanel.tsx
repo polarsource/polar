@@ -28,7 +28,6 @@ export function CatalogEmptyPanel({
         migrationId={migrationId}
         error={error}
         onRetry={onRerunPrecheck}
-        retrying={rerunning}
       />
     )
   }

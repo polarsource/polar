@@ -17,7 +17,6 @@ interface Props {
   migrationId: string
   error: string
   onRetry?: () => void
-  retrying?: boolean
   showRetry?: boolean
 }
 
@@ -25,7 +24,6 @@ export function ScanFailurePanel({
   migrationId,
   error,
   onRetry,
-  retrying = false,
   showRetry = true,
 }: Props) {
   const missingResources = parseMissingStripeScopes({ detail: error })
@@ -51,13 +49,8 @@ export function ScanFailurePanel({
       ) : null}
       {showRetry && onRetry ? (
         <Box>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onRetry}
-            disabled={retrying}
-          >
-            {retrying ? 'Refreshing…' : 'Refresh from Stripe'}
+          <Button size="sm" variant="secondary" onClick={onRetry}>
+            Refresh from Stripe
           </Button>
         </Box>
       ) : null}
@@ -99,7 +92,7 @@ function ReconnectStripeKey({
         extractApiErrorMessage(
           apiError,
           t('merchantMigration.reconnect.fallbackError'),
-        ).trim() || t('merchantMigration.reconnect.fallbackError'),
+        ),
       )
     } catch {
       setError(t('merchantMigration.reconnect.fallbackError'))

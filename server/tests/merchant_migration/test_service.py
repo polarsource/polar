@@ -17,7 +17,7 @@ from polar.customer.service import customer as customer_service
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.kit import encryption
-from polar.kit.encryption import EncryptedString, LocalKeyProvider
+from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
@@ -57,7 +57,6 @@ from polar.merchant_migration.schemas import (
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
-    SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
     CatalogImportBlocked,
     CatalogImportNotReady,
     CutoverNotStarted,
@@ -767,7 +766,7 @@ class TestReconnect:
             MerchantMigrationSourceUpdate(api_key="rk_test_replaced"),
         )
 
-        assert await _decrypt_source_key(updated) == "rk_test_replaced"
+        assert await service._decrypt_stripe_api_key(updated) == "rk_test_replaced"
         assert updated.source_credentials["stripe_user_id"] == "acct_test"
 
     @pytest.mark.auth
@@ -795,7 +794,7 @@ class TestReconnect:
             )
 
         assert exc_info.value.missing == ["Coupons", "Promotion codes"]
-        assert await _decrypt_source_key(migration) == "rk_test_123"
+        assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
 
     @pytest.mark.auth
     async def test_rejects_a_different_stripe_account(
@@ -821,14 +820,7 @@ class TestReconnect:
                 MerchantMigrationSourceUpdate(api_key="rk_test_other"),
             )
 
-        assert await _decrypt_source_key(migration) == "rk_test_123"
-
-
-async def _decrypt_source_key(migration: MerchantMigration) -> str:
-    encrypted = migration.source_credentials["api_key_encrypted"]
-    return await EncryptedString(
-        encrypted, SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT
-    ).decrypt(id=str(migration.id))
+        assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
 
 
 @pytest.mark.asyncio

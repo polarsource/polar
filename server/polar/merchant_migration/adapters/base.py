@@ -34,12 +34,20 @@ class SourceAdapter(Protocol):
         """
         ...
 
-    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+    async def stop_source_subscription(
+        self,
+        source_id: str,
+        *,
+        reference: str,
+        cancel_at_period_end: bool = False,
+    ) -> None:
         """Stop billing this subscription on the source, for good.
 
         ``reference`` identifies the migration and is recorded on the source, so
         a later read can tell our own cancellation apart from the customer
         having churned (see ``CanonicalSubscription.stopped_for_migration``).
+        ``cancel_at_period_end`` is recorded with it: the stop clears that flag,
+        and a retry has to know whether the customer had already asked to end.
         """
         ...
 

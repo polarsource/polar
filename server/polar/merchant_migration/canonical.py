@@ -160,6 +160,9 @@ class CanonicalSubscription:
     # The customer already asked to stop. A selected cutover takes it over and
     # keeps this end instead of renewing it.
     cancel_at_period_end: bool = False
+    # The stop comment recorded this flag. A retry must trust it over the import
+    # snapshot, which can be stale in either direction.
+    cancel_at_period_end_known: bool = False
     # A fixed date the source stops it on. Stripe also fills it in for
     # ``cancel_at_period_end``, so only a date without that flag is its own end.
     cancel_at: datetime | None = None
@@ -549,6 +552,9 @@ def deserialize(
                 ),
                 discount_block=data.get("discount_block"),
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
+                cancel_at_period_end_known=data.get(
+                    "cancel_at_period_end_known", False
+                ),
                 cancel_at=_parse_datetime(data.get("cancel_at")),
                 has_scheduled_changes=data.get("has_scheduled_changes", False),
                 trial_end=_parse_datetime(data.get("trial_end")),

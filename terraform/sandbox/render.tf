@@ -175,7 +175,7 @@ module "sandbox" {
   email_from_domain  = local.backend_config.email_from_domain
 
   memory_profile_config = {
-    s3_bucket_name = "polar-sandbox-logs"
+    s3_bucket_name = local.diagnostics_bucket_name
   }
 
   depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis, render_redis.redis_sandbox]

@@ -267,7 +267,7 @@ module "production" {
   email_from_domain  = local.backend_config.email_from_domain
 
   memory_profile_config = {
-    s3_bucket_name = "polar-production-logs"
+    s3_bucket_name = local.diagnostics_bucket_name
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]

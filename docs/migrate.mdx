@@ -190,14 +190,10 @@ for payments it processes.
     - Products without a supported recurring price in your organization's
       default currency, or with ambiguous prices
     - Past-due, unpaid, or paused subscriptions
+    - Payment methods that cannot be copied
 
     A subscription that is not ready stays on Stripe. Resolve the issue and retry
     it later, or keep it renewing on Stripe.
-
-    Subscriptions without a payment method, or with one Stripe can't copy (such
-    as Link or Bacs), still switch. They are flagged in the review, and if no
-    payment method is added before the next renewal, that renewal fails and
-    Polar emails the customer to add one.
 
     Polar also rechecks subscriptions during the switch. Subscriptions renewing
     within 24 hours or already scheduled to end remain on Stripe at that point.

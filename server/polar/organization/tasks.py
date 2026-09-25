@@ -718,8 +718,9 @@ async def _backfill_benefit_grants(
                 if existing_id is not None:
                     if grant.order_id is not None:
                         # One-off order — each purchase is distinct, keep both
-                        grant.member_id = target_member_id
-                        count += 1
+                        if grant.revoked_at is None:
+                            grant.member_id = target_member_id
+                            count += 1
                     else:
                         # The existing member-linked grant is the one the system
                         # actively manages. The old unlinked grant is stale
@@ -1215,8 +1216,6 @@ async def _prepare_benefit_grants(
                 )
                 if scope_conflict_id is not None:
                     skipped_conflicts += 1
-                # A revoked grant needs no member, and linking one holds the
-                # unique scope slot against the live grant that does need it.
                 elif grant.revoked_at is None:
                     grant.member_id = target_member_id
                     count += 1

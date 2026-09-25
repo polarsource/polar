@@ -75,9 +75,6 @@ function ReconnectStripeKey({
   const keyError = stripeKeyError(apiKey)
 
   const replaceKey = async () => {
-    if (keyError || !apiKey.trim()) {
-      return
-    }
     setError(null)
     try {
       const result = await reconnect.mutateAsync(apiKey.trim())

@@ -601,7 +601,6 @@ class MerchantMigrationService:
         return await repository.update(
             migration,
             update_dict={"source_credentials": dict(credentials)},
-            flush=True,
         )
 
     async def execute_precheck(self, session: AsyncSession, migration_id: UUID) -> None:

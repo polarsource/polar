@@ -79,6 +79,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    DiscountRedemption,
     Order,
     OrderItem,
     Organization,
@@ -2000,7 +2001,7 @@ class SubscriptionService:
 
         async with self.resolve_discount(
             session, ctx, subscription, discount=discount, product=product
-        ) as resolved_discount:
+        ) as (resolved_discount, discount_redemption):
             assert is_recurring_product(product)
             # We are checking for product.is_recurring instead of is_recurring_product
             # because legacy products will have is_recurring but not be of type RecurringProduct
@@ -2031,6 +2032,10 @@ class SubscriptionService:
                 subscription.pending_update = (
                     await subscription_update_repository.upsert(subscription_update)
                 )
+                if discount_redemption is not None:
+                    discount_redemption.subscription_update = (
+                        subscription.pending_update
+                    )
             else:
                 await subscription_update_repository.soft_delete_unapplied_by_subscription_id(
                     subscription.id
@@ -2176,13 +2181,15 @@ class SubscriptionService:
         *,
         discount: uuid.UUID | Literal["unset"] | None,
         product: Product,
-    ) -> AsyncGenerator[Discount | Literal["unset"] | None]:
+    ) -> AsyncGenerator[
+        tuple[Discount | Literal["unset"] | None, DiscountRedemption | None]
+    ]:
         if discount is None:
-            yield None
+            yield None, None
             return
 
         if discount == "unset":
-            yield "unset"
+            yield "unset", None
             return
 
         resolved_discount = await discount_service.get_by_id_and_organization(
@@ -2223,7 +2230,7 @@ class SubscriptionService:
             session, resolved_discount
         ) as redemption:
             redemption.subscription = subscription
-            yield resolved_discount
+            yield resolved_discount, redemption
 
     async def update_discount(
         self,
@@ -2236,7 +2243,7 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         async with self.resolve_discount(
             session, ctx, subscription, discount=discount, product=subscription.product
-        ) as resolved_discount:
+        ) as (resolved_discount, _):
             assert resolved_discount is not None
             ctx.add_event_metadata(
                 discount_id=None

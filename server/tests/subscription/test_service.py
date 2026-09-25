@@ -11,6 +11,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
@@ -46,6 +47,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    DiscountRedemption,
     Event,
     Meter,
     Organization,
@@ -10448,6 +10450,174 @@ class TestClearPendingUpdate:
 
         # Then: Pending update is cleared
         assert updated_subscription.pending_update is None
+
+
+@pytest.mark.asyncio
+class TestPendingDiscountRedemption:
+    async def _schedule_product_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        product: Product,
+        discount: Discount,
+    ) -> Subscription:
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product.id,
+                discount=discount.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+
+    async def _get_redemptions(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> list[DiscountRedemption]:
+        result = await session.scalars(
+            select(DiscountRedemption).where(
+                DiscountRedemption.subscription_id == subscription.id
+            )
+        )
+        return list(result.all())
+
+    async def test_links_redemption_to_pending_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        subscription = await self._schedule_product_change(
+            session, subscription, product_second, discount_percentage_50
+        )
+
+        assert subscription.pending_update is not None
+        [redemption] = await self._get_redemptions(session, subscription)
+        assert redemption.discount_id == discount_percentage_50.id
+        assert redemption.subscription_update_id == subscription.pending_update.id
+
+    async def test_clear_pending_update_releases_redemption(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription = await self._schedule_product_change(
+            session, subscription, product_second, discount_percentage_50
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.clear_pending_update(
+                session, ctx, subscription
+            )
+
+        assert await self._get_redemptions(session, subscription) == []
+        await session.refresh(discount_percentage_50, {"redemptions_count"})
+        assert discount_percentage_50.redemptions_count == 0
+
+    async def test_replacing_pending_discount_releases_previous_redemption(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+        discount_percentage_100: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription = await self._schedule_product_change(
+            session, subscription, product_second, discount_percentage_50
+        )
+
+        subscription = await self._schedule_product_change(
+            session, subscription, product_second, discount_percentage_100
+        )
+
+        assert subscription.pending_update is not None
+        [redemption] = await self._get_redemptions(session, subscription)
+        assert redemption.discount_id == discount_percentage_100.id
+        assert redemption.subscription_update_id == subscription.pending_update.id
+
+    async def test_immediate_product_change_releases_pending_redemption(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription = await self._schedule_product_change(
+            session, subscription, product_second, discount_percentage_50
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_second.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert subscription.discount is None
+        assert await self._get_redemptions(session, subscription) == []
+
+    async def test_cycle_keeps_applied_redemption(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription = await self._schedule_product_change(
+            session, subscription, product_second, discount_percentage_50
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.cycle(session, ctx, subscription)
+
+        assert subscription.discount == discount_percentage_50
+        [redemption] = await self._get_redemptions(session, subscription)
+        assert redemption.discount_id == discount_percentage_50.id
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/nextjs",
-  "version": "0.9.7",
+  "version": "0.10.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/polarsource/polar.git",

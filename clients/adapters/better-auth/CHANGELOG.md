@@ -1,5 +1,27 @@
 # @polar-sh/hono
 
+## 2.0.0
+
+### Major Changes
+
+- e3ef409: Support Better Auth 1.7. The `better-auth` peer dependency is now `^1.7.0`.
+
+  Better Auth 1.7 no longer types a top-level `query` on client calls to endpoints that also accept a body. To open the portal for an organization, pass the query through `fetchOptions`: `authClient.customer.portal({ fetchOptions: { query: { organizationId } } })`.
+
+- 332b802: Use standalone SDK functions so application bundles include only the API operations used by each adapter.
+
+  For Better Auth, create the `client` option with `createPolarCore` instead of `createPolar`, importing it from `@polar-sh/sdk/2026-04`. Custom plugins passed through `use` now receive a `PolarCore` and must use standalone SDK functions with it.
+
+### Minor Changes
+
+- de3c006: Support `discount_code` in checkout requests, applying the code before redirecting or opening an embedded checkout. Discount codes must be enabled, and an explicit `discount_id` takes precedence.
+
+### Patch Changes
+
+- 1dd23c2: Create signup customers after Better Auth inserts the user, including the user ID in the initial Polar request so customer.created webhooks can identify the user. Skip Polar calls when a before-create hook rejects signup, retain one-time linking for existing customers without an external ID, and reject conflicting customer identities without attempting to replace an immutable external ID.
+- 4fc5571: Do not claim an existing team customer as an individual customer on signup. `onAfterUserCreate` now filters the relink path to individual customers only and throws a CONFLICT when a team customer already holds the signup email, instead of overwriting the team customer's `external_id` with the new user's id (which left the user without an individual customer and corrupted the team customer).
+- f9019bc: Reject anonymous sessions from `/usage/ingest` before forwarding the session id as a Polar `externalCustomerId`. Without this guard, an anonymous better-auth session (which carries both `user.id` and `isAnonymous === true`) passed the existing `user.id` check and forwarded its anonymous id to `polar.events.ingest`, inserting orphan `meter_event` rows that inflate merchant org-wide meter totals under the README-default Organization Access Token. Mirrors the guard already applied to the sibling `/customer/portal` handler.
+
 ## 1.9.0
 
 ### Minor Changes

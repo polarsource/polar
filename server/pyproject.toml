@@ -63,7 +63,7 @@ dependencies = [
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
   "polar-sdk==1.0.0a22",
-  "anyio==4.14.2", # Potential culprit for Sep 23-24 memory leak
+  "anyio==4.15.1", # Potential culprit for Sep 23-24 memory leak
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
   "reauth==0.4.1",

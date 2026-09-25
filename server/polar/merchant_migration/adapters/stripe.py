@@ -696,7 +696,7 @@ class StripeAdapter:
             block = SubscriptionDiscountBlock.stacked
             has_discount = True
         elif len(items) == 1 and any_item and not mapped.has_discount:
-            folded = self._fold_single_item_coupon(per_item[0], customer_present)
+            folded = self._fold_single_item_coupon(per_item[0])
             if folded is not None:
                 source_ids, starts, started_at = folded
             has_discount = True
@@ -735,9 +735,9 @@ class StripeAdapter:
         )
 
     def _fold_single_item_coupon(
-        self, applications: list[_CouponApplication], customer_present: bool
+        self, applications: list[_CouponApplication]
     ) -> tuple[list[str], dict[str, datetime], datetime | None] | None:
-        if customer_present or len(applications) != 1:
+        if len(applications) != 1:
             return None
         coupon_id = applications[0].coupon_id
         if coupon_id is None:

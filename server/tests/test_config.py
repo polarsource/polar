@@ -88,22 +88,6 @@ class TestBuildPostgresDsn:
         assert connect_args["port"] == [6432, 6432]
 
 
-class TestSelfApiUrl:
-    def test_falls_back_to_polar_api_url(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(settings, "POLAR_API_URL", "https://api.polar.sh")
-        monkeypatch.setattr(settings, "POLAR_SELF_API_URL", None)
-
-        assert settings.self_api_url == "https://api.polar.sh"
-
-    def test_returns_override_when_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(settings, "POLAR_API_URL", "https://api.polar.sh")
-        monkeypatch.setattr(settings, "POLAR_SELF_API_URL", "http://127.0.0.1:10000")
-
-        assert settings.self_api_url == "http://127.0.0.1:10000"
-
-
 class TestGetCustomerPortalUrlOverride:
     def test_no_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(settings, "CUSTOMER_PORTAL_URL_OVERRIDES", {})

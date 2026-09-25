@@ -1051,6 +1051,6 @@ def get_client() -> PolarSelfClient:
     if _client is None:
         _client = PolarSelfClient(
             access_token=settings.POLAR_ACCESS_TOKEN,
-            api_url=settings.self_api_url,
+            api_url=settings.POLAR_API_URL,
         )
     return _client

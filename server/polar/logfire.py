@@ -227,15 +227,6 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             extra_patterns=[
                 r"access_?token",
                 r"refresh_?token",
-                # Share boundary checks to avoid repeating them for every scanned character.
-                (
-                    r'(?:^|[._"])(?:'
-                    r"(?:customer_?)?email|"
-                    r"(?:to|from|reply_to)_email_addr|"
-                    r"(?:user|full|first|last)[._]?name|"
-                    r"phone|address|ip_?address"
-                    r')(?=$|")'
-                ),
             ],
         ),
         additional_span_processors=additional_span_processors or None,

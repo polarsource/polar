@@ -94,6 +94,8 @@ class TestSerialize:
             "brand": None,
             "exp_month": None,
             "exp_year": None,
+            "billing_country": None,
+            "card_country": None,
         }
 
     def test_optional_fields_stay_none(self) -> None:
@@ -108,6 +110,8 @@ class TestSerialize:
             "email": "a@example.com",
             "name": None,
             "country": None,
+            "country_hint": None,
+            "billing_address": None,
         }
 
 

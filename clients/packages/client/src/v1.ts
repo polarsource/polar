@@ -5574,7 +5574,7 @@ export interface paths {
     options?: never
     head?: never
     /**
-     * Update Merchant Migration Record Tax
+     * Update Merchant Migration Record
      * @description **Scopes**: `organizations:write`
      */
     patch: operations['merchant-migrations:update_record']
@@ -25216,6 +25216,11 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /** MerchantMigrationRecordBillingAddressUpdate */
+    MerchantMigrationRecordBillingAddressUpdate: {
+      /** @description Billing address Polar will store on the imported customer. */
+      billing_address: components['schemas']['AddressInput']
+    }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -25267,9 +25272,16 @@ export interface components {
       customer_source_id: string | null
       /**
        * Customer Country
-       * @description The customer billing country. None for product and price rows, or when the source customer has none.
+       * @description The billing country Polar will import. This is the source customer country, or a payment-method fallback. None for product and price rows, or when neither is available.
        */
       customer_country: string | null
+      /**
+       * Customer Country Hint
+       * @description The payment-method country used as the billing-country fallback. Present only to disclose fallback provenance; Polar tax still uses the imported customer billing address.
+       */
+      customer_country_hint: string | null
+      /** @description The billing address Polar will import for the customer. None when only a payment-method country fallback or no address is available. */
+      customer_billing_address: components['schemas']['Address'] | null
       /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
@@ -25420,11 +25432,14 @@ export interface components {
        */
       selectable: number
     }
-    /** MerchantMigrationRecordUpdate */
-    MerchantMigrationRecordUpdate: {
+    /** MerchantMigrationRecordTaxUpdate */
+    MerchantMigrationRecordTaxUpdate: {
       /** @description Polar tax after the switch: `inclusive` or `exclusive`. */
       tax_behavior: components['schemas']['TaxBehavior']
     }
+    MerchantMigrationRecordUpdate:
+      | components['schemas']['MerchantMigrationRecordTaxUpdate']
+      | components['schemas']['MerchantMigrationRecordBillingAddressUpdate']
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -57075,7 +57090,9 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MerchantMigrationRecordUpdate']
+        'application/json':
+          | components['schemas']['MerchantMigrationRecordTaxUpdate']
+          | components['schemas']['MerchantMigrationRecordBillingAddressUpdate']
       }
     }
     responses: {
@@ -57088,7 +57105,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationRecordUpdate']
         }
       }
-      /** @description Tax can only be set on a subscription. */
+      /** @description Only subscription records can be updated. */
       400: {
         headers: {
           [name: string]: unknown

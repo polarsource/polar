@@ -42,6 +42,7 @@ from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
     canonical_price_key,
+    customer_country_fallbacks,
     deserialize,
     subscription_price_key,
 )
@@ -193,12 +194,28 @@ class CatalogImporter:
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
             )
         )
+        country_fallbacks = customer_country_fallbacks(
+            [
+                self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
+                for record in self._records_of(
+                    catalog, MerchantMigrationRecordType.customer
+                )
+            ],
+            [
+                self._as(
+                    deserialize(record.type, record.canonical), CanonicalSubscription
+                )
+                for record in subscription_records
+            ],
+        )
 
         product_result = await self._import_products(
             product_records, selected_source_ids=product_source_ids
         )
         customer_result = await self._import_customers(
-            customer_records, selected_source_ids=customer_source_ids
+            customer_records,
+            selected_source_ids=customer_source_ids,
+            country_fallbacks=country_fallbacks,
         )
         subscription_result = MerchantMigrationImportResult(
             entity=PrecheckEntity.subscriptions,
@@ -326,6 +343,7 @@ class CatalogImporter:
         records: Sequence[MerchantMigrationRecord],
         *,
         selected_source_ids: set[str],
+        country_fallbacks: dict[str, str],
     ) -> MerchantMigrationImportResult:
         customers = [
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
@@ -345,7 +363,9 @@ class CatalogImporter:
                 await self._mark_skipped(record, skip)
                 counts.skipped += 1
                 continue
-            result = await self._create_or_reuse_customer(customer)
+            result = await self._create_or_reuse_customer(
+                customer, country_fallbacks.get(customer.source_id)
+            )
             if result.skip is not None:
                 await self._mark_skipped(record, result.skip)
                 counts.skipped += 1
@@ -397,7 +417,7 @@ class CatalogImporter:
         return polar_product
 
     async def _create_or_reuse_customer(
-        self, customer: CanonicalCustomer
+        self, customer: CanonicalCustomer, country_fallback: str | None
     ) -> ImportedCustomer:
         stripe_customer_id = self._stripe_customer_id(customer)
         existing = await self.customer_repository.get_by_email_and_organization(
@@ -419,17 +439,26 @@ class CatalogImporter:
                 )
             # Reconcile the source id so the PAN-copied card lands on the same
             # customer, but never overwrite one that's already set.
+            updates: dict[str, object] = {}
             if stripe_customer_id and existing.stripe_customer_id is None:
-                await self.customer_repository.update(
-                    existing, update_dict={"stripe_customer_id": stripe_customer_id}
-                )
+                updates["stripe_customer_id"] = stripe_customer_id
+            address = self._billing_address(customer, country_fallback)
+            if address is not None:
+                if existing.billing_address is None:
+                    updates["billing_address"] = address
+                elif existing.billing_address.country is None:
+                    updates["billing_address"] = existing.billing_address.model_copy(
+                        update={"country": address.country}
+                    )
+            if updates:
+                await self.customer_repository.update(existing, update_dict=updates)
             return ImportedCustomer(customer=existing)
         polar_customer = await customer_service.create_for_organization(
             self.session,
             self.organization,
             email=customer.email,
             name=customer.name,
-            billing_address=self._billing_address(customer),
+            billing_address=self._billing_address(customer, country_fallback),
             stripe_customer_id=stripe_customer_id,
         )
         return ImportedCustomer(customer=polar_customer)
@@ -441,11 +470,16 @@ class CatalogImporter:
             return customer.source_id
         return None
 
-    def _billing_address(self, customer: CanonicalCustomer) -> Address | None:
-        if not customer.country:
+    def _billing_address(
+        self, customer: CanonicalCustomer, country_fallback: str | None
+    ) -> Address | None:
+        if customer.billing_address is not None:
+            return customer.billing_address
+        country_code = customer.country or country_fallback
+        if not country_code:
             return None
         try:
-            country = CountryAlpha2(customer.country.upper())
+            country = CountryAlpha2(country_code.upper())
         except ValueError:
             return None
         return Address(country=country)

@@ -1,6 +1,7 @@
 """Provider-agnostic records the adapters normalize into, so the precheck
 engine and importer don't need to know which billing provider data came from."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -9,6 +10,7 @@ from typing import Any
 from fastapi.encoders import jsonable_encoder
 
 from polar.enums import TaxBehavior
+from polar.kit.address import Address
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 
 
@@ -61,6 +63,10 @@ class CanonicalPaymentMethod:
     brand: str | None = None
     exp_month: int | None = None
     exp_year: int | None = None
+    # Cardholder billing country from `billing_details.address`. Hint only.
+    billing_country: str | None = None
+    # Card issuer country (`card.country`). Weaker than billing_country; hint only.
+    card_country: str | None = None
 
 
 @dataclass
@@ -98,7 +104,13 @@ class CanonicalCustomer:
     source_id: str
     email: str
     name: str | None
+    # From the source customer's own address.
     country: str | None
+    # Card / payment-method fallback when `country` is missing. The importer
+    # writes it to Polar billing_address, while retaining this field so the
+    # review UI can disclose its provenance.
+    country_hint: str | None = None
+    billing_address: Address | None = None
 
     type = MerchantMigrationRecordType.customer
 
@@ -174,6 +186,36 @@ CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription
 PriceKey = tuple[str, str]
 
 
+def customer_country_fallbacks(
+    customers: Sequence[CanonicalCustomer],
+    subscriptions: Sequence[CanonicalSubscription],
+) -> dict[str, str]:
+    payment_methods: dict[str, list[CanonicalPaymentMethod]] = {}
+    for subscription in subscriptions:
+        if subscription.payment_method is not None:
+            payment_methods.setdefault(subscription.customer_source_id, []).append(
+                subscription.payment_method
+            )
+    fallbacks: dict[str, str] = {}
+    for customer in customers:
+        if customer.country:
+            continue
+        if customer.country_hint:
+            fallbacks[customer.source_id] = customer.country_hint
+            continue
+        methods = payment_methods.get(customer.source_id, [])
+        fallback = next(
+            (method.billing_country for method in methods if method.billing_country),
+            None,
+        ) or next(
+            (method.card_country for method in methods if method.card_country),
+            None,
+        )
+        if fallback:
+            fallbacks[customer.source_id] = fallback
+    return fallbacks
+
+
 def price_key(source_id: str, currency: str) -> PriceKey:
     return source_id, currency.lower()
 
@@ -242,11 +284,18 @@ def deserialize(
                 archived=data.get("archived", False),
             )
         case MerchantMigrationRecordType.customer:
+            billing_address = data.get("billing_address")
             return CanonicalCustomer(
                 source_id=data["source_id"],
                 email=data["email"],
                 name=data["name"],
                 country=data["country"],
+                country_hint=data.get("country_hint"),
+                billing_address=(
+                    Address.model_validate(billing_address)
+                    if billing_address is not None
+                    else None
+                ),
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]
@@ -269,6 +318,8 @@ def deserialize(
                     brand=payment_method.get("brand"),
                     exp_month=payment_method.get("exp_month"),
                     exp_year=payment_method.get("exp_year"),
+                    billing_country=payment_method.get("billing_country"),
+                    card_country=payment_method.get("card_country"),
                 )
                 if payment_method is not None
                 else None,

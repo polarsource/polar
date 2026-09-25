@@ -502,10 +502,10 @@ async def records(
 @router.patch(
     "/{id}/records/{record_id}",
     response_model=MerchantMigrationRecordUpdate,
-    summary="Update Merchant Migration Record Tax",
+    summary="Update Merchant Migration Record",
     responses={
         400: {
-            "description": "Tax can only be set on a subscription.",
+            "description": "Only subscription records can be updated.",
             "model": RecordNotSubscription.schema(),
         },
         403: {
@@ -530,10 +530,10 @@ async def update_record(
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigrationRecordUpdate:
-    return await merchant_migration_service.update_record_tax_behavior(
+    return await merchant_migration_service.update_record(
         session,
         auth_subject,
         id,
         record_id,
-        record_update.tax_behavior,
+        record_update,
     )

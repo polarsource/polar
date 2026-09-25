@@ -550,7 +550,7 @@ class TestClassifyRecords:
         assert by_id["price_metered"].status == PrecheckRecordStatus.skipped
         assert by_id["price_metered"].reason_code == "unsupported_pricing_scheme"
 
-    def test_missing_country_is_importable_and_action_required(self) -> None:
+    def test_missing_country_is_importable_with_info(self) -> None:
         records: list[CanonicalRecord] = [
             build_customer(source_id="cus_1", email="a@example.com", country=None)
         ]
@@ -559,7 +559,47 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "customer_missing_country"
-        assert items[0].reason_level == PrecheckReasonLevel.action_required
+        assert items[0].reason_level == PrecheckReasonLevel.info
+        assert items[0].customer_country is None
+        assert items[0].customer_country_hint is None
+
+    def test_payment_method_country_is_used_with_info(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="a@example.com",
+                name="A",
+                country=None,
+                country_hint="DE",
+            ),
+            build_subscription(
+                source_id="sub_1",
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_1",
+                    type=CanonicalPaymentMethodType.card,
+                    billing_country="FR",
+                    card_country="US",
+                ),
+            ),
+        ]
+
+        customer_items = classify_records(records, PrecheckEntity.customers, "usd")
+        subscription_items = classify_records(
+            records, PrecheckEntity.subscriptions, "usd"
+        )
+
+        assert customer_items[0].customer_country == "DE"
+        assert customer_items[0].customer_country_hint == "DE"
+        assert customer_items[0].reason_code == "customer_country_from_payment_method"
+        assert customer_items[0].reason_level == PrecheckReasonLevel.info
+        assert subscription_items[0].customer_country == "DE"
+        assert subscription_items[0].customer_country_hint == "DE"
+        assert (
+            subscription_items[0].reason_code == "customer_country_from_payment_method"
+        )
 
     def test_trialing_subscription_is_importable_with_info(self) -> None:
         records: list[CanonicalRecord] = [

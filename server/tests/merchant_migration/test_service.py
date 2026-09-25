@@ -1269,6 +1269,65 @@ async def _products(session: AsyncSession, organization: Organization) -> list[P
 @pytest.mark.asyncio
 class TestImportCatalog:
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("payment_method", "expected_country"),
+        [
+            (
+                CanonicalPaymentMethod(
+                    source_id="pm_1",
+                    type=CanonicalPaymentMethodType.card,
+                    billing_country="DE",
+                    card_country="US",
+                ),
+                "DE",
+            ),
+            (None, None),
+        ],
+    )
+    async def test_missing_billing_country_does_not_block_import(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        payment_method: CanonicalPaymentMethod | None,
+        expected_country: str | None,
+    ) -> None:
+        records = _catalog_with_subscription()
+        customer = next(
+            record for record in records if isinstance(record, CanonicalCustomer)
+        )
+        customer.country = None
+        subscription = next(
+            record for record in records if isinstance(record, CanonicalSubscription)
+        )
+        subscription.payment_method = payment_method
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.customers].imported == 1
+        imported = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("alice@example.com", organization.id)
+        assert imported is not None
+        if expected_country is None:
+            assert imported.billing_address is None
+        else:
+            assert imported.billing_address is not None
+            assert imported.billing_address.country == expected_country
+
+    @pytest.mark.auth
     async def test_imports_catalog_and_advances_step(
         self,
         mocker: MockerFixture,

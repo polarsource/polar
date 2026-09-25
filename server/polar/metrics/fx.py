@@ -15,6 +15,28 @@ def payment_exchange_rate() -> ColumnElement[Decimal]:
     )
 
 
+def recorded_exchange_rate() -> ColumnElement[Decimal]:
+    return func.cast(Transaction.exchange_rate, Numeric(30, 12))
+
+
+def usd_settled_payment_clauses() -> tuple[ColumnElement[bool], ...]:
+    return (
+        Transaction.type == TransactionType.payment,
+        Transaction.presentment_currency.is_not(None),
+        func.lower(Transaction.currency) == "usd",
+    )
+
+
+def recorded_exchange_rate_clauses() -> tuple[ColumnElement[bool], ...]:
+    """Payments whose processor-recorded rate converts to USD.
+
+    Reference rates applied to other orders only use these: a rate derived
+    from amounts is skewed by rounding, and a non-USD settlement's rate is
+    not a USD rate.
+    """
+    return (*usd_settled_payment_clauses(), Transaction.exchange_rate > 0)
+
+
 def global_daily_exchange_rates() -> Select[tuple[datetime, str, Decimal]]:
     day = func.date_trunc("day", Transaction.created_at)
     currency = func.lower(Transaction.presentment_currency)
@@ -22,12 +44,9 @@ def global_daily_exchange_rates() -> Select[tuple[datetime, str, Decimal]]:
         select(
             day.label("day"),
             currency.label("currency"),
-            func.avg(payment_exchange_rate()).label("rate"),
+            func.avg(recorded_exchange_rate()).label("rate"),
         )
-        .where(
-            Transaction.type == TransactionType.payment,
-            Transaction.presentment_currency.is_not(None),
-        )
+        .where(*recorded_exchange_rate_clauses())
         .group_by(day, currency)
     )
 

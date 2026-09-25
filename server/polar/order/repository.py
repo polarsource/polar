@@ -31,6 +31,9 @@ from polar.metrics.fx import (
     closest_global_daily_rate,
     global_daily_exchange_rates,
     payment_exchange_rate,
+    recorded_exchange_rate,
+    recorded_exchange_rate_clauses,
+    usd_settled_payment_clauses,
 )
 from polar.models import (
     Customer,
@@ -45,7 +48,6 @@ from polar.models import (
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.models.transaction import TransactionType
 
 from .sorting import OrderSortProperty
 
@@ -84,14 +86,9 @@ class OrderRepository(
         across all customers cannot be expressed as bounded per-entity metric
         queries the way products can.
         """
-        exchange_rate = payment_exchange_rate()
-        payment_transaction_clauses = (
-            Transaction.type == TransactionType.payment,
-            Transaction.presentment_currency.is_not(None),
-        )
         order_exchange_rate = (
-            select(func.avg(exchange_rate))
-            .where(Transaction.order_id == Order.id, *payment_transaction_clauses)
+            select(func.avg(payment_exchange_rate()))
+            .where(Transaction.order_id == Order.id, *usd_settled_payment_clauses())
             .correlate(Order)
             .scalar_subquery()
         )
@@ -104,12 +101,12 @@ class OrderRepository(
             select(
                 payment_day.label("day"),
                 payment_currency.label("currency"),
-                func.avg(exchange_rate).label("rate"),
+                func.avg(recorded_exchange_rate()).label("rate"),
             )
             .join(payment_order, payment_order.id == Transaction.order_id)
             .where(
                 payment_order.organization_id == organization_id,
-                *payment_transaction_clauses,
+                *recorded_exchange_rate_clauses(),
             )
             .group_by(payment_day, payment_currency)
         )

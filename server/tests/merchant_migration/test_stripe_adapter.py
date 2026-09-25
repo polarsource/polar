@@ -564,12 +564,15 @@ class TestExtractProducts:
 
 
 def _customer_with_tax_ids(
-    *tax_ids: dict[str, Any], country: str | None = None
+    *tax_ids: dict[str, Any],
+    country: str | None = None,
+    tax_exempt: str = "none",
 ) -> stripe_lib.Customer:
     payload: dict[str, Any] = {
         "id": "cus_1",
         "email": "a@example.com",
         "name": "A",
+        "tax_exempt": tax_exempt,
         "tax_ids": {
             "object": "list",
             "data": list(tax_ids),
@@ -616,6 +619,7 @@ class TestMapTaxId:
         )
 
         assert mapped.tax_id is None
+        assert mapped.tax_id_dropped is True
 
     def test_missing_country_prefers_eu_vat(self) -> None:
         mapped = StripeAdapter("rk_test")._map_customer(
@@ -687,6 +691,28 @@ class TestMapTaxId:
 
         assert mapped.country == "us"
         assert mapped.tax_id == ("12-3456789", TaxIDFormat.us_ein)
+
+    def test_mapped_tax_id_is_not_dropped(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EU_VAT, country="FR", tax_exempt="reverse")
+        )
+
+        assert mapped.tax_id_dropped is False
+
+    def test_no_tax_id_is_not_dropped(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(country="FR")
+        )
+
+        assert mapped.tax_id_dropped is False
+
+    def test_reverse_charge_without_tax_id_is_dropped(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(country="FR", tax_exempt="reverse")
+        )
+
+        assert mapped.tax_id is None
+        assert mapped.tax_id_dropped is True
 
 
 @pytest.mark.asyncio

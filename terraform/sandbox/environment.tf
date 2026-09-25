@@ -103,11 +103,7 @@ locals {
     organization_id  = var.polar_organization_id
     free_product_id  = var.polar_free_product_id
     scale_product_id = var.polar_scale_product_id
-    # Loopback override: the self-referential API call skips DNS/TLS/Cloudflare
-    # instead of round-tripping over the public internet (root cause of the
-    # Sentry read-timeouts). Port is fixed by the uvicorn command in
-    # server/Dockerfile, identical across all environments.
-    api_url = "http://127.0.0.1:10000"
+    api_url          = "http://127.0.0.1:10000"
   }
 
   tinybird_config = {

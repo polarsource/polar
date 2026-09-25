@@ -177,7 +177,13 @@ class _FakeAdapter:
                 return record
         return None
 
-    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+    async def stop_source_subscription(
+        self,
+        source_id: str,
+        *,
+        reference: str,
+        cancel_at_period_end: bool = False,
+    ) -> None:
         self.stopped.append(source_id)
 
 

@@ -148,9 +148,12 @@ class CanonicalSubscription:
     # Per-coupon apply times, so a later kept coupon doesn't inherit the first
     # (discarded) coupon's start.
     discount_starts: dict[str, datetime] = field(default_factory=dict)
-    # The customer already asked to stop: the source won't renew it. Nothing left
-    # for Polar to take over, so the cutover leaves it where it is.
+    # The customer already asked to stop. A selected cutover takes it over and
+    # keeps this end instead of renewing it.
     cancel_at_period_end: bool = False
+    # The stop comment recorded this flag. A retry must trust it over the import
+    # snapshot, which can be stale in either direction.
+    cancel_at_period_end_known: bool = False
     # When the source trial ends, so the cutover can keep the subscription
     # trialing on Polar until then instead of billing it early.
     trial_end: datetime | None = None
@@ -441,6 +444,9 @@ def deserialize(
                     if (started_at := _parse_datetime(raw)) is not None
                 },
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
+                cancel_at_period_end_known=data.get(
+                    "cancel_at_period_end_known", False
+                ),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 anchor_day=data.get("anchor_day"),

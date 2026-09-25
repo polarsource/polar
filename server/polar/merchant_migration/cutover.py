@@ -36,7 +36,12 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.subscription.service import subscription as subscription_service
+from polar.subscription.service import (
+    SubscriptionUpdateContext,
+)
+from polar.subscription.service import (
+    subscription as subscription_service,
+)
 
 from . import pan_transfer
 from .adapters import SourceAdapter
@@ -78,10 +83,6 @@ _SOURCE_CANCELED = (
 _SOURCE_NOT_LIVE = (
     "The source reports it as `{status}`, which isn't a healthy subscription "
     "Polar can take billing over from."
-)
-_ENDING = (
-    "It's set to cancel at the end of the period on the source, so there is no "
-    "renewal for Polar to take over. It stays there until it ends."
 )
 _PLAN_CHANGED = (
     "The plan changed on the source since the import, so the imported "
@@ -158,6 +159,26 @@ def _skip(reason: str) -> CutoverOutcome:
 
 def _fail(reason: str) -> CutoverOutcome:
     return CutoverOutcome(MerchantMigrationCutoverStatus.failed, reason)
+
+
+def _ends_at_period_end(
+    source: CanonicalSubscription, staged: CanonicalSubscription | None
+) -> bool:
+    """Whether Polar should keep a scheduled end instead of renewing.
+
+    The live source wins. Stopping it clears Stripe's flag, so the stop comment
+    records the value and a retry reads that (``cancel_at_period_end_known``).
+    An older stop has no comment; the import snapshot is the fallback.
+    """
+    if source.cancel_at_period_end:
+        return True
+    if source.stopped_for_migration and source.cancel_at_period_end_known:
+        return False
+    return bool(
+        source.stopped_for_migration
+        and staged is not None
+        and staged.cancel_at_period_end
+    )
 
 
 class SubscriptionCutover:
@@ -264,15 +285,19 @@ class SubscriptionCutover:
             return _fail(_UNREADABLE) if already_stopped else _skip(_UNREADABLE)
         subscription.tax_behavior = staged.import_tax_behavior()
         subscription.tax_exempted = False
+        # Read before the source stop: an immediate cancel clears the flag.
+        ends_at_period_end = _ends_at_period_end(source, staged)
 
         if not already_stopped:
             await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
+                record.source_id,
+                reference=str(self.migration.id),
+                cancel_at_period_end=ends_at_period_end,
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
         try:
-            await subscription_service.activate_imported(
+            subscription = await subscription_service.activate_imported(
                 self.session,
                 subscription,
                 current_period_start=current_period_start,
@@ -283,6 +308,8 @@ class SubscriptionCutover:
                 provider=self.migration.source_platform,
                 provider_subscription_id=record.source_id,
             )
+            if ends_at_period_end:
+                await self._schedule_period_end_cancellation(subscription)
         except Exception:
             # The source is stopped and this rolls back, ledger row included, so
             # the log is the only trace of a customer nobody is billing.
@@ -409,14 +436,18 @@ class SubscriptionCutover:
             flush=True,
         )
 
+        # Read before the source stop: an immediate cancel clears the flag.
+        ends_at_period_end = _ends_at_period_end(source, staged)
         if not already_stopped:
             await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
+                record.source_id,
+                reference=str(self.migration.id),
+                cancel_at_period_end=ends_at_period_end,
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
         try:
-            await subscription_service.activate_imported(
+            subscription = await subscription_service.activate_imported(
                 self.session,
                 subscription,
                 current_period_start=current_period_start,
@@ -427,6 +458,8 @@ class SubscriptionCutover:
                 provider=self.migration.source_platform,
                 provider_subscription_id=record.source_id,
             )
+            if ends_at_period_end:
+                await self._schedule_period_end_cancellation(subscription)
         except Exception:
             log.exception(
                 "merchant_migration.cutover.stopped_but_unfinished",
@@ -459,9 +492,23 @@ class SubscriptionCutover:
                 source_id=record.source_id,
             )
             await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
+                record.source_id,
+                reference=str(self.migration.id),
+                cancel_at_period_end=source.cancel_at_period_end,
             )
         return _moved()
+
+    async def _schedule_period_end_cancellation(
+        self, subscription: Subscription
+    ) -> None:
+        """Keep the source's scheduled end. The subscription stays active until then."""
+        async with SubscriptionUpdateContext(
+            self.session,
+            subscription,
+            subscription_service,
+            notify_customer=False,
+        ) as ctx:
+            await subscription_service.cancel(self.session, ctx, subscription)
 
     async def _load_subscription(self, subscription_id: UUID) -> Subscription | None:
         return await self.subscription_repository.get_by_id(
@@ -484,8 +531,6 @@ class SubscriptionCutover:
         if source.status == CanonicalSubscriptionStatus.canceled:
             return _SOURCE_CANCELED
         migratable = source.status in MIGRATABLE_SOURCE_STATUSES
-        if migratable and source.cancel_at_period_end:
-            return _ENDING
         # The import's own bar, re-applied: the source has had weeks to grow a
         # second line item, a coupon or a manual invoice.
         reason = subscription_import_reason(source)
@@ -572,6 +617,9 @@ class SubscriptionCutover:
         return ImportedDiscount(discount=discount, started_at=started_at)
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
+        # Nothing is about to charge, so the handover window does not apply.
+        if source.cancel_at_period_end:
+            return None
         renewal = source.current_period_end
         if renewal is None:
             return (

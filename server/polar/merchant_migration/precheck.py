@@ -829,6 +829,7 @@ def _item(
     tax_behavior: TaxBehavior | None = None,
     discount_name: str | None = None,
     discount_code: str | None = None,
+    cancels_at_period_end: bool | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -871,6 +872,7 @@ def _item(
         discount_code=discount_code,
         has_payment_method=None,
         dependencies_imported=None,
+        cancels_at_period_end=cancels_at_period_end,
     )
 
 
@@ -1143,6 +1145,7 @@ def _subscription_items(
                 tax_behavior=subscription.import_tax_behavior(),
                 discount_name=kept_discount.name if kept_discount is not None else None,
                 discount_code=kept_discount.code if kept_discount is not None else None,
+                cancels_at_period_end=subscription.cancel_at_period_end,
             )
         )
     return items

@@ -27,6 +27,7 @@ STRIPE_CLI_PROFILE = "polar-sandbox"
 SANDBOX_DASHBOARD_URL = "https://dashboard.stripe.com/sandboxes"
 TAX_SETTINGS_URL = "https://dashboard.stripe.com/test/tax/settings"
 TAX_REGISTRATIONS_URL = "https://dashboard.stripe.com/test/tax/registrations"
+API_KEYS_URL = "https://dashboard.stripe.com/{account_id}/test/apikeys"
 
 
 @dataclass
@@ -223,8 +224,13 @@ def link_sandbox() -> StripeProfile | None:
 
     profile = read_profile()
     if profile is None:
-        console.print("  [red]Stripe login didn't store any keys.[/red]")
+        console.print("  [red]Stripe login didn't store a profile.[/red]")
         return None
+
+    if not has_keys(profile):
+        if not store_keys_from_dashboard(profile):
+            return None
+        profile = read_profile()
 
     rejection = sandbox_rejection(profile)
     if rejection is not None:
@@ -235,12 +241,55 @@ def link_sandbox() -> StripeProfile | None:
     return profile
 
 
+def has_keys(profile: StripeProfile) -> bool:
+    return bool(profile.secret_key and profile.publishable_key)
+
+
+def store_keys_from_dashboard(profile: StripeProfile) -> bool:
+    """Ask for the sandbox's API keys and store them in the CLI profile.
+
+    Stripe CLI 1.50+ signs in over OAuth and keeps a session token in the
+    keychain instead of writing API keys to its config, but the API server
+    still needs real keys.
+    """
+    url = API_KEYS_URL.format(account_id=profile.account_id)
+    console.print(
+        f"\n  The Stripe CLI is signed in to '{profile.display_name}', but this CLI"
+        " version no longer stores its API keys."
+    )
+    console.print("  Copy both keys from the sandbox's API keys page:")
+    console.print(f"  [link={url}]{url}[/link]\n")
+    webbrowser.open(url)
+
+    secret_key = typer.prompt("  Secret key (sk_test_...)", hide_input=True).strip()
+    publishable_key = typer.prompt("  Publishable key (pk_test_...)").strip()
+    if not secret_key.startswith("sk_test_") or not publishable_key.startswith("pk_test_"):
+        console.print("  [red]Those aren't sandbox keys: they start with sk_test_ and pk_test_.[/red]")
+        return False
+
+    for field, value in (
+        ("test_mode_api_key", secret_key),
+        ("test_mode_pub_key", publishable_key),
+    ):
+        result = run_command(
+            ["stripe", "config", "-p", STRIPE_CLI_PROFILE, "--set", field, value],
+            capture=True,
+        )
+        if not result or result.returncode != 0:
+            console.print("  [red]Couldn't store the keys in the Stripe CLI profile.[/red]")
+            return False
+    return True
+
+
 def ensure_sandbox_profile(relink: bool = False) -> StripeProfile | None:
     """Get a usable sandbox profile, walking through pairing when needed."""
     if relink:
         return link_sandbox()
 
     profile = read_profile()
+    if profile is not None and profile.account_id and not has_keys(profile):
+        if store_keys_from_dashboard(profile):
+            profile = read_profile()
     if profile is not None:
         rejection = sandbox_rejection(profile) or key_auth_failure()
         if rejection is None:

@@ -231,9 +231,7 @@ export function QuietGroup({
       <Text variant="label" as="h4" color="muted">
         {title}
       </Text>
-      <Box flexDirection="column" rowGap="m" minWidth={0}>
-        {children}
-      </Box>
+      {children}
     </Box>
   )
 }

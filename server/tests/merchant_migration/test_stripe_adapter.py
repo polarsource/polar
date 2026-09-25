@@ -1135,7 +1135,7 @@ class TestExtractCoupons:
         assert isinstance(discount, CanonicalDiscount)
         assert discount.ends_at == datetime(2027, 1, 15, 8, 0, tzinfo=UTC)
 
-    async def test_subscription_page_maps_each_coupon_start(
+    async def test_subscription_page_blocks_several_distinct_coupons(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
@@ -1167,15 +1167,11 @@ class TestExtractCoupons:
         assert "data.schedule" in expand
         record = page.records[0]
         assert isinstance(record, CanonicalSubscription)
-        assert record.discount_block is None
+        assert record.discount_block == "subscription_stacked_discounts"
         assert record.has_discount is True
-        assert record.discount_source_ids == ["coupon_old", "coupon_kept"]
-        assert record.discount_started_at == datetime(
-            2023, 11, 14, 22, 13, 20, tzinfo=UTC
-        )
-        assert record.discount_starts["coupon_kept"] == datetime(
-            2024, 3, 9, 16, 0, tzinfo=UTC
-        )
+        assert record.discount_source_ids == []
+        assert record.discount_started_at is None
+        assert record.discount_starts == {}
 
     async def test_missing_coupon_scope_is_named(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

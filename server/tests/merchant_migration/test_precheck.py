@@ -568,13 +568,7 @@ class TestClassifyRecords:
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
             ),
-            CanonicalCustomer(
-                source_id="cus_1",
-                email="a@example.com",
-                name="A",
-                country="FR",
-                tax_id_dropped=True,
-            ),
+            replace(build_customer(country="FR"), tax_id_dropped=True),
             build_subscription(source_id="sub_1"),
         ]
 

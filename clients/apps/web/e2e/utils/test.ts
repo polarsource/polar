@@ -1,6 +1,16 @@
+import type { schemas } from '@polar-sh/client'
 import { test as base } from 'vitest'
 import { App } from './app'
 import { type CheckoutPage, openCheckout } from './checkout'
+import {
+  type CustomFieldSpec,
+  type DiscountSpec,
+  ensureCustomField,
+  ensureDiscount,
+  ensureMeter,
+  type MeterSpec,
+} from './org'
+import { orgApi } from './api'
 import type { ProductSpec } from './products'
 
 type Named = { name: string; suite?: Named }
@@ -21,7 +31,13 @@ declare module 'vitest' {
 
 export const test = base.extend<{
   app: App
-  openCheckout: (spec: ProductSpec) => Promise<CheckoutPage>
+  openCheckout: (specs: ProductSpec | ProductSpec[]) => Promise<CheckoutPage>
+  org: {
+    discount: (spec: DiscountSpec) => ReturnType<typeof ensureDiscount>
+    customField: (spec: CustomFieldSpec) => ReturnType<typeof ensureCustomField>
+    meter: (spec: MeterSpec) => ReturnType<typeof ensureMeter>
+    order: (id: string) => Promise<schemas['Order']>
+  }
 }>({
   app: async ({ task }, use) => {
     const attempt = (task.result?.retryCount ?? 0) + 1
@@ -35,7 +51,15 @@ export const test = base.extend<{
     }
   },
   openCheckout: async ({ app }, use) => {
-    await use((spec) => openCheckout(app, spec))
+    await use((specs) => openCheckout(app, specs))
+  },
+  org: async ({}, use) => {
+    await use({
+      discount: ensureDiscount,
+      customField: ensureCustomField,
+      meter: ensureMeter,
+      order: (id) => orgApi<schemas['Order']>(`/v1/orders/${id}`),
+    })
   },
 })
 

@@ -28,6 +28,13 @@ Notes that save time:
 - Unit tests need neither a running backend nor `.env.local`; `apps/web/vitest.config.ts`
   injects the `NEXT_PUBLIC_*` values itself. Only `test:e2e` (Playwright) needs a live stack and `E2E_ORG_TOKEN`;
   `dev e2e setup` provides it, `dev e2e run` runs it from anywhere, `--headed` shows the browser.
+  CI runs one worker: sandbox rate-limits anonymous traffic per IP (100 requests and 6 checkout
+  confirmations a minute). The harness polls with the organization token, so give the E2E
+  organization the `elevated` rate limit group in the backoffice; the browser's own confirmations
+  stay anonymous, which is why the page object spaces them 10 s apart. Each test revokes its
+  subscriptions and deletes its customer afterwards.
+  Every attempt leaves screenshots, `browser.log` and a Playwright `trace.zip` under
+  `apps/web/e2e/artifacts/<test>/attempt-N/`; open a trace with `pnpm exec playwright show-trace <zip>`.
 - `pnpm generate` shells into the server's Python env to run `scripts.generate_openapi`, so it
   needs the import-blocking backend artifact — the email-renderer binary. You rarely need it:
   the generated `packages/client/src/v1.ts` is committed.

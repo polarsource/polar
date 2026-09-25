@@ -36,6 +36,14 @@ TOKEN_SCOPES = [
     Scope.orders_read,
     Scope.subscriptions_read,
     Scope.subscriptions_write,
+    Scope.discounts_read,
+    Scope.discounts_write,
+    Scope.custom_fields_read,
+    Scope.custom_fields_write,
+    Scope.meters_read,
+    Scope.meters_write,
+    Scope.customers_read,
+    Scope.customers_write,
 ]
 
 cli = typer.Typer()

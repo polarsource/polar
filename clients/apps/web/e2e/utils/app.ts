@@ -4,18 +4,20 @@ import {
   type Browser,
   type BrowserContext,
   chromium,
+  type Frame,
   type Locator,
   type Page,
 } from 'playwright'
 import { expect } from 'vitest'
-import { API_URL, HEADLESS } from './constants'
+import { api, type ApiInit } from './api'
+import { HEADLESS } from './constants'
 
 const NAVIGATION_TIMEOUT = 120_000
 
 type Check = () => Promise<boolean>
 export type Meta = { checkoutUrl?: string }
 
-const SETTLE = { timeout: 5_000, interval: 250 }
+const SETTLE = { timeout: 5_000, interval: 1_000 }
 const digits = (text: string) => text.replace(/\D/g, '')
 const stamp = () => new Date().toISOString().slice(11, 19)
 
@@ -42,6 +44,7 @@ export class App {
     const context = await browser.newContext({
       viewport: { width: 1280, height: 900 },
     })
+    await context.tracing.start({ snapshots: true })
     const page = await context.newPage()
     const log = (line: string) =>
       appendFileSync(`${artifacts}browser.log`, `${line}\n`)
@@ -77,6 +80,9 @@ export class App {
         for (const cleanup of this.cleanups) await cleanup()
       } finally {
         this.mark('closing browser')
+        await this.context.tracing
+          .stop({ path: `${this.artifacts}trace.zip` })
+          .catch((error: Error) => this.mark(`trace failed: ${error.message}`))
         await this.context.close()
         this.mark('context closed')
         await this.browser.close()
@@ -115,32 +121,16 @@ export class App {
       .catch((error: Error) => this.mark(`${file} failed: ${error.message}`))
   }
 
-  async api<T>(
-    path: string,
-    init: { method?: string; token?: string; body?: unknown } = {},
-  ): Promise<T> {
-    const response = await fetch(`${API_URL}${path}`, {
-      method: init.method ?? 'GET',
-      headers: {
-        ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
-        ...(init.body !== undefined
-          ? { 'Content-Type': 'application/json' }
-          : {}),
-      },
-      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
-    })
-    if (!response.ok) {
-      throw new Error(
-        `${init.method ?? 'GET'} ${path} -> ${response.status} ${await response.text()}`,
-      )
-    }
-    return (await response.json()) as T
-  }
+  api = <T>(path: string, init: ApiInit = {}): Promise<T> => api<T>(path, init)
 
   stripeField(name: string): Locator {
     return this.page
       .frameLocator('iframe[title="Secure payment input frame"]')
       .locator(`input[name="${name}"]`)
+  }
+
+  frame(url: RegExp): Frame | undefined {
+    return this.page.frames().find((frame) => url.test(frame.url()))
   }
 
   async type(field: Locator, value: string): Promise<void> {
@@ -158,12 +148,17 @@ export class App {
       .toBe(true)
   }
 
-  async fill(field: Locator, value: string, saved: Check): Promise<void> {
+  async fill(
+    field: Locator,
+    value: string,
+    saved: Check,
+    commit: () => Promise<void> = () => this.page.keyboard.press('Tab'),
+  ): Promise<void> {
     await expect
       .poll(
         async () => {
           await field.fill(value)
-          await this.page.keyboard.press('Tab')
+          await commit()
           await expect.poll(saved, SETTLE).toBe(true)
           return true
         },
@@ -194,7 +189,13 @@ export class App {
             .toBe(value)
           this.mark('option highlighted')
           await this.page.keyboard.press('Enter')
-          await expect.poll(chosen, SETTLE).toBe(true)
+          await expect
+            .poll(
+              async () =>
+                (await trigger.innerText()).includes(value) && (await chosen()),
+              SETTLE,
+            )
+            .toBe(true)
           this.mark('selection saved')
           return true
         },
@@ -211,6 +212,7 @@ export class App {
     await expect
       .poll(
         async () => {
+          if (await done()) return true
           await button.click()
           await expect.poll(done, SETTLE).toBe(true)
           return true

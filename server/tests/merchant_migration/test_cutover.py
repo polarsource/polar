@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
@@ -33,6 +33,7 @@ from polar.models import (
     Product,
     Subscription,
 )
+from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
@@ -45,12 +46,14 @@ from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
+    create_discount,
     create_payment_method,
     create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     build_connected_migration,
+    canonical_discount,
     canonical_subscription,
     copied_cards,
     pan_steps_until,
@@ -63,6 +66,69 @@ STOPPED_BY_US = {
     "status": CanonicalSubscriptionStatus.canceled,
     "stopped_for_migration": True,
 }
+
+
+async def stage_discount_record(
+    save_fixture: SaveFixture,
+    migration: MerchantMigration,
+    organization: Organization,
+    *,
+    source_id: str = "coupon_1",
+    status: MerchantMigrationRecordStatus = MerchantMigrationRecordStatus.imported,
+    target_id: UUID | None = None,
+    name: str = "Launch",
+    code: str | None = "LAUNCH",
+    canonical: dict[str, Any] | None = None,
+) -> None:
+    await save_fixture(
+        MerchantMigrationRecord(
+            merchant_migration=migration,
+            organization=organization,
+            type=MerchantMigrationRecordType.discount,
+            status=status,
+            source_id=source_id,
+            target_id=target_id,
+            canonical=(
+                canonical
+                if canonical is not None
+                else serialize(
+                    canonical_discount(source_id=source_id, name=name, code=code)
+                )
+            ),
+        )
+    )
+
+
+async def _percentage_discount(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    name: str = "Launch",
+    code: str = "LAUNCH",
+    duration: DiscountDuration = DiscountDuration.forever,
+    duration_in_months: int | None = None,
+) -> Discount:
+    return await create_discount(
+        save_fixture,
+        type=DiscountType.percentage,
+        basis_points=2000,
+        duration=duration,
+        duration_in_months=duration_in_months,
+        organization=organization,
+        name=name,
+        code=code,
+    )
+
+
+async def _discounted_pending(
+    save_fixture: SaveFixture,
+    pending_record: MerchantMigrationRecord,
+    **fields: Any,
+) -> None:
+    pending_record.canonical = serialize(
+        canonical_subscription(has_discount=True, **fields)
+    )
+    await save_fixture(pending_record)
 
 
 class _FakeSourceAdapter:
@@ -253,6 +319,249 @@ class TestRun:
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
         assert subscription.tax_behavior == tax
         assert subscription.tax_exempted is False
+
+    async def test_applies_imported_discount(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(save_fixture, organization)
+        applied_at = utc_now() - timedelta(days=40)
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_source_ids=["coupon_1"],
+            discount_started_at=applied_at,
+        )
+
+        outcome = await cutover(
+            _source(
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+                discount_started_at=applied_at,
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.discount_id == polar_discount.id
+        assert subscription.discount_applied_at == applied_at
+
+    async def test_repeating_discount_does_not_use_staged_start(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+        )
+        await stage_discount_record(
+            save_fixture,
+            migration,
+            organization,
+            target_id=polar_discount.id,
+            canonical={},
+        )
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_source_ids=["coupon_1"],
+            discount_started_at=utc_now() - timedelta(days=40),
+        )
+        adapter = _source(has_discount=True, discount_source_ids=["coupon_1"])
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "when this coupon was applied" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_applies_kept_coupon_start_not_the_first_coupon(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            name="Keep",
+            code="KEEP",
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+        )
+        await stage_discount_record(
+            save_fixture,
+            migration,
+            organization,
+            source_id="coupon_ok",
+            name="Keep",
+            code="KEEP",
+            target_id=polar_discount.id,
+        )
+        first_start = utc_now() - timedelta(days=90)
+        kept_start = utc_now() - timedelta(days=40)
+        starts = {"coupon_bad": first_start, "coupon_ok": kept_start}
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_source_ids=["coupon_bad", "coupon_ok"],
+            discount_started_at=first_start,
+            discount_starts=starts,
+        )
+
+        outcome = await cutover(
+            _source(
+                has_discount=True,
+                discount_source_ids=["coupon_bad", "coupon_ok"],
+                discount_started_at=first_start,
+                discount_starts=starts,
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.discount_id == polar_discount.id
+        assert subscription.discount_applied_at == kept_start
+
+    async def test_skips_when_discount_was_never_imported(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        await _discounted_pending(
+            save_fixture, pending_record, discount_source_ids=["coupon_1"]
+        )
+        adapter = _source(has_discount=True, discount_source_ids=["coupon_1"])
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "coupon was never imported" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_skips_when_source_coupon_changed(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        await _discounted_pending(
+            save_fixture, pending_record, discount_source_ids=["coupon_1"]
+        )
+        adapter = _source(has_discount=True, discount_source_ids=["coupon_2"])
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "coupon on the source changed" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_applies_second_coupon_when_first_was_not_imported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(
+            save_fixture, organization, name="Keep", code="KEEP"
+        )
+        await stage_discount_record(
+            save_fixture,
+            migration,
+            organization,
+            source_id="coupon_bad",
+            name="Bad",
+            status=MerchantMigrationRecordStatus.skipped,
+        )
+        await stage_discount_record(
+            save_fixture,
+            migration,
+            organization,
+            source_id="coupon_ok",
+            name="Keep",
+            code="KEEP",
+            target_id=polar_discount.id,
+        )
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_source_ids=["coupon_bad", "coupon_ok"],
+        )
+
+        outcome = await cutover(
+            _source(has_discount=True, discount_source_ids=["coupon_bad", "coupon_ok"])
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.discount_id == polar_discount.id
+
+    async def test_skips_when_kept_coupon_left_the_source(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        polar_discount = await _percentage_discount(
+            save_fixture, organization, name="Keep", code="KEEP"
+        )
+        await stage_discount_record(
+            save_fixture,
+            migration,
+            organization,
+            source_id="coupon_bad",
+            status=MerchantMigrationRecordStatus.skipped,
+            canonical={},
+        )
+        await stage_discount_record(
+            save_fixture,
+            migration,
+            organization,
+            source_id="coupon_ok",
+            target_id=polar_discount.id,
+            canonical={},
+        )
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_source_ids=["coupon_bad", "coupon_ok"],
+        )
+        adapter = _source(has_discount=True, discount_source_ids=["coupon_bad"])
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "coupon on the source changed" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
 
     async def test_creates_from_dependencies_imported_on_earlier_migration(
         self,

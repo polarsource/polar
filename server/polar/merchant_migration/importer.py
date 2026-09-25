@@ -117,7 +117,9 @@ async def create_imported_subscription(
     customer: Customer,
     *,
     provider: str,
+    discount: Discount | None = None,
 ) -> Subscription:
+    applied_at = subscription.discount_started_at
     return await subscription_service.create_imported(
         session,
         product=product,
@@ -132,6 +134,8 @@ async def create_imported_subscription(
         },
         tax_behavior=subscription.import_tax_behavior(),
         tax_exempted=False,
+        discount=discount,
+        discount_applied_at=applied_at if discount is not None else None,
     )
 
 

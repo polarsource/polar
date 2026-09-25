@@ -1,7 +1,16 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CTE, ColumnElement, Numeric, Select, func, select
+from sqlalchemy import (
+    ColumnElement,
+    Numeric,
+    Select,
+    func,
+    literal_column,
+    select,
+    union_all,
+)
+from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.models import Transaction
 from polar.models.transaction import TransactionType
@@ -15,34 +24,51 @@ def payment_exchange_rate() -> ColumnElement[Decimal]:
     )
 
 
-def global_daily_exchange_rates() -> Select[tuple[datetime, str, Decimal]]:
-    day = func.date_trunc("day", Transaction.created_at)
-    currency = func.lower(Transaction.presentment_currency)
+def recorded_exchange_rate() -> ColumnElement[Decimal]:
+    return func.cast(Transaction.exchange_rate, Numeric(30, 12))
+
+
+def usd_settled_payment_clauses() -> tuple[ColumnElement[bool], ...]:
     return (
-        select(
-            day.label("day"),
-            currency.label("currency"),
-            func.avg(payment_exchange_rate()).label("rate"),
-        )
-        .where(
-            Transaction.type == TransactionType.payment,
-            Transaction.presentment_currency.is_not(None),
-        )
-        .group_by(day, currency)
+        Transaction.type == literal_column(f"'{TransactionType.payment}'"),
+        Transaction.presentment_currency.is_not(None),
+        func.lower(Transaction.currency) == "usd",
     )
 
 
-def closest_global_daily_rate(
-    daily_rates: CTE,
+def recorded_exchange_rate_clauses() -> tuple[ColumnElement[bool], ...]:
+    return (*usd_settled_payment_clauses(), Transaction.exchange_rate.is_not(None))
+
+
+def closest_recorded_exchange_rate(
     currency: ColumnElement[str],
-    day: ColumnElement[datetime],
+    timestamp: ColumnElement[datetime] | InstrumentedAttribute[datetime],
 ) -> Select[tuple[Decimal]]:
+    candidates = select(
+        recorded_exchange_rate().label("rate"),
+        Transaction.created_at.label("created_at"),
+    ).where(
+        *recorded_exchange_rate_clauses(),
+        func.lower(Transaction.presentment_currency) == currency,
+    )
+    before = (
+        candidates.where(Transaction.created_at <= timestamp)
+        .order_by(Transaction.created_at.desc())
+        .limit(1)
+        .correlate_except(Transaction)
+    )
+    after = (
+        candidates.where(Transaction.created_at > timestamp)
+        .order_by(Transaction.created_at.asc())
+        .limit(1)
+        .correlate_except(Transaction)
+    )
+    closest = union_all(before, after).subquery("closest")
     return (
-        select(daily_rates.c.rate)
-        .where(
-            daily_rates.c.currency == currency,
-            daily_rates.c.rate.is_not(None),
+        select(closest.c.rate)
+        .order_by(
+            func.abs(func.extract("epoch", closest.c.created_at - timestamp)),
+            closest.c.created_at,
         )
-        .order_by(func.abs(func.extract("epoch", daily_rates.c.day - day)))
         .limit(1)
     )

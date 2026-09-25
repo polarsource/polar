@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 from sqlalchemy import CursorResult, Select, case, func, select, update
-from sqlalchemy.orm import aliased, joinedload, selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
@@ -28,9 +28,9 @@ from polar.kit.repository import (
 )
 from polar.kit.utils import utc_now
 from polar.metrics.fx import (
-    closest_global_daily_rate,
-    global_daily_exchange_rates,
+    closest_recorded_exchange_rate,
     payment_exchange_rate,
+    usd_settled_payment_clauses,
 )
 from polar.models import (
     Customer,
@@ -45,7 +45,6 @@ from polar.models import (
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.models.transaction import TransactionType
 
 from .sorting import OrderSortProperty
 
@@ -77,71 +76,22 @@ class OrderRepository(
 
         Orders in every currency count: each converts at the exchange rate of
         its payment transaction. Orders without one (e.g. paid from customer
-        balance) use the organization's same-day average rate, then the closest
-        global daily rate, then an identity rate.
+        balance) use the recorded rate of the closest payment in time, before
+        or after, then an identity rate.
 
         A repository aggregation (not the metrics layer) on purpose: ranking
         across all customers cannot be expressed as bounded per-entity metric
         queries the way products can.
         """
-        exchange_rate = payment_exchange_rate()
-        payment_transaction_clauses = (
-            Transaction.type == TransactionType.payment,
-            Transaction.presentment_currency.is_not(None),
-        )
         order_exchange_rate = (
-            select(func.avg(exchange_rate))
-            .where(Transaction.order_id == Order.id, *payment_transaction_clauses)
+            select(func.avg(payment_exchange_rate()))
+            .where(Transaction.order_id == Order.id, *usd_settled_payment_clauses())
             .correlate(Order)
             .scalar_subquery()
         )
-        payment_order = aliased(Order)
         order_currency = func.lower(Order.currency)
-        order_day = func.date_trunc("day", Order.created_at)
-        payment_day = func.date_trunc("day", payment_order.created_at)
-        payment_currency = func.lower(Transaction.presentment_currency)
-        organization_fx_statement = (
-            select(
-                payment_day.label("day"),
-                payment_currency.label("currency"),
-                func.avg(exchange_rate).label("rate"),
-            )
-            .join(payment_order, payment_order.id == Transaction.order_id)
-            .where(
-                payment_order.organization_id == organization_id,
-                *payment_transaction_clauses,
-            )
-            .group_by(payment_day, payment_currency)
-        )
-        global_fx_statement = global_daily_exchange_rates()
-        if start is not None:
-            organization_fx_statement = organization_fx_statement.where(
-                payment_order.created_at >= start
-            )
-            global_fx_statement = global_fx_statement.where(
-                Transaction.created_at >= start
-            )
-        if end is not None:
-            organization_fx_statement = organization_fx_statement.where(
-                payment_order.created_at < end
-            )
-            global_fx_statement = global_fx_statement.where(
-                Transaction.created_at < end
-            )
-        organization_fx_daily = organization_fx_statement.cte("organization_fx_daily")
-        global_fx_daily = global_fx_statement.cte("global_fx_daily")
-        same_day_exchange_rate = (
-            select(organization_fx_daily.c.rate)
-            .where(
-                organization_fx_daily.c.currency == order_currency,
-                organization_fx_daily.c.day == order_day,
-            )
-            .limit(1)
-            .correlate(Order)
-            .scalar_subquery()
-        )
-        closest_global_exchange_rate = (
-            closest_global_daily_rate(global_fx_daily, order_currency, order_day)
+        closest_exchange_rate = (
+            closest_recorded_exchange_rate(order_currency, Order.created_at)
             .correlate(Order)
             .scalar_subquery()
         )
@@ -152,8 +102,7 @@ class OrderRepository(
                 kept_amount
                 * func.coalesce(
                     order_exchange_rate,
-                    same_day_exchange_rate,
-                    closest_global_exchange_rate,
+                    closest_exchange_rate,
                     1,
                 )
             ),

@@ -40,12 +40,11 @@ from polar.models import (
     User,
 )
 from polar.models.product import ProductBillingType
-from polar.models.transaction import TransactionType
 
 from .fx import (
-    closest_global_daily_rate,
-    global_daily_exchange_rates,
-    payment_exchange_rate,
+    closest_recorded_exchange_rate,
+    recorded_exchange_rate,
+    recorded_exchange_rate_clauses,
 )
 
 if TYPE_CHECKING:
@@ -167,7 +166,6 @@ def get_active_subscriptions_cte(
         customer_id=customer_id,
     )
 
-    fx_value = payment_exchange_rate()
     fx_day = interval.sql_date_trunc(Order.created_at)
     fx_currency = func.lower(Transaction.presentment_currency)
 
@@ -175,30 +173,22 @@ def get_active_subscriptions_cte(
         select(
             fx_day.label("timestamp"),
             fx_currency.label("presentment_currency"),
-            func.avg(fx_value).label("avg_exchange_rate"),
+            func.avg(recorded_exchange_rate()).label("avg_exchange_rate"),
         )
         .select_from(Transaction)
         .join(Order, Order.id == Transaction.order_id)
         .where(
-            Transaction.type == TransactionType.payment,
+            *recorded_exchange_rate_clauses(),
             Order.created_at >= start_timestamp,
             Order.created_at <= end_timestamp,
-            Transaction.presentment_currency.is_not(None),
             Transaction.order_id.in_(readable_orders_statement),
         )
         .group_by(fx_day, fx_currency)
     )
 
-    global_fx_daily = cte(
-        global_daily_exchange_rates().where(
-            Transaction.created_at >= start_timestamp,
-            Transaction.created_at <= end_timestamp,
-        )
-    )
-
     closest_global_fx_rate = (
-        closest_global_daily_rate(
-            global_fx_daily, func.lower(Subscription.currency), timestamp_column
+        closest_recorded_exchange_rate(
+            func.lower(Subscription.currency), timestamp_column
         )
         .correlate(Subscription, timestamp_series)
         .scalar_subquery()

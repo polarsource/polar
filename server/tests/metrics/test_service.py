@@ -274,6 +274,7 @@ async def _create_payment_transaction_with_fx(
     presentment_amount: int,
     presentment_currency: str,
     exchange_rate: float | None = None,
+    created_at: datetime | None = None,
 ) -> None:
     transaction = await create_payment_transaction(
         save_fixture,
@@ -281,6 +282,7 @@ async def _create_payment_transaction_with_fx(
         amount=amount,
         currency="usd",
         charge_id=f"ch_{order.id}",
+        created_at=created_at,
     )
     transaction.presentment_amount = presentment_amount
     transaction.presentment_currency = presentment_currency
@@ -631,8 +633,8 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         auth_type="user",
     ),
     QueryCase(
-        label="fx_identity",
-        org_key="fx_identity",
+        label="fx_closest_global",
+        org_key="fx_closest_global",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 2, 29),
         interval=TimeInterval.month,
@@ -1466,7 +1468,7 @@ async def _seed_fx_multi_currency(
     )
 
 
-async def _seed_fx_identity(
+async def _seed_fx_closest_global(
     save_fixture: SaveFixture,
     organization: Organization,
 ) -> tuple[dict[str, UUID], dict[str, UUID]]:
@@ -1475,12 +1477,12 @@ async def _seed_fx_identity(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(100_00, "eur")],
+        prices=[(100_00, "sek")],
     )
     subscription = await create_subscription(
         save_fixture,
         product=product,
-        currency="eur",
+        currency="sek",
         customer=customer,
         status=SubscriptionStatus.active,
         started_at=_date_to_datetime(date(2024, 1, 1)),
@@ -1499,8 +1501,9 @@ async def _seed_fx_identity(
         order=january_order,
         amount=200_00,
         presentment_amount=100_00,
-        presentment_currency="eur",
+        presentment_currency="sek",
         exchange_rate=2.0,
+        created_at=_date_to_datetime(date(2023, 12, 20)),
     )
     return {"product": product.id}, {"customer": customer.id}
 
@@ -2534,11 +2537,11 @@ async def metrics_harness(
                 organization=fxmc_org, product_ids=p, customer_ids=c
             )
 
-            # --- fx_identity (no tinybird events) ---
-            fxi_org = await make_org("fx_identity")
-            p, c = await _seed_fx_identity(save_fixture, fxi_org)
-            organizations["fx_identity"] = OrganizationContext(
-                organization=fxi_org, product_ids=p, customer_ids=c
+            # --- fx_closest_global (no tinybird events) ---
+            fxcg_org = await make_org("fx_closest_global")
+            p, c = await _seed_fx_closest_global(save_fixture, fxcg_org)
+            organizations["fx_closest_global"] = OrganizationContext(
+                organization=fxcg_org, product_ids=p, customer_ids=c
             )
 
             # --- arpu_no_customers ---
@@ -4041,12 +4044,12 @@ class TestGetMetrics:
         assert feb.committed_monthly_recurring_revenue == 300_00
         assert feb.average_revenue_per_user == 150_00
 
-    async def test_mrr_bucket_without_fx_uses_identity_multiplier(
+    async def test_mrr_bucket_without_fx_uses_closest_global_rate_outside_range(
         self,
         metrics_harness: MetricsHarness,
         metrics_session: AsyncSession,
     ) -> None:
-        case = QUERY_CASES_BY_LABEL["fx_identity"]
+        case = QUERY_CASES_BY_LABEL["fx_closest_global"]
         org_ctx = metrics_harness.organizations[case.org_key]
         auth_subject = _metrics_auth_subject(
             metrics_harness.user,
@@ -4080,9 +4083,9 @@ class TestGetMetrics:
         assert jan.average_revenue_per_user == 200_00
 
         feb = metrics.periods[1]
-        assert feb.monthly_recurring_revenue == 100_00
-        assert feb.committed_monthly_recurring_revenue == 100_00
-        assert feb.average_revenue_per_user == 100_00
+        assert feb.monthly_recurring_revenue == 200_00
+        assert feb.committed_monthly_recurring_revenue == 200_00
+        assert feb.average_revenue_per_user == 200_00
 
     async def test_average_revenue_per_user_no_customers(
         self,

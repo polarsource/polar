@@ -19,24 +19,24 @@
     "release-packages": "turbo run build test --filter='./packages/*' --filter='./adapters/*' --filter='!polar-cli' && turbo run lint --filter='!polar-cli' && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "^2.31.1",
     "@manypkg/cli": "^0.25.1",
     "knip": "^5.88.1",
     "only-allow": "1.2.2",
     "oxfmt": "^0.41.0",
-    "oxlint": "^1.80.0",
-    "oxlint-tsgolint": "^7.0.2001",
-    "turbo": "^2.9.12",
+    "oxlint": "^1.85.0",
+    "oxlint-tsgolint": "^7.0.2002",
+    "turbo": "^2.11.2",
     "typescript": "catalog:"
   },
   "pnpm": {
     "overrides": {
-      "@types/react": "19.2.13",
-      "@types/react-dom": "19.2.3",
+      "@types/react": "19.3.0",
+      "@types/react-dom": "19.3.0",
       "nuxi": "3.28.0"
     }
   },
-  "packageManager": "pnpm@10.29.3",
+  "packageManager": "pnpm@10.34.5",
   "manypkg": {
     "ignoredRules": [
       "INTERNAL_MISMATCH"

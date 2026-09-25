@@ -1,4 +1,4 @@
-import { developmentApiURL, getPublicServerURL } from '@/utils/api'
+import { getPublicServerURL } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
@@ -92,7 +92,6 @@ export const getGitHubRepositoryBenefitAuthorizeURL = (
 
 export const checkAuthenticationSession = async (
   api: Client,
-  pageHost?: string,
 ): Promise<schemas['AuthenticationSession'] | null> => {
   const {
     error,
@@ -128,9 +127,7 @@ export const checkAuthenticationSession = async (
     authenticationSession.identity_id &&
     authenticationSession.available_factors.length === 0
   ) {
-    redirect(
-      `${developmentApiURL(process.env.NEXT_PUBLIC_API_URL, pageHost)}/v1/auth/complete`,
-    )
+    redirect(`${getPublicServerURL()}/v1/auth/complete`)
   }
 
   return authenticationSession

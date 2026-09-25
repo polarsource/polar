@@ -16,7 +16,6 @@ from polar.auth.service import auth as auth_service
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.kit.crypto import get_token_hash_candidates
-from polar.kit.http import request_cookie_domain
 from polar.models import (
     User,
     UserSession,
@@ -97,7 +96,7 @@ async def start_impersonation(
             value=admin_token,
             expires=admin_session.expires_at,
             path="/",
-            domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
+            domain=settings.USER_SESSION_COOKIE_DOMAIN,
             secure=secure_cookie,
             httponly=True,
             samesite="lax",
@@ -109,7 +108,7 @@ async def start_impersonation(
         value=token,
         expires=impersonation_session.expires_at,
         path="/",
-        domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
+        domain=settings.USER_SESSION_COOKIE_DOMAIN,
         secure=secure_cookie,
         httponly=True,
         samesite="lax",
@@ -121,7 +120,7 @@ async def start_impersonation(
         value="true",
         expires=impersonation_session.expires_at,
         path="/",
-        domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
+        domain=settings.USER_SESSION_COOKIE_DOMAIN,
         secure=secure_cookie,
         httponly=False,  # JS-readable
         samesite="lax",
@@ -184,7 +183,7 @@ async def end_impersonation(
         value=admin_token,
         expires=admin_session.expires_at,
         path="/",
-        domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
+        domain=settings.USER_SESSION_COOKIE_DOMAIN,
         secure=secure_cookie,
         httponly=True,
         samesite="lax",
@@ -194,14 +193,14 @@ async def end_impersonation(
     response.delete_cookie(
         settings.IMPERSONATION_COOKIE_KEY,
         path="/",
-        domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
+        domain=settings.USER_SESSION_COOKIE_DOMAIN,
     )
 
     # Remove impersonation indicator cookie
     response.delete_cookie(
         settings.IMPERSONATION_INDICATOR_COOKIE_KEY,
         path="/",
-        domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
+        domain=settings.USER_SESSION_COOKIE_DOMAIN,
     )
 
     return response

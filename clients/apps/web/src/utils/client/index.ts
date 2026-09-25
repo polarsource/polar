@@ -1,6 +1,5 @@
 import { promptSessionRefresh } from '@/components/SessionRefresh/store'
 import { toast } from '@/components/Toast/use-toast'
-import { browserApiURL } from '@/utils/api'
 import { isSessionNotFreshError } from '@/utils/api/errors'
 import {
   createClient as baseCreateClient,
@@ -43,7 +42,7 @@ const CLIENT_VERSION_HEADERS = {
 
 export const createClientSideAPI = (token?: string): Client => {
   const api = baseCreateClient(
-    browserApiURL(process.env.NEXT_PUBLIC_API_URL),
+    process.env.NEXT_PUBLIC_API_URL as string,
     token,
     CLIENT_VERSION_HEADERS,
   )

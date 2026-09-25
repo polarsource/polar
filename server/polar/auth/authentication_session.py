@@ -19,7 +19,7 @@ from sqlalchemy import delete, select, update
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_legacy_secret
-from polar.kit.http import is_localhost, request_cookie_domain
+from polar.kit.http import is_localhost
 from polar.models import AuthenticationSession
 from polar.postgres import AsyncSession, get_db_session
 
@@ -112,9 +112,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
         response.set_cookie(
             key=settings.AUTHENTICATION_SESSION_COOKIE_KEY,
             value=value,
-            domain=request_cookie_domain(
-                request, settings.AUTHENTICATION_SESSION_COOKIE_DOMAIN
-            ),
+            domain=settings.AUTHENTICATION_SESSION_COOKIE_DOMAIN,
             path="/",
             httponly=True,
             secure=not is_localhost(request),

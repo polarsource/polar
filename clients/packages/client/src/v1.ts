@@ -25167,16 +25167,6 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationCutoverStatus: 'moved' | 'skipped' | 'failed'
-    /** MerchantMigrationImportReport */
-    MerchantMigrationImportReport: {
-      /** @description The migration step after the import. */
-      step: components['schemas']['MerchantMigrationStep']
-      /**
-       * Results
-       * @description Per-entity counts of what was imported vs skipped.
-       */
-      results: components['schemas']['MerchantMigrationImportResult'][]
-    }
     /** MerchantMigrationImportRequest */
     MerchantMigrationImportRequest: {
       /**
@@ -25189,21 +25179,6 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
-    }
-    /** MerchantMigrationImportResult */
-    MerchantMigrationImportResult: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Imported
-       * @description How many were created or reused in Polar.
-       */
-      imported: number
-      /**
-       * Skipped
-       * @description How many were left on the source (not importable).
-       */
-      skipped: number
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -25234,10 +25209,7 @@ export interface components {
     MerchantMigrationOperation: {
       /** @description pending or running while Polar works; done or failed when it finishes. */
       status: components['schemas']['MerchantMigrationOperationStatus']
-      /**
-       * Kind
-       * @description Which job this is: pre-check, catalog import, or cutover. None when the run has no recorded job type.
-       */
+      /** @description Which job this is: pre-check, catalog import, or cutover. None when the run has no recorded job type. */
       kind: components['schemas']['MerchantMigrationOperationKind'] | null
       /**
        * Stalled
@@ -25251,15 +25223,15 @@ export interface components {
       error: string | null
     }
     /**
-     * MerchantMigrationOperationStatus
-     * @enum {string}
-     */
-    MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
-    /**
      * MerchantMigrationOperationKind
      * @enum {string}
      */
     MerchantMigrationOperationKind: 'precheck' | 'import' | 'cutover'
+    /**
+     * MerchantMigrationOperationStatus
+     * @enum {string}
+     */
+    MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
     /** MerchantMigrationRecordBillingAddressUpdate */
     MerchantMigrationRecordBillingAddressUpdate: {
       /** @description Billing address Polar will store on the imported customer. */
@@ -48334,6 +48306,74 @@ export interface operations {
       }
     }
   }
+  'checkouts:client_cancel_payment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The checkout session client secret. */
+        client_secret: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Checkout session payment canceled. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutPublic']
+        }
+      }
+      /** @description The organization is not allowed to accept payments. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Checkout session not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
+        }
+      }
+      /** @description The checkout session is expired. */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ExpiredCheckoutError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'cli_router:listen': {
     parameters: {
       query?: never
@@ -70634,6 +70674,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationOperationKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationKind']
+> = ['precheck', 'import', 'cutover']
 export const merchantMigrationOperationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
 > = ['pending', 'running', 'done', 'failed']

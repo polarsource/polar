@@ -34,6 +34,7 @@ export function MigrationPanelPreview() {
   const visible = selected
     ? options.filter((option) => option.id === selected)
     : options
+  const single = visible.length === 1
 
   return (
     <PolarThemeProvider>
@@ -44,15 +45,17 @@ export function MigrationPanelPreview() {
         minHeight="100vh"
         backgroundColor="background-secondary"
       >
-        <Text variant="heading-s" as="h1">
-          {labels.previewTitle}
-        </Text>
+        {single ? null : (
+          <Text variant="heading-s" as="h1">
+            {labels.previewTitle}
+          </Text>
+        )}
         <Box
           flexWrap="wrap"
           alignItems="start"
           columnGap="xl"
           rowGap="xl"
-          justifyContent={visible.length === 1 ? 'center' : 'start'}
+          justifyContent={single ? 'center' : 'start'}
         >
           {visible.map(({ id, title, Panel }) => (
             <Box
@@ -62,9 +65,11 @@ export function MigrationPanelPreview() {
               width={540}
               maxWidth="100%"
             >
-              <Text variant="body" as="h2">
-                {title}
-              </Text>
+              {single ? null : (
+                <Text variant="body" as="h2">
+                  {title}
+                </Text>
+              )}
               <Box
                 width="100%"
                 flexDirection="column"

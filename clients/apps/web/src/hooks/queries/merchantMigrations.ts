@@ -3,16 +3,16 @@ import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { defaultRetry } from './retry'
+
+const FIRST_MIGRATION_READ_DELAY_MS = 500
 
 const ACTIVE_OPERATION_STATUSES = new Set(['pending', 'running'])
 
 export const isActiveMigrationOperation = (
   operation?: schemas['MerchantMigrationOperation'] | null,
-) =>
-  operation != null &&
-  !operation.stalled &&
-  ACTIVE_OPERATION_STATUSES.has(operation.status)
+) => operation != null && ACTIVE_OPERATION_STATUSES.has(operation.status)
 
 export const useMerchantMigrations = (organizationId: string) =>
   useQuery({
@@ -27,20 +27,30 @@ export const useMerchantMigrations = (organizationId: string) =>
     enabled: !!organizationId,
   })
 
-export const useMerchantMigration = (id: string) =>
-  useQuery({
+export const useMerchantMigration = (id: string) => {
+  const delayedFirstRead = useRef(false)
+
+  return useQuery({
     queryKey: ['merchantMigration', { id }],
-    queryFn: () =>
-      unwrap(
+    queryFn: async () => {
+      if (!delayedFirstRead.current) {
+        delayedFirstRead.current = true
+        await new Promise((resolve) =>
+          setTimeout(resolve, FIRST_MIGRATION_READ_DELAY_MS),
+        )
+      }
+      return unwrap(
         api.GET('/v1/merchant-migrations/{id}', {
           params: { path: { id } },
         }),
-      ),
+      )
+    },
     retry: defaultRetry,
     enabled: !!id,
     refetchInterval: (query) =>
       isActiveMigrationOperation(query.state.data?.operation) ? 2000 : false,
   })
+}
 
 export const useCreateMerchantMigration = (organizationId: string) =>
   useMutation({

@@ -83,14 +83,11 @@ function ReconnectStripeKey({
         return
       }
       const apiError = result.error ?? {}
+      const fallback = t('merchantMigration.reconnect.fallbackError')
       const parsed = parseMissingStripeScopes(apiError)
-      setMissing(parsed.length > 0 ? parsed : missingResources)
-      setError(
-        extractApiErrorMessage(
-          apiError,
-          t('merchantMigration.reconnect.fallbackError'),
-        ),
-      )
+      const message = extractApiErrorMessage(apiError, fallback).trim()
+      setMissing(parsed)
+      setError(message || fallback)
     } catch {
       setError(t('merchantMigration.reconnect.fallbackError'))
     }
@@ -129,8 +126,12 @@ function ReconnectStripeKey({
       {error && !keyError ? (
         <Alert
           variant="danger"
-          title={t('merchantMigration.reconnect.missingTitle')}
-          description={error}
+          title={
+            missing.length > 0
+              ? t('merchantMigration.reconnect.missingTitle')
+              : error
+          }
+          description={missing.length > 0 ? error : undefined}
         />
       ) : null}
       <Button

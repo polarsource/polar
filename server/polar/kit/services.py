@@ -60,7 +60,7 @@ class ResourceService[
     # no state to retain. Unable to achieve this with mapping the model
     # and schema as class attributes though without breaking typing.
 
-    # TODO: Investigate new bulk methods in SQLALchemy 2.0 for upsert_many
+    # TODO: Investigate new bulk methods in SQLAlchemy 2.0 for upsert_many
     async def upsert_many(
         self,
         session: AsyncSession,

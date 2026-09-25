@@ -1,0 +1,20 @@
+dev/cli/up_steps/04_start_infrastructure.py
+  s_2c213c50e532b9::t_432fa22ee4a115 14-15,17-19,21,25,28-33,38-39,41
+  s_2c213c50e532b9::t_719e71c33db948 58-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "783b526410b1c6e45eb42885b37e99b771a0d97e",
+  "prompts": {},
+  "sessions": {
+    "s_2c213c50e532b9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaab0d2-e0ef-48c5-9dc4-4a5526525da6",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

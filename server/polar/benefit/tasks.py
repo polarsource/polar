@@ -25,7 +25,10 @@ from polar.worker import (
 
 from .grant.scope import resolve_member, resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
-from .strategies import BenefitRetriableError
+from .strategies import BenefitActionRequiredError, BenefitRetriableError
+from .strategies.slack_shared_channel.service import (
+    BenefitSlackSharedChannelService,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -397,3 +400,31 @@ async def benefit_delete_grant(
                 benefit_grant_id=str(benefit_grant_id),
             )
             raise Retry(delay=e.defer_milliseconds) from e
+
+
+@actor(
+    actor_name="benefit.slack_shared_channel_archive",
+    priority=TaskPriority.LOW,
+)
+async def benefit_slack_shared_channel_archive(
+    benefit_id: Annotated[uuid.UUID, LoggableField],
+    channel_id: str,
+) -> None:
+    async with AsyncSessionMaker() as session:
+        benefit_repository = BenefitRepository.from_session(session)
+        benefit = await benefit_repository.get_by_id(benefit_id, include_deleted=True)
+        if benefit is None:
+            raise BenefitDoesNotExist(benefit_id)
+
+        service = BenefitSlackSharedChannelService(session, RedisMiddleware.get())
+        try:
+            await service.archive_channel_if_unused(benefit, channel_id)
+        except BenefitRetriableError as e:
+            raise Retry(delay=e.defer_milliseconds) from e
+        except BenefitActionRequiredError as e:
+            log.warning(
+                "Could not archive Slack channel",
+                error=str(e),
+                benefit_id=str(benefit_id),
+                channel_id=channel_id,
+            )

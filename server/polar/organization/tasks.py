@@ -733,7 +733,8 @@ async def _backfill_benefit_grants(
                             existing_grant.properties = grant.properties
                         grant.set_deleted_at()
                         duplicates_deleted += 1
-                else:
+
+                elif grant.revoked_at is None:
                     grant.member_id = target_member_id
                     count += 1
 
@@ -1214,7 +1215,9 @@ async def _prepare_benefit_grants(
                 )
                 if scope_conflict_id is not None:
                     skipped_conflicts += 1
-                else:
+                # A revoked grant needs no member, and linking one holds the
+                # unique scope slot against the live grant that does need it.
+                elif grant.revoked_at is None:
                     grant.member_id = target_member_id
                     count += 1
 

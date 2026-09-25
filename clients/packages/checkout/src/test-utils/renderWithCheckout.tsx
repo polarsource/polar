@@ -19,6 +19,7 @@ interface RenderWithCheckoutOptions {
   checkout?: Partial<ProductCheckoutPublic>
   update: CheckoutContextProps['update']
   confirm?: CheckoutContextProps['confirm']
+  cancelPayment?: CheckoutContextProps['cancelPayment']
   locale?: AcceptedLocale
 }
 
@@ -26,6 +27,7 @@ export const renderWithCheckout = ({
   checkout: checkoutOverrides,
   update,
   confirm = vi.fn(),
+  cancelPayment = vi.fn(),
   locale,
 }: RenderWithCheckoutOptions) => {
   const checkout = createCheckout({
@@ -52,6 +54,7 @@ export const renderWithCheckout = ({
         refresh: vi.fn(),
         update,
         confirm,
+        cancelPayment,
         client: {} as Client,
       }}
     >

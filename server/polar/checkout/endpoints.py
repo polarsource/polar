@@ -11,7 +11,7 @@ from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import PaymentNotReady, ResourceNotFound
+from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     MultipleQueryFilter,
@@ -51,6 +51,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyActiveSubscriptionError,
+    CheckoutLocked,
     DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
     NotOpenCheckout,
@@ -291,6 +292,41 @@ async def client_confirm(
     return await checkout_service.confirm(
         session, auth_subject, checkout, checkout_confirm
     )
+
+
+@inner_router.post(
+    "/client/{client_secret}/cancel-payment",
+    response_model=CheckoutPublic,
+    summary="Cancel Checkout Session Payment from Client",
+    responses={
+        200: {"description": "Checkout session payment canceled."},
+        403: {
+            "description": "The organization is not allowed to accept payments.",
+            "model": NotPermitted.schema(),
+        },
+        404: CheckoutNotFound,
+        409: {
+            "description": "The checkout session is being processed.",
+            "model": CheckoutLocked.schema(),
+        },
+        410: CheckoutExpired,
+    },
+    tags=[APITag.private],
+)
+async def client_cancel_payment(
+    client_secret: CheckoutClientSecret,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Cancel the pending payment of a confirmed checkout session and reopen it.
+
+    If the payment already went through, the checkout session stays confirmed.
+    """
+    checkout = await checkout_service.get_by_client_secret(
+        session, client_secret, for_update=True
+    )
+
+    return await checkout_service.cancel_payment(session, checkout)
 
 
 @inner_router.post(

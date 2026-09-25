@@ -96,7 +96,7 @@ At review the merchant picks per subscription: **inclusive** — customer pays t
 
 The review UI still shows `automatic_tax` as a caption; `enabled` also feeds the computed default above. Without a pin, Polar would fall back to the org default; a `location` default is exclusive for `CA`/`IN`/`US`.
 
-The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover, so a later org-default change does not move an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row. B2B reverse-charge is not a third option: carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id` — miss it and the customer gets re-taxed as B2C. Polar only reverse-charges from a valid tax ID, so a customer with `tax_exempt = reverse` but no tax ID, or with a tax ID that doesn't match the billing country, imports with `tax_id_dropped` and an action-required `customer_tax_id_dropped` note on its review rows. `tax_exempted` is pinned `false`.
+The choice lives on `CanonicalSubscription.tax_behavior` and is written onto Polar `Subscription.tax_behavior` at cutover, so a later org-default change does not move an already-migrated subscription. A precheck refresh keeps a merchant choice already stored on a pending row. B2B reverse-charge is not a third option: carry the source VAT ID (`customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id` — miss it and the customer gets re-taxed as B2C. `tax_exempted` is pinned `false`.
 
 The change bites at the **first renewal on Polar**: inclusive lowers the merchant's net, exclusive raises the customer's charge.
 

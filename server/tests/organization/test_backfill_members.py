@@ -2779,3 +2779,157 @@ class TestPrepareSeatsKeysetPagination:
         for seat in seats:
             assert seat.customer_id == original_customer_ids[seat.id]
             assert seat.member_id is not None
+
+
+@pytest.mark.asyncio
+class TestRevokedGrantsKeepNoMember:
+    """A revoked grant needs no member, and linking one would confiscate the
+    unique scope slot from the live grant that does need it."""
+
+    async def test_prepare_leaves_revoked_grants_unlinked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": False},
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="revoked-prep@test.com",
+            stripe_customer_id="stripe_revoked_prep",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.custom
+        )
+        revoked = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await prepare_members(organization.id)
+
+        grant = await session.get(BenefitGrant, revoked.id)
+        assert grant is not None
+        assert grant.member_id is None
+
+    async def test_backfill_leaves_revoked_grants_unlinked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="revoked-back@test.com",
+            stripe_customer_id="stripe_revoked_back",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.custom
+        )
+        revoked = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        grant = await session.get(BenefitGrant, revoked.id)
+        assert grant is not None
+        assert grant.member_id is None
+
+    async def test_backfill_keeps_revoked_order_grant_with_a_linked_sibling(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A revoked order grant is neither linked nor deleted: each purchase is
+        its own record."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="revoked-order@test.com",
+            stripe_customer_id="stripe_revoked_order",
+        )
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.custom
+        )
+        linked_order = await create_order(
+            save_fixture, customer=customer, product=product
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            member=owner,
+            order=linked_order,
+        )
+        revoked_order = await create_order(
+            save_fixture, customer=customer, product=product
+        )
+        revoked = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            order=revoked_order,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        grant = await session.get(BenefitGrant, revoked.id)
+        assert grant is not None
+        assert grant.member_id is None
+        assert grant.deleted_at is None

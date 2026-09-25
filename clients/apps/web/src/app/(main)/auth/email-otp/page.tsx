@@ -3,7 +3,6 @@ import { Metadata } from 'next'
 import VerifyPage from './VerifyPage'
 import { checkAuthenticationSession } from '@/utils/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
@@ -14,8 +13,7 @@ export default async function Page(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const api = await getServerSideAPI()
-  const pageHost = (await headers()).get('host')?.split(':')[0]
-  const authenticationSession = await checkAuthenticationSession(api, pageHost)
+  const authenticationSession = await checkAuthenticationSession(api)
   if (!authenticationSession) {
     redirect('/auth')
   }

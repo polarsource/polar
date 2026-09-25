@@ -197,6 +197,7 @@ def get_safe_return_url(return_to: str | None) -> str:
 
 
 def align_loopback_frontend_url(request: Request, url: str) -> str:
+    """Keep a development redirect on the loopback host that made the request."""
     if not settings.is_development() or not is_localhost(request):
         return url
     parsed = urlparse(url)

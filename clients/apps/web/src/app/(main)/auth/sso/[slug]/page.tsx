@@ -8,7 +8,6 @@ import {
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { Box } from '@polar-sh/orbit/Box'
 import { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
@@ -20,8 +19,7 @@ export default async function Page(props: {
   searchParams: Promise<{ error?: string; return_to?: string }>
 }) {
   const api = await getServerSideAPI()
-  const pageHost = (await headers()).get('host')?.split(':')[0]
-  const authenticationSession = await checkAuthenticationSession(api, pageHost)
+  const authenticationSession = await checkAuthenticationSession(api)
 
   const redirectPath = getAuthenticationSessionRedirectPath(
     authenticationSession,

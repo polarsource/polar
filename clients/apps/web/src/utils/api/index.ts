@@ -1,5 +1,6 @@
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
+/** In development, call the API on the same loopback host as the page. */
 export const developmentApiURL = (
   baseURL: string | undefined,
   pageHostname?: string,

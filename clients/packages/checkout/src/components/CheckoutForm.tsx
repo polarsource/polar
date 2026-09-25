@@ -533,6 +533,7 @@ const BaseCheckoutForm = ({
                             <>
                               <CountryStatePicker
                                 autoComplete="billing address-level1"
+                                data-testid="billing-state"
                                 country={country}
                                 value={field.value || ''}
                                 onChange={field.onChange}
@@ -568,6 +569,7 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryPicker
+                                data-testid="billing-country"
                                 allowedCountries={
                                   enums.addressInputCountryValues
                                 }
@@ -637,6 +639,7 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="billing organization"
+                                data-testid="business-name"
                                 placeholder={t('checkout.form.businessName')}
                                 {...field}
                                 value={field.value || ''}
@@ -656,6 +659,7 @@ const BaseCheckoutForm = ({
                                 <Input
                                   type="text"
                                   autoComplete="off"
+                                  data-testid="tax-id"
                                   placeholder={`${t('checkout.form.taxId')} (${t('checkout.form.optional')})`}
                                   {...field}
                                   value={field.value || ''}

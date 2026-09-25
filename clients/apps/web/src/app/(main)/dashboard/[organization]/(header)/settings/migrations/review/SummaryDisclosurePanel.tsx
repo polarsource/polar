@@ -12,7 +12,7 @@ import {
   BillingCountryField,
   IdCopy,
   TaxAfterSwitchField,
-  useAssessmentLabels,
+  assessmentLabels,
 } from './AssessmentPanelParts'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { reviewStatus } from './reviewStatus'
@@ -88,7 +88,7 @@ export function SummaryDisclosurePanel({
   migrationId,
   onClose,
 }: AssessmentPanelProps) {
-  const labels = useAssessmentLabels()
+  const labels = assessmentLabels
   const facts = assessmentFacts(row)
   const readyToSwitch = reviewStatus(row).label === 'Ready to switch'
 

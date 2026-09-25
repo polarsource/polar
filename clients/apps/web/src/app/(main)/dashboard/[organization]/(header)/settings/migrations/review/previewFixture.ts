@@ -13,7 +13,6 @@ export const assessmentPreviewRow: ReviewRow = {
   customer_email: 'smard@nvidia.com',
   customer_name: null,
   customer_source_id: 'cus_SmardNvidia',
-  customer_tax_id: '911144442',
   customer_country: null,
   customer_country_hint: null,
   customer_billing_address: null,

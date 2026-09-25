@@ -5,10 +5,7 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useSearchParams } from 'next/navigation'
 import { ComponentType } from 'react'
-import {
-  AssessmentPanelProps,
-  useAssessmentLabels,
-} from './AssessmentPanelParts'
+import { AssessmentPanelProps, assessmentLabels } from './AssessmentPanelParts'
 import { DecisionsFirstPanel } from './DecisionsFirstPanel'
 import { DecisionsThenCardsPanel } from './DecisionsThenCardsPanel'
 import { EntityCardsPanel } from './EntityCardsPanel'
@@ -19,7 +16,7 @@ const noop = () => {}
 
 export function MigrationPanelPreview() {
   const params = useSearchParams()
-  const labels = useAssessmentLabels()
+  const labels = assessmentLabels
   const selected = params.get('option')
   const options: {
     id: string

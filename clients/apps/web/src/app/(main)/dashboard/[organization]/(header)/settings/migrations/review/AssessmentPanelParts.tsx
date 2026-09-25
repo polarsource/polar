@@ -3,7 +3,6 @@
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { buildCustomerDashboardPath } from '@/utils/customer'
-import { useTranslations } from '@polar-sh/i18n'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
@@ -18,44 +17,40 @@ export type AssessmentPanelProps = {
   onClose: () => void
 }
 
-export function useAssessmentLabels() {
-  const t = useTranslations('en')
-  return {
-    beforeSwitch: t('migrationAssessment.beforeSwitch'),
-    fromStripe: t('migrationAssessment.fromStripe'),
-    stripeDetails: t('migrationAssessment.stripeDetails'),
-    show: t('migrationAssessment.show'),
-    hide: t('migrationAssessment.hide'),
-    customer: t('migrationAssessment.customer'),
-    subscription: t('migrationAssessment.subscription'),
-    product: t('migrationAssessment.product'),
-    status: t('migrationAssessment.status'),
-    renewal: t('migrationAssessment.renewal'),
-    price: t('migrationAssessment.price'),
-    name: t('migrationAssessment.name'),
-    email: t('migrationAssessment.email'),
-    taxId: t('migrationAssessment.taxId'),
-    renewalInterval: t('migrationAssessment.renewalInterval'),
-    stripeAutomaticTax: t('migrationAssessment.stripeAutomaticTax'),
-    stripeSubscriptionId: t('migrationAssessment.stripeSubscriptionId'),
-    stripeProductId: t('migrationAssessment.stripeProductId'),
-    stripeCustomerId: t('migrationAssessment.stripeCustomerId'),
-    stripeId: t('migrationAssessment.stripeId'),
-    lastRun: t('migrationAssessment.lastRun'),
-    failed: t('migrationAssessment.failed'),
-    goodToKnow: t('migrationAssessment.goodToKnow'),
-    needsAttention: t('migrationAssessment.needsAttention'),
-    billingCountry: t('migrationAssessment.billingCountry'),
-    viewPolarCustomer: t('migrationAssessment.viewPolarCustomer'),
-    previewTitle: t('migrationAssessment.preview.title'),
-    optionDecisions: t('migrationAssessment.preview.optionDecisions'),
-    optionCards: t('migrationAssessment.preview.optionCards'),
-    optionSummary: t('migrationAssessment.preview.optionSummary'),
-    optionCombined: t('migrationAssessment.preview.optionCombined'),
-  }
+export const assessmentLabels = {
+  beforeSwitch: 'Before switch',
+  fromStripe: 'From Stripe',
+  stripeDetails: 'Stripe details',
+  show: 'Show',
+  hide: 'Hide',
+  customer: 'Customer',
+  subscription: 'Subscription',
+  product: 'Product',
+  status: 'Status',
+  renewal: 'Renewal',
+  price: 'Price',
+  name: 'Name',
+  email: 'Email',
+  renewalInterval: 'Renewal interval',
+  stripeAutomaticTax: 'Stripe automatic tax',
+  stripeSubscriptionId: 'Stripe subscription ID',
+  stripeProductId: 'Stripe product ID',
+  stripeCustomerId: 'Stripe customer ID',
+  stripeId: 'Stripe ID',
+  lastRun: 'Last run',
+  failed: 'Failed',
+  goodToKnow: 'Good to know',
+  needsAttention: 'Needs your attention',
+  billingCountry: 'Billing country',
+  viewPolarCustomer: 'View Polar customer',
+  previewTitle: 'Migration panel options',
+  optionDecisions: 'Option 1 — decisions on top',
+  optionCards: 'Option 2 — one card per entity',
+  optionSummary: 'Option 3 — summary and details',
+  optionCombined: 'Option 4 — decisions then cards',
 }
 
-export type AssessmentLabels = ReturnType<typeof useAssessmentLabels>
+export type AssessmentLabels = typeof assessmentLabels
 
 export function AssessmentPanelFrame({
   row,

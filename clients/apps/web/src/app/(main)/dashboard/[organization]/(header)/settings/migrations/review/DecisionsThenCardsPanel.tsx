@@ -10,7 +10,7 @@ import {
   AssessmentPanelProps,
   BillingCountryField,
   TaxAfterSwitchField,
-  useAssessmentLabels,
+  assessmentLabels,
 } from './AssessmentPanelParts'
 import { EntityCard } from './EntityCardsPanel'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
@@ -20,7 +20,7 @@ export function DecisionsThenCardsPanel({
   migrationId,
   onClose,
 }: AssessmentPanelProps) {
-  const labels = useAssessmentLabels()
+  const labels = assessmentLabels
   const facts = assessmentFacts(row)
 
   return (
@@ -55,9 +55,6 @@ export function DecisionsThenCardsPanel({
         ) : null}
         {row.customer_email ? (
           <DetailCell label={labels.email} value={row.customer_email} />
-        ) : null}
-        {facts.customerTaxId ? (
-          <DetailCell label={labels.taxId} value={facts.customerTaxId} />
         ) : null}
         {facts.customerId ? (
           <DetailCell

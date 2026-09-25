@@ -14,7 +14,7 @@ import {
   IdCopy,
   ProminentFact,
   TaxAfterSwitchField,
-  useAssessmentLabels,
+  assessmentLabels,
 } from './AssessmentPanelParts'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -89,7 +89,7 @@ export function EntityCardsPanel({
   migrationId,
   onClose,
 }: AssessmentPanelProps) {
-  const labels = useAssessmentLabels()
+  const labels = assessmentLabels
   const facts = assessmentFacts(row)
 
   return (

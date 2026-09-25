@@ -25283,11 +25283,6 @@ export interface components {
       /** @description The billing address Polar will import for the customer. None when only a payment-method country fallback or no address is available. */
       customer_billing_address: components['schemas']['Address'] | null
       /**
-       * Customer Tax Id
-       * @description The business tax ID Polar will import for the customer. None for product and price rows, or when the source customer has none.
-       */
-      customer_tax_id: string | null
-      /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
        */

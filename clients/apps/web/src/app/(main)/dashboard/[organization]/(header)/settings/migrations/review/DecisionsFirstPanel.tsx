@@ -11,7 +11,7 @@ import {
   BillingCountryField,
   QuietGroup,
   TaxAfterSwitchField,
-  useAssessmentLabels,
+  assessmentLabels,
 } from './AssessmentPanelParts'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
@@ -20,7 +20,7 @@ export function DecisionsFirstPanel({
   migrationId,
   onClose,
 }: AssessmentPanelProps) {
-  const labels = useAssessmentLabels()
+  const labels = assessmentLabels
   const facts = assessmentFacts(row)
   const showCustomer = Boolean(facts.customerName || facts.customerId)
 

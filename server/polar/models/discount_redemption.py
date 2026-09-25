@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Discount, Subscription
+    from polar.models import Checkout, Discount, Subscription, SubscriptionUpdate
 
 
 class DiscountRedemption(RecordModel):
@@ -38,3 +38,12 @@ class DiscountRedemption(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
+
+    subscription_update_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("subscription_updates.id", ondelete="set null"), index=True
+    )
+    """The pending `SubscriptionUpdate` that will apply the discount, if any."""
+
+    @declared_attr
+    def subscription_update(cls) -> Mapped["SubscriptionUpdate | None"]:
+        return relationship("SubscriptionUpdate", lazy="raise")

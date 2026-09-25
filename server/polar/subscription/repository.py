@@ -43,6 +43,7 @@ from polar.models import (
     Customer,
     CustomerSeat,
     Discount,
+    DiscountRedemption,
     Product,
     ProductPrice,
     Subscription,
@@ -852,9 +853,17 @@ class SubscriptionUpdateRepository(
         if object.units is not None:
             existing.units = object.units
         if object.discount is not None or object.discount_unset:
+            await self._release_discount_redemptions(existing)
             existing.discount_unset = object.discount_unset
             existing.discount = object.discount
         return await self.update(existing, flush=flush)
+
+    async def soft_delete(
+        self, object: SubscriptionUpdate, *, flush: bool = False
+    ) -> SubscriptionUpdate:
+        if object.applied_at is None:
+            await self._release_discount_redemptions(object)
+        return await super().soft_delete(object, flush=flush)
 
     async def soft_delete_unapplied_by_subscription_id(
         self, subscription_id: UUID
@@ -862,6 +871,16 @@ class SubscriptionUpdateRepository(
         existing = await self.get_unapplied_by_subscription_id(subscription_id)
         if existing is not None:
             await self.soft_delete(existing)
+
+    async def _release_discount_redemptions(
+        self, subscription_update: SubscriptionUpdate
+    ) -> None:
+        """Delete the redemptions of a discount the update will no longer apply."""
+        await self.session.execute(
+            sa.delete(DiscountRedemption).where(
+                DiscountRedemption.subscription_update_id == subscription_update.id
+            )
+        )
 
     async def get_unapplied_by_subscription_id(
         self, subscription_id: UUID, *, options: Options = ()

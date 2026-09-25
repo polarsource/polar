@@ -128,6 +128,7 @@ export function ReviewTableView({
         kind={catalogEmpty}
         onRerunPrecheck={onRerunPrecheck}
         rerunning={rerunning}
+        readError={refreshError}
       />
     )
   }

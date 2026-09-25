@@ -148,6 +148,12 @@ class MerchantMigrationRecordItem(Schema):
             "only a payment-method country fallback or no address is available."
         ),
     )
+    customer_tax_id: str | None = Field(
+        description=(
+            "The business tax ID Polar will import for the customer. None for "
+            "product and price rows, or when the source customer has none."
+        ),
+    )
     amount: int | None = Field(
         description=(
             "Recurring price in the currency's smallest unit (cents for USD), for "

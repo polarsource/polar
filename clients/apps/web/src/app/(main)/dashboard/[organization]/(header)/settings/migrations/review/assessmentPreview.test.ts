@@ -8,6 +8,7 @@ describe('assessmentPreviewRow', () => {
     const facts = assessmentFacts(assessmentPreviewRow)
 
     expect(facts.email).toBe('smard@nvidia.com')
+    expect(facts.customerTaxId).toBe('911144442')
     expect(facts.productName).toBe('Pepy Pro')
     expect(facts.price).toBe('$90.00')
     expect(facts.interval).toBe('Every year')

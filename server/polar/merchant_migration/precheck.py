@@ -678,6 +678,7 @@ def _item(
     customer_country: str | None = None,
     customer_country_hint: str | None = None,
     customer_billing_address: Address | None = None,
+    customer_tax_id: str | None = None,
     renews_at: datetime | None = None,
     automatic_tax: bool | None = None,
     tax_behavior: TaxBehavior | None = None,
@@ -703,6 +704,7 @@ def _item(
         customer_country=customer_country,
         customer_country_hint=customer_country_hint,
         customer_billing_address=customer_billing_address,
+        customer_tax_id=customer_tax_id,
         amount=price.amount,
         currency=price.currency,
         recurring_interval=price.recurring_interval,
@@ -889,6 +891,9 @@ def _customer_items(
                 customer_country=effective_country,
                 customer_country_hint=country_fallback,
                 customer_billing_address=customer.billing_address,
+                customer_tax_id=(
+                    customer.tax_id[0] if customer.tax_id is not None else None
+                ),
             )
         )
     return items
@@ -974,6 +979,11 @@ def _subscription_items(
                 customer_country_hint=country_fallback,
                 customer_billing_address=(
                     customer.billing_address if customer is not None else None
+                ),
+                customer_tax_id=(
+                    customer.tax_id[0]
+                    if customer is not None and customer.tax_id is not None
+                    else None
                 ),
                 renews_at=subscription.current_period_end,
                 automatic_tax=subscription.automatic_tax,

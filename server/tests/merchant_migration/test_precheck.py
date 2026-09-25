@@ -33,6 +33,7 @@ from polar.merchant_migration.schemas import (
 )
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
+from polar.tax.tax_id import TaxIDFormat
 
 
 async def aiter_records(
@@ -1110,8 +1111,24 @@ class TestClassifyCascade:
         assert items[0].customer_email == "a@example.com"
         assert items[0].customer_source_id == "cus_1"
         assert items[0].customer_country == "US"
+        assert items[0].customer_tax_id is None
         assert items[0].automatic_tax is True
         assert items[0].tax_behavior == TaxBehavior.exclusive
+
+    def test_subscription_carries_the_customer_tax_id(self) -> None:
+        customer = replace(
+            build_customer(source_id="cus_1", email="a@example.com"),
+            tax_id=("911144442", TaxIDFormat.us_ein),
+        )
+        records: list[CanonicalRecord] = [
+            build_product(),
+            customer,
+            build_subscription(),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].customer_tax_id == "911144442"
 
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,

@@ -15,6 +15,7 @@ export function assessmentFacts(row: ReviewRow) {
     productId: row.product_source_id,
     customerId: row.customer_source_id,
     customerName: row.customer_name,
+    customerTaxId: row.customer_tax_id,
     productName: row.product_name,
     failed: row.import_status === 'failed',
     showProduct:

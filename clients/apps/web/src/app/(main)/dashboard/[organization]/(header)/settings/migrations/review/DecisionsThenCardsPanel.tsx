@@ -59,6 +59,12 @@ export function DecisionsThenCardsPanel({
         {facts.customerName ? (
           <DetailCell label={labels.name} value={facts.customerName} />
         ) : null}
+        {row.customer_email ? (
+          <DetailCell label={labels.email} value={row.customer_email} />
+        ) : null}
+        {facts.customerTaxId ? (
+          <DetailCell label={labels.taxId} value={facts.customerTaxId} />
+        ) : null}
       </EntityCard>
       {facts.showProduct ? (
         <EntityCard

@@ -33,6 +33,8 @@ export function useAssessmentLabels() {
     renewal: t('migrationAssessment.renewal'),
     price: t('migrationAssessment.price'),
     name: t('migrationAssessment.name'),
+    email: t('migrationAssessment.email'),
+    taxId: t('migrationAssessment.taxId'),
     renewalInterval: t('migrationAssessment.renewalInterval'),
     stripeAutomaticTax: t('migrationAssessment.stripeAutomaticTax'),
     stripeSubscriptionId: t('migrationAssessment.stripeSubscriptionId'),

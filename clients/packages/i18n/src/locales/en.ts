@@ -481,6 +481,8 @@ export default {
     renewal: 'Renewal',
     price: 'Price',
     name: 'Name',
+    email: 'Email',
+    taxId: 'Tax ID',
     renewalInterval: 'Renewal interval',
     stripeAutomaticTax: 'Stripe automatic tax',
     stripeSubscriptionId: 'Stripe subscription ID',

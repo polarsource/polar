@@ -27,18 +27,17 @@ class OrganizationAccessTokenRepository(
     token_hash_attribute = "token"
 
     async def get_by_token(
-        self, token: str, *, expired: bool = False
+        self, token: str, *, expired: bool = False, include_blocked: bool = False
     ) -> OrganizationAccessToken | None:
         candidates = get_token_hash_candidates(token)
         statement = (
             self.get_base_statement()
             .join(OrganizationAccessToken.organization)
-            .where(
-                self.token_hash_clause(candidates),
-                Organization.can_authenticate,
-            )
+            .where(self.token_hash_clause(candidates))
             .options(contains_eager(OrganizationAccessToken.organization))
         )
+        if not include_blocked:
+            statement = statement.where(Organization.can_authenticate)
         if not expired:
             statement = statement.where(
                 or_(

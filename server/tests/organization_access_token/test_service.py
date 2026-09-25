@@ -18,6 +18,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization import OrganizationStatus
 from polar.organization_access_token.schemas import (
     AvailableScope,
     OrganizationAccessTokenCreate,
@@ -89,6 +90,42 @@ class TestRevokeLeaked:
         assert isinstance(
             enqueue_email_mock.call_args[0][0], OrganizationAccessTokenLeakedEmail
         )
+
+    async def test_blocked_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+        organization_access_token = OrganizationAccessToken(
+            comment="Test",
+            token=get_token_hash("polar_oat_123"),
+            organization=organization,
+            expires_at=utc_now() + timedelta(days=1),
+            scope="openid",
+        )
+        await save_fixture(organization_access_token)
+
+        result = await organization_access_token_service.revoke_leaked(
+            session,
+            "polar_oat_123",
+            TokenType.organization_access_token,
+            notifier="github",
+            url="https://github.com",
+        )
+        assert result is True
+
+        updated_organization_access_token = await session.get(
+            OrganizationAccessToken, organization_access_token.id
+        )
+        assert updated_organization_access_token is not None
+        assert updated_organization_access_token.deleted_at is not None
+
+        enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

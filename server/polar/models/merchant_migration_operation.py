@@ -34,8 +34,6 @@ class MerchantMigrationOperationStatus(StrEnum):
 
 
 class MerchantMigrationOperationKind(StrEnum):
-    """Which job owns this operation. Absent on rows written before the field."""
-
     precheck = "precheck"
     import_catalog = "import"
     cutover = "cutover"

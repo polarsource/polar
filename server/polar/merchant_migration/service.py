@@ -118,6 +118,19 @@ IMPORTABLE_STEPS = {
 _IMPORT_TASK = "merchant_migration.import_catalog"
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 
+
+def _import_failure_log_fields(error: BaseException) -> dict[str, object]:
+    """Operational facts only. Constraint detail can include a customer email."""
+    fields: dict[str, object] = {"error_type": type(error).__name__}
+    orig = getattr(error, "orig", None)
+    if orig is None:
+        return fields
+    database_error = getattr(orig, "__cause__", None)
+    fields["sqlstate"] = getattr(orig, "sqlstate", None)
+    fields["constraint_name"] = getattr(database_error, "constraint_name", None)
+    return fields
+
+
 # Entities whose records map 1:1 to a ledger row. Prices live inside a product
 # record and are excluded. Discounts import with the catalog but are not listed
 # in the subscription review table unless asked for by entity.
@@ -533,6 +546,7 @@ class MerchantMigrationService:
             update_dict={
                 "operation": MerchantMigrationOperation(
                     status=MerchantMigrationOperationStatus.pending,
+                    kind=MerchantMigrationOperationKind.precheck,
                     last_progress_at=utc_now(),
                     subscription_tax_behavior=preserved_tax or None,
                 )
@@ -750,7 +764,6 @@ class MerchantMigrationService:
             if selection is not None and selection.exclude_record_ids is not None
             else None
         )
-        migration_id = migration.id
         try:
             async with session.begin_nested():
                 organization = await self._get_organization(session, migration)
@@ -771,25 +784,26 @@ class MerchantMigrationService:
                     exclude_record_ids=exclude_record_ids,
                 )
                 outcome = await importer.import_next_batch()
-                report = await importer.run() if outcome.finished else None
+                report = outcome.report
         except PolarError as error:
             log.warning(
                 "merchant_migration.import_failed",
                 merchant_migration_id=migration_id,
-                error=error.message,
+                error_type=type(error).__name__,
             )
-            await session.refresh(migration)
-            await self._fail_import(session, migration, operation)
+            await repository.refresh_for_update(migration)
+            await self._fail_operation(session, migration, _IMPORT_FAILURE, flush=True)
             return None
-        except Exception:
-            log.exception(
+        except Exception as error:
+            log.error(
                 "merchant_migration.import_failed",
                 merchant_migration_id=migration_id,
+                **_import_failure_log_fields(error),
             )
             if can_retry():
-                raise
-            await session.refresh(migration)
-            await self._fail_import(session, migration, operation)
+                raise RuntimeError("merchant_migration.import_failed") from None
+            await repository.refresh_for_update(migration)
+            await self._fail_operation(session, migration, _IMPORT_FAILURE, flush=True)
             return None
 
         if report is None:
@@ -809,13 +823,8 @@ class MerchantMigrationService:
             return None
 
         update_dict: dict[str, object] = {
-            "operation": running.model_copy(
-                update={
-                    "status": MerchantMigrationOperationStatus.done,
-                    "cursor": None,
-                    "error": None,
-                    "last_progress_at": utc_now(),
-                }
+            "operation": self._done_operation(migration).model_copy(
+                update={"cursor": None}
             )
         }
         if migration.step == MerchantMigrationStep.pre_check:
@@ -825,26 +834,6 @@ class MerchantMigrationService:
             report.step = migration.step
         await repository.update(migration, update_dict=update_dict, flush=True)
         return report
-
-    async def _fail_import(
-        self,
-        session: AsyncSession,
-        migration: MerchantMigration,
-        operation: MerchantMigrationOperation,
-    ) -> None:
-        await MerchantMigrationRepository.from_session(session).update(
-            migration,
-            update_dict={
-                "operation": operation.model_copy(
-                    update={
-                        "status": MerchantMigrationOperationStatus.failed,
-                        "error": _IMPORT_FAILURE,
-                        "last_progress_at": utc_now(),
-                    }
-                )
-            },
-            flush=True,
-        )
 
     async def get_pan_transfer(
         self,
@@ -1222,6 +1211,7 @@ class MerchantMigrationService:
             update_dict={
                 "operation": MerchantMigrationOperation(
                     status=MerchantMigrationOperationStatus.running,
+                    kind=MerchantMigrationOperationKind.cutover,
                     selection=selection,
                     last_progress_at=utc_now(),
                 )
@@ -1337,10 +1327,13 @@ class MerchantMigrationService:
         session: AsyncSession,
         migration: MerchantMigration,
         error: str,
+        *,
+        flush: bool = False,
     ) -> None:
         await MerchantMigrationRepository.from_session(session).update(
             migration,
             update_dict={"operation": self._failed_operation(migration, error)},
+            flush=flush,
         )
 
     def _operation_blocks_new_work(self, migration: MerchantMigration) -> bool:

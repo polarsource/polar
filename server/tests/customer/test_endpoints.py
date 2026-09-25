@@ -686,6 +686,80 @@ class TestTopCustomers:
         assert balance_result["net_revenue"] == 2_000
 
     @pytest.mark.auth
+    async def test_balance_order_uses_closest_global_rate_outside_window(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        paying_customer = await create_customer(
+            save_fixture, organization=organization, email="paying@example.com"
+        )
+        eur_balance_customer = await create_customer(
+            save_fixture, organization=organization, email="eur@example.com"
+        )
+        jpy_balance_customer = await create_customer(
+            save_fixture, organization=organization, email="jpy@example.com"
+        )
+        for currency, day, rate in (
+            ("eur", 8, 1.05),
+            ("eur", 18, 1.2),
+            ("jpy", 8, 0.0067),
+        ):
+            order = await create_order(
+                save_fixture,
+                customer=paying_customer,
+                product=product,
+                subtotal_amount=100_000,
+                currency=currency,
+                created_at=datetime(2026, 1, day, tzinfo=UTC),
+            )
+            await create_payment_transaction(
+                save_fixture,
+                order=order,
+                amount=int(100_000 * rate),
+                presentment_currency=currency,
+                presentment_amount=100_000,
+                exchange_rate=rate,
+                created_at=datetime(2026, 1, day, 1, tzinfo=UTC),
+                charge_id=f"{currency.upper()}_CHARGE_{day}",
+            )
+        await create_order(
+            save_fixture,
+            customer=eur_balance_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="eur",
+            created_at=datetime(2026, 1, 10, 12, tzinfo=UTC),
+        )
+        await create_order(
+            save_fixture,
+            customer=jpy_balance_customer,
+            product=product,
+            subtotal_amount=100_000,
+            currency="jpy",
+            created_at=datetime(2026, 1, 10, 12, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/customers/top",
+            params={
+                "organization_id": str(organization.id),
+                "start": datetime(2026, 1, 10, tzinfo=UTC).isoformat(),
+                "end": datetime(2026, 1, 12, tzinfo=UTC).isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        results = {item["id"]: item["net_revenue"] for item in response.json()}
+        assert results == {
+            str(eur_balance_customer.id): 10_500,
+            str(jpy_balance_customer.id): 670,
+        }
+
+    @pytest.mark.auth
     async def test_team_customer_without_email_uses_owner_avatar(
         self,
         save_fixture: SaveFixture,

@@ -51,6 +51,7 @@ import XIcon from './icons/XIcon'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
 const DEFAULT_PAYMENT_METHOD_ORDER = ['apple_pay', 'google_pay', 'card']
+const EXCLUDED_PAYMENT_METHOD_TYPES = ['blik']
 const KRW_PAYMENT_METHOD_ORDER = [
   'kr_card',
   'kakao_pay',
@@ -853,6 +854,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         mode: 'subscription',
         setupFutureUsage: 'off_session',
         paymentMethodCreation: 'manual',
+        excludedPaymentMethodTypes: EXCLUDED_PAYMENT_METHOD_TYPES,
         amount: checkout.total_amount,
         currency: checkout.currency,
       }
@@ -860,6 +862,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       return {
         mode: 'payment',
         paymentMethodCreation: 'manual',
+        excludedPaymentMethodTypes: EXCLUDED_PAYMENT_METHOD_TYPES,
         amount: checkout.total_amount,
         currency: checkout.currency,
       }
@@ -868,6 +871,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     return {
       mode: 'setup',
       paymentMethodCreation: 'manual',
+      excludedPaymentMethodTypes: EXCLUDED_PAYMENT_METHOD_TYPES,
       setupFutureUsage: 'off_session',
       currency: checkout.currency,
     }

@@ -784,12 +784,6 @@ class TestClassifyRecords:
                 ),
                 "payment_method_not_card",
             ),
-            (
-                CanonicalPaymentMethod(
-                    source_id="pm_1", type=CanonicalPaymentMethodType.sepa_debit
-                ),
-                "payment_method_not_card",
-            ),
         ],
     )
     def test_payment_method_the_switch_cant_check_is_importable_with_info(

@@ -11,6 +11,7 @@ from polar.event.system import SystemEvent
 from polar.kit.utils import generate_uuid, utc_now
 from polar.meter.aggregation import (
     AggregationFunction,
+    CountAggregation,
     PropertyAggregation,
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
@@ -475,6 +476,45 @@ class TestUpdateCustomerMeter:
         assert customer_meter.credited_units == Decimal(50)
         assert customer_meter.balance == Decimal(20)
         assert updated is True
+
+    async def test_credit_for_different_meter_ignored_match_all_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        match_all_meter = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=CountAggregation(),
+            organization=customer.organization,
+        )
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp,
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(match_all_meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 200, "meter_id": str(uuid.uuid4())},
+        )
+
+        customer_meter, _ = await customer_meter_service.update_customer_meter(
+            session, customer, match_all_meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.credited_units == Decimal(50)
 
     async def test_multiple_credit_events(
         self,

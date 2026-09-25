@@ -785,6 +785,7 @@ class PayoutService:
                     "payout_id": str(payout.id),
                     "payout_attempt_id": str(attempt.id),
                 },
+                idempotency_key=f"payout-{payout.id}-{account_amount}",
             )
         except stripe_lib.InvalidRequestError as e:
             # Capture exception in Sentry for debugging purposes

@@ -9,7 +9,7 @@ import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
 import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 export interface ErrorFallbackProps {
-  error: Error
+  error: unknown
   resetErrorBoundary: () => void
 }
 
@@ -22,7 +22,8 @@ export const ErrorFallback = ({
   const { authenticate } = useOAuth()
   const permissionError =
     error instanceof UnauthorizedResponseError ||
-    (isValidationError(error) &&
+    (error instanceof Error &&
+      isValidationError(error) &&
       error.message.includes('insufficient_scope')) ||
     (error instanceof Error && error.message.includes('privileges'))
 

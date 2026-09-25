@@ -10,12 +10,12 @@
     "box-codemod": "tsx src/cli.ts"
   },
   "dependencies": {
-    "jscodeshift": "^17.1.2"
+    "jscodeshift": "^17.4.0"
   },
   "devDependencies": {
-    "@types/jscodeshift": "^17.0.0",
-    "@types/node": "^22.0.0",
-    "tsx": "^4.19.2",
+    "@types/jscodeshift": "^17.3.0",
+    "@types/node": "^22.20.4",
+    "tsx": "^4.23.15",
     "typescript": "catalog:"
   }
 }

@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "date-fns": "catalog:",
-    "openapi-fetch": "^0.15.0",
+    "openapi-fetch": "^0.15.2",
     "openapi-typescript-helpers": "^0.0.15"
   }
 }

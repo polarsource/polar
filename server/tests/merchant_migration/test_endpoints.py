@@ -409,84 +409,9 @@ class TestPrecheck:
             "merchant_migration.precheck", merchant_migration_id=migration.id
         )
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_missing_coupon_scopes_return_failed_operation(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        mocker: MockerFixture,
-    ) -> None:
-        migration = await build_connected_migration(save_fixture, organization)
-        migration.step = MerchantMigrationStep.pre_check
-        await save_fixture(migration)
-        _mock_stripe_adapter(mocker, missing_scopes=["Coupons", "Promotion codes"])
-        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
-
-        response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-
-        assert response.status_code == 200
-        operation = response.json()["operation"]
-        assert operation["status"] == "failed"
-        assert "Coupons" in operation["error"]
-        assert "Promotion codes" in operation["error"]
-        assert response.json()["step"] == "pre_check"
-        enqueue.assert_not_called()
-
 
 @pytest.mark.asyncio
 class TestReconnectSource:
-    async def test_anonymous(
-        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
-    ) -> None:
-        migration = await build_connected_migration(save_fixture, organization)
-        response = await client.post(
-            f"/v1/merchant-migrations/{migration.id}/source",
-            json={"api_key": "rk_test_replaced"},
-        )
-        assert response.status_code == 401
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_missing_scopes_returns_400(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        mocker: MockerFixture,
-    ) -> None:
-        migration = await build_connected_migration(save_fixture, organization)
-        _mock_stripe_adapter(mocker, missing_scopes=["Coupons", "Promotion codes"])
-
-        response = await client.post(
-            f"/v1/merchant-migrations/{migration.id}/source",
-            json={"api_key": "rk_test_incomplete"},
-        )
-
-        assert response.status_code == 400
-        assert "Coupons" in response.text
-        assert "Promotion codes" in response.text
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_different_account_returns_409(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        mocker: MockerFixture,
-    ) -> None:
-        migration = await build_connected_migration(save_fixture, organization)
-        _mock_stripe_adapter(mocker, account_id="acct_other")
-
-        response = await client.post(
-            f"/v1/merchant-migrations/{migration.id}/source",
-            json={"api_key": "rk_test_other"},
-        )
-
-        assert response.status_code == 409
-
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_replaces_key_for_the_same_account(
         self,

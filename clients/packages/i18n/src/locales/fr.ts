@@ -324,14 +324,4 @@ export default {
       unknown: 'Une erreur s’est produite.',
     },
   },
-  merchantMigration: {
-    reconnect: {
-      hint: 'Collez une clé pour ce même compte Stripe qui inclut les autorisations manquantes. Vous pouvez aussi mettre à jour les autorisations de la clé actuelle et actualiser.',
-      pasteHint:
-        'Nous validerons la clé et conserverons cette migration sur le même compte Stripe.',
-      submit: 'Valider et remplacer la clé',
-      missingTitle: 'Cette clé Stripe n’a pas les autorisations nécessaires',
-      fallbackError: 'Veuillez vérifier la clé API et réessayer.',
-    },
-  },
 } as const

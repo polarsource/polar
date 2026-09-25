@@ -2,7 +2,6 @@
 
 import { useReconnectMerchantMigration } from '@/hooks/queries/merchantMigrations'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { useTranslations } from '@polar-sh/i18n'
 import { Alert, Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { FormEvent, useState } from 'react'
@@ -12,6 +11,9 @@ import {
   stripeKeyError,
   stripeKeyPlaceholder,
 } from '../stripeKey'
+
+const MISSING_PERMISSIONS_TITLE = 'This Stripe key is missing permissions'
+const REPLACE_KEY_FALLBACK = 'Please check the API key and try again.'
 
 interface Props {
   migrationId: string
@@ -27,7 +29,6 @@ export function ScanFailurePanel({
   showRetry = true,
 }: Props) {
   const missingResources = parseMissingStripeScopes({ detail: error })
-  const t = useTranslations('en')
 
   return (
     <Box flexDirection="column" rowGap="xl">
@@ -35,7 +36,7 @@ export function ScanFailurePanel({
         variant="danger"
         title={
           missingResources.length > 0
-            ? t('merchantMigration.reconnect.missingTitle')
+            ? MISSING_PERMISSIONS_TITLE
             : "We couldn't refresh from Stripe"
         }
         description={error}
@@ -67,7 +68,6 @@ function ReconnectStripeKey({
   missingResources: string[]
   onReconnected?: () => void
 }) {
-  const t = useTranslations('en')
   const reconnect = useReconnectMerchantMigration(migrationId)
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -83,13 +83,15 @@ function ReconnectStripeKey({
         return
       }
       const apiError = result.error ?? {}
-      const fallback = t('merchantMigration.reconnect.fallbackError')
       const parsed = parseMissingStripeScopes(apiError)
-      const message = extractApiErrorMessage(apiError, fallback).trim()
+      const message = extractApiErrorMessage(
+        apiError,
+        REPLACE_KEY_FALLBACK,
+      ).trim()
       setMissing(parsed)
-      setError(message || fallback)
+      setError(message || REPLACE_KEY_FALLBACK)
     } catch {
-      setError(t('merchantMigration.reconnect.fallbackError'))
+      setError(REPLACE_KEY_FALLBACK)
     }
   }
 
@@ -100,10 +102,14 @@ function ReconnectStripeKey({
 
   return (
     <Box as="form" onSubmit={handleSubmit} flexDirection="column" rowGap="xl">
-      <Text color="muted">{t('merchantMigration.reconnect.hint')}</Text>
+      <Text color="muted">
+        Paste a key for this same Stripe account that includes the missing
+        permissions. Updating permissions on the current key and refreshing
+        also works.
+      </Text>
       <ConnectGuide
         missingResources={missing}
-        pasteHint={t('merchantMigration.reconnect.pasteHint')}
+        pasteHint="We'll validate the key and keep this migration on the same Stripe account."
       />
       <Box flexDirection="column" rowGap="xs">
         <Input
@@ -126,11 +132,7 @@ function ReconnectStripeKey({
       {error && !keyError ? (
         <Alert
           variant="danger"
-          title={
-            missing.length > 0
-              ? t('merchantMigration.reconnect.missingTitle')
-              : error
-          }
+          title={missing.length > 0 ? MISSING_PERMISSIONS_TITLE : error}
           description={missing.length > 0 ? error : undefined}
         />
       ) : null}
@@ -139,7 +141,7 @@ function ReconnectStripeKey({
         disabled={!apiKey.trim() || keyError !== null || reconnect.isPending}
         loading={reconnect.isPending}
       >
-        {t('merchantMigration.reconnect.submit')}
+        Validate & replace key
       </Button>
     </Box>
   )

@@ -322,14 +322,4 @@ export default {
       unknown: 'Si è verificato un problema.',
     },
   },
-  merchantMigration: {
-    reconnect: {
-      hint: 'Incolla una chiave per questo stesso account Stripe che includa le autorizzazioni mancanti. Anche aggiornare le autorizzazioni della chiave attuale e aggiornare la pagina funziona.',
-      pasteHint:
-        'Convalideremo la chiave e manterremo questa migrazione nello stesso account Stripe.',
-      submit: 'Convalida e sostituisci la chiave',
-      missingTitle: 'Questa chiave Stripe non ha le autorizzazioni necessarie',
-      fallbackError: 'Controlla la chiave API e riprova.',
-    },
-  },
 } as const

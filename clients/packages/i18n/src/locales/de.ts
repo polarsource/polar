@@ -326,16 +326,4 @@ export default {
       unknown: 'Etwas ist schiefgelaufen.',
     },
   },
-  merchantMigration: {
-    reconnect: {
-      hint: 'Fügen Sie einen Schlüssel für dasselbe Stripe-Konto ein, dem die fehlenden Berechtigungen hinzugefügt wurden. Es funktioniert auch, wenn Sie die Berechtigungen des aktuellen Schlüssels aktualisieren und die Seite neu laden.',
-      pasteHint:
-        'Wir validieren den Schlüssel und behalten diese Migration auf demselben Stripe-Konto bei.',
-      submit: 'Prüfen & Schlüssel ersetzen',
-      missingTitle:
-        'Dieser Stripe-Schlüssel hat nicht die erforderlichen Berechtigungen',
-      fallbackError:
-        'Bitte prüfen Sie den API-Schlüssel und versuchen Sie es erneut.',
-    },
-  },
 } as const

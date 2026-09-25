@@ -318,14 +318,4 @@ export default {
       unknown: 'Något gick fel.',
     },
   },
-  merchantMigration: {
-    reconnect: {
-      hint: 'Klistra in en nyckel för samma Stripe-konto som innehåller de saknade behörigheterna. Det fungerar också att uppdatera behörigheterna för den nuvarande nyckeln och uppdatera sidan.',
-      pasteHint:
-        'Vi validerar nyckeln och behåller den här migreringen på samma Stripe-konto.',
-      submit: 'Validera och ersätt nyckel',
-      missingTitle: 'Den här Stripe-nyckeln saknar behörigheter',
-      fallbackError: 'Kontrollera API-nyckeln och försök igen.',
-    },
-  },
 } as const

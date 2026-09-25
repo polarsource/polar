@@ -322,13 +322,4 @@ export default {
       unknown: '問題が発生しました。',
     },
   },
-  merchantMigration: {
-    reconnect: {
-      hint: '不足している権限を含む、この同じ Stripe アカウントのキーを貼り付けてください。現在のキーの権限を更新して再読み込みしてもかまいません。',
-      pasteHint: 'キーを検証し、この移行は同じ Stripe アカウントで継続します。',
-      submit: '検証してキーを置換',
-      missingTitle: 'この Stripe キーには権限がありません',
-      fallbackError: 'API キーを確認して、もう一度お試しください。',
-    },
-  },
 } as const

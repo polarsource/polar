@@ -320,14 +320,4 @@ export default {
       unknown: 'Algo deu errado.',
     },
   },
-  merchantMigration: {
-    reconnect: {
-      hint: 'Cole uma chave dessa mesma conta Stripe que inclua as permissões ausentes. Também funciona atualizar as permissões na chave atual e recarregar.',
-      pasteHint:
-        'Vamos validar a chave e manter esta migração na mesma conta Stripe.',
-      submit: 'Validar e substituir chave',
-      missingTitle: 'Esta chave da Stripe não tem permissões',
-      fallbackError: 'Verifique a chave de API e tente novamente.',
-    },
-  },
 } as const

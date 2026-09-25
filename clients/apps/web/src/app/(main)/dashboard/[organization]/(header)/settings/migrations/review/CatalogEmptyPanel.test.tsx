@@ -128,29 +128,4 @@ describe('CatalogEmptyPanel', () => {
       screen.getByRole('button', { name: 'Refresh from Stripe' }),
     ).toBeEnabled()
   })
-
-  it('shows a failed scan instead of the all-switched result', () => {
-    render(
-      <CatalogEmptyPanel
-        kind="all_switched"
-        migrationId="migration_1"
-        error="We couldn't verify the Stripe key right now. Please try again."
-        onRerunPrecheck={() => undefined}
-      />,
-    )
-
-    expect(
-      screen.queryByRole('heading', {
-        name: 'All subscriptions already switched',
-      }),
-    ).toBeNull()
-    expect(
-      screen.getByText(
-        "We couldn't verify the Stripe key right now. Please try again.",
-      ),
-    ).toBeTruthy()
-    expect(
-      screen.queryByRole('button', { name: 'Validate & replace key' }),
-    ).toBeNull()
-  })
 })

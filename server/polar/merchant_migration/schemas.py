@@ -12,7 +12,10 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
-from polar.models.merchant_migration_operation import MerchantMigrationOperationStatus
+from polar.models.merchant_migration_operation import (
+    MerchantMigrationOperationKind,
+    MerchantMigrationOperationStatus,
+)
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
@@ -424,6 +427,13 @@ class MerchantMigrationOperation(Schema):
 
     status: MerchantMigrationOperationStatus = Field(
         description="pending or running while Polar works; done or failed when it finishes."
+    )
+    kind: MerchantMigrationOperationKind | None = Field(
+        default=None,
+        description=(
+            "Which job this is: pre-check, catalog import, or cutover. "
+            "Null on runs started before this field existed."
+        ),
     )
     stalled: bool = Field(
         description="Whether an active operation has stopped making progress."

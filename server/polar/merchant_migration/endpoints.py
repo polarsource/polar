@@ -33,7 +33,6 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
-    MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
@@ -185,7 +184,7 @@ async def precheck(
 
 @router.post(
     "/{id}/import",
-    response_model=MerchantMigrationImportReport,
+    response_model=MerchantMigrationSchema,
     summary="Import Merchant Migration Catalog",
     responses={
         400: {
@@ -214,7 +213,7 @@ async def import_catalog(
     auth_subject: MerchantMigrationWrite,
     body: MerchantMigrationImportRequest | None = None,
     session: AsyncSession = Depends(get_db_session),
-) -> MerchantMigrationImportReport:
+) -> MerchantMigration:
     return await merchant_migration_service.import_catalog(
         session,
         auth_subject,

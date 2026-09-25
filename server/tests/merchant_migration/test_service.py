@@ -705,7 +705,6 @@ class TestStartPrecheck:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         migration.step = MerchantMigrationStep.pre_check
-        await save_fixture(migration)
         await save_fixture(
             MerchantMigrationRecord(
                 merchant_migration=migration,

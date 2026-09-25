@@ -36,7 +36,11 @@ from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit, create_benefit_grant
+from tests.fixtures.random_objects import (
+    create_benefit,
+    create_benefit_grant,
+    create_member,
+)
 
 _BASE_PROPERTIES = {
     "channel_name_template": "support-{customer_name}",
@@ -1882,6 +1886,57 @@ class TestSlackSharedChannelRevoke:
             "invited_email": "admin@customer.example",
             "channel_id": "C123",
         }
+
+    async def test_revoke_skips_archive_when_channel_used_by_sibling_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        grant_properties: dict[str, Any] = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
+        members = [
+            await create_member(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                email=f"member{i}@customer.example",
+            )
+            for i in range(2)
+        ]
+        for member in members:
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                granted=True,
+                properties=grant_properties,
+                member=member,
+            )
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            cast(Any, grant_properties),
+            member=members[0],
+        )
+
+        client.conversations_archive.assert_not_awaited()
+        assert result == grant_properties
 
     async def test_revoke_skips_when_archive_disabled(
         self,

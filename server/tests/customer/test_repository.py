@@ -4,6 +4,7 @@ from unittest.mock import call
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import inspect
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
@@ -276,6 +277,21 @@ async def test_update_with_update_dict_tracks_changed_fields(
 
 
 @pytest.mark.asyncio
+async def test_update_with_identical_value_does_not_modify_customer(
+    session: AsyncSession, customer: Customer, repository: CustomerRepository
+) -> None:
+    modified_at = customer.modified_at
+
+    await repository.update(customer, update_dict={"name": customer.name})
+
+    assert not session.is_modified(customer)
+    assert not inspect(customer).attrs.name.history.has_changes()
+    await session.flush()
+    await session.refresh(customer)
+    assert customer.modified_at == modified_at
+
+
+@pytest.mark.asyncio
 async def test_update_deleted_customer_is_silent(
     mocker: MockerFixture,
     customer: Customer,
@@ -308,7 +324,7 @@ async def test_update_restoring_customer_emits_updated(
 
 
 @pytest.mark.asyncio
-async def test_update_without_changes_emits_empty_updated_fields(
+async def test_update_without_changes(
     mocker: MockerFixture,
     customer: Customer,
     repository: CustomerRepository,
@@ -317,12 +333,7 @@ async def test_update_without_changes_emits_empty_updated_fields(
 
     await repository.update(customer)
 
-    enqueue_job_mock.assert_any_call(
-        "customer.event",
-        customer.id,
-        SystemEvent.customer_updated,
-        {},
-    )
+    enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

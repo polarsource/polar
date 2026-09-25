@@ -107,8 +107,11 @@ class CustomerRepository(
         # Force flush to False so we can inspect the changed attributes before the flush occurs.
         customer = await super().update(object, update_dict=update_dict, flush=False)
 
-        # Only create an event if the customer is not being deleted
-        if not customer.deleted_at:
+        if (
+            self.session.is_modified(customer, include_collections=False)
+            # Only create an event if the customer is not being deleted
+            and not customer.deleted_at
+        ):
             enqueue_job(
                 "customer.webhook", WebhookEventType.customer_updated, customer.id
             )

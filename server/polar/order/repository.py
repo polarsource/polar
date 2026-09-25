@@ -466,11 +466,15 @@ class OrderRepository(
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
 
-    async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:
+    async def release_payment_lock(self, order: Order) -> Order:
         """Release a payment lock for an order."""
-        return await self.update(
-            order, update_dict={"payment_lock_acquired_at": None}, flush=flush
+        statement = (
+            update(Order)
+            .where(Order.id == order.id)
+            .values(payment_lock_acquired_at=None)
         )
+        await self.session.execute(statement)
+        return order
 
     async def start_finalization(self, order_id: UUID) -> bool:
         """

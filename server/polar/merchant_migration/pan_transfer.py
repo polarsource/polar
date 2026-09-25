@@ -206,6 +206,9 @@ class PanTransferStepsType(TypeDecorator[Any]):
     impl = JSONB
     cache_ok = True
 
+    def compare_values(self, x: Any, y: Any) -> bool:
+        return False  # Make sure all assignations are treated as changes, so SQLAlchemy flushes the column.
+
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is None:
             return value

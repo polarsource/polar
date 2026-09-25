@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import update
 
 from polar.email.deduplication import (
     subscription_renewal_reminder_key,
@@ -27,6 +28,29 @@ from tests.fixtures.random_objects import (
     create_product,
     create_subscription,
 )
+
+
+@pytest.mark.asyncio
+class TestReleaseSchedulerLock:
+    @pytest.mark.parametrize("stale", [False, True])
+    async def test_releases_lock(
+        self, session: AsyncSession, subscription: Subscription, stale: bool
+    ) -> None:
+        assert subscription.scheduler_locked_at is None
+        await session.execute(
+            update(Subscription)
+            .where(Subscription.id == subscription.id)
+            .values(scheduler_locked_at=utc_now())
+            .execution_options(synchronize_session=False if stale else "fetch")
+        )
+        assert (subscription.scheduler_locked_at is None) == stale
+
+        repository = SubscriptionRepository.from_session(session)
+        await repository.release_scheduler_lock(subscription)
+        assert subscription.scheduler_locked_at is None
+        await session.refresh(subscription)
+
+        assert subscription.scheduler_locked_at is None
 
 
 @pytest.mark.asyncio

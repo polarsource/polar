@@ -167,11 +167,14 @@ def _ends_at_period_end(
 ) -> bool:
     """Whether Polar should keep a scheduled end instead of renewing.
 
-    The live source wins. After we have already stopped it, Stripe no longer
-    reports the flag, so the staged row is the fallback.
+    The live source wins. Stopping it clears Stripe's flag, so the stop comment
+    records the value and a retry reads that (``cancel_at_period_end_known``).
+    An older stop has no comment; the import snapshot is the fallback.
     """
     if source.cancel_at_period_end:
         return True
+    if source.stopped_for_migration and source.cancel_at_period_end_known:
+        return False
     return bool(
         source.stopped_for_migration
         and staged is not None
@@ -299,7 +302,9 @@ class SubscriptionCutover:
 
         if not already_stopped:
             await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
+                record.source_id,
+                reference=str(self.migration.id),
+                cancel_at_period_end=ends_at_period_end,
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
@@ -458,7 +463,9 @@ class SubscriptionCutover:
         ends_at_period_end = _ends_at_period_end(source, staged)
         if not already_stopped:
             await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
+                record.source_id,
+                reference=str(self.migration.id),
+                cancel_at_period_end=ends_at_period_end,
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
@@ -508,7 +515,9 @@ class SubscriptionCutover:
                 source_id=record.source_id,
             )
             await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
+                record.source_id,
+                reference=str(self.migration.id),
+                cancel_at_period_end=source.cancel_at_period_end,
             )
         return _moved()
 

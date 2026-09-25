@@ -65,6 +65,43 @@ SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
 # subscription it already cancelled; without this marker the retry would read
 # that as the customer having churned and strand the subscription unbilled.
 CANCELLATION_COMMENT_PREFIX = "Migrated to Polar"
+_PERIOD_END_MARKER = "cancel at period end"
+_RENEWS_MARKER = "renews"
+
+
+def _cancellation_comment(reference: str, *, cancel_at_period_end: bool) -> str:
+    decision = _PERIOD_END_MARKER if cancel_at_period_end else _RENEWS_MARKER
+    return f"{CANCELLATION_COMMENT_PREFIX} (migration {reference}; {decision})"
+
+
+def _recorded_cancel_at_period_end(
+    subscription: stripe_lib.Subscription,
+) -> bool | None:
+    """The flag written into our stop comment, or None for an older stop."""
+    details = subscription.cancellation_details
+    comment = details.comment if details is not None else None
+    if comment is None or not comment.startswith(CANCELLATION_COMMENT_PREFIX):
+        return None
+    if _PERIOD_END_MARKER in comment:
+        return True
+    if _RENEWS_MARKER in comment:
+        return False
+    return None
+
+
+def _cancel_at_period_end(subscription: stripe_lib.Subscription) -> bool:
+    recorded = _recorded_cancel_at_period_end(subscription)
+    if subscription.status == "canceled" and recorded is not None:
+        return recorded
+    return bool(subscription.cancel_at_period_end)
+
+
+def _cancel_at_period_end_known(subscription: stripe_lib.Subscription) -> bool:
+    return (
+        subscription.status == "canceled"
+        and _recorded_cancel_at_period_end(subscription) is not None
+    )
+
 
 # Expansions the cutover needs on a single subscription read.
 _SUBSCRIPTION_EXPAND = [
@@ -454,7 +491,13 @@ class StripeAdapter:
             return None
         return self._map_subscription(subscription)
 
-    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+    async def stop_source_subscription(
+        self,
+        source_id: str,
+        *,
+        reference: str,
+        cancel_at_period_end: bool = False,
+    ) -> None:
         """Cancel the subscription on Stripe, right now.
 
         No proration and no final invoice: the customer already paid the source
@@ -462,7 +505,9 @@ class StripeAdapter:
         with that same period end. Cancelling one Stripe has already cancelled
         is treated as done, so a retry converges instead of failing.
         """
-        comment = f"{CANCELLATION_COMMENT_PREFIX} (migration {reference})"
+        comment = _cancellation_comment(
+            reference, cancel_at_period_end=cancel_at_period_end
+        )
         try:
             await self._client.v1.subscriptions.cancel_async(
                 source_id,
@@ -531,7 +576,8 @@ class StripeAdapter:
             discount_source_ids=discounts.source_ids,
             discount_started_at=discounts.started_at,
             discount_starts=discounts.starts,
-            cancel_at_period_end=bool(subscription.cancel_at_period_end),
+            cancel_at_period_end=_cancel_at_period_end(subscription),
+            cancel_at_period_end_known=_cancel_at_period_end_known(subscription),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
             anchor_day=self._anchor_day(subscription),

@@ -1375,6 +1375,44 @@ class TestGetSubscription:
         assert subscription is not None
         assert subscription.stopped_for_migration is False
 
+    async def test_our_stop_keeps_a_period_end_cancellation(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                status="canceled",
+                cancel_at_period_end=False,
+                cancellation_comment=(
+                    "Migrated to Polar (migration abc; cancel at period end)"
+                ),
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.stopped_for_migration is True
+        assert subscription.cancel_at_period_end is True
+        assert subscription.cancel_at_period_end_known is True
+
+    async def test_our_stop_records_that_it_still_renews(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                status="canceled",
+                cancellation_comment="Migrated to Polar (migration abc; renews)",
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.cancel_at_period_end is False
+        assert subscription.cancel_at_period_end_known is True
+
 
 @pytest.mark.asyncio
 class TestStopSourceSubscription:
@@ -1390,6 +1428,22 @@ class TestStopSourceSubscription:
         comment = kwargs["params"]["cancellation_details"]["comment"]
         assert comment.startswith(CANCELLATION_COMMENT_PREFIX)
         assert "abc" in comment
+        assert "renews" in comment
+
+    async def test_records_a_period_end_cancellation(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.cancel_async = mocker.AsyncMock()
+
+        await adapter.stop_source_subscription(
+            "sub_1", reference="abc", cancel_at_period_end=True
+        )
+
+        _, kwargs = client.v1.subscriptions.cancel_async.call_args
+        comment = kwargs["params"]["cancellation_details"]["comment"]
+        assert comment.startswith(CANCELLATION_COMMENT_PREFIX)
+        assert "cancel at period end" in comment
 
     async def test_already_cancelled_is_done(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

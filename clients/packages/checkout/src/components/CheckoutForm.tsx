@@ -466,7 +466,7 @@ const BaseCheckoutForm = ({
                                   : false,
                               }}
                               render={({ field }) => (
-                                <div>
+                                <div className="space-y-2">
                                   <Input
                                     type="text"
                                     autoComplete="billing postal-code"
@@ -497,7 +497,7 @@ const BaseCheckoutForm = ({
                                   : false,
                               }}
                               render={({ field }) => (
-                                <div>
+                                <div className="space-y-2">
                                   <Input
                                     type="text"
                                     autoComplete="billing address-level2"

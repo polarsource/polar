@@ -1,0 +1,56 @@
+clients/apps/web/src/csp.mjs
+  s_2c213c50e532b9::t_eb26f3eaffef09 8,10-14,16,19-20
+  s_2c213c50e532b9::t_8c49056eb70f66 41,47,77
+  s_2c213c50e532b9::t_2e8fba3fb1ce82 28
+  s_2c213c50e532b9::t_9bbb5f3136287d 9,15,17-18,21
+server/polar/auth/authentication_session.py
+  s_2c213c50e532b9::t_93ecdf8febd244 115-117
+  s_2c213c50e532b9::t_3428e1072ecf7e 22
+server/polar/kit/http.py
+  s_2c213c50e532b9::t_d0b3ec742423d2 199-210,214-215
+  s_2c213c50e532b9::t_ee0438cd86f4ba 211-213
+  s_2c213c50e532b9::t_97dcf9d56c2bd9 242-248
+clients/apps/web/src/utils/client/index.ts
+  s_2c213c50e532b9::t_a59d74b3f2f88b 46
+  s_2c213c50e532b9::t_d7cf98aef2ec6f 3
+clients/apps/web/src/utils/api/index.ts
+  s_2c213c50e532b9::t_09a76724995baa 28
+  s_2c213c50e532b9::t_e494ee66825388 1-27,29-33,38
+  s_2c213c50e532b9::t_1fe26ea99a95bf 50
+clients/apps/web/src/utils/auth.ts
+  s_2c213c50e532b9::t_d7e696ed84f4c8 1
+  s_2c213c50e532b9::t_ee30f4932f3d15 95
+  s_2c213c50e532b9::t_b39a71845b8a46 131,133
+  s_2c213c50e532b9::t_1ae9e37673140a 132
+server/polar/backoffice/impersonation/endpoints.py
+  s_2c213c50e532b9::t_3613a32eda06e0 19
+  s_2c213c50e532b9::t_f30f423d73b2dc 100,112,124,187,197,204
+clients/apps/web/src/app/(main)/auth/email-otp/VerifyPage.tsx
+  s_2c213c50e532b9::t_82927ca0d72925 44-50
+server/polar/auth/service.py
+  s_2c213c50e532b9::t_5928799846aa7e 166,183
+  s_2c213c50e532b9::t_7751a719365517 53-55
+  s_2c213c50e532b9::t_a8e4b537aac07f 13-17
+clients/apps/web/src/app/(main)/auth/page.tsx
+  s_2c213c50e532b9::t_e5680821a17359 2
+  s_2c213c50e532b9::t_3866b8394d4c04 25-26
+clients/apps/web/next.config.mjs
+  s_2c213c50e532b9::t_7afa250d3e3095 236-238,240
+  s_2c213c50e532b9::t_55c9226705f562 45-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7c57710ff84913bd9acd7532cdc8edbad005f014",
+  "prompts": {},
+  "sessions": {
+    "s_2c213c50e532b9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaab0d2-e0ef-48c5-9dc4-4a5526525da6",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

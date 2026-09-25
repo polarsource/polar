@@ -7,6 +7,7 @@ from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
+from polar.event.system import SystemEvent
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     Options,
@@ -14,8 +15,9 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import BillingEntry
+from polar.models import BillingEntry, Event
 from polar.models.billing_entry import BillingEntryType
+from polar.models.event import EventSource
 from polar.models.product_price import ProductPrice
 
 _LINK_PENDING_BATCH_SIZE = 5_000
@@ -148,6 +150,30 @@ class BillingEntryRepository(
             BillingEntry.product_price_id == product_price_id,
             BillingEntry.start_timestamp < cutoff,
             BillingEntry.created_at <= cutoff,
+        )
+        await self._link_pending(pending_ids, order_item_id)
+
+    async def link_pending_credits_by_subscription_and_prices(
+        self,
+        subscription_id: UUID,
+        product_price_ids: Sequence[UUID],
+        order_item_id: UUID,
+        *,
+        cutoff: datetime,
+    ) -> None:
+        pending_ids = (
+            select(BillingEntry.id)
+            .join(Event, Event.id == BillingEntry.event_id)
+            .where(
+                BillingEntry.subscription_id == subscription_id,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                BillingEntry.product_price_id.in_(product_price_ids),
+                BillingEntry.start_timestamp < cutoff,
+                BillingEntry.created_at <= cutoff,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_credited,
+            )
         )
         await self._link_pending(pending_ids, order_item_id)
 

@@ -1451,3 +1451,176 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id is None
+
+    async def test_inactive_price_credits_applied_after_product_switch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        credit_entry = await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=old_price,
+            subscription=subscription,
+            units=30,
+            meter=meter,
+        )
+        old_usage_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=old_price,
+            subscription=subscription,
+            tokens=10,
+        )
+
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        new_price = product_new.prices[0]
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(new_price)
+        ]
+        await save_fixture(subscription)
+
+        new_entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=new_price,
+                subscription=subscription,
+                tokens=50,
+            ),
+        ]
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.product_price == new_price
+            # (50 - 30 credited) tokens at $0.50/token
+            assert order_item.amount == 10_00
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        for entry in [*new_entries, credit_entry]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
+
+        await session.refresh(old_usage_entry)
+        assert old_usage_entry.order_item_id is None
+
+    async def test_inactive_price_credits_without_active_price_usage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        credit_entry = await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=old_price,
+            subscription=subscription,
+            units=30,
+            meter=meter,
+        )
+
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        new_price = product_new.prices[0]
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(new_price)
+        ]
+        await save_fixture(subscription)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.product_price == new_price
+            assert order_item.amount == 0
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        # The period's credits are consumed so they don't carry into the next cycle
+        await session.refresh(credit_entry)
+        assert credit_entry.order_item_id == order_item.id
+
+    async def test_inactive_price_usage_only_yields_no_line_item(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=old_price,
+            subscription=subscription,
+            tokens=10,
+        )
+
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(product_new.prices[0])
+        ]
+        await save_fixture(subscription)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert order_items == []

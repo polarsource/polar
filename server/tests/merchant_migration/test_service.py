@@ -3262,6 +3262,34 @@ def _fake_cutover(
 
 
 @pytest.mark.asyncio
+class TestAnnotatePanStep:
+    async def test_persists_note(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+
+        await service.annotate_pan_step(
+            session, migration, STEP_VERIFY_CARDS, note="Waiting for verification"
+        )
+        await session.flush()
+        await session.refresh(migration)
+
+        step = next(
+            step
+            for step in migration.pan_transfer_steps
+            if step.key == STEP_VERIFY_CARDS
+        )
+        assert step.note == "Waiting for verification"
+
+
+@pytest.mark.asyncio
 class TestFinishCardChecks:
     async def test_moves_the_migration_onto_the_switch(
         self,

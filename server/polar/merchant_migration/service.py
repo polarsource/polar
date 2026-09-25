@@ -834,7 +834,7 @@ class MerchantMigrationService:
     ) -> None:
         """Persist progress and start work for the current Polar-managed step."""
         current = pan_transfer.current(steps)
-        update_dict: dict[str, object] = {"pan_transfer_steps": list(steps)}
+        update_dict: dict[str, object] = {"pan_transfer_steps": steps}
         if current is not None:
             migration_step = _MIGRATION_STEP_BY_PAN_STEP.get(current.key)
             if migration_step is not None:

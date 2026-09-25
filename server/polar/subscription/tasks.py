@@ -81,9 +81,7 @@ async def subscription_cycle(
                 "Subscription has already been cycled",
                 subscription_id=subscription_id,
             )
-            subscription = await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            subscription = await repository.release_scheduler_lock(subscription)
             return
 
         span = trace.get_current_span()
@@ -226,9 +224,7 @@ async def subscription_resume(
                 "Subscription is not due for resume, skipping",
                 subscription_id=subscription_id,
             )
-            await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            await repository.release_scheduler_lock(subscription)
             return
 
         async with SubscriptionUpdateContext(

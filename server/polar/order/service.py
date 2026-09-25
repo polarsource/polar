@@ -369,7 +369,7 @@ class OrderService:
         try:
             yield
         except Exception:
-            await repository.release_payment_lock(order, flush=True)
+            await repository.release_payment_lock(order)
             raise
 
     async def list(

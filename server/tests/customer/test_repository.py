@@ -4,6 +4,7 @@ from unittest.mock import call
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import inspect
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
@@ -273,6 +274,21 @@ async def test_update_with_update_dict_tracks_changed_fields(
         SystemEvent.customer_updated,
         {"name": "New Name Via Dict"},
     )
+
+
+@pytest.mark.asyncio
+async def test_update_with_identical_value_does_not_modify_customer(
+    session: AsyncSession, customer: Customer, repository: CustomerRepository
+) -> None:
+    modified_at = customer.modified_at
+
+    await repository.update(customer, update_dict={"name": customer.name})
+
+    assert not session.is_modified(customer)
+    assert not inspect(customer).attrs.name.history.has_changes()
+    await session.flush()
+    await session.refresh(customer)
+    assert customer.modified_at == modified_at
 
 
 @pytest.mark.asyncio

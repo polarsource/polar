@@ -948,13 +948,14 @@ class SubscriptionService:
         skips the resumed side effects too, since nothing paused for them.
         """
         assert subscription.status == SubscriptionStatus.paused
+        repository = SubscriptionRepository.from_session(session)
 
+        await repository.release_scheduler_lock(subscription)
         subscription.status = (
             SubscriptionStatus.trialing if trial_end else SubscriptionStatus.active
         )
         subscription.paused_at = None
         subscription.resumes_at = None
-        subscription.scheduler_locked_at = None
         subscription.trial_start = current_period_start if trial_end else None
         subscription.trial_end = trial_end
         subscription.current_period_start = current_period_start
@@ -970,7 +971,6 @@ class SubscriptionService:
             None if trial_end else current_period_start
         )
 
-        repository = SubscriptionRepository.from_session(session)
         # Flushed so the returned subscription carries `payment_method_id`, which
         # the cutover records, and not just the relationship.
         subscription = await repository.update(subscription, flush=True)
@@ -1165,9 +1165,7 @@ class SubscriptionService:
                 organization_id=subscription.organization.id,
             )
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         cycle_at = subscription.current_period_end
         revoke = subscription.cancel_at_period_end
@@ -1187,9 +1185,7 @@ class SubscriptionService:
                 )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         previous_status = subscription.status
         previous_canceled = subscription.canceled
@@ -1288,9 +1284,7 @@ class SubscriptionService:
             subscription.initialize_meter_period(subscription.current_period_start)
 
         repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.update(
-            subscription, update_dict={"scheduler_locked_at": None}
-        )
+        subscription = await repository.release_scheduler_lock(subscription)
 
         reset_at = min(cycle_at, utc_now())
         await self.reset_meters(session, subscription, reset_at=reset_at)
@@ -1513,9 +1507,7 @@ class SubscriptionService:
             # No meter cycle, but dispatch locked the row: clear it or the
             # subscription (billing renewal included) never cycles again.
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         now = utc_now()
 
@@ -1533,9 +1525,7 @@ class SubscriptionService:
                 )
             subscription.current_meter_period_end = period_end
             repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         self.check_meter_cycle_lag(subscription)
 
@@ -1563,9 +1553,7 @@ class SubscriptionService:
         subscription.current_meter_period_end = next_period_end
 
         repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.update(
-            subscription, update_dict={"scheduler_locked_at": None}
-        )
+        subscription = await repository.release_scheduler_lock(subscription)
         return subscription
 
     async def _after_subscription_created(
@@ -2655,6 +2643,8 @@ class SubscriptionService:
         if not subscription.can_reinstate():
             raise CannotReinstateSubscription(subscription)
 
+        repository = SubscriptionRepository.from_session(session)
+
         now = utc_now()
 
         if subscription.current_period_end <= now:
@@ -2680,13 +2670,12 @@ class SubscriptionService:
         subscription.pause_at_period_end = False
         subscription.paused_at = None
         subscription.resumes_at = None
-        subscription.scheduler_locked_at = None
+        await repository.release_scheduler_lock(subscription)
         subscription.initialize_meter_period(now)
 
         await self.reset_meters(session, subscription)
         await self.enqueue_benefits_grants(session, subscription)
 
-        repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
         log.info(
@@ -2788,6 +2777,8 @@ class SubscriptionService:
         if not subscription.can_resume():
             raise NotPausedSubscription(subscription)
 
+        repository = SubscriptionRepository.from_session(session)
+
         # Defensive: renewals may have been disabled while the subscription was
         # paused. Resuming starts a fresh period and charges immediately, so skip
         # rather than bill a subscription the organization can no longer renew.
@@ -2797,16 +2788,13 @@ class SubscriptionService:
                 subscription_id=subscription.id,
                 organization_id=subscription.organization.id,
             )
-            repository = SubscriptionRepository.from_session(session)
-            return await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
+            return await repository.release_scheduler_lock(subscription)
 
         now = utc_now()
         subscription.status = SubscriptionStatus.active
         subscription.paused_at = None
         subscription.resumes_at = None
-        subscription.scheduler_locked_at = None
+        await repository.release_scheduler_lock(subscription)
 
         # Start a fresh billing period from now and charge immediately.
         subscription.current_period_start = now
@@ -2829,7 +2817,6 @@ class SubscriptionService:
         await self.enqueue_benefits_grants(session, subscription)
         await self._create_cycle_billing_entries(session, subscription)
 
-        repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
         enqueue_job(

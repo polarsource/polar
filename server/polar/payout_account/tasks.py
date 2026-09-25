@@ -1,14 +1,20 @@
 import uuid
+from typing import Annotated
 
 from polar.integrations.stripe.service import StripeAccountRejectReason
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .service import payout_account as payout_account_service
 
 
-@actor(actor_name="payout_account.reject_stripe_account", priority=TaskPriority.LOW)
+@actor(
+    actor_name="payout_account.reject_stripe_account",
+    priority=TaskPriority.LOW,
+)
 async def reject_stripe_account(
-    payout_account_id: uuid.UUID, reason: StripeAccountRejectReason
+    payout_account_id: Annotated[uuid.UUID, LoggableField],
+    reason: Annotated[StripeAccountRejectReason, LoggableField],
 ) -> None:
     """Reject the Stripe connected account for a denied or blocked organization.
 

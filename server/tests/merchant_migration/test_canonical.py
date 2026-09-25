@@ -16,6 +16,9 @@ from polar.merchant_migration.canonical import (
     CanonicalProduct,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    SubscriptionDiscountBlock,
+    apply_customer_discount,
+    customer_discount_action,
     deserialize,
     discount_started_at_for,
     polar_discount_amounts,
@@ -239,6 +242,86 @@ class TestDeserialize:
         )
         assert discount_started_at_for(legacy, "coupon_1") == first
         assert discount_started_at_for(legacy, "coupon_other") is None
+
+    def test_discount_block_round_trips(self) -> None:
+        started = datetime(2024, 3, 9, 16, 0, tzinfo=UTC)
+        subscription = canonical_subscription(
+            has_discount=True,
+            customer_discount_source_id="coupon_cust",
+            customer_discount_started_at=started,
+            discount_block="subscription_item_discount",
+        )
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
+
+        assert isinstance(result, CanonicalSubscription)
+        assert result.discount_block == "subscription_item_discount"
+        assert result.customer_discount_source_id == "coupon_cust"
+        assert result.customer_discount_started_at == started
+
+
+class TestCustomerDiscount:
+    def test_action_matches_only_a_coupon_limited_to_this_product(self) -> None:
+        assert customer_discount_action("prod_1", None) == "block"
+        assert customer_discount_action("prod_1", []) == "block"
+        assert customer_discount_action(None, ["prod_1"]) == "block"
+        assert customer_discount_action("prod_1", ["prod_other"]) == "ignore"
+        assert customer_discount_action("prod_1", ["prod_1", "prod_other"]) == "block"
+        assert customer_discount_action("prod_1", ["prod_1"]) == "apply"
+
+    def test_scoped_coupon_folds_onto_the_subscription(self) -> None:
+        started = datetime(2024, 3, 9, 16, 0, tzinfo=UTC)
+        subscription = canonical_subscription(
+            has_discount=True,
+            customer_discount_source_id="coupon_cust",
+            customer_discount_started_at=started,
+        )
+
+        result = apply_customer_discount(subscription, "prod_1", ["prod_1"])
+
+        assert result.discount_source_ids == ["coupon_cust"]
+        assert result.discount_started_at == started
+        assert result.discount_starts["coupon_cust"] == started
+        assert result.customer_discount_source_id is None
+        assert result.discount_block is None
+
+    def test_unrestricted_coupon_blocks(self) -> None:
+        subscription = canonical_subscription(
+            has_discount=True,
+            customer_discount_source_id="coupon_cust",
+        )
+
+        result = apply_customer_discount(subscription, "prod_1", [])
+
+        assert result.discount_block == SubscriptionDiscountBlock.customer
+        assert result.discount_source_ids == []
+
+    def test_coupon_for_another_product_is_ignored(self) -> None:
+        subscription = canonical_subscription(
+            has_discount=True,
+            customer_discount_source_id="coupon_cust",
+        )
+
+        result = apply_customer_discount(subscription, "prod_1", ["prod_other"])
+
+        assert result.has_discount is False
+        assert result.discount_block is None
+        assert result.customer_discount_source_id is None
+
+    def test_subscription_coupon_is_left_alone(self) -> None:
+        subscription = canonical_subscription(
+            has_discount=True,
+            discount_source_ids=["coupon_sub"],
+            customer_discount_source_id="coupon_cust",
+        )
+
+        result = apply_customer_discount(subscription, "prod_1", None)
+
+        assert result.discount_source_ids == ["coupon_sub"]
+        assert result.discount_block is None
+        assert result.customer_discount_source_id == "coupon_cust"
 
 
 class TestPolarDiscountHelpers:

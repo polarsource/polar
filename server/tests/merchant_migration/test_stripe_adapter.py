@@ -292,6 +292,63 @@ def _stripe_subscription(
     )
 
 
+def _stripe_discount(
+    coupon_id: str,
+    *,
+    id: str = "di_1",
+    start: int = 1_700_000_000,
+) -> dict[str, Any]:
+    return {
+        "id": id,
+        "object": "discount",
+        "start": start,
+        "source": {"type": "coupon", "coupon": coupon_id},
+    }
+
+
+def _stripe_item(
+    *,
+    price_id: str = "price_1",
+    product_id: str = "prod_1",
+    discounts: list[dict[str, Any] | str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "price": {"id": price_id, "currency": "usd", "product": product_id},
+        "quantity": 1,
+        "tax_rates": [],
+        "current_period_start": 1_700_000_000,
+        "current_period_end": 1_702_000_000,
+        "discounts": discounts or [],
+    }
+
+
+def _coupon_restricted_to(
+    products: list[str] | None,
+) -> stripe_lib.Coupon:
+    data: dict[str, Any] = {"id": "coupon_cust", "object": "coupon"}
+    if products is not None:
+        data["applies_to"] = {"products": products}
+    return stripe_lib.Coupon.construct_from(data, None)
+
+
+async def _extracted_subscription(
+    mocker: MockerFixture,
+    subscription: stripe_lib.Subscription,
+    *,
+    coupon: stripe_lib.Coupon | None = None,
+) -> CanonicalSubscription:
+    adapter, client = _adapter(mocker)
+    client.v1.subscriptions.list_async = mocker.AsyncMock(
+        return_value=mocker.MagicMock(data=[subscription], has_more=False)
+    )
+    if coupon is not None:
+        client.v1.coupons.retrieve_async = mocker.AsyncMock(return_value=coupon)
+    page = await adapter.extract_page({"phase": "subscriptions"})
+    record = page.records[0]
+    assert isinstance(record, CanonicalSubscription)
+    return record
+
+
 def _stripe_price(
     *,
     id: str = "price_1",
@@ -1078,7 +1135,7 @@ class TestExtractCoupons:
         assert isinstance(discount, CanonicalDiscount)
         assert discount.ends_at == datetime(2027, 1, 15, 8, 0, tzinfo=UTC)
 
-    async def test_subscription_page_maps_each_coupon_start(
+    async def test_subscription_page_blocks_several_distinct_coupons(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
@@ -1103,17 +1160,18 @@ class TestExtractCoupons:
         page = await adapter.extract_page({"phase": "subscriptions"})
 
         kwargs = client.v1.subscriptions.list_async.await_args.kwargs
-        assert "data.discounts" in kwargs["params"]["expand"]
+        expand = kwargs["params"]["expand"]
+        assert "data.discounts" in expand
+        assert "data.customer.discount" in expand
+        assert "data.items.data.discounts" in expand
+        assert "data.schedule" in expand
         record = page.records[0]
         assert isinstance(record, CanonicalSubscription)
+        assert record.discount_block == "subscription_stacked_discounts"
         assert record.has_discount is True
-        assert record.discount_source_ids == ["coupon_old", "coupon_kept"]
-        assert record.discount_started_at == datetime(
-            2023, 11, 14, 22, 13, 20, tzinfo=UTC
-        )
-        assert record.discount_starts["coupon_kept"] == datetime(
-            2024, 3, 9, 16, 0, tzinfo=UTC
-        )
+        assert record.discount_source_ids == []
+        assert record.discount_started_at is None
+        assert record.discount_starts == {}
 
     async def test_missing_coupon_scope_is_named(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -1520,3 +1578,378 @@ class TestMapCustomer:
 
         assert mapped.country is None
         assert mapped.country_hint == expected
+
+
+@pytest.mark.asyncio
+class TestDiscountAttachments:
+    async def test_item_discount_on_one_item_folds_into_the_subscription(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[_stripe_item(discounts=[_stripe_discount("coupon_item")])]
+            ),
+        )
+
+        assert record.discount_block is None
+        assert record.has_discount is True
+        assert record.discount_source_ids == ["coupon_item"]
+        assert record.discount_started_at == datetime(
+            2023, 11, 14, 22, 13, 20, tzinfo=UTC
+        )
+
+    async def test_item_and_subscription_discounts_stack(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(
+            items=[_stripe_item(discounts=[_stripe_discount("coupon_item")])]
+        )
+        subscription["discounts"] = [_stripe_discount("coupon_sub", id="di_sub")]
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block == "subscription_stacked_discounts"
+        assert record.has_discount is True
+
+    async def test_several_subscription_discounts_stack(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [
+            _stripe_discount("coupon_a"),
+            _stripe_discount("coupon_b", id="di_2"),
+        ]
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block == "subscription_stacked_discounts"
+        assert record.has_discount is True
+        assert record.discount_source_ids == []
+
+    async def test_same_subscription_coupon_listed_twice_is_one_discount(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [
+            _stripe_discount("coupon_a"),
+            _stripe_discount("coupon_a", id="di_2"),
+        ]
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block is None
+        assert record.discount_source_ids == ["coupon_a"]
+
+    async def test_several_coupons_on_one_item_stack(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(
+                        discounts=[
+                            _stripe_discount("coupon_a"),
+                            _stripe_discount("coupon_b", id="di_2"),
+                        ]
+                    )
+                ]
+            ),
+        )
+
+        assert record.discount_block == "subscription_stacked_discounts"
+        assert record.discount_source_ids == []
+
+    async def test_item_discount_on_one_of_several_items_is_blocked(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(discounts=[_stripe_discount("coupon_item")]),
+                    _stripe_item(price_id="price_2"),
+                ]
+            ),
+        )
+
+        assert record.line_item_count == 2
+        assert record.discount_block == "subscription_item_discount"
+        assert record.discount_source_ids == []
+
+    async def test_same_coupon_on_every_item_is_not_a_discount_block(
+        self, mocker: MockerFixture
+    ) -> None:
+        coupon = _stripe_discount("coupon_shared")
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(
+                items=[
+                    _stripe_item(discounts=[coupon]),
+                    _stripe_item(price_id="price_2", discounts=[coupon]),
+                ]
+            ),
+        )
+
+        assert record.discount_block is None
+        assert record.has_discount is True
+        assert record.line_item_count == 2
+
+    async def test_unresolved_item_discount_is_left_for_the_coupon_skip(
+        self, mocker: MockerFixture
+    ) -> None:
+        record = await _extracted_subscription(
+            mocker,
+            _stripe_subscription(items=[_stripe_item(discounts=["di_bare"])]),
+        )
+
+        assert record.discount_block is None
+        assert record.has_discount is True
+        assert record.discount_source_ids == []
+
+    async def test_unrestricted_customer_coupon_blocks(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(items=[_stripe_item(product_id="prod_1")])
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+        )
+        client.v1.coupons.retrieve_async = mocker.AsyncMock(
+            return_value=_coupon_restricted_to(None)
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+        record = page.records[0]
+
+        assert isinstance(record, CanonicalSubscription)
+        assert record.discount_block == "subscription_customer_discount"
+        assert record.has_discount is True
+        assert record.discount_source_ids == []
+        assert client.v1.coupons.retrieve_async.await_args.kwargs["params"][
+            "expand"
+        ] == ["applies_to"]
+
+    async def test_customer_coupon_limited_to_this_product_folds(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(items=[_stripe_item(product_id="prod_1")])
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+
+        record = await _extracted_subscription(
+            mocker, subscription, coupon=_coupon_restricted_to(["prod_1"])
+        )
+
+        assert record.discount_block is None
+        assert record.discount_source_ids == ["coupon_cust"]
+        assert record.customer_discount_source_id is None
+        assert record.discount_started_at == datetime(
+            2023, 11, 14, 22, 13, 20, tzinfo=UTC
+        )
+
+    async def test_customer_coupon_for_another_product_is_ignored(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(items=[_stripe_item(product_id="prod_1")])
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+
+        record = await _extracted_subscription(
+            mocker, subscription, coupon=_coupon_restricted_to(["prod_other"])
+        )
+
+        assert record.discount_block is None
+        assert record.has_discount is False
+        assert record.discount_source_ids == []
+
+    async def test_customer_coupon_that_also_lists_another_product_blocks(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(items=[_stripe_item(product_id="prod_1")])
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+
+        record = await _extracted_subscription(
+            mocker,
+            subscription,
+            coupon=_coupon_restricted_to(["prod_1", "prod_other"]),
+        )
+
+        assert record.discount_block == "subscription_customer_discount"
+
+    async def test_subscription_coupon_overrides_the_customer_coupon(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(items=[_stripe_item(product_id="prod_1")])
+        subscription["discounts"] = [_stripe_discount("coupon_sub")]
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+        )
+        client.v1.coupons.retrieve_async = mocker.AsyncMock()
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+        record = page.records[0]
+
+        assert isinstance(record, CanonicalSubscription)
+        assert record.discount_block is None
+        assert record.discount_source_ids == ["coupon_sub"]
+        assert record.customer_discount_source_id is None
+        client.v1.coupons.retrieve_async.assert_not_called()
+
+    async def test_item_discount_and_customer_coupon_stack(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription(
+            items=[_stripe_item(discounts=[_stripe_discount("coupon_item")])]
+        )
+        subscription["customer"] = {
+            "id": "cus_1",
+            "object": "customer",
+            "discount": _stripe_discount("coupon_cust", id="di_customer"),
+        }
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+        )
+        client.v1.coupons.retrieve_async = mocker.AsyncMock()
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+        record = page.records[0]
+
+        assert isinstance(record, CanonicalSubscription)
+        assert record.discount_block == "subscription_stacked_discounts"
+        client.v1.coupons.retrieve_async.assert_not_called()
+
+    async def test_future_phase_with_a_different_coupon_is_blocked(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [_stripe_discount("coupon_now")]
+        subscription["schedule"] = {
+            "id": "sub_sched_1",
+            "status": "active",
+            "current_phase": {"start_date": 1_700_000_000, "end_date": 1_800_000_000},
+            "phases": [
+                {
+                    "start_date": 1_700_000_000,
+                    "end_date": 1_800_000_000,
+                    "discounts": [{"discount": "di_1"}],
+                    "items": [{"price": "price_1", "discounts": []}],
+                    "add_invoice_items": [],
+                },
+                {
+                    "start_date": 1_800_000_000,
+                    "end_date": 1_900_000_000,
+                    "discounts": [{"coupon": "coupon_later"}],
+                    "items": [{"price": "price_1", "discounts": []}],
+                    "add_invoice_items": [],
+                },
+            ],
+        }
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block == "subscription_scheduled_discount"
+        assert record.discount_source_ids == ["coupon_now"]
+
+    async def test_future_phase_reusing_the_same_discount_is_kept(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [_stripe_discount("coupon_now")]
+        subscription["schedule"] = {
+            "id": "sub_sched_1",
+            "status": "active",
+            "current_phase": {"start_date": 1_700_000_000, "end_date": 1_800_000_000},
+            "phases": [
+                {
+                    "start_date": 1_800_000_000,
+                    "end_date": 1_900_000_000,
+                    "discounts": [{"discount": "di_1"}],
+                    "items": [{"price": "price_1", "discounts": []}],
+                    "add_invoice_items": [],
+                }
+            ],
+        }
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block is None
+        assert record.discount_source_ids == ["coupon_now"]
+
+    async def test_invoice_item_discount_blocks(self, mocker: MockerFixture) -> None:
+        subscription = _stripe_subscription()
+        subscription["schedule"] = {
+            "id": "sub_sched_1",
+            "status": "active",
+            "current_phase": {"start_date": 1_700_000_000, "end_date": 1_800_000_000},
+            "phases": [
+                {
+                    "start_date": 1_700_000_000,
+                    "end_date": 1_800_000_000,
+                    "discounts": [],
+                    "items": [{"price": "price_1", "discounts": []}],
+                    "add_invoice_items": [
+                        {"price": "price_fee", "discounts": [{"coupon": "coupon_fee"}]}
+                    ],
+                }
+            ],
+        }
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block == "subscription_invoice_item_discount"
+        assert record.has_discount is True
+
+    async def test_unexpanded_schedule_blocks(self, mocker: MockerFixture) -> None:
+        subscription = _stripe_subscription()
+        subscription["schedule"] = "sub_sched_1"
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block == "subscription_scheduled_discount"
+
+    async def test_released_schedule_does_not_block(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [_stripe_discount("coupon_now")]
+        subscription["schedule"] = {
+            "id": "sub_sched_1",
+            "status": "released",
+            "phases": [
+                {
+                    "start_date": 1_800_000_000,
+                    "discounts": [{"coupon": "coupon_later"}],
+                    "items": [],
+                    "add_invoice_items": [],
+                }
+            ],
+        }
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block is None
+        assert record.discount_source_ids == ["coupon_now"]

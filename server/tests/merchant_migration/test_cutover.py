@@ -356,6 +356,30 @@ class TestRun:
         assert subscription.discount_id == polar_discount.id
         assert subscription.discount_applied_at == applied_at
 
+    async def test_blocked_discount_stays_on_stripe(
+        self,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        await _discounted_pending(
+            save_fixture,
+            pending_record,
+            discount_block="subscription_stacked_discounts",
+        )
+        adapter = _source(
+            has_discount=True,
+            discount_block="subscription_stacked_discounts",
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert outcome.message is not None
+        assert "stacks discounts" in outcome.message
+        assert "stays on Stripe" in outcome.message
+        _assert_left_alone(adapter, pending_record)
+
     async def test_repeating_discount_does_not_use_staged_start(
         self,
         save_fixture: SaveFixture,

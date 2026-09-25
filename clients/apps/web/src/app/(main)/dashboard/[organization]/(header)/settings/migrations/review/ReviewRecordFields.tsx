@@ -1,136 +1,123 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
-import { Text } from '@polar-sh/orbit'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { buildCustomerDashboardPath } from '@/utils/customer'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ReactNode } from 'react'
+import Link from 'next/link'
+import { ReactNode, useContext } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
-import { automaticTaxLabel, intervalLabel, renewalDate } from '../recordFormat'
 import { BillingAddressEditor } from './BillingAddressEditor'
-import { ReviewRow, rowAmount } from './reviewRows'
-import { ReviewStatusIndicator } from './ReviewStatusIndicator'
+import { needsAttention, ReviewRow } from './reviewRows'
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+export function RecordCard({
+  title,
+  action,
+  children,
+}: {
+  title: string
+  action?: ReactNode
+  children?: ReactNode
+}) {
   return (
-    <Box flexDirection="column" rowGap="l" minWidth={0}>
-      <Text variant="body" as="h3">
-        {title}
-      </Text>
-      <Box flexDirection="column" rowGap="m" minWidth={0}>
-        {children}
+    <Box
+      as="section"
+      flexDirection="column"
+      rowGap="l"
+      padding="l"
+      borderRadius="l"
+      backgroundColor="background-card"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      minWidth={0}
+    >
+      <Box alignItems="center" justifyContent="between" columnGap="m">
+        <Text variant="heading-xxs" as="h3">
+          {title}
+        </Text>
+        {action}
       </Box>
+      {children ? (
+        <Box flexDirection="column" rowGap="m" minWidth={0}>
+          {children}
+        </Box>
+      ) : null}
     </Box>
   )
 }
 
-export function SubscriptionFields({
-  row,
-  migrationId,
-}: {
-  row: ReviewRow
-  migrationId: string
-}) {
-  const tax = automaticTaxLabel(row)
+export function RecordReason({ row }: { row: ReviewRow }) {
+  const { organization } = useContext(OrganizationContext)
+  if (!row.reason) return null
+
+  const polarCustomerHref = row.conflicting_customer_id
+    ? buildCustomerDashboardPath(organization.slug, {
+        id: row.conflicting_customer_id,
+      })
+    : null
+  const attention = needsAttention(row)
 
   return (
-    <Section title="Subscription">
-      <DetailCell label="Import" value={<ReviewStatusIndicator row={row} />} />
-      {row.subtitle ? <DetailCell label="Status" value={row.subtitle} /> : null}
-      {row.discount_name ? (
-        <DetailCell
-          label="Discount"
-          value={
-            row.discount_code
-              ? `${row.discount_name} (${row.discount_code})`
-              : row.discount_name
-          }
-        />
-      ) : null}
-      <DetailCell label="Renewal" value={renewalDate(row)} />
-      {tax ? <DetailCell label="Stripe automatic tax" value={tax} /> : null}
-      <ImportTaxPicker
-        key={row.record_id ?? row.source_id}
-        migrationId={migrationId}
-        row={row}
-      />
-      {row.import_status === 'failed' ? (
-        <DetailCell label="Last run" value="Failed" />
-      ) : null}
-      <DetailCell
-        label="Stripe subscription ID"
-        value={row.source_id}
-        monospace
-      />
-    </Section>
-  )
-}
-
-export function ProductFields({ row }: { row: ReviewRow }) {
-  const amount = rowAmount(row)
-  const interval = intervalLabel(row)
-  const missing = row.reason_code === 'subscription_product_not_importable'
-  if (!row.product_name && !missing) {
-    return null
-  }
-
-  return (
-    <Section title="Product">
-      <DetailCell label="Name" value={row.product_name} />
-      {amount ? <DetailCell label="Price" value={amount.money} /> : null}
-      {interval ? (
-        <DetailCell label="Renewal interval" value={interval} />
-      ) : null}
-      {row.product_source_id ? (
-        <DetailCell
-          label="Stripe product ID"
-          value={row.product_source_id}
-          monospace
-        />
-      ) : null}
-    </Section>
-  )
-}
-
-export function CustomerFields({
-  row,
-  migrationId,
-}: {
-  row: ReviewRow
-  migrationId: string
-}) {
-  if (!row.customer_email && !row.customer_name && !row.customer_source_id) {
-    return null
-  }
-
-  return (
-    <Section title="Customer">
-      {row.customer_name ? (
-        <DetailCell label="Name" value={row.customer_name} />
-      ) : null}
-      {row.customer_email ? (
-        <DetailCell label="Email" value={row.customer_email} />
-      ) : null}
-      <DetailCell
-        label="Billing country"
-        value={
-          row.entity === 'subscriptions' && row.record_id ? (
-            <BillingAddressEditor
-              key={row.record_id}
-              migrationId={migrationId}
-              row={row}
-            />
+    // Alert grows to fill a column parent, so keep it in its own row.
+    <Box>
+      <Alert
+        variant={attention ? 'warning' : 'info'}
+        title={attention ? 'Needs your attention' : 'Good to know'}
+        description={
+          polarCustomerHref ? (
+            <>
+              {row.reason}{' '}
+              <Link href={polarCustomerHref}>View Polar customer</Link>
+            </>
           ) : (
-            row.customer_country
+            row.reason
           )
         }
       />
-      {row.customer_source_id ? (
-        <DetailCell
-          label="Stripe customer ID"
-          value={row.customer_source_id}
-          monospace
-        />
-      ) : null}
-    </Section>
+    </Box>
+  )
+}
+
+export function BillingCountryField({
+  row,
+  migrationId,
+}: {
+  row: ReviewRow
+  migrationId: string
+}) {
+  return (
+    <DetailCell
+      label="Billing country"
+      value={
+        row.entity === 'subscriptions' && row.record_id ? (
+          <BillingAddressEditor
+            key={row.record_id}
+            migrationId={migrationId}
+            row={row}
+          />
+        ) : (
+          row.customer_country
+        )
+      }
+    />
+  )
+}
+
+export function TaxAfterSwitchField({
+  row,
+  migrationId,
+}: {
+  row: ReviewRow
+  migrationId: string
+}) {
+  if (row.entity !== 'subscriptions') return null
+  return (
+    <ImportTaxPicker
+      key={row.record_id ?? row.source_id}
+      migrationId={migrationId}
+      row={row}
+    />
   )
 }

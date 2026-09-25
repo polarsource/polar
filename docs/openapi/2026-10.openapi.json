@@ -65841,6 +65841,18 @@
             ],
             "title": "Dependencies Imported",
             "description": "Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows."
+          },
+          "cancels_at_period_end": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancels At Period End",
+            "description": "Whether the source subscription is set to cancel at period end. None for non-subscription rows."
           }
         },
         "type": "object",
@@ -65872,7 +65884,8 @@
           "cutover_error",
           "renews_at",
           "has_payment_method",
-          "dependencies_imported"
+          "dependencies_imported",
+          "cancels_at_period_end"
         ],
         "title": "MerchantMigrationRecordItem"
       },

@@ -1138,6 +1138,97 @@ class TestAlreadyLiveOnPolar:
 
 
 @pytest.mark.asyncio
+class TestCancelAtPeriodEnd:
+    """A selected ending subscription moves, and still ends on that date."""
+
+    async def test_moves_and_keeps_the_scheduled_end(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        adapter = _source(cancel_at_period_end=True, current_period_end=period_end)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.current_period_end == period_end
+        assert subscription.ended_at is None
+
+    async def test_moves_inside_the_renewal_safety_window(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(hours=6)
+        adapter = _source(cancel_at_period_end=True, current_period_end=period_end)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.ended_at is None
+
+    async def test_retry_keeps_the_staged_end_after_the_source_was_stopped(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True, current_period_end=period_end
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(**STOPPED_BY_US, current_period_end=period_end)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == []
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at == period_end
+        assert subscription.ended_at is None
+
+    async def test_renewing_subscription_stays_renewing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.cancel_at_period_end is False
+        assert subscription.ends_at is None
+        assert subscription.ended_at is None
+
+
+@pytest.mark.asyncio
 class TestSkips:
     """Every skip leaves the source billing."""
 
@@ -1153,11 +1244,6 @@ class TestSkips:
                 {"status": CanonicalSubscriptionStatus.past_due},
                 None,
                 id="payment-failing",
-            ),
-            pytest.param(
-                {"cancel_at_period_end": True},
-                "cancel at the end of the period",
-                id="already-ending",
             ),
             pytest.param(
                 {"current_period_end": utc_now() + timedelta(hours=6)},

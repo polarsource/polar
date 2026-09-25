@@ -148,8 +148,8 @@ class CanonicalSubscription:
     # Per-coupon apply times, so a later kept coupon doesn't inherit the first
     # (discarded) coupon's start.
     discount_starts: dict[str, datetime] = field(default_factory=dict)
-    # The customer already asked to stop: the source won't renew it. Nothing left
-    # for Polar to take over, so the cutover leaves it where it is.
+    # The customer already asked to stop. A selected cutover takes it over and
+    # keeps this end instead of renewing it.
     cancel_at_period_end: bool = False
     # When the source trial ends, so the cutover can keep the subscription
     # trialing on Polar until then instead of billing it early.

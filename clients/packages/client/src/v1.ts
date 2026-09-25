@@ -25400,6 +25400,11 @@ export interface components {
        * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
        */
       dependencies_imported: boolean | null
+      /**
+       * Cancels At Period End
+       * @description Whether the source subscription is set to cancel at period end. None for non-subscription rows.
+       */
+      cancels_at_period_end: boolean | null
     }
     /** MerchantMigrationRecordNotFound */
     MerchantMigrationRecordNotFound: {

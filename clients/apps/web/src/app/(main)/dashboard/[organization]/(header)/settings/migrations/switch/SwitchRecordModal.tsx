@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { automaticTaxLabel, renewalDate } from '../recordFormat'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
+import { periodEndMoveNotice } from './switchCopy'
 import { needsAttention, SwitchRow } from './switchRows'
 
 export function SwitchRecordModal({
@@ -18,6 +19,7 @@ export function SwitchRecordModal({
   onClose: () => void
 }) {
   const tax = automaticTaxLabel(row)
+  const periodEndNotice = periodEndMoveNotice(row)
 
   return (
     <Box flexDirection="column" height="100%">
@@ -34,7 +36,15 @@ export function SwitchRecordModal({
         flex={1}
         overflowY="auto"
       >
-        {row.cutover_error && (
+        {periodEndNotice ? (
+          <Box>
+            <Alert
+              variant="warning"
+              title="Cancels at period end"
+              description={periodEndNotice}
+            />
+          </Box>
+        ) : row.cutover_error ? (
           <Box>
             <Alert
               variant={needsAttention(row) ? 'warning' : 'info'}
@@ -46,7 +56,7 @@ export function SwitchRecordModal({
               description={row.cutover_error}
             />
           </Box>
-        )}
+        ) : null}
 
         <Box flexDirection="column" rowGap="l" minWidth={0}>
           <Text variant="body" as="h3">

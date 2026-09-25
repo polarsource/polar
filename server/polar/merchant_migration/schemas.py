@@ -246,6 +246,12 @@ class MerchantMigrationRecordItem(Schema):
             "so it can be created at cutover. Null for non-subscription rows."
         ),
     )
+    cancels_at_period_end: bool | None = Field(
+        description=(
+            "Whether the source subscription is set to cancel at period end. "
+            "None for non-subscription rows."
+        ),
+    )
 
 
 class MerchantMigrationRecordTaxUpdate(Schema):

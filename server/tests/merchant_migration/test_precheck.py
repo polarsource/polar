@@ -557,6 +557,21 @@ class TestClassifyRecords:
         assert items[0].reason_code is None
         assert items[0].discount_name == "Launch"
         assert items[0].discount_code == "LAUNCH"
+        assert items[0].cancels_at_period_end is False
+
+    def test_cancel_at_period_end_stays_importable(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(build_subscription(), cancel_at_period_end=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].cancels_at_period_end is True
 
     def test_subscription_keeps_first_importable_coupon(self) -> None:
         records: list[CanonicalRecord] = [

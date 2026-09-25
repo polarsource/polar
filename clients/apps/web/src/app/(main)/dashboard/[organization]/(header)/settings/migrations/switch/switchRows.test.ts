@@ -63,6 +63,19 @@ describe('isSwitchable', () => {
     expect(isSwitchable(row({ cutover_status: 'failed' }))).toBe(true)
   })
 
+  it('stays true when the source will cancel at period end', () => {
+    expect(isSwitchable(row({ cancels_at_period_end: true }))).toBe(true)
+    expect(
+      isSwitchable(
+        row({
+          cutover_status: 'skipped',
+          cutover_error:
+            "It's set to cancel at the end of the period on the source, so there is no renewal for Polar to take over. It stays there until it ends.",
+        }),
+      ),
+    ).toBe(true)
+  })
+
   it('is false once moved', () => {
     expect(isSwitchable(row({ cutover_status: 'moved' }))).toBe(false)
   })

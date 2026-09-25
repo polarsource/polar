@@ -2,8 +2,12 @@ import { API_URL, ORG_TOKEN } from './constants'
 
 export type ApiInit = { method?: string; token?: string; body?: unknown }
 
-export const api = async <T>(path: string, init: ApiInit = {}): Promise<T> => {
-  const response = await fetch(`${API_URL}${path}`, {
+const RATE_LIMIT_RETRIES = 3
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const request = (path: string, init: ApiInit) =>
+  fetch(`${API_URL}${path}`, {
     method: init.method ?? 'GET',
     headers: {
       ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
@@ -13,6 +17,17 @@ export const api = async <T>(path: string, init: ApiInit = {}): Promise<T> => {
     },
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
   })
+
+export const api = async <T>(path: string, init: ApiInit = {}): Promise<T> => {
+  let response = await request(path, init)
+  for (
+    let retry = 0;
+    response.status === 429 && retry < RATE_LIMIT_RETRIES;
+    retry++
+  ) {
+    await sleep(Number(response.headers.get('retry-after') ?? 5) * 1000)
+    response = await request(path, init)
+  }
   if (!response.ok) {
     throw new Error(
       `${init.method ?? 'GET'} ${path} -> ${response.status} ${await response.text()}`,

@@ -17,7 +17,7 @@ const NAVIGATION_TIMEOUT = 120_000
 type Check = () => Promise<boolean>
 export type Meta = { checkoutUrl?: string }
 
-const SETTLE = { timeout: 5_000, interval: 250 }
+const SETTLE = { timeout: 5_000, interval: 1_000 }
 const digits = (text: string) => text.replace(/\D/g, '')
 const stamp = () => new Date().toISOString().slice(11, 19)
 

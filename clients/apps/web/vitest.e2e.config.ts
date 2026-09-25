@@ -14,7 +14,7 @@ export default defineConfig({
       ['json', { outputFile: 'e2e/artifacts/results.json' }],
     ],
     environment: 'node',
-    maxWorkers: 4,
+    maxWorkers: process.env.CI ? 1 : 4,
     retry: process.env.CI ? 2 : 0,
     allowOnly: !process.env.CI,
     testTimeout: 180_000,

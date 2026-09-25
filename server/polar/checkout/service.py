@@ -1621,24 +1621,30 @@ class CheckoutService:
         If the intent can't be canceled anymore because the customer completed it
         in the meantime, the checkout is left confirmed.
         """
-        intent_id = checkout.payment_processor_metadata.get("intent_id")
-        if checkout.status != CheckoutStatus.confirmed or intent_id is None:
+        if checkout.status != CheckoutStatus.confirmed:
             return checkout
 
-        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
-        try:
-            if checkout.is_payment_required:
-                intent = await stripe_service.cancel_payment_intent(intent_id)
-            else:
-                intent = await stripe_service.cancel_setup_intent(intent_id)
-        except stripe_lib.InvalidRequestError:
-            if checkout.is_payment_required:
-                intent = await stripe_service.get_payment_intent(intent_id)
-            else:
-                intent = await stripe_service.get_setup_intent(intent_id)
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            intent_id = checkout.payment_processor_metadata.get("intent_id")
+            if intent_id is None:
+                return checkout
 
-        if intent.status != "canceled":
-            return checkout
+            intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
+            try:
+                if checkout.is_payment_required:
+                    intent = await stripe_service.cancel_payment_intent(intent_id)
+                else:
+                    intent = await stripe_service.cancel_setup_intent(intent_id)
+            except stripe_lib.InvalidRequestError:
+                if checkout.is_payment_required:
+                    intent = await stripe_service.get_payment_intent(intent_id)
+                else:
+                    intent = await stripe_service.get_setup_intent(intent_id)
+
+            if intent.status != "canceled":
+                return checkout
+        else:
+            raise NotImplementedError()
 
         return await self.handle_failure(session, checkout)
 

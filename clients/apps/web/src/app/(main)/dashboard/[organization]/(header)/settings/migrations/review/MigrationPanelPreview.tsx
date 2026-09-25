@@ -10,6 +10,7 @@ import {
   useAssessmentLabels,
 } from './AssessmentPanelParts'
 import { DecisionsFirstPanel } from './DecisionsFirstPanel'
+import { DecisionsThenCardsPanel } from './DecisionsThenCardsPanel'
 import { EntityCardsPanel } from './EntityCardsPanel'
 import { PREVIEW_MIGRATION_ID, assessmentPreviewRow } from './previewFixture'
 import { SummaryDisclosurePanel } from './SummaryDisclosurePanel'
@@ -28,6 +29,7 @@ export function MigrationPanelPreview() {
     { id: '1', title: labels.optionDecisions, Panel: DecisionsFirstPanel },
     { id: '2', title: labels.optionCards, Panel: EntityCardsPanel },
     { id: '3', title: labels.optionSummary, Panel: SummaryDisclosurePanel },
+    { id: '4', title: labels.optionCombined, Panel: DecisionsThenCardsPanel },
   ]
   const visible = selected
     ? options.filter((option) => option.id === selected)

@@ -49,6 +49,7 @@ export function useAssessmentLabels() {
     optionDecisions: t('migrationAssessment.preview.optionDecisions'),
     optionCards: t('migrationAssessment.preview.optionCards'),
     optionSummary: t('migrationAssessment.preview.optionSummary'),
+    optionCombined: t('migrationAssessment.preview.optionCombined'),
   }
 }
 

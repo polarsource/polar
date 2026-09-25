@@ -498,6 +498,7 @@ export default {
       optionDecisions: 'Option 1 — decisions on top',
       optionCards: 'Option 2 — one card per entity',
       optionSummary: 'Option 3 — summary and details',
+      optionCombined: 'Option 4 — decisions then cards',
     },
   },
 } as const

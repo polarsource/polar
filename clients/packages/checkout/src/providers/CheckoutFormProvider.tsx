@@ -333,8 +333,6 @@ export const CheckoutFormProvider = ({
         throw error
       }
 
-      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
-
       const { intent_status, intent_client_secret } =
         updatedCheckout.payment_processor_metadata
       if (intent_status === 'requires_action') {
@@ -364,6 +362,7 @@ export const CheckoutFormProvider = ({
         }
       }
 
+      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
       setLoading(false)
       return updatedCheckout
     },

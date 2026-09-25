@@ -774,6 +774,7 @@ describe('CheckoutFormProvider', () => {
 
       expect(handleNextAction).toHaveBeenCalledTimes(1)
       expect(cancelPayment).toHaveBeenCalledTimes(1)
+      expect(getCtx().loadingLabel).toBe('Processing payment')
       expect(getCtx().loading).toBe(false)
       expect(getCtx().form.formState.errors.root?.message).toBeDefined()
     })

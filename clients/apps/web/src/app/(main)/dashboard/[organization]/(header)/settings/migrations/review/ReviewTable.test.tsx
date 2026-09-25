@@ -100,8 +100,6 @@ vi.mock('@polar-sh/orbit', () => ({
   SegmentedControl: () => null,
   Grid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Input: () => null,
-  DataTableColumnDef: undefined,
-  StatusColor: undefined,
 }))
 
 vi.mock('@polar-sh/orbit/Box', () => ({

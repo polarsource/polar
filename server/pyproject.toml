@@ -10,7 +10,7 @@ dependencies = [
   "asyncpg>=0.29.0",
   "alembic>=1.18.5",
   "sqlalchemy[asyncio]>=2.0.51",
-  "greenlet==3.5.5", # Potential culprit for Sep 23-24 memory leak
+  "greenlet>=3.5.5",
   "structlog>=26.1.0",
   "githubkit==0.16.1",
   "redis>=5.0.4",

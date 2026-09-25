@@ -1,19 +1,17 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { buildCustomerDashboardPath } from '@/utils/customer'
-import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
+import { InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Link from 'next/link'
-import { useContext } from 'react'
+import { assessmentFacts } from './assessmentFacts'
 import {
-  CustomerFields,
-  ProductFields,
-  SubscriptionFields,
+  BillingCountryField,
+  RecordCard,
+  RecordReason,
+  TaxAfterSwitchField,
 } from './ReviewRecordFields'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
-import { needsAttention, ReviewRow } from './reviewRows'
+import { ReviewRow } from './reviewRows'
 
 export function ReviewRecordModal({
   row,
@@ -24,13 +22,15 @@ export function ReviewRecordModal({
   migrationId: string
   onClose: () => void
 }) {
-  const { organization } = useContext(OrganizationContext)
-  const isSubscription = row.entity === 'subscriptions'
-  const polarCustomerHref = row.conflicting_customer_id
-    ? buildCustomerDashboardPath(organization.slug, {
-        id: row.conflicting_customer_id,
-      })
+  const facts = assessmentFacts(row)
+  const discount = row.discount_name
+    ? row.discount_code
+      ? `${row.discount_name} (${row.discount_code})`
+      : row.discount_name
     : null
+  const showCustomer = Boolean(
+    facts.customerName || row.customer_email || facts.customerId,
+  )
 
   return (
     <Box flexDirection="column" height="100%">
@@ -45,48 +45,108 @@ export function ReviewRecordModal({
         rowGap="xl"
         padding="xl"
         flex={1}
+        minWidth={0}
         overflowY="auto"
       >
-        {row.reason && (
-          // Alert grows to fill a column parent, so keep it in its own row.
-          <Box>
-            <Alert
-              variant={needsAttention(row) ? 'warning' : 'info'}
-              title={
-                needsAttention(row) ? 'Needs your attention' : 'Good to know'
-              }
-              description={
-                polarCustomerHref ? (
-                  <>
-                    {row.reason}{' '}
-                    <Link href={polarCustomerHref}>View Polar customer</Link>
-                  </>
-                ) : (
-                  row.reason
-                )
-              }
-            />
+        {facts.isSubscription ? (
+          <Box
+            flexDirection="column"
+            rowGap="l"
+            padding="l"
+            borderRadius="l"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          >
+            <Box alignItems="center" justifyContent="between" columnGap="m">
+              <Text variant="heading-xs" as="h3">
+                Before switch
+              </Text>
+              <ReviewStatusIndicator row={row} />
+            </Box>
+            <RecordReason row={row} />
+            <BillingCountryField row={row} migrationId={migrationId} />
+            <TaxAfterSwitchField row={row} migrationId={migrationId} />
           </Box>
+        ) : (
+          <RecordReason row={row} />
         )}
 
-        {isSubscription ? (
-          <SubscriptionFields row={row} migrationId={migrationId} />
-        ) : (
-          <Box flexDirection="column" rowGap="l" minWidth={0}>
-            <Text variant="body" as="h3">
-              Import
-            </Text>
-            <Box flexDirection="column" rowGap="m" minWidth={0}>
+        {showCustomer ? (
+          <RecordCard title="Customer">
+            {facts.customerName ? (
+              <DetailCell label="Name" value={facts.customerName} />
+            ) : null}
+            {row.customer_email ? (
+              <DetailCell label="Email" value={row.customer_email} />
+            ) : null}
+            {facts.customerId ? (
               <DetailCell
-                label="Status"
-                value={<ReviewStatusIndicator row={row} />}
+                label="Stripe customer ID"
+                value={facts.customerId}
+                monospace
               />
-              <DetailCell label="Stripe ID" value={row.source_id} monospace />
-            </Box>
-          </Box>
+            ) : null}
+          </RecordCard>
+        ) : null}
+
+        {facts.showProduct ? (
+          <RecordCard title="Product">
+            {facts.productName ? (
+              <DetailCell label="Name" value={facts.productName} />
+            ) : null}
+            {facts.price ? (
+              <DetailCell label="Price" value={facts.price} />
+            ) : null}
+            {facts.interval ? (
+              <DetailCell label="Renewal interval" value={facts.interval} />
+            ) : null}
+            {facts.productId ? (
+              <DetailCell
+                label="Stripe product ID"
+                value={facts.productId}
+                monospace
+              />
+            ) : null}
+          </RecordCard>
+        ) : null}
+
+        {facts.isSubscription ? (
+          <RecordCard
+            title="Subscription"
+            action={<ReviewStatusIndicator row={row} />}
+          >
+            {facts.status ? (
+              <DetailCell label="Status" value={facts.status} />
+            ) : null}
+            {discount ? <DetailCell label="Discount" value={discount} /> : null}
+            {facts.renewal ? (
+              <DetailCell label="Renewal" value={facts.renewal} />
+            ) : null}
+            {facts.automaticTax ? (
+              <DetailCell
+                label="Stripe automatic tax"
+                value={facts.automaticTax}
+              />
+            ) : null}
+            {facts.failed ? (
+              <DetailCell label="Last run" value="Failed" />
+            ) : null}
+            <DetailCell
+              label="Stripe subscription ID"
+              value={facts.sourceId}
+              monospace
+            />
+          </RecordCard>
+        ) : (
+          <RecordCard title="Import">
+            <DetailCell
+              label="Status"
+              value={<ReviewStatusIndicator row={row} />}
+            />
+            <DetailCell label="Stripe ID" value={facts.sourceId} monospace />
+          </RecordCard>
         )}
-        <ProductFields row={row} />
-        <CustomerFields row={row} migrationId={migrationId} />
       </Box>
     </Box>
   )

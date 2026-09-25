@@ -10,11 +10,10 @@ import {
   AssessmentPanelProps,
   BillingCountryField,
   IdCopy,
-  ProminentFact,
   TaxAfterSwitchField,
   useAssessmentLabels,
 } from './AssessmentPanelParts'
-import { EntityCard, ProductCard } from './EntityCardsPanel'
+import { EntityCard } from './EntityCardsPanel'
 import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
 export function DecisionsThenCardsPanel({
@@ -61,7 +60,24 @@ export function DecisionsThenCardsPanel({
           <DetailCell label={labels.name} value={facts.customerName} />
         ) : null}
       </EntityCard>
-      <ProductCard labels={labels} facts={facts} />
+      {facts.showProduct ? (
+        <EntityCard
+          title={labels.product}
+          footer={
+            <IdCopy label={labels.stripeProductId} value={facts.productId} />
+          }
+        >
+          {facts.productName ? (
+            <DetailCell label={labels.name} value={facts.productName} />
+          ) : null}
+          {facts.price ? (
+            <DetailCell label={labels.price} value={facts.price} />
+          ) : null}
+          {facts.interval ? (
+            <DetailCell label={labels.renewalInterval} value={facts.interval} />
+          ) : null}
+        </EntityCard>
+      ) : null}
       <EntityCard
         title={labels.subscription}
         action={<ReviewStatusIndicator row={row} />}
@@ -77,10 +93,10 @@ export function DecisionsThenCardsPanel({
         }
       >
         {facts.status ? (
-          <ProminentFact label={labels.status} value={facts.status} />
+          <DetailCell label={labels.status} value={facts.status} />
         ) : null}
         {facts.renewal ? (
-          <ProminentFact label={labels.renewal} value={facts.renewal} />
+          <DetailCell label={labels.renewal} value={facts.renewal} />
         ) : null}
         {facts.automaticTax ? (
           <DetailCell

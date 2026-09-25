@@ -54,7 +54,13 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: "npm"
-    directory: "/clients"
+    directories:
+      - "/clients"
+      - "/clients/apps/*"
+      - "/clients/adapters/*"
+      - "/clients/packages/*"
+      - "/clients/examples/*"
+      - "/clients/scripts/*"
     schedule:
       interval: "weekly"
     cooldown:

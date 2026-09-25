@@ -104,6 +104,7 @@ resource "aws_vpc_security_group_ingress_rule" "redis_nlb_b" {
 locals {
   files_bucket_name        = "polar-sandbox-files"
   files_public_bucket_name = "polar-public-sandbox-files"
+  diagnostics_bucket_name  = "polar-sandbox-diagnostics"
 
   worker_sqs_queue_prefix = "polar-sandbox-tasks"
 
@@ -259,6 +260,12 @@ data "aws_iam_policy_document" "s3_access" {
     sid       = "LogsWrite"
     actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${local.aws_s3_config.logs_bucket_name}/*"]
+  }
+
+  statement {
+    sid       = "DiagnosticsWrite"
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${local.diagnostics_bucket_name}/*"]
   }
 }
 

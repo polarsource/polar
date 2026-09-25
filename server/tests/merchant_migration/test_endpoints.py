@@ -491,6 +491,7 @@ class TestReconnectSource:
     async def test_replaces_key_for_the_same_account(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -506,6 +507,16 @@ class TestReconnectSource:
 
         assert response.status_code == 200
         assert response.json()["id"] == str(migration.id)
+
+        stored = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert stored is not None
+        assert (
+            await merchant_migration_service._decrypt_stripe_api_key(stored)
+            == "rk_test_replaced"
+        )
+        assert stored.source_credentials["stripe_user_id"] == "acct_test"
 
 
 StartAndExecutePrecheck = Callable[[MerchantMigration], Awaitable[None]]

@@ -15,6 +15,10 @@ class SlackPayload(TypedDict):
     blocks: NotRequired[list[dict[str, Any]]]
 
 
+def escape_slack_text(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def get_branded_slack_payload(payload: SlackPayload) -> SlackPayload:
     return {
         **payload,

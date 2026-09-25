@@ -2,7 +2,7 @@ import inspect
 import json
 import typing
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from inspect import Parameter, Signature
 from typing import (
     Annotated,
@@ -28,6 +28,7 @@ from pydantic_core import core_schema as cs
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
+from polar.customer.schemas.customer import CustomerBase
 from polar.customer.schemas.customer import CustomerResponse as CustomerSchema
 from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
@@ -41,6 +42,7 @@ from polar.integrations.discord.webhook import (
 from polar.integrations.slack.payload import (
     SlackPayload,
     SlackText,
+    escape_slack_text,
     get_branded_slack_payload,
 )
 from polar.kit.schemas import IDSchema, Schema
@@ -133,6 +135,18 @@ class SkipEvent(PolarError):
         self.format = format
         message = f"Skipping event {event} for format {format}"
         super().__init__(message)
+
+
+SLACK_FIELD_MAX_LENGTH = 1000
+PENDING_UPDATE_NOTIFICATION_WINDOW = timedelta(minutes=1)
+
+
+def get_slack_customer_field(customer: CustomerBase) -> SlackText:
+    lines = [
+        escape_slack_text(line) for line in (customer.name, customer.email) if line
+    ]
+    value = "\n".join(lines) or "Team Customer"
+    return {"type": "mrkdwn", "text": f"*Customer*\n{value}"}
 
 
 class BaseWebhookPayload(Schema):
@@ -454,10 +468,7 @@ class WebhookOrderPayloadBase(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.description}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {
-                "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
-            },
+            get_slack_customer_field(self.data.customer),
         ]
         if self.data.subscription is not None:
             fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})
@@ -584,10 +595,7 @@ class WebhookOrderRefundedPayload(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.description}"},
             {"type": "mrkdwn", "text": f"*Refunded*\n{amount_display}"},
-            {
-                "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
-            },
+            get_slack_customer_field(self.data.customer),
         ]
         if self.data.subscription is not None:
             fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})
@@ -666,10 +674,7 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {
-                "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
-            },
+            get_slack_customer_field(self.data.customer),
         ]
         payload: SlackPayload = get_branded_slack_payload(
             {
@@ -862,6 +867,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         else:
             ends_at = format_date(self.data.ended_at, locale="en_US")
         fields.append({"type": "mrkdwn", "text": f"*Ends At*\n{ends_at}"})
+        fields.extend(self._get_slack_cancellation_fields())
 
         payload: SlackPayload = get_branded_slack_payload(
             {
@@ -943,7 +949,10 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
                             "type": "mrkdwn",
                             "text": "Subscription has been revoked.",
                         },
-                        "fields": self._get_slack_fields(target),
+                        "fields": [
+                            *self._get_slack_fields(target),
+                            *self._get_slack_cancellation_fields(),
+                        ],
                     }
                 ],
             }
@@ -986,6 +995,69 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
         return json.dumps(payload)
 
+    def _get_pending_update_slack_payload(self, target: User | Organization) -> str:
+        pending_update = self.data.pending_update
+        assert pending_update is not None
+        fields = self._get_slack_fields(target)
+        if pending_update.product_id is not None:
+            fields.append(
+                {
+                    "type": "mrkdwn",
+                    "text": f"*New Product ID*\n{pending_update.product_id}",
+                }
+            )
+        if pending_update.seats is not None:
+            fields.append(
+                {"type": "mrkdwn", "text": f"*New Seats*\n{pending_update.seats}"}
+            )
+        if pending_update.units is not None:
+            fields.append(
+                {"type": "mrkdwn", "text": f"*New Units*\n{pending_update.units}"}
+            )
+        applies_at = format_date(pending_update.applies_at, locale="en_US")
+        fields.append({"type": "mrkdwn", "text": f"*Applies At*\n{applies_at}"})
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription change has been scheduled.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription change has been scheduled for the next billing period.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _has_new_pending_update(self) -> bool:
+        pending_update = self.data.pending_update
+        if pending_update is None:
+            return False
+        recorded_at = pending_update.modified_at or pending_update.created_at
+        return self.timestamp - recorded_at < PENDING_UPDATE_NOTIFICATION_WINDOW
+
+    def _get_slack_cancellation_fields(self) -> list[SlackText]:
+        fields: list[SlackText] = []
+        if self.data.customer_cancellation_reason is not None:
+            reason = self.data.customer_cancellation_reason.replace("_", " ")
+            fields.append(
+                {"type": "mrkdwn", "text": f"*Reason*\n{reason.capitalize()}"}
+            )
+        if self.data.customer_cancellation_comment:
+            comment = self.data.customer_cancellation_comment
+            if len(comment) > SLACK_FIELD_MAX_LENGTH:
+                comment = f"{comment[: SLACK_FIELD_MAX_LENGTH - 1]}…"
+            fields.append(
+                {"type": "mrkdwn", "text": f"*Comment*\n{escape_slack_text(comment)}"}
+            )
+        return fields
+
     def _get_discord_fields(
         self, target: User | Organization
     ) -> list[DiscordEmbedField]:
@@ -1008,10 +1080,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {
-                "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
-            },
+            get_slack_customer_field(self.data.customer),
             {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
         ]
         return fields
@@ -1025,7 +1094,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
     To listen specifically for renewals, listen to `subscription.cycled`.
 
-    **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
+    **Discord & Slack support:** On cancellation, past due, and revocation. Slack is also notified when a change is scheduled for the next period. Renewals are skipped.
     """
 
     type: Literal[WebhookEventType.subscription_updated]
@@ -1058,12 +1127,15 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
         if self.data.status == SubscriptionStatus.past_due:
             return self._get_past_due_slack_payload(target)
 
-        # Avoid to send notifications for subscription renewals (not interesting)
-        # TODO: Notify about upgrades and downgrades
-        if not self.data.ends_at and not self.data.ended_at:
-            raise SkipEvent(self.type, WebhookFormat.slack)
+        if self.data.ends_at or self.data.ended_at:
+            return self._get_canceled_slack_payload(target)
 
-        return self._get_canceled_slack_payload(target)
+        if self._has_new_pending_update():
+            return self._get_pending_update_slack_payload(target)
+
+        # Avoid to send notifications for subscription renewals (not interesting)
+        # TODO: Notify about immediate upgrades and downgrades
+        raise SkipEvent(self.type, WebhookFormat.slack)
 
 
 class WebhookSubscriptionActivePayload(WebhookSubscriptionUpdatedPayloadBase):

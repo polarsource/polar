@@ -22,7 +22,11 @@ from polar.kit.schemas import IDSchema
 from polar.kit.utils import utc_now
 from polar.kit.versioning import Version
 from polar.models.organization import Organization
-from polar.models.subscription import Subscription
+from polar.models.subscription import (
+    CustomerCancellationReason,
+    Subscription,
+    SubscriptionStatus,
+)
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
@@ -30,6 +34,8 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
+from polar.subscription.schemas import PendingSubscriptionUpdate
+from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.version import CURRENT_API_VERSION
 from polar.webhook.constants import (
     WEBHOOK_SECRET_KEY_BYTES,
@@ -46,9 +52,30 @@ from polar.webhook.tasks import (
     sign_webhook,
     webhook_event_send,
 )
-from polar.webhook.webhooks import BaseWebhookPayload, WebhookCustomerCreatedPayload
+from polar.webhook.webhooks import (
+    BaseWebhookPayload,
+    SkipEvent,
+    WebhookCustomerCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionUpdatedPayload,
+)
 from tests.fixtures.database import SaveFixture
 from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
+
+
+def _subscription_schema(
+    subscription: Subscription, **update: object
+) -> SubscriptionSchema:
+    schema = SubscriptionSchema.model_validate(subscription)
+    customer = schema.customer.model_copy(
+        update={"name": "Jane <!channel> Doe", "email": "jane@example.com"}
+    )
+    return schema.model_copy(update={"customer": customer, **update})
+
+
+def _slack_fields(raw_payload: str) -> list[str]:
+    payload = json.loads(raw_payload)
+    return [field["text"] for field in payload["blocks"][0]["fields"]]
 
 
 @pytest.fixture
@@ -621,3 +648,88 @@ async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
     request = route_mock.calls.last.request
     w = StandardWebhook(secret)
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
+
+
+@pytest.mark.asyncio
+class TestSlackSubscriptionPayload:
+    async def test_canceled_includes_customer_and_reason(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        now = utc_now()
+        payload = WebhookSubscriptionCanceledPayload(
+            type=WebhookEventType.subscription_canceled,
+            timestamp=now,
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(
+                subscription,
+                ends_at=now + timedelta(days=10),
+                customer_cancellation_reason=CustomerCancellationReason.too_expensive,
+                customer_cancellation_comment="Too pricey <@U123> & more",
+            ),
+        )
+
+        fields = _slack_fields(payload.get_payload(WebhookFormat.slack, organization))
+
+        assert "*Customer*\nJane &lt;!channel&gt; Doe\njane@example.com" in fields
+        assert "*Reason*\nToo expensive" in fields
+        assert "*Comment*\nToo pricey &lt;@U123&gt; &amp; more" in fields
+
+    async def test_updated_with_new_pending_update(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        now = utc_now()
+        new_product_id = uuid4()
+        applies_at = now + timedelta(days=10)
+        payload = WebhookSubscriptionUpdatedPayload(
+            type=WebhookEventType.subscription_updated,
+            timestamp=now,
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(
+                subscription,
+                status=SubscriptionStatus.active,
+                pending_update=PendingSubscriptionUpdate(
+                    id=uuid4(),
+                    created_at=now,
+                    modified_at=None,
+                    applies_at=applies_at,
+                    product_id=new_product_id,
+                    seats=None,
+                    units=None,
+                ),
+            ),
+        )
+
+        raw_payload = payload.get_payload(WebhookFormat.slack, organization)
+
+        assert json.loads(raw_payload)["text"] == (
+            "Subscription change has been scheduled."
+        )
+        fields = _slack_fields(raw_payload)
+        assert f"*New Product ID*\n{new_product_id}" in fields
+        assert any(field.startswith("*Applies At*") for field in fields)
+
+    async def test_updated_with_stale_pending_update_is_skipped(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        now = utc_now()
+        payload = WebhookSubscriptionUpdatedPayload(
+            type=WebhookEventType.subscription_updated,
+            timestamp=now,
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(
+                subscription,
+                status=SubscriptionStatus.active,
+                pending_update=PendingSubscriptionUpdate(
+                    id=uuid4(),
+                    created_at=now - timedelta(days=2),
+                    modified_at=None,
+                    applies_at=now + timedelta(days=10),
+                    product_id=uuid4(),
+                    seats=None,
+                    units=None,
+                ),
+            ),
+        )
+
+        with pytest.raises(SkipEvent):
+            payload.get_payload(WebhookFormat.slack, organization)

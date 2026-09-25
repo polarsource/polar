@@ -9,7 +9,6 @@ import {
   AssessmentPanelFrame,
   AssessmentPanelProps,
   BillingCountryField,
-  IdCopy,
   TaxAfterSwitchField,
   useAssessmentLabels,
 } from './AssessmentPanelParts'
@@ -50,12 +49,7 @@ export function DecisionsThenCardsPanel({
         <TaxAfterSwitchField row={row} migrationId={migrationId} />
       </Box>
 
-      <EntityCard
-        title={labels.customer}
-        footer={
-          <IdCopy label={labels.stripeCustomerId} value={facts.customerId} />
-        }
-      >
+      <EntityCard title={labels.customer}>
         {facts.customerName ? (
           <DetailCell label={labels.name} value={facts.customerName} />
         ) : null}
@@ -65,14 +59,16 @@ export function DecisionsThenCardsPanel({
         {facts.customerTaxId ? (
           <DetailCell label={labels.taxId} value={facts.customerTaxId} />
         ) : null}
+        {facts.customerId ? (
+          <DetailCell
+            label={labels.stripeCustomerId}
+            value={facts.customerId}
+            monospace
+          />
+        ) : null}
       </EntityCard>
       {facts.showProduct ? (
-        <EntityCard
-          title={labels.product}
-          footer={
-            <IdCopy label={labels.stripeProductId} value={facts.productId} />
-          }
-        >
+        <EntityCard title={labels.product}>
           {facts.productName ? (
             <DetailCell label={labels.name} value={facts.productName} />
           ) : null}
@@ -82,21 +78,18 @@ export function DecisionsThenCardsPanel({
           {facts.interval ? (
             <DetailCell label={labels.renewalInterval} value={facts.interval} />
           ) : null}
+          {facts.productId ? (
+            <DetailCell
+              label={labels.stripeProductId}
+              value={facts.productId}
+              monospace
+            />
+          ) : null}
         </EntityCard>
       ) : null}
       <EntityCard
         title={labels.subscription}
         action={<ReviewStatusIndicator row={row} />}
-        footer={
-          <IdCopy
-            label={
-              facts.isSubscription
-                ? labels.stripeSubscriptionId
-                : labels.stripeId
-            }
-            value={facts.sourceId}
-          />
-        }
       >
         {facts.status ? (
           <DetailCell label={labels.status} value={facts.status} />
@@ -113,6 +106,13 @@ export function DecisionsThenCardsPanel({
         {facts.failed ? (
           <DetailCell label={labels.lastRun} value={labels.failed} />
         ) : null}
+        <DetailCell
+          label={
+            facts.isSubscription ? labels.stripeSubscriptionId : labels.stripeId
+          }
+          value={facts.sourceId}
+          monospace
+        />
       </EntityCard>
     </AssessmentPanelFrame>
   )

@@ -95,6 +95,7 @@ ACTION_REQUIRED_CODES = {
     "subscription_has_discount",
     "send_invoice_collection",
     "customer_stripe_id_conflict",
+    "customer_tax_id_dropped",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -127,6 +128,11 @@ _NO_IMPORTABLE_PRICE_REASON = (
 _MISSING_COUNTRY_REASON = (
     "No billing or payment-method country was found. The customer will import, "
     "but Polar won't calculate tax until a billing country is added."
+)
+_TAX_ID_DROPPED_REASON = (
+    "This customer had a tax ID or reverse charge on Stripe that can't be "
+    "imported. Add a valid tax ID on Polar before the first renewal, or they'll "
+    "be charged tax as a consumer."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
@@ -873,6 +879,9 @@ def _customer_items(
             Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
             if not customer.country and not country_fallback
             else None,
+            Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
+            if customer.tax_id_dropped
+            else None,
         )
         effective_country = customer.country or country_fallback
         items.append(
@@ -933,6 +942,9 @@ def _subscription_items(
             else None,
             Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
             if customer is not None and not customer.country and not country_fallback
+            else None,
+            Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
+            if customer is not None and customer.tax_id_dropped
             else None,
             Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
             if payment_method is not None and payment_method.type.requires_reentry

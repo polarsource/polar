@@ -116,6 +116,9 @@ class CanonicalCustomer:
     country_hint: str | None = None
     billing_address: Address | None = None
     tax_id: TaxID | None = None
+    # The source had a tax ID or reverse-charge status that didn't carry over,
+    # so Polar will tax the customer as B2C.
+    tax_id_dropped: bool = False
 
     type = MerchantMigrationRecordType.customer
 
@@ -402,6 +405,7 @@ def deserialize(
                     if tax_id_data
                     else None
                 ),
+                tax_id_dropped=data.get("tax_id_dropped", False),
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]

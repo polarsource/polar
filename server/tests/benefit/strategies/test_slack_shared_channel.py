@@ -1754,81 +1754,7 @@ class TestSlackSharedChannelGrant:
 
 @pytest.mark.asyncio
 class TestSlackSharedChannelRevoke:
-    async def test_revoke_enqueues_archive(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.slack_shared_channel,
-            properties=_BASE_PROPERTIES,
-        )
-        enqueue_job_mock = mocker.patch(
-            "polar.benefit.strategies.slack_shared_channel.service.enqueue_job"
-        )
-        client = _mock_client(mocker)
-        strategy = _strategy(session, redis, client)
-
-        result = await strategy.revoke(
-            benefit,
-            customer,
-            {"invited_email": "admin@customer.example", "channel_id": "C123"},
-        )
-
-        enqueue_job_mock.assert_called_once_with(
-            "benefit.slack_shared_channel_archive",
-            benefit_id=benefit.id,
-            channel_id="C123",
-        )
-        client.conversations_archive.assert_not_awaited()
-        assert result == {
-            "invited_email": "admin@customer.example",
-            "channel_id": "C123",
-        }
-
-    @pytest.mark.parametrize(
-        ("archive_on_revoke", "grant_properties"),
-        [
-            (False, {"invited_email": "admin@customer.example", "channel_id": "C123"}),
-            (True, {"invited_email": "admin@customer.example"}),
-        ],
-    )
-    async def test_revoke_skips_archive(
-        self,
-        archive_on_revoke: bool,
-        grant_properties: dict[str, Any],
-        session: AsyncSession,
-        redis: Redis,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.slack_shared_channel,
-            properties={**_BASE_PROPERTIES, "archive_on_revoke": archive_on_revoke},
-        )
-        enqueue_job_mock = mocker.patch(
-            "polar.benefit.strategies.slack_shared_channel.service.enqueue_job"
-        )
-        strategy = _strategy(session, redis, _mock_client(mocker))
-
-        await strategy.revoke(benefit, customer, cast(Any, grant_properties))
-
-        enqueue_job_mock.assert_not_called()
-
-
-@pytest.mark.asyncio
-class TestSlackSharedChannelArchive:
-    async def test_archives_when_all_grants_on_channel_revoked(
+    async def test_revoke_archives_when_enabled(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -1844,34 +1770,67 @@ class TestSlackSharedChannelArchive:
             properties=_BASE_PROPERTIES,
         )
         await _create_integration(save_fixture, benefit)
-        for i in range(2):
-            member = await create_member(
-                save_fixture,
-                customer=customer,
-                organization=organization,
-                email=f"member{i}@customer.example",
-            )
-            await create_benefit_grant(
-                save_fixture,
-                customer,
-                benefit,
-                granted=False,
-                properties={
-                    "invited_email": "admin@customer.example",
-                    "channel_id": "C123",
-                },
-                member=member,
-            )
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
-        await strategy.archive_channel_if_unused(benefit, "C123")
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
 
         client.conversations_archive.assert_awaited_once_with(
             bot_token="xoxb-test-token", channel="C123"
         )
+        assert result == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
 
-    async def test_skips_when_channel_still_granted(
+    async def test_revoke_archives_when_last_grant_on_channel(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            granted=True,
+            properties={
+                "invited_email": "admin@customer.example",
+                "channel_id": "C123",
+            },
+        )
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
+
+        client.conversations_archive.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="C123"
+        )
+        assert result == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
+
+    async def test_revoke_skips_archive_when_channel_used_by_other_benefit(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -1896,6 +1855,16 @@ class TestSlackSharedChannelArchive:
         await create_benefit_grant(
             save_fixture,
             customer,
+            benefit,
+            granted=True,
+            properties={
+                "invited_email": "admin@customer.example",
+                "channel_id": "C123",
+            },
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
             other_benefit,
             granted=True,
             properties={
@@ -1906,16 +1875,130 @@ class TestSlackSharedChannelArchive:
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
-        await strategy.archive_channel_if_unused(benefit, "C123")
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
 
         client.conversations_archive.assert_not_awaited()
+        assert result == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
 
-    async def test_skips_when_integration_uninstalled(
+    async def test_revoke_skips_archive_when_channel_used_by_sibling_member(
         self,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        grant_properties: dict[str, Any] = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
+        members = [
+            await create_member(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                email=f"member{i}@customer.example",
+            )
+            for i in range(2)
+        ]
+        for member in members:
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                granted=True,
+                properties=grant_properties,
+                member=member,
+            )
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            cast(Any, grant_properties),
+            member=members[0],
+        )
+
+        client.conversations_archive.assert_not_awaited()
+        assert result == grant_properties
+
+    async def test_revoke_skips_when_archive_disabled(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={**_BASE_PROPERTIES, "archive_on_revoke": False},
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
+
+        client.conversations_archive.assert_not_awaited()
+
+    async def test_revoke_skips_when_no_channel_id(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        client.conversations_archive.assert_not_awaited()
+
+    async def test_revoke_skips_when_integration_uninstalled(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
         organization: Organization,
     ) -> None:
         benefit = await create_benefit(
@@ -1928,35 +2011,21 @@ class TestSlackSharedChannelArchive:
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
-        await strategy.archive_channel_if_unused(benefit, "C123")
+        await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
 
         client.conversations_archive.assert_not_awaited()
 
-    @pytest.mark.parametrize(
-        ("archive_mock", "expected_error"),
-        [
-            (
-                AsyncMock(side_effect=httpx.ConnectError("boom")),
-                BenefitRetriableError,
-            ),
-            (
-                AsyncMock(return_value={"ok": False, "error": "ratelimited"}),
-                BenefitRetriableError,
-            ),
-            (
-                AsyncMock(return_value={"ok": False, "error": "restricted_action"}),
-                BenefitActionRequiredError,
-            ),
-        ],
-    )
-    async def test_archive_errors(
+    async def test_revoke_archive_http_error_raises_retriable(
         self,
-        archive_mock: AsyncMock,
-        expected_error: type[Exception],
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
+        customer: Customer,
         organization: Organization,
     ) -> None:
         benefit = await create_benefit(
@@ -1966,20 +2035,59 @@ class TestSlackSharedChannelArchive:
             properties=_BASE_PROPERTIES,
         )
         await _create_integration(save_fixture, benefit)
-        client = _mock_client(mocker, conversations_archive=archive_mock)
+        client = _mock_client(
+            mocker,
+            conversations_archive=AsyncMock(side_effect=httpx.ConnectError("boom")),
+        )
         strategy = _strategy(session, redis, client)
 
-        with pytest.raises(expected_error):
-            await strategy.archive_channel_if_unused(benefit, "C123")
+        with pytest.raises(BenefitRetriableError):
+            await strategy.revoke(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example", "channel_id": "C123"},
+            )
+
+    async def test_revoke_archive_slack_error_raises_retriable(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_archive=AsyncMock(
+                return_value={"ok": False, "error": "ratelimited"}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(BenefitRetriableError):
+            await strategy.revoke(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example", "channel_id": "C123"},
+            )
 
     @pytest.mark.parametrize("error", ["already_archived", "channel_not_found"])
-    async def test_archive_noop_error_succeeds(
+    async def test_revoke_archive_noop_error_succeeds(
         self,
         error: str,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
+        customer: Customer,
         organization: Organization,
     ) -> None:
         benefit = await create_benefit(
@@ -1995,9 +2103,50 @@ class TestSlackSharedChannelArchive:
         )
         strategy = _strategy(session, redis, client)
 
-        await strategy.archive_channel_if_unused(benefit, "C123")
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
 
-        client.conversations_archive.assert_awaited_once()
+        if error == "channel_not_found":
+            assert result == {"invited_email": "admin@customer.example"}
+        else:
+            assert result == {
+                "invited_email": "admin@customer.example",
+                "channel_id": "C123",
+            }
+
+    async def test_revoke_archive_permanent_error_raises_action_required(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_archive=AsyncMock(
+                return_value={"ok": False, "error": "restricted_action"}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(BenefitActionRequiredError, match="restricted_action"):
+            await strategy.revoke(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example", "channel_id": "C123"},
+            )
 
 
 @pytest.mark.asyncio

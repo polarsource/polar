@@ -19,7 +19,6 @@ from polar.models import (
     User,
 )
 from polar.models.benefit_grant import BenefitGrantScopeArgs
-from polar.worker import enqueue_job
 
 from ..base.service import (
     BenefitActionRequiredError,
@@ -220,38 +219,34 @@ class BenefitSlackSharedChannelService(
         attempt: int = 1,
         member: Member | None = None,
     ) -> BenefitGrantSlackSharedChannelProperties:
+        bound_logger = log.bind(
+            benefit_id=str(benefit.id), customer_id=str(customer.id)
+        )
+
         properties = self._get_properties(benefit)
         channel_id = grant_properties.get("channel_id")
 
-        # Deferred until the revocation commits, so concurrent sibling
-        # revocations all see each other as revoked
-        if properties.get("archive_on_revoke") and channel_id:
-            enqueue_job(
-                "benefit.slack_shared_channel_archive",
-                benefit_id=benefit.id,
-                channel_id=channel_id,
-            )
-        return self._revoked_properties(grant_properties, keep_channel=True)
-
-    async def archive_channel_if_unused(
-        self, benefit: Benefit, channel_id: str
-    ) -> None:
-        bound_logger = log.bind(benefit_id=str(benefit.id), channel_id=channel_id)
+        if not properties.get("archive_on_revoke") or not channel_id:
+            return self._revoked_properties(grant_properties, keep_channel=True)
 
         grant_repository = BenefitGrantRepository.from_session(self.session)
-        if await grant_repository.count_granted_by_property_and_organization(
-            benefit.organization_id, "channel_id", channel_id
-        ):
-            bound_logger.info(
-                "Slack channel still used by other grants; skipping archive"
+        total_grants = (
+            await grant_repository.count_granted_by_property_and_organization(
+                benefit.organization_id, "channel_id", channel_id
             )
-            return
+        )
+        if total_grants > 1:
+            bound_logger.info(
+                "Slack channel still used by other grants; skipping archive",
+                channel_id=channel_id,
+            )
+            return self._revoked_properties(grant_properties, keep_channel=True)
 
         integration = await self._get_integration(benefit)
         bot_token = await integration.get_bot_token() if integration else None
         if bot_token is None:
             bound_logger.info("Slack integration uninstalled; skipping archive")
-            return
+            return self._revoked_properties(grant_properties, keep_channel=True)
 
         try:
             result = await self._client.conversations_archive(
@@ -265,11 +260,15 @@ class BenefitSlackSharedChannelService(
             error = result.get("error", "")
             if error in _ARCHIVE_NOOP_ERRORS:
                 bound_logger.info("Slack channel already archived or gone", error=error)
-                return
+                return self._revoked_properties(
+                    grant_properties, keep_channel=error != "channel_not_found"
+                )
             bound_logger.warning("Slack archive returned error", error=error)
             if error in _TRANSIENT_ERRORS:
                 raise BenefitRetriableError()
             raise BenefitActionRequiredError(f"Slack archive error: {error}")
+
+        return self._revoked_properties(grant_properties, keep_channel=True)
 
     def _revoked_properties(
         self,

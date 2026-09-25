@@ -1616,6 +1616,35 @@ class TestDiscountAttachments:
         assert record.discount_block == "subscription_stacked_discounts"
         assert record.has_discount is True
 
+    async def test_several_subscription_discounts_stack(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [
+            _stripe_discount("coupon_a"),
+            _stripe_discount("coupon_b", id="di_2"),
+        ]
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block == "subscription_stacked_discounts"
+        assert record.has_discount is True
+        assert record.discount_source_ids == []
+
+    async def test_same_subscription_coupon_listed_twice_is_one_discount(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [
+            _stripe_discount("coupon_a"),
+            _stripe_discount("coupon_a", id="di_2"),
+        ]
+
+        record = await _extracted_subscription(mocker, subscription)
+
+        assert record.discount_block is None
+        assert record.discount_source_ids == ["coupon_a"]
+
     async def test_several_coupons_on_one_item_stack(
         self, mocker: MockerFixture
     ) -> None:

@@ -687,14 +687,20 @@ class StripeAdapter:
         started_at = mapped.started_at
         has_discount = mapped.has_discount
         block: str | None = None
+        subscription_stack = self._subscription_discounts_stack(subscription)
 
         if (
             (mapped.has_discount and any_item)
             or self._an_item_has_several_coupons(per_item)
             or (any_item and customer_present)
+            or subscription_stack
         ):
             block = SubscriptionDiscountBlock.stacked
             has_discount = True
+            if subscription_stack:
+                source_ids = []
+                starts = {}
+                started_at = None
         elif len(items) == 1 and any_item and not mapped.has_discount:
             folded = self._fold_single_item_coupon(per_item[0])
             if folded is not None:
@@ -764,6 +770,23 @@ class StripeAdapter:
         self, per_item: list[list[_CouponApplication]]
     ) -> bool:
         return any(len(applications) > 1 for applications in per_item)
+
+    def _subscription_discounts_stack(
+        self, subscription: stripe_lib.Subscription
+    ) -> bool:
+        """Several different coupons on the subscription each come off the invoice."""
+        keys: set[str] = set()
+        for index, discount in enumerate(subscription.get("discounts") or []):
+            if isinstance(discount, str):
+                keys.add(f"id:{discount}")
+                continue
+            coupon_id = self._coupon_id_of_discount(discount)
+            if coupon_id is not None:
+                keys.add(f"coupon:{coupon_id}")
+                continue
+            discount_id = discount.get("id")
+            keys.add(f"id:{discount_id}" if discount_id else f"unknown:{index}")
+        return len(keys) > 1
 
     def _items_share_one_coupon(self, per_item: list[list[_CouponApplication]]) -> bool:
         if not per_item or any(not applications for applications in per_item):

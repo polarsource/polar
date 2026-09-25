@@ -27,7 +27,12 @@ class OrganizationAccessTokenRepository(
     token_hash_attribute = "token"
 
     async def get_by_token(
-        self, token: str, *, expired: bool = False, include_blocked: bool = False
+        self,
+        token: str,
+        *,
+        expired: bool = False,
+        include_deleted: bool = False,
+        include_blocked: bool = False,
     ) -> OrganizationAccessToken | None:
         candidates = get_token_hash_candidates(token)
         statement = (
@@ -36,8 +41,12 @@ class OrganizationAccessTokenRepository(
             .where(self.token_hash_clause(candidates))
             .options(contains_eager(OrganizationAccessToken.organization))
         )
+        if not include_deleted:
+            statement = statement.where(~Organization.is_deleted)
         if not include_blocked:
-            statement = statement.where(Organization.can_authenticate)
+            statement = statement.where(
+                Organization.capabilities["api_access"].as_boolean()
+            )
         if not expired:
             statement = statement.where(
                 or_(

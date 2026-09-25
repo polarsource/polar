@@ -127,6 +127,40 @@ class TestRevokeLeaked:
 
         enqueue_email_mock.assert_called_once()
 
+    async def test_deleted_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        organization.deleted_at = utc_now()
+        await save_fixture(organization)
+        organization_access_token = OrganizationAccessToken(
+            comment="Test",
+            token=get_token_hash("polar_oat_123"),
+            organization=organization,
+            expires_at=utc_now() + timedelta(days=1),
+            scope="openid",
+        )
+        await save_fixture(organization_access_token)
+
+        result = await organization_access_token_service.revoke_leaked(
+            session,
+            "polar_oat_123",
+            TokenType.organization_access_token,
+            notifier="github",
+            url="https://github.com",
+        )
+        assert result is True
+
+        updated_organization_access_token = await session.get(
+            OrganizationAccessToken, organization_access_token.id
+        )
+        assert updated_organization_access_token is not None
+        assert updated_organization_access_token.deleted_at is not None
+
 
 @pytest.mark.asyncio
 class TestCreateScopeValidation:

@@ -112,11 +112,15 @@ class OrganizationAccessTokenService:
         token: str,
         *,
         expired: bool = False,
+        include_deleted: bool = False,
         include_blocked: bool = False,
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
         return await repository.get_by_token(
-            token, expired=expired, include_blocked=include_blocked
+            token,
+            expired=expired,
+            include_deleted=include_deleted,
+            include_blocked=include_blocked,
         )
 
     async def create(
@@ -223,7 +227,7 @@ class OrganizationAccessTokenService:
         url: str | None = None,
     ) -> bool:
         organization_access_token = await self.get_by_token(
-            session, token, include_blocked=True
+            session, token, include_deleted=True, include_blocked=True
         )
 
         if organization_access_token is None:

@@ -429,10 +429,9 @@ class MerchantMigrationOperation(Schema):
         description="pending or running while Polar works; done or failed when it finishes."
     )
     kind: MerchantMigrationOperationKind | None = Field(
-        default=None,
         description=(
             "Which job this is: pre-check, catalog import, or cutover. "
-            "Null on runs started before this field existed."
+            "None when the run has no recorded job type."
         ),
     )
     stalled: bool = Field(

@@ -2553,7 +2553,6 @@ class TestImportCatalog:
 
         assert report is not None
         assert report.step == MerchantMigrationStep.create_catalog
-        assert migration.step == MerchantMigrationStep.create_catalog
         await session.refresh(migration)
         assert migration.step == MerchantMigrationStep.create_catalog
         assert migration.operation is not None
@@ -2590,7 +2589,6 @@ class TestImportCatalog:
         assert migration.operation.error == (
             "We couldn't prepare these subscriptions. Please try again."
         )
-        assert "alice@example.com" not in (migration.operation.error or "")
         assert await _products(session, organization) == []
 
     @pytest.mark.auth

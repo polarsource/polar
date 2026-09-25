@@ -25202,9 +25202,9 @@ export interface components {
       status: components['schemas']['MerchantMigrationOperationStatus']
       /**
        * Kind
-       * @description Which job this is: pre-check, catalog import, or cutover. Null on runs started before this field existed.
+       * @description Which job this is: pre-check, catalog import, or cutover. None when the run has no recorded job type.
        */
-      kind?: components['schemas']['MerchantMigrationOperationKind'] | null
+      kind: components['schemas']['MerchantMigrationOperationKind'] | null
       /**
        * Stalled
        * @description Whether an active operation has stopped making progress.

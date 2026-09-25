@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, TypeVar
 from uuid import UUID
 
-from polar.auth.models import AuthSubject, is_organization
+from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountFixedCreate, DiscountPercentageCreate
@@ -156,8 +156,8 @@ class ImportCounts:
 
 @dataclass(frozen=True)
 class ImportBatchOutcome:
-    finished: bool
     phase: str
+    report: MerchantMigrationImportReport | None = None
 
 
 @dataclass(frozen=True)
@@ -201,38 +201,6 @@ class CatalogImporter:
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
         self.customer_repository = CustomerRepository.from_session(session)
 
-    async def run(self) -> MerchantMigrationImportReport:
-        ctx = await self._load_context()
-        product_result = await self._import_products(
-            ctx.product_records, selected_source_ids=ctx.product_source_ids
-        )
-        discount_result = await self._import_discounts(
-            ctx.discount_records,
-            product_records=self._records_of(
-                ctx.catalog, MerchantMigrationRecordType.product
-            ),
-        )
-        customer_result = await self._import_customers(
-            ctx.customer_records,
-            selected_source_ids=ctx.customer_source_ids,
-            country_fallbacks=ctx.country_fallbacks,
-        )
-        subscription_result = MerchantMigrationImportResult(
-            entity=PrecheckEntity.subscriptions,
-            imported=0,
-            skipped=0,
-        )
-
-        return MerchantMigrationImportReport(
-            step=self.migration.step,
-            results=[
-                product_result,
-                discount_result,
-                customer_result,
-                subscription_result,
-            ],
-        )
-
     async def import_next_batch(self) -> ImportBatchOutcome:
         """Import one batch, products then discounts then customers.
 
@@ -256,7 +224,7 @@ class CatalogImporter:
             )
             budget -= len(batch)
             if len(pending_products) > len(batch) or budget == 0:
-                return ImportBatchOutcome(finished=False, phase="products")
+                return ImportBatchOutcome(phase="products")
 
         actionable_discounts = self._actionable_discounts(
             ctx.discount_records, catalog_products
@@ -266,7 +234,7 @@ class CatalogImporter:
             await self._import_discounts(batch, product_records=catalog_products)
             budget -= len(batch)
             if len(actionable_discounts) > len(batch) or budget == 0:
-                return ImportBatchOutcome(finished=False, phase="discounts")
+                return ImportBatchOutcome(phase="discounts")
 
         pending_customers = self._pending_selected(
             ctx.customer_records, ctx.customer_source_ids
@@ -280,9 +248,51 @@ class CatalogImporter:
             )
             budget -= len(batch)
             if len(pending_customers) > len(batch) or budget == 0:
-                return ImportBatchOutcome(finished=False, phase="customers")
+                return ImportBatchOutcome(phase="customers")
 
-        return ImportBatchOutcome(finished=True, phase="customers")
+        return ImportBatchOutcome(phase="customers", report=self._report(ctx))
+
+    def _report(self, ctx: _ImportContext) -> MerchantMigrationImportReport:
+        return MerchantMigrationImportReport(
+            step=self.migration.step,
+            results=[
+                self._tally(
+                    ctx.product_records,
+                    ctx.product_source_ids,
+                    PrecheckEntity.products,
+                ),
+                self._tally(ctx.discount_records, None, PrecheckEntity.discounts),
+                self._tally(
+                    ctx.customer_records,
+                    ctx.customer_source_ids,
+                    PrecheckEntity.customers,
+                ),
+                MerchantMigrationImportResult(
+                    entity=PrecheckEntity.subscriptions,
+                    imported=0,
+                    skipped=0,
+                ),
+            ],
+        )
+
+    def _tally(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        source_ids: set[str] | None,
+        entity: PrecheckEntity,
+    ) -> MerchantMigrationImportResult:
+        counts = ImportCounts()
+        for record in records:
+            if source_ids is not None and record.source_id not in source_ids:
+                continue
+            if record.status == MerchantMigrationRecordStatus.pending:
+                continue
+            counts.settle(record.status)
+        return MerchantMigrationImportResult(
+            entity=entity,
+            imported=counts.imported,
+            skipped=counts.skipped,
+        )
 
     async def _load_context(self) -> _ImportContext:
         records = await self.record_repository.list_by_migration(self.migration.id)
@@ -636,11 +646,12 @@ class CatalogImporter:
                 )
             )
         # A bulk import must not webhook or re-review the org for every product.
+        # An organization token rejects an explicit organization_id.
         polar_product = await product_service.create(
             self.session,
             ProductCreateRecurring(
                 name=product.name,
-                organization_id=self._payload_organization_id(),
+                organization_id=None,
                 recurring_interval=SubscriptionRecurringInterval(
                     product.recurring_interval
                 ),
@@ -680,7 +691,8 @@ class CatalogImporter:
             "ends_at": ends_at,
             "max_redemptions": None if exhausted else discount.max_redemptions,
             "products": product_ids or None,
-            "organization_id": self._payload_organization_id(),
+            # An organization token rejects an explicit organization_id.
+            "organization_id": None,
             "metadata": {"stripe_coupon_id": discount.source_id},
         }
         create: DiscountFixedCreate | DiscountPercentageCreate
@@ -699,13 +711,6 @@ class CatalogImporter:
         if exhausted:
             created.max_redemptions = 0
         return created
-
-    def _payload_organization_id(self) -> UUID | None:
-        # An organization token rejects an explicit organization_id. The worker
-        # acts as the organization, so the id is omitted there.
-        if is_organization(self.auth_subject):
-            return None
-        return self.organization.id
 
     async def _available_discount_code(self, code: str | None) -> str | None:
         if code is None:

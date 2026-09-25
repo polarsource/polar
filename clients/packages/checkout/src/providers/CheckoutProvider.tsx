@@ -153,6 +153,35 @@ const checkoutsClientUpdate = async (
   }
 }
 
+const checkoutsClientCancelPayment = async (
+  api: Client,
+  path: operations['checkouts:client_cancel_payment']['parameters']['path'],
+): Promise<Result<'checkouts:client_cancel_payment'>> => {
+  try {
+    const checkout = await unwrap(
+      api.POST('/v1/checkouts/client/{client_secret}/cancel-payment', {
+        params: { path },
+      }),
+    )
+
+    return {
+      ok: true,
+      value: checkout,
+    } as Result<'checkouts:client_cancel_payment'>
+  } catch (error) {
+    if (error instanceof ClientResponseError) {
+      return {
+        ok: false,
+        error: error.error as ErrorResponse<'checkouts:client_cancel_payment'>,
+      } as Result<'checkouts:client_cancel_payment'>
+    }
+    return {
+      ok: false,
+      error: null,
+    } as Result<'checkouts:client_cancel_payment'>
+  }
+}
+
 const stub = (): never => {
   throw new Error('You forgot to wrap your component in <CheckoutProvider>.')
 }
@@ -166,6 +195,7 @@ export interface CheckoutContextProps {
   confirm: (
     data: schemas['CheckoutConfirmStripe'],
   ) => Promise<Result<'checkouts:client_confirm'>>
+  cancelPayment: () => Promise<Result<'checkouts:client_cancel_payment'>>
   client: Client
 }
 
@@ -279,6 +309,18 @@ export const CheckoutProvider = ({
     [client, clientSecret],
   )
 
+  const cancelPayment = useCallback(async () => {
+    const result = await checkoutsClientCancelPayment(client, {
+      client_secret: clientSecret,
+    })
+
+    if (result.ok) {
+      setCheckout(result.value)
+    }
+
+    return result
+  }, [client, clientSecret])
+
   if (!checkout) {
     return null
   }
@@ -290,6 +332,7 @@ export const CheckoutProvider = ({
         refresh,
         update,
         confirm,
+        cancelPayment,
         client,
       }}
     >

@@ -12,6 +12,9 @@ type CheckoutResult = Awaited<ReturnType<CheckoutFormContextProps['update']>>
 
 type UpdateResult = Awaited<ReturnType<CheckoutContextProps['update']>>
 type ConfirmResult = Awaited<ReturnType<CheckoutContextProps['confirm']>>
+type CancelPaymentResult = Awaited<
+  ReturnType<CheckoutContextProps['cancelPayment']>
+>
 
 type UpdateError = Extract<UpdateResult, { ok: false }>['error']
 type ConfirmError = Extract<ConfirmResult, { ok: false }>['error']
@@ -739,16 +742,27 @@ describe('CheckoutFormProvider', () => {
           ({ ok: true, value: confirmedCheckout }) as unknown as ConfirmResult,
       )
 
-    it('stops and shows an error when the buyer dismisses the next action', async () => {
+    const makeCancelPayment = (status: 'open' | 'confirmed') =>
+      vi.fn<CheckoutContextProps['cancelPayment']>(
+        async () =>
+          ({
+            ok: true,
+            value: { ...confirmedCheckout, status },
+          }) as unknown as CancelPaymentResult,
+      )
+
+    it('cancels the payment and shows an error when the buyer dismisses the next action', async () => {
       const handleNextAction = vi.fn(async () => ({
         paymentIntent: { status: 'requires_action' },
       }))
       const stripe = makeStripe(handleNextAction)
+      const cancelPayment = makeCancelPayment('open')
 
       const getCtx = renderWithCheckout({
         checkout: paidCheckout,
         update: vi.fn(),
         confirm: makeConfirm(),
+        cancelPayment,
       })
 
       await act(async () => {
@@ -759,28 +773,22 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(handleNextAction).toHaveBeenCalledTimes(1)
+      expect(cancelPayment).toHaveBeenCalledTimes(1)
       expect(getCtx().loading).toBe(false)
       expect(getCtx().form.formState.errors.root?.message).toBeDefined()
     })
 
-    it('resumes the pending next action on the next submit without confirming again', async () => {
-      const handleNextAction = vi
-        .fn()
-        .mockResolvedValueOnce({ paymentIntent: { status: 'requires_action' } })
-        .mockResolvedValueOnce({ paymentIntent: { status: 'succeeded' } })
+    it('resolves with the confirmed checkout when the payment went through before the dismissal', async () => {
+      const handleNextAction = vi.fn(async () => ({
+        paymentIntent: { status: 'requires_action' },
+      }))
       const stripe = makeStripe(handleNextAction)
-      const confirm = makeConfirm()
 
       const getCtx = renderWithCheckout({
         checkout: paidCheckout,
         update: vi.fn(),
-        confirm,
-      })
-
-      await act(async () => {
-        await expect(
-          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
-        ).rejects.toBeDefined()
+        confirm: makeConfirm(),
+        cancelPayment: makeCancelPayment('confirmed'),
       })
 
       let result: unknown
@@ -793,12 +801,37 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(result).toEqual(confirmedCheckout)
-      expect(confirm).toHaveBeenCalledTimes(1)
-      expect(stripe.createConfirmationToken).toHaveBeenCalledTimes(1)
-      expect(handleNextAction).toHaveBeenCalledTimes(2)
-      expect(handleNextAction).toHaveBeenLastCalledWith({
-        clientSecret: 'pi_secret',
+      expect(getCtx().form.formState.errors.root).toBeUndefined()
+    })
+
+    it('starts a new payment on the next submit after a dismissal', async () => {
+      const handleNextAction = vi
+        .fn()
+        .mockResolvedValueOnce({ paymentIntent: { status: 'requires_action' } })
+        .mockResolvedValueOnce({ paymentIntent: { status: 'succeeded' } })
+      const stripe = makeStripe(handleNextAction)
+      const confirm = makeConfirm()
+
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm,
+        cancelPayment: makeCancelPayment('open'),
       })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
+        ).rejects.toBeDefined()
+      })
+
+      await act(async () => {
+        await getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements)
+      })
+
+      expect(confirm).toHaveBeenCalledTimes(2)
+      expect(stripe.createConfirmationToken).toHaveBeenCalledTimes(2)
+      expect(handleNextAction).toHaveBeenCalledTimes(2)
     })
   })
 })

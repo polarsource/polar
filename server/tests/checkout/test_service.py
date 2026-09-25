@@ -7482,6 +7482,147 @@ class TestHandleFailure:
 
 
 @pytest.mark.asyncio
+class TestCancelPayment:
+    @pytest.mark.parametrize(
+        "status",
+        [
+            CheckoutStatus.open,
+            CheckoutStatus.expired,
+            CheckoutStatus.succeeded,
+            CheckoutStatus.failed,
+        ],
+    )
+    async def test_not_confirmed(
+        self,
+        status: CheckoutStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=status,
+            payment_processor_metadata={"intent_id": "pi_current"},
+        )
+
+        checkout = await checkout_service.cancel_payment(session, checkout)
+
+        assert checkout.status == status
+        stripe_service_mock.cancel_payment_intent.assert_not_called()
+
+    async def test_no_intent(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        checkout_confirmed_one_time: Checkout,
+    ) -> None:
+        checkout = await checkout_service.cancel_payment(
+            session, checkout_confirmed_one_time
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        stripe_service_mock.cancel_payment_intent.assert_not_called()
+        stripe_service_mock.cancel_setup_intent.assert_not_called()
+
+    async def test_payment_intent_canceled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            payment_processor_metadata={
+                "intent_id": "pi_current",
+                "intent_client_secret": "pi_current_secret_test",
+                "intent_status": "requires_action",
+            },
+        )
+        stripe_service_mock.cancel_payment_intent.return_value = SimpleNamespace(
+            status="canceled"
+        )
+
+        checkout = await checkout_service.cancel_payment(session, checkout)
+
+        stripe_service_mock.cancel_payment_intent.assert_called_once_with("pi_current")
+        assert checkout.status == CheckoutStatus.open
+        assert checkout.payment_processor_metadata == {"intent_id": "pi_current"}
+
+    async def test_setup_intent_canceled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+            payment_processor_metadata={
+                "intent_id": "seti_current",
+                "intent_client_secret": "seti_current_secret_test",
+                "intent_status": "requires_action",
+            },
+        )
+        stripe_service_mock.cancel_setup_intent.return_value = SimpleNamespace(
+            status="canceled"
+        )
+
+        checkout = await checkout_service.cancel_payment(session, checkout)
+
+        stripe_service_mock.cancel_setup_intent.assert_called_once_with("seti_current")
+        stripe_service_mock.cancel_payment_intent.assert_not_called()
+        assert checkout.status == CheckoutStatus.open
+
+    @pytest.mark.parametrize(
+        ("intent_status", "expected_status"),
+        [
+            ("succeeded", CheckoutStatus.confirmed),
+            ("processing", CheckoutStatus.confirmed),
+            ("canceled", CheckoutStatus.open),
+        ],
+    )
+    async def test_intent_not_cancelable(
+        self,
+        intent_status: str,
+        expected_status: CheckoutStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            payment_processor_metadata={
+                "intent_id": "pi_current",
+                "intent_client_secret": "pi_current_secret_test",
+                "intent_status": "requires_action",
+            },
+        )
+        stripe_service_mock.cancel_payment_intent.side_effect = (
+            stripe_lib.InvalidRequestError("Cannot cancel", param=None)
+        )
+        stripe_service_mock.get_payment_intent.return_value = SimpleNamespace(
+            status=intent_status
+        )
+
+        checkout = await checkout_service.cancel_payment(session, checkout)
+
+        stripe_service_mock.get_payment_intent.assert_called_once_with("pi_current")
+        assert checkout.status == expected_status
+
+
+@pytest.mark.asyncio
 class TestCheckoutCreatedEvent:
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_event_created(

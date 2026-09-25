@@ -294,6 +294,33 @@ async def client_confirm(
 
 
 @inner_router.post(
+    "/client/{client_secret}/cancel-payment",
+    response_model=CheckoutPublic,
+    summary="Cancel Checkout Session Payment from Client",
+    responses={
+        200: {"description": "Checkout session payment canceled."},
+        404: CheckoutNotFound,
+        410: CheckoutExpired,
+    },
+    tags=[APITag.private],
+)
+async def client_cancel_payment(
+    client_secret: CheckoutClientSecret,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Cancel the pending payment of a confirmed checkout session and reopen it.
+
+    If the payment already went through, the checkout session stays confirmed.
+    """
+    checkout = await checkout_service.get_by_client_secret(
+        session, client_secret, for_update=True
+    )
+
+    return await checkout_service.cancel_payment(session, checkout)
+
+
+@inner_router.post(
     "/client/{client_secret}/opened",
     response_model=CheckoutPublic,
     summary="Mark Checkout Session as Opened",

@@ -75,7 +75,12 @@ export const CheckoutFormProvider = ({
   children,
   locale = DEFAULT_LOCALE,
 }: React.PropsWithChildren<{ locale?: AcceptedLocale }>) => {
-  const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
+  const {
+    checkout,
+    update: updateOuter,
+    confirm: confirmOuter,
+    cancelPayment,
+  } = useCheckout()
   const t = useTranslations(locale)
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
@@ -240,9 +245,6 @@ export const CheckoutFormProvider = ({
     [confirmOuter, setError, setDiscountError, update, setTrialUnavailable],
   )
 
-  const pendingNextActionCheckout =
-    useRef<schemas['CheckoutPublicConfirmed']>(null)
-
   const handleNextAction = useCallback(
     async (
       stripe: Stripe,
@@ -257,25 +259,26 @@ export const CheckoutFormProvider = ({
       const { error, paymentIntent, setupIntent } =
         await stripe.handleNextAction({ clientSecret: intent_client_secret })
       if (error) {
-        pendingNextActionCheckout.current = null
         setLoading(false)
         setError('root', { message: error.message })
         throw shownToBuyer(new Error(error.message))
       }
 
-      // Buyer dismissed the action (e.g. closed the Cash App Pay QR code): resume it on next submit
+      // Buyer dismissed the action (e.g. closed the Cash App Pay QR code): cancel the intent and reopen the checkout
       const status = (paymentIntent ?? setupIntent)?.status ?? intent_status
       if (status === 'requires_action') {
-        pendingNextActionCheckout.current = confirmedCheckout
+        const { ok, value } = await cancelPayment()
+        // The buyer completed the payment before dismissing it
+        if (ok && value.status !== 'open') {
+          return
+        }
         const message = t('checkout.loading.paymentNotCompleted')
         setLoading(false)
         setError('root', { message })
         throw shownToBuyer(new Error(message))
       }
-
-      pendingNextActionCheckout.current = null
     },
-    [setError, t],
+    [cancelPayment, setError, t],
   )
 
   const confirm = useCallback(
@@ -303,13 +306,6 @@ export const CheckoutFormProvider = ({
       }
 
       setLoadingLabel(t('checkout.loading.processingPayment'))
-
-      const pendingCheckout = pendingNextActionCheckout.current
-      if (pendingCheckout) {
-        await handleNextAction(stripe, pendingCheckout)
-        setLoading(false)
-        return pendingCheckout
-      }
 
       const { error: submitError } = await elements.submit()
       if (submitError) {

@@ -2942,6 +2942,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/checkouts/client/{client_secret}/cancel-payment': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Cancel Checkout Session Payment from Client
+     * @description Cancel the pending payment of a confirmed checkout session and reopen it.
+     *
+     *     If the payment already went through, the checkout session stays confirmed.
+     */
+    post: operations['checkouts:client_cancel_payment']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/cli/listen/{id}': {
     parameters: {
       query?: never
@@ -48179,6 +48201,56 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CheckoutForbiddenError']
+        }
+      }
+      /** @description Checkout session not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout session is expired. */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ExpiredCheckoutError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'checkouts:client_cancel_payment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The checkout session client secret. */
+        client_secret: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Checkout session payment canceled. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutPublic']
         }
       }
       /** @description Checkout session not found. */

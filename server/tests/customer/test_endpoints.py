@@ -633,7 +633,7 @@ class TestTopCustomers:
         assert no_rate_result["net_revenue"] == 10_000
 
     @pytest.mark.auth
-    async def test_balance_order_uses_organization_daily_average_rate(
+    async def test_balance_order_uses_closest_payment_rate(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -683,7 +683,7 @@ class TestTopCustomers:
         balance_result = next(
             item for item in response.json() if item["id"] == str(balance_customer.id)
         )
-        assert balance_result["net_revenue"] == 2_000
+        assert balance_result["net_revenue"] == 3_000
 
     @pytest.mark.auth
     async def test_balance_order_uses_closest_global_rate_outside_window(

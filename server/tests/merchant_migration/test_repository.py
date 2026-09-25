@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -36,7 +37,7 @@ from polar.models.merchant_migration_record import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_payment_method
-from tests.merchant_migration._helpers import canonical_subscription
+from tests.merchant_migration._helpers import canonical_discount, canonical_subscription
 
 
 async def _create_migration(
@@ -285,6 +286,60 @@ class TestUpsert:
         assert [price["source_id"] for price in reused.canonical["prices"]] == [
             "price_current"
         ]
+
+    async def test_merges_promotion_codes_onto_a_pending_coupon(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon_ends = datetime(2028, 1, 1, tzinfo=UTC)
+        promo_ends = datetime(2027, 1, 1, tzinfo=UTC)
+        coupon = canonical_discount(code=None, ends_at=coupon_ends)
+        await repository.upsert(migration, organization, coupon)
+        merged = await repository.upsert(
+            migration,
+            organization,
+            replace(coupon, code="LAUNCH", ends_at=promo_ends),
+        )
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="SAVE", ends_at=coupon_ends)
+        )
+
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["extra_codes"] == 1
+        assert merged.canonical["ends_at"] == promo_ends.isoformat()
+
+    async def test_coupon_reextract_refreshes_terms_and_keeps_promo_code(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = canonical_discount(code=None, name="Launch", max_redemptions=100)
+        await repository.upsert(migration, organization, coupon)
+        await repository.upsert(
+            migration,
+            organization,
+            replace(coupon, code="LAUNCH", max_redemptions=3),
+        )
+
+        merged = await repository.upsert(
+            migration,
+            organization,
+            canonical_discount(
+                code=None, name="Launch 20", basis_points=2000, max_redemptions=50
+            ),
+        )
+
+        assert merged.canonical["name"] == "Launch 20"
+        assert merged.canonical["basis_points"] == 2000
+        assert merged.canonical["code"] == "LAUNCH"
+        assert merged.canonical["max_redemptions"] == 3
 
 
 @pytest.mark.asyncio

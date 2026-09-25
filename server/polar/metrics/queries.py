@@ -42,8 +42,7 @@ from polar.models import (
 from polar.models.product import ProductBillingType
 
 from .fx import (
-    closest_global_daily_rate,
-    global_daily_exchange_rates,
+    closest_recorded_exchange_rate,
     recorded_exchange_rate,
     recorded_exchange_rate_clauses,
 )
@@ -187,12 +186,9 @@ def get_active_subscriptions_cte(
         .group_by(fx_day, fx_currency)
     )
 
-    # Not bounded by the query range: the closest rate may fall outside it.
-    global_fx_daily = cte(global_daily_exchange_rates())
-
     closest_global_fx_rate = (
-        closest_global_daily_rate(
-            global_fx_daily, func.lower(Subscription.currency), timestamp_column
+        closest_recorded_exchange_rate(
+            func.lower(Subscription.currency), timestamp_column
         )
         .correlate(Subscription, timestamp_series)
         .scalar_subquery()

@@ -59,4 +59,49 @@ describe('CatalogEmptyPanel', () => {
       screen.getByRole('button', { name: 'Refresh from Stripe' }),
     ).toBeEnabled()
   })
+
+  it('shows a failed Stripe read instead of an empty catalog', () => {
+    render(
+      <CatalogEmptyPanel
+        kind="no_stripe_subscriptions"
+        readError="The Stripe API key is missing access to: Coupons."
+        onRerunPrecheck={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: "We couldn't read your subscriptions",
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('heading', { name: 'Nothing to import' }),
+    ).toBeNull()
+    expect(
+      screen.getByText('The Stripe API key is missing access to: Coupons.'),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Refresh from Stripe' }),
+    ).toBeEnabled()
+  })
+
+  it('shows the refresh in progress while a failed read is retried', () => {
+    render(
+      <CatalogEmptyPanel
+        kind="no_stripe_subscriptions"
+        rerunning
+        readError="The Stripe API key is missing access to: Coupons."
+        onRerunPrecheck={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Refreshing from Stripe' }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('heading', {
+        name: "We couldn't read your subscriptions",
+      }),
+    ).toBeNull()
+  })
 })

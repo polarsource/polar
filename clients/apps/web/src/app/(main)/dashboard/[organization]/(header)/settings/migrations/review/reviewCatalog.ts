@@ -42,3 +42,5 @@ export const CATALOG_REFRESH_COPY = {
   title: 'Refreshing from Stripe',
   description: `We're reading your Stripe catalog again. ${CATALOG_READ_DURATION}.`,
 } as const
+
+export const CATALOG_READ_ERROR_TITLE = "We couldn't read your subscriptions"

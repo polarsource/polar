@@ -33,7 +33,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const {
     data: migration,
     isPending: migrationPending,
-    isError: migrationError,
+    isLoadingError: migrationLoadingError,
   } = useMerchantMigration(migrationId)
   const refreshing = isActiveMigrationOperation(migration?.operation)
   const pollMs = refreshing ? 2000 : false
@@ -120,7 +120,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     )
   }
 
-  if (records.isError || countsError || migrationError) {
+  if (records.isError || countsError || migrationLoadingError) {
     return (
       <Alert
         variant="danger"

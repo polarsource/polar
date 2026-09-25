@@ -245,42 +245,6 @@ export const CheckoutFormProvider = ({
     [confirmOuter, setError, setDiscountError, update, setTrialUnavailable],
   )
 
-  const handleNextAction = useCallback(
-    async (
-      stripe: Stripe,
-      confirmedCheckout: schemas['CheckoutPublicConfirmed'],
-    ): Promise<void> => {
-      const { intent_status, intent_client_secret } =
-        confirmedCheckout.payment_processor_metadata
-      if (intent_status !== 'requires_action') {
-        return
-      }
-
-      const { error, paymentIntent, setupIntent } =
-        await stripe.handleNextAction({ clientSecret: intent_client_secret })
-      if (error) {
-        setLoading(false)
-        setError('root', { message: error.message })
-        throw shownToBuyer(new Error(error.message))
-      }
-
-      // Buyer dismissed the action (e.g. closed the Cash App Pay QR code): cancel the intent and reopen the checkout
-      const status = (paymentIntent ?? setupIntent)?.status ?? intent_status
-      if (status === 'requires_action') {
-        const { ok, value } = await cancelPayment()
-        // The buyer completed the payment before dismissing it
-        if (ok && value.status !== 'open') {
-          return
-        }
-        const message = t('checkout.loading.paymentNotCompleted')
-        setLoading(false)
-        setError('root', { message })
-        throw shownToBuyer(new Error(message))
-      }
-    },
-    [cancelPayment, setError, t],
-  )
-
   const confirm = useCallback(
     async (
       data: schemas['CheckoutConfirmStripe'],
@@ -370,12 +334,40 @@ export const CheckoutFormProvider = ({
       }
 
       setLoadingLabel(t('checkout.loading.paymentSuccessful'))
-      await handleNextAction(stripe, updatedCheckout)
+
+      const { intent_status, intent_client_secret } =
+        updatedCheckout.payment_processor_metadata
+      if (intent_status === 'requires_action') {
+        const {
+          error: nextActionError,
+          paymentIntent,
+          setupIntent,
+        } = await stripe.handleNextAction({
+          clientSecret: intent_client_secret,
+        })
+        if (nextActionError) {
+          setLoading(false)
+          setError('root', { message: nextActionError.message })
+          throw shownToBuyer(new Error(nextActionError.message))
+        }
+
+        // Buyer dismissed the action (e.g. closed the Cash App Pay QR code): cancel the intent and reopen the checkout, unless they completed it first
+        const status = (paymentIntent ?? setupIntent)?.status ?? intent_status
+        if (status === 'requires_action') {
+          const { ok, value } = await cancelPayment()
+          if (!ok || value.status === 'open') {
+            const message = t('checkout.loading.paymentNotCompleted')
+            setLoading(false)
+            setError('root', { message })
+            throw shownToBuyer(new Error(message))
+          }
+        }
+      }
 
       setLoading(false)
       return updatedCheckout
     },
-    [checkout, setError, _confirm, t, setTrialUnavailable, handleNextAction],
+    [checkout, setError, _confirm, t, setTrialUnavailable, cancelPayment],
   )
 
   return (

@@ -1,7 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import ColumnElement, Numeric, Select, func, select, union_all
+from sqlalchemy import (
+    ColumnElement,
+    Numeric,
+    Select,
+    func,
+    literal_column,
+    select,
+    union_all,
+)
 from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.models import Transaction
@@ -22,9 +30,9 @@ def recorded_exchange_rate() -> ColumnElement[Decimal]:
 
 def usd_settled_payment_clauses() -> tuple[ColumnElement[bool], ...]:
     return (
-        Transaction.type == TransactionType.payment,
+        Transaction.type == literal_column(f"'{TransactionType.payment}'"),
         Transaction.presentment_currency.is_not(None),
-        func.lower(Transaction.currency) == "usd",
+        func.lower(Transaction.currency) == literal_column("'usd'"),
     )
 
 

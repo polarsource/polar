@@ -52,6 +52,8 @@ from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidati
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.email import normalize_email
+from polar.kit.pii import hash_pii
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -6022,7 +6024,7 @@ class TestConfirm:
         await create_trial_redemption(
             save_fixture,
             customer=existing_customer,
-            customer_email=existing_customer.email,
+            customer_email=hash_pii(normalize_email(existing_customer.email)),
             payment_method_fingerprint="FINGERPRINT",
         )
 

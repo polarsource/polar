@@ -22,6 +22,8 @@ from polar.kit.address import Address, CountryAlpha2
 HASH_SEPARATOR = "$"
 MAX_HASH_SECRET_ID_LENGTH = 15
 
+DEFAULT_PII_SCRUBBING_SALT = "super secret pii scrubbing salt"
+
 DEVELOPMENT_JWKS = json.dumps(
     {
         "keys": [
@@ -126,6 +128,7 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
     SECRET: str = "super secret jwt secret"
+    PII_SCRUBBING_SALT: str = DEFAULT_PII_SCRUBBING_SALT
     HASH_SECRETS: dict[str, str] = {}
     CURRENT_HASH_SECRET_ID: str | None = None
     # The key set the LocalSigner signs with: a document, or a path to one.

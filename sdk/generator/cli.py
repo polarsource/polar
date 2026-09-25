@@ -8,6 +8,7 @@ import openapi_pydantic as op
 from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
 from generator.emitter import Prerelease
 from generator.ir import generate_ir
+from generator.mcp_openapi import generate_mcp_openapi
 from generator.release import regenerate_openapi, release_sdk
 from python.emitter import PythonEmitter
 
@@ -46,6 +47,19 @@ parser_docs_openapi.add_argument(
     type=str,
     default="0.0.0",
     help="SDK version represented by the code samples (default: 0.0.0).",
+)
+
+parser_mcp_openapi = subparsers.add_parser(
+    "mcp-openapi", help="Generate a public OpenAPI spec for MCP"
+)
+parser_mcp_openapi.add_argument(
+    "spec_paths", nargs="+", type=pathlib.Path, help="Paths to OpenAPI spec files."
+)
+parser_mcp_openapi.add_argument(
+    "--output",
+    type=pathlib.Path,
+    required=True,
+    help="Directory to write the generated OpenAPI specs.",
 )
 parser_generate.add_argument(
     "--language",
@@ -157,6 +171,16 @@ elif args.command == "docs-openapi":
             print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
             sys.exit(1)
     generate_docs_openapi(args.spec_paths, args.output, args.version)
+
+elif args.command == "mcp-openapi":
+    for spec_path in args.spec_paths:
+        if not spec_path.exists():
+            print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
+            sys.exit(1)
+        if not spec_path.is_file():
+            print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
+            sys.exit(1)
+    generate_mcp_openapi(args.spec_paths, args.output)
 
 elif args.command == "release":
     prerelease = None

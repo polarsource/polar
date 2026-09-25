@@ -1,5 +1,18 @@
 # @polar-sh/nuxt
 
+## 0.6.0
+
+### Minor Changes
+
+- de3c006: Support `discount_code` in checkout requests, applying the code before redirecting or opening an embedded checkout. Discount codes must be enabled, and an explicit `discount_id` takes precedence.
+- 8f18833: Target Nuxt 4, now that Nuxt 3 reached end-of-life on July 31, 2026. Upgrades `@nuxt/kit` to 4, `@nuxt/module-builder` to 1, `@nuxt/devtools` to 3, `@nuxt/test-utils` to 4.3, `vue-tsc` to 3 and `zod` to 4. The package now ships ESM only (`dist/module.mjs`, types in `dist/types.d.mts`); the CommonJS `require` entry, which Nuxt does not use, is removed.
+
+### Patch Changes
+
+- 332b802: Use standalone SDK functions so application bundles include only the API operations used by each adapter.
+
+  For Better Auth, create the `client` option with `createPolarCore` instead of `createPolar`, importing it from `@polar-sh/sdk/2026-04`. Custom plugins passed through `use` now receive a `PolarCore` and must use standalone SDK functions with it.
+
 ## 0.5.8
 
 ### Patch Changes

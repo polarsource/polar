@@ -1,5 +1,17 @@
 # @polar-sh/tanstack-start
 
+## 0.5.0
+
+### Minor Changes
+
+- de3c006: Support `discount_code` in checkout requests, applying the code before redirecting or opening an embedded checkout. Discount codes must be enabled, and an explicit `discount_id` takes precedence.
+
+### Patch Changes
+
+- 332b802: Use standalone SDK functions so application bundles include only the API operations used by each adapter.
+
+  For Better Auth, create the `client` option with `createPolarCore` instead of `createPolar`, importing it from `@polar-sh/sdk/2026-04`. Custom plugins passed through `use` now receive a `PolarCore` and must use standalone SDK functions with it.
+
 ## 0.4.7
 
 ### Patch Changes

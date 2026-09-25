@@ -11,8 +11,6 @@ import {
 
 const NO_MISSING: string[] = []
 
-const DEFAULT_PASTE_HINT = "We'll validate it and start your migration."
-
 function PermissionRow({
   resource,
   access,
@@ -38,7 +36,7 @@ function PermissionRow({
 
 export function ConnectGuide({
   missingResources = NO_MISSING,
-  pasteHint = DEFAULT_PASTE_HINT,
+  pasteHint = "We'll validate it and start your migration.",
 }: {
   missingResources?: string[]
   pasteHint?: string

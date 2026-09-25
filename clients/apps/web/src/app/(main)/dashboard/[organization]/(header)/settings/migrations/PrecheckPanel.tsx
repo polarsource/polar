@@ -28,7 +28,7 @@ export function PrecheckPanel({
   const missingScopes =
     error && !running ? parseMissingStripeScopes({ detail: error }) : []
 
-  if (error && !running && missingScopes.length > 0) {
+  if (missingScopes.length > 0) {
     return (
       <Box marginTop="m">
         <ScanFailurePanel

@@ -41,7 +41,6 @@ class MerchantMigrationCreate(Schema):
 
 class MerchantMigrationSourceUpdate(Schema):
     api_key: str = Field(
-        min_length=1,
         pattern=r"^(rk|sk)_",
         description=(
             "A Stripe API key for the account already connected to this migration. "

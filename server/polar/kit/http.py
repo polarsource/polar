@@ -196,6 +196,23 @@ def get_safe_return_url(return_to: str | None) -> str:
     return return_to
 
 
+def align_loopback_frontend_url(request: Request, url: str) -> str:
+    """Keep a development redirect on the loopback host that made the request."""
+    if not settings.is_development() or not is_localhost(request):
+        return url
+    parsed = urlparse(url)
+    request_host = request.url.hostname
+    if (
+        parsed.hostname not in {"127.0.0.1", "localhost"}
+        or request_host is None
+        or parsed.hostname == request_host
+    ):
+        return url
+    return urlunparse(
+        parsed._replace(netloc=parsed.netloc.replace(parsed.hostname, request_host, 1))
+    )
+
+
 async def _get_safe_return_url_dependency(return_to: str | None = Query(None)) -> str:
     return get_safe_return_url(return_to)
 
@@ -220,6 +237,13 @@ def add_query_parameters(url: str, **kwargs: str | list[str]) -> str:
 
 def is_localhost(request: Request) -> bool:
     return request.url.hostname in {"127.0.0.1", "localhost"}
+
+
+def request_cookie_domain(request: Request, configured: str | None) -> str | None:
+    """Omit Domain on a development loopback request so the cookie stays on that host."""
+    if settings.is_development() and is_localhost(request):
+        return None
+    return configured
 
 
 def get_ip_address(request: Request) -> str | None:

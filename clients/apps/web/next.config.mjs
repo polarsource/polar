@@ -42,6 +42,9 @@ const POLAR_AUTH_COOKIE_KEY =
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
+const loopbackFrontend =
+  defaultFrontendHostname === 'localhost' ||
+  defaultFrontendHostname === '127.0.0.1'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -230,9 +233,11 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Redirect /dashboard to correct domain if on a different domain name
+      // Redirect /dashboard to correct domain if on a different domain name.
+      // Loopback dev uses both localhost and 127.0.0.1, and this rule would
+      // send one of them to https://127.0.0.1 without a port.
       // Skip in preview builds — preview env uses a single domain via Caddy proxy
-      ...(!previewBasePath
+      ...(!previewBasePath && !loopbackFrontend
         ? [
             {
               source: '/dashboard/:path*',

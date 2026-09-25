@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import Auth from '@/components/Auth/Auth'
 import AuthHeader from '@/components/Auth/AuthHeader'
 import { getServerSideAPI } from '@/utils/client/serverside'
@@ -22,7 +22,8 @@ export default async function Page(props: {
   }>
 }) {
   const api = await getServerSideAPI()
-  const authenticationSession = await checkAuthenticationSession(api)
+  const pageHost = (await headers()).get('host')?.split(':')[0]
+  const authenticationSession = await checkAuthenticationSession(api, pageHost)
   const searchParams = await props.searchParams
 
   const redirectPath = getAuthenticationSessionRedirectPath(

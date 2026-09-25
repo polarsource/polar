@@ -41,7 +41,13 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
         }
         return
       }
-      window.location.href = `${CONFIG.FRONTEND_BASE_URL}/auth`
+      const origin =
+        process.env.NODE_ENV !== 'production' &&
+        (window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1')
+          ? window.location.origin
+          : CONFIG.FRONTEND_BASE_URL
+      window.location.href = `${origin}/auth`
     } catch {
       setError('code', {
         message: 'An unexpected error occurred. Please try again.',

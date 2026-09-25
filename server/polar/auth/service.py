@@ -10,7 +10,11 @@ from sqlalchemy import delete
 from polar.config import settings
 from polar.enums import TokenType
 from polar.kit.crypto import generate_token_hash_pair
-from polar.kit.http import get_safe_return_url
+from polar.kit.http import (
+    align_loopback_frontend_url,
+    get_safe_return_url,
+    request_cookie_domain,
+)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import User, UserSession, UserSessionOrganization
@@ -46,7 +50,9 @@ class AuthService:
             organization_ids=organization_ids,
         )
 
-        return_url = get_safe_return_url(return_to)
+        return_url = align_loopback_frontend_url(
+            request, get_safe_return_url(return_to)
+        )
         response = RedirectResponse(return_url, 303)
         response = self._set_user_session_cookie(
             request, response, token, user_session.expires_at
@@ -157,7 +163,7 @@ class AuthService:
             value=value,
             expires=expires,
             path="/",
-            domain=settings.USER_SESSION_COOKIE_DOMAIN,
+            domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
             secure=secure,
             httponly=True,
             samesite="lax",
@@ -174,7 +180,7 @@ class AuthService:
             value=factor,
             max_age=60 * 60 * 24 * 365,
             path="/",
-            domain=settings.USER_SESSION_COOKIE_DOMAIN,
+            domain=request_cookie_domain(request, settings.USER_SESSION_COOKIE_DOMAIN),
             secure=secure,
             httponly=False,
             samesite="lax",

@@ -690,12 +690,26 @@ async def _count_seat_orders(
 async def _count_seats(
     session: AsyncReadSession, seat_products: CTE
 ) -> dict[uuid.UUID, tuple[int, int]]:
-    """Claimed seats and seats still missing a member, per organization."""
+    """Claimed seats, and seats still missing a member that prepare could fill.
+
+    Prepare cannot fill a seat whose holder customer is deleted, so those are
+    left out of the missing-member count but still counted as claimed.
+    """
+    holder_deleted = (
+        select(Customer.id)
+        .where(
+            Customer.id == CustomerSeat.customer_id,
+            Customer.deleted_at.is_not(None),
+        )
+        .exists()
+        .label("holder_deleted")
+    )
     subscription_seats = (
         select(
             CustomerSeat.status.label("status"),
             CustomerSeat.member_id.label("member_id"),
             seat_products.c.organization_id.label("organization_id"),
+            holder_deleted,
         )
         .select_from(CustomerSeat)
         .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
@@ -706,6 +720,7 @@ async def _count_seats(
             CustomerSeat.status,
             CustomerSeat.member_id,
             seat_products.c.organization_id,
+            holder_deleted,
         )
         .select_from(CustomerSeat)
         .join(Order, CustomerSeat.order_id == Order.id)
@@ -721,6 +736,7 @@ async def _count_seats(
                 and_(
                     seats.c.member_id.is_(None),
                     seats.c.status != SeatStatus.revoked,
+                    ~seats.c.holder_deleted,
                 )
             ),
         ).group_by(seats.c.organization_id)

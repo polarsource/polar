@@ -100,12 +100,12 @@ _DISCOUNT_MISSING_START = (
     "continue its remaining duration. It stays on the source."
 )
 _NO_PAYMENT_METHOD = (
-    "No copied payment method has landed on Polar for this customer, so the "
-    "next renewal fails and goes to dunning unless they add one first."
+    "No copied payment method has landed on Polar for this customer. Unless "
+    "they have a default one by the next renewal, it fails and goes to dunning."
 )
 _NOT_A_CARD = (
-    "It renews with a copied bank debit, which Polar can't check ahead of the "
-    "first charge. If that renewal fails, it goes to dunning."
+    "It renews with a payment method that isn't a card, which Polar can't "
+    "check ahead of the first charge. If that renewal fails, it goes to dunning."
 )
 _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
 _CARD_EXPIRED = (

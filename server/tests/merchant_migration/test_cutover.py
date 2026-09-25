@@ -1039,7 +1039,7 @@ class TestRun:
         outcome = await cutover(_source())
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
-        assert "bank debit" in (outcome.message or "")
+        assert "isn't a card" in (outcome.message or "")
         subscription = await _created(session, pending_record)
         assert subscription.payment_method_id is not None
 

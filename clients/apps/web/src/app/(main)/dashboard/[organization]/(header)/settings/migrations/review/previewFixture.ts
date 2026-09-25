@@ -22,6 +22,8 @@ export const assessmentPreviewRow: ReviewRow = {
   recurring_interval_count: 1,
   automatic_tax: false,
   tax_behavior: 'inclusive',
+  discount_name: null,
+  discount_code: null,
   status: 'importable',
   import_status: 'pending',
   reason:

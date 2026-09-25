@@ -49,8 +49,7 @@ SHARED_PROJECT_NAME = "polar-shared"
 SHARED_NETWORK_NAME = "polar-shared"
 
 # Cross-worktree registry of allocated instances. Lives outside the repo so all
-# worktrees (and conductor checkouts) see the same list and can allocate without
-# colliding.
+# worktrees see the same list and can allocate without colliding.
 REGISTRY_FILE = Path.home() / ".config" / "polar" / "docker-instances.json"
 REGISTRY_VERSION = 1
 MIN_INSTANCE = 1
@@ -291,21 +290,12 @@ def _detect_instance() -> tuple[int, str]:
 
     Priority:
     1. POLAR_DOCKER_INSTANCE in .env.docker (explicit per-worktree pin)
-    2. CONDUCTOR_PORT env var → (port - 55000) / 10 + 1
-    3. Existing entry in the cross-worktree registry for this path
-    4. Allocate the lowest free instance number
+    2. Existing entry in the cross-worktree registry for this path
+    3. Allocate the lowest free instance number
     """
     stored = _read_stored_instance()
     if stored is not None:
         return stored, "stored"
-
-    conductor_port = os.environ.get("CONDUCTOR_PORT")
-    if conductor_port:
-        try:
-            port = int(conductor_port)
-            return (port - 55000) // 10 + 1, "auto"
-        except ValueError:
-            pass
 
     path = str(ROOT_DIR)
     data = _load_registry()
@@ -683,8 +673,6 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 err_console.print(
                     f"[dim]Allocated new instance {instance} for {ROOT_DIR}[/dim]"
                 )
-            else:
-                err_console.print(f"[dim]Auto-detected instance {instance}[/dim]")
             if source != "registry":
                 _upsert_registry(str(ROOT_DIR), instance)
         ctx.ensure_object(dict)

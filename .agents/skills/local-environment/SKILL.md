@@ -36,9 +36,8 @@ uploads and console access.
 rarely needed. Priority:
 
 1. `POLAR_DOCKER_INSTANCE` pinned in `dev/docker/.env.docker` (`dev docker set-instance N`)
-2. `CONDUCTOR_PORT` env var → `(port - 55000) / 10 + 1`
-3. The cross-worktree registry (`~/.config/polar/docker-instances.json`)
-4. Otherwise the lowest free number, then registered
+2. The cross-worktree registry (`~/.config/polar/docker-instances.json`)
+3. Otherwise the lowest free number, then registered
 
 Run `dev docker ports` to see the resolved instance and its URLs (add `--json`
 for tooling). To wire this worktree into Claude Code's preview, run

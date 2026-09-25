@@ -12,6 +12,7 @@ from polar.merchant_migration.adapters.stripe import (
     StripeMissingScope,
 )
 from polar.merchant_migration.canonical import (
+    CanonicalCustomer,
     CanonicalDiscount,
     CanonicalDiscountType,
     CanonicalPaymentMethod,
@@ -21,6 +22,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from polar.tax.tax_id import TaxIDFormat
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -561,6 +563,132 @@ class TestExtractProducts:
         assert products == []
 
 
+def _customer_with_tax_ids(
+    *tax_ids: dict[str, Any], country: str | None = None
+) -> stripe_lib.Customer:
+    payload: dict[str, Any] = {
+        "id": "cus_1",
+        "email": "a@example.com",
+        "name": "A",
+        "tax_ids": {
+            "object": "list",
+            "data": list(tax_ids),
+            "has_more": False,
+        },
+    }
+    if country is not None:
+        payload["address"] = {"country": country}
+    return stripe_lib.Customer.construct_from(payload, None)
+
+
+_EIN = {
+    "id": "txi_ein",
+    "object": "tax_id",
+    "type": "us_ein",
+    "value": "12-3456789",
+}
+_EU_VAT = {
+    "id": "txi_vat",
+    "object": "tax_id",
+    "type": "eu_vat",
+    "value": "FR61954506077",
+}
+
+
+class TestMapTaxId:
+    def test_country_match_prefers_map_order_over_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="US")
+        )
+
+        assert mapped.tax_id == ("12-3456789", TaxIDFormat.us_ein)
+
+    def test_country_match_picks_eu_vat_for_eu_address(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="FR")
+        )
+
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_known_country_no_matching_type_is_none(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, country="FR")
+        )
+
+        assert mapped.tax_id is None
+
+    def test_missing_country_prefers_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT)
+        )
+
+        assert mapped.country is None
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_unknown_country_prefers_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="ZZ")
+        )
+
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_missing_country_without_eu_vat_is_none(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(_customer_with_tax_ids(_EIN))
+
+        assert mapped.country is None
+        assert mapped.tax_id is None
+
+    def test_skips_unknown_type_for_matching_country(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(
+                {
+                    "id": "txi_unknown",
+                    "object": "tax_id",
+                    "type": "not_a_tax_id",
+                    "value": "XX123",
+                },
+                {
+                    "id": "txi_gb",
+                    "object": "tax_id",
+                    "type": "gb_vat",
+                    "value": "GB123456789",
+                },
+                country="GB",
+            )
+        )
+
+        assert mapped.tax_id == ("GB123456789", TaxIDFormat.gb_vat)
+
+    def test_ca_map_order_prefers_qst_over_bn(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(
+                {
+                    "id": "txi_bn",
+                    "object": "tax_id",
+                    "type": "ca_bn",
+                    "value": "123456789",
+                },
+                {
+                    "id": "txi_qst",
+                    "object": "tax_id",
+                    "type": "ca_qst",
+                    "value": "1234567890TQ1234",
+                },
+                country="CA",
+            )
+        )
+
+        assert mapped.tax_id == ("1234567890TQ1234", TaxIDFormat.ca_qst)
+
+    def test_lowercase_country_still_matches_map(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="us")
+        )
+
+        assert mapped.country == "us"
+        assert mapped.tax_id == ("12-3456789", TaxIDFormat.us_ein)
+
+
 @pytest.mark.asyncio
 class TestExtractPages:
     async def test_customer_page_resumes_and_advances_to_subscriptions(
@@ -592,10 +720,69 @@ class TestExtractPages:
         client.v1.customers.list_async.assert_awaited_once_with(
             params={
                 "limit": 100,
-                "expand": ["data.invoice_settings.default_payment_method"],
+                "expand": [
+                    "data.invoice_settings.default_payment_method",
+                    "data.tax_ids",
+                ],
                 "starting_after": "cus_1",
             }
         )
+
+    async def test_copies_vat_id_onto_canonical_customer(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_vat",
+                "email": "b2b@example.com",
+                "name": "B2B",
+                "address": {"country": "FR"},
+                "tax_ids": {
+                    "object": "list",
+                    "data": [
+                        {
+                            "id": "txi_1",
+                            "object": "tax_id",
+                            "type": "eu_vat",
+                            "value": "FR61954506077",
+                        }
+                    ],
+                    "has_more": False,
+                },
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "customers"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalCustomer)
+        assert record.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    async def test_no_tax_ids_maps_to_none(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_2",
+                "email": "customer@example.com",
+                "name": "Customer",
+                "address": {"country": "US"},
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "customers"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalCustomer)
+        assert record.tax_id is None
 
     async def test_skipped_subscription_still_advances_the_page_cursor(
         self, mocker: MockerFixture

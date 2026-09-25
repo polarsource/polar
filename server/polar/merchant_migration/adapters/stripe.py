@@ -9,10 +9,12 @@ from enum import StrEnum
 from typing import Any, TypeVar
 
 import stripe as stripe_lib
+from pydantic import ValidationError
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address
 from polar.kit.schemas import Schema
+from polar.tax.tax_id import COUNTRY_TAX_ID_MAP, TaxID, TaxIDFormat, from_stripe_tax_id
 
 from ..canonical import (
     CanonicalAccount,
@@ -373,7 +375,10 @@ class StripeAdapter:
     ) -> ExtractionPage:
         params: stripe_lib.params.CustomerListParams = {
             "limit": PAGE_SIZE,
-            "expand": ["data.invoice_settings.default_payment_method"],
+            "expand": [
+                "data.invoice_settings.default_payment_method",
+                "data.tax_ids",
+            ],
         }
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
@@ -700,30 +705,34 @@ class StripeAdapter:
         return bool(comment and comment.startswith(CANCELLATION_COMMENT_PREFIX))
 
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
-        address = customer.address
-        country = address.country if address is not None else None
-        billing_address = (
-            Address.model_validate(
-                {
-                    "line1": address.get("line1"),
-                    "line2": address.get("line2"),
-                    "postal_code": address.get("postal_code"),
-                    "city": address.get("city"),
-                    "state": address.get("state"),
-                    "country": country,
-                }
-            )
-            if address is not None and country is not None
-            else None
-        )
+        address = customer.get("address")
+        country = address.get("country") if address is not None else None
         return CanonicalCustomer(
             source_id=customer.id,
             email=customer.email or "",
             name=customer.name,
             country=country,
             country_hint=None if country else self._customer_country_hint(customer),
-            billing_address=billing_address,
+            billing_address=self._billing_address(address, country),
+            tax_id=self._map_tax_id(customer, country),
         )
+
+    def _billing_address(self, address: Any, country: str | None) -> Address | None:
+        if address is None or not country:
+            return None
+        try:
+            return Address.model_validate(
+                {
+                    "line1": address.get("line1"),
+                    "line2": address.get("line2"),
+                    "postal_code": address.get("postal_code"),
+                    "city": address.get("city"),
+                    "state": address.get("state"),
+                    "country": country.upper(),
+                }
+            )
+        except ValidationError:
+            return None
 
     def _customer_country_hint(self, customer: stripe_lib.Customer) -> str | None:
         invoice_settings = customer.get("invoice_settings")
@@ -761,6 +770,31 @@ class StripeAdapter:
         billing_country = source.get("address_country") or address.get("country")
         card = source.get("card") or {}
         return billing_country, source.get("country") or card.get("country")
+
+    def _map_tax_id(
+        self, customer: stripe_lib.Customer, country: str | None
+    ) -> TaxID | None:
+        tax_ids = customer.get("tax_ids")
+        mapped: list[TaxID] = []
+        for item in (tax_ids["data"] if tax_ids else None) or []:
+            tax_id = from_stripe_tax_id(item.get("type") or "", item.get("value"))
+            if tax_id is not None:
+                mapped.append(tax_id)
+        if not mapped:
+            return None
+
+        allowed = COUNTRY_TAX_ID_MAP.get(country.upper()) if country else None
+        if allowed is not None:
+            for fmt in allowed:
+                for tax_id in mapped:
+                    if tax_id[1] is fmt:
+                        return tax_id
+            return None
+
+        for tax_id in mapped:
+            if tax_id[1] is TaxIDFormat.eu_vat:
+                return tax_id
+        return None
 
     def _resolve_payment_method(
         self, subscription: stripe_lib.Subscription

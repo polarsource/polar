@@ -117,6 +117,7 @@ class TestSerialize:
             "country": None,
             "country_hint": None,
             "billing_address": None,
+            "tax_id": None,
         }
 
 

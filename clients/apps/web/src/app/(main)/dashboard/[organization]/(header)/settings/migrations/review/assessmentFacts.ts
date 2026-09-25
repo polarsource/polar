@@ -10,7 +10,6 @@ export function assessmentFacts(row: ReviewRow) {
     renewal: renewalDate(row),
     status: row.subtitle,
     automaticTax: automaticTaxLabel(row),
-    subscriptionId: row.entity === 'subscriptions' ? row.source_id : null,
     sourceId: row.source_id,
     productId: row.product_source_id,
     customerId: row.customer_source_id,

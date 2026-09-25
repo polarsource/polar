@@ -22,6 +22,19 @@ async def merchant_migration_precheck(
 
 
 @actor(
+    actor_name="merchant_migration.import_catalog",
+    priority=TaskPriority.LOW,
+    time_limit=600_000,
+)
+async def merchant_migration_import_catalog(
+    merchant_migration_id: Annotated[UUID, LoggableField],
+) -> None:
+    """Create products, discounts, and customers, one batch per run."""
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.execute_import(session, merchant_migration_id)
+
+
+@actor(
     actor_name="merchant_migration.verify_cards",
     priority=TaskPriority.LOW,
 )

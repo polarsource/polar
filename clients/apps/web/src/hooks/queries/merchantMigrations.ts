@@ -114,8 +114,8 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
         }),
         'Something went wrong. Please try again.',
       ),
-    onSuccess: () => {
-      invalidateMigrationRecords(id)
+    onSuccess: (migration) => {
+      getQueryClient().setQueryData(['merchantMigration', { id }], migration)
     },
   })
 

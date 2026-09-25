@@ -25235,6 +25235,11 @@ export interface components {
       /** @description pending or running while Polar works; done or failed when it finishes. */
       status: components['schemas']['MerchantMigrationOperationStatus']
       /**
+       * Kind
+       * @description Which job this is: pre-check, catalog import, or cutover. Null on runs started before this field existed.
+       */
+      kind?: components['schemas']['MerchantMigrationOperationKind'] | null
+      /**
        * Stalled
        * @description Whether an active operation has stopped making progress.
        */
@@ -25250,6 +25255,11 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /**
+     * MerchantMigrationOperationKind
+     * @enum {string}
+     */
+    MerchantMigrationOperationKind: 'precheck' | 'import' | 'cutover'
     /** MerchantMigrationRecordBillingAddressUpdate */
     MerchantMigrationRecordBillingAddressUpdate: {
       /** @description Billing address Polar will store on the imported customer. */
@@ -56647,7 +56657,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MerchantMigrationImportReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */

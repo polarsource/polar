@@ -548,6 +548,7 @@ class TestImport:
     async def test_imports_catalog(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -567,19 +568,35 @@ class TestImport:
         )
 
         await start_and_execute_precheck(migration)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
         assert response.status_code == 200
         json_body = response.json()
-        assert json_body["step"] == "create_catalog"
-        results = {result["entity"]: result for result in json_body["results"]}
-        assert results["products"]["imported"] == 1
-        assert results["customers"]["imported"] == 1
+        assert json_body["step"] == "pre_check"
+        assert json_body["operation"]["status"] == "pending"
+        assert json_body["operation"]["kind"] == "import"
+        enqueue.assert_called_once_with(
+            "merchant_migration.import_catalog", merchant_migration_id=migration.id
+        )
+
+        report = await merchant_migration_service.execute_import(session, migration.id)
+        assert report is not None
+        results = {result.entity.value: result for result in report.results}
+        assert results["products"].imported == 1
+        assert results["customers"].imported == 1
+
+        finished = await client.get(f"/v1/merchant-migrations/{migration.id}")
+        assert finished.status_code == 200
+        assert finished.json()["step"] == "create_catalog"
+        assert finished.json()["operation"]["status"] == "done"
+        assert finished.json()["operation"]["kind"] == "import"
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_imports_selected_subscription_dependencies(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -613,9 +630,14 @@ class TestImport:
             json={"record_ids": [subscription_record_id]},
         )
         assert response.status_code == 200
-        results = {r["entity"]: r for r in response.json()["results"]}
-        assert results["customers"]["imported"] == 1
-        assert results["products"]["imported"] == 1
+        assert response.json()["step"] == "pre_check"
+        assert response.json()["operation"]["kind"] == "import"
+
+        report = await merchant_migration_service.execute_import(session, migration.id)
+        assert report is not None
+        results = {result.entity.value: result for result in report.results}
+        assert results["customers"].imported == 1
+        assert results["products"].imported == 1
 
 
 def _configure_destination(mocker: MockerFixture) -> None:

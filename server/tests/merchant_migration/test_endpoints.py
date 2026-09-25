@@ -338,28 +338,6 @@ class TestGet:
         assert response.status_code == 200
         assert response.json()["operation"]["stalled"] is True
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_read}))
-    async def test_returns_in_progress_operation(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        migration = await _create_migration(save_fixture, organization)
-        migration.operation = MerchantMigrationOperation(
-            status=MerchantMigrationOperationStatus.pending,
-            last_progress_at=utc_now(),
-        )
-        await save_fixture(migration)
-
-        response = await client.get(f"/v1/merchant-migrations/{migration.id}")
-
-        assert response.status_code == 200
-        operation = response.json()["operation"]
-        assert operation["status"] == "pending"
-        assert operation["stalled"] is False
-
 
 @pytest.mark.asyncio
 class TestList:

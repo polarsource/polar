@@ -93,12 +93,14 @@ async def get_organization_access_token(
 ) -> OrganizationAccessToken | None:
     token = await organization_access_token_service.get_by_token(session, value)
 
-    if token is not None:
-        enqueue_job(
-            "organization_access_token.record_usage",
-            organization_access_token_id=token.id,
-            last_used_at=utc_now().timestamp(),
-        )
+    if token is None or not token.organization.can_authenticate:
+        return None
+
+    enqueue_job(
+        "organization_access_token.record_usage",
+        organization_access_token_id=token.id,
+        last_used_at=utc_now().timestamp(),
+    )
 
     return token
 

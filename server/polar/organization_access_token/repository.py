@@ -14,6 +14,7 @@ from polar.kit.repository import (
 )
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationAccessToken
+from polar.models.organization import OrganizationStatus
 from polar.postgres import sql
 
 
@@ -42,10 +43,10 @@ class OrganizationAccessTokenRepository(
             .options(contains_eager(OrganizationAccessToken.organization))
         )
         if not include_deleted:
-            statement = statement.where(~Organization.is_deleted)
+            statement = statement.where(Organization.deleted_at.is_(None))
         if not include_blocked:
             statement = statement.where(
-                Organization.capabilities["api_access"].as_boolean()
+                Organization.status != OrganizationStatus.BLOCKED
             )
         if not expired:
             statement = statement.where(

@@ -7,10 +7,18 @@ from polar.auth.middlewares import get_auth_subject
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
-from polar.models import OAuth2Client, OAuth2Token, Organization, User, UserOrganization
+from polar.models import (
+    OAuth2Client,
+    OAuth2Token,
+    Organization,
+    OrganizationAccessToken,
+    User,
+    UserOrganization,
+)
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.models.user_session_organization import UserSessionOrganization
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
+from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.sub_type import SubType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -153,3 +161,29 @@ class TestGetAuthSubjectOAuth2TokenScope:
 
         assert auth_subject.subject == organization
         assert auth_subject.organization_ids is None
+
+
+@pytest.mark.asyncio
+class TestGetAuthSubjectOrganizationAccessToken:
+    async def test_api_access_disabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "api_access": False,
+        }
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="Test",
+                token=get_token_hash("polar_oat_123"),
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        with pytest.raises(InvalidTokenError):
+            await get_auth_subject(_request_with_bearer_token("polar_oat_123"), session)

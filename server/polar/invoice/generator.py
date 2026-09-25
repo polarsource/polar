@@ -106,36 +106,30 @@ class Invoice(BaseModel):
     def tax_items(self) -> list[InvoiceTotalsItem]:
         items: list[InvoiceTotalsItem] = []
         for item in self.tax_breakdown:
-            if item["taxability_reason"] not in {
-                TaxabilityReason.standard_rated,
-                TaxabilityReason.reverse_charge,
-            }:
+            if item["taxability_reason"] != TaxabilityReason.standard_rated:
                 continue
 
             label = item["display_name"]
 
-            if item["taxability_reason"] == TaxabilityReason.reverse_charge:
-                label = f"{label} (0% Reverse Charge)"
-            else:
-                if item["country"] is not None:
-                    country = pycountry.countries.get(alpha_2=item["country"])
-                    if country is not None:
-                        parts = [country.name]
+            if item["country"] is not None:
+                country = pycountry.countries.get(alpha_2=item["country"])
+                if country is not None:
+                    parts = [country.name]
 
-                        if item["state"] is not None:
-                            state: Any | None = pycountry.subdivisions.get(
-                                code=f"{item['country']}-{item['state']}"
-                            )
-                            if state is not None:
-                                parts = [state.name] + parts
+                    if item["state"] is not None:
+                        state: Any | None = pycountry.subdivisions.get(
+                            code=f"{item['country']}-{item['state']}"
+                        )
+                        if state is not None:
+                            parts = [state.name] + parts
 
-                        if item["subdivision"] is not None:
-                            parts = [item["subdivision"]] + parts
+                    if item["subdivision"] is not None:
+                        parts = [item["subdivision"]] + parts
 
-                        label += f" — {', '.join(parts)}"
+                    label += f" — {', '.join(parts)}"
 
-                if item["rate"] is not None:
-                    label += f" ({format_percent(item['rate'])})"
+            if item["rate"] is not None:
+                label += f" ({format_percent(item['rate'])})"
 
             items.append(
                 InvoiceTotalsItem(
@@ -155,6 +149,22 @@ class Invoice(BaseModel):
             )
 
         return items
+
+    @property
+    def reverse_charge_notice(self) -> str | None:
+        tax_names = sorted(
+            {
+                item["display_name"]
+                for item in self.tax_breakdown
+                if item["taxability_reason"] == TaxabilityReason.reverse_charge
+            }
+        )
+        if not tax_names:
+            return None
+        return (
+            f"Reverse charge: {' / '.join(tax_names)} "
+            "to be accounted for by the recipient."
+        )
 
     @property
     def totals_items(self) -> list[InvoiceTotalsItem]:
@@ -527,6 +537,7 @@ class InvoiceGenerator(FPDF):
         self._render_addresses()
         self._render_items_table()
         self._render_totals_table()
+        self._render_reverse_charge_notice()
         self._render_statement_descriptor()
         self._render_notes()
 
@@ -676,6 +687,15 @@ class InvoiceGenerator(FPDF):
                 row.cell(self._shape_text(total_item.label))
                 self.set_font(style="")
                 row.cell(format_currency(total_item.amount, total_item.currency))
+
+    def _render_reverse_charge_notice(self) -> None:
+        notice = self.data.reverse_charge_notice
+        if notice is None:
+            return
+        self.set_font(style="B")
+        self.set_xy(self.l_margin, self.get_y() + self.elements_y_margin)
+        self.multi_cell(w=0, h=self.cell_height(), text=notice, align=Align.R)
+        self.set_font(style="")
 
     def _render_statement_descriptor(self) -> None:
         if self.data.statement_descriptor is None:

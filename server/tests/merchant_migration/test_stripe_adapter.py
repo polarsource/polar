@@ -619,6 +619,7 @@ class TestMapTaxId:
         )
 
         assert mapped.tax_id is None
+        assert mapped.tax_id_dropped is True
 
     def test_missing_country_prefers_eu_vat(self) -> None:
         mapped = StripeAdapter("rk_test")._map_customer(
@@ -704,14 +705,6 @@ class TestMapTaxId:
         )
 
         assert mapped.tax_id_dropped is False
-
-    def test_mismatched_tax_id_is_dropped(self) -> None:
-        mapped = StripeAdapter("rk_test")._map_customer(
-            _customer_with_tax_ids(_EIN, country="FR")
-        )
-
-        assert mapped.tax_id is None
-        assert mapped.tax_id_dropped is True
 
     def test_reverse_charge_without_tax_id_is_dropped(self) -> None:
         mapped = StripeAdapter("rk_test")._map_customer(

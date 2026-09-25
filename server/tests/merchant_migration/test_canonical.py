@@ -1,4 +1,3 @@
-from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -132,16 +131,23 @@ class TestDeserialize:
             country="FR",
             tax_id_dropped=True,
         )
+
+        result = deserialize(MerchantMigrationRecordType.customer, serialize(customer))
+
+        assert result == customer
+
+    def test_customer_tax_id_dropped_defaults_false_for_legacy_payload(
+        self,
+    ) -> None:
+        customer = CanonicalCustomer(
+            source_id="cus_1", email="a@example.com", name=None, country="FR"
+        )
         legacy = serialize(customer)
         del legacy["tax_id_dropped"]
 
-        assert (
-            deserialize(MerchantMigrationRecordType.customer, serialize(customer))
-            == customer
-        )
-        assert deserialize(MerchantMigrationRecordType.customer, legacy) == replace(
-            customer, tax_id_dropped=False
-        )
+        result = deserialize(MerchantMigrationRecordType.customer, legacy)
+
+        assert result == customer
 
     def test_subscription_currency(self) -> None:
         subscription = CanonicalSubscription(

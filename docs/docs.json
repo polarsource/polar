@@ -221,7 +221,7 @@
               "merchant-of-record/introduction",
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
-              "merchant-of-record/acceptable-use",
+              "merchant-of-record/acceptable-use/introduction",
               "merchant-of-record/account-reviews",
               "migrate-away"
             ]
@@ -2213,7 +2213,7 @@
     },
     {
       "source": "/documentation/polar-as-merchant-of-record/acceptable-products-use",
-      "destination": "/merchant-of-record/acceptable-use"
+      "destination": "/merchant-of-record/acceptable-use/introduction"
     },
     {
       "source": "/merchant-of-record/acceptable-use",

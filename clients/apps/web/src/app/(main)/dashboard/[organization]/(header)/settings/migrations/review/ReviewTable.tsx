@@ -21,6 +21,7 @@ import {
   toggleRow,
 } from '../selection'
 import { ReviewFilter } from './ReviewStatusTabs'
+import { reviewCatalogEmptyKind } from './reviewCatalog'
 import { ReviewTableView } from './ReviewTableView'
 
 export function ReviewTable({ migrationId }: { migrationId: string }) {
@@ -29,7 +30,11 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const [pageSize, setPageSize] = useState(20)
   const [selection, setSelection] = useState<SelectionState>(initialSelection)
 
-  const { data: migration } = useMerchantMigration(migrationId)
+  const {
+    data: migration,
+    isPending: migrationPending,
+    isError: migrationError,
+  } = useMerchantMigration(migrationId)
   const refreshing = isActiveMigrationOperation(migration?.operation)
   const pollMs = refreshing ? 2000 : false
 
@@ -63,6 +68,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     counts,
     attentionCount,
     isLoading: countsLoading,
+    isFetching: countsFetching,
     isError: countsError,
   } = useRecordSummary(migrationId, pollMs)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
@@ -106,7 +112,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
         "We couldn't refresh from Stripe. Please try again."
       : undefined
 
-  if (records.isLoading || countsLoading) {
+  if (migrationPending || records.isLoading || countsLoading) {
     return (
       <Box padding="2xl" alignItems="center" justifyContent="center">
         <Spinner />
@@ -114,13 +120,28 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     )
   }
 
-  if (records.isError || countsError) {
+  if (records.isError || countsError || migrationError) {
     return (
       <Alert
         variant="danger"
         title="We couldn't load these records"
         description="Something went wrong. Please refresh and try again."
       />
+    )
+  }
+
+  if (
+    !refreshing &&
+    countsFetching &&
+    reviewCatalogEmptyKind(
+      counts.subscriptions.total,
+      counts.subscriptions.imported,
+    )
+  ) {
+    return (
+      <Box padding="2xl" alignItems="center" justifyContent="center">
+        <Spinner />
+      </Box>
     )
   }
 

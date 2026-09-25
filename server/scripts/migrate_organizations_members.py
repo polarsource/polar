@@ -1075,5 +1075,85 @@ async def enable(
     typer.echo(f"  - Failed: {failed}")
 
 
+@cli.command("repair-backfill")
+@typer_async
+async def repair_backfill(
+    dry_run: bool = typer.Option(
+        True, help="If True, only show which organizations would be re-enqueued"
+    ),
+    chunk_size: int = typer.Option(
+        20, min=1, help="Organizations per query for the owner-member count"
+    ),
+) -> None:
+    """Re-enqueue the backfill for organizations flipped without one.
+
+    `enable` commits the flag before the job reaches Redis, so a failed enqueue
+    leaves an organization on the member model with nothing migrated. It no
+    longer matches `enable`'s filter, so this is the only way back.
+
+    Customers of a flipped organization get their owner member on creation, so
+    customers without one mean the backfill never ran.
+    """
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        statement = (
+            select(Organization.id, Organization.slug)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
+                Organization.feature_settings["member_model_enabled"].as_boolean(),
+            )
+            .order_by(Organization.slug.asc())
+        )
+        organizations = list(await session.execute(statement))
+        if not organizations:
+            typer.echo("No organizations on the member model.")
+            return
+
+        owner_gaps = await _count_customers_missing_owner(
+            session,
+            [organization_id for organization_id, _ in organizations],
+            chunk_size,
+        )
+
+    unbackfilled = [
+        (organization_id, organization_slug)
+        for organization_id, organization_slug in organizations
+        if owner_gaps.get(organization_id, 0) > 0
+    ]
+
+    typer.echo(f"Organizations on the member model: {len(organizations)}")
+    typer.echo(f"Never backfilled: {len(unbackfilled)}")
+    typer.echo()
+
+    if not unbackfilled:
+        typer.echo("Nothing to repair.")
+        return
+
+    typer.echo(f"{'Slug':<40} {'Customers without owner':>24}")
+    typer.echo("-" * 65)
+    for organization_id, organization_slug in unbackfilled:
+        typer.echo(f"{organization_slug:<40} {owner_gaps[organization_id]:>24}")
+    typer.echo()
+
+    if dry_run:
+        typer.echo("DRY RUN - No changes will be made.")
+        return
+
+    broker = dramatiq.get_broker()
+    async with create_redis("script") as redis:
+        async with JobQueueManager.open(broker, redis):
+            for organization_id, organization_slug in unbackfilled:
+                enqueue_job(
+                    "organization.backfill_members", organization_id=organization_id
+                )
+                typer.echo(f"  {organization_slug}")
+
+    typer.echo()
+    typer.echo(f"Re-enqueued {len(unbackfilled)} backfill(s).")
+
+
 if __name__ == "__main__":
     cli()

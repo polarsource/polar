@@ -9,6 +9,7 @@ from enum import StrEnum
 from typing import Any, TypeVar
 
 import stripe as stripe_lib
+from pydantic import ValidationError
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address
@@ -706,29 +707,32 @@ class StripeAdapter:
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
         address = customer.get("address")
         country = address.get("country") if address is not None else None
-        billing_address = (
-            Address.model_validate(
-                {
-                    "line1": address.get("line1"),
-                    "line2": address.get("line2"),
-                    "postal_code": address.get("postal_code"),
-                    "city": address.get("city"),
-                    "state": address.get("state"),
-                    "country": country,
-                }
-            )
-            if address is not None and country is not None
-            else None
-        )
         return CanonicalCustomer(
             source_id=customer.id,
             email=customer.email or "",
             name=customer.name,
             country=country,
             country_hint=None if country else self._customer_country_hint(customer),
-            billing_address=billing_address,
+            billing_address=self._billing_address(address, country),
             tax_id=self._map_tax_id(customer, country),
         )
+
+    def _billing_address(self, address: Any, country: str | None) -> Address | None:
+        if address is None or not country:
+            return None
+        try:
+            return Address.model_validate(
+                {
+                    "line1": address.get("line1"),
+                    "line2": address.get("line2"),
+                    "postal_code": address.get("postal_code"),
+                    "city": address.get("city"),
+                    "state": address.get("state"),
+                    "country": country.upper(),
+                }
+            )
+        except ValidationError:
+            return None
 
     def _customer_country_hint(self, customer: stripe_lib.Customer) -> str | None:
         invoice_settings = customer.get("invoice_settings")

@@ -65,6 +65,25 @@ resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
   }
 }
 
+# Created by hand on the workspace in December 2025, so it lives there rather
+# than in the Production Settings set like its siblings.
+resource "tfe_variable" "backend_chargebackstop_webhook_secret_production" {
+  key          = "backend_chargebackstop_webhook_secret_production"
+  category     = "terraform"
+  description  = "ChargebackStop Webhook Secret for production"
+  sensitive    = true
+  workspace_id = data.tfe_workspace_ids.aws.ids["polar"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+import {
+  to = tfe_variable.backend_chargebackstop_webhook_secret_production
+  id = "polar-sh/polar/var-zspoEq1Cn7qz32i8"
+}
+
 resource "tfe_variable" "backend_discord_bot_token_production" {
   key             = "backend_discord_bot_token_production"
   category        = "terraform"
@@ -982,4 +1001,23 @@ resource "tfe_variable" "linear_payout_amount_mismatch_template_id_production" {
   lifecycle {
     ignore_changes = [value]
   }
+}
+
+# Render assigns the host once the private link is wired, so the value is
+# entered on the workspace and Terraform only registers the variable.
+resource "tfe_variable" "redis_private_link_host_production" {
+  key          = "redis_private_link_host"
+  category     = "terraform"
+  description  = "DNS name of the Render private link to the production worker Redis"
+  sensitive    = false
+  workspace_id = data.tfe_workspace_ids.aws.ids["polar"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+import {
+  to = tfe_variable.redis_private_link_host_production
+  id = "polar-sh/polar/var-DiQgRaQF7rQwsxsw"
 }

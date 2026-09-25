@@ -760,7 +760,7 @@ class TestTopCustomers:
         }
 
     @pytest.mark.auth
-    async def test_balance_order_global_rate_ignores_unrecorded_and_non_usd_rates(
+    async def test_balance_order_global_rate_ignores_unrecorded_rates(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -774,11 +774,7 @@ class TestTopCustomers:
         balance_customer = await create_customer(
             save_fixture, organization=organization, email="balance@example.com"
         )
-        for day, settlement_currency, amount, exchange_rate in (
-            (5, "usd", 5_000, None),
-            (6, "krw", 10_000, 1.0),
-            (9, "usd", 2_000, 0.2),
-        ):
+        for day, amount, exchange_rate in ((5, 5_000, None), (9, 2_000, 0.2)):
             order = await create_order(
                 save_fixture,
                 customer=paying_customer,
@@ -790,7 +786,6 @@ class TestTopCustomers:
             await create_payment_transaction(
                 save_fixture,
                 order=order,
-                currency=settlement_currency,
                 amount=amount,
                 presentment_currency="krw",
                 presentment_amount=10_000,

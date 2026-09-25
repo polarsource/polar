@@ -469,6 +469,20 @@ class Settings(BaseSettings):
     # Scale plan product, used by the Startup Program to grant a 100% discount
     POLAR_SCALE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
+    # Optional override for the base URL the self-referential SDK client
+    # (`PolarSelfClient`) uses for its outbound calls back to our own API
+    # (customer sessions, customer/billing lookups). Defaults to `None`, in which
+    # case `self_api_url` falls back to `POLAR_API_URL` — leaving this unset is a
+    # safe no-op. Set it to a loopback address to avoid the DNS/TLS/Cloudflare
+    # round trip when the API calls itself. If used in production, it MUST target
+    # the port Render assigns via `$PORT` (currently 10000, not the local-dev
+    # default of 8000 used elsewhere in this codebase, e.g. `BASE_URL`), e.g.
+    # `http://127.0.0.1:10000`. Never hardcode a loopback URL as the default.
+    POLAR_SELF_API_URL: str | None = None
+
+    @property
+    def self_api_url(self) -> str:
+        return self.POLAR_SELF_API_URL or self.POLAR_API_URL
 
     @property
     def POLAR_SELF_ENABLED(self) -> bool:

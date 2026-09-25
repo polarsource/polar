@@ -11,6 +11,7 @@ import {
 } from './src/csp.mjs'
 
 const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
+const TYPE_CHECKED_IN_CI = PREVIEW_BUILD || process.env.VERCEL === '1'
 
 // Vercel preview: compute basePath and API URL from PR number + Tailscale hostname
 let previewBasePath = ''
@@ -60,7 +61,7 @@ const nextConfig = {
     },
   }),
 
-  ...(PREVIEW_BUILD && {
+  ...(TYPE_CHECKED_IN_CI && {
     typescript: { ignoreBuildErrors: true },
   }),
 

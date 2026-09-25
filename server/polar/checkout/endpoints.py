@@ -11,7 +11,7 @@ from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import PaymentNotReady, ResourceNotFound
+from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     MultipleQueryFilter,
@@ -51,6 +51,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyActiveSubscriptionError,
+    CheckoutLocked,
     DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
     NotOpenCheckout,
@@ -299,7 +300,15 @@ async def client_confirm(
     summary="Cancel Checkout Session Payment from Client",
     responses={
         200: {"description": "Checkout session payment canceled."},
+        403: {
+            "description": "The organization is not allowed to accept payments.",
+            "model": NotPermitted.schema(),
+        },
         404: CheckoutNotFound,
+        409: {
+            "description": "The checkout session is being processed.",
+            "model": CheckoutLocked.schema(),
+        },
         410: CheckoutExpired,
     },
     tags=[APITag.private],

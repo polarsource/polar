@@ -14134,6 +14134,17 @@ export interface components {
        */
       return_url?: string | null
     }
+    /** CheckoutLocked */
+    CheckoutLocked: {
+      /**
+       * Error
+       * @example CheckoutLocked
+       * @constant
+       */
+      error: 'CheckoutLocked'
+      /** Detail */
+      detail: string
+    }
     /** CheckoutOrganization */
     CheckoutOrganization: {
       /**
@@ -48253,6 +48264,15 @@ export interface operations {
           'application/json': components['schemas']['CheckoutPublic']
         }
       }
+      /** @description The organization is not allowed to accept payments. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Checkout session not found. */
       404: {
         headers: {
@@ -48260,6 +48280,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
         }
       }
       /** @description The checkout session is expired. */

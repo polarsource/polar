@@ -84,6 +84,7 @@ async def build_connected_migration(
     save_fixture: SaveFixture,
     organization: Organization,
     api_key: str = "rk_test_123",
+    stripe_user_id: str | None = "acct_test",
 ) -> MerchantMigration:
     """A Stripe migration with source credentials already stored, in a single
     INSERT (the id is pre-generated so the encrypted key binds to it)."""
@@ -94,7 +95,7 @@ async def build_connected_migration(
         step=MerchantMigrationStep.source_setup,
     )
     migration.source_credentials = dict(
-        await build_stripe_credentials(migration, api_key)
+        await build_stripe_credentials(migration, api_key, stripe_user_id)
     )
     await save_fixture(migration)
     return migration

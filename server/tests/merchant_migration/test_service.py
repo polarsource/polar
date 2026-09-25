@@ -821,6 +821,34 @@ class TestReconnect:
 
         assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
 
+    @pytest.mark.auth
+    async def test_rejects_reconnect_without_a_stored_account_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(
+            save_fixture, organization, stripe_user_id=None
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_other"),
+        )
+
+        with pytest.raises(SourceAccountMismatch):
+            await service.reconnect(
+                session,
+                auth_subject,
+                migration.id,
+                MerchantMigrationSourceUpdate(api_key="rk_test_other"),
+            )
+
+        assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+
 
 @pytest.mark.asyncio
 class TestExecutePrecheck:

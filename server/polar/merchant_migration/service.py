@@ -559,8 +559,9 @@ class MerchantMigrationService:
     ) -> MerchantMigration:
         """Replace the stored Stripe key after the same checks as create.
 
-        The key must belong to the account already connected to this migration.
-        A key that fails those checks leaves the stored credentials unchanged.
+        The key must belong to the Stripe account already stored on this
+        migration. A migration with no stored account id is rejected, and a key
+        that fails these checks leaves the stored credentials unchanged.
         """
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
@@ -587,7 +588,7 @@ class MerchantMigrationService:
         repository = MerchantMigrationRepository.from_session(session)
         await repository.lock_stripe_account(stripe_account_id)
         connected_account_id = migration.source_credentials.get("stripe_user_id")
-        if connected_account_id and connected_account_id != stripe_account_id:
+        if connected_account_id != stripe_account_id:
             raise SourceAccountMismatch()
         if await repository.stripe_account_id_exists(
             stripe_account_id,

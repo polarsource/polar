@@ -31,20 +31,20 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@effect/platform-bun": "4.0.0-rc.117",
-    "@napi-rs/keyring": "2.0.0",
-    "@polar-sh/sdk": "1.0.0-alpha.20",
+    "@napi-rs/keyring": "2.1.0",
+    "@polar-sh/sdk": "1.0.0-alpha.22",
     "effect": "4.0.0-rc.117",
     "open": "^10.2.0",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@effect/tsgo": "0.45.0",
-    "@sindresorhus/tsconfig": "^8.0.1",
-    "@types/bun": "^1.4.1",
-    "@types/node": "^24.2.1",
+    "@sindresorhus/tsconfig": "^8.1.0",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^24.13.6",
     "@typescript/native": "catalog:",
-    "@vitest/coverage-istanbul": "^5.0.0",
-    "tsup": "^8.5.0",
+    "@vitest/coverage-istanbul": "^5.0.1",
+    "tsup": "^8.5.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -38,16 +38,15 @@
     "dist"
   ],
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.69",
     "@ai-sdk/openai": "catalog:",
     "@polar-sh/typescript-config": "workspace:*",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.3.0",
     "@typescript/native": "catalog:",
     "ai": "catalog:",
     "dotenv": "^16.6.1",
-    "react": "^19.2.5",
+    "react": "^19.3.0",
     "tsup": "catalog:",
-    "tsx": "^4.21.0",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

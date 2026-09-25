@@ -21,8 +21,8 @@
     "lucide-react": "catalog:",
     "next": "^16.3.6",
     "next-themes": "catalog:",
-    "react": "19.2.5",
-    "react-dom": "19.2.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "shiki": "catalog:"
   },
   "devDependencies": {
@@ -31,7 +31,7 @@
     "@stylexjs/postcss-plugin": "catalog:",
     "@tailwindcss/forms": "catalog:",
     "@tailwindcss/postcss": "catalog:",
-    "@types/node": "^22.10.5",
+    "@types/node": "^22.20.4",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@typescript/native": "catalog:",

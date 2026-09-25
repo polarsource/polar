@@ -39,8 +39,8 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0-alpha.20",
-    "@tanstack/react-start": "^1.140.0"
+    "@polar-sh/sdk": "1.0.0-alpha.22",
+    "@tanstack/react-start": "^1.168.57"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

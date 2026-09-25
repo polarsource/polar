@@ -4218,6 +4218,49 @@ class TestHandlePaymentFailure:
         mock_mark_past_due.assert_not_called()
 
     @freeze_time("2024-01-01 12:00:00")
+    @pytest.mark.parametrize(
+        ("past_due_days_ago", "next_retry_in_days"),
+        [(2, 5), (7, 7), (14, 7)],
+    )
+    async def test_consecutive_retry_without_payments_follows_schedule(
+        self,
+        past_due_days_ago: int,
+        next_retry_in_days: int,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """No payment method means no charge and no failed Payment rows, so the
+        retry is read off the time since the subscription went past due."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now() - timedelta(days=past_due_days_ago)
+        await save_fixture(subscription)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = utc_now()
+        await save_fixture(order)
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at == utc_now() + timedelta(
+            days=next_retry_in_days
+        )
+
+    @freeze_time("2024-01-01 12:00:00")
     async def test_final_attempt_cancels_subscription(
         self,
         session: AsyncSession,

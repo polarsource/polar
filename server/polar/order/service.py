@@ -1,3 +1,4 @@
+import itertools
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
@@ -3222,6 +3223,10 @@ class OrderService:
 
         now = utc_now()
         subscription = order.subscription
+        # With no payment method, no charge is ever attempted, so there is no
+        # Payment row to count; read the attempt off the schedule instead.
+        if failed_attempts == 0 and subscription is not None:
+            failed_attempts = self._scheduled_dunning_attempts(subscription, now)
 
         # failed_attempts includes the current failure (upserted by the Stripe
         # webhook handler before we get here) and the initial cycle failure
@@ -3262,6 +3267,19 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
+
+    def _scheduled_dunning_attempts(
+        self, subscription: Subscription, now: datetime
+    ) -> int:
+        """Failed attempts so far, counting the initial one, per the schedule."""
+        if subscription.past_due_at is None:
+            return 1
+        elapsed = now - subscription.past_due_at
+        return 1 + sum(
+            1
+            for retry_offset in itertools.accumulate(settings.DUNNING_RETRY_INTERVALS)
+            if elapsed >= retry_offset
+        )
 
     async def _handle_meter_cycle_dunning_attempt(
         self, session: AsyncSession, order: Order

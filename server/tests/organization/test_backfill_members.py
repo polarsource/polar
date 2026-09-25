@@ -2933,3 +2933,99 @@ class TestRevokedGrantsKeepNoMember:
         assert grant is not None
         assert grant.member_id is None
         assert grant.deleted_at is None
+
+
+@pytest.mark.asyncio
+class TestBackfillTransfersGrantsOfSeveralSeatHolders:
+    """Two seat holders on one subscription and benefit must both land on their
+    own member. Transferring customer_id before the member is known flushes two
+    grants onto the same scope key."""
+
+    async def test_two_seat_holders_share_a_subscription_and_benefit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="two-holders-billing@test.com",
+            stripe_customer_id="stripe_two_holders_billing",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=2
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.custom
+        )
+
+        # The buyer already holds an unlinked grant on the same scope, so a
+        # transferred grant duplicates its key until member_id is set.
+        await create_benefit_grant(
+            save_fixture,
+            customer=billing_customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+
+        grant_ids: list[uuid.UUID] = []
+        holder_emails: list[str] = []
+        for i in range(2):
+            holder_email = f"two-holders-{i}@test.com"
+            holder = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=holder_email,
+                stripe_customer_id=f"stripe_two_holders_{i}",
+            )
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                status=SeatStatus.claimed,
+                customer=holder,
+                claimed_at=utc_now(),
+            )
+            grant = await create_benefit_grant(
+                save_fixture,
+                customer=holder,
+                benefit=benefit,
+                granted=True,
+                subscription=subscription,
+            )
+            grant_ids.append(grant.id)
+            holder_emails.append(holder_email)
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        grants = (
+            (
+                await session.execute(
+                    select(BenefitGrant).where(BenefitGrant.id.in_(grant_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert len(grants) == 2
+        member_emails: set[str] = set()
+        for grant in grants:
+            assert grant.customer_id == billing_customer.id
+            assert grant.member_id is not None
+            member = await session.get(Member, grant.member_id)
+            assert member is not None
+            member_emails.add(member.email)
+        assert member_emails == set(holder_emails)

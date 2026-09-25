@@ -677,9 +677,10 @@ async def _backfill_benefit_grants(
                 and grant.customer_id != billing_customer_id
             )
             old_customer_id = grant.customer_id if needs_transfer else None
-            if needs_transfer:
-                assert billing_customer_id is not None
-                grant.customer_id = billing_customer_id
+            target_customer_id = (
+                billing_customer_id if needs_transfer else grant.customer_id
+            )
+            assert target_customer_id is not None
 
             # Link to seat member or owner member
             target_member_id: uuid.UUID | None = None
@@ -692,13 +693,13 @@ async def _backfill_benefit_grants(
             if seat_member_id is not None:
                 target_member_id = seat_member_id
             else:
-                if grant.customer_id not in owner_members_map:
+                if target_customer_id not in owner_members_map:
                     owner = await member_repository.get_owner_by_customer_id(
-                        grant.customer_id
+                        target_customer_id
                     )
                     if owner is not None:
-                        owner_members_map[grant.customer_id] = owner
-                owner = owner_members_map.get(grant.customer_id)
+                        owner_members_map[target_customer_id] = owner
+                owner = owner_members_map.get(target_customer_id)
                 if owner is not None:
                     target_member_id = owner.id
 
@@ -718,6 +719,7 @@ async def _backfill_benefit_grants(
                     if grant.order_id is not None:
                         # One-off order — each purchase is distinct, keep both
                         if grant.revoked_at is None:
+                            grant.customer_id = target_customer_id
                             grant.member_id = target_member_id
                             count += 1
                     else:
@@ -735,6 +737,9 @@ async def _backfill_benefit_grants(
                         duplicates_deleted += 1
 
                 elif grant.revoked_at is None:
+                    # Moving customer_id without member_id in the same statement
+                    # collides with the buyer's own unlinked grant.
+                    grant.customer_id = target_customer_id
                     grant.member_id = target_member_id
                     count += 1
 

@@ -663,6 +663,8 @@ class WebhookService:
         target: Organization,
         event: Literal[WebhookEventType.subscription_updated],
         data: Subscription,
+        *,
+        previous_product_name: str | None = None,
     ) -> list[WebhookEvent]: ...
 
     @overload

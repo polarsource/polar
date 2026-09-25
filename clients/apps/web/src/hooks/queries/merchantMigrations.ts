@@ -301,21 +301,21 @@ export const useMerchantMigrationRecordSummary = (
     refetchInterval: refetchInterval ?? false,
   })
 
-export const useUpdateMigrationRecordTax = (id: string) =>
+export const useUpdateMigrationRecord = (id: string) =>
   useMutation({
     mutationFn: ({
       recordId,
-      taxBehavior,
+      update,
     }: {
       recordId: string
-      taxBehavior: schemas['TaxBehavior']
+      update: schemas['MerchantMigrationRecordUpdate']
     }) =>
       dataOrThrow(
         api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
           params: { path: { id, record_id: recordId } },
-          body: { tax_behavior: taxBehavior },
+          body: update,
         }),
-        "We couldn't save the tax setting.",
+        "We couldn't save the migration record.",
       ),
     onSuccess: () => {
       invalidateMigrationRecords(id)

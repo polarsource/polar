@@ -137,6 +137,22 @@ describe('ReviewTable refresh on an empty catalog', () => {
     expect(screen.getByRole('button', { name: 'Refreshing…' })).toBeDisabled()
   })
 
+  it('keeps refreshing when the scan has had no progress for a while', () => {
+    harness.migration.data = {
+      operation: { status: 'pending', stalled: true, error: null },
+    }
+
+    render(<ReviewTable migrationId="mig_1" />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Refreshing from Stripe' }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('heading', { name: 'Nothing to import' }),
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Refreshing…' })).toBeDisabled()
+  })
+
   it('shows the empty result only once the scan has settled on nothing', () => {
     harness.migration.data = {
       operation: { status: 'done', stalled: false, error: null },

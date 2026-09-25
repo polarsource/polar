@@ -10,9 +10,7 @@ const ACTIVE_OPERATION_STATUSES = new Set(['pending', 'running'])
 export const isActiveMigrationOperation = (
   operation?: schemas['MerchantMigrationOperation'] | null,
 ) =>
-  operation != null &&
-  !operation.stalled &&
-  ACTIVE_OPERATION_STATUSES.has(operation.status)
+  operation != null && ACTIVE_OPERATION_STATUSES.has(operation.status)
 
 export const useMerchantMigrations = (organizationId: string) =>
   useQuery({

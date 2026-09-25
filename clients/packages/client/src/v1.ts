@@ -13598,6 +13598,7 @@ export interface components {
     CheckoutForbiddenError:
       | components['schemas']['AlreadyActiveSubscriptionError']
       | components['schemas']['NotOpenCheckout']
+      | components['schemas']['NotPermitted']
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
       | components['schemas']['DiscountRedemptionLimitReached']
@@ -48094,6 +48095,15 @@ export interface operations {
           'application/json': components['schemas']['CheckoutPublic']
         }
       }
+      /** @description The organization is not allowed to accept payments. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Checkout session not found. */
       404: {
         headers: {
@@ -48166,6 +48176,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
+        }
+      }
       /** @description The checkout session is expired. */
       410: {
         headers: {
@@ -48236,6 +48255,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
         }
       }
       /** @description The checkout session is expired. */

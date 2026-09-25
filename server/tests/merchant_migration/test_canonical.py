@@ -118,10 +118,37 @@ class TestSerialize:
             "country_hint": None,
             "billing_address": None,
             "tax_id": None,
+            "tax_id_dropped": False,
         }
 
 
 class TestDeserialize:
+    def test_customer_tax_id_dropped_round_trips(self) -> None:
+        customer = CanonicalCustomer(
+            source_id="cus_1",
+            email="a@example.com",
+            name=None,
+            country="FR",
+            tax_id_dropped=True,
+        )
+
+        result = deserialize(MerchantMigrationRecordType.customer, serialize(customer))
+
+        assert result == customer
+
+    def test_customer_tax_id_dropped_defaults_false_for_legacy_payload(
+        self,
+    ) -> None:
+        customer = CanonicalCustomer(
+            source_id="cus_1", email="a@example.com", name=None, country="FR"
+        )
+        legacy = serialize(customer)
+        del legacy["tax_id_dropped"]
+
+        result = deserialize(MerchantMigrationRecordType.customer, legacy)
+
+        assert result == customer
+
     def test_subscription_currency(self) -> None:
         subscription = CanonicalSubscription(
             source_id="sub_1",

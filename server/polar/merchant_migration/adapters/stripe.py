@@ -707,6 +707,7 @@ class StripeAdapter:
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
         address = customer.get("address")
         country = address.get("country") if address is not None else None
+        tax_id = self._map_tax_id(customer, country)
         return CanonicalCustomer(
             source_id=customer.id,
             email=customer.email or "",
@@ -714,7 +715,8 @@ class StripeAdapter:
             country=country,
             country_hint=None if country else self._customer_country_hint(customer),
             billing_address=self._billing_address(address, country),
-            tax_id=self._map_tax_id(customer, country),
+            tax_id=tax_id,
+            tax_id_dropped=tax_id is None and self._has_source_tax_id(customer),
         )
 
     def _billing_address(self, address: Any, country: str | None) -> Address | None:
@@ -770,6 +772,12 @@ class StripeAdapter:
         billing_country = source.get("address_country") or address.get("country")
         card = source.get("card") or {}
         return billing_country, source.get("country") or card.get("country")
+
+    def _has_source_tax_id(self, customer: stripe_lib.Customer) -> bool:
+        tax_ids = customer.get("tax_ids")
+        return customer.get("tax_exempt") == "reverse" or bool(
+            tax_ids and tax_ids["data"]
+        )
 
     def _map_tax_id(
         self, customer: stripe_lib.Customer, country: str | None

@@ -257,13 +257,11 @@ class Transaction(RecordModel):
             postgresql_where="payout_id IS NOT NULL",
         ),
         Index(
-            "ix_transactions_recorded_usd_payment_rate",
+            "ix_transactions_recorded_payment_rate",
+            text("lower(currency)"),
             text("lower(presentment_currency)"),
             "created_at",
-            postgresql_where=text(
-                "type = 'payment' AND exchange_rate IS NOT NULL "
-                "AND lower(currency) = 'usd'"
-            ),
+            postgresql_where=text("type = 'payment' AND exchange_rate IS NOT NULL"),
         ),
         Index(
             "ix_transactions_account_type_amount",

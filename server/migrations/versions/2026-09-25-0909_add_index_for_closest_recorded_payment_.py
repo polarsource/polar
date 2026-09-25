@@ -18,7 +18,7 @@ branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
 
-INDEX_NAME = "ix_transactions_recorded_usd_payment_rate"
+INDEX_NAME = "ix_transactions_recorded_payment_rate"
 
 
 def upgrade() -> None:
@@ -35,11 +35,14 @@ def upgrade() -> None:
             op.create_index(
                 INDEX_NAME,
                 "transactions",
-                [sa.literal_column("lower(presentment_currency)"), "created_at"],
+                [
+                    sa.literal_column("lower(currency)"),
+                    sa.literal_column("lower(presentment_currency)"),
+                    "created_at",
+                ],
                 unique=False,
                 postgresql_where=sa.text(
-                    "type = 'payment' AND exchange_rate IS NOT NULL "
-                    "AND lower(currency) = 'usd'"
+                    "type = 'payment' AND exchange_rate IS NOT NULL"
                 ),
                 postgresql_concurrently=True,
             )

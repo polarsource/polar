@@ -32,7 +32,7 @@ def usd_settled_payment_clauses() -> tuple[ColumnElement[bool], ...]:
     return (
         Transaction.type == literal_column(f"'{TransactionType.payment}'"),
         Transaction.presentment_currency.is_not(None),
-        func.lower(Transaction.currency) == literal_column("'usd'"),
+        func.lower(Transaction.currency) == "usd",
     )
 
 

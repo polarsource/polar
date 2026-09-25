@@ -24,7 +24,9 @@ Application code never calls `session.commit()`. The single commit happens at th
 request (in middleware) or task (in the worker's session context): commit on success, rollback
 on exception. Call `session.flush()` when you need database-generated values (like IDs) before
 that final commit. Read handlers take `AsyncReadSession` (routed to the read replica); anything
-that writes takes `AsyncSession`.
+that writes takes `AsyncSession`. A read that must observe a write from the same action
+uses `AsyncSession` on the primary instead, and the handler says why. Replica lag on
+that read would show a stale result.
 
 ## Consequences
 

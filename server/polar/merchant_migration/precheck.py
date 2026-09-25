@@ -156,9 +156,9 @@ _PAYMENT_REENTRY_REASON = (
     "billing details first."
 )
 _PAYMENT_METHOD_MISSING_REASON = (
-    "Stripe has no payment method for this subscription. It still moves to "
-    "Polar, but its next renewal fails and goes to dunning unless the customer "
-    "adds one first."
+    "The source has no payment method for this subscription. It still moves "
+    "to Polar, but its next renewal fails and goes to dunning unless the "
+    "customer adds one first."
 )
 _PAYMENT_METHOD_NOT_CARD_REASON = (
     "Bank debits are copied without a card check, so the first Polar renewal is "

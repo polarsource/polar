@@ -13,6 +13,7 @@ const harness = vi.hoisted(() => ({
     data: undefined as { operation: Operation } | undefined,
     isPending: true,
     isError: false,
+    isLoadingError: false,
   },
   records: {
     isLoading: false,
@@ -90,6 +91,7 @@ vi.mock('@polar-sh/orbit', () => ({
     </button>
   ),
   Spinner: () => <div role="status" />,
+  Alert: ({ title }: { title: string }) => <div role="alert">{title}</div>,
 }))
 
 vi.mock('@polar-sh/orbit/Box', () => ({
@@ -108,6 +110,7 @@ const settledCounts = () => {
   harness.summary.counts.subscriptions.imported = 0
   harness.migration.isPending = false
   harness.migration.isError = false
+  harness.migration.isLoadingError = false
   harness.rerun.isPending = false
   harness.rerun.isError = false
 }
@@ -158,6 +161,37 @@ describe('ReviewTable refresh on an empty catalog', () => {
     expect(screen.getByRole('status')).toBeTruthy()
     expect(
       screen.queryByRole('heading', { name: 'Nothing to import' }),
+    ).toBeNull()
+  })
+
+  it('keeps refreshing when a later poll fails and the scan is still running', () => {
+    harness.migration.data = {
+      operation: { status: 'pending', stalled: false, error: null },
+    }
+    harness.migration.isError = true
+    harness.migration.isLoadingError = false
+
+    render(<ReviewTable migrationId="mig_1" />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Refreshing from Stripe' }),
+    ).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Refreshing…' })).toBeDisabled()
+  })
+
+  it('shows a load error when the migration never arrives', () => {
+    harness.migration.isPending = false
+    harness.migration.data = undefined
+    harness.migration.isLoadingError = true
+
+    render(<ReviewTable migrationId="mig_1" />)
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "We couldn't load these records",
+    )
+    expect(
+      screen.queryByRole('heading', { name: 'Refreshing from Stripe' }),
     ).toBeNull()
   })
 

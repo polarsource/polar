@@ -16,6 +16,7 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import Environment, settings
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
@@ -162,8 +163,10 @@ async def _webhook_event_send(
             delivery.http_code = event.last_http_code = 200
             delivery.response = None
         else:
+            url = httpx.URL(event.webhook_endpoint.url)
+            await resolve_and_validate_ip(url.raw_host.decode("ascii"))
             response = await client.post(
-                event.webhook_endpoint.url,
+                url,
                 content=event.payload,
                 headers=headers,
                 timeout=10.0,
@@ -177,7 +180,7 @@ async def _webhook_event_send(
             event.last_http_code = response.status_code
             response.raise_for_status()
     # Error
-    except (httpx.HTTPError, SSLError) as e:
+    except (httpx.HTTPError, SSLError, SSRFBlockedError) as e:
         bound_log.info("An error occurred while sending a webhook", error=e)
 
         if (

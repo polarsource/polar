@@ -20,7 +20,6 @@ import {
   selectedCount,
   SelectionState,
 } from '../selection'
-import { parseMissingStripeScopes } from '../stripeKey'
 import {
   CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
@@ -124,11 +123,6 @@ export function ReviewTableView({
     onPageChange(next.pageIndex + 1)
   }
 
-  const missingScopes =
-    refreshError && !rerunning
-      ? parseMissingStripeScopes({ detail: refreshError })
-      : []
-
   if (catalogEmpty) {
     return (
       <CatalogEmptyPanel
@@ -151,19 +145,12 @@ export function ReviewTableView({
           description={CATALOG_REFRESH_COPY.description}
         />
       )}
-      {!rerunning && refreshError && missingScopes.length > 0 && (
+      {!rerunning && refreshError && (
         <ScanFailurePanel
           migrationId={migrationId}
           error={refreshError}
           onRetry={onRerunPrecheck}
           showRetry={false}
-        />
-      )}
-      {!rerunning && refreshError && missingScopes.length === 0 && (
-        <Alert
-          variant="danger"
-          title="We couldn't refresh from Stripe"
-          description={refreshError}
         />
       )}
       {importError && (

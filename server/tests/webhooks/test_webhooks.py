@@ -733,3 +733,22 @@ class TestSlackSubscriptionPayload:
 
         with pytest.raises(SkipEvent):
             payload.get_payload(WebhookFormat.slack, organization)
+
+    async def test_updated_with_previous_product(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        payload = WebhookSubscriptionUpdatedPayload(
+            type=WebhookEventType.subscription_updated,
+            timestamp=utc_now(),
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(subscription, status=SubscriptionStatus.active),
+            previous_product_name="Starter",
+        )
+
+        raw_payload = payload.get_payload(WebhookFormat.slack, organization)
+
+        assert json.loads(raw_payload)["text"] == "Subscription plan has changed."
+        fields = _slack_fields(raw_payload)
+        assert "*Previous Product*\nStarter" in fields
+        assert f"*Product*\n{subscription.product.name}" in fields
+        assert "previous_product_name" not in payload.get_raw_payload()

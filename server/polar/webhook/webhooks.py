@@ -22,7 +22,7 @@ from pydantic import (
     GetJsonSchemaHandler,
     TypeAdapter,
 )
-from pydantic.json_schema import JsonSchemaValue
+from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import core_schema as cs
 
 from polar.benefit.schemas import Benefit as BenefitSchema
@@ -995,6 +995,34 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
         return json.dumps(payload)
 
+    def _get_product_changed_slack_payload(
+        self, target: User | Organization, previous_product_name: str
+    ) -> str:
+        fields: list[SlackText] = [
+            {
+                "type": "mrkdwn",
+                "text": f"*Previous Product*\n{previous_product_name}",
+            },
+            *self._get_slack_fields(target),
+        ]
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription plan has changed.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription plan has changed.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
     def _get_pending_update_slack_payload(self, target: User | Organization) -> str:
         pending_update = self.data.pending_update
         assert pending_update is not None
@@ -1094,11 +1122,14 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
     To listen specifically for renewals, listen to `subscription.cycled`.
 
-    **Discord & Slack support:** On cancellation, past due, and revocation. Slack is also notified when a change is scheduled for the next period. Renewals are skipped.
+    **Discord & Slack support:** On cancellation, past due, and revocation. Slack is also notified when the plan changes immediately or a change is scheduled for the next period. Renewals are skipped.
     """
 
     type: Literal[WebhookEventType.subscription_updated]
     data: SubscriptionSchema
+    previous_product_name: SkipJsonSchema[str | None] = Field(
+        default=None, exclude=True
+    )
 
     def get_discord_payload(self, target: User | Organization) -> str:
         if isinstance(target, User):
@@ -1130,11 +1161,15 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
         if self.data.ends_at or self.data.ended_at:
             return self._get_canceled_slack_payload(target)
 
+        if self.previous_product_name is not None:
+            return self._get_product_changed_slack_payload(
+                target, self.previous_product_name
+            )
+
         if self._has_new_pending_update():
             return self._get_pending_update_slack_payload(target)
 
         # Avoid to send notifications for subscription renewals (not interesting)
-        # TODO: Notify about immediate upgrades and downgrades
         raise SkipEvent(self.type, WebhookFormat.slack)
 
 

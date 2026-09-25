@@ -487,6 +487,7 @@ class SubscriptionUpdateContext:
         self._billing_effect: Literal["invoice", "cycle", "cycle_sync"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
+        self._previous_product: Product | None = None
 
     async def __aenter__(self) -> Self:
         return self
@@ -537,10 +538,14 @@ class SubscriptionUpdateContext:
                 previous_status=self._previous_status,
                 previous_is_canceled=self._previous_is_canceled,
                 notify_customer=self._notify_customer,
+                previous_product=self._previous_product,
             )
 
     def mark_unchanged(self) -> None:
         self._has_changes = False
+
+    def set_previous_product(self, product: Product) -> None:
+        self._previous_product = product
 
     def set_billing_effect(
         self, effect: Literal["invoice", "cycle", "cycle_sync"]
@@ -2045,6 +2050,7 @@ class SubscriptionService:
                     await self._settle_meter_cycle(session, subscription)
 
                 interval_changed = subscription_update.is_interval_changed()
+                ctx.set_previous_product(previous_product)
                 subscription = subscription_update.apply_update()
                 if was_trialing:
                     if ends_trial:
@@ -3531,8 +3537,11 @@ class SubscriptionService:
         previous_status: SubscriptionStatus,
         previous_is_canceled: bool,
         notify_customer: bool = True,
+        previous_product: Product | None = None,
     ) -> None:
-        await self._on_subscription_updated(session, subscription)
+        await self._on_subscription_updated(
+            session, subscription, previous_product=previous_product
+        )
 
         became_resumed = (
             subscription.active and previous_status == SubscriptionStatus.paused
@@ -3609,9 +3618,28 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        *,
+        previous_product: Product | None = None,
     ) -> None:
-        await self._send_webhook(
-            session, subscription, WebhookEventType.subscription_updated
+        if previous_product is None:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_updated
+            )
+            return
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = cast(
+            Subscription,
+            await repository.get_by_id(
+                subscription.id, options=repository.get_eager_options()
+            ),
+        )
+        await webhook_service.send(
+            session,
+            subscription.organization,
+            WebhookEventType.subscription_updated,
+            subscription,
+            previous_product_name=previous_product.name,
         )
 
     async def _on_subscription_activated(

@@ -277,16 +277,6 @@ const login = (environment: PolarEnvironment) =>
                 ),
               ),
             )
-            child.on('exit', (code) => {
-              if (code)
-                finish(
-                  Effect.fail(
-                    new AuthError({
-                      message: 'Could not open the browser for login.',
-                    }),
-                  ),
-                )
-            })
           })
           .catch(() =>
             finish(

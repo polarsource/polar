@@ -189,12 +189,8 @@ def get_active_subscriptions_cte(
         .group_by(fx_day, fx_currency)
     )
 
-    global_fx_daily = cte(
-        global_daily_exchange_rates().where(
-            Transaction.created_at >= start_timestamp,
-            Transaction.created_at <= end_timestamp,
-        )
-    )
+    # Not bounded by the query range: the closest rate may fall outside it.
+    global_fx_daily = cte(global_daily_exchange_rates())
 
     closest_global_fx_rate = (
         closest_global_daily_rate(

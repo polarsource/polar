@@ -39,6 +39,18 @@ class MerchantMigrationCreate(Schema):
     )
 
 
+class MerchantMigrationSourceUpdate(Schema):
+    api_key: str = Field(
+        min_length=1,
+        pattern=r"^(rk|sk)_",
+        description=(
+            "A Stripe API key for the account already connected to this migration. "
+            "It is validated for every required permission, including coupons and "
+            "promotion codes, before it replaces the stored key."
+        ),
+    )
+
+
 class PrecheckIssueLevel(StrEnum):
     blocker = "blocker"
     warning = "warning"

@@ -1,9 +1,28 @@
 import { render, screen } from '@testing-library/react'
-import { ReactNode } from 'react'
+import { FormEvent, InputHTMLAttributes, ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 
+vi.mock('@/hooks/queries/merchantMigrations', () => ({
+  useReconnectMerchantMigration: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}))
+
 vi.mock('@polar-sh/orbit', () => ({
+  Alert: ({
+    title,
+    description,
+  }: {
+    title: string
+    description?: ReactNode
+  }) => (
+    <div role="alert">
+      <strong>{title}</strong>
+      <p>{description}</p>
+    </div>
+  ),
   Text: ({
     as: Tag = 'span',
     children,
@@ -14,14 +33,37 @@ vi.mock('@polar-sh/orbit', () => ({
   Button: ({
     children,
     disabled,
+    type,
+    asChild,
   }: {
     children: ReactNode
     disabled?: boolean
-  }) => <button disabled={disabled}>{children}</button>,
+    type?: 'button' | 'submit'
+    asChild?: boolean
+  }) =>
+    asChild ? (
+      children
+    ) : (
+      <button type={type} disabled={disabled}>
+        {children}
+      </button>
+    ),
+  Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }))
 
 vi.mock('@polar-sh/orbit/Box', () => ({
-  Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Box: ({
+    children,
+    as: Tag = 'div',
+    onSubmit,
+  }: {
+    children?: ReactNode
+    as?: string
+    onSubmit?: (event: FormEvent) => void
+  }) => {
+    const Component = Tag as 'form'
+    return <Component onSubmit={onSubmit}>{children}</Component>
+  },
 }))
 
 describe('CatalogEmptyPanel', () => {
@@ -58,5 +100,57 @@ describe('CatalogEmptyPanel', () => {
     expect(
       screen.getByRole('button', { name: 'Refresh from Stripe' }),
     ).toBeEnabled()
+  })
+
+  it('shows a failed scan instead of the empty result', () => {
+    render(
+      <CatalogEmptyPanel
+        kind="no_stripe_subscriptions"
+        migrationId="migration_1"
+        error="The Stripe API key is missing access to: Coupons, Promotion codes."
+        onRerunPrecheck={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.queryByRole('heading', { name: 'Nothing to import' }),
+    ).toBeNull()
+    expect(screen.queryByText(/no subscriptions in Stripe/i)).toBeNull()
+    expect(
+      screen.getByText(
+        'The Stripe API key is missing access to: Coupons, Promotion codes.',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Validate & replace key' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Refresh from Stripe' }),
+    ).toBeEnabled()
+  })
+
+  it('shows a failed scan instead of the all-switched result', () => {
+    render(
+      <CatalogEmptyPanel
+        kind="all_switched"
+        migrationId="migration_1"
+        error="We couldn't verify the Stripe key right now. Please try again."
+        onRerunPrecheck={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.queryByRole('heading', {
+        name: 'All subscriptions already switched',
+      }),
+    ).toBeNull()
+    expect(
+      screen.getByText(
+        "We couldn't verify the Stripe key right now. Please try again.",
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Validate & replace key' }),
+    ).toBeNull()
   })
 })

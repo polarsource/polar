@@ -5432,6 +5432,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/source': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reconnect Merchant Migration Source
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:reconnect_source']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/import': {
     parameters: {
       query?: never
@@ -25489,6 +25509,14 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationSourcePlatform: 'stripe' | 'lemon_squeezy' | 'paddle'
+    /** MerchantMigrationSourceUpdate */
+    MerchantMigrationSourceUpdate: {
+      /**
+       * Api Key
+       * @description A Stripe API key for the account already connected to this migration. It is validated for every required permission, including coupons and promotion codes, before it replaces the stored key.
+       */
+      api_key: string
+    }
     /**
      * MerchantMigrationStep
      * @enum {string}
@@ -34901,6 +34929,17 @@ export interface components {
        * @constant
        */
       error: 'SourceAccountAlreadyMigrated'
+      /** Detail */
+      detail: string
+    }
+    /** SourceAccountMismatch */
+    SourceAccountMismatch: {
+      /**
+       * Error
+       * @example SourceAccountMismatch
+       * @constant
+       */
+      error: 'SourceAccountMismatch'
       /** Detail */
       detail: string
     }
@@ -56650,6 +56689,94 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:reconnect_source': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationSourceUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description The Stripe API key is invalid, wrong mode, or missing permissions, or the account it belongs to can't be migrated. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['InvalidSourceCredentials']
+            | components['schemas']['MissingStripeScopes']
+            | components['schemas']['SourceAccountNotMigratable']
+            | components['schemas']['SourceKeyModeMismatch']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The key is for a different Stripe account, that account is already used by another migration, or a scan is already running. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceAccountMismatch']
+            | components['schemas']['SourceAccountAlreadyMigrated']
+            | components['schemas']['MigrationOperationInProgress']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Couldn't reach Stripe to validate the key. */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceVerificationUnavailable']
         }
       }
     }

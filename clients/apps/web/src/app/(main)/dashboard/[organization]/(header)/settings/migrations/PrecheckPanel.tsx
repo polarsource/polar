@@ -8,6 +8,8 @@ import { schemas } from '@polar-sh/client'
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { CATALOG_READ_DURATION } from './catalogReadCopy'
+import { ScanFailurePanel } from './review/ScanFailurePanel'
+import { parseMissingStripeScopes } from './stripeKey'
 
 export function PrecheckPanel({
   migration,
@@ -23,6 +25,21 @@ export function PrecheckPanel({
     (precheck.isError
       ? "We couldn't start the pre-check. Please try again."
       : null)
+  const missingScopes =
+    error && !running ? parseMissingStripeScopes({ detail: error }) : []
+
+  if (error && !running && missingScopes.length > 0) {
+    return (
+      <Box marginTop="m">
+        <ScanFailurePanel
+          migrationId={migration.id}
+          error={error}
+          onRetry={() => precheck.mutate()}
+          retrying={running}
+        />
+      </Box>
+    )
+  }
 
   return (
     <Box flexDirection="column" rowGap="l" marginTop="m">

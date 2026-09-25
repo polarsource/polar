@@ -38,6 +38,7 @@ from .schemas import (
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordUpdate,
+    MerchantMigrationSourceUpdate,
     PanTransferChecklist,
     PanTransferStepComplete,
     PrecheckEntity,
@@ -57,6 +58,7 @@ from .service import (
     RecordNotSubscription,
     RecordTaxLocked,
     SourceAccountAlreadyMigrated,
+    SourceAccountMismatch,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -181,6 +183,52 @@ async def precheck(
     session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigration:
     return await merchant_migration_service.start_precheck(session, auth_subject, id)
+
+
+@router.post(
+    "/{id}/source",
+    response_model=MerchantMigrationSchema,
+    summary="Reconnect Merchant Migration Source",
+    responses={
+        400: {
+            "description": "The Stripe API key is invalid, wrong mode, or missing "
+            "permissions, or the account it belongs to can't be migrated.",
+            "model": InvalidSourceCredentials.schema()
+            | MissingStripeScopes.schema()
+            | SourceAccountNotMigratable.schema()
+            | SourceKeyModeMismatch.schema()
+            | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The key is for a different Stripe account, that account "
+            "is already used by another migration, or a scan is already running.",
+            "model": SourceAccountMismatch.schema()
+            | SourceAccountAlreadyMigrated.schema()
+            | MigrationOperationInProgress.schema(),
+        },
+        502: {
+            "description": "Couldn't reach Stripe to validate the key.",
+            "model": SourceVerificationUnavailable.schema(),
+        },
+    },
+)
+async def reconnect_source(
+    id: UUID4,
+    source_update: MerchantMigrationSourceUpdate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.reconnect(
+        session, auth_subject, id, source_update
+    )
 
 
 @router.post(

@@ -5,6 +5,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
+import { ScanFailurePanel } from './ScanFailurePanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
   EMPTY_MESSAGES,
@@ -19,6 +20,7 @@ import {
   selectedCount,
   SelectionState,
 } from '../selection'
+import { parseMissingStripeScopes } from '../stripeKey'
 import {
   CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
@@ -122,10 +124,17 @@ export function ReviewTableView({
     onPageChange(next.pageIndex + 1)
   }
 
+  const missingScopes =
+    refreshError && !rerunning
+      ? parseMissingStripeScopes({ detail: refreshError })
+      : []
+
   if (catalogEmpty) {
     return (
       <CatalogEmptyPanel
         kind={catalogEmpty}
+        migrationId={migrationId}
+        error={refreshError}
         onRerunPrecheck={onRerunPrecheck}
         rerunning={rerunning}
       />
@@ -134,7 +143,7 @@ export function ReviewTableView({
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
-      {rerunning && !refreshError && (
+      {rerunning && (
         <Alert
           variant="info"
           loading
@@ -142,7 +151,15 @@ export function ReviewTableView({
           description={CATALOG_REFRESH_COPY.description}
         />
       )}
-      {refreshError && (
+      {!rerunning && refreshError && missingScopes.length > 0 && (
+        <ScanFailurePanel
+          migrationId={migrationId}
+          error={refreshError}
+          onRetry={onRerunPrecheck}
+          showRetry={false}
+        />
+      )}
+      {!rerunning && refreshError && missingScopes.length === 0 && (
         <Alert
           variant="danger"
           title="We couldn't refresh from Stripe"

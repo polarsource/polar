@@ -66,6 +66,21 @@ export const invalidateMigrationRecords = (id: string) => {
   })
 }
 
+export const useReconnectMerchantMigration = (id: string) =>
+  useMutation({
+    mutationFn: (apiKey: string) =>
+      api.POST('/v1/merchant-migrations/{id}/source', {
+        params: { path: { id } },
+        body: { api_key: apiKey },
+      }),
+    onSuccess: (result) => {
+      if (result.error || !result.data) {
+        return
+      }
+      getQueryClient().setQueryData(['merchantMigration', { id }], result.data)
+    },
+  })
+
 export const useRunMerchantMigrationPrecheck = (id: string) =>
   useMutation({
     mutationFn: () =>

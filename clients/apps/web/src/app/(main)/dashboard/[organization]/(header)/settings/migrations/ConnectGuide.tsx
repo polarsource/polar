@@ -11,6 +11,8 @@ import {
 
 const NO_MISSING: string[] = []
 
+const DEFAULT_PASTE_HINT = "We'll validate it and start your migration."
+
 function PermissionRow({
   resource,
   access,
@@ -36,8 +38,10 @@ function PermissionRow({
 
 export function ConnectGuide({
   missingResources = NO_MISSING,
+  pasteHint = DEFAULT_PASTE_HINT,
 }: {
   missingResources?: string[]
+  pasteHint?: string
 }) {
   const mode = expectedStripeKeyMode()
   const missing = new Set(missingResources)
@@ -106,7 +110,7 @@ export function ConnectGuide({
       <Box flexDirection="column" rowGap="xs">
         <Text variant="label">3. Paste the key below</Text>
         <Text variant="caption" color="muted">
-          We&rsquo;ll validate it and start your migration.
+          {pasteHint}
         </Text>
       </Box>
     </Box>

@@ -468,4 +468,14 @@ export default {
       unknown: 'Something went wrong.',
     },
   },
+  merchantMigration: {
+    reconnect: {
+      hint: 'Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.',
+      pasteHint:
+        "We'll validate the key and keep this migration on the same Stripe account.",
+      submit: 'Validate & replace key',
+      missingTitle: 'This Stripe key is missing permissions',
+      fallbackError: 'Please check the API key and try again.',
+    },
+  },
 } as const

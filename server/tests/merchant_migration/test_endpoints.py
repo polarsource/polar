@@ -395,9 +395,11 @@ class TestPrecheck:
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
+        adapter = mocker.MagicMock()
+        adapter.verify_scopes = mocker.AsyncMock(return_value=[])
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
-            return_value=mocker.MagicMock(),
+            return_value=adapter,
         )
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
@@ -410,6 +412,38 @@ class TestPrecheck:
         enqueue.assert_called_once_with(
             "merchant_migration.precheck", merchant_migration_id=migration.id
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_missing_coupon_scopes_return_failed_operation(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.pre_check
+        await save_fixture(migration)
+        adapter = mocker.MagicMock()
+        adapter.verify_scopes = mocker.AsyncMock(
+            return_value=["Coupons", "Promotion codes"]
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
+
+        assert response.status_code == 200
+        operation = response.json()["operation"]
+        assert operation["status"] == "failed"
+        assert "Coupons" in operation["error"]
+        assert "Promotion codes" in operation["error"]
+        assert response.json()["step"] == "pre_check"
+        enqueue.assert_not_called()
 
 
 StartAndExecutePrecheck = Callable[[MerchantMigration], Awaitable[None]]
@@ -473,6 +507,7 @@ class TestRecords:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
+        adapter.verify_scopes = mocker.AsyncMock(return_value=[])
         adapter.extract_page = mocker.AsyncMock(
             return_value=ExtractionPage(_catalog(), None)
         )
@@ -556,6 +591,7 @@ class TestImport:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
+        adapter.verify_scopes = mocker.AsyncMock(return_value=[])
         adapter.extract_page = mocker.AsyncMock(
             return_value=ExtractionPage(_catalog_with_customer(), None)
         )
@@ -588,6 +624,7 @@ class TestImport:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
+        adapter.verify_scopes = mocker.AsyncMock(return_value=[])
         adapter.extract_page = mocker.AsyncMock(
             return_value=ExtractionPage(_catalog_with_customer(), None)
         )

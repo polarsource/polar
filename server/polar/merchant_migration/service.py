@@ -44,7 +44,7 @@ from polar.product.repository import ProductRepository
 from polar.worker import enqueue_job
 
 from . import pan_transfer
-from .adapters import PaginatedSourceAdapter, StripeAdapter
+from .adapters import StripeAdapter
 from .canonical import (
     CanonicalCustomer,
     CanonicalPaymentMethod,
@@ -97,6 +97,7 @@ from .schemas import (
     MerchantMigrationRecordSummaryEntity,
     MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
+    MerchantMigrationSourceUpdate,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -214,6 +215,15 @@ class SourceAccountAlreadyMigrated(MerchantMigrationError):
         super().__init__(
             "This Stripe account is already used by another organization's "
             "merchant migration.",
+            409,
+        )
+
+
+class SourceAccountMismatch(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This Stripe key belongs to a different account than the one "
+            "connected to this migration.",
             409,
         )
 
@@ -455,16 +465,7 @@ class MerchantMigrationService:
             raise SourceKeyModeMismatch(expect_live=expect_live)
 
         adapter = StripeAdapter(create_schema.api_key)
-        try:
-            missing_scopes = await adapter.verify_scopes()
-        except stripe_lib.AuthenticationError as e:
-            raise InvalidSourceCredentials() from e
-        except stripe_lib.StripeError as e:
-            # A non-permission failure (rate limit, network) means we couldn't
-            # fully check the key — fail closed rather than store an unvalidated one.
-            raise SourceVerificationUnavailable() from e
-        if missing_scopes:
-            raise MissingStripeScopes(missing_scopes)
+        await self._assert_stripe_scopes(adapter)
 
         # An account we can never migrate is rejected here rather than at the
         # import, so the merchant hears it while they're still connecting the key.
@@ -505,6 +506,11 @@ class MerchantMigrationService:
     ) -> MerchantMigration:
         """Queue a Stripe read. Returns immediately; poll ``operation`` until it
         finishes. A stalled run is replaced so the merchant can retry with one click.
+
+        Coupons and promotion codes are checked here too, including for a key
+        stored before those permissions were required. A missing, invalid, or
+        unverifiable key is stored on ``operation`` and pending rows are left
+        in place.
         """
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
@@ -512,7 +518,16 @@ class MerchantMigrationService:
         if self._operation_blocks_new_work(migration):
             raise MigrationOperationInProgress()
         # Fail before enqueueing if the key is gone or the source isn't Stripe.
-        await self._build_adapter(migration)
+        adapter = await self._build_adapter(migration)
+        try:
+            await self._assert_stripe_scopes(adapter)
+        except (
+            InvalidSourceCredentials,
+            MissingStripeScopes,
+            SourceVerificationUnavailable,
+        ) as error:
+            await self._fail_operation(session, migration, error.message)
+            return migration
 
         repository = MerchantMigrationRepository.from_session(session)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -534,6 +549,60 @@ class MerchantMigrationService:
         )
         enqueue_job("merchant_migration.precheck", merchant_migration_id=migration.id)
         return migration
+
+    async def reconnect(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        update_schema: MerchantMigrationSourceUpdate,
+    ) -> MerchantMigration:
+        """Replace the stored Stripe key after the same checks as create.
+
+        The key must belong to the account already connected to this migration.
+        A key that fails those checks leaves the stored credentials unchanged.
+        """
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if self._operation_blocks_new_work(migration):
+            raise MigrationOperationInProgress()
+        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            raise UnsupportedMigrationSource(migration.source_platform)
+
+        expect_live = settings.is_production()
+        if _is_live_key(update_schema.api_key) != expect_live:
+            raise SourceKeyModeMismatch(expect_live=expect_live)
+
+        adapter = StripeAdapter(update_schema.api_key)
+        await self._assert_stripe_scopes(adapter)
+        blockers = account_blockers(await adapter.get_source_account())
+        if blockers:
+            raise SourceAccountNotMigratable(blockers)
+
+        stripe_account_id = await adapter.get_account_id()
+        if stripe_account_id is None:
+            raise MissingStripeScopes(["All accounts"])
+
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.lock_stripe_account(stripe_account_id)
+        connected_account_id = migration.source_credentials.get("stripe_user_id")
+        if connected_account_id and connected_account_id != stripe_account_id:
+            raise SourceAccountMismatch()
+        if await repository.stripe_account_id_exists(
+            stripe_account_id,
+            exclude_organization_id=migration.organization_id,
+        ):
+            raise SourceAccountAlreadyMigrated()
+
+        credentials = await self._build_stripe_credentials(
+            migration, update_schema.api_key, stripe_account_id
+        )
+        return await repository.update(
+            migration,
+            update_dict={"source_credentials": dict(credentials)},
+            flush=True,
+        )
 
     async def execute_precheck(self, session: AsyncSession, migration_id: UUID) -> None:
         migration = await self._load(session, migration_id)
@@ -1824,9 +1893,19 @@ class MerchantMigrationService:
             )
             yield record
 
-    async def _build_adapter(
-        self, migration: MerchantMigration
-    ) -> PaginatedSourceAdapter:
+    async def _assert_stripe_scopes(self, adapter: StripeAdapter) -> None:
+        try:
+            missing_scopes = await adapter.verify_scopes()
+        except stripe_lib.AuthenticationError as e:
+            raise InvalidSourceCredentials() from e
+        except stripe_lib.StripeError as e:
+            # A non-permission failure (rate limit, network) means we couldn't
+            # fully check the key — fail closed rather than accept it.
+            raise SourceVerificationUnavailable() from e
+        if missing_scopes:
+            raise MissingStripeScopes(missing_scopes)
+
+    async def _build_adapter(self, migration: MerchantMigration) -> StripeAdapter:
         if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(migration.source_platform)
         return StripeAdapter(await self._decrypt_stripe_api_key(migration))

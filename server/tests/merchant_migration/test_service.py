@@ -17,7 +17,7 @@ from polar.customer.service import customer as customer_service
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.kit import encryption
-from polar.kit.encryption import LocalKeyProvider
+from polar.kit.encryption import EncryptedString, LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
@@ -51,11 +51,13 @@ from polar.merchant_migration.repository import (
 )
 from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationSourceUpdate,
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
+    SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
     CatalogImportBlocked,
     CatalogImportNotReady,
     CutoverNotStarted,
@@ -63,6 +65,7 @@ from polar.merchant_migration.service import (
     MigrationOperationInProgress,
     MissingStripeScopes,
     SourceAccountAlreadyMigrated,
+    SourceAccountMismatch,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -690,6 +693,142 @@ class TestStartPrecheck:
         assert started.operation is not None
         assert started.operation.status == MerchantMigrationOperationStatus.pending
         enqueue.assert_called_once()
+
+    @pytest.mark.auth
+    async def test_missing_coupon_scopes_fail_before_clearing_pending_rows(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.pre_check
+        await save_fixture(migration)
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.pending,
+                source_id="prod_existing",
+                canonical={},
+            )
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(missing_scopes=["Coupons", "Promotion codes"]),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        started = await service.start_precheck(session, auth_subject, migration.id)
+
+        assert started.step == MerchantMigrationStep.pre_check
+        assert started.operation is not None
+        assert started.operation.status == MerchantMigrationOperationStatus.failed
+        assert started.operation.error is not None
+        assert "Coupons" in started.operation.error
+        assert "Promotion codes" in started.operation.error
+        enqueue.assert_not_called()
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        pending = await record_repository.get_all(
+            record_repository.get_base_statement().where(
+                MerchantMigrationRecord.merchant_migration_id == migration.id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            )
+        )
+        assert [record.source_id for record in pending] == ["prod_existing"]
+
+
+@pytest.mark.asyncio
+class TestReconnect:
+    @pytest.mark.auth
+    async def test_replaces_key_for_the_same_stripe_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_test"),
+        )
+
+        updated = await service.reconnect(
+            session,
+            auth_subject,
+            migration.id,
+            MerchantMigrationSourceUpdate(api_key="rk_test_replaced"),
+        )
+
+        assert await _decrypt_source_key(updated) == "rk_test_replaced"
+        assert updated.source_credentials["stripe_user_id"] == "acct_test"
+
+    @pytest.mark.auth
+    async def test_missing_scopes_leave_the_stored_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(missing_scopes=["Coupons", "Promotion codes"]),
+        )
+
+        with pytest.raises(MissingStripeScopes) as exc_info:
+            await service.reconnect(
+                session,
+                auth_subject,
+                migration.id,
+                MerchantMigrationSourceUpdate(api_key="rk_test_incomplete"),
+            )
+
+        assert exc_info.value.missing == ["Coupons", "Promotion codes"]
+        assert await _decrypt_source_key(migration) == "rk_test_123"
+
+    @pytest.mark.auth
+    async def test_rejects_a_different_stripe_account(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(account_id="acct_other"),
+        )
+
+        with pytest.raises(SourceAccountMismatch):
+            await service.reconnect(
+                session,
+                auth_subject,
+                migration.id,
+                MerchantMigrationSourceUpdate(api_key="rk_test_other"),
+            )
+
+        assert await _decrypt_source_key(migration) == "rk_test_123"
+
+
+async def _decrypt_source_key(migration: MerchantMigration) -> str:
+    encrypted = migration.source_credentials["api_key_encrypted"]
+    return await EncryptedString(
+        encrypted, SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT
+    ).decrypt(id=str(migration.id))
 
 
 @pytest.mark.asyncio

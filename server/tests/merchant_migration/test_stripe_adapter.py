@@ -92,6 +92,20 @@ class TestVerifyScopes:
 
         assert await adapter.verify_scopes() == ["All accounts"]
 
+    async def test_missing_coupon_and_promotion_code_scopes_reported(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _all_scopes_present(mocker, client)
+        client.v1.coupons.list_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError("missing coupon scope")
+        )
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError("missing promotion code scope")
+        )
+
+        assert await adapter.verify_scopes() == ["Coupons", "Promotion codes"]
+
     async def test_account_probe_caches_for_get_account_id(
         self, mocker: MockerFixture
     ) -> None:

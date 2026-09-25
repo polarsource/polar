@@ -24,8 +24,8 @@ Leave the ones that mean "the account that pays". `seat.email` and
 
 ## Watch out
 
-`member` is set on direct purchases too, holding the buyer's own member. So a
-branch on its presence never fires:
+A branch on whether `member` is set cannot tell a seat holder from a buyer:
+direct purchases carry the buyer's own member.
 
 ```diff
 - if (grant.member) { holder(grant.member) } else { buyer(grant.customer_id) }

@@ -85,13 +85,14 @@ def _mock_stripe_adapter(
     missing_scopes: list[str] | None = None,
     auth_error: Exception | None = None,
     has_connected_accounts: bool = False,
+    account_id: str = "acct_test",
 ) -> None:
     adapter = mocker.MagicMock()
     if auth_error is not None:
         adapter.verify_scopes = mocker.AsyncMock(side_effect=auth_error)
     else:
         adapter.verify_scopes = mocker.AsyncMock(return_value=missing_scopes or [])
-    adapter.get_account_id = mocker.AsyncMock(return_value="acct_test")
+    adapter.get_account_id = mocker.AsyncMock(return_value=account_id)
     adapter.get_source_account = mocker.AsyncMock(
         return_value=CanonicalAccount(
             country="US", has_connected_accounts=has_connected_accounts
@@ -395,12 +396,7 @@ class TestPrecheck:
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-        adapter = mocker.MagicMock()
-        adapter.verify_scopes = mocker.AsyncMock(return_value=[])
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter",
-            return_value=adapter,
-        )
+        _mock_stripe_adapter(mocker)
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
@@ -425,14 +421,7 @@ class TestPrecheck:
         migration = await build_connected_migration(save_fixture, organization)
         migration.step = MerchantMigrationStep.pre_check
         await save_fixture(migration)
-        adapter = mocker.MagicMock()
-        adapter.verify_scopes = mocker.AsyncMock(
-            return_value=["Coupons", "Promotion codes"]
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter",
-            return_value=adapter,
-        )
+        _mock_stripe_adapter(mocker, missing_scopes=["Coupons", "Promotion codes"])
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
@@ -489,15 +478,7 @@ class TestReconnectSource:
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-        adapter = mocker.MagicMock()
-        adapter.verify_scopes = mocker.AsyncMock(return_value=[])
-        adapter.get_account_id = mocker.AsyncMock(return_value="acct_other")
-        adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
+        _mock_stripe_adapter(mocker, account_id="acct_other")
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/source",

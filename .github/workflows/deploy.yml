@@ -15,7 +15,7 @@ on:
 concurrency:
   group: build-deploy
 
-# Tag-update steps in deploy-environment.yml need contents: write to push
+# Tag-update jobs in deploy-environment.yml need contents: write to push
 # deployed/{component}-{environment} tags. Declared here at the workflow
 # level because a reusable workflow's per-job permissions are capped by
 # the caller's effective token scope.
@@ -401,6 +401,8 @@ jobs:
     if: needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
     outputs:
       deployment-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:

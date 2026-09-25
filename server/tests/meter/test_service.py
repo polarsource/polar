@@ -341,6 +341,32 @@ class TestUpdate:
 
         assert updated_meter.unit == unit
 
+    @pytest.mark.auth
+    async def test_name_unit_explicit_null_ignored(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            name="Original Name",
+            organization=organization,
+        )
+        original_unit = meter.unit
+
+        updated_meter = await meter_service.update(
+            session,
+            meter,
+            MeterUpdate.model_validate({"name": None, "unit": None}),
+            auth_subject=auth_subject,
+        )
+
+        assert updated_meter.name == "Original Name"
+        assert updated_meter.unit == original_unit
+
 
 @pytest.mark.asyncio
 class TestGetQuantities:

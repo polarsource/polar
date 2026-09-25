@@ -41,10 +41,11 @@ def _get_function_arguments(
     f: Callable[..., Any],
 ) -> Iterator[tuple[str, Any, Any]]:
     signature = inspect.signature(f)
+    annotations = get_type_hints(inspect.unwrap(f))
     for key, parameter in signature.parameters.items():
         if key in {"self"}:
             continue
-        type_hint = parameter.annotation
+        type_hint = annotations.get(key, parameter.annotation)
         if get_origin(type_hint) is Unpack:
             type_hints_args = get_args(type_hint)
             if is_typeddict(type_hints_args[0]):

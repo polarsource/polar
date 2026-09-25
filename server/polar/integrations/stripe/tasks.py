@@ -1,7 +1,7 @@
 import functools
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
-from typing import ParamSpec, cast
+from typing import Annotated, ParamSpec, cast
 
 import stripe as stripe_lib
 import structlog
@@ -14,6 +14,7 @@ from polar.external_event.service import external_event as external_event_servic
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models.dispute import DisputeStatus
+from polar.observability.task_logging import LoggableField
 from polar.organization.service import organization as organization_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
@@ -58,9 +59,12 @@ def stripe_api_connection_error_retry[**Params, ReturnValue](
     return wrapper
 
 
-@actor(actor_name="stripe.webhook.account.updated", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.account.updated",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def account_updated(event_id: uuid.UUID) -> None:
+async def account_updated(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             stripe_account = cast(stripe_lib.Account, event.stripe_data.data.object)
@@ -70,9 +74,12 @@ async def account_updated(event_id: uuid.UUID) -> None:
             )
 
 
-@actor(actor_name="stripe.account_risk_signal", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="stripe.account_risk_signal",
+    priority=TaskPriority.MEDIUM,
+)
 @stripe_api_connection_error_retry
-async def account_risk_signal(event_id: uuid.UUID) -> None:
+async def account_risk_signal(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             related = event.data.get("related_object")
@@ -103,9 +110,14 @@ async def account_risk_signal(event_id: uuid.UUID) -> None:
                 raise
 
 
-@actor(actor_name="stripe.webhook.payment_intent.succeeded", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.payment_intent.succeeded",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
+async def payment_intent_succeeded(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payment_intent = cast(
@@ -140,7 +152,9 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
     priority=TaskPriority.HIGH,
 )
 @stripe_api_connection_error_retry
-async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
+async def payment_intent_payment_failed(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payment_intent = cast(
@@ -160,9 +174,12 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.setup_intent.succeeded", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.setup_intent.succeeded",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
+async def setup_intent_succeeded(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
@@ -183,10 +200,13 @@ async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
 
 
 @actor(
-    actor_name="stripe.webhook.setup_intent.setup_failed", priority=TaskPriority.HIGH
+    actor_name="stripe.webhook.setup_intent.setup_failed",
+    priority=TaskPriority.HIGH,
 )
 @stripe_api_connection_error_retry
-async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
+async def setup_intent_setup_failed(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
@@ -201,8 +221,11 @@ async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.charge.pending", priority=TaskPriority.HIGH)
-async def charge_pending(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="stripe.webhook.charge.pending",
+    priority=TaskPriority.HIGH,
+)
+async def charge_pending(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
@@ -222,8 +245,11 @@ async def charge_pending(event_id: uuid.UUID) -> None:
             )
 
 
-@actor(actor_name="stripe.webhook.charge.failed", priority=TaskPriority.HIGH)
-async def charge_failed(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="stripe.webhook.charge.failed",
+    priority=TaskPriority.HIGH,
+)
+async def charge_failed(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
@@ -238,9 +264,12 @@ async def charge_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.charge.succeeded", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.charge.succeeded",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def charge_succeeded(event_id: uuid.UUID) -> None:
+async def charge_succeeded(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
@@ -263,9 +292,12 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
                 return
 
 
-@actor(actor_name="stripe.webhook.charge.updated", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.charge.updated",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def charge_updated(event_id: uuid.UUID) -> None:
+async def charge_updated(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
@@ -277,9 +309,12 @@ async def charge_updated(event_id: uuid.UUID) -> None:
                 return
 
 
-@actor(actor_name="stripe.webhook.refund.created", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.refund.created",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def refund_created(event_id: uuid.UUID) -> None:
+async def refund_created(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             refund = cast(stripe_lib.Refund, event.stripe_data.data.object)
@@ -301,9 +336,12 @@ async def refund_created(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.refund.updated", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.refund.updated",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def refund_updated(event_id: uuid.UUID) -> None:
+async def refund_updated(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             refund = cast(stripe_lib.Refund, event.stripe_data.data.object)
@@ -325,9 +363,12 @@ async def refund_updated(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.refund.failed", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.refund.failed",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def refund_failed(event_id: uuid.UUID) -> None:
+async def refund_failed(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             refund = cast(stripe_lib.Refund, event.stripe_data.data.object)
@@ -349,9 +390,12 @@ async def refund_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.charge.dispute.created", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.charge.dispute.created",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def charge_dispute_created(event_id: uuid.UUID) -> None:
+async def charge_dispute_created(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
@@ -364,9 +408,12 @@ async def charge_dispute_created(event_id: uuid.UUID) -> None:
             await dispute_service.upsert_from_stripe(session, dispute)
 
 
-@actor(actor_name="stripe.webhook.charge.dispute.updated", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.charge.dispute.updated",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def charge_dispute_updated(event_id: uuid.UUID) -> None:
+async def charge_dispute_updated(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
@@ -379,45 +426,62 @@ async def charge_dispute_updated(event_id: uuid.UUID) -> None:
             await dispute_service.upsert_from_stripe(session, dispute)
 
 
-@actor(actor_name="stripe.webhook.charge.dispute.closed", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.charge.dispute.closed",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def charge_dispute_closed(event_id: uuid.UUID) -> None:
+async def charge_dispute_closed(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
             await dispute_service.upsert_from_stripe(session, dispute)
 
 
-@actor(actor_name="stripe.webhook.payout.updated", priority=TaskPriority.LOW)
+@actor(
+    actor_name="stripe.webhook.payout.updated",
+    priority=TaskPriority.LOW,
+)
 @stripe_api_connection_error_retry
-async def payout_updated(event_id: uuid.UUID) -> None:
+async def payout_updated(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
             await payout_service.update_from_stripe(session, payout)
 
 
-@actor(actor_name="stripe.webhook.payout.paid", priority=TaskPriority.LOW)
+@actor(
+    actor_name="stripe.webhook.payout.paid",
+    priority=TaskPriority.LOW,
+)
 @stripe_api_connection_error_retry
-async def payout_paid(event_id: uuid.UUID) -> None:
+async def payout_paid(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
             await payout_service.update_from_stripe(session, payout)
 
 
-@actor(actor_name="stripe.webhook.payout.failed", priority=TaskPriority.LOW)
+@actor(
+    actor_name="stripe.webhook.payout.failed",
+    priority=TaskPriority.LOW,
+)
 @stripe_api_connection_error_retry
-async def payout_failed(event_id: uuid.UUID) -> None:
+async def payout_failed(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
             await payout_service.update_from_stripe(session, payout)
 
 
-@actor(actor_name="stripe.webhook.payment_method.detached", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="stripe.webhook.payment_method.detached",
+    priority=TaskPriority.HIGH,
+)
 @stripe_api_connection_error_retry
-async def payment_method_detached(event_id: uuid.UUID) -> None:
+async def payment_method_detached(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             stripe_payment_method = cast(
@@ -438,7 +502,9 @@ async def payment_method_detached(event_id: uuid.UUID) -> None:
     priority=TaskPriority.HIGH,
 )
 @stripe_api_connection_error_retry
-async def payment_method_automatically_updated(event_id: uuid.UUID) -> None:
+async def payment_method_automatically_updated(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             stripe_payment_method = cast(
@@ -460,7 +526,9 @@ async def payment_method_automatically_updated(event_id: uuid.UUID) -> None:
     actor_name="stripe.webhook.identity.verification_session.verified",
     priority=TaskPriority.HIGH,
 )
-async def identity_verification_session_verified(event_id: uuid.UUID) -> None:
+async def identity_verification_session_verified(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             verification_session = cast(
@@ -475,7 +543,9 @@ async def identity_verification_session_verified(event_id: uuid.UUID) -> None:
     actor_name="stripe.webhook.identity.verification_session.processing",
     priority=TaskPriority.HIGH,
 )
-async def identity_verification_session_processing(event_id: uuid.UUID) -> None:
+async def identity_verification_session_processing(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             verification_session = cast(
@@ -490,7 +560,9 @@ async def identity_verification_session_processing(event_id: uuid.UUID) -> None:
     actor_name="stripe.webhook.identity.verification_session.requires_input",
     priority=TaskPriority.HIGH,
 )
-async def identity_verification_session_requires_input(event_id: uuid.UUID) -> None:
+async def identity_verification_session_requires_input(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             verification_session = cast(
@@ -505,7 +577,9 @@ async def identity_verification_session_requires_input(event_id: uuid.UUID) -> N
     actor_name="stripe.webhook.identity.verification_session.canceled",
     priority=TaskPriority.HIGH,
 )
-async def identity_verification_session_canceled(event_id: uuid.UUID) -> None:
+async def identity_verification_session_canceled(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             verification_session = cast(

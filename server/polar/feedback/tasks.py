@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from sqlalchemy.orm import joinedload
@@ -5,13 +6,17 @@ from sqlalchemy.orm import joinedload
 from polar.integrations.plain.service import plain as plain_service
 from polar.models import Feedback
 from polar.models.feedback import FeedbackStatus
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import FeedbackRepository
 
 
-@actor(actor_name="feedback.reply_in_plain", priority=TaskPriority.LOW)
-async def feedback_reply_in_plain(feedback_id: UUID) -> None:
+@actor(
+    actor_name="feedback.reply_in_plain",
+    priority=TaskPriority.LOW,
+)
+async def feedback_reply_in_plain(feedback_id: Annotated[UUID, LoggableField]) -> None:
     """
     Automatically open a Plain support thread for a freshly submitted question.
 

@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 import stripe as stripe_lib
 import structlog
@@ -11,6 +12,7 @@ from polar.logging import Logger
 from polar.models import Order, Product
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.payment import PaymentTrigger
+from polar.observability.task_logging import LoggableField
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -63,7 +65,7 @@ class OrderDoesNotExist(OrderTaskError):
 
 
 @actor(actor_name="order.created", priority=TaskPriority.LOW)
-async def order_created(order_id: uuid.UUID) -> None:
+async def order_created(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -80,9 +82,9 @@ async def order_created(order_id: uuid.UUID) -> None:
     time_limit=600_000,
 )
 async def create_subscription_order(
-    subscription_id: uuid.UUID,
-    order_reason: OrderBillingReasonInternal,
-    cutoff: str | None = None,
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+    order_reason: Annotated[OrderBillingReasonInternal, LoggableField],
+    cutoff: Annotated[str | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -113,11 +115,14 @@ async def create_subscription_order(
             pass
 
 
-@actor(actor_name="order.trigger_payment", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.trigger_payment",
+    priority=TaskPriority.LOW,
+)
 async def trigger_payment(
-    order_id: uuid.UUID,
-    payment_method_id: uuid.UUID,
-    payment_trigger: str | None = None,
+    order_id: Annotated[uuid.UUID, LoggableField],
+    payment_method_id: Annotated[uuid.UUID, LoggableField],
+    payment_trigger: Annotated[str | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -181,8 +186,14 @@ async def trigger_payment(
                 raise
 
 
-@actor(actor_name="order.balance", priority=TaskPriority.LOW)
-async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
+@actor(
+    actor_name="order.balance",
+    priority=TaskPriority.LOW,
+)
+async def create_order_balance(
+    order_id: Annotated[uuid.UUID, LoggableField],
+    charge_id: Annotated[str, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -204,8 +215,13 @@ async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
                 raise
 
 
-@actor(actor_name="order.update_product_benefits_grants", priority=TaskPriority.MEDIUM)
-async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
+@actor(
+    actor_name="order.update_product_benefits_grants",
+    priority=TaskPriority.MEDIUM,
+)
+async def update_product_benefits_grants(
+    product_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(product_id)
@@ -215,8 +231,13 @@ async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
         await order_service.update_product_benefits_grants(session, product)
 
 
-@actor(actor_name="order.confirmation_email", priority=TaskPriority.LOW)
-async def order_confirmation_email(order_id: uuid.UUID) -> None:
+@actor(
+    actor_name="order.confirmation_email",
+    priority=TaskPriority.LOW,
+)
+async def order_confirmation_email(
+    order_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -228,8 +249,13 @@ async def order_confirmation_email(order_id: uuid.UUID) -> None:
         await order_service.send_confirmation_email(session, order)
 
 
-@actor(actor_name="order.subscription_renewal_notification", priority=TaskPriority.LOW)
-async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
+@actor(
+    actor_name="order.subscription_renewal_notification",
+    priority=TaskPriority.LOW,
+)
+async def order_subscription_renewal_notification(
+    order_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -241,8 +267,13 @@ async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
         await order_service.send_subscription_renewal_notification(session, order)
 
 
-@actor(actor_name="order.admin_notification", priority=TaskPriority.LOW)
-async def order_admin_notification(order_id: uuid.UUID) -> None:
+@actor(
+    actor_name="order.admin_notification",
+    priority=TaskPriority.LOW,
+)
+async def order_admin_notification(
+    order_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -276,7 +307,10 @@ async def _run_order_invoice(order_id: uuid.UUID, force: bool = False) -> None:
     priority=TaskPriority.LOW,
     queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
 )
-async def order_invoice(order_id: uuid.UUID, force: bool = False) -> None:
+async def order_invoice(
+    order_id: Annotated[uuid.UUID, LoggableField],
+    force: Annotated[bool, LoggableField] = False,
+) -> None:
     await _run_order_invoice(order_id, force=force)
 
 
@@ -295,8 +329,11 @@ async def process_dunning() -> None:
         enqueue_job("order.process_dunning_order", order.id)
 
 
-@actor(actor_name="order.process_dunning_order", priority=TaskPriority.MEDIUM)
-async def process_dunning_order(order_id: uuid.UUID) -> None:
+@actor(
+    actor_name="order.process_dunning_order",
+    priority=TaskPriority.MEDIUM,
+)
+async def process_dunning_order(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Process a single order due for dunning (payment retry)."""
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
@@ -321,8 +358,13 @@ async def enqueue_stale_payment_locks() -> None:
             enqueue_job("order.process_stale_payment_lock", order.id)
 
 
-@actor(actor_name="order.process_stale_payment_lock", priority=TaskPriority.MEDIUM)
-async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
+@actor(
+    actor_name="order.process_stale_payment_lock",
+    priority=TaskPriority.MEDIUM,
+)
+async def process_stale_payment_lock(
+    order_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
         order = await order_repository.get_by_id(
@@ -347,9 +389,12 @@ async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
 
 
 @actor(
-    actor_name="order.void_pending_orders_for_subscription", priority=TaskPriority.LOW
+    actor_name="order.void_pending_orders_for_subscription",
+    priority=TaskPriority.LOW,
 )
-async def void_pending_orders_for_subscription(subscription_id: uuid.UUID) -> None:
+async def void_pending_orders_for_subscription(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Void all pending orders for a subscription when it's revoked."""
     async with AsyncSessionMaker() as session:
         subscription_repository = SubscriptionRepository.from_session(session)

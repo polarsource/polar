@@ -736,6 +736,12 @@ async def _count_grants_missing_member(
     organization_ids: Sequence[uuid.UUID],
     chunk_size: int,
 ) -> dict[uuid.UUID, int]:
+    """Grants still missing a member that prepare could actually link.
+
+    Prepare links neither a deleted customer's grants, having no owner member to
+    link them to, nor a revoked grant. Counting those would keep an organization
+    reported as incomplete for good.
+    """
     counts: dict[uuid.UUID, int] = {}
     for chunk in _chunked(organization_ids, chunk_size):
         result = await session.execute(
@@ -744,7 +750,9 @@ async def _count_grants_missing_member(
             .join(Customer, BenefitGrant.customer_id == Customer.id)
             .where(
                 Customer.organization_id.in_(chunk),
+                Customer.deleted_at.is_(None),
                 BenefitGrant.member_id.is_(None),
+                BenefitGrant.revoked_at.is_(None),
                 ~BenefitGrant.is_deleted,
             )
             .group_by(Customer.organization_id)

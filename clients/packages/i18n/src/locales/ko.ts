@@ -315,4 +315,14 @@ export default {
       unknown: '문제가 발생했습니다.',
     },
   },
+  merchantMigration: {
+    reconnect: {
+      hint: '누락된 권한이 포함된 동일한 Stripe 계정의 키를 붙여넣으세요. 현재 키의 권한을 업데이트한 뒤 새로고침해도 됩니다.',
+      pasteHint:
+        '키를 확인한 후 이 마이그레이션을 동일한 Stripe 계정에 유지합니다.',
+      submit: '키 확인 및 교체',
+      missingTitle: '이 Stripe 키에 권한이 없습니다',
+      fallbackError: 'API 키를 확인한 후 다시 시도하세요.',
+    },
+  },
 } as const

@@ -319,4 +319,15 @@ export default {
       unknown: 'Valami hiba történt.',
     },
   },
+  merchantMigration: {
+    reconnect: {
+      hint: 'Illesszen be egy kulcsot ehhez az ugyanahhoz a Stripe-fiókhoz, amely tartalmazza a hiányzó jogosultságokat. Az is működik, ha a jelenlegi kulcs jogosultságait frissíti, majd újratölti az oldalt.',
+      pasteHint:
+        'Ellenőrizzük a kulcsot, és ezt a migrációt ugyanahhoz a Stripe-fiókhoz rendeljük.',
+      submit: 'Ellenőrzés és kulcs csere',
+      missingTitle:
+        'Ez a Stripe-kulcs nem rendelkezik minden szükséges jogosultsággal',
+      fallbackError: 'Kérjük, ellenőrizze az API-kulcsot, és próbálja újra.',
+    },
+  },
 } as const

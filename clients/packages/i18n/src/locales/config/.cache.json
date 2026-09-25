@@ -203,7 +203,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -406,7 +411,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -609,7 +619,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -815,7 +830,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1021,7 +1041,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1216,7 +1241,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1414,7 +1444,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1609,7 +1644,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1804,7 +1844,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1999,7 +2044,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2197,7 +2247,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2395,7 +2450,12 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2593,6 +2653,11 @@
     "checkout.pricing.tiers.andAbove": "{from}+",
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
-    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again."
+    "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
+    "merchantMigration.reconnect.hint": "Paste a key for this same Stripe account that includes the missing permissions. Updating permissions on the current key and refreshing also works.",
+    "merchantMigration.reconnect.pasteHint": "We'll validate the key and keep this migration on the same Stripe account.",
+    "merchantMigration.reconnect.submit": "Validate & replace key",
+    "merchantMigration.reconnect.missingTitle": "This Stripe key is missing permissions",
+    "merchantMigration.reconnect.fallbackError": "Please check the API key and try again."
   }
 }

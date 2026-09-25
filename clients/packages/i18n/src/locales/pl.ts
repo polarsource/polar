@@ -322,4 +322,14 @@ export default {
       unknown: 'Coś poszło nie tak.',
     },
   },
+  merchantMigration: {
+    reconnect: {
+      hint: 'Wklej klucz dla tego samego konta Stripe, który ma brakujące uprawnienia. Działa też zaktualizowanie uprawnień na obecnym kluczu i odświeżenie.',
+      pasteHint:
+        'Sprawdzimy klucz i zachowamy tę migrację na tym samym koncie Stripe.',
+      submit: 'Sprawdź i zamień klucz',
+      missingTitle: 'Ten klucz Stripe nie ma wymaganych uprawnień',
+      fallbackError: 'Sprawdź klucz API i spróbuj ponownie.',
+    },
+  },
 } as const

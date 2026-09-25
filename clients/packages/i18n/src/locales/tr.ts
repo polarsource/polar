@@ -318,4 +318,14 @@ export default {
       unknown: 'Bir sorun oluştu.',
     },
   },
+  merchantMigration: {
+    reconnect: {
+      hint: 'Eksik izinleri içeren, aynı Stripe hesabına ait bir anahtar yapıştırın. Mevcut anahtarın izinlerini güncelleyip yenilemek de işe yarar.',
+      pasteHint:
+        'Anahtarı doğrulayacağız ve bu geçişi aynı Stripe hesabında tutacağız.',
+      submit: 'Doğrula ve anahtarı değiştir',
+      missingTitle: 'Bu Stripe anahtarında izinler eksik',
+      fallbackError: 'Lütfen API anahtarını kontrol edip tekrar deneyin.',
+    },
+  },
 } as const

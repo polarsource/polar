@@ -322,4 +322,14 @@ export default {
       unknown: 'Er is iets misgegaan.',
     },
   },
+  merchantMigration: {
+    reconnect: {
+      hint: 'Plak een sleutel voor hetzelfde Stripe-account die de ontbrekende machtigingen heeft. Machtigingen bijwerken op de huidige sleutel en verversen werkt ook.',
+      pasteHint:
+        'We valideren de sleutel en houden deze migratie op hetzelfde Stripe-account.',
+      submit: 'Valideer en vervang sleutel',
+      missingTitle: 'Deze Stripe-sleutel mist machtigingen',
+      fallbackError: 'Controleer de API-sleutel en probeer het opnieuw.',
+    },
+  },
 } as const

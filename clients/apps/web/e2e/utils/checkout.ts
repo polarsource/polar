@@ -2,12 +2,17 @@ import type { schemas } from '@polar-sh/client'
 import type { Frame } from 'playwright'
 import { expect } from 'vitest'
 import type { App } from './app'
-import { BILLING_ADDRESS, CARD, WEBHOOK_TIMEOUT } from './constants'
+import {
+  BILLING_ADDRESS,
+  CARD,
+  CONFIRMATION_INTERVAL,
+  WEBHOOK_TIMEOUT,
+} from './constants'
 import { orgApi } from './api'
 import { ensureProduct } from './org'
 import type { ProductSpec } from './products'
 
-type Checkout = schemas['CheckoutPublic']
+type Checkout = schemas['Checkout']
 type Card = typeof CARD
 export type Subscription = schemas['CustomerSubscription']
 export type Order = schemas['CustomerOrder']
@@ -22,23 +27,30 @@ export const openCheckout = async (
   const body: Pick<schemas['CheckoutProductsCreate'], 'products'> = {
     products,
   }
-  const { url, client_secret } = await orgApi<schemas['Checkout']>(
-    '/v1/checkouts/',
-    { method: 'POST', body },
-  )
+  const { id, url } = await orgApi<Checkout>('/v1/checkouts/', {
+    method: 'POST',
+    body,
+  })
   app.meta.checkoutUrl = url
   await app.goto(url)
-  return new CheckoutPage(app, client_secret)
+  return new CheckoutPage(app, id)
+}
+
+let lastConfirmationAt = 0
+
+const spaceConfirmations = async (): Promise<void> => {
+  const wait = lastConfirmationAt + CONFIRMATION_INTERVAL - Date.now()
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+  lastConfirmationAt = Date.now()
 }
 
 export class CheckoutPage {
   constructor(
     private readonly app: App,
-    readonly clientSecret: string,
+    readonly id: string,
   ) {}
 
-  state = (): Promise<Checkout> =>
-    this.app.api<Checkout>(`/v1/checkouts/client/${this.clientSecret}`)
+  state = (): Promise<Checkout> => orgApi<Checkout>(`/v1/checkouts/${this.id}`)
 
   hasMessage = (text: string): Promise<boolean> =>
     this.app.page.getByText(text).isVisible()
@@ -221,6 +233,7 @@ export class CheckoutPage {
   }
 
   async submit(): Promise<Portal> {
+    await spaceConfirmations()
     await this.app.click(
       this.submitButton(),
       async () => (await this.state()).status !== 'open',
@@ -229,6 +242,7 @@ export class CheckoutPage {
   }
 
   async submitExpectingError(message: string): Promise<void> {
+    await spaceConfirmations()
     await this.submitButton().click()
     await expect
       .poll(() => this.hasMessage(message), { message: `"${message}" shown` })
@@ -238,6 +252,7 @@ export class CheckoutPage {
 
   async submitFor3ds(): Promise<ThreeDSecure> {
     const challenge = new ThreeDSecure(this.app)
+    await spaceConfirmations()
     await this.app.click(this.submitButton(), () => challenge.isOpen())
     return challenge
   }
@@ -251,9 +266,21 @@ export class CheckoutPage {
     )
     expect(token, 'customer session token in the confirmation URL').toBeTruthy()
     const portal = new Portal(this.app, token!)
-    this.app.onCleanup(() => portal.cancelSubscriptions())
+    this.app.onCleanup(() => this.purge())
     await this.awaitStatus('succeeded')
     return portal
+  }
+
+  private async purge(): Promise<void> {
+    const { customer_id } = await this.state()
+    if (!customer_id) return
+    const { items } = await orgApi<{ items: { id: string }[] }>(
+      `/v1/subscriptions/?customer_id=${customer_id}&active=true&limit=100`,
+    )
+    for (const { id } of items) {
+      await orgApi(`/v1/subscriptions/${id}`, { method: 'DELETE' })
+    }
+    await orgApi(`/v1/customers/${customer_id}`, { method: 'DELETE' })
   }
 }
 

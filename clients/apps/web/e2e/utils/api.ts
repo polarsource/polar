@@ -25,7 +25,9 @@ export const api = async <T>(path: string, init: ApiInit = {}): Promise<T> => {
     response.status === 429 && retry < RATE_LIMIT_RETRIES;
     retry++
   ) {
-    await sleep(Number(response.headers.get('retry-after') ?? 5) * 1000)
+    await sleep(
+      Math.min(Number(response.headers.get('retry-after') ?? 5), 10) * 1000,
+    )
     response = await request(path, init)
   }
   if (!response.ok) {
@@ -33,6 +35,7 @@ export const api = async <T>(path: string, init: ApiInit = {}): Promise<T> => {
       `${init.method ?? 'GET'} ${path} -> ${response.status} ${await response.text()}`,
     )
   }
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 

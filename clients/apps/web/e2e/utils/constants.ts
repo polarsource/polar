@@ -18,3 +18,4 @@ export const BILLING_ADDRESS = {
 
 export const HEADLESS = !process.env.E2E_HEADED
 export const WEBHOOK_TIMEOUT = 120_000
+export const CONFIRMATION_INTERVAL = 10_000

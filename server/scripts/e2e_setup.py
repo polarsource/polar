@@ -42,6 +42,8 @@ TOKEN_SCOPES = [
     Scope.custom_fields_write,
     Scope.meters_read,
     Scope.meters_write,
+    Scope.customers_read,
+    Scope.customers_write,
 ]
 
 cli = typer.Typer()

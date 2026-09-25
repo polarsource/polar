@@ -119,22 +119,20 @@ export function AssessmentNotice({
   const attention = needsAttention(row)
 
   return (
-    <Box>
-      <Alert
-        variant={attention ? 'warning' : 'info'}
-        title={attention ? labels.needsAttention : labels.goodToKnow}
-        description={
-          polarCustomerHref ? (
-            <>
-              {row.reason}{' '}
-              <Link href={polarCustomerHref}>{labels.viewPolarCustomer}</Link>
-            </>
-          ) : (
-            row.reason
-          )
-        }
-      />
-    </Box>
+    <Alert
+      variant={attention ? 'warning' : 'info'}
+      title={attention ? labels.needsAttention : labels.goodToKnow}
+      description={
+        polarCustomerHref ? (
+          <>
+            {row.reason}{' '}
+            <Link href={polarCustomerHref}>{labels.viewPolarCustomer}</Link>
+          </>
+        ) : (
+          row.reason
+        )
+      }
+    />
   )
 }
 

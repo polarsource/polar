@@ -107,11 +107,7 @@ export function AssessmentNotice({
   row: ReviewRow
   labels: AssessmentLabels
 }) {
-  const context = useContext(OrganizationContext)
-  const organization =
-    typeof context === 'object' && context !== null && 'organization' in context
-      ? context.organization
-      : undefined
+  const { organization } = useContext(OrganizationContext)
   if (!row.reason) return null
 
   const polarCustomerHref =

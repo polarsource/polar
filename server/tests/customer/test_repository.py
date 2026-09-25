@@ -324,7 +324,7 @@ async def test_update_restoring_customer_emits_updated(
 
 
 @pytest.mark.asyncio
-async def test_update_without_changes_emits_empty_updated_fields(
+async def test_update_without_changes(
     mocker: MockerFixture,
     customer: Customer,
     repository: CustomerRepository,
@@ -333,12 +333,7 @@ async def test_update_without_changes_emits_empty_updated_fields(
 
     await repository.update(customer)
 
-    enqueue_job_mock.assert_any_call(
-        "customer.event",
-        customer.id,
-        SystemEvent.customer_updated,
-        {},
-    )
+    enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -58,11 +58,7 @@
     },
     "web#build": {
       "dependsOn": ["^build"],
-      "env": [
-        "VERCEL_GIT_COMMIT_SHA",
-        "VERCEL_URL",
-        "SENTRY_AUTH_TOKEN"
-      ],
+      "env": ["VERCEL_GIT_COMMIT_SHA", "VERCEL_URL", "SENTRY_AUTH_TOKEN"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "//#lint": {},

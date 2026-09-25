@@ -86,8 +86,6 @@ jobs:
     if: always() && inputs.skip-backend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -120,20 +118,6 @@ jobs:
           projects: server
           working_directory: ./server
 
-      # The next run's `changes` job diffs against this tag. Main only: a
-      # workflow_dispatch from another ref would move the tag off main and
-      # poison that diff base. Best effort: a failed advance only means the
-      # next push redeploys the same SHA.
-      - name: Advance deployed/backend-${{ inputs.environment }} tag
-        if: github.ref == 'refs/heads/main'
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: deployed/backend-${{ inputs.environment }}
-        run: |
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" -f sha="$GITHUB_SHA" -F force=true \
-            || gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
-
   promote-frontend:
     name: "Frontend: Promote to Production"
     concurrency:
@@ -143,8 +127,6 @@ jobs:
     if: always() && !failure() && !cancelled() && inputs.skip-frontend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    permissions:
-      contents: write
     env:
       DEPLOYMENT_URL: ${{ inputs.frontend-deployment-url || needs.build-frontend.outputs.deployment-url }}
     steps:
@@ -173,10 +155,40 @@ jobs:
           echo "Promotion of $DEPLOYMENT_URL still $STATUS after two minutes"
           exit 1
 
-      # See the backend tag step.
-      - name: Advance deployed/frontend-${{ inputs.environment }} tag
-        if: github.ref == 'refs/heads/main'
-        continue-on-error: true
+  # Tag advancement lives in its own jobs so the write-capable token never
+  # reaches the deploy jobs, which run third-party actions and hold
+  # deploy credentials. The next run's `changes` job diffs against these
+  # tags. Main only: a workflow_dispatch from another ref would move a tag
+  # off main and poison that diff base. Best effort: a failed advance only
+  # means the next push redeploys the same SHA, and failing the
+  # workflow_call would block production.
+  update-backend-tag:
+    name: "Update deployed/backend-${{ inputs.environment }} tag"
+    needs: deploy-backend
+    if: always() && needs.deploy-backend.result == 'success' && inputs.skip-backend != true && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    continue-on-error: true
+    steps:
+      - name: Advance tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: deployed/backend-${{ inputs.environment }}
+        run: |
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" -f sha="$GITHUB_SHA" -F force=true \
+            || gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+
+  update-frontend-tag:
+    name: "Update deployed/frontend-${{ inputs.environment }} tag"
+    needs: promote-frontend
+    if: always() && needs.promote-frontend.result == 'success' && inputs.skip-frontend != true && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    continue-on-error: true
+    steps:
+      - name: Advance tag
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: deployed/frontend-${{ inputs.environment }}

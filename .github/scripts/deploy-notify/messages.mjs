@@ -53,7 +53,7 @@ function environmentJobs(jobs, environment) {
   const deployment = jobs.filter(job => job.name.startsWith(`Deploy to ${name} `));
   return {
     backend: deployment.find(job => job.name.includes('/ Backend: Deploy to ')),
-    build: deployment.find(job => job.name.endsWith('/ Frontend: Build')),
+    build: jobs.find(job => job.name.startsWith(`Frontend: Build for ${name} `)) ?? deployment.find(job => job.name.endsWith('/ Frontend: Build')),
     promotion: deployment.find(job => job.name.endsWith('/ Frontend: Promote to Production')),
     lambda: jobs.find(job => job.name.startsWith(`Deploy Lambda Worker to ${name} `)),
   };

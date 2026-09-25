@@ -88,6 +88,19 @@ test('environment replies distinguish skipped, failed, cancelled and unknown com
   assert.match(environmentText([{ ...backend, conclusion: null }]), /Render: :grey_question: <[^>]+\|unknown>/);
 });
 
+test('production reports the frontend build that runs before the production deploy', () => {
+  const deployWorkflow = readFileSync(new URL('../../workflows/deploy.yml', import.meta.url), 'utf8');
+  const buildName = deployWorkflow.match(/\n  build-production-frontend:\n    name: "([^"]+)"/)[1];
+  const text = environmentText([
+    { ...backend, name: buildName },
+    { ...backend, name: 'Deploy to Production 🚀 / Frontend: Build', conclusion: 'skipped' },
+    { ...backend, name: 'Deploy to Production 🚀 / Backend: Deploy to production' },
+    { ...backend, name: 'Deploy to Production 🚀 / Frontend: Promote to Production' },
+    { ...backend, name: 'Deploy Lambda Worker to Production 🚀' },
+  ]);
+  assert.match(text, /\*production\*\nRender: :white_check_mark: .* Frontend build: :white_check_mark:/);
+});
+
 test('escapes job names and conclusions in the failed jobs list', () => {
   const message = buildMessage({
     ...input,

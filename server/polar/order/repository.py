@@ -113,23 +113,17 @@ class OrderRepository(
             )
             .group_by(payment_day, payment_currency)
         )
-        global_fx_statement = global_daily_exchange_rates()
         if start is not None:
             organization_fx_statement = organization_fx_statement.where(
                 payment_order.created_at >= start
-            )
-            global_fx_statement = global_fx_statement.where(
-                Transaction.created_at >= start
             )
         if end is not None:
             organization_fx_statement = organization_fx_statement.where(
                 payment_order.created_at < end
             )
-            global_fx_statement = global_fx_statement.where(
-                Transaction.created_at < end
-            )
         organization_fx_daily = organization_fx_statement.cte("organization_fx_daily")
-        global_fx_daily = global_fx_statement.cte("global_fx_daily")
+        # Not bounded by start/end: the closest rate may fall outside the window.
+        global_fx_daily = global_daily_exchange_rates().cte("global_fx_daily")
         same_day_exchange_rate = (
             select(organization_fx_daily.c.rate)
             .where(

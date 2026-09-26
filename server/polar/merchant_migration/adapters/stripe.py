@@ -72,8 +72,9 @@ _SUBSCRIPTION_EXPAND = [
     "customer.invoice_settings.default_payment_method",
     "customer.default_source",
     "discounts",
-    "latest_invoice",
 ]
+# The import never checks the invoice, and a page of them is heavy.
+_CUTOVER_SUBSCRIPTION_EXPAND = [*_SUBSCRIPTION_EXPAND, "latest_invoice"]
 
 
 class StripeExtractionPhase(StrEnum):
@@ -444,7 +445,7 @@ class StripeAdapter:
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         try:
             subscription = await self._client.v1.subscriptions.retrieve_async(
-                source_id, params={"expand": _SUBSCRIPTION_EXPAND}
+                source_id, params={"expand": _CUTOVER_SUBSCRIPTION_EXPAND}
             )
         except stripe_lib.InvalidRequestError as e:
             # The merchant deleted it on Stripe since the import.
@@ -453,7 +454,7 @@ class StripeAdapter:
             raise
         if not subscription["items"]["data"]:
             return None
-        return self._map_subscription(subscription)
+        return self._map_subscription(subscription, with_latest_invoice=True)
 
     async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
         """Cancel the subscription on Stripe, right now.
@@ -506,7 +507,10 @@ class StripeAdapter:
         return CanonicalPricingScheme.fixed
 
     def _map_subscription(
-        self, subscription: stripe_lib.Subscription
+        self,
+        subscription: stripe_lib.Subscription,
+        *,
+        with_latest_invoice: bool = False,
     ) -> CanonicalSubscription:
         items = subscription["items"]["data"]
         first_item = items[0]
@@ -535,7 +539,8 @@ class StripeAdapter:
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
-            latest_invoice_unpaid=self._latest_invoice_unpaid(subscription),
+            latest_invoice_unpaid=with_latest_invoice
+            and self._latest_invoice_unpaid(subscription),
             anchor_day=self._anchor_day(subscription),
             currency=subscription.currency,
             automatic_tax=self._automatic_tax(subscription),

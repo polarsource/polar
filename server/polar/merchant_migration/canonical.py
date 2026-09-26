@@ -160,6 +160,7 @@ class CanonicalSubscription:
     stopped_for_migration: bool = False
     # The source still has to collect its latest invoice, like a renewal it
     # drafts and charges an hour later. Stopping it now could drop that payment.
+    # Only read at cutover.
     latest_invoice_unpaid: bool = False
     # The renewal day before any month-end clamping. A period boundary can't be
     # trusted for it: a 31st anchor reads as Feb 28 in a February period.

@@ -1168,6 +1168,29 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.latest_invoice_unpaid is expected
+        kwargs = client.v1.subscriptions.retrieve_async.await_args.kwargs
+        assert "latest_invoice" in kwargs["params"]["expand"]
+
+    async def test_import_page_leaves_the_latest_invoice_unread(
+        self, mocker: MockerFixture
+    ) -> None:
+        stripe_subscription = _stripe_subscription()
+        stripe_subscription["latest_invoice"] = "in_1"
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[stripe_subscription], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        [subscription] = [
+            record
+            for record in page.records
+            if isinstance(record, CanonicalSubscription)
+        ]
+        assert subscription.latest_invoice_unpaid is False
+        kwargs = client.v1.subscriptions.list_async.await_args.kwargs
+        assert "data.latest_invoice" not in kwargs["params"]["expand"]
 
     async def test_reads_the_price_it_is_billed_in(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

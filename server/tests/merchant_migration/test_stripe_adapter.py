@@ -1315,7 +1315,13 @@ class TestGetSubscription:
         adapter, client = _adapter(mocker)
         client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
             return_value=_stripe_subscription(
-                customer={"id": "cus_1", "object": "customer", "balance": -500}
+                customer={
+                    "id": "cus_1",
+                    "object": "customer",
+                    "balance": -500,
+                    "invoice_settings": None,
+                    "default_source": None,
+                }
             )
         )
 

@@ -164,6 +164,9 @@ class CanonicalSubscription:
     # cutover, so a retry after a crash finishes the move instead of reading its
     # own cancellation as the customer having churned.
     stopped_for_migration: bool = False
+    # The source still has to collect its latest invoice, like a renewal it
+    # drafts and charges an hour later. Stopping it now could drop that payment.
+    latest_invoice_unpaid: bool = False
     # The renewal day before any month-end clamping. A period boundary can't be
     # trusted for it: a 31st anchor reads as Feb 28 in a February period.
     anchor_day: int | None = None
@@ -452,6 +455,7 @@ def deserialize(
                 has_scheduled_changes=data.get("has_scheduled_changes", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
+                latest_invoice_unpaid=data.get("latest_invoice_unpaid", False),
                 anchor_day=data.get("anchor_day"),
                 currency=data.get("currency"),
                 automatic_tax=data.get("automatic_tax"),

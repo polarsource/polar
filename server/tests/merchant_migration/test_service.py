@@ -73,6 +73,7 @@ from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
     Discount,
+    DiscountProduct,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -1221,6 +1222,18 @@ async def _imported_discounts(
         select(Discount).where(Discount.organization_id == organization.id)
     )
     return list(result.scalars().all())
+
+
+async def _discount_product_names(
+    session: AsyncSession, organization: Organization
+) -> set[str]:
+    result = await session.execute(
+        select(Product.name)
+        .join(DiscountProduct, DiscountProduct.product_id == Product.id)
+        .join(Discount, Discount.id == DiscountProduct.discount_id)
+        .where(Discount.organization_id == organization.id)
+    )
+    return set(result.scalars().all())
 
 
 def _catalog_with_discounted_subscription(
@@ -2625,7 +2638,7 @@ class TestImportCatalog:
         } == {("eur", 900), ("usd", 1000)}
 
     @pytest.mark.auth
-    async def test_product_restricted_discount_waits_until_every_product_settles(
+    async def test_product_restricted_discount_follows_products_imported_later(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2707,38 +2720,71 @@ class TestImportCatalog:
             record_ids=[first_subscription.id],
         )
         first_results = {result.entity: result for result in first.results}
-        assert first_results[PrecheckEntity.discounts].imported == 0
-        assert first_results[PrecheckEntity.discounts].skipped == 0
-        assert await _imported_discounts(session, organization) == []
-        discount_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.discount,
-            source_id="coupon_1",
-        )
-        assert discount_record is not None
-        assert discount_record.status == MerchantMigrationRecordStatus.pending
+        assert first_results[PrecheckEntity.discounts].imported == 1
+        assert await _discount_product_names(session, organization) == {"Pro"}
 
-        second = await service.import_catalog(
+        await service.import_catalog(
             session,
             auth_subject,
             migration.id,
             record_ids=[second_subscription.id],
         )
-        second_results = {result.entity: result for result in second.results}
-        assert second_results[PrecheckEntity.discounts].imported == 1
 
-        result = await session.execute(
-            select(Discount)
-            .where(Discount.organization_id == organization.id)
-            .options(selectinload(Discount.discount_products))
+        assert len(await _imported_discounts(session, organization)) == 1
+        assert await _discount_product_names(session, organization) == {"Pro", "Team"}
+
+    @pytest.mark.auth
+    async def test_product_restricted_discount_skips_an_interval_nobody_is_on(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Nothing selects the yearly row, so waiting on it would wait forever."""
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *(
+                    CanonicalProduct(
+                        source_id=f"prod_1:{interval}:1",
+                        product_source_id="prod_1",
+                        name=f"Pro {interval}",
+                        recurring_interval=interval,
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id=f"price_{interval}",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                    for interval in ("month", "year")
+                ),
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="alice@example.com",
+                    name="Alice",
+                    country="US",
+                ),
+                canonical_discount(product_source_ids=["prod_1"]),
+                canonical_subscription(price_source_id="price_month"),
+            ],
         )
-        discounts = list(result.scalars().unique().all())
-        assert len(discounts) == 1
-        products = await _products(session, organization)
-        assert {product.name for product in products} == {"Pro", "Team"}
-        assert {link.product_id for link in discounts[0].discount_products} == {
-            product.id for product in products
-        }
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 1
+        assert await _discount_product_names(session, organization) == {"Pro month"}
 
 
 @pytest.mark.asyncio

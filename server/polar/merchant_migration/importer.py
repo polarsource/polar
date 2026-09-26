@@ -10,6 +10,7 @@ from uuid import UUID
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.discount.repository import DiscountRepository
 from polar.discount.schemas import DiscountFixedCreate, DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import SubscriptionRecurringInterval
@@ -20,6 +21,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Discount,
+    DiscountProduct,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -287,6 +289,11 @@ class CatalogImporter:
             ],
         )
 
+        pending_products = [
+            record
+            for record in product_records
+            if record.status == MerchantMigrationRecordStatus.pending
+        ]
         product_result = await self._import_products(
             product_records,
             selected_source_ids=product_source_ids,
@@ -297,6 +304,12 @@ class CatalogImporter:
             product_records=self._records_of(
                 catalog, MerchantMigrationRecordType.product
             ),
+            new_product_ids={
+                record.target_id
+                for record in pending_products
+                if record.status == MerchantMigrationRecordStatus.imported
+                and record.target_id is not None
+            },
         )
         customer_result = await self._import_customers(
             customer_records,
@@ -483,7 +496,14 @@ class CatalogImporter:
         records: Sequence[MerchantMigrationRecord],
         *,
         product_records: Sequence[MerchantMigrationRecord],
+        new_product_ids: set[UUID],
     ) -> MerchantMigrationImportResult:
+        """Import coupons, restricted to the Polar products of their Stripe ones.
+
+        A restricted coupon imports once any of its products is on Polar: waiting
+        for every catalog row would wait forever on rows nothing selects, like a
+        yearly price nobody is on. Rows imported later join the restriction.
+        """
         discounts = [
             self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
             for record in records
@@ -511,6 +531,16 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, discount in zip(records, discounts, strict=True):
+            product_ids = [
+                product_id
+                for product_source_id in discount.product_source_ids or []
+                for product_id in polar_product_ids_by_source.get(product_source_id, [])
+            ]
+            if record.status == MerchantMigrationRecordStatus.imported:
+                await self._restrict_to_new_products(
+                    record,
+                    [id for id in product_ids if id in new_product_ids],
+                )
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)
                 continue
@@ -519,17 +549,12 @@ class CatalogImporter:
                 await self._mark_skipped(record, skip)
                 counts.skipped += 1
                 continue
-            product_ids: list[UUID] = []
             if discount.product_source_ids:
-                if any(
+                if not product_ids and any(
                     product_source_id in pending_product_source_ids
                     for product_source_id in discount.product_source_ids
                 ):
                     continue
-                for product_source_id in discount.product_source_ids:
-                    product_ids.extend(
-                        polar_product_ids_by_source.get(product_source_id, [])
-                    )
                 if not product_ids:
                     await self._mark_skipped(
                         record,
@@ -552,6 +577,25 @@ class CatalogImporter:
             imported=counts.imported,
             skipped=counts.skipped,
         )
+
+    async def _restrict_to_new_products(
+        self, record: MerchantMigrationRecord, product_ids: list[UUID]
+    ) -> None:
+        if not product_ids or record.target_id is None:
+            return
+        discount = await DiscountRepository.from_session(self.session).get_by_id(
+            record.target_id
+        )
+        # No products at all means every product: widening that would narrow it.
+        if discount is None or not discount.discount_products:
+            return
+        attached = {link.product_id for link in discount.discount_products}
+        discount.discount_products.extend(
+            DiscountProduct(product_id=product_id)
+            for product_id in product_ids
+            if product_id not in attached
+        )
+        await self.session.flush()
 
     async def _create_product(
         self, product: CanonicalProduct, plan: ProductImportPlan

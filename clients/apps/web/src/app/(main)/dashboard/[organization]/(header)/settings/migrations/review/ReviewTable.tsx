@@ -157,6 +157,9 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       }
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={refreshing || rerunPrecheck.isPending}
+      stalled={
+        !rerunPrecheck.isPending && migration?.operation?.stalled === true
+      }
       refreshError={refreshError}
     />
   )

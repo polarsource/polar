@@ -7,7 +7,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { CATALOG_READ_DURATION } from './catalogReadCopy'
+import { CATALOG_READ_DURATION, CATALOG_READ_STALLED } from './catalogReadCopy'
 
 export function PrecheckPanel({
   migration,
@@ -17,6 +17,7 @@ export function PrecheckPanel({
   const precheck = useRunMerchantMigrationPrecheck(migration.id)
   const running =
     precheck.isPending || isActiveMigrationOperation(migration.operation)
+  const stalled = migration.operation?.stalled === true
   const failed = migration.operation?.status === 'failed'
   const error =
     (failed ? migration.operation?.error : null) ||
@@ -41,7 +42,7 @@ export function PrecheckPanel({
             </Text>
           </Box>
           <Text variant="caption" color="muted">
-            {CATALOG_READ_DURATION}
+            {stalled ? CATALOG_READ_STALLED : CATALOG_READ_DURATION}
           </Text>
         </Box>
       )}
@@ -53,8 +54,18 @@ export function PrecheckPanel({
       )}
 
       <Box>
-        <Button size="sm" onClick={() => precheck.mutate()} disabled={running}>
-          {running ? 'Checking…' : failed ? 'Try again' : 'Run pre-check'}
+        <Button
+          size="sm"
+          onClick={() => precheck.mutate()}
+          disabled={precheck.isPending || (running && !stalled)}
+        >
+          {stalled
+            ? 'Start again'
+            : running
+              ? 'Checking…'
+              : failed
+                ? 'Try again'
+                : 'Run pre-check'}
         </Button>
       </Box>
     </Box>

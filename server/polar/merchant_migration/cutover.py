@@ -441,6 +441,7 @@ class SubscriptionCutover:
         Past the stop nothing may raise: the paused subscription and its ledger
         row have to commit, so a retry picks up a customer nobody is billing.
         """
+        await self.session.flush()
         if not already_stopped:
             unconfirmed = await self._stop_source(
                 record, cancel_at_period_end=scheduled_end is not None

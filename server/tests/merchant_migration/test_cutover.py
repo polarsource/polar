@@ -954,6 +954,52 @@ class TestRun:
         assert reloaded.tax_behavior == TaxBehavior.exclusive
         assert reloaded.tax_exempted is False
 
+    async def test_writes_everything_before_stopping_the_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        """A write failing after the stop would leave a customer nobody bills."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            tax_behavior=TaxBehavior.inclusive,
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        pending_record.canonical = serialize(
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
+        )
+        await save_fixture(pending_record)
+        adapter = _source()
+        stop = adapter.stop_source_subscription
+        unwritten_at_stop: list[object] = []
+
+        async def stop_and_check(source_id: str, *, reference: str) -> None:
+            unwritten_at_stop.extend([*session.new, *session.dirty])
+            await stop(source_id, reference=reference)
+
+        mocker.patch.object(
+            adapter, "stop_source_subscription", side_effect=stop_and_check
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert unwritten_at_stop == []
+
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
         mocker: MockerFixture,

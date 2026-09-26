@@ -533,7 +533,7 @@ class StripeAdapter:
             discount_started_at=discounts.started_at,
             discount_starts=discounts.starts,
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
-            cancel_at=self._to_datetime(subscription.get("cancel_at")),
+            cancel_at=self._to_datetime(subscription.cancel_at),
             has_scheduled_changes=self._has_scheduled_changes(subscription),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
@@ -705,10 +705,9 @@ class StripeAdapter:
         current_phase = schedule.get("current_phase")
         if current_phase is None:
             return True
-        current_start = current_phase.get("start_date") or 0
+        current_start = current_phase.get("start_date")
         return any(
-            (phase.get("start_date") or 0) > current_start
-            for phase in schedule.get("phases") or []
+            phase.get("start_date") > current_start for phase in schedule.get("phases")
         )
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:

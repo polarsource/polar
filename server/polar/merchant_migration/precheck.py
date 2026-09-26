@@ -19,6 +19,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from polar.discount.schemas import BasisPoints, DurationInMonths
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior
+from polar.invoice.generator import format_date
 from polar.kit.address import Address
 from polar.kit.currency import (
     PresentmentCurrency,
@@ -637,8 +638,7 @@ class PrecheckEngine:
                 code="subscription_scheduled_end",
                 message=(
                     "It's set to end on the source on "
-                    f"{subscription.cancel_at:%B} {subscription.cancel_at.day}, "
-                    f"{subscription.cancel_at.year}. Polar would keep "
+                    f"{format_date(subscription.cancel_at)}. Polar would keep "
                     "renewing it past that date, so it stays on the source until "
                     "it ends."
                 ),

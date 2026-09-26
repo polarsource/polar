@@ -1173,6 +1173,17 @@ class TestAlreadyLiveOnPolar:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert adapter.stopped == ["sub_1"]
 
+    async def test_resumed_by_hand_waits_for_the_source_to_collect(
+        self, cutover: RunCutover
+    ) -> None:
+        adapter = _source(latest_invoice_unpaid=True)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "hasn't been paid yet" in (outcome.message or "")
+        assert adapter.stopped == []
+
     async def test_source_already_gone_needs_no_reconciling(
         self, cutover: RunCutover
     ) -> None:

@@ -832,6 +832,27 @@ class TestExtractPages:
             "starting_after": "sub_2",
         }
 
+    async def test_import_page_leaves_the_latest_invoice_unread(
+        self, mocker: MockerFixture
+    ) -> None:
+        stripe_subscription = _stripe_subscription()
+        stripe_subscription["latest_invoice"] = "in_1"
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[stripe_subscription], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        [subscription] = [
+            record
+            for record in page.records
+            if isinstance(record, CanonicalSubscription)
+        ]
+        assert subscription.latest_invoice_unpaid is False
+        kwargs = client.v1.subscriptions.list_async.await_args.kwargs
+        assert "data.latest_invoice" not in kwargs["params"]["expand"]
+
     async def test_last_subscription_page_finishes_extraction(
         self, mocker: MockerFixture
     ) -> None:
@@ -1142,6 +1163,34 @@ class TestGetSubscription:
         assert subscription.status == CanonicalSubscriptionStatus.active
         assert subscription.cancel_at_period_end is True
         assert subscription.current_period_end is not None
+
+    @pytest.mark.parametrize(
+        ("latest_invoice", "expected"),
+        [
+            pytest.param(None, False, id="no-invoice"),
+            pytest.param("in_1", True, id="unexpanded"),
+            pytest.param({"status": "paid", "amount_due": 1000}, False, id="paid"),
+            pytest.param({"status": "draft", "amount_due": 1000}, True, id="draft"),
+            pytest.param({"status": "open", "amount_due": 1000}, True, id="open"),
+            pytest.param({"status": "open", "amount_due": 0}, False, id="nothing-due"),
+        ],
+    )
+    async def test_reads_whether_the_latest_invoice_is_unpaid(
+        self, mocker: MockerFixture, latest_invoice: Any, expected: bool
+    ) -> None:
+        stripe_subscription = _stripe_subscription()
+        stripe_subscription["latest_invoice"] = latest_invoice
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=stripe_subscription
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.latest_invoice_unpaid is expected
+        kwargs = client.v1.subscriptions.retrieve_async.await_args.kwargs
+        assert "latest_invoice" in kwargs["params"]["expand"]
 
     async def test_reads_the_price_it_is_billed_in(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

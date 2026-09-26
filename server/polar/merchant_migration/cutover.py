@@ -127,6 +127,10 @@ _LAPSED = (
     "now would bill the customer for every period missed since. Contact support "
     "to set its next billing date first."
 )
+_INVOICE_UNPAID = (
+    "Its latest invoice on the source hasn't been paid yet. Moving it now could "
+    "lose that payment, so retry once the source has collected it."
+)
 _RENEWALS_DISABLED = (
     "Your organization can't renew subscriptions yet, so Polar wouldn't bill "
     "this one after taking it over. It stays on the source until your account "
@@ -449,7 +453,8 @@ class SubscriptionCutover:
         """Already live on Polar, so make sure it isn't live on the source too.
 
         Usually a previous run finishing twice, but a customer can also resume
-        from their portal, and then both sides bill them.
+        from their portal, and then both sides bill them. An unpaid source
+        invoice doesn't wait here: Polar already bills that period.
         """
         source = await self.adapter.get_subscription(record.source_id)
         if source is not None and source.status != CanonicalSubscriptionStatus.canceled:
@@ -512,6 +517,8 @@ class SubscriptionCutover:
             )
             if self._discount_changed(source, staged, importable):
                 return _DISCOUNT_CHANGED
+        if source.latest_invoice_unpaid:
+            return _INVOICE_UNPAID
         return self._renewal_reason(source)
 
     async def _importable_discount_source_ids(self, source_ids: list[str]) -> set[str]:

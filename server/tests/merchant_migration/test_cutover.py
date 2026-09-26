@@ -1173,6 +1173,16 @@ class TestAlreadyLiveOnPolar:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert adapter.stopped == ["sub_1"]
 
+    async def test_resumed_by_hand_stops_the_source_before_it_collects(
+        self, cutover: RunCutover
+    ) -> None:
+        adapter = _source(latest_invoice_unpaid=True)
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+
     async def test_source_already_gone_needs_no_reconciling(
         self, cutover: RunCutover
     ) -> None:
@@ -1215,6 +1225,11 @@ class TestSkips:
                 {"current_period_end": utc_now() - timedelta(days=2)},
                 "too soon to hand over",
                 id="renewal-already-past",
+            ),
+            pytest.param(
+                {"latest_invoice_unpaid": True},
+                "latest invoice on the source hasn't been paid",
+                id="renewal-not-collected-yet",
             ),
             pytest.param(
                 {"price_source_id": "price_upgraded"},

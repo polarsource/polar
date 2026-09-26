@@ -453,7 +453,8 @@ class SubscriptionCutover:
         """Already live on Polar, so make sure it isn't live on the source too.
 
         Usually a previous run finishing twice, but a customer can also resume
-        from their portal, and then both sides bill them.
+        from their portal, and then both sides bill them. An unpaid source
+        invoice doesn't wait here: Polar already bills that period.
         """
         source = await self.adapter.get_subscription(record.source_id)
         if source is not None and source.status != CanonicalSubscriptionStatus.canceled:

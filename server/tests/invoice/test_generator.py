@@ -153,6 +153,24 @@ Thank you for your business!
         ),
         (
             {
+                "tax_amount": 0,
+                "tax_breakdown": [
+                    {
+                        "rate": 0.0,
+                        "amount": 0,
+                        "country": "BE",
+                        "state": None,
+                        "subdivision": None,
+                        "rate_type": "percentage",
+                        "display_name": "VAT",
+                        "taxability_reason": "reverse_charge",
+                    }
+                ],
+            },
+            "reverse_charge",
+        ),
+        (
+            {
                 "customer_additional_info": "john__doe__1@example.com",
                 "notes": "Thank you! __Terms__ apply, **conditions** too.",
             },
@@ -268,6 +286,47 @@ def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None
     generator.output(str(path))
 
     assert path.exists()
+
+
+def test_reverse_charge_totals(invoice: Invoice) -> None:
+    invoice = invoice.model_copy(
+        update={
+            "tax_amount": 0,
+            "tax_breakdown": [
+                {
+                    "rate": 0.0,
+                    "amount": 0,
+                    "country": "BE",
+                    "state": None,
+                    "subdivision": None,
+                    "rate_type": "percentage",
+                    "display_name": "VAT",
+                    "taxability_reason": TaxabilityReason.reverse_charge,
+                }
+            ],
+        }
+    )
+
+    assert [item.label for item in invoice.totals_items] == [
+        "Subtotal",
+        "Discount",
+        "Total",
+    ]
+    assert (
+        invoice.reverse_charge_notice
+        == "Reverse charge: VAT to be accounted for by the recipient."
+    )
+
+
+def test_standard_rated_has_no_reverse_charge_notice(invoice: Invoice) -> None:
+    assert invoice.reverse_charge_notice is None
+    assert [item.label for item in invoice.totals_items] == [
+        "Subtotal",
+        "Discount",
+        "Total excluding tax",
+        "VAT — France (20%)",
+        "Total",
+    ]
 
 
 def test_generator_handles_unsupported_bidi_text(invoice: Invoice) -> None:

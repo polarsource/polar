@@ -1044,11 +1044,9 @@ class TestClassifyRecords:
 
     def test_schedule_drops_subscription(self) -> None:
         records: list[CanonicalRecord] = [
-            build_product(
-                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
-            ),
-            build_customer(source_id="cus_1", email="a@example.com"),
-            replace(build_subscription(source_id="sub_1"), has_schedule=True),
+            build_product(),
+            build_customer(),
+            replace(build_subscription(), has_schedule=True),
         ]
 
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")

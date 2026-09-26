@@ -266,6 +266,7 @@ def _stripe_subscription(
             "collection_method": "charge_automatically",
             "cancel_at_period_end": cancel_at_period_end,
             "pause_collection": None,
+            "schedule": None,
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,

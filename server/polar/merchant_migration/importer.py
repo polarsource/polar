@@ -84,6 +84,16 @@ _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
 )
 
 
+def _price_owner_rank(record: MerchantMigrationRecord) -> tuple[bool, float]:
+    """Sort key where the last row with a price owns it. Archiving a Stripe
+    price stages it again on an `:archived` sibling row, while the row imported
+    before keeps it. Imported rows win, and among them the oldest, as at
+    cutover."""
+    if record.status != MerchantMigrationRecordStatus.imported:
+        return (False, 0.0)
+    return (True, -record.created_at.timestamp())
+
+
 def find_imported_price(
     product: Product,
     canonical_product: CanonicalProduct,
@@ -321,16 +331,11 @@ class CatalogImporter:
             None,
             discounts,
         )
-        # Archiving a Stripe price moves it to an `:archived` sibling row on the
-        # next precheck, while the row imported before keeps it. Imported rows
-        # sort last so they win.
         product_by_price = {
             canonical_price_key(price): product
             for _, product in sorted(
                 zip(product_records, products, strict=True),
-                key=lambda pair: (
-                    pair[0].status == MerchantMigrationRecordStatus.imported
-                ),
+                key=lambda pair: _price_owner_rank(pair[0]),
             )
             for price in product.prices
         }

@@ -4,6 +4,8 @@ Every check runs before the source is stopped, so a subscription that fails one
 stays there.
 """
 
+import contextlib
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -37,6 +39,7 @@ from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
+from polar.worker import JobQueueManager
 
 from . import pan_transfer
 from .adapters import SourceAdapter
@@ -122,6 +125,18 @@ _NOT_IMPORTED = (
     "It was never imported into Polar, so there is nothing to switch on. Re-run "
     "the import for this customer."
 )
+_STOPPED_NOT_ACTIVATED = (
+    "It was cancelled on the source but couldn't be switched on in Polar, so "
+    "nobody is billing the customer. Retry the move to switch it on."
+)
+_STOP_UNCONFIRMED = (
+    "The source didn't confirm the cancellation, so it may already be cancelled "
+    "there with nobody billing the customer. Retry the move to finish it."
+)
+_UNEXPECTED = (
+    "Something went wrong while switching it over, and nothing changed. Retry "
+    "the move, or contact support if it keeps failing."
+)
 _LAPSED = (
     "It was stopped on the source more than one renewal ago, so switching it on "
     "now would bill the customer for every period missed since. Contact support "
@@ -180,8 +195,15 @@ class SubscriptionCutover:
 
     async def run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
         try:
-            return await self._run(record)
-        except AmbiguousCopiedCard as e:
+            async with self._savepoint():
+                return await self._run(record)
+        except Exception as e:
+            # The savepoint expired it on the way out.
+            await self.session.refresh(record)
+            return self._failure(record, e)
+
+    def _failure(self, record: MerchantMigrationRecord, e: Exception) -> CutoverOutcome:
+        if isinstance(e, AmbiguousCopiedCard):
             # Recorded rather than raised: one customer must not stop the run.
             log.warning(
                 "merchant_migration.cutover.card_resolution_error",
@@ -191,7 +213,7 @@ class SubscriptionCutover:
                 error=str(e),
             )
             return _fail(str(e))
-        except stripe_lib.StripeError as e:
+        if isinstance(e, stripe_lib.StripeError):
             # Failed, not skipped: nothing here is this subscription's fault.
             log.warning(
                 "merchant_migration.cutover.stripe_error",
@@ -201,6 +223,21 @@ class SubscriptionCutover:
                 error=str(e),
             )
             return _fail(e.user_message or str(e))
+        log.error(
+            "merchant_migration.cutover.unexpected_error",
+            migration_id=self.migration.id,
+            record_id=record.id,
+            source_id=record.source_id,
+            exc_info=e,
+        )
+        return _fail(_UNEXPECTED)
+
+    @contextlib.asynccontextmanager
+    async def _savepoint(self) -> AsyncIterator[None]:
+        """Undo the block's writes, and the jobs it enqueued, if it raises."""
+        with JobQueueManager.get().discard_on_error():
+            async with self.session.begin_nested():
+                yield
 
     async def _run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
         if record.target_id is None:
@@ -265,34 +302,57 @@ class SubscriptionCutover:
         subscription.tax_behavior = staged.import_tax_behavior()
         subscription.tax_exempted = False
 
-        if not already_stopped:
-            await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
-            )
+        return await self._hand_over(
+            record,
+            subscription,
+            source,
+            payment_method,
+            already_stopped=already_stopped,
+        )
 
-        current_period_start, current_period_end = self._period(source, subscription)
+    async def _hand_over(
+        self,
+        record: MerchantMigrationRecord,
+        subscription: Subscription,
+        source: CanonicalSubscription,
+        payment_method: PaymentMethod | None,
+        *,
+        already_stopped: bool,
+    ) -> CutoverOutcome:
+        """Stop the source, then switch the Polar subscription on.
+
+        Past the stop nothing may raise: the paused subscription and its ledger
+        row have to commit, so a retry picks up a customer nobody is billing.
+        """
+        if not already_stopped:
+            unconfirmed = await self._stop_source(record)
+            if unconfirmed is not None:
+                return unconfirmed
+
         try:
-            await subscription_service.activate_imported(
-                self.session,
-                subscription,
-                current_period_start=current_period_start,
-                current_period_end=current_period_end,
-                trial_end=self._trial_end(source),
-                anchor_day=source.anchor_day,
-                payment_method=payment_method,
-                provider=self.migration.source_platform,
-                provider_subscription_id=record.source_id,
-            )
+            async with self._savepoint():
+                current_period_start, current_period_end = self._period(
+                    source, subscription
+                )
+                await subscription_service.activate_imported(
+                    self.session,
+                    subscription,
+                    current_period_start=current_period_start,
+                    current_period_end=current_period_end,
+                    trial_end=self._trial_end(source),
+                    anchor_day=source.anchor_day,
+                    payment_method=payment_method,
+                    provider=self.migration.source_platform,
+                    provider_subscription_id=record.source_id,
+                )
         except Exception:
-            # The source is stopped and this rolls back, ledger row included, so
-            # the log is the only trace of a customer nobody is billing.
             log.exception(
                 "merchant_migration.cutover.stopped_but_unfinished",
                 migration_id=self.migration.id,
                 record_id=record.id,
                 source_id=record.source_id,
             )
-            raise
+            return _fail(_STOPPED_NOT_ACTIVATED)
         log.info(
             "merchant_migration.cutover.moved",
             migration_id=self.migration.id,
@@ -300,6 +360,33 @@ class SubscriptionCutover:
             source_id=record.source_id,
         )
         return _moved(self._card_note(payment_method))
+
+    async def _stop_source(
+        self, record: MerchantMigrationRecord
+    ) -> CutoverOutcome | None:
+        """Cancel on the source; an outcome only when it may have happened unseen.
+
+        A timeout or a Stripe 5xx can land after Stripe cancelled, so read back
+        before treating it as nothing happened.
+        """
+        try:
+            await self.adapter.stop_source_subscription(
+                record.source_id, reference=str(self.migration.id)
+            )
+        except stripe_lib.APIConnectionError, stripe_lib.APIError:
+            try:
+                source = await self.adapter.get_subscription(record.source_id)
+            except Exception:
+                log.exception(
+                    "merchant_migration.cutover.stop_unconfirmed",
+                    migration_id=self.migration.id,
+                    record_id=record.id,
+                    source_id=record.source_id,
+                )
+                return _fail(_STOP_UNCONFIRMED)
+            if source is None or not source.stopped_for_migration:
+                raise
+        return None
 
     async def _create_and_activate(
         self, record: MerchantMigrationRecord
@@ -409,39 +496,13 @@ class SubscriptionCutover:
             flush=True,
         )
 
-        if not already_stopped:
-            await self.adapter.stop_source_subscription(
-                record.source_id, reference=str(self.migration.id)
-            )
-
-        current_period_start, current_period_end = self._period(source, subscription)
-        try:
-            await subscription_service.activate_imported(
-                self.session,
-                subscription,
-                current_period_start=current_period_start,
-                current_period_end=current_period_end,
-                trial_end=self._trial_end(source),
-                anchor_day=source.anchor_day,
-                payment_method=payment_method,
-                provider=self.migration.source_platform,
-                provider_subscription_id=record.source_id,
-            )
-        except Exception:
-            log.exception(
-                "merchant_migration.cutover.stopped_but_unfinished",
-                migration_id=self.migration.id,
-                record_id=record.id,
-                source_id=record.source_id,
-            )
-            raise
-        log.info(
-            "merchant_migration.cutover.moved",
-            migration_id=self.migration.id,
-            subscription_id=subscription.id,
-            source_id=record.source_id,
+        return await self._hand_over(
+            record,
+            subscription,
+            source,
+            payment_method,
+            already_stopped=already_stopped,
         )
-        return _moved(self._card_note(payment_method))
 
     async def _reconcile_active(
         self, record: MerchantMigrationRecord

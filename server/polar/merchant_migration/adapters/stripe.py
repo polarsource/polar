@@ -539,6 +539,7 @@ class StripeAdapter:
             automatic_tax=self._automatic_tax(subscription),
             price_tax_behavior=self._price_tax_behavior(first_item.get("price")),
             has_tax_rates=self._has_tax_rates(subscription, first_item),
+            customer_balance=self._customer_balance(subscription),
         )
 
     def _map_subscription_discounts(
@@ -689,6 +690,12 @@ class StripeAdapter:
         return bool(subscription.get("default_tax_rates")) or bool(
             first_item.get("tax_rates")
         )
+
+    def _customer_balance(self, subscription: stripe_lib.Subscription) -> int | None:
+        customer = subscription.customer
+        if not isinstance(customer, stripe_lib.Customer):
+            return None
+        return customer.get("balance")
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

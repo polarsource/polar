@@ -1227,6 +1227,11 @@ class TestSkips:
                 None,
                 id="manual-invoicing",
             ),
+            pytest.param(
+                {"customer_balance": -500},
+                "credit balance on Stripe",
+                id="customer-credit-since-the-import",
+            ),
         ],
     )
     async def test_source_is_no_longer_handable(

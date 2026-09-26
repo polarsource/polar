@@ -1042,6 +1042,27 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_paused_collection"
 
+    @pytest.mark.parametrize(
+        ("balance", "wording"), [(-500, "credit balance"), (500, "owes a balance")]
+    )
+    def test_customer_balance_drops_subscription(
+        self, balance: int, wording: str
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(build_subscription(source_id="sub_1"), customer_balance=balance),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_customer_balance"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+        assert wording in (items[0].reason or "")
+
 
 class TestSummarizeRecords:
     def test_counts_match_classification(self) -> None:

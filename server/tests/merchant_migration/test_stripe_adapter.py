@@ -252,6 +252,7 @@ def _stripe_subscription(
     automatic_tax: dict[str, Any] | None = None,
     default_tax_rates: list[dict[str, Any]] | None = None,
     price_tax_behavior: str | None = None,
+    customer: str | dict[str, Any] = "cus_1",
 ) -> stripe_lib.Subscription:
     price: dict[str, Any] = {"id": "price_1", "currency": "usd"}
     if price_tax_behavior is not None:
@@ -259,7 +260,7 @@ def _stripe_subscription(
     return stripe_lib.Subscription.construct_from(
         {
             "id": id,
-            "customer": "cus_1",
+            "customer": customer,
             "currency": currency,
             "automatic_tax": automatic_tax,
             "status": status,
@@ -1309,6 +1310,26 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.import_tax_behavior() == expected
+
+    async def test_reads_the_customer_balance(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                customer={
+                    "id": "cus_1",
+                    "object": "customer",
+                    "balance": -500,
+                    "invoice_settings": None,
+                    "default_source": None,
+                }
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.customer_source_id == "cus_1"
+        assert subscription.customer_balance == -500
 
     async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
         """The cutover keeps the trial running rather than billing at once, so

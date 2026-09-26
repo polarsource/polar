@@ -2639,12 +2639,17 @@ class TestImportCatalog:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        ("deleted_in_between", "expected"),
-        [(False, {"Pro", "Team"}), (True, {"Pro"})],
+        ("deleted_in_between", "in_a_new_migration", "expected"),
+        [
+            (False, False, {"Pro", "Team"}),
+            (True, False, {"Pro"}),
+            (False, True, {"Pro", "Team"}),
+        ],
     )
     async def test_product_restricted_discount_follows_products_imported_later(
         self,
         deleted_in_between: bool,
+        in_a_new_migration: bool,
         expected: set[str],
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2653,57 +2658,53 @@ class TestImportCatalog:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        records: list[CanonicalRecord] = [
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_1",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            ),
+            CanonicalProduct(
+                source_id="prod_2:month:1",
+                product_source_id="prod_2",
+                name="Team",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_2",
+                        currency="usd",
+                        amount=2000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="US",
+            ),
+            canonical_discount(
+                name="Both",
+                code="BOTH",
+                product_source_ids=["prod_1", "prod_2"],
+            ),
+            canonical_subscription(source_id="sub_1", price_source_id="price_1"),
+            canonical_subscription(source_id="sub_2", price_source_id="price_2"),
+        ]
         migration = await _staged_migration(
-            mocker,
-            session,
-            save_fixture,
-            auth_subject,
-            organization,
-            records=[
-                CanonicalProduct(
-                    source_id="prod_1:month:1",
-                    product_source_id="prod_1",
-                    name="Pro",
-                    recurring_interval="month",
-                    recurring_interval_count=1,
-                    prices=[
-                        CanonicalPrice(
-                            source_id="price_1",
-                            currency="usd",
-                            amount=1000,
-                            pricing_scheme=CanonicalPricingScheme.fixed,
-                        )
-                    ],
-                ),
-                CanonicalProduct(
-                    source_id="prod_2:month:1",
-                    product_source_id="prod_2",
-                    name="Team",
-                    recurring_interval="month",
-                    recurring_interval_count=1,
-                    prices=[
-                        CanonicalPrice(
-                            source_id="price_2",
-                            currency="usd",
-                            amount=2000,
-                            pricing_scheme=CanonicalPricingScheme.fixed,
-                        )
-                    ],
-                ),
-                CanonicalCustomer(
-                    source_id="cus_1",
-                    email="alice@example.com",
-                    name="Alice",
-                    country="US",
-                ),
-                canonical_discount(
-                    name="Both",
-                    code="BOTH",
-                    product_source_ids=["prod_1", "prod_2"],
-                ),
-                canonical_subscription(source_id="sub_1", price_source_id="price_1"),
-                canonical_subscription(source_id="sub_2", price_source_id="price_2"),
-            ],
+            mocker, session, save_fixture, auth_subject, organization, records=records
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         first_subscription = await record_repository.get_by_source(
@@ -2732,6 +2733,15 @@ class TestImportCatalog:
             [discount] = await _imported_discounts(session, organization)
             discount.deleted_at = utc_now()
             await session.flush()
+        if in_a_new_migration:
+            migration = await _staged_migration(
+                mocker,
+                session,
+                save_fixture,
+                auth_subject,
+                organization,
+                records=records,
+            )
 
         await service.import_catalog(
             session,

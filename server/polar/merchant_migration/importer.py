@@ -302,6 +302,9 @@ class CatalogImporter:
         )
         discount_result = await self._import_discounts(
             discount_records,
+            catalog_discount_records=self._records_of(
+                catalog, MerchantMigrationRecordType.discount
+            ),
             product_records=self._records_of(
                 catalog, MerchantMigrationRecordType.product
             ),
@@ -496,6 +499,7 @@ class CatalogImporter:
         self,
         records: Sequence[MerchantMigrationRecord],
         *,
+        catalog_discount_records: Sequence[MerchantMigrationRecord],
         product_records: Sequence[MerchantMigrationRecord],
         new_product_ids: set[UUID],
     ) -> MerchantMigrationImportResult:
@@ -503,7 +507,8 @@ class CatalogImporter:
 
         A restricted coupon imports once any of its products is on Polar: waiting
         for every catalog row would wait forever on rows nothing selects, like a
-        yearly price nobody is on. Rows imported later join the restriction.
+        yearly price nobody is on. Rows imported later join the restriction, even
+        when an earlier migration imported the coupon.
         """
         discounts = [
             self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
@@ -530,18 +535,27 @@ class CatalogImporter:
                 product.product_source_id, []
             ).append(record.target_id)
 
-        counts = ImportCounts()
-        for record, discount in zip(records, discounts, strict=True):
-            product_ids = [
+        def polar_product_ids(discount: CanonicalDiscount) -> list[UUID]:
+            return [
                 product_id
                 for product_source_id in discount.product_source_ids or []
                 for product_id in polar_product_ids_by_source.get(product_source_id, [])
             ]
-            if record.status == MerchantMigrationRecordStatus.imported:
-                await self._restrict_to_new_products(
-                    record,
-                    [id for id in product_ids if id in new_product_ids],
-                )
+
+        for record in catalog_discount_records:
+            if record.status != MerchantMigrationRecordStatus.imported:
+                continue
+            imported = self._as(
+                deserialize(record.type, record.canonical), CanonicalDiscount
+            )
+            await self._restrict_to_new_products(
+                record,
+                [id for id in polar_product_ids(imported) if id in new_product_ids],
+            )
+
+        counts = ImportCounts()
+        for record, discount in zip(records, discounts, strict=True):
+            product_ids = polar_product_ids(discount)
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)
                 continue

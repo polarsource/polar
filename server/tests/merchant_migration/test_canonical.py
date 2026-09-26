@@ -174,6 +174,18 @@ class TestDeserialize:
         assert result.currency == "usd"
         assert result.import_tax_behavior() == TaxBehavior.inclusive
 
+    def test_tax_rate_behavior_round_trips(self) -> None:
+        subscription = canonical_subscription(
+            has_tax_rates=True, tax_rate_behavior=TaxBehavior.exclusive
+        )
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
+
+        assert isinstance(result, CanonicalSubscription)
+        assert result.tax_rate_behavior == TaxBehavior.exclusive
+
     def test_discount_round_trips(self) -> None:
         discount = canonical_discount(
             extra_codes=1,
@@ -266,6 +278,18 @@ class TestImportTaxBehavior:
             ({"price_tax_behavior": TaxBehavior.exclusive}, TaxBehavior.inclusive),
             (
                 {"has_tax_rates": True, "price_tax_behavior": TaxBehavior.exclusive},
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "has_tax_rates": True,
+                    "tax_rate_behavior": TaxBehavior.inclusive,
+                    "price_tax_behavior": TaxBehavior.exclusive,
+                },
+                TaxBehavior.inclusive,
+            ),
+            (
+                {"has_tax_rates": True, "tax_rate_behavior": TaxBehavior.exclusive},
                 TaxBehavior.exclusive,
             ),
             (

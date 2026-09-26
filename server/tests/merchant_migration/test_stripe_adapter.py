@@ -251,6 +251,7 @@ def _stripe_subscription(
     payment_method: dict[str, Any] | None = None,
     automatic_tax: dict[str, Any] | None = None,
     default_tax_rates: list[dict[str, Any]] | None = None,
+    item_tax_rates: list[dict[str, Any]] | None = None,
     price_tax_behavior: str | None = None,
 ) -> stripe_lib.Subscription:
     price: dict[str, Any] = {"id": "price_1", "currency": "usd"}
@@ -281,7 +282,7 @@ def _stripe_subscription(
                     {
                         "price": price,
                         "quantity": 1,
-                        "tax_rates": [],
+                        "tax_rates": item_tax_rates or [],
                         "current_period_start": 1_700_000_000,
                         "current_period_end": 1_702_000_000,
                     }
@@ -1287,7 +1288,31 @@ class TestGetSubscription:
             ),
             (
                 {
-                    "default_tax_rates": [{"id": "txr_1"}],
+                    "default_tax_rates": [{"id": "txr_1", "inclusive": False}],
+                    "price_tax_behavior": "inclusive",
+                },
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "default_tax_rates": [{"id": "txr_1", "inclusive": True}],
+                    "price_tax_behavior": "exclusive",
+                },
+                TaxBehavior.inclusive,
+            ),
+            (
+                {
+                    "default_tax_rates": [{"id": "txr_1", "inclusive": False}],
+                    "item_tax_rates": [{"id": "txr_2", "inclusive": True}],
+                },
+                TaxBehavior.inclusive,
+            ),
+            (
+                {
+                    "default_tax_rates": [
+                        {"id": "txr_1", "inclusive": True},
+                        {"id": "txr_2", "inclusive": False},
+                    ],
                     "price_tax_behavior": "exclusive",
                 },
                 TaxBehavior.exclusive,

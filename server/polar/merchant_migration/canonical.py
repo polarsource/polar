@@ -171,6 +171,9 @@ class CanonicalSubscription:
     price_tax_behavior: TaxBehavior | None = None
     # Legacy Stripe TaxRate lists on the subscription or its first item.
     has_tax_rates: bool = False
+    # How those tax rates apply: each rate says whether it's inclusive, and that,
+    # not the price, sets what the customer pays. None when the rates disagree.
+    tax_rate_behavior: TaxBehavior | None = None
     # Merchant pin at review. None means compute from the source fields above.
     tax_behavior: TaxBehavior | None = None
 
@@ -179,12 +182,13 @@ class CanonicalSubscription:
     def import_tax_behavior(self) -> TaxBehavior:
         if self.tax_behavior is not None:
             return self.tax_behavior
-        if self._source_collects_tax() and self.price_tax_behavior is not None:
+        if self.automatic_tax is True and self.price_tax_behavior is not None:
+            return self.price_tax_behavior
+        if self.tax_rate_behavior is not None:
+            return self.tax_rate_behavior
+        if self.has_tax_rates and self.price_tax_behavior is not None:
             return self.price_tax_behavior
         return TaxBehavior.inclusive
-
-    def _source_collects_tax(self) -> bool:
-        return self.automatic_tax is True or self.has_tax_rates
 
 
 class CanonicalDiscountType(StrEnum):
@@ -448,6 +452,7 @@ def deserialize(
                 automatic_tax=data.get("automatic_tax"),
                 price_tax_behavior=parse_tax_behavior(data.get("price_tax_behavior")),
                 has_tax_rates=bool(data.get("has_tax_rates", False)),
+                tax_rate_behavior=parse_tax_behavior(data.get("tax_rate_behavior")),
                 tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
             )
         case MerchantMigrationRecordType.discount:

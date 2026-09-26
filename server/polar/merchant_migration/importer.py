@@ -48,6 +48,7 @@ from .canonical import (
     CanonicalDiscountType,
     CanonicalProduct,
     CanonicalSubscription,
+    PriceKey,
     canonical_price_key,
     customer_country_fallbacks,
     deserialize,
@@ -85,13 +86,45 @@ _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
 
 
 def _price_owner_rank(record: MerchantMigrationRecord) -> tuple[bool, float]:
-    """Sort key where the last row with a price owns it. Archiving a Stripe
-    price stages it again on an `:archived` sibling row, while the row imported
-    before keeps it. Imported rows win, and among them the oldest, as at
-    cutover."""
     if record.status != MerchantMigrationRecordStatus.imported:
         return (False, 0.0)
     return (True, -record.created_at.timestamp())
+
+
+def _price_owners(
+    product_records: Sequence[MerchantMigrationRecord],
+) -> dict[PriceKey, MerchantMigrationRecord]:
+    """The row each price resolves to. Archiving a Stripe price stages it again
+    on an `:archived` sibling row, while the row imported before keeps it.
+    Imported rows win, and among them the oldest, as at cutover."""
+    owners: dict[PriceKey, MerchantMigrationRecord] = {}
+    for record in sorted(product_records, key=_price_owner_rank):
+        product = deserialize(record.type, record.canonical)
+        assert isinstance(product, CanonicalProduct)
+        for price in product.prices:
+            owners[canonical_price_key(price)] = record
+    return owners
+
+
+def _covered_source_ids(
+    product_records: Sequence[MerchantMigrationRecord],
+    owners: dict[PriceKey, MerchantMigrationRecord],
+) -> set[str]:
+    """Pending rows whose every price resolves to an imported row. Left
+    pending, they would hold back coupons restricted to their product."""
+    covered: set[str] = set()
+    for record in product_records:
+        if record.status != MerchantMigrationRecordStatus.pending:
+            continue
+        product = deserialize(record.type, record.canonical)
+        assert isinstance(product, CanonicalProduct)
+        if product.prices and all(
+            owners[canonical_price_key(price)].status
+            == MerchantMigrationRecordStatus.imported
+            for price in product.prices
+        ):
+            covered.add(record.source_id)
+    return covered
 
 
 def find_imported_price(
@@ -217,12 +250,17 @@ class CatalogImporter:
             records, MerchantMigrationRecordType.subscription
         )
 
+        catalog_products = self._records_of(
+            catalog, MerchantMigrationRecordType.product
+        )
+        price_owners = _price_owners(catalog_products)
         product_source_ids, customer_source_ids = (
             self._selected_subscription_dependencies(
                 subscription_records,
-                self._records_of(catalog, MerchantMigrationRecordType.product),
+                catalog_products,
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
                 self._records_of(catalog, MerchantMigrationRecordType.discount),
+                price_owners,
             )
         )
         country_fallbacks = customer_country_fallbacks(
@@ -243,9 +281,7 @@ class CatalogImporter:
         product_result = await self._import_products(
             product_records,
             selected_source_ids=product_source_ids,
-            covered_source_ids=self._covered_product_source_ids(
-                self._records_of(catalog, MerchantMigrationRecordType.product)
-            ),
+            covered_source_ids=_covered_source_ids(catalog_products, price_owners),
         )
         discount_result = await self._import_discounts(
             discount_records,
@@ -306,6 +342,7 @@ class CatalogImporter:
         product_records: Sequence[MerchantMigrationRecord],
         customer_records: Sequence[MerchantMigrationRecord],
         discount_records: Sequence[MerchantMigrationRecord],
+        price_owners: dict[PriceKey, MerchantMigrationRecord],
     ) -> tuple[set[str], set[str]]:
         subscriptions = [
             self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
@@ -331,15 +368,6 @@ class CatalogImporter:
             None,
             discounts,
         )
-        product_by_price = {
-            canonical_price_key(price): product
-            for _, product in sorted(
-                zip(product_records, products, strict=True),
-                key=lambda pair: _price_owner_rank(pair[0]),
-            )
-            for price in product.prices
-        }
-
         product_source_ids: set[str] = set()
         customer_source_ids: set[str] = set()
         for record, subscription in zip(
@@ -353,39 +381,10 @@ class CatalogImporter:
                 continue
             customer_source_ids.add(subscription.customer_source_id)
             key = subscription_price_key(subscription)
-            product = product_by_price.get(key) if key is not None else None
-            if product is not None:
-                product_source_ids.add(product.source_id)
+            owner = price_owners.get(key) if key is not None else None
+            if owner is not None:
+                product_source_ids.add(owner.source_id)
         return product_source_ids, customer_source_ids
-
-    @staticmethod
-    def _covered_product_source_ids(
-        product_records: Sequence[MerchantMigrationRecord],
-    ) -> set[str]:
-        """Pending rows whose every price is already on an imported row. Left
-        pending, they would hold back coupons restricted to their product."""
-        products = [
-            (record, deserialize(record.type, record.canonical))
-            for record in product_records
-        ]
-        imported_prices = {
-            canonical_price_key(price)
-            for record, product in products
-            if record.status == MerchantMigrationRecordStatus.imported
-            and isinstance(product, CanonicalProduct)
-            for price in product.prices
-        }
-        return {
-            record.source_id
-            for record, product in products
-            if record.status == MerchantMigrationRecordStatus.pending
-            and isinstance(product, CanonicalProduct)
-            and product.prices
-            and all(
-                canonical_price_key(price) in imported_prices
-                for price in product.prices
-            )
-        }
 
     async def _import_products(
         self,

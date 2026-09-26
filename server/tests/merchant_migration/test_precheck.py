@@ -486,6 +486,19 @@ class TestPrecheckEngine:
         assert "payment_method_not_card" in warnings
         assert report.can_start is True
 
+    async def test_schedule_that_cancels_warns_once(self) -> None:
+        subscription = replace(
+            build_subscription(),
+            cancel_at=datetime(2030, 3, 1, tzinfo=UTC),
+            has_scheduled_changes=True,
+        )
+
+        report = await run([build_product(), build_customer(), subscription])
+
+        warnings = codes(report, PrecheckIssueLevel.warning)
+        assert "subscription_scheduled_end" in warnings
+        assert "subscription_scheduled_change" not in warnings
+
     async def test_copyable_payment_method_does_not_warn(self) -> None:
         report = await run(
             [

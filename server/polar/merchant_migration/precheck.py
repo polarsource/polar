@@ -643,7 +643,7 @@ class PrecheckEngine:
                 ),
                 source_id=source_id,
             )
-        if subscription.has_scheduled_changes:
+        elif subscription.has_scheduled_changes:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
                 code="subscription_scheduled_change",

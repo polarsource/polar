@@ -1586,18 +1586,43 @@ class TestImportCatalog:
         )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
-            return_value=_FakeAdapter([archived, *_catalog_with_subscription()[1:]]),
+            return_value=_FakeAdapter(
+                [
+                    archived,
+                    *_catalog_with_subscription()[1:],
+                    canonical_discount(product_source_ids=["prod_1"]),
+                ]
+            ),
         )
         await service.run_precheck(session, auth_subject, migration.id)
 
         await service.import_catalog(session, auth_subject, migration.id)
 
         [polar_product] = await _products(session, organization)
-        record = await MerchantMigrationRecordRepository.from_session(
-            session
-        ).get_imported_product_dependency(organization.id, "price_1")
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await record_repository.get_imported_product_dependency(
+            organization.id, "price_1"
+        )
         assert record is not None
         assert record.target_id == polar_product.id
+        coupon = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert coupon is not None
+        assert coupon.status == MerchantMigrationRecordStatus.imported
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        [subscription] = items
+        assert subscription.status == PrecheckRecordStatus.importable
+        assert subscription.dependencies_imported is True
 
     @pytest.mark.auth
     async def test_rejects_while_precheck_is_running(

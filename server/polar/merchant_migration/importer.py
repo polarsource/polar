@@ -73,6 +73,10 @@ from .schemas import (
 _CanonicalT = TypeVar("_CanonicalT")
 
 _DEPENDENCY_CODE = "subscription_dependency_not_imported"
+_PRICES_ALREADY_IMPORTED = Reason(
+    "product_prices_already_imported",
+    "Its prices are already on a product imported earlier, so it isn't imported again.",
+)
 _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
     _DEPENDENCY_CODE,
     "This customer already has a live subscription to the product on Polar, so a "
@@ -227,7 +231,11 @@ class CatalogImporter:
         )
 
         product_result = await self._import_products(
-            product_records, selected_source_ids=product_source_ids
+            product_records,
+            selected_source_ids=product_source_ids,
+            covered_source_ids=self._covered_product_source_ids(
+                self._records_of(catalog, MerchantMigrationRecordType.product)
+            ),
         )
         discount_result = await self._import_discounts(
             discount_records,
@@ -314,7 +322,8 @@ class CatalogImporter:
             discounts,
         )
         # Archiving a Stripe price moves it to an `:archived` sibling row on the
-        # next precheck, while the row imported before keeps it.
+        # next precheck, while the row imported before keeps it. Imported rows
+        # sort last so they win.
         product_by_price = {
             canonical_price_key(price): product
             for _, product in sorted(
@@ -344,11 +353,41 @@ class CatalogImporter:
                 product_source_ids.add(product.source_id)
         return product_source_ids, customer_source_ids
 
+    @staticmethod
+    def _covered_product_source_ids(
+        product_records: Sequence[MerchantMigrationRecord],
+    ) -> set[str]:
+        """Pending rows whose every price is already on an imported row. Left
+        pending, they would hold back coupons restricted to their product."""
+        products = [
+            (record, deserialize(record.type, record.canonical))
+            for record in product_records
+        ]
+        imported_prices = {
+            canonical_price_key(price)
+            for record, product in products
+            if record.status == MerchantMigrationRecordStatus.imported
+            and isinstance(product, CanonicalProduct)
+            for price in product.prices
+        }
+        return {
+            record.source_id
+            for record, product in products
+            if record.status == MerchantMigrationRecordStatus.pending
+            and isinstance(product, CanonicalProduct)
+            and product.prices
+            and all(
+                canonical_price_key(price) in imported_prices
+                for price in product.prices
+            )
+        }
+
     async def _import_products(
         self,
         records: Sequence[MerchantMigrationRecord],
         *,
         selected_source_ids: set[str],
+        covered_source_ids: set[str],
     ) -> MerchantMigrationImportResult:
         products = [
             self._as(deserialize(record.type, record.canonical), CanonicalProduct)
@@ -360,6 +399,10 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
+            if record.source_id in covered_source_ids:
+                await self._mark_skipped(record, _PRICES_ALREADY_IMPORTED)
+                counts.skipped += 1
+                continue
             if record.source_id not in selected_source_ids:
                 continue
             if record.status != MerchantMigrationRecordStatus.pending:

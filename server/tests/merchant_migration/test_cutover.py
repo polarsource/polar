@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
+from freezegun import freeze_time
 from pytest_mock import MockerFixture
 
 from polar.enums import TaxBehavior
@@ -181,6 +182,25 @@ async def _created(
     )
     assert subscription is not None
     return subscription
+
+
+def _discounted_renewals(subscription: Subscription, renewals: int) -> list[bool]:
+    """Whether each coming renewal keeps the discount, checked the way ``cycle``
+    does."""
+    discount = subscription.discount
+    applied_at = subscription.discount_applied_at
+    assert discount is not None
+    assert applied_at is not None
+    discounted: list[bool] = []
+    period_start = subscription.current_period_end
+    for _ in range(renewals):
+        discounted.append(not discount.is_repetition_expired(applied_at, period_start))
+        period_start = subscription.recurring_interval.get_next_period(
+            period_start,
+            subscription.anchor_day,
+            subscription.recurring_interval_count,
+        )
+    return discounted
 
 
 @pytest_asyncio.fixture
@@ -420,7 +440,7 @@ class TestRun:
             target_id=polar_discount.id,
         )
         first_start = utc_now() - timedelta(days=90)
-        kept_start = utc_now() - timedelta(days=40)
+        kept_start = utc_now() - timedelta(days=30)
         starts = {"coupon_bad": first_start, "coupon_ok": kept_start}
         await _discounted_pending(
             save_fixture,
@@ -442,7 +462,102 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
         assert subscription.discount_id == polar_discount.id
-        assert subscription.discount_applied_at == kept_start
+        assert _discounted_renewals(subscription, 3) == [True, True, False]
+
+    @pytest.mark.parametrize(
+        ("duration", "duration_in_months", "started_days_ago", "discounted"),
+        [
+            pytest.param(DiscountDuration.once, None, 3, [True, False], id="once"),
+            pytest.param(
+                DiscountDuration.repeating,
+                3,
+                3,
+                [True, True, True, False],
+                id="repeating added mid-period",
+            ),
+            pytest.param(
+                DiscountDuration.repeating,
+                3,
+                50,
+                [True, False, False],
+                id="repeating nearly used up",
+            ),
+        ],
+    )
+    async def test_discounts_the_renewals_the_source_still_would(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+        duration: DiscountDuration,
+        duration_in_months: int | None,
+        started_days_ago: int,
+        discounted: list[bool],
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=duration,
+            duration_in_months=duration_in_months,
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        started_at = utc_now() - timedelta(days=started_days_ago)
+        fields: dict[str, Any] = {
+            "discount_source_ids": ["coupon_1"],
+            "discount_started_at": started_at,
+        }
+        await _discounted_pending(save_fixture, pending_record, **fields)
+
+        outcome = await cutover(_source(has_discount=True, **fields))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert _discounted_renewals(subscription, len(discounted)) == discounted
+
+    async def test_repeating_discount_keeps_a_renewal_after_a_short_month(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+    ) -> None:
+        """Renewing on the 30th, a 2-month coupon from Feb 5 ends Apr 5 on the
+        source, so it still discounts Feb 28 and Mar 30."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=DiscountDuration.repeating,
+            duration_in_months=2,
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        fields: dict[str, Any] = {
+            "discount_source_ids": ["coupon_1"],
+            "discount_started_at": datetime(2026, 2, 5, tzinfo=UTC),
+            "current_period_start": datetime(2026, 1, 30, tzinfo=UTC),
+            "current_period_end": datetime(2026, 2, 28, tzinfo=UTC),
+            "anchor_day": 30,
+        }
+        await _discounted_pending(save_fixture, pending_record, **fields)
+
+        with freeze_time("2026-02-20"):
+            outcome = await cutover(_source(has_discount=True, **fields))
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert _discounted_renewals(subscription, 3) == [True, True, False]
 
     async def test_skips_when_discount_was_never_imported(
         self,

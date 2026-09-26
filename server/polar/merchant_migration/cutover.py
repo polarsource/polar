@@ -13,6 +13,7 @@ from uuid import UUID
 import stripe as stripe_lib
 import structlog
 from dateutil.relativedelta import relativedelta
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.customer.repository import CustomerRepository
@@ -135,8 +136,8 @@ _STOP_UNCONFIRMED = (
     "there with nobody billing the customer. Retry the move to finish it."
 )
 _UNEXPECTED = (
-    "Something went wrong while switching it over, and nothing changed. Retry "
-    "the move, or contact support if it keeps failing."
+    "Something went wrong while switching it over. Retry the move, or contact "
+    "support if it keeps failing."
 )
 _LAPSED = (
     "It was stopped on the source more than one renewal ago, so switching it on "
@@ -303,6 +304,9 @@ class SubscriptionCutover:
         try:
             async with self._savepoint():
                 return await self._run(record)
+        except DBAPIError:
+            # The session may be gone with it: fail the job so it retries.
+            raise
         except Exception as e:
             # The savepoint expired it on the way out.
             await self.session.refresh(record)
@@ -340,7 +344,6 @@ class SubscriptionCutover:
 
     @contextlib.asynccontextmanager
     async def _savepoint(self) -> AsyncIterator[None]:
-        """Undo the block's writes, and the jobs it enqueued, if it raises."""
         with JobQueueManager.get().discard_on_error():
             async with self.session.begin_nested():
                 yield

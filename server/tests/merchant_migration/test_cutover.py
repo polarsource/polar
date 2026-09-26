@@ -8,6 +8,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import OperationalError
 
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
@@ -2136,9 +2137,26 @@ class TestFailures:
         outcome = await cutover(adapter)
 
         assert outcome.status == MerchantMigrationCutoverStatus.failed
-        assert "nothing changed" in (outcome.message or "")
+        assert "Something went wrong" in (outcome.message or "")
         assert pending_record.status == MerchantMigrationRecordStatus.pending
         _assert_left_alone(adapter, pending_record)
+
+    async def test_a_database_error_fails_the_run_so_it_retries(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=OperationalError("SELECT 1", {}, Exception("lock timeout")),
+        )
+
+        with pytest.raises(OperationalError):
+            await cutover(adapter)
 
     async def test_polar_subscription_no_longer_exists(
         self,

@@ -111,6 +111,7 @@ ACTION_REQUIRED_CODES = {
     "send_invoice_collection",
     "customer_stripe_id_conflict",
     "customer_tax_id_dropped",
+    "customer_tax_exempt",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -148,6 +149,11 @@ _TAX_ID_DROPPED_REASON = (
     "This customer had a tax ID or reverse charge on Stripe that can't be "
     "imported. Add a valid tax ID on Polar before the first renewal, or they'll "
     "be charged tax as a consumer."
+)
+_TAX_EXEMPT_REASON = (
+    "This customer is tax-exempt on Stripe. Polar calculates tax as merchant of "
+    "record and doesn't carry the exemption over, so they'll be charged tax from "
+    "their first renewal on Polar. Let them know before you migrate."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
@@ -1026,6 +1032,9 @@ def _customer_items(
             Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
             if customer.tax_id_dropped
             else None,
+            Reason("customer_tax_exempt", _TAX_EXEMPT_REASON)
+            if customer.tax_exempt
+            else None,
         )
         effective_country = customer.country or country_fallback
         items.append(
@@ -1093,6 +1102,9 @@ def _subscription_items(
             else None,
             Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
             if customer is not None and customer.tax_id_dropped
+            else None,
+            Reason("customer_tax_exempt", _TAX_EXEMPT_REASON)
+            if customer is not None and customer.tax_exempt
             else None,
             payment_method_reason(subscription.payment_method),
             Reason("subscription_trialing", _TRIALING_REASON)

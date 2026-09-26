@@ -717,6 +717,7 @@ class StripeAdapter:
             billing_address=self._billing_address(address, country),
             tax_id=tax_id,
             tax_id_dropped=tax_id is None and self._has_source_tax_id(customer),
+            tax_exempt=customer.get("tax_exempt") == "exempt",
         )
 
     def _billing_address(self, address: Any, country: str | None) -> Address | None:

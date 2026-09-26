@@ -721,6 +721,25 @@ class TestClassifyRecords:
             assert item.reason_code == "customer_tax_id_dropped"
             assert item.reason_level == PrecheckReasonLevel.action_required
 
+    def test_tax_exempt_customer_requires_action(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            replace(build_customer(country="US"), tax_exempt=True),
+            build_subscription(source_id="sub_1"),
+        ]
+
+        customer_items = classify_records(records, PrecheckEntity.customers, "usd")
+        subscription_items = classify_records(
+            records, PrecheckEntity.subscriptions, "usd"
+        )
+
+        for item in (customer_items[0], subscription_items[0]):
+            assert item.status == PrecheckRecordStatus.importable
+            assert item.reason_code == "customer_tax_exempt"
+            assert item.reason_level == PrecheckReasonLevel.action_required
+
     def test_payment_method_country_is_used_with_info(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(

@@ -1520,3 +1520,14 @@ class TestMapCustomer:
 
         assert mapped.country is None
         assert mapped.country_hint == expected
+
+    @pytest.mark.parametrize(
+        ("tax_exempt", "expected"),
+        [("exempt", True), ("none", False), ("reverse", False)],
+    )
+    def test_reads_a_tax_exemption(self, tax_exempt: str, expected: bool) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(country="US", tax_exempt=tax_exempt)
+        )
+
+        assert mapped.tax_exempt is expected

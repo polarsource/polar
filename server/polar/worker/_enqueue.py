@@ -4,7 +4,7 @@ import itertools
 import time
 import uuid
 from collections import defaultdict
-from collections.abc import AsyncIterator, Callable, Iterable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
 from typing import Any, Self
 
 import dramatiq
@@ -214,6 +214,21 @@ class JobQueueManager:
     def reset(self) -> None:
         self._enqueued_jobs = []
         self._ingested_events = []
+
+    @contextlib.contextmanager
+    def discard_on_error(self) -> Iterator[None]:
+        """Forget what the block enqueued if it raises.
+
+        Pair it with a SAVEPOINT: the rows those jobs point at are rolled back
+        with it, while jobs enqueued before the block are kept.
+        """
+        jobs, events = len(self._enqueued_jobs), len(self._ingested_events)
+        try:
+            yield
+        except BaseException:
+            del self._enqueued_jobs[jobs:]
+            del self._ingested_events[events:]
+            raise
 
     @classmethod
     def set(cls) -> "Self":

@@ -171,6 +171,33 @@ class TestFlushIngestedEventsChunking:
         assert await redis.llen("dramatiq:low_priority") == 0
 
 
+@pytest.mark.asyncio
+class TestDiscardOnError:
+    async def test_drops_only_what_the_failed_block_enqueued(
+        self, redis: Redis
+    ) -> None:
+        CorrelationID.set()
+        kept_event, dropped_event = uuid4(), uuid4()
+        jqm = JobQueueManager()
+        jqm.enqueue_job("dummy", "kept")
+        jqm.enqueue_events(kept_event)
+        with pytest.raises(RuntimeError), jqm.discard_on_error():
+            jqm.enqueue_job("dummy", "dropped")
+            jqm.enqueue_events(dropped_event)
+            raise RuntimeError
+        with jqm.discard_on_error():
+            jqm.enqueue_job("dummy", "succeeded")
+        await jqm.flush(dramatiq.get_broker(), redis)
+
+        message_ids = await redis.lrange("dramatiq:low_priority", 0, -1)
+        messages = await redis.hgetall("dramatiq:low_priority.msgs")
+        assert [json.loads(messages[id])["args"] for id in message_ids] == [
+            ["kept"],
+            ["succeeded"],
+            [[str(kept_event)]],
+        ]
+
+
 class TestPackBatches:
     def make_entries(
         self, sizes: list[int]

@@ -115,6 +115,7 @@ ACTION_REQUIRED_CODES = {
     "customer_stripe_id_conflict",
     "customer_tax_id_dropped",
     "customer_tax_exempt",
+    "subscription_tax_behavior_unspecified",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -157,6 +158,11 @@ _TAX_EXEMPT_REASON = (
     "This customer is tax-exempt on Stripe. Polar calculates tax as merchant of "
     "record and doesn't carry the exemption over, so they'll be charged tax from "
     "their first renewal on Polar. Let them know before you migrate."
+)
+_TAX_BEHAVIOR_UNSPECIFIED_REASON = (
+    "The Stripe price doesn't say whether tax is included, so Stripe Tax used "
+    "your account's default. Polar will treat it as tax-inclusive. Check that "
+    "matches what the customer paid, and change it here if not."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
@@ -1131,6 +1137,14 @@ def _subscription_items(
             else None,
             Reason("customer_tax_exempt", _TAX_EXEMPT_REASON)
             if customer is not None and customer.tax_exempt
+            else None,
+            Reason(
+                "subscription_tax_behavior_unspecified",
+                _TAX_BEHAVIOR_UNSPECIFIED_REASON,
+            )
+            if subscription.tax_behavior is None
+            and subscription.automatic_tax is True
+            and subscription.price_tax_behavior is None
             else None,
             payment_method_reason(subscription.payment_method),
             Reason("subscription_trialing", _TRIALING_REASON)

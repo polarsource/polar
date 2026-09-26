@@ -1175,7 +1175,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
     To listen specifically for renewals, listen to `subscription.cycled`.
 
-    **Discord & Slack support:** On cancellation, past due, and revocation. Also on immediate plan changes and on changes scheduled for the next period. Renewals are skipped.
+    **Discord & Slack support:** On cancellation, past due, revocation, immediate plan changes, and plan changes scheduled for the next period. Renewals are skipped.
     """
 
     type: Literal[WebhookEventType.subscription_updated]

@@ -25966,7 +25966,7 @@
     "subscription.updated": {
       "post": {
         "summary": "subscription_updated",
-        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Also on immediate plan changes and on changes scheduled for the next period. Renewals are skipped.",
+        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, revocation, immediate plan changes, and plan changes scheduled for the next period. Renewals are skipped.",
         "operationId": "_endpointsubscription_updated_post",
         "requestBody": {
           "content": {
@@ -97231,7 +97231,7 @@
           "data"
         ],
         "title": "WebhookSubscriptionUpdatedPayload",
-        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Also on immediate plan changes and on changes scheduled for the next period. Renewals are skipped."
+        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, revocation, immediate plan changes, and plan changes scheduled for the next period. Renewals are skipped."
       },
       "MetadataQuery": {
         "anyOf": [

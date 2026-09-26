@@ -36,6 +36,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordType,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
+from polar.product.repository import ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -587,15 +588,26 @@ class CatalogImporter:
             record.target_id
         )
         # No products at all means every product: widening that would narrow it.
-        if discount is None or not discount.discount_products:
+        if (
+            discount is None
+            or discount.deleted_at is not None
+            or not discount.discount_products
+        ):
             return
         attached = {link.product_id for link in discount.discount_products}
-        discount.discount_products.extend(
-            DiscountProduct(product_id=product_id)
-            for product_id in product_ids
-            if product_id not in attached
+        missing = [id for id in product_ids if id not in attached]
+        if not missing:
+            return
+        product_repository = ProductRepository.from_session(self.session)
+        products = await product_repository.get_all(
+            product_repository.get_base_statement().where(
+                Product.id.in_(missing),
+                Product.organization_id == self.organization.id,
+            )
         )
-        await self.session.flush()
+        discount.discount_products.extend(
+            DiscountProduct(product=product) for product in products
+        )
 
     async def _create_product(
         self, product: CanonicalProduct, plan: ProductImportPlan

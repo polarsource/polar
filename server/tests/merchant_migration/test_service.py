@@ -2638,8 +2638,14 @@ class TestImportCatalog:
         } == {("eur", 900), ("usd", 1000)}
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("deleted_in_between", "expected"),
+        [(False, {"Pro", "Team"}), (True, {"Pro"})],
+    )
     async def test_product_restricted_discount_follows_products_imported_later(
         self,
+        deleted_in_between: bool,
+        expected: set[str],
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2722,6 +2728,10 @@ class TestImportCatalog:
         first_results = {result.entity: result for result in first.results}
         assert first_results[PrecheckEntity.discounts].imported == 1
         assert await _discount_product_names(session, organization) == {"Pro"}
+        if deleted_in_between:
+            [discount] = await _imported_discounts(session, organization)
+            discount.deleted_at = utc_now()
+            await session.flush()
 
         await service.import_catalog(
             session,
@@ -2731,7 +2741,7 @@ class TestImportCatalog:
         )
 
         assert len(await _imported_discounts(session, organization)) == 1
-        assert await _discount_product_names(session, organization) == {"Pro", "Team"}
+        assert await _discount_product_names(session, organization) == expected
 
     @pytest.mark.auth
     async def test_product_restricted_discount_skips_an_interval_nobody_is_on(
@@ -2743,7 +2753,6 @@ class TestImportCatalog:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        """Nothing selects the yearly row, so waiting on it would wait forever."""
         migration = await _staged_migration(
             mocker,
             session,

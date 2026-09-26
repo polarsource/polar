@@ -78,6 +78,11 @@ def _slack_fields(raw_payload: str) -> list[str]:
     return [field["text"] for field in payload["blocks"][0]["fields"]]
 
 
+def _discord_fields(raw_payload: str) -> dict[str, str]:
+    payload = json.loads(raw_payload)
+    return {field["name"]: field["value"] for field in payload["embeds"][0]["fields"]}
+
+
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.webhook.service.enqueue_job")
@@ -752,3 +757,107 @@ class TestSlackSubscriptionPayload:
         assert "*Previous Product*\nStarter" in fields
         assert f"*Product*\n{subscription.product.name}" in fields
         assert "previous_product_name" not in payload.get_raw_payload()
+
+
+@pytest.mark.asyncio
+class TestDiscordSubscriptionPayload:
+    async def test_canceled_includes_customer_and_reason(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        now = utc_now()
+        payload = WebhookSubscriptionCanceledPayload(
+            type=WebhookEventType.subscription_canceled,
+            timestamp=now,
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(
+                subscription,
+                ends_at=now + timedelta(days=10),
+                customer_cancellation_reason=CustomerCancellationReason.too_expensive,
+                customer_cancellation_comment="Too pricey",
+            ),
+        )
+
+        fields = _discord_fields(
+            payload.get_payload(WebhookFormat.discord, organization)
+        )
+
+        assert fields["Customer"] == "Jane <!channel> Doe\njane@example.com"
+        assert fields["Reason"] == "Too expensive"
+        assert fields["Comment"] == "Too pricey"
+
+    async def test_updated_with_new_pending_update(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        now = utc_now()
+        new_product_id = uuid4()
+        payload = WebhookSubscriptionUpdatedPayload(
+            type=WebhookEventType.subscription_updated,
+            timestamp=now,
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(
+                subscription,
+                status=SubscriptionStatus.active,
+                pending_update=PendingSubscriptionUpdate(
+                    id=uuid4(),
+                    created_at=now,
+                    modified_at=None,
+                    applies_at=now + timedelta(days=10),
+                    product_id=new_product_id,
+                    seats=None,
+                    units=None,
+                ),
+            ),
+        )
+
+        raw_payload = payload.get_payload(WebhookFormat.discord, organization)
+
+        assert json.loads(raw_payload)["content"] == (
+            "Subscription change has been scheduled."
+        )
+        fields = _discord_fields(raw_payload)
+        assert fields["New Product ID"] == str(new_product_id)
+        assert "Applies At" in fields
+
+    async def test_updated_with_stale_pending_update_is_skipped(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        now = utc_now()
+        payload = WebhookSubscriptionUpdatedPayload(
+            type=WebhookEventType.subscription_updated,
+            timestamp=now,
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(
+                subscription,
+                status=SubscriptionStatus.active,
+                pending_update=PendingSubscriptionUpdate(
+                    id=uuid4(),
+                    created_at=now - timedelta(days=2),
+                    modified_at=None,
+                    applies_at=now + timedelta(days=10),
+                    product_id=uuid4(),
+                    seats=None,
+                    units=None,
+                ),
+            ),
+        )
+
+        with pytest.raises(SkipEvent):
+            payload.get_payload(WebhookFormat.discord, organization)
+
+    async def test_updated_with_previous_product(
+        self, organization: Organization, subscription: Subscription
+    ) -> None:
+        payload = WebhookSubscriptionUpdatedPayload(
+            type=WebhookEventType.subscription_updated,
+            timestamp=utc_now(),
+            api_version=CURRENT_API_VERSION,
+            data=_subscription_schema(subscription, status=SubscriptionStatus.active),
+            previous_product_name="Starter",
+        )
+
+        raw_payload = payload.get_payload(WebhookFormat.discord, organization)
+
+        assert json.loads(raw_payload)["content"] == "Subscription plan has changed."
+        fields = _discord_fields(raw_payload)
+        assert fields["Previous Product"] == "Starter"
+        assert fields["Product"] == subscription.product.name

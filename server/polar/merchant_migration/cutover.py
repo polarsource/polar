@@ -190,12 +190,16 @@ def _scheduled_end(
     source: CanonicalSubscription, staged: CanonicalSubscription
 ) -> _ScheduledEnd | None:
     """The end the customer asked for on the source, and when and why. The stop
-    overwrites that date and reason there, so a retry reads the import's."""
+    overwrites that date and reason there, so a retry reads the import's.
+
+    Both come from one snapshot: a request re-made without feedback must not
+    inherit the reason of one the customer took back."""
     if not _ends_at_period_end(source, staged):
         return None
-    reason = source.cancellation_reason or staged.cancellation_reason
+    pending = source if source.canceled_at is not None else staged
+    reason = pending.cancellation_reason
     return _ScheduledEnd(
-        canceled_at=source.canceled_at or staged.canceled_at or utc_now(),
+        canceled_at=pending.canceled_at or utc_now(),
         reason=CustomerCancellationReason(reason)
         if reason is not None and reason in CustomerCancellationReason
         else None,

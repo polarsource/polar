@@ -1436,6 +1436,51 @@ class TestCancelAtPeriodEnd:
         assert subscription.canceled_at == requested_again_at
         assert subscription.customer_cancellation_reason is None
 
+    async def test_keeps_when_and_why_on_a_paused_polar_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        period_end = utc_now() + timedelta(days=20)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        await save_fixture(pending_record)
+        canceled_at = utc_now() - timedelta(days=12)
+        adapter = _source(
+            cancel_at_period_end=True,
+            canceled_at=canceled_at,
+            cancellation_reason="too_expensive",
+            current_period_end=period_end,
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.period_end_stops == [True]
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.canceled_at == canceled_at
+        assert subscription.ends_at == period_end
+        assert (
+            subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+
     async def test_renews_when_the_customer_takes_the_end_back_before_the_stop(
         self,
         mocker: MockerFixture,

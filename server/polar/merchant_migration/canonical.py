@@ -22,6 +22,7 @@ class CanonicalPricingScheme(StrEnum):
     fixed = "fixed"
     tiered = "tiered"
     metered = "metered"
+    package = "package"
 
 
 class CanonicalSubscriptionStatus(StrEnum):

@@ -1042,6 +1042,20 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_paused_collection"
 
+    def test_zero_quantity_drops_subscription(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1", quantity=0),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "unsupported_quantity"
+
 
 class TestSummarizeRecords:
     def test_counts_match_classification(self) -> None:

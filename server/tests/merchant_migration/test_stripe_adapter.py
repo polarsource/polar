@@ -302,8 +302,10 @@ def _stripe_price(
     product_active: bool = True,
     price_active: bool = True,
     product_name: str = "Pro",
+    transform_quantity: dict[str, Any] | None = None,
 ) -> stripe_lib.Price:
     price: dict[str, Any] = {
+        "transform_quantity": transform_quantity,
         "id": id,
         "object": "price",
         "active": price_active,
@@ -375,6 +377,27 @@ class TestExtractProducts:
             1000,
         )
         assert price.pricing_scheme == CanonicalPricingScheme.fixed
+
+    @pytest.mark.parametrize(
+        ("rounding", "expected"),
+        [
+            ("down", CanonicalPricingScheme.package),
+            ("up", CanonicalPricingScheme.fixed),
+        ],
+    )
+    async def test_package_rounding_selects_the_scheme(
+        self, mocker: MockerFixture, rounding: str, expected: CanonicalPricingScheme
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(transform_quantity={"divide_by": 10, "round": rounding}),
+        )
+
+        products = await _extracted_products(adapter)
+
+        assert products[0].prices[0].pricing_scheme == expected
 
     async def test_multi_currency_price_yields_one_price_per_currency(
         self, mocker: MockerFixture
@@ -1164,6 +1187,29 @@ class TestGetSubscription:
         assert subscription is not None
         assert subscription.price_source_id == "price_1"
         assert subscription.currency == "usd"
+
+    @pytest.mark.parametrize(("quantity", "expected"), [(0, 0), (None, 1)])
+    async def test_reads_the_item_quantity(
+        self, mocker: MockerFixture, quantity: int | None, expected: int
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                items=[
+                    {
+                        "price": {"id": "price_1", "currency": "usd"},
+                        "quantity": quantity,
+                        "current_period_start": 1_700_000_000,
+                        "current_period_end": 1_702_000_000,
+                    }
+                ],
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.quantity == expected
 
     async def test_default_currency_keeps_the_bare_price_id(
         self, mocker: MockerFixture

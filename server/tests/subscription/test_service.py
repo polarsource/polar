@@ -171,11 +171,13 @@ def assert_webhook_sent_once(
     organization: Organization,
     subscription: Subscription,
 ) -> None:
-    send_mock.assert_any_call(ANY, organization, event_type, subscription)
-    event_occurences = 0
-    for mock_calls in send_mock.call_args_list:
-        if mock_calls.args[1] == organization and mock_calls.args[2] == event_type:
-            event_occurences += 1
+    event_calls = [
+        mock_call
+        for mock_call in send_mock.call_args_list
+        if mock_call.args[1] == organization and mock_call.args[2] == event_type
+    ]
+    assert any(mock_call.args[3] == subscription for mock_call in event_calls)
+    event_occurences = len(event_calls)
     assert event_occurences == 1, (
         f"Expected webhook {event_type} to be sent once, but was sent {event_occurences} times"
     )
@@ -5348,6 +5350,54 @@ class TestUpdate:
 
 @pytest.mark.asyncio
 class TestUpdateProduct:
+    @pytest.mark.parametrize(
+        ("proration_behavior", "expects_previous_product"),
+        [
+            (SubscriptionProrationBehavior.prorate, True),
+            (SubscriptionProrationBehavior.next_period, False),
+        ],
+    )
+    async def test_updated_webhook_previous_product(
+        self,
+        proration_behavior: SubscriptionProrationBehavior,
+        expects_previous_product: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=proration_behavior,
+            )
+
+        [updated_call] = [
+            call
+            for call in webhook_service_send_mock.call_args_list
+            if call.args[2] == WebhookEventType.subscription_updated
+        ]
+        if expects_previous_product:
+            assert updated_call.kwargs == {"previous_product_name": product.name}
+        else:
+            assert updated_call.kwargs == {}
+
     async def test_trial_to_equal_trial_succeeds(
         self,
         session: AsyncSession,

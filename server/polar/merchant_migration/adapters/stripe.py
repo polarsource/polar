@@ -511,9 +511,7 @@ class StripeAdapter:
         transform = price.get("transform_quantity")
         if transform is None:
             return False
-        return (
-            transform.get("round") == "down" and (transform.get("divide_by") or 1) > 1
-        )
+        return transform.get("round") == "down" and transform.get("divide_by") > 1
 
     def _map_subscription(
         self, subscription: stripe_lib.Subscription

@@ -385,7 +385,7 @@ class TestExtractProducts:
             ("up", CanonicalPricingScheme.fixed),
         ],
     )
-    async def test_package_price_that_rounds_one_unit_to_nothing(
+    async def test_package_rounding_selects_the_scheme(
         self, mocker: MockerFixture, rounding: str, expected: CanonicalPricingScheme
     ) -> None:
         adapter, client = _adapter(mocker)

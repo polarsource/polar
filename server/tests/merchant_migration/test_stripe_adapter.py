@@ -1143,6 +1143,80 @@ class TestGetSubscription:
         assert subscription.cancel_at_period_end is True
         assert subscription.current_period_end is not None
 
+    async def test_reads_a_set_end_date(self, mocker: MockerFixture) -> None:
+        stripe_subscription = _stripe_subscription()
+        stripe_subscription["cancel_at"] = 1_705_000_000
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=stripe_subscription
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.cancel_at == datetime.fromtimestamp(1_705_000_000, UTC)
+        assert subscription.cancel_at_period_end is False
+
+    @pytest.mark.parametrize(
+        ("schedule", "expected"),
+        [
+            pytest.param(None, False, id="no-schedule"),
+            pytest.param("sub_sched_1", True, id="unexpanded"),
+            pytest.param(
+                {"status": "released", "end_behavior": "cancel"},
+                False,
+                id="released",
+            ),
+            pytest.param(
+                {
+                    "status": "active",
+                    "end_behavior": "release",
+                    "current_phase": {"start_date": 100, "end_date": 200},
+                    "phases": [{"start_date": 100, "end_date": 200}],
+                },
+                False,
+                id="only-the-current-phase",
+            ),
+            pytest.param(
+                {
+                    "status": "active",
+                    "end_behavior": "cancel",
+                    "current_phase": {"start_date": 100, "end_date": 200},
+                    "phases": [{"start_date": 100, "end_date": 200}],
+                },
+                True,
+                id="cancels-at-the-end",
+            ),
+            pytest.param(
+                {
+                    "status": "active",
+                    "end_behavior": "release",
+                    "current_phase": {"start_date": 100, "end_date": 200},
+                    "phases": [
+                        {"start_date": 100, "end_date": 200},
+                        {"start_date": 200, "end_date": 300},
+                    ],
+                },
+                True,
+                id="a-later-phase",
+            ),
+        ],
+    )
+    async def test_flags_schedules_that_change_it_later(
+        self, mocker: MockerFixture, schedule: Any, expected: bool
+    ) -> None:
+        stripe_subscription = _stripe_subscription()
+        stripe_subscription["schedule"] = schedule
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=stripe_subscription
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.has_scheduled_changes is expected
+
     async def test_reads_the_price_it_is_billed_in(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
         client.v1.subscriptions.retrieve_async = mocker.AsyncMock(

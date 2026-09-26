@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -1041,6 +1042,49 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_paused_collection"
+
+    @pytest.mark.parametrize(
+        ("fields", "reason_code"),
+        [
+            pytest.param(
+                {"cancel_at": datetime(2030, 3, 1, tzinfo=UTC)},
+                "subscription_scheduled_end",
+                id="ends-on-a-set-date",
+            ),
+            pytest.param(
+                {
+                    "cancel_at": datetime(2030, 3, 1, tzinfo=UTC),
+                    "cancel_at_period_end": True,
+                },
+                None,
+                id="ends-with-the-period",
+            ),
+            pytest.param(
+                {"has_scheduled_changes": True},
+                "subscription_scheduled_change",
+                id="schedule-changes-it-later",
+            ),
+        ],
+    )
+    def test_scheduled_end_drops_subscription(
+        self, fields: dict[str, Any], reason_code: str | None
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(build_subscription(source_id="sub_1"), **fields),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].reason_code == reason_code
+        assert items[0].status == (
+            PrecheckRecordStatus.importable
+            if reason_code is None
+            else PrecheckRecordStatus.skipped
+        )
 
 
 class TestSummarizeRecords:

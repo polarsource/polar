@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -1302,6 +1303,37 @@ class TestClassifyCascade:
         assert items[0].customer_country == "US"
         assert items[0].automatic_tax is True
         assert items[0].tax_behavior == TaxBehavior.exclusive
+
+    @pytest.mark.parametrize(
+        ("fields", "expected_code"),
+        [
+            ({"automatic_tax": True}, "subscription_tax_behavior_unspecified"),
+            (
+                {"automatic_tax": True, "price_tax_behavior": TaxBehavior.exclusive},
+                None,
+            ),
+            (
+                {"automatic_tax": True, "tax_behavior": TaxBehavior.exclusive},
+                None,
+            ),
+            ({"automatic_tax": False}, None),
+        ],
+    )
+    def test_unspecified_price_tax_behavior_requires_action(
+        self, fields: dict[str, Any], expected_code: str | None
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(),
+            build_customer(),
+            replace(build_subscription(), **fields),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code == expected_code
+        if expected_code is not None:
+            assert items[0].reason_level == PrecheckReasonLevel.action_required
 
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,

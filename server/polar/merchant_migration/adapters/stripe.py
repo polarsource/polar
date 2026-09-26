@@ -72,6 +72,7 @@ _SUBSCRIPTION_EXPAND = [
     "customer.invoice_settings.default_payment_method",
     "customer.default_source",
     "discounts",
+    "latest_invoice",
 ]
 
 
@@ -534,6 +535,7 @@ class StripeAdapter:
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
+            latest_invoice_unpaid=self._latest_invoice_unpaid(subscription),
             anchor_day=self._anchor_day(subscription),
             currency=subscription.currency,
             automatic_tax=self._automatic_tax(subscription),
@@ -703,6 +705,17 @@ class StripeAdapter:
         details = subscription.cancellation_details
         comment = details.comment if details is not None else None
         return bool(comment and comment.startswith(CANCELLATION_COMMENT_PREFIX))
+
+    def _latest_invoice_unpaid(self, subscription: stripe_lib.Subscription) -> bool:
+        """An unexpanded invoice counts: we can't tell whether it was paid."""
+        invoice = subscription.get("latest_invoice")
+        if not invoice:
+            return False
+        if isinstance(invoice, str):
+            return True
+        return invoice.get("status") in {"draft", "open"} and bool(
+            invoice.get("amount_due")
+        )
 
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
         address = customer.get("address")

@@ -1217,6 +1217,11 @@ class TestSkips:
                 id="renewal-already-past",
             ),
             pytest.param(
+                {"latest_invoice_unpaid": True},
+                "latest invoice on the source hasn't been paid",
+                id="renewal-not-collected-yet",
+            ),
+            pytest.param(
                 {"price_source_id": "price_upgraded"},
                 "plan changed on the source",
                 id="plan-changed",

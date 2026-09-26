@@ -1047,7 +1047,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         fields: list[SlackText] = [
             {
                 "type": "mrkdwn",
-                "text": f"*Previous Product*\n{previous_product_name}",
+                "text": f"*Previous Product*\n{escape_slack_text(previous_product_name)}",
             },
             *self._get_slack_fields(target),
         ]

@@ -131,11 +131,6 @@ _INVOICE_UNPAID = (
     "Its latest invoice on the source hasn't been paid yet. Moving it now could "
     "lose that payment, so retry once the source has collected it."
 )
-_LIVE_INVOICE_UNPAID = (
-    "It's live on both Polar and the source, but its latest invoice on the "
-    "source hasn't been paid yet. Retry once the source has collected it to "
-    "stop it there."
-)
 _RENEWALS_DISABLED = (
     "Your organization can't renew subscriptions yet, so Polar wouldn't bill "
     "this one after taking it over. It stays on the source until your account "
@@ -467,8 +462,6 @@ class SubscriptionCutover:
                 migration_id=self.migration.id,
                 source_id=record.source_id,
             )
-            if source.latest_invoice_unpaid:
-                return _fail(_LIVE_INVOICE_UNPAID)
             await self.adapter.stop_source_subscription(
                 record.source_id, reference=str(self.migration.id)
             )

@@ -189,11 +189,10 @@ def _discount_applied_at(
     if last_discounted is None:
         return started_at
 
-    remaining = relativedelta(months=months - 1)
-    applied_at = last_discounted - remaining
-    # Going back to a shorter month clamps the day, so adding the months back can
-    # land before the renewal it has to keep.
-    while applied_at + remaining < last_discounted:
+    applied_at = last_discounted - relativedelta(months=months - 1)
+    # Going back to a shorter month clamps the day, so counting the months forward
+    # again can end before the renewal it has to keep.
+    while discount.is_repetition_expired(applied_at, last_discounted):
         applied_at += timedelta(days=1)
     return applied_at
 

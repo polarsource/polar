@@ -747,14 +747,14 @@ class TestSlackSubscriptionPayload:
             timestamp=utc_now(),
             api_version=CURRENT_API_VERSION,
             data=_subscription_schema(subscription, status=SubscriptionStatus.active),
-            previous_product_name="Starter",
+            previous_product_name="Starter <Team>",
         )
 
         raw_payload = payload.get_payload(WebhookFormat.slack, organization)
 
         assert json.loads(raw_payload)["text"] == "Subscription plan has changed."
         fields = _slack_fields(raw_payload)
-        assert "*Previous Product*\nStarter" in fields
+        assert "*Previous Product*\nStarter &lt;Team&gt;" in fields
         assert f"*Product*\n{subscription.product.name}" in fields
         assert "previous_product_name" not in payload.get_raw_payload()
 

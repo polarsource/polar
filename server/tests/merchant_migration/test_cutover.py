@@ -2038,7 +2038,8 @@ class TestFailures:
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         assert retry.stopped == []
-        assert subscription.status == SubscriptionStatus.active
+        retried = await _created(session, pending_record)
+        assert retried.status == SubscriptionStatus.active
 
     async def test_a_stop_that_timed_out_after_cancelling_still_moves(
         self,

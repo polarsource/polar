@@ -505,7 +505,18 @@ class StripeAdapter:
         recurring = price.recurring
         if recurring is not None and recurring.usage_type == "metered":
             return CanonicalPricingScheme.metered
+        if self._package_rounds_down(price):
+            return CanonicalPricingScheme.package
         return CanonicalPricingScheme.fixed
+
+    def _package_rounds_down(self, price: stripe_lib.Price) -> bool:
+        # A single unit rounded up is one whole package: the flat unit amount.
+        transform = price.get("transform_quantity")
+        if transform is None:
+            return False
+        return (
+            transform.get("round") == "down" and (transform.get("divide_by") or 1) > 1
+        )
 
     def _map_subscription(
         self,
@@ -531,7 +542,7 @@ class StripeAdapter:
             trialing=subscription.status == "trialing",
             paused_collection=subscription.pause_collection is not None,
             line_item_count=len(items),
-            quantity=first_item.get("quantity") or 1,
+            quantity=self._quantity(first_item),
             payment_method=self._resolve_payment_method(subscription),
             has_discount=discounts.has_discount,
             discount_source_ids=discounts.source_ids,
@@ -551,6 +562,11 @@ class StripeAdapter:
             has_tax_rates=self._has_tax_rates(subscription, first_item),
             tax_rate_behavior=self._tax_rate_behavior(subscription, first_item),
         )
+
+    def _quantity(self, item: Any) -> int:
+        # Metered items carry no quantity; 0 is a real quantity that bills nothing.
+        quantity = item.get("quantity")
+        return 1 if quantity is None else quantity
 
     def _map_subscription_discounts(
         self, subscription: stripe_lib.Subscription

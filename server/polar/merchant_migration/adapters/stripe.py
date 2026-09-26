@@ -693,7 +693,7 @@ class StripeAdapter:
 
     def _customer_balance(self, subscription: stripe_lib.Subscription) -> int | None:
         customer = subscription.customer
-        if isinstance(customer, str):
+        if not isinstance(customer, stripe_lib.Customer):
             return None
         return customer.get("balance")
 

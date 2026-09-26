@@ -1227,6 +1227,11 @@ class TestSkips:
                 None,
                 id="manual-invoicing",
             ),
+            pytest.param(
+                {"cancel_at": utc_now() + timedelta(days=5)},
+                "cancel on a specific date",
+                id="cancel-date-set-since-the-import",
+            ),
         ],
     )
     async def test_source_is_no_longer_handable(

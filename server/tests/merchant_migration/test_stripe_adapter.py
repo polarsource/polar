@@ -243,6 +243,7 @@ def _stripe_subscription(
     id: str = "sub_1",
     status: str = "active",
     cancel_at_period_end: bool = False,
+    cancel_at: int | None = None,
     trial_end: int | None = None,
     billing_cycle_anchor: int | None = 1_700_000_000,
     cancellation_comment: str | None = None,
@@ -265,6 +266,7 @@ def _stripe_subscription(
             "status": status,
             "collection_method": "charge_automatically",
             "cancel_at_period_end": cancel_at_period_end,
+            "cancel_at": cancel_at,
             "pause_collection": None,
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
@@ -1309,6 +1311,31 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.import_tax_behavior() == expected
+
+    @pytest.mark.parametrize(
+        ("cancel_at", "expected_cancel_at", "expected_ending"),
+        [
+            (1_701_000_000, datetime(2023, 11, 26, 12, 0, tzinfo=UTC), False),
+            (1_702_000_000, None, True),
+        ],
+    )
+    async def test_reads_a_cancellation_date(
+        self,
+        mocker: MockerFixture,
+        cancel_at: int,
+        expected_cancel_at: datetime | None,
+        expected_ending: bool,
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(cancel_at=cancel_at)
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.cancel_at == expected_cancel_at
+        assert subscription.cancel_at_period_end is expected_ending
 
     async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
         """The cutover keeps the trial running rather than billing at once, so

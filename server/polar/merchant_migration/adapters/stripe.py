@@ -510,6 +510,11 @@ class StripeAdapter:
         items = subscription["items"]["data"]
         first_item = items[0]
         discounts = self._map_subscription_discounts(subscription)
+        current_period_end = self._to_datetime(first_item.get("current_period_end"))
+        cancel_at = self._to_datetime(subscription.get("cancel_at"))
+        ends_at_period_end = bool(subscription.cancel_at_period_end) or (
+            cancel_at is not None and cancel_at == current_period_end
+        )
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
@@ -521,7 +526,7 @@ class StripeAdapter:
             current_period_start=self._to_datetime(
                 first_item.get("current_period_start")
             ),
-            current_period_end=self._to_datetime(first_item.get("current_period_end")),
+            current_period_end=current_period_end,
             trialing=subscription.status == "trialing",
             paused_collection=subscription.pause_collection is not None,
             line_item_count=len(items),
@@ -531,7 +536,8 @@ class StripeAdapter:
             discount_source_ids=discounts.source_ids,
             discount_started_at=discounts.started_at,
             discount_starts=discounts.starts,
-            cancel_at_period_end=bool(subscription.cancel_at_period_end),
+            cancel_at_period_end=ends_at_period_end,
+            cancel_at=None if ends_at_period_end else cancel_at,
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
             anchor_day=self._anchor_day(subscription),

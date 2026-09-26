@@ -151,6 +151,9 @@ class CanonicalSubscription:
     # The customer already asked to stop: the source won't renew it. Nothing left
     # for Polar to take over, so the cutover leaves it where it is.
     cancel_at_period_end: bool = False
+    # A cancellation date on the source other than the current period end. Polar
+    # can't cancel on an arbitrary date, so it would keep billing past this one.
+    cancel_at: datetime | None = None
     # When the source trial ends, so the cutover can keep the subscription
     # trialing on Polar until then instead of billing it early.
     trial_end: datetime | None = None
@@ -441,6 +444,7 @@ def deserialize(
                     if (started_at := _parse_datetime(raw)) is not None
                 },
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
+                cancel_at=_parse_datetime(data.get("cancel_at")),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 anchor_day=data.get("anchor_day"),

@@ -93,6 +93,7 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_scheduled_cancellation",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -626,6 +627,17 @@ class PrecheckEngine:
                 message=(
                     "Subscription has paused collection; it won't be imported and "
                     "stays on the current provider."
+                ),
+                source_id=source_id,
+            )
+        if subscription.cancel_at is not None:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_scheduled_cancellation",
+                message=(
+                    "Subscription is set to cancel on a specific date. Polar can "
+                    "only cancel at the end of the current period, so it would "
+                    "bill past that date; it stays on the current provider."
                 ),
                 source_id=source_id,
             )

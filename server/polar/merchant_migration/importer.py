@@ -85,10 +85,10 @@ _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
 )
 
 
-def _price_owner_rank(record: MerchantMigrationRecord) -> tuple[bool, float]:
-    if record.status != MerchantMigrationRecordStatus.imported:
-        return (False, 0.0)
-    return (True, -record.created_at.timestamp())
+def _price_keys(record: MerchantMigrationRecord) -> list[PriceKey]:
+    product = deserialize(record.type, record.canonical)
+    assert isinstance(product, CanonicalProduct)
+    return [canonical_price_key(price) for price in product.prices]
 
 
 def _price_owners(
@@ -96,14 +96,25 @@ def _price_owners(
 ) -> dict[PriceKey, MerchantMigrationRecord]:
     """The row each price resolves to. Archiving a Stripe price stages it again
     on an `:archived` sibling row, while the row imported before keeps it.
-    Imported rows win, and among them the oldest, as at cutover."""
-    owners: dict[PriceKey, MerchantMigrationRecord] = {}
-    for record in sorted(product_records, key=_price_owner_rank):
-        product = deserialize(record.type, record.canonical)
-        assert isinstance(product, CanonicalProduct)
-        for price in product.prices:
-            owners[canonical_price_key(price)] = record
-    return owners
+    Imported rows win, the oldest first, in the cutover lookup's order."""
+    owners = {
+        key: record
+        for record in product_records
+        if record.status != MerchantMigrationRecordStatus.imported
+        for key in _price_keys(record)
+    }
+    imported: dict[PriceKey, MerchantMigrationRecord] = {}
+    for record in sorted(
+        (
+            record
+            for record in product_records
+            if record.status == MerchantMigrationRecordStatus.imported
+        ),
+        key=lambda record: (record.created_at, record.id),
+    ):
+        for key in _price_keys(record):
+            imported.setdefault(key, record)
+    return owners | imported
 
 
 def _covered_source_ids(
@@ -116,12 +127,9 @@ def _covered_source_ids(
     for record in product_records:
         if record.status != MerchantMigrationRecordStatus.pending:
             continue
-        product = deserialize(record.type, record.canonical)
-        assert isinstance(product, CanonicalProduct)
-        if product.prices and all(
-            owners[canonical_price_key(price)].status
-            == MerchantMigrationRecordStatus.imported
-            for price in product.prices
+        keys = _price_keys(record)
+        if keys and all(
+            owners[key].status == MerchantMigrationRecordStatus.imported for key in keys
         ):
             covered.add(record.source_id)
     return covered

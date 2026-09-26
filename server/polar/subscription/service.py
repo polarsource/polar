@@ -964,8 +964,8 @@ class SubscriptionService:
         customer's default, and goes to dunning when there is none.
 
         ``canceled_at`` keeps an end the customer already asked for on the old
-        provider. It still ends at the period end, and isn't announced as a new
-        cancellation.
+        provider. Activation doesn't announce it as a new cancellation; the period
+        end revokes it like any other.
         """
         assert subscription.status == SubscriptionStatus.paused
         repository = SubscriptionRepository.from_session(session)

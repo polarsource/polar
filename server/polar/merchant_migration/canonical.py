@@ -158,6 +158,9 @@ class CanonicalSubscription:
     # cutover, so a retry after a crash finishes the move instead of reading its
     # own cancellation as the customer having churned.
     stopped_for_migration: bool = False
+    # A Stripe subscription schedule is attached. Its later phases can change the
+    # price, quantity, or end date, and Polar has nothing to run them.
+    has_schedule: bool = False
     # The renewal day before any month-end clamping. A period boundary can't be
     # trusted for it: a 31st anchor reads as Feb 28 in a February period.
     anchor_day: int | None = None
@@ -443,6 +446,7 @@ def deserialize(
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
+                has_schedule=data.get("has_schedule", False),
                 anchor_day=data.get("anchor_day"),
                 currency=data.get("currency"),
                 automatic_tax=data.get("automatic_tax"),

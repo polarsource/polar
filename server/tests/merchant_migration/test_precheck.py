@@ -1042,6 +1042,19 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_paused_collection"
 
+    def test_schedule_drops_subscription(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(),
+            build_customer(),
+            replace(build_subscription(), has_schedule=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_schedule"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+
 
 class TestSummarizeRecords:
     def test_counts_match_classification(self) -> None:

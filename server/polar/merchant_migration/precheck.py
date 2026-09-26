@@ -93,6 +93,7 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_schedule",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -111,6 +112,7 @@ ACTION_REQUIRED_CODES = {
     "send_invoice_collection",
     "customer_stripe_id_conflict",
     "customer_tax_id_dropped",
+    "subscription_schedule",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -121,6 +123,11 @@ _EXISTING_PRODUCT_NAME_REASON = (
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another source customer uses this email, and a Polar customer can only carry "
     "one source id. Merge them at the source, then run the pre-check again."
+)
+_SCHEDULE_REASON = (
+    "This subscription has a Stripe subscription schedule, which can change its "
+    "price, quantity, or end date later. Polar can't run it. Release the schedule "
+    "on Stripe (the subscription stays as it is), then run the pre-check again."
 )
 _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
@@ -627,6 +634,13 @@ class PrecheckEngine:
                     "Subscription has paused collection; it won't be imported and "
                     "stays on the current provider."
                 ),
+                source_id=source_id,
+            )
+        if subscription.has_schedule:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_schedule",
+                message=_SCHEDULE_REASON,
                 source_id=source_id,
             )
         if subscription.trialing:

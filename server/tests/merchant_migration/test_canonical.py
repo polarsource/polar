@@ -174,6 +174,16 @@ class TestDeserialize:
         assert result.currency == "usd"
         assert result.import_tax_behavior() == TaxBehavior.inclusive
 
+    def test_schedule_flag_round_trips(self) -> None:
+        subscription = canonical_subscription(has_schedule=True)
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
+
+        assert isinstance(result, CanonicalSubscription)
+        assert result.has_schedule is True
+
     def test_discount_round_trips(self) -> None:
         discount = canonical_discount(
             extra_codes=1,

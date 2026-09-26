@@ -560,6 +560,7 @@ class StripeAdapter:
             price_tax_behavior=self._price_tax_behavior(first_item.get("price")),
             has_tax_rates=self._has_tax_rates(subscription, first_item),
             tax_rate_behavior=self._tax_rate_behavior(subscription, first_item),
+            customer_balance=self._customer_balance(subscription),
         )
 
     def _quantity(self, item: Any) -> int:
@@ -744,6 +745,12 @@ class StripeAdapter:
         if inclusive == {False}:
             return TaxBehavior.exclusive
         return None
+
+    def _customer_balance(self, subscription: stripe_lib.Subscription) -> int | None:
+        customer = subscription.customer
+        if isinstance(customer, str):
+            return None
+        return customer.get("balance")
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

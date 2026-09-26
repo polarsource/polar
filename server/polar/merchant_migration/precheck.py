@@ -93,6 +93,7 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_customer_balance",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -111,6 +112,7 @@ ACTION_REQUIRED_CODES = {
     "send_invoice_collection",
     "customer_stripe_id_conflict",
     "customer_tax_id_dropped",
+    "subscription_customer_balance",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -121,6 +123,16 @@ _EXISTING_PRODUCT_NAME_REASON = (
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another source customer uses this email, and a Polar customer can only carry "
     "one source id. Merge them at the source, then run the pre-check again."
+)
+_CUSTOMER_CREDIT_REASON = (
+    "The customer has a credit balance on Stripe that would lower their next "
+    "invoice, and Polar can't carry it over. Settle it on Stripe, then run the "
+    "pre-check again."
+)
+_CUSTOMER_DEBT_REASON = (
+    "The customer owes a balance on Stripe that would be added to their next "
+    "invoice, and Polar can't carry it over. Settle it on Stripe, then run the "
+    "pre-check again."
 )
 _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
@@ -626,6 +638,17 @@ class PrecheckEngine:
                 message=(
                     "Subscription has paused collection; it won't be imported and "
                     "stays on the current provider."
+                ),
+                source_id=source_id,
+            )
+        if subscription.customer_balance:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_customer_balance",
+                message=(
+                    _CUSTOMER_CREDIT_REASON
+                    if subscription.customer_balance < 0
+                    else _CUSTOMER_DEBT_REASON
                 ),
                 source_id=source_id,
             )

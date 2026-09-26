@@ -139,6 +139,7 @@ def build_subscription(
     discount_started_at: datetime | None = None,
     discount_starts: dict[str, datetime] | None = None,
     currency: str | None = "usd",
+    customer_balance: int | None = None,
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
         source_id=source_id,
@@ -158,6 +159,7 @@ def build_subscription(
         discount_started_at=discount_started_at,
         discount_starts=discount_starts or {},
         currency=currency,
+        customer_balance=customer_balance,
     )
 
 
@@ -1041,6 +1043,27 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_paused_collection"
+
+    @pytest.mark.parametrize(
+        ("balance", "wording"), [(-500, "credit balance"), (500, "owes a balance")]
+    )
+    def test_customer_balance_drops_subscription(
+        self, balance: int, wording: str
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1", customer_balance=balance),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_customer_balance"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+        assert wording in (items[0].reason or "")
 
 
 class TestSummarizeRecords:

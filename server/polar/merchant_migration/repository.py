@@ -385,6 +385,11 @@ class MerchantMigrationRecordRepository(
                 )
             ),
         )
+        # An archived price can sit on two imported rows; the oldest is the one
+        # earlier moves used.
+        statement = statement.order_by(
+            MerchantMigrationRecord.created_at, MerchantMigrationRecord.id
+        ).limit(1)
         return await self.get_one_or_none(statement)
 
     async def get_imported_discount_dependency(

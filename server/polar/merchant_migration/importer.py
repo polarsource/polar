@@ -313,9 +313,16 @@ class CatalogImporter:
             None,
             discounts,
         )
+        # Archiving a Stripe price moves it to an `:archived` sibling row on the
+        # next precheck, while the row imported before keeps it.
         product_by_price = {
             canonical_price_key(price): product
-            for product in products
+            for _, product in sorted(
+                zip(product_records, products, strict=True),
+                key=lambda pair: (
+                    pair[0].status == MerchantMigrationRecordStatus.imported
+                ),
+            )
             for price in product.prices
         }
 

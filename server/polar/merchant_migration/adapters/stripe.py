@@ -507,7 +507,8 @@ class StripeAdapter:
         return CanonicalPricingScheme.fixed
 
     def _package_rounds_down(self, price: stripe_lib.Price) -> bool:
-        # A single unit rounded up is one whole package: the flat unit amount.
+        # One unit rounded down to whole packages bills nothing. Rounded up it bills
+        # one package, the flat unit amount, which imports as a fixed price.
         transform = price.get("transform_quantity")
         if transform is None:
             return False

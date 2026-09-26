@@ -78,6 +78,7 @@ export function ReviewTableView({
   refreshError,
   attentionCount,
 }: Props) {
+  const refreshing = rerunning && !stalled
   const rowTotal = remainingSubscriptionCount(
     counts.subscriptions.total,
     counts.subscriptions.imported,
@@ -130,7 +131,8 @@ export function ReviewTableView({
       <CatalogEmptyPanel
         kind={catalogEmpty}
         onRerunPrecheck={onRerunPrecheck}
-        rerunning={rerunning && !stalled}
+        rerunning={rerunning}
+        stalled={stalled}
         readError={refreshError}
       />
     )
@@ -190,9 +192,9 @@ export function ReviewTableView({
                 size="sm"
                 variant="secondary"
                 onClick={onRerunPrecheck}
-                disabled={rerunning && !stalled}
+                disabled={refreshing}
               >
-                {rerunning && !stalled ? 'Refreshing…' : 'Refresh from Stripe'}
+                {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
             {canPrepare ? (

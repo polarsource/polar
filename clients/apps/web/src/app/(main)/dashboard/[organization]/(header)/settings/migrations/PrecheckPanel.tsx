@@ -17,7 +17,7 @@ export function PrecheckPanel({
   const precheck = useRunMerchantMigrationPrecheck(migration.id)
   const running =
     precheck.isPending || isActiveMigrationOperation(migration.operation)
-  const stalled = migration.operation?.stalled === true
+  const stalled = !precheck.isPending && migration.operation?.stalled === true
   const failed = migration.operation?.status === 'failed'
   const error =
     (failed ? migration.operation?.error : null) ||
@@ -57,7 +57,7 @@ export function PrecheckPanel({
         <Button
           size="sm"
           onClick={() => precheck.mutate()}
-          disabled={precheck.isPending || (running && !stalled)}
+          disabled={running && !stalled}
         >
           {stalled
             ? 'Start again'

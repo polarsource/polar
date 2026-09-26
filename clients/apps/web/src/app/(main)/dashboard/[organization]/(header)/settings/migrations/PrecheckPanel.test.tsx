@@ -1,18 +1,14 @@
 import { schemas } from '@polar-sh/client'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { ReactNode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PrecheckPanel } from './PrecheckPanel'
 
-const mutate = vi.fn()
+const precheck = { mutate: vi.fn(), isPending: false, isError: false }
 
 vi.mock('@/hooks/queries/merchantMigrations', async (importOriginal) => ({
   ...(await importOriginal()),
-  useRunMerchantMigrationPrecheck: () => ({
-    mutate,
-    isPending: false,
-    isError: false,
-  }),
+  useRunMerchantMigrationPrecheck: () => precheck,
 }))
 
 vi.mock('@polar-sh/orbit', () => ({
@@ -44,6 +40,11 @@ const migrationWith = (stalled: boolean) =>
   }) as unknown as schemas['MerchantMigration']
 
 describe('PrecheckPanel', () => {
+  beforeEach(() => {
+    precheck.mutate.mockClear()
+    precheck.isPending = false
+  })
+
   it('keeps the button disabled while the pre-check is making progress', () => {
     render(<PrecheckPanel migration={migrationWith(false)} />)
 
@@ -55,6 +56,14 @@ describe('PrecheckPanel', () => {
 
     expect(screen.getByText(/no progress for a while/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Start again' }))
-    expect(mutate).toHaveBeenCalledOnce()
+    expect(precheck.mutate).toHaveBeenCalledOnce()
+  })
+
+  it('stops offering a restart once one is on its way', () => {
+    precheck.isPending = true
+    render(<PrecheckPanel migration={migrationWith(true)} />)
+
+    expect(screen.queryByText(/no progress for a while/i)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Checking…' })).toBeDisabled()
   })
 })

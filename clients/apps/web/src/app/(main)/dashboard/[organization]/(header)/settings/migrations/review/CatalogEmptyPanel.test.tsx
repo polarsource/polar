@@ -59,4 +59,23 @@ describe('CatalogEmptyPanel', () => {
       screen.getByRole('button', { name: 'Refresh from Stripe' }),
     ).toBeEnabled()
   })
+
+  it('lets a stalled refresh be started again', () => {
+    render(
+      <CatalogEmptyPanel
+        kind="no_stripe_subscriptions"
+        rerunning
+        stalled
+        onRerunPrecheck={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Refreshing from Stripe' }),
+    ).toBeTruthy()
+    expect(screen.getByText(/no progress for a while/i)).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Refresh from Stripe' }),
+    ).toBeEnabled()
+  })
 })

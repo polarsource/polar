@@ -694,17 +694,12 @@ class StripeAdapter:
         )
 
     def _has_scheduled_changes(self, subscription: stripe_lib.Subscription) -> bool:
-        """A phase after the current one, or a schedule that cancels at its end.
-
-        An unexpanded schedule counts: we can't tell what it will do.
-        """
+        """An unexpanded schedule counts: we can't tell what it will do."""
         schedule = subscription.get("schedule")
         if not schedule:
             return False
         if isinstance(schedule, str):
             return True
-        if schedule.get("status") != "active":
-            return False
         if schedule.get("end_behavior") == "cancel":
             return True
         current_phase = schedule.get("current_phase")

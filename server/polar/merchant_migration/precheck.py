@@ -637,7 +637,8 @@ class PrecheckEngine:
                 code="subscription_scheduled_end",
                 message=(
                     "It's set to end on the source on "
-                    f"{subscription.cancel_at:%B %-d, %Y}. Polar would keep "
+                    f"{subscription.cancel_at:%B} {subscription.cancel_at.day}, "
+                    f"{subscription.cancel_at.year}. Polar would keep "
                     "renewing it past that date, so it stays on the source until "
                     "it ends."
                 ),

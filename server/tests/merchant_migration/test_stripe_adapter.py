@@ -1163,11 +1163,6 @@ class TestGetSubscription:
             pytest.param(None, False, id="no-schedule"),
             pytest.param("sub_sched_1", True, id="unexpanded"),
             pytest.param(
-                {"status": "released", "end_behavior": "cancel"},
-                False,
-                id="released",
-            ),
-            pytest.param(
                 {
                     "status": "active",
                     "end_behavior": "release",

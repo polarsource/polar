@@ -1086,6 +1086,14 @@ def _subscription_items(
         )
         note = _pick_note(
             Reason(
+                "subscription_tax_behavior_unspecified",
+                _TAX_BEHAVIOR_UNSPECIFIED_REASON,
+            )
+            if subscription.tax_behavior is None
+            and subscription.automatic_tax is True
+            and subscription.price_tax_behavior is None
+            else None,
+            Reason(
                 "customer_country_from_payment_method",
                 (
                     f"Billing country {country_fallback} came from a payment "
@@ -1099,14 +1107,6 @@ def _subscription_items(
             else None,
             Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
             if customer is not None and customer.tax_id_dropped
-            else None,
-            Reason(
-                "subscription_tax_behavior_unspecified",
-                _TAX_BEHAVIOR_UNSPECIFIED_REASON,
-            )
-            if subscription.tax_behavior is None
-            and subscription.automatic_tax is True
-            and subscription.price_tax_behavior is None
             else None,
             payment_method_reason(subscription.payment_method),
             Reason("subscription_trialing", _TRIALING_REASON)

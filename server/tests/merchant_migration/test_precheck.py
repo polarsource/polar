@@ -1335,6 +1335,17 @@ class TestClassifyCascade:
         if expected_code is not None:
             assert items[0].reason_level == PrecheckReasonLevel.action_required
 
+    def test_unspecified_price_tax_behavior_outranks_customer_notes(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(),
+            replace(build_customer(), tax_id_dropped=True),
+            replace(build_subscription(), automatic_tax=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].reason_code == "subscription_tax_behavior_unspecified"
+
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,
     ) -> None:

@@ -72,6 +72,7 @@ _SUBSCRIPTION_EXPAND = [
     "customer.invoice_settings.default_payment_method",
     "customer.default_source",
     "discounts",
+    "schedule",
 ]
 
 
@@ -532,6 +533,8 @@ class StripeAdapter:
             discount_started_at=discounts.started_at,
             discount_starts=discounts.starts,
             cancel_at_period_end=bool(subscription.cancel_at_period_end),
+            cancel_at=self._to_datetime(subscription.cancel_at),
+            has_scheduled_changes=self._has_scheduled_changes(subscription),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
             anchor_day=self._anchor_day(subscription),
@@ -689,6 +692,23 @@ class StripeAdapter:
         return bool(subscription.get("default_tax_rates")) or bool(
             first_item.get("tax_rates")
         )
+
+    def _has_scheduled_changes(self, subscription: stripe_lib.Subscription) -> bool:
+        """A schedule we can't read counts, unexpanded or missing a phase date:
+        we can't tell what it will do."""
+        schedule = subscription.get("schedule")
+        if not schedule:
+            return False
+        if isinstance(schedule, str):
+            return True
+        if schedule.get("end_behavior") == "cancel":
+            return True
+        current_phase = schedule.get("current_phase")
+        current_start = current_phase.get("start_date") if current_phase else None
+        starts = [phase.get("start_date") for phase in schedule.get("phases") or []]
+        if current_start is None or None in starts:
+            return True
+        return any(start > current_start for start in starts)
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

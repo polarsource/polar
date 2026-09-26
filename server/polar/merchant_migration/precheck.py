@@ -587,7 +587,7 @@ class PrecheckEngine:
                 ),
                 source_id=source_id,
             )
-        if subscription.quantity > 1:
+        if subscription.quantity != 1:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
                 code="unsupported_quantity",

@@ -1196,6 +1196,16 @@ class TestGetSubscription:
                 True,
                 id="a-later-phase",
             ),
+            pytest.param(
+                {
+                    "status": "active",
+                    "end_behavior": "release",
+                    "current_phase": {"start_date": 100, "end_date": 200},
+                    "phases": [{"end_date": 200}],
+                },
+                True,
+                id="a-phase-without-a-date",
+            ),
         ],
     )
     async def test_flags_schedules_that_change_it_later(

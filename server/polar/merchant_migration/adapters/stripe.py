@@ -694,7 +694,8 @@ class StripeAdapter:
         )
 
     def _has_scheduled_changes(self, subscription: stripe_lib.Subscription) -> bool:
-        """An unexpanded schedule counts: we can't tell what it will do."""
+        """A schedule we can't read counts, unexpanded or missing a phase date:
+        we can't tell what it will do."""
         schedule = subscription.get("schedule")
         if not schedule:
             return False
@@ -703,12 +704,11 @@ class StripeAdapter:
         if schedule.get("end_behavior") == "cancel":
             return True
         current_phase = schedule.get("current_phase")
-        if current_phase is None:
+        current_start = current_phase.get("start_date") if current_phase else None
+        starts = [phase.get("start_date") for phase in schedule.get("phases") or []]
+        if current_start is None or None in starts:
             return True
-        current_start = current_phase.get("start_date")
-        return any(
-            phase.get("start_date") > current_start for phase in schedule.get("phases")
-        )
+        return any(start > current_start for start in starts)
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

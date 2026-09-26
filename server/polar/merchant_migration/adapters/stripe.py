@@ -708,11 +708,11 @@ class StripeAdapter:
         if schedule.get("end_behavior") == "cancel":
             return True
         current_phase = schedule.get("current_phase")
-        current_end = current_phase.get("end_date") if current_phase else None
-        if current_end is None:
-            return current_phase is None
+        if current_phase is None:
+            return True
+        current_start = current_phase.get("start_date") or 0
         return any(
-            (phase.get("start_date") or 0) >= current_end
+            (phase.get("start_date") or 0) > current_start
             for phase in schedule.get("phases") or []
         )
 

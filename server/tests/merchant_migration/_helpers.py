@@ -198,6 +198,7 @@ def canonical_subscription(
     price_tax_behavior: TaxBehavior | None = None,
     has_tax_rates: bool = False,
     tax_behavior: TaxBehavior | None = None,
+    has_schedule: bool = False,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -226,6 +227,7 @@ def canonical_subscription(
         price_tax_behavior=price_tax_behavior,
         has_tax_rates=has_tax_rates,
         tax_behavior=tax_behavior,
+        has_schedule=has_schedule,
     )
 
 

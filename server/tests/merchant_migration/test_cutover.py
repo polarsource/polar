@@ -1227,6 +1227,11 @@ class TestSkips:
                 None,
                 id="manual-invoicing",
             ),
+            pytest.param(
+                {"has_schedule": True},
+                "subscription schedule",
+                id="schedule-attached-since-the-import",
+            ),
         ],
     )
     async def test_source_is_no_longer_handable(

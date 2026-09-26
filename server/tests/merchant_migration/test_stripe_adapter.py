@@ -1165,6 +1165,22 @@ class TestGetSubscription:
         assert subscription.price_source_id == "price_1"
         assert subscription.currency == "usd"
 
+    @pytest.mark.parametrize(
+        ("schedule", "expected"), [("sub_sched_1", True), (None, False)]
+    )
+    async def test_reads_an_attached_schedule(
+        self, mocker: MockerFixture, schedule: str | None, expected: bool
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        source = _stripe_subscription()
+        source["schedule"] = schedule
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(return_value=source)
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.has_schedule is expected
+
     async def test_default_currency_keeps_the_bare_price_id(
         self, mocker: MockerFixture
     ) -> None:

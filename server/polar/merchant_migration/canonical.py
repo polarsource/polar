@@ -184,7 +184,7 @@ class CanonicalSubscription:
             return self.tax_behavior
         if self.automatic_tax is True and self.price_tax_behavior is not None:
             return self.price_tax_behavior
-        if self.has_tax_rates and self.tax_rate_behavior is not None:
+        if self.tax_rate_behavior is not None:
             return self.tax_rate_behavior
         if self.has_tax_rates and self.price_tax_behavior is not None:
             return self.price_tax_behavior

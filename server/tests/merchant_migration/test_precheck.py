@@ -140,7 +140,6 @@ def build_subscription(
     discount_started_at: datetime | None = None,
     discount_starts: dict[str, datetime] | None = None,
     currency: str | None = "usd",
-    customer_balance: int | None = None,
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
         source_id=source_id,
@@ -160,7 +159,6 @@ def build_subscription(
         discount_started_at=discount_started_at,
         discount_starts=discount_starts or {},
         currency=currency,
-        customer_balance=customer_balance,
     )
 
 
@@ -1145,7 +1143,7 @@ class TestClassifyRecords:
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
             ),
             build_customer(source_id="cus_1", email="a@example.com"),
-            build_subscription(source_id="sub_1", customer_balance=balance),
+            replace(build_subscription(source_id="sub_1"), customer_balance=balance),
         ]
 
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")

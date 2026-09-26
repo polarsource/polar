@@ -98,6 +98,13 @@ def _cancel_at_period_end(subscription: stripe_lib.Subscription) -> bool:
     return bool(subscription.cancel_at_period_end)
 
 
+def _cancellation_feedback(subscription: stripe_lib.Subscription) -> str | None:
+    if not subscription.cancel_at_period_end:
+        return None
+    details = subscription.cancellation_details
+    return details.feedback if details is not None else None
+
+
 def _cancel_at_period_end_known(subscription: stripe_lib.Subscription) -> bool:
     return (
         subscription.status == "canceled"
@@ -696,6 +703,11 @@ class StripeAdapter:
             cancel_at_period_end_known=_cancel_at_period_end_known(subscription),
             cancel_at=self._to_datetime(subscription.cancel_at),
             has_scheduled_changes=self._has_scheduled_changes(subscription),
+            # For a pending end Stripe dates the request, not the end itself.
+            canceled_at=self._to_datetime(subscription.canceled_at)
+            if subscription.cancel_at_period_end
+            else None,
+            cancellation_reason=_cancellation_feedback(subscription),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
             latest_invoice_unpaid=with_latest_invoice

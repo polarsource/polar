@@ -1436,6 +1436,36 @@ class TestCancelAtPeriodEnd:
         assert subscription.canceled_at == requested_again_at
         assert subscription.customer_cancellation_reason is None
 
+    async def test_live_feedback_without_a_date_replaces_the_staged_reason(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        pending_record.canonical = serialize(
+            canonical_subscription(
+                cancel_at_period_end=True,
+                canceled_at=utc_now() - timedelta(days=12),
+                cancellation_reason="unused",
+            )
+        )
+        await save_fixture(pending_record)
+        adapter = _source(
+            cancel_at_period_end=True, cancellation_reason="too_expensive"
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert (
+            subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+
     async def test_keeps_when_and_why_on_a_paused_polar_subscription(
         self,
         mocker: MockerFixture,

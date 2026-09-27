@@ -196,7 +196,11 @@ def _scheduled_end(
     inherit the reason of one the customer took back."""
     if not _ends_at_period_end(source, staged):
         return None
-    pending = source if source.canceled_at is not None else staged
+    pending = (
+        source
+        if source.cancel_at_period_end and not source.stopped_for_migration
+        else staged
+    )
     reason = pending.cancellation_reason
     return _ScheduledEnd(
         canceled_at=pending.canceled_at or utc_now(),

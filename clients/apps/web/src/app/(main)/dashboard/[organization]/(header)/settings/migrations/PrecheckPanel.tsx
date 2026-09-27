@@ -47,7 +47,7 @@ export function PrecheckPanel({
         </Box>
       )}
 
-      {error && !running && (
+      {error && (!running || stalled) && (
         <Text variant="caption" color="danger">
           {error}
         </Text>

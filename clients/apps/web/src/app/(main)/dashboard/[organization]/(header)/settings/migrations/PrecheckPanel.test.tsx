@@ -43,6 +43,7 @@ describe('PrecheckPanel', () => {
   beforeEach(() => {
     precheck.mutate.mockClear()
     precheck.isPending = false
+    precheck.isError = false
   })
 
   it('keeps the button disabled while the pre-check is making progress', () => {
@@ -57,6 +58,14 @@ describe('PrecheckPanel', () => {
     expect(screen.getByText(/no progress for a while/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Start again' }))
     expect(precheck.mutate).toHaveBeenCalledOnce()
+  })
+
+  it('shows why a restart of a stalled pre-check failed', () => {
+    precheck.isError = true
+    render(<PrecheckPanel migration={migrationWith(true)} />)
+
+    expect(screen.getByText(/no progress for a while/i)).toBeTruthy()
+    expect(screen.getByText(/couldn't start the pre-check/i)).toBeTruthy()
   })
 
   it('stops offering a restart once one is on its way', () => {

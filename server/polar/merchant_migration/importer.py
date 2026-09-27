@@ -96,11 +96,12 @@ def _price_owners(
 ) -> dict[PriceKey, MerchantMigrationRecord]:
     """The row each price resolves to. Archiving a Stripe price stages it again
     on an `:archived` sibling row, while the row imported before keeps it.
-    Imported rows win, the oldest first, in the cutover lookup's order."""
+    Imported rows win, the oldest first, in the cutover lookup's order; a
+    skipped or failed row never takes a price from a pending one."""
     owners = {
         key: record
         for record in product_records
-        if record.status != MerchantMigrationRecordStatus.imported
+        if record.status == MerchantMigrationRecordStatus.pending
         for key in _price_keys(record)
     }
     imported: dict[PriceKey, MerchantMigrationRecord] = {}

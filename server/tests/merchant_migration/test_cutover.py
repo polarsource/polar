@@ -9,7 +9,7 @@ import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
 
-from polar.enums import TaxBehavior
+from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -640,6 +640,48 @@ class TestRun:
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
         assert _discounted_renewals(subscription, 3) == [True, True, False]
+
+    async def test_skips_a_coupon_end_no_month_count_lands_on(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Renewing every 2 days, a 3-month coupon from Jan 30 ends Apr 30 on
+        the source: Apr 29 is discounted, May 1 isn't. Only an end on Apr 29 or
+        30 would say that, and no Feb 29 or 30 exists to count two months from."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        product.recurring_interval = RecurringInterval.day
+        product.recurring_interval_count = 2
+        await save_fixture(product)
+        polar_discount = await _percentage_discount(
+            save_fixture,
+            organization,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+        )
+        await stage_discount_record(
+            save_fixture, migration, organization, target_id=polar_discount.id
+        )
+        fields: dict[str, Any] = {
+            "discount_source_ids": ["coupon_1"],
+            "discount_started_at": datetime(2026, 1, 30, tzinfo=UTC),
+            "current_period_start": datetime(2026, 4, 27, tzinfo=UTC),
+            "current_period_end": datetime(2026, 4, 29, tzinfo=UTC),
+        }
+        await _discounted_pending(save_fixture, pending_record, **fields)
+        adapter = _source(has_discount=True, **fields)
+
+        with freeze_time("2026-04-27T06:00:00Z", tick=True):
+            outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.skipped
+        assert "can't end this coupon" in (outcome.message or "")
+        _assert_left_alone(adapter, pending_record)
 
     async def test_skips_when_discount_was_never_imported(
         self,

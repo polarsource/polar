@@ -96,6 +96,10 @@ _DISCOUNT_MISSING_START = (
     "The source doesn't say when this coupon was applied, so Polar can't "
     "continue its remaining duration. It stays on the source."
 )
+_DISCOUNT_END_UNREPRESENTABLE = (
+    "Polar can't end this coupon on the same renewal the source does, so it "
+    "would discount a renewal the source charges in full. It stays on the source."
+)
 _NO_PAYMENT_METHOD = (
     "No copied payment method has landed on Polar for this customer. Unless "
     "they have a default one by the next renewal, it fails and goes to dunning."
@@ -149,13 +153,13 @@ class ImportedDiscount:
     applied_at: datetime | None = None
 
 
-def _discount_applied_at(
+def _imported_discount_at(
     discount: Discount,
     started_at: datetime | None,
     first_renewal: datetime | None,
     product: Product,
     anchor_day: int | None,
-) -> datetime | None:
+) -> ImportedDiscount:
     """The ``discount_applied_at`` that makes Polar discount the renewals the
     source still would.
 
@@ -165,9 +169,9 @@ def _discount_applied_at(
     ``start + N months``, wherever that start falls in the period.
     """
     if started_at is None or first_renewal is None:
-        return started_at
+        return ImportedDiscount(discount=discount, applied_at=started_at)
     if discount.duration == DiscountDuration.once:
-        return first_renewal
+        return ImportedDiscount(discount=discount, applied_at=first_renewal)
     months = discount.duration_in_months
     interval = product.recurring_interval
     if (
@@ -175,7 +179,7 @@ def _discount_applied_at(
         or months is None
         or interval is None
     ):
-        return started_at
+        return ImportedDiscount(discount=discount, applied_at=started_at)
 
     source_end = started_at + relativedelta(months=months)
     anchor = anchor_day or first_renewal.day
@@ -187,14 +191,17 @@ def _discount_applied_at(
             renewal, anchor, product.recurring_interval_count or 1
         )
     if last_discounted is None:
-        return started_at
+        return ImportedDiscount(discount=discount, applied_at=started_at)
 
     applied_at = last_discounted - relativedelta(months=months - 1)
     # Going back to a shorter month clamps the day, so counting the months forward
     # again can end before the renewal it has to keep.
     while discount.is_repetition_expired(applied_at, last_discounted):
         applied_at += timedelta(days=1)
-    return applied_at
+    # Renewals a day apart can fall in a gap no month count lands in.
+    if not discount.is_repetition_expired(applied_at, renewal):
+        return ImportedDiscount(skip=_DISCOUNT_END_UNREPRESENTABLE)
+    return ImportedDiscount(discount=discount, applied_at=applied_at)
 
 
 def _moved(message: str | None = None) -> CutoverOutcome:
@@ -713,14 +720,13 @@ class SubscriptionCutover:
         started_at = discount_started_at_for(source, kept)
         if discount.duration != DiscountDuration.forever and started_at is None:
             return ImportedDiscount(skip=_DISCOUNT_MISSING_START)
-        applied_at = _discount_applied_at(
+        return _imported_discount_at(
             discount,
             started_at,
             self._trial_end(source) or source.current_period_end,
             product,
             source.anchor_day,
         )
-        return ImportedDiscount(discount=discount, applied_at=applied_at)
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
         # Nothing is about to charge, so the handover window does not apply.

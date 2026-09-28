@@ -9,7 +9,6 @@ os.environ["PYTHONTZPATH"] = ""
 
 from fastapi.routing import iter_route_contexts
 
-from polar.api import router
 from polar.kit.versioning import (
     APIVersion,
     finalize_versioned_routes,
@@ -17,7 +16,6 @@ from polar.kit.versioning import (
 )
 from polar.openapi import get_openapi
 from polar.version import CURRENT_API_VERSION, VERSIONS
-from polar.webhook.webhooks import get_webhook_routes
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -29,6 +27,7 @@ if __name__ == "__main__":
         type=APIVersion.parse,
         default=CURRENT_API_VERSION,
     )
+    generate_parser.add_argument("--private", action="store_true")
     commands.add_parser("versions", help="List available API versions")
     parser.set_defaults(command="generate", version=CURRENT_API_VERSION)
 
@@ -39,6 +38,14 @@ if __name__ == "__main__":
 
     if arguments.version not in VERSIONS:
         parser.error(f"Unsupported API version: {arguments.version}")
+
+    if arguments.private:
+        os.environ["POLAR_ENV"] = "development"
+    else:
+        os.environ["POLAR_ENV"] = "testing"
+
+    from polar.api import router
+    from polar.webhook.webhooks import get_webhook_routes
 
     route_contexts = tuple(iter_route_contexts(router.routes))
     finalize_versioned_routes(route_contexts, VERSIONS)

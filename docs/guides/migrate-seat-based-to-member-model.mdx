@@ -285,10 +285,9 @@ if (event.type === 'benefit_grant.created') {
 
 <Warning>
 Do not branch on whether `member` is set to tell a seat grant from a direct
-purchase. A direct purchase carries the buyer's own member, so `member` is
-always set and the branch never fires. Read `grant.member.role` if you need to
-tell the buyer from a seat holder, or `grant.member.customer_id` if you need the
-billing customer.
+purchase: a direct purchase carries the buyer's own member, so presence tells you
+nothing. Read `grant.member.role` if you need to tell the buyer from a seat
+holder, or `grant.member.customer_id` if you need the billing customer.
 </Warning>
 
 **New member lifecycle events** are now available if you want to track when team members are added or removed:

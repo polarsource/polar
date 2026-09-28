@@ -27,9 +27,9 @@ export const DisputeStatusDisplayColor: Record<
 
 export type DisputeStatusFilter = schemas['DisputeStatus'] | 'any'
 
-export const isDisputeStatus = (
-  value: string,
-): value is schemas['DisputeStatus'] => value in DisputeStatusDisplayTitle
+export const disputeStatusValues = Object.keys(
+  DisputeStatusDisplayTitle,
+) as schemas['DisputeStatus'][]
 
 export const getDisputeDisplayStatus = (
   dispute: schemas['Dispute'],

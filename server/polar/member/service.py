@@ -700,6 +700,23 @@ class MemberService:
                     "Upgrade to a team customer to add more members."
                 )
 
+        if (
+            external_id is not None
+            and await repository.get_by_customer_id_and_external_id(
+                customer_id, external_id
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A member with this external ID already exists.",
+                        "input": external_id,
+                    }
+                ]
+            )
+
         existing_member = await repository.get_by_customer_and_email(
             customer, email=email
         )

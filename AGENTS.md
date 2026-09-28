@@ -265,9 +265,7 @@ needs a real Stripe sandbox later (`dev stripe`, see the `local-environment` ski
 any of it, none of it holds in other cloud containers): `./dev/cli/install` adds the `dev`
 alias; Node 24 is installed via nvm; `uv` is at `~/.local/bin/uv`. Source `~/.bashrc` (or start
 a login shell) so `nvm use 24` and the `dev` alias are active. Where the alias is absent, call
-`./dev/cli/dev` directly. The root `.nvmrc` pins Node 24 for the whole repo, but pnpm's
-`engine-strict` is off and the repo ships no `.npmrc`, so those pins are warnings — install,
-lint, typecheck, test and `next build` all pass on Node 22.
+`./dev/cli/dev` directly. The root `.nvmrc` pins Node 24 for the whole repo.
 
 **Docker caveats** (again Cursor Cloud VM specific). `/etc/docker/daemon.json` is pinned to
 `fuse-overlayfs` with `features.containerd-snapshotter: false` — required for Docker 29 in that

@@ -4,16 +4,14 @@ The official TypeScript client for the [Polar API](https://polar.sh/docs/api-ref
 
 ## Installation
 
-The SDK is currently available under the `next` pre-release tag.
-
 ```bash
-pnpm add @polar-sh/sdk@next
+pnpm add @polar-sh/sdk
 ```
 
 or, with `npm`:
 
 ```bash
-npm install @polar-sh/sdk@next
+npm install @polar-sh/sdk
 ```
 
 ## Quick Start

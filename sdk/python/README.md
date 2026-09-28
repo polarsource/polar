@@ -6,16 +6,16 @@ The official Python client for the [Polar API](https://polar.sh/docs/api-referen
 
 The SDK requires Python 3.11 or later.
 
-The SDK is currently available as a pre-release. To install it with `uv`:
+To install it with `uv`:
 
 ```bash
-uv add polar-sdk --prerelease allow
+uv add polar-sdk
 ```
 
 or, with `pip`:
 
 ```bash
-pip install --pre polar-sdk
+pip install polar-sdk
 ```
 
 ## Quick Start

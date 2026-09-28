@@ -1,7 +1,6 @@
 import datetime
 
 import dramatiq
-import pytest
 
 import polar.tasks  # noqa: F401 — imported so every actor is declared on the broker
 from polar.worker import CronTrigger, MaintenanceWindow
@@ -26,11 +25,15 @@ def test_maintenance_window_is_stable_and_spaced() -> None:
     )
 
 
-def test_maintenance_window_rejects_overflow() -> None:
-    declarations = ((str(index), MaintenanceWindow()) for index in range(60))
+def test_maintenance_window_shares_minutes_on_overflow() -> None:
+    declarations = [(f"{index:03}", MaintenanceWindow()) for index in range(120)]
 
-    with pytest.raises(ValueError, match="no free slots"):
-        resolve_cron_triggers(declarations)
+    resolved = resolve_cron_triggers(declarations)
+
+    minutes = [int(str(trigger.fields[6])) for trigger in resolved.values()]
+    assert len(minutes) == 120
+    assert all(str(trigger.fields[5]) == "4" for trigger in resolved.values())
+    assert sorted(set(minutes)) == list(range(60))
 
 
 def test_maintenance_window_spacing_changes_with_job_count() -> None:
@@ -47,7 +50,7 @@ def test_maintenance_window_spacing_changes_with_job_count() -> None:
     ]
 
 
-def test_registered_triggers_run_in_utc_and_maintenance_jobs_have_distinct_slots() -> (
+def test_registered_triggers_run_in_utc_and_maintenance_jobs_follow_the_window() -> (
     None
 ):
     declarations = {

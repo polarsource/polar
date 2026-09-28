@@ -25,16 +25,12 @@ not by a wide margin, but consistently the trough.
 
 ## Decision
 
-Daily scheduled tasks run in a **maintenance window between 04:00 and 05:00 UTC**, staggered
-one job per minute. Declare them with `MaintenanceWindow()` from `polar.worker`. At scheduler
+Daily scheduled tasks run in a **maintenance window between 04:00 and 05:00 UTC**, spread
+evenly. Declare them with `MaintenanceWindow()` from `polar.worker`. At scheduler
 startup, the jobs are sorted by actor name and spread evenly through the interior minutes of
 the window. For N jobs, job i (starting at 1) runs at minute `floor(60 × i / (N + 1))` after
-04:00 UTC. Registration order does not affect the schedule. The scheduler rejects a sixtieth
-maintenance job rather than assigning two to the same minute.
-
-When you add a daily task, add a row for it to
-[Scheduled jobs](/engineering/backend-development/scheduled-jobs). The table records the
-resolved schedule, rather than defining it.
+04:00 UTC. Registration order does not affect the schedule. Up to 59 jobs, each gets its own minute;
+beyond that, some minutes run more than one job.
 
 This covers *daily* jobs only. Hourly and sub-hourly tasks keep their own schedules: they are
 already spread across the hour, and pinning them to the window would defeat the point of
@@ -44,11 +40,9 @@ running them frequently.
 
 - The database sees daily maintenance jobs spread over an hour instead of many firing at
   midnight, during the hour when it has the most headroom to absorb them.
-- Every daily job has a predictable minute, so an incident at 04:3x can be traced to a specific
-  task from the scheduled jobs table.
-- Slots are a finite resource: the hour has 59 interior minutes. As jobs are added, the gap
-  between them shrinks. A sixtieth job requires an explicit decision about window bounds or
-  resolution.
+- As jobs are added, the gap between them shrinks. Past 59 jobs, some minutes run two jobs
+  at once rather than the scheduler refusing to start. That still beats everything at midnight,
+  but if it happens, revisit the window bounds.
 - Adding or removing a maintenance actor changes the spacing and can shift any job. Renaming
   one can change the order. A deployment between a job's old and new slots may run it twice or
   skip it that day. Deploy after 05:00 UTC when changing the set of jobs. Today's jobs tolerate
@@ -79,14 +73,12 @@ running them frequently.
 - **Derive the slot from a hash of the actor name**: stable for unrelated additions, but hashes
   can collide and would need a collision-resolution policy to preserve spacing.
 - **Assign slots manually**: keeps existing times stable when a new job is added, but requires
-  each new declaration to coordinate with a separate registry.
+  each new declaration to coordinate with every other one.
 - **One "daily maintenance" task calling each job in sequence**: one slot and no overlap, but it
   couples unrelated modules and one failure stalls everything behind it.
 
 ## References
 
-- [Scheduled jobs](/engineering/backend-development/scheduled-jobs) — the registry of every
-  cron task and when it runs.
 - `server/polar/worker/scheduler.py` (APScheduler wiring),
   `server/polar/worker/_broker.py` (`SchedulerMiddleware`).
 - Example declarations: `server/polar/auth/tasks.py`, `server/polar/organization/tasks.py`.

@@ -29,9 +29,6 @@ def resolve_cron_triggers(
         for name, trigger in declarations.items()
         if isinstance(trigger, MaintenanceWindow)
     )
-    if len(maintenance_jobs) >= 60:
-        raise ValueError("The daily maintenance window has no free slots")
-
     resolved = {
         name: trigger
         for name, trigger in declarations.items()

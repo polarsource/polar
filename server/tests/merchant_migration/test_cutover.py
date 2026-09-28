@@ -984,9 +984,15 @@ class TestRun:
         stop = adapter.stop_source_subscription
         unwritten_at_stop: list[object] = []
 
-        async def stop_and_check(source_id: str, *, reference: str) -> None:
+        async def stop_and_check(
+            source_id: str, *, reference: str, cancel_at_period_end: bool = False
+        ) -> None:
             unwritten_at_stop.extend([*session.new, *session.dirty])
-            await stop(source_id, reference=reference)
+            await stop(
+                source_id,
+                reference=reference,
+                cancel_at_period_end=cancel_at_period_end,
+            )
 
         mocker.patch.object(
             adapter, "stop_source_subscription", side_effect=stop_and_check
@@ -2107,6 +2113,7 @@ class TestFailures:
             "get_subscription",
             side_effect=[
                 canonical_subscription(),
+                canonical_subscription(),
                 canonical_subscription(stopped_for_migration=True),
             ],
         )
@@ -2135,6 +2142,7 @@ class TestFailures:
             adapter,
             "get_subscription",
             side_effect=[
+                canonical_subscription(),
                 canonical_subscription(),
                 stripe_lib.APIConnectionError("Stripe is down"),
             ],

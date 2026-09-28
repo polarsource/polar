@@ -103,7 +103,7 @@ locals {
     organization_id  = var.polar_organization_id
     free_product_id  = var.polar_free_product_id
     scale_product_id = var.polar_scale_product_id
-    api_url          = "https://sandbox-api.polar.sh"
+    api_url          = "http://127.0.0.1:10000"
   }
 
   tinybird_config = {

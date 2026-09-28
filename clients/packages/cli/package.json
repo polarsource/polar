@@ -20,7 +20,8 @@
     "build:binary": "bun build ./src/cli.ts --compile --outfile polar",
     "build:binary:darwin-arm64": "bun build ./src/cli.ts --compile --target=bun-darwin-arm64 --outfile polar",
     "build:binary:darwin-x64": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile polar",
-    "build:binary:linux-x64": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile polar"
+    "build:binary:linux-x64": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile polar",
+    "build:binary:windows-x64": "bun build ./src/cli.ts --compile --target=bun-windows-x64 --outfile polar"
   },
   "files": [
     "bin",

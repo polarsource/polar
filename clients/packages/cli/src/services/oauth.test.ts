@@ -116,7 +116,7 @@ const previous = session('old', { expiresAt: 0 })
 const run = <A, E>(effect: Effect.Effect<A, E, never>) =>
   Effect.runPromise(effect)
 
-test('exchange converts seconds to milliseconds and preserves omitted refresh token/scopes', async () => {
+test('exchange converts seconds to milliseconds and preserves an omitted refresh token', async () => {
   respond(() => Response.json({ access_token: 'new', expires_in: 3600 }))
   const before = Date.now()
   const updated = await run(
@@ -129,7 +129,6 @@ test('exchange converts seconds to milliseconds and preserves omitted refresh to
   expect(updated.expiresAt).toBeGreaterThanOrEqual(before + 3600_000)
   expect(updated.expiresAt).toBeLessThanOrEqual(Date.now() + 3600_000)
   expect(Redacted.value(updated.refreshToken!)).toBe('refresh')
-  expect(updated.scopes).toEqual(previous.scopes)
   expect(api.urls()).toEqual([tokenUrls.sandbox])
 })
 
@@ -148,7 +147,7 @@ test('exchange retains rotated credentials and selects production explicitly', a
     ),
   )
   expect(Redacted.value(updated.refreshToken!)).toBe('rotated')
-  expect(updated.scopes).toEqual(['organizations:read', 'webhooks:read'])
+  expect(updated.scopes).toEqual([])
   expect(api.urls()).toEqual([tokenUrls.production])
 })
 

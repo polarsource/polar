@@ -70,6 +70,48 @@ describe('Credentials', () => {
     ).resolves.toBeUndefined()
   })
 
+  test('reads sessions saved by versions that stored scopes', async () => {
+    keyring.passwords.set(
+      'polar-cli:sandbox',
+      JSON.stringify({
+        version: 1,
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        expiresAt: 1_700_000_000_000,
+        scopes: ['organizations:read', 'webhooks:read'],
+      }),
+    )
+
+    const stored = await run((credentials) => credentials.read('sandbox'))
+    expect(Redacted.value(stored!.accessToken)).toBe('access')
+    expect(Redacted.value(stored!.refreshToken!)).toBe('refresh')
+    expect(stored?.expiresAt).toBe(1_700_000_000_000)
+    expect(stored?.scopes).toEqual(['organizations:read', 'webhooks:read'])
+  })
+
+  test('saves sessions older versions can still read', async () => {
+    await run((credentials) =>
+      credentials.write('sandbox', { ...session, scopes: [] }),
+    )
+
+    const saved = JSON.parse(keyring.passwords.get('polar-cli:sandbox')!)
+    expect(saved).toHaveProperty('scopes', [])
+  })
+
+  test('saves sessions small enough for Windows Credential Manager', async () => {
+    await run((credentials) =>
+      credentials.write('sandbox', {
+        ...session,
+        scopes: [],
+        accessToken: Redacted.make(`polar_at_u_${'x'.repeat(64)}`),
+        refreshToken: Redacted.make(`polar_rt_u_${'x'.repeat(64)}`),
+      }),
+    )
+
+    const saved = keyring.passwords.get('polar-cli:sandbox')!
+    expect(saved.length * 2).toBeLessThan(2560)
+  })
+
   test('reports whether a session was deleted', async () => {
     await run((credentials) => credentials.write('sandbox', session))
 

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { Console, Data, Effect, FileSystem } from 'effect'
 import { Command } from 'effect/unstable/cli'
@@ -16,11 +17,55 @@ export class UpdateError extends Data.TaggedError('UpdateError')<{
   cause?: unknown
 }> {}
 
-export const replaceBinary = (
+export const retiredBinaryPath = (binaryPath: string) => `${binaryPath}.old`
+
+export const removeRetiredBinary = (
+  binaryPath: string = process.execPath,
+  platform: NodeJS.Platform = process.platform,
+) => {
+  if (platform !== 'win32') return
+  try {
+    rmSync(retiredBinaryPath(binaryPath), { force: true })
+  } catch {
+    return
+  }
+}
+
+const replaceRunningWindowsBinary = (
   newBinaryPath: string,
   binaryPath: string,
 ): Effect.Effect<void, UpdateError, FileSystem.FileSystem> =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const retired = retiredBinaryPath(binaryPath)
+    yield* fs.remove(retired).pipe(Effect.ignore)
+    yield* fs.rename(binaryPath, retired)
+    yield* fs
+      .copyFile(newBinaryPath, binaryPath)
+      .pipe(
+        Effect.tapError(() =>
+          fs.rename(retired, binaryPath).pipe(Effect.ignore),
+        ),
+      )
+  }).pipe(
+    Effect.mapError(
+      (cause) =>
+        new UpdateError({
+          message: `Could not replace ${binaryPath}. Close other running polar processes, or run the terminal as administrator, and try again.`,
+          cause,
+        }),
+    ),
+  )
+
+export const replaceBinary = (
+  newBinaryPath: string,
+  binaryPath: string,
+  platform: NodeJS.Platform = process.platform,
+): Effect.Effect<void, UpdateError, FileSystem.FileSystem> =>
+  Effect.gen(function* () {
+    if (platform === 'win32') {
+      return yield* replaceRunningWindowsBinary(newBinaryPath, binaryPath)
+    }
     const fs = yield* FileSystem.FileSystem
     yield* fs
       .chmod(newBinaryPath, 0o755)
@@ -83,6 +128,9 @@ function detectPlatform(): { os: string; arch: string } {
     case 'linux':
       os = 'linux'
       break
+    case 'win32':
+      os = 'windows'
+      break
     default:
       throw new Error(`Unsupported OS: ${platform}`)
   }
@@ -103,6 +151,10 @@ function detectPlatform(): { os: string; arch: string } {
     throw new Error('Linux arm64 is not yet supported')
   }
 
+  if (os === 'windows' && normalizedArch === 'arm64') {
+    throw new Error('Windows arm64 is not yet supported')
+  }
+
   return { os, arch: normalizedArch }
 }
 
@@ -111,15 +163,21 @@ export function getReleaseArchiveName(platform: {
   arch: string
 }): string {
   const baseName = `polar-${platform.os}-${platform.arch}`
-  return platform.os === 'darwin' ? `${baseName}.zip` : `${baseName}.tar.gz`
+  return platform.os === 'linux' ? `${baseName}.tar.gz` : `${baseName}.zip`
 }
+
+export const binaryNameFor = (os: string) =>
+  os === 'windows' ? 'polar.exe' : 'polar'
 
 export function getArchiveExtractionCommand(
   archivePath: string,
   destinationDir: string,
+  platform: NodeJS.Platform = process.platform,
 ): string[] {
   if (archivePath.endsWith('.zip')) {
-    return ['ditto', '-x', '-k', archivePath, destinationDir]
+    return platform === 'win32'
+      ? ['tar', '-xf', archivePath, '-C', destinationDir]
+      : ['ditto', '-x', '-k', archivePath, destinationDir]
   }
 
   if (archivePath.endsWith('.tar.gz')) {
@@ -258,7 +316,7 @@ export const downloadAndUpdate = (
 
         yield* Console.log(ui.step('Replacing binary...'))
 
-        yield* replaceBinary(join(tempDir, 'polar'), binaryPath)
+        yield* replaceBinary(join(tempDir, binaryNameFor(os)), binaryPath)
 
         yield* Console.log(ui.blank)
         yield* Console.log(

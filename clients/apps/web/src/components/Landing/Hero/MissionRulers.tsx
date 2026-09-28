@@ -74,6 +74,7 @@ const Ruler = ({
 
     let width = 0
     let pillWidth = 0
+    let measuredLength = 0
     let dpr = 1
     const labels = new Map<string, HTMLCanvasElement>()
 
@@ -110,6 +111,7 @@ const Ruler = ({
       ctx.strokeStyle = stroke
       ctx.lineWidth = 1
       pillWidth = ctx.measureText(format(999)).width + 16
+      measuredLength = 0
     }
     resize()
     const observer = new ResizeObserver(resize)
@@ -125,6 +127,11 @@ const Ruler = ({
       const spacing = width < 640 ? 56 : 72
       const pointerX = width * pointer
       const xAt = (v: number) => pointerX + ((v - value) / unit) * spacing
+      const label = format(value)
+      if (label.length > measuredLength) {
+        measuredLength = label.length
+        pillWidth = Math.max(pillWidth, ctx.measureText(label).width + 16)
+      }
       const clearance = pillWidth / 2
 
       ctx.clearRect(0, 0, width, HEIGHT)
@@ -168,7 +175,7 @@ const Ruler = ({
       ctx.roundRect(pointerX - clearance, labelY - 11, pillWidth, 22, 11)
       ctx.fill()
       ctx.globalCompositeOperation = 'destination-out'
-      ctx.fillText(format(value), pointerX, labelY)
+      ctx.fillText(label, pointerX, labelY)
       ctx.globalCompositeOperation = 'source-over'
     }
 

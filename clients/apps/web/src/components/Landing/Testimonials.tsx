@@ -85,8 +85,15 @@ export const Testimonials = () => {
   const [active, setActive] = useState(0)
   const progressRefs = useRef<(HTMLElement | null)[]>([])
   const tweenRef = useRef<gsap.core.Tween | null>(null)
-  const hoveredRef = useRef(false)
+  const pauseRef = useRef({ hovered: false, focused: false })
   const testimonial = TESTIMONIALS[active]
+
+  const setPaused = (reason: 'hovered' | 'focused', paused: boolean) => {
+    pauseRef.current[reason] = paused
+    const { hovered, focused } = pauseRef.current
+    if (hovered || focused) tweenRef.current?.pause()
+    else tweenRef.current?.resume()
+  }
 
   useEffect(() => {
     const bar = progressRefs.current[active]
@@ -102,7 +109,7 @@ export const Testimonials = () => {
           setActive((current) => (current + 1) % TESTIMONIALS.length),
       },
     )
-    if (hoveredRef.current) tween.pause()
+    if (pauseRef.current.hovered || pauseRef.current.focused) tween.pause()
     tweenRef.current = tween
     return () => {
       tween.kill()
@@ -127,13 +134,13 @@ export const Testimonials = () => {
           paddingVertical={{ base: '3xl', md: '5xl' }}
           paddingHorizontal={{ base: 'xl', md: '4xl' }}
           backgroundColor="background-secondary"
-          onMouseEnter={() => {
-            hoveredRef.current = true
-            tweenRef.current?.pause()
-          }}
-          onMouseLeave={() => {
-            hoveredRef.current = false
-            tweenRef.current?.resume()
+          onMouseEnter={() => setPaused('hovered', true)}
+          onMouseLeave={() => setPaused('hovered', false)}
+          onFocus={() => setPaused('focused', true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+              setPaused('focused', false)
+            }
           }}
         >
           <Box width="100%" maxWidth="48rem" minHeight={{ md: '18rem' }}>

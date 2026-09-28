@@ -156,7 +156,9 @@ export default function CompanyPage() {
         >
           {investors.map((investor) => (
             <Box key={investor.name} flexDirection="column">
-              <Text variant="heading-xxs">{investor.name}</Text>
+              <Text variant="heading-xxs" as="span">
+                {investor.name}
+              </Text>
               <Text variant="heading-xxs" as="span" color="muted">
                 {investor.company}
               </Text>

@@ -16,7 +16,7 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    title: 'Usage billing',
+    title: 'Usage Billing',
     desc: 'Meter tokens, API calls, compute and storage down to the event.',
     href: '/features/usage-billing',
     Graphic: VennCluster,
@@ -33,12 +33,6 @@ const FEATURES: Feature[] = [
     href: '/features/seats',
     Graphic: LinkedRings,
   },
-  {
-    title: 'Credits',
-    desc: 'Prepaid balances that drain as usage flows.',
-    href: '/features/credits',
-    Graphic: CreditArc,
-  },
 ]
 
 export const FeatureCards = () => (
@@ -46,7 +40,7 @@ export const FeatureCards = () => (
     templateColumns={{
       base: '1fr',
       md: 'repeat(2, 1fr)',
-      xl: 'repeat(4, 1fr)',
+      xl: 'repeat(3, 1fr)',
     }}
     gap="l"
   >

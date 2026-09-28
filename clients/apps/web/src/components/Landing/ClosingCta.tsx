@@ -18,7 +18,7 @@ export const ClosingCta = () => (
     borderStyle="solid"
     borderColor="border-primary"
   >
-    <Box display="block" width="100%" maxWidth="50%">
+    <Box display="block" width="100%" maxWidth="70%">
       <TextRings />
     </Box>
     <Box

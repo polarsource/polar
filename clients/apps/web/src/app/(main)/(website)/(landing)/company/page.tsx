@@ -30,30 +30,17 @@ export default function CompanyPage() {
           templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
           gap={{ base: '2xl', lg: 'l' }}
         >
-          <Box flexDirection="column" rowGap="s">
-            <Text variant="heading-xl" as="h1" wrap="balance">
-              Small team, big ambitions
-            </Text>
-            <Text variant="heading-xl" as="p" color="muted" wrap="balance">
-              Rewriting billing for the AI era
-            </Text>
-          </Box>
-        </Grid>
-        <Grid
-          templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-          gap={{ base: '2xl', lg: 'l' }}
-        >
           <Box
             flexDirection="column"
             justifyContent="end"
             alignItems="start"
-            rowGap="3xl"
+            rowGap="2xl"
           >
             <Box display="block" maxWidth="32rem">
-              <Text variant="heading-m" wrap="pretty">
+              <Text variant="heading-s" wrap="pretty">
                 A small, senior team working remotely across the world.
               </Text>
-              <Text variant="heading-m" color="muted" wrap="pretty">
+              <Text variant="heading-s" color="muted" wrap="pretty">
                 Building the finance layer for the next generation of AI
                 products.
               </Text>
@@ -83,7 +70,7 @@ export default function CompanyPage() {
               {MISSION.map((paragraph) => (
                 <Text
                   key={paragraph}
-                  variant="heading-s"
+                  variant="heading-xs"
                   as="p"
                   color="muted"
                   wrap="pretty"
@@ -169,10 +156,8 @@ export default function CompanyPage() {
         >
           {investors.map((investor) => (
             <Box key={investor.name} flexDirection="column">
-              <Text variant="heading-xs" as="span">
-                {investor.name}
-              </Text>
-              <Text variant="heading-xs" as="span" color="muted">
+              <Text variant="heading-xxs">{investor.name}</Text>
+              <Text variant="heading-xxs" as="span" color="muted">
                 {investor.company}
               </Text>
             </Box>

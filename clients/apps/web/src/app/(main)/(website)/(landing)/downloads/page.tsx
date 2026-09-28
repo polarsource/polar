@@ -81,7 +81,7 @@ const DownloadCard = ({ title, description, href, icon }: Download) => (
       flexDirection="column"
       justifyContent="between"
       rowGap="4xl"
-      padding={{ base: 'xl', md: '3xl' }}
+      padding={{ base: 'xl', md: '2xl' }}
       backgroundColor={{
         base: 'background-secondary',
         hover: 'background-card',
@@ -91,10 +91,10 @@ const DownloadCard = ({ title, description, href, icon }: Download) => (
     >
       <Box>{icon}</Box>
       <Box flexDirection="column" rowGap="s">
-        <Text variant="heading-xs" as="h3">
+        <Text variant="heading-xxs" as="h3">
           {title}
         </Text>
-        <Text variant="heading-xxs" as="p" color="muted" wrap="pretty">
+        <Text variant="body" as="p" color="muted" wrap="pretty">
           {description}
         </Text>
       </Box>
@@ -130,11 +130,11 @@ export default function Downloads() {
           templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
           gap={{ base: '2xl', lg: 'l' }}
         >
-          <Box flexDirection="column" rowGap="m">
-            <Text variant="heading-xl" as="h1" wrap="balance">
+          <Box flexDirection="column">
+            <Text variant="heading-s" as="h1" wrap="balance">
               Polar in your pocket
             </Text>
-            <Text variant="heading-xl" as="p" color="muted" wrap="balance">
+            <Text variant="heading-s" as="p" color="muted" wrap="balance">
               Apps and plugins for every platform
             </Text>
           </Box>

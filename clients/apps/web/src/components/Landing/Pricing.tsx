@@ -64,7 +64,6 @@ export const Pricing = () => (
       name="Pricing"
       title="Pricing that scales with you"
       subtitle="Start free, upgrade as you grow"
-      description="No hidden fees. Enterprise needs? Let's talk."
       cta={
         <>
           <GetStartedButton size="default" />
@@ -96,10 +95,10 @@ const TierCard = ({ tier }: { tier: Tier }) => (
     justifyContent="between"
     backgroundColor="background-secondary"
   >
-    <Box flexDirection="column" rowGap="xl" padding="2xl">
+    <Box flexDirection="column" rowGap="xl" padding="xl">
       <Box flexDirection="column" rowGap="xl">
-        <Box flexDirection="column" rowGap="m">
-          <Text variant="heading-s" as="h3">
+        <Box flexDirection="column" rowGap="s">
+          <Text variant="heading-xs" as="h3">
             {tier.name}
           </Text>
           <Box display="block">

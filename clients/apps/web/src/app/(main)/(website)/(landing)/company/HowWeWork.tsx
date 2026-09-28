@@ -4,7 +4,7 @@ import { Box } from '@polar-sh/orbit/Box'
 const PRINCIPLES = [
   {
     title: 'Own the outcome',
-    description: 'Take problems end to end with high ownership and autonomy.',
+    description: 'Take problems end to end with high ownership & autonomy.',
   },
   {
     title: 'Build in the open',
@@ -41,15 +41,15 @@ export const HowWeWork = () => (
         borderColor="border-primary"
       >
         <Box flex={1} alignItems="baseline" columnGap="l">
-          <Text as="span" variant="heading-s" color="muted" tabularNums>
+          <Text as="span" variant="heading-xs" color="muted" tabularNums>
             {String(index + 1).padStart(2, '0')}
           </Text>
-          <Text variant="heading-s" as="h3">
+          <Text variant="heading-xs" as="h3">
             {principle.title}
           </Text>
         </Box>
         <Box flex={1}>
-          <Text variant="heading-s" color="muted">
+          <Text variant="heading-xs" color="muted">
             {principle.description}
           </Text>
         </Box>

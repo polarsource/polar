@@ -9,7 +9,7 @@ interface ChapterMarkerProps {
 
 const ChapterMarker = ({ name }: ChapterMarkerProps) => (
   <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
-    <Text variant="heading-l">{name}</Text>
+    <Text variant="heading-s">{name}</Text>
   </Box>
 )
 
@@ -20,10 +20,10 @@ interface ChapterHeadlineProps {
 
 export const ChapterHeadline = ({ title, subtitle }: ChapterHeadlineProps) => (
   <Box flexDirection="column">
-    <Text variant="heading-l" as="h2" wrap="balance">
+    <Text variant="heading-s" as="h2" wrap="balance">
       {title}
     </Text>
-    <Text variant="heading-l" as="p" color="muted" wrap="balance">
+    <Text variant="heading-s" as="p" color="muted" wrap="balance">
       {subtitle}
     </Text>
   </Box>
@@ -81,7 +81,7 @@ export const Chapter = ({
         <ChapterHeadline title={title} subtitle={subtitle} />
         {description ? (
           <Box display="block" width="100%">
-            <Text variant="heading-s" color="muted" wrap="pretty">
+            <Text variant="heading-xs" color="muted" wrap="pretty">
               {description}
             </Text>
           </Box>

@@ -81,7 +81,7 @@ export const NavLink = ({
         transitionProperty="colors"
         transitionDuration="fast"
       >
-        <Text variant="heading-xxs" color="inherit">
+        <Text variant="body" color="inherit">
           {children}
         </Text>
       </Box>

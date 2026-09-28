@@ -1,5 +1,6 @@
 'use client'
 
+import { StaticImage } from '@/components/Image/StaticImage'
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
@@ -196,11 +197,20 @@ export const Pipeline = () => {
       </Box>
       <Box
         display={{ base: 'none', lg: 'flex' }}
+        position="relative"
         alignItems="center"
         justifyContent="center"
+        overflow="hidden"
+        paddingHorizontal="2xl"
         backgroundColor="background-secondary"
       >
-        <Box display="block" maxWidth="32rem" padding="3xl">
+        <Box
+          display="block"
+          position="relative"
+          maxWidth="32rem"
+          padding="3xl"
+          boxShadow="l"
+        >
           <Text variant="heading-xs" wrap="pretty">
             Your customer consumes usage.
             <br />

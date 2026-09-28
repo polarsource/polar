@@ -2,6 +2,7 @@ import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import type { ComponentType } from 'react'
 import { Chapter } from '../Chapter'
+import { MeterStream } from '../MeterStream'
 import { Compass } from '../graphics/Compass'
 import { GaugeSweep } from '../graphics/GaugeSweep'
 import { RadialSpinner } from '../graphics/RadialSpinner'
@@ -25,11 +26,6 @@ const STEPS: Step[] = [
     Graphic: GaugeSweep,
   },
   {
-    title: 'Calculate the charge',
-    desc: 'Meters turn into priced units. Per token, per seat, tiered or hybrid. However you wish to price.',
-    Graphic: Compass,
-  },
-  {
     title: 'Bill it automatically',
     desc: 'Usage lands on the invoice and settles at the end of every cycle, without any manual reconciliation.',
     Graphic: SteppedRadial,
@@ -39,43 +35,46 @@ const STEPS: Step[] = [
 export const Meter = () => (
   <Chapter
     index="01"
-    name="Meter everything"
+    name="Meter anything"
     title="Every token becomes revenue"
     subtitle="the moment your model streams it"
     description="Tokens, agent runs and GPU seconds flow through live meters and land on the invoice, priced however you sell."
   >
-    <Grid
-      templateColumns={{
-        base: '1fr',
-        md: 'repeat(2, 1fr)',
-        xl: 'repeat(4, 1fr)',
-      }}
-      gap="l"
-    >
-      {STEPS.map(({ title, desc, Graphic }) => (
-        <Box
-          key={title}
-          height="100%"
-          flexDirection="column"
-          justifyContent="between"
-          rowGap="3xl"
-          padding={{ base: 'xl', md: '3xl' }}
-          backgroundColor="background-secondary"
-        >
-          <Box display="block" aspectRatio="1 / 1">
-            <Graphic />
-          </Box>
-          <Box flexDirection="column" rowGap="l">
-            <Text variant="heading-xs" as="h3">
-              {title}
-            </Text>
+    <Box flexDirection="column" rowGap="4xl">
+      <MeterStream />
+      <Grid
+        templateColumns={{
+          base: '1fr',
+          md: 'repeat(2, 1fr)',
+          xl: 'repeat(3, 1fr)',
+        }}
+        gap="l"
+      >
+        {STEPS.map(({ title, desc, Graphic }) => (
+          <Box
+            key={title}
+            height="100%"
+            flexDirection="column"
+            justifyContent="between"
+            rowGap="3xl"
+            padding={{ base: 'xl', md: '3xl' }}
+            backgroundColor="background-secondary"
+          >
+            <Box display="block" aspectRatio="1 / 1">
+              <Graphic />
+            </Box>
+            <Box flexDirection="column" rowGap="l">
+              <Text variant="heading-xs" as="h3">
+                {title}
+              </Text>
 
-            <Text variant="heading-xxs" color="muted" wrap="pretty">
-              {desc}
-            </Text>
+              <Text variant="heading-xxs" color="muted" wrap="pretty">
+                {desc}
+              </Text>
+            </Box>
           </Box>
-        </Box>
-      ))}
-    </Grid>
+        ))}
+      </Grid>
+    </Box>
   </Chapter>
 )

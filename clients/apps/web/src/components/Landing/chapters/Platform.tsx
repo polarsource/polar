@@ -1,63 +1,14 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Chapter } from '../Chapter'
-
-const CheckoutVignette = () => (
-  <Box
-    flexDirection="column"
-    rowGap="l"
-    backgroundColor="background-card"
-    padding="xl"
-    width="100%"
-    maxWidth="19rem"
-  >
-    <Box justifyContent="between" alignItems="baseline" columnGap="xl">
-      <Text variant="body">Pro plan</Text>
-      <Text variant="body" color="muted">
-        $20/mo
-      </Text>
-    </Box>
-    <Box
-      justifyContent="center"
-      paddingVertical="s"
-      borderRadius="full"
-      backgroundColor="background-inverse"
-    >
-      <Text variant="body" color="inverse">
-        Pay $20
-      </Text>
-    </Box>
-  </Box>
-)
-
-const MeterVignette = () => (
-  <Box
-    flexDirection="column"
-    rowGap="m"
-    backgroundColor="background-card"
-    padding="xl"
-    width="100%"
-    maxWidth="19rem"
-  >
-    <Box justifyContent="between" alignItems="baseline" columnGap="l">
-      <Text variant="body" monospace>
-        gpt-4o
-      </Text>
-      <Text variant="body" color="muted" tabularNums>
-        1.2M tokens
-      </Text>
-    </Box>
-    <Box
-      display="block"
-      height="0.2rem"
-      backgroundColor="background-secondary"
-      overflow="hidden"
-    >
-      <Box height="100%" width="72%" backgroundColor="background-inverse" />
-    </Box>
-  </Box>
-)
+import {
+  CheckoutVignette,
+  MeterVignette,
+  PayoutVignette,
+} from './PlatformVignettes'
 
 const INSIGHT_ROWS = [
   { name: 'Jane Doe', tokens: '4.1M tokens', margin: '+86%', negative: false },
@@ -70,7 +21,14 @@ const INSIGHT_ROWS = [
 ]
 
 const MarginVignette = () => (
-  <Box flexDirection="column" rowGap="s" width="100%" maxWidth="19rem">
+  <Box
+    flexDirection="column"
+    rowGap="s"
+    width="100%"
+    maxWidth="19rem"
+    padding="s"
+    backgroundColor="background-secondary"
+  >
     <Box justifyContent="between" alignItems="baseline" paddingHorizontal="xl">
       <Text variant="caption" color="muted">
         Customer
@@ -103,30 +61,12 @@ const MarginVignette = () => (
   </Box>
 )
 
-const PayoutVignette = () => (
-  <Box
-    flexDirection="column"
-    rowGap="xs"
-    backgroundColor="background-card"
-    padding="xl"
-    width="100%"
-    maxWidth="19rem"
-  >
-    <Box justifyContent="between" alignItems="baseline" columnGap="l">
-      <Text variant="body">Payout</Text>
-      <Text variant="body" tabularNums>
-        $9,311
-      </Text>
-    </Box>
-    <Text variant="body" color="muted">
-      Acme Inc · SEB **** 9128
-    </Text>
-  </Box>
-)
-
 interface Pillar {
   title: string
   desc: string
+  image: string
+  focus: string
+  docs: string
   vignette: ReactNode
 }
 
@@ -134,21 +74,25 @@ const PILLARS: Pillar[] = [
   {
     title: 'Usage metering',
     desc: 'Every token, agent run and GPU second streams into live meters, priced and ready to bill the moment it happens.',
+    image: '/assets/landing/company/Polar_Flow_01_No_Logo.jpg',
+    focus: 'center',
+    docs: '/docs/features/usage-based-billing/introduction',
     vignette: <MeterVignette />,
   },
   {
     title: 'Checkout',
     desc: 'A hosted checkout that converts out of the box. Localized currencies, sales tax included, one link to start selling.',
+    image: '/assets/landing/company/Polar_Flow_02_No_Logo.jpg',
+    focus: 'center',
+    docs: '/docs/features/checkout/session',
     vignette: <CheckoutVignette />,
-  },
-  {
-    title: 'Cost insights',
-    desc: 'What each customer pays beside what their usage costs you. True gross margin per customer, updated in real time.',
-    vignette: <MarginVignette />,
   },
   {
     title: 'Payouts',
     desc: 'Revenue settles to your bank account on your schedule. Sales tax already collected, remitted and off your plate.',
+    image: '/assets/landing/company/Polar_Flow_03_No_Logo.jpg',
+    focus: 'right center',
+    docs: '/docs/features/finance/payouts',
     vignette: <PayoutVignette />,
   },
 ]
@@ -164,31 +108,66 @@ export const Platform = () => (
       templateColumns={{
         base: '1fr',
         md: 'repeat(2, 1fr)',
-        xl: 'repeat(4, 1fr)',
+        xl: 'repeat(3, 1fr)',
       }}
-      columnGap="l"
-      rowGap={{ base: '3xl', xl: 'l' }}
+      gap="2xl"
     >
       {PILLARS.map((pillar) => (
         <Box key={pillar.title} flexDirection="column" rowGap="xl">
           <Box
+            position="relative"
+            overflow="hidden"
             backgroundColor="background-secondary"
             alignItems="center"
             justifyContent="center"
             paddingHorizontal="2xl"
             minHeight={{ base: '14rem', xl: '20rem' }}
           >
-            {pillar.vignette}
+            <StaticImage
+              src={pillar.image}
+              alt=""
+              fill
+              sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+              className="object-cover"
+              style={{ objectPosition: pillar.focus }}
+            />
+            <Box
+              position="absolute"
+              inset={0}
+              backgroundColor="background-secondary"
+              opacity={0.6}
+            />
+            <Box
+              position="relative"
+              width="100%"
+              alignItems="center"
+              justifyContent="center"
+            >
+              {pillar.vignette}
+            </Box>
           </Box>
           <Box flexDirection="column" rowGap="xs">
-            <Text variant="heading-xs" as="h3">
+            <Text variant="heading-xxs" as="h3">
               {pillar.title}
             </Text>
-            <Box display="block">
-              <Text variant="heading-xxs" color="muted" wrap="pretty">
-                {pillar.desc}
-              </Text>
-            </Box>
+            <Text variant="body" color="muted" as="p">
+              {pillar.desc}
+            </Text>
+            <a href={pillar.docs}>
+              <Box
+                alignItems="center"
+                columnGap="xs"
+                paddingTop="s"
+                color={{ base: 'text-primary', hover: 'text-secondary' }}
+                transitionProperty="colors"
+                transitionDuration="fast"
+              >
+                <Text variant="body" color="inherit">
+                  Learn more
+                </Text>
+                <ArrowRight size={16} />
+              </Box>
+            </a>
           </Box>
         </Box>
       ))}

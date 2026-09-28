@@ -677,29 +677,29 @@ async def _backfill_benefit_grants(
                 and grant.customer_id != billing_customer_id
             )
             old_customer_id = grant.customer_id if needs_transfer else None
-            if needs_transfer:
-                assert billing_customer_id is not None
-                grant.customer_id = billing_customer_id
+            target_customer_id = (
+                billing_customer_id if needs_transfer else grant.customer_id
+            )
+            assert target_customer_id is not None
 
             # Link to seat member or owner member
             target_member_id: uuid.UUID | None = None
             seat_member_id = await _find_seat_member_for_grant(
                 session,
                 member_repository,
-                grant,
                 billing_customer_id=billing_customer_id,
                 old_customer_id=old_customer_id,
             )
             if seat_member_id is not None:
                 target_member_id = seat_member_id
             else:
-                if grant.customer_id not in owner_members_map:
+                if target_customer_id not in owner_members_map:
                     owner = await member_repository.get_owner_by_customer_id(
-                        grant.customer_id
+                        target_customer_id
                     )
                     if owner is not None:
-                        owner_members_map[grant.customer_id] = owner
-                owner = owner_members_map.get(grant.customer_id)
+                        owner_members_map[target_customer_id] = owner
+                owner = owner_members_map.get(target_customer_id)
                 if owner is not None:
                     target_member_id = owner.id
 
@@ -719,6 +719,7 @@ async def _backfill_benefit_grants(
                     if grant.order_id is not None:
                         # One-off order — each purchase is distinct, keep both
                         if grant.revoked_at is None:
+                            grant.customer_id = target_customer_id
                             grant.member_id = target_member_id
                             count += 1
                     else:
@@ -736,6 +737,9 @@ async def _backfill_benefit_grants(
                         duplicates_deleted += 1
 
                 elif grant.revoked_at is None:
+                    # Moving customer_id without member_id in the same statement
+                    # collides with the buyer's own unlinked grant.
+                    grant.customer_id = target_customer_id
                     grant.member_id = target_member_id
                     count += 1
 
@@ -773,57 +777,26 @@ async def _backfill_benefit_grants(
 async def _find_seat_member_for_grant(
     session: AsyncSession,
     member_repository: MemberRepository,
-    grant: BenefitGrant,
     billing_customer_id: uuid.UUID | None,
     old_customer_id: uuid.UUID | None,
 ) -> uuid.UUID | None:
-    """Find the seat member for a grant, if the grant is seat-based.
+    """Find the seat member for a grant held by an old seat-holder customer.
 
-    Returns the member_id from the matching CustomerSeat, or None if the
-    grant is not seat-based (i.e. the customer purchased directly).
-
-    For transferred grants (old_customer_id is set), we look up the member
-    by the seat-holder's email rather than querying CustomerSeat directly,
-    because step B already migrated seat.customer_id to the billing customer
-    — so a subscription with multiple seats would return multiple rows.
+    Looked up by the holder's email: `_backfill_seats` has already moved
+    seat.customer_id to the billing customer, so the seat no longer identifies
+    its holder. A grant already on the billing customer is the buyer's own, and
+    the caller resolves it to their owner member.
     """
-    if old_customer_id is not None and billing_customer_id is not None:
-        # Transferred grant: find member via seat-holder customer email
-        seat_holder = await session.get(Customer, old_customer_id)
-        if seat_holder is not None and seat_holder.email:
-            member = await member_repository.get_by_customer_id_and_email(
-                billing_customer_id, seat_holder.email
-            )
-            if member is not None:
-                return member.id
+    if old_customer_id is None or billing_customer_id is None:
         return None
 
-    # Non-transferred grant: single-seat lookup is safe
-    if grant.subscription_id is not None:
-        stmt = (
-            select(CustomerSeat.member_id)
-            .where(
-                CustomerSeat.subscription_id == grant.subscription_id,
-                CustomerSeat.member_id.is_not(None),
-                CustomerSeat.status != SeatStatus.revoked,
-            )
-            .limit(1)
-        )
-    elif grant.order_id is not None:
-        stmt = (
-            select(CustomerSeat.member_id)
-            .where(
-                CustomerSeat.order_id == grant.order_id,
-                CustomerSeat.member_id.is_not(None),
-                CustomerSeat.status != SeatStatus.revoked,
-            )
-            .limit(1)
-        )
-    else:
+    seat_holder = await session.get(Customer, old_customer_id)
+    if seat_holder is None or not seat_holder.email:
         return None
-
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    member = await member_repository.get_by_customer_id_and_email(
+        billing_customer_id, seat_holder.email
+    )
+    return member.id if member is not None else None
 
 
 async def _cleanup_orphaned_seat_customers(

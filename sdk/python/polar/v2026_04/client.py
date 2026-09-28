@@ -55,10 +55,14 @@ class Polar:
         environment: Environment = "production",
         base_url: str | None = None,
         timeout: RequestTimeout | None = 5.0,
+        organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._access_token = access_token
+        self._base_url = resolved_base_url
+        self._timeout = timeout
         self._client = SyncClientBase(
-            resolved_base_url, self.version, access_token, timeout
+            resolved_base_url, self.version, access_token, timeout, organization_id
         )
         self.organizations = OrganizationsSync(self._client)
         self.subscriptions = SubscriptionsSync(self._client)
@@ -87,6 +91,15 @@ class Polar:
         self.customer_meters = CustomerMetersSync(self._client)
         self.payments = PaymentsSync(self._client)
 
+    def scoped(self, *, organization_id: str) -> typing.Self:
+        """Return a client acting on ``organization_id``, with its own connections."""
+        return type(self)(
+            self._access_token,
+            base_url=self._base_url,
+            timeout=self._timeout,
+            organization_id=organization_id,
+        )
+
     def __enter__(self) -> typing.Self:
         self._client.__enter__()
         return self
@@ -110,10 +123,14 @@ class PolarAsync:
         environment: Environment = "production",
         base_url: str | None = None,
         timeout: RequestTimeout | None = 5.0,
+        organization_id: str | None = None,
     ) -> None:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._access_token = access_token
+        self._base_url = resolved_base_url
+        self._timeout = timeout
         self._client = AsyncClientBase(
-            resolved_base_url, self.version, access_token, timeout
+            resolved_base_url, self.version, access_token, timeout, organization_id
         )
         self.organizations = OrganizationsAsync(self._client)
         self.subscriptions = SubscriptionsAsync(self._client)
@@ -141,6 +158,15 @@ class PolarAsync:
         self.meters = MetersAsync(self._client)
         self.customer_meters = CustomerMetersAsync(self._client)
         self.payments = PaymentsAsync(self._client)
+
+    def scoped(self, *, organization_id: str) -> typing.Self:
+        """Return a client acting on ``organization_id``, with its own connections."""
+        return type(self)(
+            self._access_token,
+            base_url=self._base_url,
+            timeout=self._timeout,
+            organization_id=organization_id,
+        )
 
     async def __aenter__(self) -> typing.Self:
         await self._client.__aenter__()

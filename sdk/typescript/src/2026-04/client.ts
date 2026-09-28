@@ -1,4 +1,4 @@
-import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
+import { ClientBase, ClientOptions, ClientScope, resolveBaseUrl } from "../base";
 import { createBenefitGrantsService } from "./services/benefit_grants";
 import { createBenefitsService } from "./services/benefits";
 import { createCheckoutLinksService } from "./services/checkout_links";
@@ -48,9 +48,7 @@ export function createPolarCore(options: PolarOptions) {
 
 export type PolarCore = ReturnType<typeof createPolarCore>;
 
-export function createPolar(options: PolarOptions) {
-  const client = createPolarCore(options);
-
+function createServices(client: PolarCore) {
   return {
     organizations: createOrganizationsService(client),
     subscriptions: createSubscriptionsService(client),
@@ -81,4 +79,17 @@ export function createPolar(options: PolarOptions) {
   };
 }
 
-export type Polar = ReturnType<typeof createPolar>;
+export type Polar = ReturnType<typeof createServices> & {
+  scoped(scope: ClientScope): Polar;
+};
+
+function createPolarFromCore(client: PolarCore): Polar {
+  return {
+    ...createServices(client),
+    scoped: (scope) => createPolarFromCore(client.scoped(scope)),
+  };
+}
+
+export function createPolar(options: PolarOptions): Polar {
+  return createPolarFromCore(createPolarCore(options));
+}

@@ -14,6 +14,7 @@ from polar.base import (
     _register_extra_items_typed_dict,
     resolve_base_url,
 )
+from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar, PolarAsync
 
 SERVERS = {
     "production": "https://api.polar.sh",
@@ -273,3 +274,53 @@ class TestBuildRequest:
         )
         assert request.method == "GET"
         assert str(request.url) == "https://api.polar.sh/v1/items/?metadata%5Bkept%5D=value"
+
+
+class TestOrganization:
+    def test_omitted_by_default(self, client: SyncClientBase | AsyncClientBase) -> None:
+        request = client.build_request(method="GET", url="/v1/items/")
+
+        assert "Polar-Organization" not in request.headers
+
+    @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
+    def test_configured_organization(
+        self, client_class: type[SyncClientBase] | type[AsyncClientBase]
+    ) -> None:
+        client = client_class(
+            base_url="https://api.polar.sh",
+            version="2026-04",
+            access_token="polar_at_u_xxx",
+            organization_id="org_1",
+        )
+
+        request = client.build_request(method="GET", url="/v1/items/")
+
+        assert request.headers["Polar-Organization"] == "org_1"
+
+    @pytest.mark.parametrize("polar_class", [Polar, PolarAsync])
+    def test_scoped(self, polar_class: type[Polar] | type[PolarAsync]) -> None:
+        polar = polar_class(
+            "polar_at_u_xxx", base_url="http://localhost:8000", timeout=30.0
+        )
+
+        scoped = polar.scoped(organization_id="org_1")
+
+        request = scoped._client.build_request(method="GET", url="/v1/items/")
+        assert request.headers["Polar-Organization"] == "org_1"
+        assert request.headers["Authorization"] == "Bearer polar_at_u_xxx"
+        assert str(request.url) == "http://localhost:8000/v1/items/"
+        assert request.extensions["timeout"]["read"] == 30.0
+        assert scoped._client._client is not polar._client._client
+        parent_request = polar._client.build_request(method="GET", url="/v1/items/")
+        assert "Polar-Organization" not in parent_request.headers
+
+    @pytest.mark.parametrize("polar_class", [Polar, PolarAsync])
+    def test_scoped_replaces_organization(
+        self, polar_class: type[Polar] | type[PolarAsync]
+    ) -> None:
+        polar = polar_class("polar_at_u_xxx")
+
+        scoped = polar.scoped(organization_id="org_1").scoped(organization_id="org_2")
+
+        request = scoped._client.build_request(method="GET", url="/v1/items/")
+        assert request.headers["Polar-Organization"] == "org_2"

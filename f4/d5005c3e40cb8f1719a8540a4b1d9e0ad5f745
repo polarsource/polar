@@ -1,0 +1,55 @@
+server/scripts/anonymize_expired_checkouts.py
+  s_9ac21b1821b7d5::t_0a7437b82b967d 1-23,25-30,32,34-47,51-54,56-71
+  s_9ac21b1821b7d5::t_02d565d176f090 24,31,33
+  s_9ac21b1821b7d5::t_e808243ec53f43 55
+  s_9ac21b1821b7d5::t_66effe3cd92f8c 48-50
+server/polar/config.py
+  s_9ac21b1821b7d5::t_0a7437b82b967d 200
+server/migrations/versions/2026-09-28-1430_add_checkout_anonymized_at.py
+  s_9ac21b1821b7d5::t_0e0e3f23afe6fa 45
+  s_9ac21b1821b7d5::t_59dc2f0d20c34d 1-44,46-66
+server/polar/models/checkout.py
+  s_9ac21b1821b7d5::t_eba014046d6cea 109-112,114-115
+  s_9ac21b1821b7d5::t_190fe9a709de80 15
+  s_9ac21b1821b7d5::t_0e0e3f23afe6fa 113
+  s_9ac21b1821b7d5::t_e27f67e8cbc722 268-270
+server/tests/checkout/test_repository.py
+  s_9ac21b1821b7d5::t_34e6e0f5ef3866 7
+  s_9ac21b1821b7d5::t_b9a8e53bb748e5 1,9,13
+  s_9ac21b1821b7d5::t_4d879b8884cf7e 99-101,103-133,135-143,145-149,151-165,167,177-193,195-208,211-230,232-238,240-257,260-279
+  s_9ac21b1821b7d5::t_364f3a4d6ddb5f 4
+  s_9ac21b1821b7d5::t_915cdccd45b31d 239
+  s_9ac21b1821b7d5::t_e6f27c3b30590d 282-291,293,295-307,309,311
+  s_9ac21b1821b7d5::t_eb48caabbe11b7 166
+  s_9ac21b1821b7d5::t_24e74f98f0077c 292,294
+  s_9ac21b1821b7d5::t_03d6e50f2eabbe 144
+  s_9ac21b1821b7d5::t_e808243ec53f43 102,150,194,231,258-259,280-281,310
+  s_9ac21b1821b7d5::t_bfb76d28176c6e 134,308,312
+  s_9ac21b1821b7d5::t_9eaf22e2d739f4 168-176
+  s_9ac21b1821b7d5::t_8e24b560bac0a7 209-210
+server/polar/checkout/repository.py
+  s_9ac21b1821b7d5::t_2636b05bc417cd 119
+  s_9ac21b1821b7d5::t_97887bc5334653 97-100,102-104,106,108-111
+  s_9ac21b1821b7d5::t_7fac8527dedc1f 5-13
+  s_9ac21b1821b7d5::t_3ace007135c836 112
+  s_9ac21b1821b7d5::t_b3b359eb28e897 128-145
+  s_9ac21b1821b7d5::t_81ef8b4392b4bd 96,101,105,107,114-115,122
+  s_9ac21b1821b7d5::t_626a7d14338e94 2,113,116-118,120-121,123-127,146-147
+  s_9ac21b1821b7d5::t_05c51ad1d11004 148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f4d5005c3e40cb8f1719a8540a4b1d9e0ad5f745",
+  "prompts": {},
+  "sessions": {
+    "s_9ac21b1821b7d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4eeeaae0-49b3-432b-8fa2-e641f1dd7485",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

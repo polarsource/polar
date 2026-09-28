@@ -1,5 +1,6 @@
 import { getPublicServerURL } from '@/utils/api'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { POLAR_EMBED_ORIGIN_HEADER } from '@/utils/embed'
 import {
   DEFAULT_LOCALE,
   isAcceptedLocale,
@@ -7,6 +8,7 @@ import {
 } from '@polar-sh/i18n'
 import { unwrap, UnauthorizedResponseError } from '@polar-sh/client'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { EmbedError } from './EmbedError'
 import { PaymentMethodEmbed } from './PaymentMethodEmbed'
 
@@ -29,20 +31,6 @@ interface SearchParams {
 
 const resolveLocale = (locale: string | undefined): AcceptedLocale =>
   locale && isAcceptedLocale(locale) ? locale : DEFAULT_LOCALE
-
-const isValidEmbedOrigin = (origin: string): boolean => {
-  try {
-    const url = new URL(origin)
-    if (origin !== url.origin) return false
-    if (url.protocol === 'https:') return true
-    if (url.protocol === 'http:') {
-      return ['localhost', '127.0.0.1'].includes(url.hostname)
-    }
-    return false
-  } catch {
-    return false
-  }
-}
 
 const resolveEmbedReturnUrl = (
   returnUrl: string | undefined,
@@ -75,20 +63,9 @@ export default async function Page(props: {
 
   const locale = resolveLocale(localeParam)
 
-  const embedOrigin =
-    embed_origin && isValidEmbedOrigin(embed_origin) ? embed_origin : undefined
-
-  if (!sessionToken || !embedOrigin) {
-    return (
-      <EmbedError
-        code="invalid_request"
-        embedOrigin={embedOrigin}
-        locale={locale}
-      />
-    )
+  if (!sessionToken || !embed_origin) {
+    return <EmbedError code="invalid_request" locale={locale} />
   }
-
-  const embedReturnUrl = resolveEmbedReturnUrl(embed_return_url, embedOrigin)
 
   const api = await getServerSideAPI(sessionToken)
   let customer
@@ -104,11 +81,17 @@ export default async function Page(props: {
             ? 'unauthorized'
             : 'unknown'
         }
-        embedOrigin={embedOrigin}
         locale={locale}
       />
     )
   }
+
+  const embedOrigin = (await headers()).get(POLAR_EMBED_ORIGIN_HEADER)
+  if (!embedOrigin) {
+    return <EmbedError code="invalid_request" locale={locale} />
+  }
+
+  const embedReturnUrl = resolveEmbedReturnUrl(embed_return_url, embedOrigin)
 
   let setupCurrency = 'usd'
   try {

@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AfterValidator, Discriminator, TypeAdapter
+from pydantic import UUID4, AfterValidator, Discriminator, Field, TypeAdapter
 
 from polar.kit.address import Address, AddressInput
 from polar.kit.http import get_safe_return_url
@@ -38,6 +38,18 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     default_payment_method_id: UUID4 | None = None
     type: CustomerType | None = None
     locale: str | None = None
+
+
+class CustomerPortalEmbedPolicy(Schema):
+    frame_ancestors: list[str] = Field(
+        description="The `frame-ancestors` sources admitting the hosts allowed to embed."
+    )
+    embed_origin: str | None = Field(
+        description=(
+            "The requested embed origin, normalized, "
+            "when the organization allows it to embed."
+        )
+    )
 
 
 class CustomerPortalCustomerUpdate(Schema):

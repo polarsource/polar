@@ -49,10 +49,10 @@ async def get_payload_organization(
     repository = OrganizationRepository.from_session(session)
 
     if model.organization_id is None:
-        # A credential down-scoped to exactly one organization resolves it
-        # implicitly, restoring organization-token ergonomics on create
-        # endpoints.
-        if (
+        # A credential down-scoped to exactly one organization, or a request
+        # naming one, resolves it implicitly, restoring organization-token
+        # ergonomics on create endpoints.
+        if auth_subject.requested_organization_id is not None or (
             auth_subject.organization_ids is not None
             and len(auth_subject.organization_ids) == 1
         ):

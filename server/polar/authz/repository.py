@@ -61,6 +61,10 @@ def select_accessible_org_ids(
     (``sso_enforced``) — those are only accessible through an SSO-scoped session
     or a token explicitly scoped to them (which can only be issued via SSO).
     Personal access tokens remain exempt from SSO enforcement.
+
+    A ``requested_organization_id`` (the ``Polar-Organization`` header) narrows
+    the result further. It doesn't count as a scope, so SSO enforcement still
+    applies.
     """
     # Composes the raw helper, then applies the session down-scope right below.
     stmt = select_user_org_ids(  # lint-skip: org-scope
@@ -72,6 +76,11 @@ def select_accessible_org_ids(
         )
     elif isinstance(auth_subject.session, (UserSession, OAuth2Token)):
         stmt = stmt.where(Organization.sso_enforced.is_not(True))
+    if auth_subject.requested_organization_id is not None:
+        stmt = stmt.where(
+            UserOrganization.organization_id  # lint-skip: org-scope
+            == auth_subject.requested_organization_id
+        )
     return stmt
 
 

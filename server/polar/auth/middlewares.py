@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import logfire
 import structlog
 from fastapi import Request
@@ -5,6 +7,7 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
+from polar.authz.service import get_accessible_organization
 from polar.config import settings
 from polar.customer_session.service import (
     CUSTOMER_SESSION_TOKEN_PREFIX,
@@ -12,6 +15,7 @@ from polar.customer_session.service import (
 from polar.customer_session.service import (
     customer_session as customer_session_service,
 )
+from polar.exception_handlers import polar_exception_handler
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member_session.service import member_session as member_session_service
@@ -46,7 +50,20 @@ from polar.redis import Redis
 from polar.sentry import set_sentry_user
 from polar.worker import enqueue_job
 
-from .models import Anonymous, AuthSubject, Subject
+from .exceptions import (
+    InvalidRequestedOrganization,
+    PolarAuthError,
+    RequestedOrganizationNotAccessible,
+)
+from .models import (
+    ORGANIZATION_HEADER,
+    Anonymous,
+    AuthSubject,
+    Subject,
+    is_anonymous,
+    is_organization,
+    is_user,
+)
 from .scope import Scope
 from .service import auth as auth_service
 
@@ -114,6 +131,14 @@ async def get_member_session(session: AsyncSession, value: str) -> MemberSession
 
 
 async def get_auth_subject(
+    request: Request, session: AsyncSession
+) -> AuthSubject[Subject]:
+    auth_subject = await get_credential_auth_subject(request, session)
+    await apply_requested_organization(request, session, auth_subject)
+    return auth_subject
+
+
+async def get_credential_auth_subject(
     request: Request, session: AsyncSession
 ) -> AuthSubject[Subject]:
     token = get_bearer_token(request)
@@ -196,6 +221,48 @@ async def get_auth_subject(
     return AuthSubject(Anonymous(), set(), None)
 
 
+def get_requested_organization_id(request: Request) -> UUID | None:
+    value = request.headers.get(ORGANIZATION_HEADER)
+    if value is None:
+        return None
+    try:
+        return UUID(value)
+    except ValueError as e:
+        raise InvalidRequestedOrganization(
+            f"The {ORGANIZATION_HEADER} header must be an organization ID."
+        ) from e
+
+
+async def apply_requested_organization(
+    request: Request, session: AsyncSession, auth_subject: AuthSubject[Subject]
+) -> None:
+    if is_anonymous(auth_subject):
+        return
+
+    organization_id = get_requested_organization_id(request)
+    if organization_id is None:
+        return
+
+    if is_organization(auth_subject):
+        if organization_id != auth_subject.subject.id:
+            raise RequestedOrganizationNotAccessible()
+        return
+
+    if not is_user(auth_subject) or not isinstance(
+        auth_subject.session, (OAuth2Token, PersonalAccessToken)
+    ):
+        raise InvalidRequestedOrganization(
+            f"The {ORGANIZATION_HEADER} header is only supported with access tokens."
+        )
+
+    if (
+        await get_accessible_organization(session, auth_subject, organization_id)
+        is None
+    ):
+        raise RequestedOrganizationNotAccessible()
+    auth_subject.requested_organization_id = organization_id
+
+
 class AuthSubjectMiddleware:
     def __init__(self, app: ASGIApp, redis: Redis) -> None:
         self.app = app
@@ -216,6 +283,10 @@ class AuthSubjectMiddleware:
             if token is not None:
                 await clear_cached_identity(self.redis, token)
             response = await oauth2_error_exception_handler(request, e)
+            request.state.transaction_failed = True
+            return await response(scope, receive, send)
+        except PolarAuthError as e:
+            response = await polar_exception_handler(request, e)
             request.state.transaction_failed = True
             return await response(scope, receive, send)
 

@@ -332,6 +332,22 @@ class TestGetMyNotificationSettings:
         )
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_other_requested_organization_returns_404(
+        self,
+        client: AsyncClient,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        auth_subject.requested_organization_id = organization_second.id
+
+        response = await client.get(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        )
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestUpdateMyNotificationSettings:

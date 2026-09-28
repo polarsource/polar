@@ -332,3 +332,63 @@ class TestGetAccessibleOrganizationScopedTo:
             session, auth_subject, organization.id
         )
         assert result is None
+
+
+@pytest.mark.asyncio
+class TestGetAccessibleOrgIdsRequestedOrganization:
+    """`AuthSubject.requested_organization_id` narrows the accessible set."""
+
+    @pytest.mark.auth
+    async def test_narrows_to_requested_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        auth_subject.requested_organization_id = organization.id
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == {organization.id}
+
+    @pytest.mark.auth
+    async def test_intersects_with_down_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        auth_subject.organization_ids = frozenset({organization.id})
+        auth_subject.requested_organization_id = organization_second.id
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth
+    async def test_does_not_lift_sso_enforcement(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await session.flush()
+        auth_subject.session = MagicMock(spec=OAuth2Token)
+        auth_subject.requested_organization_id = organization.id
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()

@@ -31,7 +31,7 @@ const sessionFreshnessMiddleware: Middleware = {
   },
 }
 
-const NEXT_API_VERSION = '2026-10'
+const NEXT_API_VERSION = '2027-01'
 
 const CLIENT_VERSION_HEADERS = {
   'X-Polar-Client-Version': `web/${

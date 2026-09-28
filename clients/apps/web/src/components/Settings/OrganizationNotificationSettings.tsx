@@ -88,7 +88,7 @@ const OrganizationNotificationSettings: React.FC<
       <SettingsGroupItem
         layout="inline"
         title="Exclude Free Products"
-        description="Skip new subscription and renewal notifications for free products. Paid products discounted to zero are still notified."
+        description="Skip new subscription and renewal notifications for free products."
       >
         <Switch
           checked={settings.exclude_free_products ?? false}

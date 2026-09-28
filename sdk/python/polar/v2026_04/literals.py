@@ -3,7 +3,7 @@ import typing
 AggregationFunction: typing.TypeAlias = typing.Literal[
     "count", "sum", "max", "min", "avg", "unique"
 ]
-ApiVersion: typing.TypeAlias = typing.Literal["2026-04", "2026-10"]
+ApiVersion: typing.TypeAlias = typing.Literal["2026-04"]
 """The API version that'll be used in event payloads."""
 BenefitGrantSortProperty: typing.TypeAlias = typing.Literal[
     "created_at",
@@ -810,6 +810,7 @@ PaymentTrigger: typing.TypeAlias = typing.Literal[
 Permission: typing.TypeAlias = typing.Literal[
     "pull", "triage", "push", "maintain", "admin"
 ]
+"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Literal[
     "aed",
     "all",
@@ -1048,7 +1049,7 @@ Scope: typing.TypeAlias = typing.Literal[
 ]
 SeatStatus: typing.TypeAlias = typing.Literal["pending", "claimed", "revoked"]
 SeatTierType: typing.TypeAlias = typing.Literal["volume", "graduated"]
-Status: typing.TypeAlias = typing.Literal["active", "trialing"]
+Status: typing.TypeAlias = typing.Literal["granted", "disabled"]
 SubType: typing.TypeAlias = typing.Literal["user", "organization"]
 SubscriptionExportColumn: typing.TypeAlias = typing.Literal[
     "email",
@@ -1748,6 +1749,7 @@ WebhookEventType: typing.TypeAlias = typing.Literal[
     "subscription.past_due",
     "subscription.paused",
     "subscription.resumed",
+    "subscription.migrated",
     "refund.created",
     "refund.updated",
     "product.created",

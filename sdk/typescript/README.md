@@ -20,7 +20,7 @@ Create an [organization access token](https://polar.sh/docs/integrate/oat) and u
 the current API version:
 
 ```typescript
-import { createPolar } from "@polar-sh/sdk/2026-04";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
 const polar = createPolar({
     accessToken: "polar_oat_xxx",
@@ -70,8 +70,8 @@ To import individual API functions for tree-shaking, create a core client and pa
 function:
 
 ```typescript
-import { createPolarCore } from "@polar-sh/sdk/2026-04";
-import { getStateExternalCustomers } from "@polar-sh/sdk/2026-04/services/customers";
+import { createPolarCore } from "@polar-sh/sdk/2026-10";
+import { getStateExternalCustomers } from "@polar-sh/sdk/2026-10/services/customers";
 
 const polar = createPolarCore({
     accessToken: "polar_oat_xxx",
@@ -89,7 +89,7 @@ webhook signing secret:
 
 ```typescript
 import express from "express";
-import { webhooks } from "@polar-sh/sdk/2026-04";
+import { webhooks } from "@polar-sh/sdk/2026-10";
 
 const app = express();
 const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;

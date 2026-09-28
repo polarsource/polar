@@ -888,6 +888,41 @@ export interface WebhookSubscriptionCycledPayload {
   data: Subscription;
 }
 /**
+ * Sent when Polar takes over billing of a subscription migrated from another provider.
+ *
+ * This fires at cutover, once the subscription is live on Polar. `provider`
+ * and `provider_subscription_id` identify the subscription on the billing
+ * provider so you can correlate the two.
+ *
+ * **Discord & Slack support:** Basic
+ */
+export interface WebhookSubscriptionMigratedPayload {
+  /**
+   * type
+   */
+  type: "subscription.migrated";
+  /**
+   * timestamp
+   */
+  timestamp: string;
+  /**
+   * api_version
+   */
+  api_version: string;
+  /**
+   * data
+   */
+  data: Subscription;
+  /**
+   * The billing provider the subscription was migrated from.
+   */
+  provider: string;
+  /**
+   * The identifier of the subscription on the billing provider.
+   */
+  provider_subscription_id: string;
+}
+/**
  * Sent when a subscription payment fails and the subscription enters `past_due` status.
  *
  * This is a recoverable state - the customer can update their payment method to restore the subscription.
@@ -1082,6 +1117,7 @@ export type WebhookPayload =
   | WebhookSubscriptionCanceledPayload
   | WebhookSubscriptionCreatedPayload
   | WebhookSubscriptionCycledPayload
+  | WebhookSubscriptionMigratedPayload
   | WebhookSubscriptionPastDuePayload
   | WebhookSubscriptionPausedPayload
   | WebhookSubscriptionResumedPayload
@@ -1125,6 +1161,7 @@ const knownEventTypes = new Set<string>([
   "subscription.canceled",
   "subscription.created",
   "subscription.cycled",
+  "subscription.migrated",
   "subscription.past_due",
   "subscription.paused",
   "subscription.resumed",

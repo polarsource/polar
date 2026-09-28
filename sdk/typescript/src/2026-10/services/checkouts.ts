@@ -13,11 +13,13 @@ import type {
 } from "../models";
 
 import {
+  CheckoutLocked,
   CheckoutsClientConfirm403Error,
   CheckoutsClientUpdate403Error,
   CheckoutsUpdate403Error,
   ExpiredCheckoutError,
   HTTPValidationError,
+  NotPermitted,
   PaymentError,
   ResourceNotFound,
 } from "../errors";
@@ -229,6 +231,7 @@ export const clientGetCheckouts = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} The organization is not allowed to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {ExpiredCheckoutError} The checkout session is expired.
    * @throws {HTTPValidationError} Validation Error
@@ -250,6 +253,7 @@ export const clientGetCheckouts = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<CheckoutPublic>(response, "json", {
+      403: NotPermitted,
       404: ResourceNotFound,
       410: ExpiredCheckoutError,
       422: HTTPValidationError,
@@ -269,6 +273,7 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CheckoutsClientUpdate403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
+   * @throws {CheckoutLocked} The checkout session is being processed.
    * @throws {ExpiredCheckoutError} The checkout session is expired.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -292,6 +297,7 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
     return client.parseResponse<CheckoutPublic>(response, "json", {
       403: CheckoutsClientUpdate403Error,
       404: ResourceNotFound,
+      409: CheckoutLocked,
       410: ExpiredCheckoutError,
       422: HTTPValidationError,
     });
@@ -313,6 +319,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    * @throws {PaymentError} The payment failed.
    * @throws {CheckoutsClientConfirm403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
+   * @throws {CheckoutLocked} The checkout session is being processed.
    * @throws {ExpiredCheckoutError} The checkout session is expired.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -337,6 +344,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
       400: PaymentError,
       403: CheckoutsClientConfirm403Error,
       404: ResourceNotFound,
+      409: CheckoutLocked,
       410: ExpiredCheckoutError,
       422: HTTPValidationError,
     });

@@ -8,13 +8,15 @@ import { RefObject, useEffect, useRef } from 'react'
 const HEIGHT = 96
 const LABEL_HEIGHT = 16
 const TOKENS_PER_DOLLAR = 6
+const STARTING_TOKENS = 240_000
+const TOKENS_PER_SECOND = 6_000
 const BURST = (Math.PI * 2) / 3.2
 
 // Thousands of tokens streamed after `seconds`. The rate swells and eases
 // on a (1 - cos)^2 curve, like a model streaming a response.
 const streamedTokens = (seconds: number) =>
-  240 +
-  6 *
+  STARTING_TOKENS +
+  TOKENS_PER_SECOND *
     (0.4 * seconds +
       0.4 *
         (1.5 * seconds -
@@ -209,8 +211,16 @@ const Ruler = ({
   )
 }
 
-const formatTokens = (value: number) => `${Math.floor(value)}k`
-const formatDollars = (value: number) => `$${Math.floor(value)}`
+const formatTokens = (thousands: number) =>
+  thousands < 1_000
+    ? `${Math.floor(thousands)}k`
+    : `${Math.floor(thousands / 1_000)}M`
+
+const formatDollars = (dollars: number) => {
+  if (dollars < 1_000) return `$${Math.floor(dollars)}`
+  if (dollars < 1_000_000) return `$${Math.floor(dollars / 1_000)}k`
+  return `$${Math.floor(dollars / 1_000_000)}M`
+}
 
 export const MissionRulers = () => {
   const { ref, inView } = useInView()
@@ -237,7 +247,7 @@ export const MissionRulers = () => {
         active={inView}
         clock={clock}
         valueAt={streamedTokens}
-        unit={20}
+        unit={5_000}
         pointer={0.72}
         format={formatTokens}
       />
@@ -253,7 +263,7 @@ export const MissionRulers = () => {
         active={inView}
         clock={clock}
         valueAt={earnedDollars}
-        unit={10}
+        unit={2_000}
         pointer={0.3}
         flip
         format={formatDollars}

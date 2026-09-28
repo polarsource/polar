@@ -137,6 +137,11 @@ class CheckoutRepository(
                     Checkout.customer_tax_id: null(),
                     Checkout.customer_metadata: {},
                     Checkout.custom_field_data: {},
+                    # `distinct_id` falls back to the customer's email.
+                    # `opened_at` stays: it drives the checkout funnel metrics.
+                    Checkout.analytics_metadata: Checkout.analytics_metadata.op("-")(
+                        "distinct_id"
+                    ),
                     Checkout.anonymized_at: utc_now(),
                 }
             )

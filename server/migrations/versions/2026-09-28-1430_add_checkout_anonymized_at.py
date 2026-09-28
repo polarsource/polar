@@ -21,9 +21,11 @@ INDEX_NAME = "ix_checkouts_created_at_pending_anonymization"
 
 
 def upgrade() -> None:
-    op.add_column(
-        "checkouts",
-        sa.Column("anonymized_at", sa.TIMESTAMP(timezone=True), nullable=True),
+    # `IF NOT EXISTS`: entering the autocommit block below commits this column,
+    # so an interrupted index build leaves it behind for the next attempt.
+    op.execute(
+        "ALTER TABLE checkouts "
+        "ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMP WITH TIME ZONE"
     )
 
     with op.get_context().autocommit_block():

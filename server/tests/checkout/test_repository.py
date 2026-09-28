@@ -119,6 +119,10 @@ class TestAnonymizeExpired:
             external_customer_id="EXTERNAL_ID",
             customer_metadata={"key": "value"},
             customer_billing_address=Address(country=CountryAlpha2("FR")),
+            analytics_metadata={
+                "opened_at": "2026-01-01T00:00:00+00:00",
+                "distinct_id": "john@example.com",
+            },
         )
         checkout.customer_name = "John Doe"
         checkout.customer_email = "john@example.com"
@@ -164,6 +168,10 @@ class TestAnonymizeExpired:
         assert checkout.customer_metadata == {}
         assert checkout.custom_field_data == {}
         assert checkout.anonymized_at is not None
+
+        # `distinct_id` falls back to the customer's email, `opened_at` is
+        # needed by the checkout funnel metrics.
+        assert checkout.analytics_metadata == {"opened_at": "2026-01-01T00:00:00+00:00"}
 
         # The ORM reads a JSONB `null` back as `None`, so assert SQL NULL.
         sql_null = await session.execute(

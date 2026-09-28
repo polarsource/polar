@@ -21,6 +21,7 @@ configure_script_logging()
 async def anonymize_expired_checkouts(
     retention_days: int = typer.Option(
         settings.EXPIRED_CHECKOUT_RETENTION_PERIOD.days,
+        min=0,
         help="Scrub expired checkouts created more than this many days ago",
     ),
     batch_size: int = typer.Option(5000, help="Number of rows to scrub per batch"),

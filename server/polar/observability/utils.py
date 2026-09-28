@@ -1,7 +1,7 @@
+from fastapi.routing import _get_scope_effective_route_context
 from starlette.types import Scope
 
 from .http_metrics import METRICS_DENY_LIST, METRICS_EXCLUDED_APPS
-from .http_telemetry import route_path_template
 
 
 def get_path_template(scope: Scope) -> str | None:
@@ -29,6 +29,16 @@ def get_path_template(scope: Scope) -> str | None:
 
     # Populated after routing completes, which is why we
     # call this in the finally block after the request.
-    # None when no route matched (404 on unknown path) - skip metrics
+    # Since FastAPI 0.141, scope["route"] is the route as declared on its own
+    # router, without the prefixes of the routers including it. Routes declared
+    # directly on the app have no effective context and keep scope["route"].
+    route_context = _get_scope_effective_route_context(scope)
+    route_path = getattr(route_context, "path", None) or getattr(
+        scope.get("route"), "path", None
+    )
+    if isinstance(route_path, str):
+        return route_path  # e.g., "/v1/checkouts/{id}"
+
+    # No route matched (404 on unknown path) - skip metrics
     # to prevent cardinality explosion from bots/attackers
-    return route_path_template(scope)  # e.g., "/v1/checkouts/{id}"
+    return None

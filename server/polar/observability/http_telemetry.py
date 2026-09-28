@@ -1,6 +1,5 @@
 from urllib.parse import urlsplit, urlunsplit
 
-from fastapi.routing import _get_scope_effective_route_context
 from opentelemetry.context import Context
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
 from opentelemetry.trace import Span as APISpan
@@ -16,20 +15,10 @@ def url_without_request_values(url: str, path: str = "/") -> str:
         return path
 
 
-def route_path_template(scope: Scope) -> str | None:
-    # Since FastAPI 0.141, scope["route"] is the route as declared on its own
-    # router, without the prefixes of the routers including it. Routes declared
-    # directly on the app have no effective context and keep scope["route"].
-    route_context = _get_scope_effective_route_context(scope)
-    path = getattr(route_context, "path", None) or getattr(
-        scope.get("route"), "path", None
-    )
-    return path if isinstance(path, str) else None
-
-
 def request_path_template(scope: Scope) -> str:
-    if (template := route_path_template(scope)) is not None:
-        return template
+    route = getattr(scope.get("route"), "path", None)
+    if isinstance(route, str):
+        return route
     span = scope.get("logfire.span")
     if (
         isinstance(span, APISpan)

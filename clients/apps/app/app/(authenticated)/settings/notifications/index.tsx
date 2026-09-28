@@ -120,6 +120,18 @@ export default function NotificationsPage() {
             )}
           />
         </SettingsItem>
+        <SettingsItem
+          title="Exclude Free Products"
+          description="Skip new subscription and renewal notifications for free products. Paid products discounted to zero are still notified."
+          variant="static"
+        >
+          <Switch
+            value={notificationSettings?.exclude_free_products ?? false}
+            onValueChange={createNotificationSettingHandler(
+              'exclude_free_products',
+            )}
+          />
+        </SettingsItem>
         <Box
           flexDirection="column"
           gap="spacing-4"

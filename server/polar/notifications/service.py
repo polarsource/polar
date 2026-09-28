@@ -75,6 +75,8 @@ class NotificationsService:
         session: AsyncSession,
         org_id: UUID,
         notif: PartialNotification,
+        *,
+        is_free_product: bool = False,
     ) -> None:
         _SETTING_KEY: dict[
             NotificationType,
@@ -89,6 +91,11 @@ class NotificationsService:
 
         for member in members:
             if key is not None and not member.notification_settings[key]:
+                continue
+
+            if is_free_product and member.notification_settings.get(
+                "exclude_free_products", False
+            ):
                 continue
 
             await self.send_to_user(

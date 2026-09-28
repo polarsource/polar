@@ -2449,6 +2449,7 @@ class OrderService:
         await notifications_service.send_to_org_members(
             session,
             org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
             notif=PartialNotification(
                 type=NotificationType.maintainer_subscription_renewal,
                 payload=MaintainerSubscriptionRenewalNotificationPayload(

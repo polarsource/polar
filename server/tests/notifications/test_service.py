@@ -164,3 +164,54 @@ class TestSendToOrgMembers:
 
         notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
         assert notified == {member_a.id, member_b.id}
+
+    async def test_free_product_skips_members_excluding_free_products(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        send_to_user_mock = mocker.patch(
+            "polar.notifications.service.NotificationsService.send_to_user"
+        )
+
+        member_excluding = await create_user(save_fixture)
+        member_including = await create_user(save_fixture)
+        await save_fixture(
+            UserOrganization(
+                user=member_excluding,
+                organization=organization,
+                notification_settings={
+                    "new_order": True,
+                    "new_subscription": True,
+                    "exclude_free_products": True,
+                },
+            )
+        )
+        await save_fixture(
+            UserOrganization(
+                user=member_including,
+                organization=organization,
+                notification_settings={"new_order": True, "new_subscription": True},
+            )
+        )
+
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=_new_subscription_notif(),
+            is_free_product=True,
+        )
+        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
+        assert notified == {member_including.id}
+
+        send_to_user_mock.reset_mock()
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=_new_subscription_notif(),
+            is_free_product=False,
+        )
+        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
+        assert notified == {member_excluding.id, member_including.id}

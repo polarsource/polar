@@ -897,6 +897,77 @@ class TestOrderSubscriptionRenewalNotification:
 
         assert await self._notifications_for(session, member) == []
 
+    async def test_skips_free_product_when_excluded(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_free_price: Product,
+        organization: Organization,
+    ) -> None:
+        member = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            member,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=True,
+                subscription_renewal=True,
+                exclude_free_products=True,
+            ),
+        )
+        order = await self._create_renewal_order(
+            save_fixture, product_recurring_free_price, organization
+        )
+
+        await order_subscription_renewal_notification(order.id)
+
+        assert await self._notifications_for(session, member) == []
+
+    async def test_notifies_fully_discounted_paid_product_when_free_excluded(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        member = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            member,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=True,
+                subscription_renewal=True,
+                exclude_free_products=True,
+            ),
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+            subtotal_amount=1000,
+            discount_amount=1000,
+        )
+        assert order.net_amount == 0
+
+        await order_subscription_renewal_notification(order.id)
+
+        notifications = await self._notifications_for(session, member)
+        assert len(notifications) == 1
+
     async def test_member_setting_is_always_present(
         self,
         session: AsyncSession,

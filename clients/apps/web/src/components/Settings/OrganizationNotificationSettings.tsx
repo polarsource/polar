@@ -85,6 +85,22 @@ const OrganizationNotificationSettings: React.FC<
         />
       </SettingsGroupItem>
 
+      <SettingsGroupItem
+        layout="inline"
+        title="Exclude Free Products"
+        description="Skip new subscription and renewal notifications for free products. Paid products discounted to zero are still notified."
+      >
+        <Switch
+          checked={settings.exclude_free_products ?? false}
+          onCheckedChange={(checked) =>
+            update((previous) => ({
+              ...previous,
+              exclude_free_products: checked,
+            }))
+          }
+        />
+      </SettingsGroupItem>
+
       {canManage === true && (
         <SettingsGroupItem
           layout="inline"

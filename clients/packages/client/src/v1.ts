@@ -29737,6 +29737,8 @@ export interface components {
       chargeback_prevention: boolean
       /** Subscription Renewal */
       subscription_renewal: boolean
+      /** Exclude Free Products */
+      exclude_free_products?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {

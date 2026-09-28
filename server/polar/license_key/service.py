@@ -352,6 +352,7 @@ class LicenseKeyService:
                 raise BadRequest(f"License key only has {remaining} more usages.")
 
         license_key.mark_validated(increment_usage=validate.increment_usage)
+        await session.refresh(license_key, attribute_names=["subscription"])
         session.add(license_key)
         bound_logger.info("license_key.validate")
         return license_key
@@ -415,6 +416,7 @@ class LicenseKeyService:
             )
             raise NotPermitted("License key activation limit already reached")
 
+        await session.refresh(license_key, attribute_names=["subscription"])
         instance = LicenseKeyActivation(
             license_key=license_key,
             label=activate.label,

@@ -24100,6 +24100,44 @@ export interface components {
      * @enum {string}
      */
     LicenseKeyStatus: 'granted' | 'revoked' | 'disabled'
+    /** LicenseKeySubscription */
+    LicenseKeySubscription: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
+      status: components['schemas']['SubscriptionStatus']
+      /**
+       * Current Period Start
+       * Format: date-time
+       * @description The start timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      current_period_start: string
+      /**
+       * Current Period End
+       * Format: date-time
+       * @description The end timestamp of the current billing period.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      current_period_end: string
+      /**
+       * Cancel At Period End
+       * @description Whether the subscription will be canceled at the end of the current period.
+       */
+      cancel_at_period_end: boolean
+      /**
+       * Ends At
+       * @description The timestamp when the subscription will end.
+       */
+      ends_at: string | null
+    }
     /** LicenseKeyUpdate */
     LicenseKeyUpdate: {
       status?: components['schemas']['LicenseKeyStatus'] | null

@@ -10,6 +10,8 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    and_,
+    cast,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -17,8 +19,10 @@ from polar.kit.db.models import RecordModel
 from polar.kit.utils import utc_now
 
 from .benefit import Benefit
+from .benefit_grant import BenefitGrant
 from .customer import Customer
 from .member import Member
+from .subscription import Subscription
 
 if TYPE_CHECKING:
     from .license_key_activation import LicenseKeyActivation
@@ -75,6 +79,24 @@ class LicenseKey(RecordModel):
     @declared_attr
     def benefit(cls) -> Mapped[Benefit]:
         return relationship("Benefit", lazy="raise")
+
+    @declared_attr
+    def subscription(cls) -> Mapped["Subscription | None"]:
+        return relationship(
+            "Subscription",
+            secondary="benefit_grants",
+            primaryjoin=lambda: and_(
+                BenefitGrant.customer_id == LicenseKey.customer_id,
+                BenefitGrant.benefit_id == LicenseKey.benefit_id,
+                BenefitGrant.properties["license_key_id"].as_string()
+                == cast(LicenseKey.id, String),
+                BenefitGrant.deleted_at.is_(None),
+            ),
+            secondaryjoin=lambda: Subscription.id == BenefitGrant.subscription_id,
+            lazy="raise",
+            uselist=False,
+            viewonly=True,
+        )
 
     key: Mapped[str] = mapped_column(String, nullable=False)
 

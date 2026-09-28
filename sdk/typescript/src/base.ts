@@ -101,7 +101,7 @@ export interface ClientOptions {
   /** Default request timeout, in seconds. */
   timeout?: number;
   /** Organization to act on, sent in the `Polar-Organization` header. */
-  organizationId?: string;
+  organizationId?: string | undefined;
 }
 
 export interface ClientScope {

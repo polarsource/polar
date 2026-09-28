@@ -720,7 +720,6 @@ class MerchantMigrationService:
                     status=MerchantMigrationOperationStatus.pending,
                     kind=MerchantMigrationOperationKind.import_catalog,
                     selection=self._build_selection(record_ids, exclude_record_ids),
-                    cursor={"phase": "products"},
                     last_progress_at=utc_now(),
                     subscription_tax_behavior=(
                         operation.subscription_tax_behavior if operation else None
@@ -783,8 +782,7 @@ class MerchantMigrationService:
                     record_ids=record_ids,
                     exclude_record_ids=exclude_record_ids,
                 )
-                outcome = await importer.import_next_batch()
-                report = outcome.report
+                report = await importer.import_next_batch()
         except PolarError as error:
             log.warning(
                 "merchant_migration.import_failed",
@@ -807,26 +805,10 @@ class MerchantMigrationService:
             return None
 
         if report is None:
-            await repository.update(
-                migration,
-                update_dict={
-                    "operation": running.model_copy(
-                        update={
-                            "cursor": {"phase": outcome.phase},
-                            "last_progress_at": utc_now(),
-                        }
-                    )
-                },
-                flush=True,
-            )
             enqueue_job(_IMPORT_TASK, merchant_migration_id=migration.id)
             return None
 
-        update_dict: dict[str, object] = {
-            "operation": self._done_operation(migration).model_copy(
-                update={"cursor": None}
-            )
-        }
+        update_dict: dict[str, object] = {"operation": self._done_operation(migration)}
         if migration.step == MerchantMigrationStep.pre_check:
             update_dict["step"] = MerchantMigrationStep.create_catalog
             report.step = MerchantMigrationStep.create_catalog

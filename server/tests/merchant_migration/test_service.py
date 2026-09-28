@@ -2673,7 +2673,6 @@ class TestImportCatalog:
 
         assert migration.operation is not None
         assert migration.operation.is_active
-        assert migration.operation.cursor == {"phase": "products"}
         assert migration.step.value == MerchantMigrationStep.pre_check.value
         assert len(await _products(session, organization)) == 1
         customers = await session.execute(

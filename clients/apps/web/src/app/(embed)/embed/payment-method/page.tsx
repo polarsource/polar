@@ -67,6 +67,8 @@ export default async function Page(props: {
     return <EmbedError code="invalid_request" locale={locale} />
   }
 
+  const embedOrigin = (await headers()).get(POLAR_EMBED_ORIGIN_HEADER)
+
   const api = await getServerSideAPI(sessionToken)
   let customer
   try {
@@ -81,12 +83,12 @@ export default async function Page(props: {
             ? 'unauthorized'
             : 'unknown'
         }
+        embedOrigin={embedOrigin ?? undefined}
         locale={locale}
       />
     )
   }
 
-  const embedOrigin = (await headers()).get(POLAR_EMBED_ORIGIN_HEADER)
   if (!embedOrigin) {
     return <EmbedError code="invalid_request" locale={locale} />
   }

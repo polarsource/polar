@@ -85,7 +85,6 @@ async def get_embed_policy(
         None, description="The origin of the page embedding the customer portal."
     ),
 ) -> CustomerPortalEmbedPolicy:
-    """Get the hosts allowed to embed the customer's portal."""
     organization = get_customer(auth_subject).organization
     return CustomerPortalEmbedPolicy(
         frame_ancestors=csp_frame_ancestors(organization.embed_hosts)

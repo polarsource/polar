@@ -638,6 +638,22 @@ describe('payment method embed policy', () => {
     )
   })
 
+  it('lets Polar embed itself without asking for the policy', async () => {
+    const response = await proxy(
+      framedRequest(
+        'https://polar.sh/embed/payment-method?session_token=polar_cst_123&embed_origin=https%3A%2F%2Fpolar.sh',
+      ),
+    )
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'self';",
+    )
+    expect(getForwardedRequestHeader(response, 'x-polar-embed-origin')).toBe(
+      'https://polar.sh',
+    )
+  })
+
   it('refuses framing without a session token', async () => {
     const response = await proxy(
       framedRequest('https://polar.sh/embed/payment-method'),

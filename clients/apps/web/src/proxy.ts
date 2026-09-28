@@ -160,6 +160,13 @@ const getPaymentMethodEmbedPolicy = async (
   }
 
   const embedOrigin = searchParams.get('embed_origin')
+  if (embedOrigin === request.nextUrl.origin) {
+    return {
+      frame_ancestors: isFramed(request) ? ["'self'"] : NO_FRAME_ANCESTORS,
+      embed_origin: embedOrigin,
+    }
+  }
+
   const query = embedOrigin
     ? `?${new URLSearchParams({ embed_origin: embedOrigin })}`
     : ''

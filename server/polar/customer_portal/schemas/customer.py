@@ -44,12 +44,7 @@ class CustomerPortalEmbedPolicy(Schema):
     frame_ancestors: list[str] = Field(
         description="The `frame-ancestors` sources admitting the hosts allowed to embed."
     )
-    embed_origin: str | None = Field(
-        description=(
-            "The requested embed origin, normalized, "
-            "when the organization allows it to embed."
-        )
-    )
+    embed_origin: str | None = Field(description="The requested embed origin.")
 
 
 class CustomerPortalCustomerUpdate(Schema):

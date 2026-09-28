@@ -82,17 +82,43 @@ class TestStripeRejectReasonForAup:
 
 @pytest.mark.asyncio
 class TestDenyDialog:
+    @pytest.mark.parametrize(
+        ("section", "label", "reason"),
+        [
+            (
+                AUPSection.TRADING_FINANCIAL,
+                "19. Trading and Financial Services",
+                "Crypto trading bot",
+            ),
+            (
+                AUPSection.AI_IMAGE_VIDEO_GENERATION,
+                "37. AI image and video generation",
+                "AI image and video generation platform",
+            ),
+        ],
+    )
     async def test_stores_violated_aup_section(
         self,
         backoffice_client: httpx.AsyncClient,
         session: AsyncSession,
         organization: Organization,
+        section: AUPSection,
+        label: str,
+        reason: str,
     ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/deny-dialog"
+        )
+
+        assert response.status_code == 200
+        assert f'value="{section.value}"' in response.text
+        assert label in response.text
+
         response = await backoffice_client.post(
             f"/organizations/{organization.id}/deny-dialog",
             data={
-                "override_reason": "Crypto trading bot",
-                "violated_aup_section": "trading_financial",
+                "override_reason": reason,
+                "violated_aup_section": section.value,
             },
         )
 
@@ -102,7 +128,8 @@ class TestDenyDialog:
             session
         ).get_current_decision(organization.id)
         assert current is not None
-        assert current.violated_aup_section == AUPSection.TRADING_FINANCIAL
+        await session.refresh(current)
+        assert current.violated_aup_section == section
 
     async def test_missing_aup_section_does_not_deny(
         self,

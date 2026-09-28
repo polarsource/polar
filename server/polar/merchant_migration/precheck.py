@@ -19,6 +19,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from polar.discount.schemas import BasisPoints, DurationInMonths
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior
+from polar.invoice.generator import format_date
 from polar.kit.address import Address
 from polar.kit.currency import (
     PresentmentCurrency,
@@ -93,6 +94,8 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_scheduled_end",
+    "subscription_scheduled_change",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -626,6 +629,29 @@ class PrecheckEngine:
                 message=(
                     "Subscription has paused collection; it won't be imported and "
                     "stays on the current provider."
+                ),
+                source_id=source_id,
+            )
+        if subscription.cancel_at is not None and not subscription.cancel_at_period_end:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_scheduled_end",
+                message=(
+                    "It's set to end on the source on "
+                    f"{format_date(subscription.cancel_at)}. Polar would keep "
+                    "renewing it past that date, so it stays on the source until "
+                    "it ends."
+                ),
+                source_id=source_id,
+            )
+        elif subscription.has_scheduled_changes:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_scheduled_change",
+                message=(
+                    "A subscription schedule on the source changes or ends it "
+                    "later. Polar can't carry that schedule over, so it stays on "
+                    "the source."
                 ),
                 source_id=source_id,
             )

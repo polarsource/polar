@@ -151,6 +151,11 @@ class CanonicalSubscription:
     # The customer already asked to stop: the source won't renew it. Nothing left
     # for Polar to take over, so the cutover leaves it where it is.
     cancel_at_period_end: bool = False
+    # A fixed date the source stops it on. Stripe also fills it in for
+    # ``cancel_at_period_end``, so only a date without that flag is its own end.
+    cancel_at: datetime | None = None
+    # A source schedule will change or end it later, which Polar can't carry.
+    has_scheduled_changes: bool = False
     # When the source trial ends, so the cutover can keep the subscription
     # trialing on Polar until then instead of billing it early.
     trial_end: datetime | None = None
@@ -441,6 +446,8 @@ def deserialize(
                     if (started_at := _parse_datetime(raw)) is not None
                 },
                 cancel_at_period_end=data.get("cancel_at_period_end", False),
+                cancel_at=_parse_datetime(data.get("cancel_at")),
+                has_scheduled_changes=data.get("has_scheduled_changes", False),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 anchor_day=data.get("anchor_day"),

@@ -1207,6 +1207,16 @@ class TestSkips:
                 id="already-ending",
             ),
             pytest.param(
+                {"cancel_at": utc_now() + timedelta(days=60)},
+                "set to end on the source",
+                id="ends-on-a-set-date",
+            ),
+            pytest.param(
+                {"has_scheduled_changes": True},
+                "subscription schedule",
+                id="schedule-changes-it-later",
+            ),
+            pytest.param(
                 {"current_period_end": utc_now() + timedelta(hours=6)},
                 "too soon to hand over",
                 id="renewal-inside-the-safety-window",

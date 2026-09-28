@@ -4,24 +4,28 @@ import { StaticImage } from '@/components/Image/StaticImage'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useRef, useState } from 'react'
 
-const FRAME_COUNT = 66
+const FRAME_COUNT = 68
 const FLIP_INTERVAL_MS = 350
 const LOOKAHEAD = 4
+const SEAM_GAP = 12
 
 const FRAMES = Array.from({ length: FRAME_COUNT }, (_, i) =>
   String(i + 1).padStart(2, '0'),
 )
 
-const shuffle = (previousLast?: number) => {
+// Every round shows each frame exactly once. The frames that closed the
+// previous round are kept out of the opening slots, so a repeat is always
+// at least SEAM_GAP frames away.
+const shuffle = (recent: number[] = []) => {
   const order = FRAMES.map((_, i) => i)
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[order[i], order[j]] = [order[j], order[i]]
   }
-  if (order[0] === previousLast) {
-    ;[order[0], order[order.length - 1]] = [order[order.length - 1], order[0]]
-  }
-  return order
+  const blocked = new Set(recent)
+  const opening = order.filter((i) => !blocked.has(i)).slice(0, SEAM_GAP)
+  const opened = new Set(opening)
+  return [...opening, ...order.filter((i) => !opened.has(i))]
 }
 
 interface Playback {
@@ -33,11 +37,11 @@ const advance = ({ queue, position }: Playback): Playback => {
   let nextQueue = queue
   let nextPosition = position + 1
   if (nextQueue.length - nextPosition <= LOOKAHEAD) {
-    nextQueue = nextQueue.concat(shuffle(nextQueue[nextQueue.length - 1]))
+    nextQueue = nextQueue.concat(shuffle(nextQueue.slice(-SEAM_GAP)))
   }
-  if (nextPosition > FRAME_COUNT) {
-    nextQueue = nextQueue.slice(nextPosition)
-    nextPosition = 0
+  if (nextPosition >= FRAME_COUNT) {
+    nextQueue = nextQueue.slice(FRAME_COUNT)
+    nextPosition -= FRAME_COUNT
   }
   return { queue: nextQueue, position: nextPosition }
 }

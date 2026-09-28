@@ -549,6 +549,7 @@ class StripeAdapter:
             automatic_tax=self._automatic_tax(subscription),
             price_tax_behavior=self._price_tax_behavior(first_item.get("price")),
             has_tax_rates=self._has_tax_rates(subscription, first_item),
+            tax_rate_behavior=self._tax_rate_behavior(subscription, first_item),
         )
 
     def _map_subscription_discounts(
@@ -716,6 +717,18 @@ class StripeAdapter:
         if current_start is None or None in starts:
             return True
         return any(start > current_start for start in starts)
+
+    def _tax_rate_behavior(
+        self, subscription: stripe_lib.Subscription, first_item: Any
+    ) -> TaxBehavior | None:
+        # An item's own rates replace the subscription's defaults.
+        rates = first_item.get("tax_rates") or subscription.get("default_tax_rates")
+        inclusive = {rate.get("inclusive") for rate in rates or []}
+        if inclusive == {True}:
+            return TaxBehavior.inclusive
+        if inclusive == {False}:
+            return TaxBehavior.exclusive
+        return None
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)

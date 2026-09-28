@@ -4,7 +4,6 @@ import Link from 'next/link'
 import type { ComponentType } from 'react'
 import { CreditArc } from './graphics/CreditArc'
 import { CycleArrow } from './graphics/CycleArrow'
-import { LinkedRings } from './graphics/LinkedRings'
 import { VennCluster } from './graphics/VennCluster'
 
 interface Feature {
@@ -16,7 +15,7 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    title: 'Usage billing',
+    title: 'Usage Billing',
     desc: 'Meter tokens, API calls, compute and storage down to the event.',
     href: '/features/usage-billing',
     Graphic: VennCluster,
@@ -28,14 +27,8 @@ const FEATURES: Feature[] = [
     Graphic: CycleArrow,
   },
   {
-    title: 'Seats',
-    desc: 'Add, remove and prorate seats automatically.',
-    href: '/features/seats',
-    Graphic: LinkedRings,
-  },
-  {
     title: 'Credits',
-    desc: 'Prepaid balances that drain as usage flows.',
+    desc: 'Prepaid balances that draw down with usage and top up automatically.',
     href: '/features/credits',
     Graphic: CreditArc,
   },
@@ -46,7 +39,7 @@ export const FeatureCards = () => (
     templateColumns={{
       base: '1fr',
       md: 'repeat(2, 1fr)',
-      xl: 'repeat(4, 1fr)',
+      xl: 'repeat(3, 1fr)',
     }}
     gap="l"
   >

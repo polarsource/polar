@@ -10,11 +10,11 @@ interface LogoCell {
 
 const LOGOS: LogoCell[] = [
   {
-    icon: <Tailwind size={28} />,
+    icon: <Tailwind size={24} />,
     link: 'https://tailwindcss.com',
   },
   {
-    icon: <FastAPICloud size={36} />,
+    icon: <FastAPICloud size={32} />,
     link: 'https://fastapicloud.com',
   },
   {
@@ -22,7 +22,7 @@ const LOGOS: LogoCell[] = [
     link: 'https://confidence.spotify.com',
   },
   {
-    icon: <StillaAIWordmark size={36} />,
+    icon: <StillaAIWordmark size={32} />,
     link: 'https://stilla.ai',
   },
 ]

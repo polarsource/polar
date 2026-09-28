@@ -40,17 +40,11 @@ const Cover = ({ post, sizes }: { post: ContentPost; sizes: string }) => (
 
 const Meta = ({ post }: { post: ContentPost }) => (
   <Box columnGap="s" alignItems="baseline">
-    <Text variant="body" color="muted">
-      {TYPE_LABEL[post.type]}
-    </Text>
+    <Text color="muted">{TYPE_LABEL[post.type]}</Text>
     {post.date ? (
       <>
-        <Text variant="body" color="muted">
-          ·
-        </Text>
-        <Text variant="body" color="muted">
-          {formatDate(post.date)}
-        </Text>
+        <Text color="muted">·</Text>
+        <Text color="muted">{formatDate(post.date)}</Text>
       </>
     ) : null}
   </Box>
@@ -64,12 +58,12 @@ const FeaturedPost = ({ post }: { post: ContentPost }) => (
     >
       <Box flexDirection="column" justifyContent="end" rowGap="xl">
         <Box flexDirection="column" rowGap="s" maxWidth="32rem">
-          <Text variant="heading-l" as="h2" wrap="pretty">
+          <Text variant="heading-s" as="h2" wrap="pretty">
             {post.title}
           </Text>
           {post.description ? (
             <Box display="block">
-              <Text variant="heading-s" as="p" color="muted" wrap="pretty">
+              <Text variant="heading-xs" as="p" color="muted" wrap="pretty">
                 {post.description}
               </Text>
             </Box>
@@ -90,7 +84,7 @@ const PostCard = ({ post }: { post: ContentPost }) => (
         sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
       />
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xs" as="h3" wrap="balance">
+        <Text variant="body" as="h3" wrap="balance">
           {post.title}
         </Text>
         <Meta post={post} />
@@ -116,11 +110,11 @@ export default function BlogPage() {
           templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
           gap={{ base: '2xl', lg: 'l' }}
         >
-          <Box flexDirection="column" rowGap="s">
-            <Text variant="heading-xl" as="h1">
+          <Box flexDirection="column">
+            <Text variant="heading-s" as="h1">
               Blog
             </Text>
-            <Text variant="heading-xl" as="p" color="muted" wrap="balance">
+            <Text variant="heading-s" as="p" color="muted" wrap="balance">
               Thinking out loud
             </Text>
           </Box>
@@ -141,7 +135,7 @@ export default function BlogPage() {
           templateColumns={{
             base: '1fr',
             md: 'repeat(2, 1fr)',
-            xl: 'repeat(4, 1fr)',
+            xl: 'repeat(3, 1fr)',
           }}
           columnGap="l"
           rowGap={{ base: '3xl', xl: '4xl' }}

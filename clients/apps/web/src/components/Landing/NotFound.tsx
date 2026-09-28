@@ -65,7 +65,7 @@ const DestinationCard = ({ title, href, Graphic }: Destination) => (
         </div>
       </Box>
       <Box alignItems="center" justifyContent="between" columnGap="l">
-        <Text variant="heading-xs" as="h2">
+        <Text variant="heading-xxs" as="h2">
           {title}
         </Text>
         <Text variant="heading-xs">
@@ -91,14 +91,14 @@ export const NotFound = () => {
         gap={{ base: '2xl', lg: 'l' }}
       >
         <Box alignItems="start" display={{ base: 'none', lg: 'flex' }}>
-          <Text variant="heading-l">404</Text>
+          <Text variant="heading-s">404</Text>
         </Box>
         <Box flexDirection="column" alignItems="start" rowGap="3xl">
           <Box flexDirection="column">
-            <Text variant="heading-l" as="p" color="muted">
+            <Text variant="heading-s" as="p" color="muted">
               Sorry
             </Text>
-            <Text variant="heading-l" as="h1" wrap="balance">
+            <Text variant="heading-s" as="h1" wrap="balance">
               We can&apos;t find the page you&apos;re looking for.
             </Text>
           </Box>

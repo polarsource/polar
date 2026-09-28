@@ -55,15 +55,15 @@ export const LandingPageDesktopNavigation = () => {
       <Box
         position="relative"
         width="100%"
-        maxWidth={1920}
+        maxWidth="80rem"
         alignItems="center"
         justifyContent="between"
       >
-        <Box alignItems="center" columnGap="4xl">
+        <Box alignItems="center" columnGap="2xl">
           <Link href="/">
-            <PolarLogotype logoVariant="logotype" size={100} />
+            <PolarLogotype logoVariant="icon" size={36} />
           </Link>
-          <Box as="ul" alignItems="center" columnGap="xl">
+          <Box as="ul" alignItems="center" columnGap="l">
             {navMenus.map((menu) => (
               <Box as="li" key={menu.id}>
                 <NavMenuTrigger
@@ -132,7 +132,7 @@ const NavMenuTrigger = ({
       transitionProperty="colors"
       transitionDuration="fast"
     >
-      <Text variant="heading-xxs" color="inherit">
+      <Text variant="body" color="inherit">
         {menu.title}
       </Text>
     </Box>
@@ -169,7 +169,7 @@ const NavMenuPanel = ({
     >
       <Grid
         width="100%"
-        maxWidth={1920}
+        maxWidth="80rem"
         templateColumns="repeat(2, 1fr)"
         gap="l"
       >

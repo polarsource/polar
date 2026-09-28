@@ -11,10 +11,8 @@ import { Text } from '@polar-sh/orbit/Text'
 import { X } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
-import OrganizationEmbedUncoveredHosts from './OrganizationEmbedUncoveredHosts'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-const NO_HOSTS: schemas['OrganizationUncoveredHost'][] = []
 const NO_SHARED: string[] = []
 
 interface OrganizationEmbedSettingsProps {
@@ -70,11 +68,6 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
 
   const remove = useCallback(
     (entry: string) => save(hosts.filter((host) => host !== entry)),
-    [hosts, save],
-  )
-
-  const addSuggested = useCallback(
-    (entries: string[]) => save([...hosts, ...entries]),
     [hosts, save],
   )
 
@@ -144,14 +137,6 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
               ))}
             </Box>
           ) : null}
-
-          {readOnly ? null : (
-            <OrganizationEmbedUncoveredHosts
-              hosts={embedStatus?.uncovered_hosts ?? NO_HOSTS}
-              onAdd={addSuggested}
-              pending={updateOrganization.isPending}
-            />
-          )}
 
           {readOnly ? null : (
             <Box gap="s" alignItems="start">

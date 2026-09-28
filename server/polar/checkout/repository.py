@@ -1,10 +1,7 @@
 import typing
-from collections.abc import Sequence
-from datetime import datetime
-from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -86,26 +83,6 @@ class CheckoutRepository(
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())
-
-    async def list_embed_origins(
-        self, organization_id: UUID, *, since: datetime
-    ) -> Sequence[tuple[str, int, datetime]]:
-        statement = (
-            select(
-                Checkout.embed_origin,
-                func.count().label("checkouts"),
-                func.max(Checkout.created_at).label("last_seen_at"),
-            )
-            .where(
-                ~Checkout.is_deleted,
-                Checkout.organization_id == organization_id,
-                Checkout.embed_origin.is_not(None),
-                Checkout.created_at >= since,
-            )
-            .group_by(Checkout.embed_origin)
-        )
-        result = await self.session.execute(statement)
-        return cast(Sequence[tuple[str, int, datetime]], result.all())
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

@@ -1,8 +1,6 @@
 import ipaddress
 import re
-from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 
 from pydantic import AnyUrl, TypeAdapter, ValidationError
 from tld import is_tld
@@ -22,9 +20,6 @@ _LOCAL_SUFFIXES = (".localhost", ".local")
 # https://www.w3.org/TR/CSP3/#grammardef-host-source
 _HOST_LABEL = re.compile(r"[A-Za-z0-9-]+")
 _WRITTEN_PORT = re.compile(r":\d+$")
-
-# How far back we look for the hosts an organization embeds from.
-EMBED_ORIGIN_WINDOW = timedelta(days=90)
 
 _url_adapter = TypeAdapter(AnyUrl)
 
@@ -106,14 +101,6 @@ class HostPattern:
         if self.wildcard:
             return origin.host.endswith(f".{self.host}")
         return origin.host == self.host
-
-
-@dataclass(frozen=True, slots=True)
-class ObservedHost:
-    host: str
-    origin: str
-    checkouts: int
-    last_seen_at: datetime
 
 
 def _parse_url(value: str) -> AnyUrl | None:
@@ -243,20 +230,6 @@ def match_origin(origin: str, hosts: list[str]) -> str | None:
     return None
 
 
-def host_for_origin(origin: ParsedOrigin) -> str | None:
-    """The entry admitting this origin, or `None` when none can: a public host
-    served over HTTP leaks the session token to the network, whatever we list."""
-    if origin.scheme in WEB_SCHEMES:
-        if origin.scheme == "http" and not is_local_host(origin.host):
-            return None
-        scheme = None
-    else:
-        scheme = origin.scheme
-
-    port = None if origin.port == DEFAULT_PORTS.get(origin.scheme) else origin.port
-    return str(HostPattern(scheme, origin.host, port, False))
-
-
 def csp_frame_ancestors(hosts: list[str]) -> list[str]:
     """The `frame-ancestors` source list admitting the same origins as `matches`."""
     sources: list[str] = []
@@ -280,36 +253,3 @@ def csp_frame_ancestors(hosts: list[str]) -> list[str]:
             sources.append(f"http://{host}{port}")
 
     return sources or ["'none'"]
-
-
-def uncovered_hosts(
-    observed: Iterable[tuple[str, int, datetime]], hosts: list[str]
-) -> list[ObservedHost]:
-    """Hosts an organization has embedded from that its allowlist would refuse.
-
-    Origins stored before they were normalized still carry a path, so they
-    collapse here rather than showing up as several entries for one host.
-    """
-    merged: dict[str, ObservedHost] = {}
-    for value, checkouts, last_seen_at in observed:
-        origin = parse_origin(value)
-        if origin is None:
-            continue
-
-        host = host_for_origin(origin)
-        if host is None or any(
-            (pattern := parse_host_pattern(entry)) is not None
-            and pattern.matches(origin)
-            for entry in hosts
-        ):
-            continue
-
-        seen = merged.get(host)
-        merged[host] = ObservedHost(
-            host=host,
-            origin=str(origin),
-            checkouts=checkouts + (seen.checkouts if seen else 0),
-            last_seen_at=max(last_seen_at, seen.last_seen_at) if seen else last_seen_at,
-        )
-
-    return sorted(merged.values(), key=lambda o: (-o.checkouts, o.host))

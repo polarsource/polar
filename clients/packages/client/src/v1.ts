@@ -29173,11 +29173,6 @@ export interface components {
        * @description Entries of `embed_hosts` admitting every tenant of a platform, such as `*.vercel.app`.
        */
       shared_hosts: string[]
-      /**
-       * Uncovered Hosts
-       * @description Hosts seen embedding this organization's checkout that `embed_hosts` would refuse. Anyone can name an origin when they create a checkout, so these are observations, not hosts we vouch for.
-       */
-      uncovered_hosts: components['schemas']['OrganizationUncoveredHost'][]
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -30411,31 +30406,6 @@ export interface components {
        * @description Polar product ID to switch the plan to.
        */
       product_id: string
-    }
-    /** OrganizationUncoveredHost */
-    OrganizationUncoveredHost: {
-      /**
-       * Host
-       * @description The entry that would admit this origin.
-       */
-      host: string
-      /**
-       * Origin
-       * @description The origin seen embedding the checkout.
-       */
-      origin: string
-      /**
-       * Checkouts
-       * @description Embedded checkouts opened from this origin.
-       */
-      checkouts: number
-      /**
-       * Last Seen At
-       * Format: date-time
-       * @description When it last opened one.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      last_seen_at: string
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {

@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
-from starlette.types import Scope
+from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from polar.observability.http_metrics import (
     METRICS_EXCLUDED_APPS,
@@ -42,6 +44,30 @@ class TestGetPathTemplate:
 
         result = get_path_template(scope)
         assert result == "/v1/checkouts/{id}"
+
+    def test_nested_router_prefixes(self) -> None:
+        checkouts_router = APIRouter(prefix="/checkouts")
+
+        @checkouts_router.get("/{id}")
+        async def get_checkout(id: str) -> None: ...
+
+        v1_router = APIRouter(prefix="/v1")
+        v1_router.include_router(checkouts_router)
+        app = FastAPI()
+        app.include_router(v1_router)
+
+        templates: list[str | None] = []
+
+        def capture_template(app: ASGIApp) -> ASGIApp:
+            async def asgi(scope: Scope, receive: Receive, send: Send) -> None:
+                await app(scope, receive, send)
+                templates.append(get_path_template(scope))
+
+            return asgi
+
+        TestClient(capture_template(app)).get("/v1/checkouts/123")
+
+        assert templates == ["/v1/checkouts/{id}"]
 
     def test_middleware_route_without_path_attr(self) -> None:
         """Test that unmatched routes return None (no metrics)."""

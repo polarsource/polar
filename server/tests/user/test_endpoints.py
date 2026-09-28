@@ -387,6 +387,43 @@ class TestUpdateMyNotificationSettings:
         }
 
     @pytest.mark.auth
+    async def test_exclude_free_products_only_exposed_from_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        settings = {
+            "new_order": True,
+            "new_subscription": True,
+            "chargeback_prevention": True,
+            "subscription_renewal": False,
+        }
+
+        response = await client.patch(
+            url,
+            json={"notification_settings": {**settings, "exclude_free_products": True}},
+            headers={"Polar-Version": "2027-01"},
+        )
+        assert response.status_code == 200
+        assert response.json()["notification_settings"]["exclude_free_products"]
+
+        response = await client.patch(
+            url,
+            json={"notification_settings": settings},
+            headers={"Polar-Version": "2026-10"},
+        )
+        assert response.status_code == 200
+        assert response.json()["notification_settings"] == settings
+
+        response = await client.get(url, headers={"Polar-Version": "2027-01"})
+        assert response.json()["notification_settings"] == {
+            **settings,
+            "exclude_free_products": True,
+        }
+
+    @pytest.mark.auth
     async def test_chargeback_prevention_round_trips(
         self,
         client: AsyncClient,

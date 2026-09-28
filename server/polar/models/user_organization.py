@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import NotRequired, TypedDict
+from typing import Annotated, NotRequired, TypedDict
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, Uuid
@@ -8,8 +8,10 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.kit.versioning import Version
 from polar.models.organization import Organization
 from polar.models.user import User
+from polar.version import V2027_01
 
 
 class OrganizationRole(StrEnum):
@@ -24,7 +26,7 @@ class OrganizationNotificationSettings(TypedDict):
     new_subscription: bool
     chargeback_prevention: bool
     subscription_renewal: bool
-    exclude_free_products: NotRequired[bool]
+    exclude_free_products: Annotated[NotRequired[bool], Version(starting_from=V2027_01)]
 
 
 _default_notification_settings: OrganizationNotificationSettings = {

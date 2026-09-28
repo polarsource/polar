@@ -97,6 +97,11 @@ export function ConnectGuide({
           billing cycle across without charging the customer twice.
         </Text>
         <Text variant="caption" color="muted">
+          Subscription schedules and Invoices Read let Polar spot subscriptions
+          with a scheduled change or an unpaid invoice, and leave them on
+          Stripe.
+        </Text>
+        <Text variant="caption" color="muted">
           All accounts Read lets Polar identify the Stripe account and reject
           Connect platforms before the migration is saved. It is under Connect
           in Stripe&rsquo;s key form.

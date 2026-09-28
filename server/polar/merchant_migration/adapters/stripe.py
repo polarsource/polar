@@ -113,10 +113,11 @@ class StripeAdapter:
         exercise each one: a missing permission raises ``PermissionError``. Any
         other failure — an invalid key (``AuthenticationError``), a rate limit, a
         network blip — propagates, so we fail closed rather than accept a key we
-        couldn't fully check. The probes cover exactly what ``extract()`` reads
-        plus the ``subscription_write`` needed to stop billing at cutover and
-        All accounts Read so we can store the Stripe account id and check
-        country / Connect blockers.
+        couldn't fully check. The probes cover exactly what ``extract()`` and the
+        cutover read, including every object they expand (a restricted key needs
+        read access to each one), plus the ``subscription_write`` needed to stop
+        billing at cutover and All accounts Read so we can store the Stripe
+        account id and check country / Connect blockers.
         """
         v1 = self._client.v1
         probes: list[tuple[str, Callable[[], Awaitable[Any]]]] = [
@@ -124,6 +125,11 @@ class StripeAdapter:
             ("Products", lambda: v1.products.list_async(params={"limit": 1})),
             ("Prices", lambda: v1.prices.list_async(params={"limit": 1})),
             ("Subscriptions", lambda: v1.subscriptions.list_async(params={"limit": 1})),
+            (
+                "Subscription schedules",
+                lambda: v1.subscription_schedules.list_async(params={"limit": 1}),
+            ),
+            ("Invoices", lambda: v1.invoices.list_async(params={"limit": 1})),
             (
                 "Payment methods",
                 lambda: v1.payment_methods.list_async(

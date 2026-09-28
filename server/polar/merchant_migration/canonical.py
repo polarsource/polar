@@ -187,6 +187,10 @@ class CanonicalSubscription:
     tax_rate_behavior: TaxBehavior | None = None
     # Merchant pin at review. None means compute from the source fields above.
     tax_behavior: TaxBehavior | None = None
+    # Stripe customer balance in minor units; negative is a credit. The source
+    # applies it to the next invoice and Polar has nowhere to carry it. None when
+    # the customer wasn't expanded.
+    customer_balance: int | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -469,6 +473,7 @@ def deserialize(
                 has_tax_rates=bool(data.get("has_tax_rates", False)),
                 tax_rate_behavior=parse_tax_behavior(data.get("tax_rate_behavior")),
                 tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
+                customer_balance=data.get("customer_balance"),
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(

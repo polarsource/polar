@@ -96,6 +96,7 @@ SUBSCRIPTION_DROP_CODES = {
     "subscription_paused_collection",
     "subscription_scheduled_end",
     "subscription_scheduled_change",
+    "subscription_customer_balance",
 }
 DISCOUNT_DROP_CODES = {
     "unsupported_percentage",
@@ -116,6 +117,7 @@ ACTION_REQUIRED_CODES = {
     "customer_tax_id_dropped",
     "customer_tax_exempt",
     "subscription_tax_behavior_unspecified",
+    "subscription_customer_balance",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -126,6 +128,16 @@ _EXISTING_PRODUCT_NAME_REASON = (
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another source customer uses this email, and a Polar customer can only carry "
     "one source id. Merge them at the source, then run the pre-check again."
+)
+_CUSTOMER_CREDIT_REASON = (
+    "The customer has a credit balance on Stripe that would lower their next "
+    "invoice, and Polar can't carry it over. Settle it on Stripe, then run the "
+    "pre-check again."
+)
+_CUSTOMER_DEBT_REASON = (
+    "The customer owes a balance on Stripe that would be added to their next "
+    "invoice, and Polar can't carry it over. Settle it on Stripe, then run the "
+    "pre-check again."
 )
 _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
@@ -664,6 +676,17 @@ class PrecheckEngine:
                     "A subscription schedule on the source changes or ends it "
                     "later. Polar can't carry that schedule over, so it stays on "
                     "the source."
+                ),
+                source_id=source_id,
+            )
+        if subscription.customer_balance:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_customer_balance",
+                message=(
+                    _CUSTOMER_CREDIT_REASON
+                    if subscription.customer_balance < 0
+                    else _CUSTOMER_DEBT_REASON
                 ),
                 source_id=source_id,
             )

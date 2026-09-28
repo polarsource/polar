@@ -1,6 +1,5 @@
 'use client'
 
-import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'

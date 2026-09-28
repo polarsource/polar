@@ -10,57 +10,6 @@ import {
   PayoutVignette,
 } from './PlatformVignettes'
 
-const INSIGHT_ROWS = [
-  { name: 'Jane Doe', tokens: '4.1M tokens', margin: '+86%', negative: false },
-  {
-    name: 'Michael Chen',
-    tokens: '8.7M tokens',
-    margin: '-19%',
-    negative: true,
-  },
-]
-
-const MarginVignette = () => (
-  <Box
-    flexDirection="column"
-    rowGap="s"
-    width="100%"
-    maxWidth="19rem"
-    padding="s"
-    backgroundColor="background-secondary"
-  >
-    <Box justifyContent="between" alignItems="baseline" paddingHorizontal="xl">
-      <Text variant="caption" color="muted">
-        Customer
-      </Text>
-      <Text variant="caption" color="muted">
-        Gross margin
-      </Text>
-    </Box>
-    {INSIGHT_ROWS.map((row) => (
-      <Box
-        key={row.name}
-        justifyContent="between"
-        alignItems="center"
-        columnGap="l"
-        backgroundColor="background-card"
-        paddingHorizontal="xl"
-        paddingVertical="l"
-      >
-        <Box flexDirection="column">
-          <Text variant="body">{row.name}</Text>
-          <Text variant="body" color="muted">
-            {row.tokens}
-          </Text>
-        </Box>
-        <Text variant="body" tabularNums>
-          {row.margin}
-        </Text>
-      </Box>
-    ))}
-  </Box>
-)
-
 interface Pillar {
   title: string
   desc: string

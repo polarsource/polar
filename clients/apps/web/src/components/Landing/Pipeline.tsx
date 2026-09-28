@@ -1,6 +1,5 @@
 'use client'
 
-import { StaticImage } from '@/components/Image/StaticImage'
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 

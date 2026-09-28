@@ -9,8 +9,6 @@ const HEIGHT = 96
 const LABEL_HEIGHT = 16
 const TOKENS_PER_DOLLAR = 6
 const BURST = (Math.PI * 2) / 3.2
-const EDGE_FADE =
-  'linear-gradient(90deg, transparent, black 12%, black 88%, transparent)'
 
 // Thousands of tokens streamed after `seconds`. The rate swells and eases
 // on a (1 - cos)^2 curve, like a model streaming a response.

@@ -64,6 +64,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: body.organization_id,
         invoke: (client, organizationId) =>
           client.customFields.create({
             organization_id: organizationId,

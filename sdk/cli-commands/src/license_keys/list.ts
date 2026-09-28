@@ -53,6 +53,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: query.organization_id,
         invoke: (client, organizationId) =>
           client.licenseKeys.list({
             organization_id: organizationId,

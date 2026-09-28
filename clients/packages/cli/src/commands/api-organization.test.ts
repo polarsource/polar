@@ -132,21 +132,25 @@ test.each([production, sandbox])(
 )
 
 test.each([
-  ['--org=org-sandbox'],
-  ['-d', '{"organization_id":"org-sandbox"}'],
-  ['-d', '{"organization_id":"org-production"}', '--org=org-sandbox'],
+  { args: ['--org=org-sandbox'], selection: production },
+  { args: ['-d', '{"organization_id":"org-sandbox"}'], selection: undefined },
+  {
+    args: ['-d', '{"organization_id":"org-production"}', '--org=org-sandbox'],
+    selection: production,
+  },
 ])(
-  'explicit organization input %j does not change the selected environment',
-  async (...args) => {
+  'explicit organization input $args uses its environment',
+  async ({ args, selection }) => {
+    config.state.activeOrganization = selection
     await run(['products', 'list', ...args]).promise
     const url = new URL(requests.at(-1)!.url)
-    expect(url.hostname).toBe('api.polar.sh')
+    expect(url.hostname).toBe('sandbox-api.polar.sh')
     expect(url.searchParams.getAll('organization_id')).toEqual([sandbox.id])
     expect(requests).toHaveLength(2)
     expect(new URL(requests[0]!.url).pathname).toBe(
-      '/v1/organizations/org-production',
+      '/v1/organizations/org-sandbox',
     )
-    expect(config.state.activeOrganization).toEqual(production)
+    expect(config.state.activeOrganization).toEqual(selection)
     expect(config.state.writes).toBe(0)
   },
 )

@@ -68,6 +68,9 @@ export const command = Command.make(
       method: {{ method.http_method | quote }},
       requiresConfirmation: {{ confirmation_expression }},
       confirm: {% if needs_confirmation %}config.confirm{% else %}false{% endif %},
+{% if has_organization %}
+      organizationId: {{ input_type | lower }}.organization_id,
+{% endif %}
 {% if preview %}
       preview: {
         fields: [

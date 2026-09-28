@@ -27,14 +27,35 @@ export const layer = Layer.effect(
             }
           }
 
+          const organizationIds =
+            operation.organizationId == null
+              ? []
+              : typeof operation.organizationId === 'string'
+                ? [operation.organizationId]
+                : operation.organizationId
           const organization = yield* organizations
-            .resolve()
+            .resolve(organizationIds[0])
             .pipe(
               Effect.mapError(
                 (error) => new ApiCommandError({ message: error.message }),
               ),
             )
           const { environment } = organization
+          for (const id of organizationIds.slice(1)) {
+            const other = yield* organizations
+              .resolve(id)
+              .pipe(
+                Effect.mapError(
+                  (error) => new ApiCommandError({ message: error.message }),
+                ),
+              )
+            if (other.environment !== environment) {
+              return yield* new ApiCommandError({
+                message:
+                  'Organizations in --org must belong to the same environment.',
+              })
+            }
+          }
           const environmentContext = ` in ${environment}`
 
           if (operation.requiresConfirmation && !operation.confirm) {

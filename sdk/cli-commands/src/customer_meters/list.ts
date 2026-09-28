@@ -85,6 +85,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: query.organization_id,
         invoke: (client, organizationId) =>
           client.customerMeters.list({
             organization_id: organizationId,

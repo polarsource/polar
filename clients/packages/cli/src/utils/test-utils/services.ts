@@ -87,7 +87,13 @@ export const fakeAuth = (
           ? Effect.fail(state.failure)
           : Effect.succeed(state.credential)
       }),
-    login: () => Effect.sync(() => state.replaced),
+    login: (environment, _newSession, announce) =>
+      Effect.gen(function* () {
+        if (state.replaced) {
+          yield* announce(new URL(`https://${environment}.example/authorize`))
+        }
+        return state.replaced
+      }),
     logout: (targets) =>
       Effect.sync(() => {
         const deleted = targets.filter((target) =>

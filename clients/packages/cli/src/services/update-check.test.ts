@@ -1,13 +1,10 @@
-import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import {
-  checkForUpdateInBackground,
-  showUpdateNotice,
-} from '@/services/update-check'
-import { stripAnsi } from '@/utils/test-utils/cli'
+import { Effect } from 'effect'
+import { availableUpdate, checkForUpdate } from '@/services/update-check'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
 
@@ -15,7 +12,6 @@ const releasesUrl =
   'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1'
 
 let home: string
-let stderr: string[]
 let http: ReturnType<typeof fakeHttp>
 
 const stateFile = () => join(home, '.polar', 'update-check.json')
@@ -38,61 +34,50 @@ const release = (version: string) => () =>
     },
   ])
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const check = () =>
+  Effect.runPromise(checkForUpdate({ home }).pipe(Effect.provide(http.layer)))
 
 beforeEach(async () => {
   home = await mkdtemp(join(tmpdir(), 'polar-home-'))
-  stderr = []
-  vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => {
-    stderr.push(stripAnsi(String(chunk)))
-    return true
-  })
   http = fakeHttp()
 })
 
 afterEach(async () => {
-  vi.restoreAllMocks()
   await rm(home, { recursive: true, force: true })
 })
 
-describe('showUpdateNotice', () => {
-  test('stays silent without a cached check', () => {
-    showUpdateNotice({ home })
-    expect(stderr).toEqual([])
+describe('availableUpdate', () => {
+  test('finds nothing without a cached check', () => {
+    expect(availableUpdate({ home })).toBeUndefined()
   })
 
-  test('announces a newer cached release', async () => {
+  test('returns a newer cached release', async () => {
     await writeState({
       lastChecked: new Date().toISOString(),
       latestVersion: 'v99.0.0',
     })
-    showUpdateNotice({ home })
-    expect(stderr.join('')).toContain(`Update available ${VERSION} → v99.0.0`)
-    expect(stderr.join('')).toContain('polar update')
+    expect(availableUpdate({ home })).toBe('v99.0.0')
   })
 
-  test('stays silent when the cached release is not newer', async () => {
+  test('finds nothing when the cached release is not newer', async () => {
     await writeState({
       lastChecked: new Date().toISOString(),
       latestVersion: VERSION,
     })
-    showUpdateNotice({ home })
-    expect(stderr).toEqual([])
+    expect(availableUpdate({ home })).toBeUndefined()
   })
 
   test('ignores a corrupt cache', async () => {
     await writeState('not json')
-    showUpdateNotice({ home })
-    expect(stderr).toEqual([])
+    expect(availableUpdate({ home })).toBeUndefined()
   })
 })
 
-describe('checkForUpdateInBackground', () => {
+describe('checkForUpdate', () => {
   test('fetches and caches the latest release', async () => {
     http.routes[releasesUrl] = release('9.9.9')
-    checkForUpdateInBackground({ home, http: http.layer })
+    await check()
 
-    await vi.waitFor(() => expect(existsSync(stateFile())).toBe(true))
     const state = JSON.parse(await readFile(stateFile(), 'utf8'))
     expect(state.latestVersion).toBe('v9.9.9')
     expect(Date.now() - new Date(state.lastChecked).getTime()).toBeLessThan(
@@ -105,9 +90,8 @@ describe('checkForUpdateInBackground', () => {
       lastChecked: new Date().toISOString(),
       latestVersion: 'v1.0.0',
     })
-    checkForUpdateInBackground({ home, http: http.layer })
+    await check()
 
-    await settle()
     expect(http.requests).toHaveLength(0)
   })
 
@@ -117,31 +101,28 @@ describe('checkForUpdateInBackground', () => {
       latestVersion: 'v1.0.0',
     })
     http.routes[releasesUrl] = release('2.0.0')
-    checkForUpdateInBackground({ home, http: http.layer })
+    await check()
 
-    await vi.waitFor(async () =>
-      expect(
-        JSON.parse(await readFile(stateFile(), 'utf8')).latestVersion,
-      ).toBe('v2.0.0'),
+    expect(JSON.parse(await readFile(stateFile(), 'utf8')).latestVersion).toBe(
+      'v2.0.0',
     )
   })
 
   test('re-checks when the cache is corrupt', async () => {
     await writeState('not json')
     http.routes[releasesUrl] = release('2.0.0')
-    checkForUpdateInBackground({ home, http: http.layer })
+    await check()
 
-    await vi.waitFor(() => expect(http.requests).toHaveLength(1))
+    expect(http.requests).toHaveLength(1)
   })
 
   test('leaves no cache behind when the check fails', async () => {
     http.routes[releasesUrl] = () => {
       throw new Error('offline')
     }
-    checkForUpdateInBackground({ home, http: http.layer })
+    await check()
 
-    await vi.waitFor(() => expect(http.requests).toHaveLength(1))
-    await settle()
+    expect(http.requests).toHaveLength(1)
     expect(existsSync(stateFile())).toBe(false)
   })
 })

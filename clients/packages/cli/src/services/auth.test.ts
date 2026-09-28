@@ -49,10 +49,14 @@ beforeEach(() => {
 describe('saved sessions', () => {
   test('usable login is a no-op; replacement clears a selection in that environment', async () => {
     const auth = await Effect.runPromise(authEffect())
-    expect(await Effect.runPromise(auth.login('sandbox', false))).toBe(false)
+    expect(
+      await Effect.runPromise(auth.login('sandbox', false, () => Effect.void)),
+    ).toBe(false)
     expect(oauth.state.logins).toBe(0)
     expect(credentials.state.writes).toBe(0)
-    expect(await Effect.runPromise(auth.login('sandbox', true))).toBe(true)
+    expect(
+      await Effect.runPromise(auth.login('sandbox', true, () => Effect.void)),
+    ).toBe(true)
     expect(config.state.activeOrganization).toBeUndefined()
     expect(
       Redacted.value(credentials.state.sessions.sandbox!.accessToken),
@@ -61,7 +65,11 @@ describe('saved sessions', () => {
 
   test('replacing the other environment keeps the selection', async () => {
     const auth = await Effect.runPromise(authEffect())
-    expect(await Effect.runPromise(auth.login('production', true))).toBe(true)
+    expect(
+      await Effect.runPromise(
+        auth.login('production', true, () => Effect.void),
+      ),
+    ).toBe(true)
     expect(config.state.activeOrganization).toEqual(sandboxOrg)
     expect(config.state.writes).toBe(0)
   })
@@ -70,7 +78,9 @@ describe('saved sessions', () => {
     delete credentials.state.sessions.sandbox
     config = fakeConfig()
     const auth = await Effect.runPromise(authEffect())
-    expect(await Effect.runPromise(auth.login('sandbox', false))).toBe(true)
+    expect(
+      await Effect.runPromise(auth.login('sandbox', false, () => Effect.void)),
+    ).toBe(true)
     expect(config.state.activeOrganization).toBeUndefined()
     expect(credentials.state.sessions.sandbox).toBeDefined()
     expect(oauth.state.logins).toBe(1)
@@ -80,7 +90,7 @@ describe('saved sessions', () => {
     oauth.state.failure = new AuthError({ message: 'denied' })
     const auth = await Effect.runPromise(authEffect())
     await expect(
-      Effect.runPromise(auth.login('sandbox', true)),
+      Effect.runPromise(auth.login('sandbox', true, () => Effect.void)),
     ).rejects.toThrow('denied')
     expect(credentials.state.sessions.sandbox).toBe(saved)
     expect(config.state.activeOrganization).toEqual(sandboxOrg)
@@ -145,7 +155,9 @@ describe('saved sessions', () => {
       expiresAt: Date.now() + 10_000,
     })
     const auth = await Effect.runPromise(authEffect())
-    expect(await Effect.runPromise(auth.login('sandbox', false))).toBe(false)
+    expect(
+      await Effect.runPromise(auth.login('sandbox', false, () => Effect.void)),
+    ).toBe(false)
     expect(oauth.state.refreshes).toBe(1)
     expect(oauth.state.logins).toBe(0)
   })
@@ -235,7 +247,7 @@ describe('token override', () => {
     override = 'ci-secret'
     const auth = await Effect.runPromise(authEffect())
     await expect(
-      Effect.runPromise(auth.login('sandbox', true)),
+      Effect.runPromise(auth.login('sandbox', true, () => Effect.void)),
     ).rejects.toThrow('Unset POLAR_ACCESS_TOKEN')
     expect(
       await Effect.runPromise(auth.logout(['sandbox', 'production'])),

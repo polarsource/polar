@@ -50,3 +50,14 @@ export const timestamp = (date: Date = new Date()) =>
 
 export const duration = (milliseconds: number) =>
   pc.dim(`${Math.round(milliseconds)}ms`)
+
+export const updateNotice = (current: string, latest: string) =>
+  [
+    blank,
+    warning(
+      `Update available ${pc.dim(current)} ${pc.dim('→')} ${pc.bold(pc.cyan(latest))}`,
+    ),
+    step(`Run ${command('polar update')} to install it`),
+    blank,
+    blank,
+  ].join('\n')

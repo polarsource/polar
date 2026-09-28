@@ -10,6 +10,12 @@ describe('ui', () => {
     expect(stripAnsi(ui.command('polar update'))).toBe('polar update')
   })
 
+  test('announces an available update with the command to install it', () => {
+    const notice = stripAnsi(ui.updateNotice('v1.0.0', 'v2.0.0'))
+    expect(notice).toContain('Update available v1.0.0 → v2.0.0')
+    expect(notice).toContain('Run polar update to install it')
+  })
+
   test('renders failures with an optional hint', () => {
     expect(stripAnsi(ui.failure('Broken'))).toBe('  ✖ Broken')
     expect(stripAnsi(ui.failure('Broken', 'Try again'))).toBe(

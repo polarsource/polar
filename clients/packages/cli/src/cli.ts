@@ -15,10 +15,7 @@ import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
 import * as Telemetry from '@/services/telemetry'
 import * as Trigger from '@/services/trigger'
-import {
-  checkForUpdateInBackground,
-  showUpdateNotice,
-} from '@/services/update-check'
+import { availableUpdate, checkForUpdate } from '@/services/update-check'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
@@ -99,8 +96,11 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
     BunRuntime.runMain({ disableErrorReporting: true }),
   )
 } else {
-  showUpdateNotice()
-  checkForUpdateInBackground()
+  const latestVersion = availableUpdate()
+  if (latestVersion) {
+    process.stderr.write(ui.updateNotice(VERSION, latestVersion))
+  }
+  Effect.runFork(checkForUpdate().pipe(Effect.provide(FetchHttpClient.layer)))
   instrumented.pipe(
     Effect.provide(services),
     BunRuntime.runMain({ disableErrorReporting: true }),

@@ -5,12 +5,8 @@ import type {
   AuthError,
   PolarEnvironment,
 } from '@/schemas/Auth'
-import {
-  type ApiClient,
-  apiUrl,
-  authenticatedClient,
-  describeApiFailure,
-} from '@/services/api'
+import { apiUrl, describeApiFailure } from '@/services/api'
+import { type ApiClient, authenticatedClient } from '@/services/client'
 
 export class TriggerError extends Data.TaggedError('TriggerError')<{
   message: string

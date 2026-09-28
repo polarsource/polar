@@ -700,6 +700,19 @@ class MemberService:
                     "Upgrade to a team customer to add more members."
                 )
 
+        existing_member = await repository.get_by_customer_and_email(
+            customer, email=email
+        )
+        if existing_member:
+            log.info(
+                "member.create.already_exists",
+                customer_id=customer_id,
+                organization_id=customer.organization_id,
+                existing_member_id=existing_member.id,
+                role=existing_member.role,
+            )
+            return existing_member
+
         if (
             external_id is not None
             and await repository.get_by_customer_id_and_external_id(
@@ -716,19 +729,6 @@ class MemberService:
                     }
                 ]
             )
-
-        existing_member = await repository.get_by_customer_and_email(
-            customer, email=email
-        )
-        if existing_member:
-            log.info(
-                "member.create.already_exists",
-                customer_id=customer_id,
-                organization_id=customer.organization_id,
-                existing_member_id=existing_member.id,
-                role=existing_member.role,
-            )
-            return existing_member
 
         member = Member(
             customer_id=customer_id,

@@ -9,18 +9,20 @@ from pydantic import (
     AnyUrl,
     BeforeValidator,
     Field,
+    GetCoreSchemaHandler,
+    GetJsonSchemaHandler,
     computed_field,
 )
-from pydantic.json_schema import SkipJsonSchema
+from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
+from pydantic_core import core_schema
 
 from polar.kit.schemas import (
     HttpsUrl,
     IDSchema,
-    MergeJSONSchema,
     Schema,
     TimestampedSchema,
 )
-from polar.kit.versioning import APIVersion
+from polar.kit.versioning import _ACTIVE_API_VERSION, APIVersion
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 from polar.version import CURRENT_API_VERSION, VERSIONS
@@ -101,11 +103,29 @@ def _is_available_version(api_version: APIVersion) -> APIVersion:
     return api_version
 
 
-AvailableAPIVersion = Annotated[
-    APIVersion,
-    MergeJSONSchema({"enum": [str(version) for version in sorted(VERSIONS)]}),
-    AfterValidator(_is_available_version),
-]
+class _AvailableAPIVersion:
+    def __get_pydantic_core_schema__(
+        self, source_type: object, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            _is_available_version, handler(source_type)
+        )
+
+    def __get_pydantic_json_schema__(
+        self, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler.resolve_ref_schema(handler(schema))
+        active_version = _ACTIVE_API_VERSION.get()
+        if active_version is None:
+            active_version = CURRENT_API_VERSION
+        json_schema["enum"] = [
+            str(version)
+            for version in sorted(v for v in VERSIONS if v <= active_version)
+        ]
+        return json_schema
+
+
+AvailableAPIVersion = Annotated[APIVersion, _AvailableAPIVersion()]
 
 
 class WebhookEndpoint(IDSchema, TimestampedSchema):

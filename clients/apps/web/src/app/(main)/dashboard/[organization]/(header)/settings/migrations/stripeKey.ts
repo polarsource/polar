@@ -15,6 +15,8 @@ export const REQUIRED_PERMISSIONS: StripePermission[] = [
   { resource: 'Coupons', access: 'Read' },
   { resource: 'Promotion codes', access: 'Read' },
   { resource: 'Subscriptions', access: 'Write' },
+  { resource: 'Subscription schedules', access: 'Read' },
+  { resource: 'Invoices', access: 'Read' },
   { resource: 'Payment methods', access: 'Read' },
   { resource: 'All accounts', access: 'Read' },
 ]
@@ -27,6 +29,8 @@ const SCOPE_TO_RESOURCE: Record<string, string> = {
   'Promotion codes': 'Promotion codes',
   Subscriptions: 'Subscriptions',
   'Subscriptions (write)': 'Subscriptions',
+  'Subscription schedules': 'Subscription schedules',
+  Invoices: 'Invoices',
   'Payment methods': 'Payment methods',
   'All accounts': 'All accounts',
 }

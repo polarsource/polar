@@ -38,6 +38,8 @@ def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
         "products",
         "prices",
         "subscriptions",
+        "subscription_schedules",
+        "invoices",
         "payment_methods",
         "coupons",
         "promotion_codes",
@@ -71,6 +73,24 @@ class TestVerifyScopes:
         )
 
         assert await adapter.verify_scopes() == ["Prices"]
+
+    @pytest.mark.parametrize(
+        ("resource", "label"),
+        [
+            ("subscription_schedules", "Subscription schedules"),
+            ("invoices", "Invoices"),
+        ],
+    )
+    async def test_missing_expanded_object_scope_reported(
+        self, mocker: MockerFixture, resource: str, label: str
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _all_scopes_present(mocker, client)
+        getattr(client.v1, resource).list_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError(f"missing {resource} scope")
+        )
+
+        assert await adapter.verify_scopes() == [label]
 
     async def test_missing_write_scope_reported(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

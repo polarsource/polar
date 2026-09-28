@@ -41,6 +41,17 @@ describe('REQUIRED_PERMISSIONS', () => {
       access: 'Read',
     })
   })
+
+  it('requires Read on the objects the subscription reads expand', () => {
+    expect(REQUIRED_PERMISSIONS).toContainEqual({
+      resource: 'Subscription schedules',
+      access: 'Read',
+    })
+    expect(REQUIRED_PERMISSIONS).toContainEqual({
+      resource: 'Invoices',
+      access: 'Read',
+    })
+  })
 })
 
 describe('stripeKeyError', () => {
@@ -88,6 +99,13 @@ describe('parseMissingStripeScopes', () => {
           'The Stripe API key is missing access to: Customers, Subscriptions (write), All accounts.',
       }),
     ).toEqual(['Customers', 'Subscriptions', 'All accounts'])
+    expect(
+      parseMissingStripeScopes({
+        error: 'MissingStripeScopes',
+        detail:
+          'The Stripe API key is missing access to: Subscription schedules, Invoices.',
+      }),
+    ).toEqual(['Subscription schedules', 'Invoices'])
   })
 
   it('ignores other API errors', () => {

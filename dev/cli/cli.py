@@ -50,6 +50,7 @@ app = typer.Typer(
     name="dev",
     help="Polar Development CLI - streamline your dev environment",
     no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 

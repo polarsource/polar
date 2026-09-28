@@ -6,7 +6,7 @@ from openapi_kit.diff import compare
 from openapi_kit.parser import OpenAPIParser
 
 from polar.kit.versioning import APIVersion
-from polar.version import NEXT_API_VERSION, VERSIONS
+from polar.version import VERSIONS
 
 
 @pytest.mark.asyncio
@@ -24,9 +24,7 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "version", [pytest.param(v, id=str(v)) for v in VERSIONS if v != NEXT_API_VERSION]
-)
+@pytest.mark.parametrize("version", [pytest.param(v, id=str(v)) for v in VERSIONS])
 async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) -> None:
     OPENAPI_FROZEN_MESSAGE = """
     The current API contract is frozen and must not contain contract changes,

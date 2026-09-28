@@ -1,16 +1,20 @@
 """
-Backfill `exclude_free_products: false` into every member's notification settings.
+Backfill `exclude_free_products` and `new_trial` into every member's notification
+settings.
 
-Rows written before the setting existed lack the key. Once this has run, the key
-can become required on `OrganizationNotificationSettings`.
+Rows written before these settings existed lack the keys. `exclude_free_products`
+defaults to false and `new_trial` takes the member's `new_subscription` value.
+Keys already present are left untouched. Once this has run, both keys can become
+required on `OrganizationNotificationSettings`.
 
 Usage:
     cd server
-    uv run python -m scripts.backfill_exclude_free_products_setting
+    uv run python -m scripts.backfill_notification_settings
 """
 
 import typer
-from sqlalchemy import Update, func, select, tuple_, update
+from sqlalchemy import Update, func, literal, or_, select, tuple_, update
+from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.models import UserOrganization
 from scripts.helper import (
@@ -26,19 +30,23 @@ configure_script_logging()
 
 
 def backfill_statement() -> Update:
+    settings = UserOrganization.notification_settings
+    defaults = func.jsonb_build_object(
+        "exclude_free_products",
+        False,
+        "new_trial",
+        func.coalesce(settings["new_subscription"], literal(True, JSONB)),
+    )
     return (
         update(UserOrganization)
-        .values(
-            notification_settings=UserOrganization.notification_settings.op("||")(
-                func.jsonb_build_object("exclude_free_products", False)
-            )
-        )
+        .values(notification_settings=defaults.op("||")(settings))
         .where(
             tuple_(UserOrganization.user_id, UserOrganization.organization_id).in_(
                 select(UserOrganization.user_id, UserOrganization.organization_id)
                 .where(
-                    ~UserOrganization.notification_settings.has_key(
-                        "exclude_free_products"
+                    or_(
+                        ~settings.has_key("exclude_free_products"),
+                        ~settings.has_key("new_trial"),
                     )
                 )
                 .limit(limit_bindparam())

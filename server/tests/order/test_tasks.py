@@ -968,6 +968,63 @@ class TestOrderSubscriptionRenewalNotification:
         notifications = await self._notifications_for(session, member)
         assert len(notifications) == 1
 
+    async def _create_trial_conversion_order(
+        self, save_fixture: SaveFixture, product: Product, organization: Organization
+    ) -> Order:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        return await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+    @pytest.mark.parametrize(
+        ("new_subscription", "subscription_renewal", "expected"),
+        [
+            (True, False, [NotificationType.maintainer_new_paid_subscription.value]),
+            (True, True, [NotificationType.maintainer_new_paid_subscription.value]),
+            (False, True, []),
+        ],
+    )
+    async def test_trial_conversion_is_a_new_subscription(
+        self,
+        new_subscription: bool,
+        subscription_renewal: bool,
+        expected: list[str],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        member = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            member,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=new_subscription,
+                chargeback_prevention=True,
+                subscription_renewal=subscription_renewal,
+            ),
+        )
+        order = await self._create_trial_conversion_order(
+            save_fixture, product, organization
+        )
+
+        await order_subscription_renewal_notification(order.id)
+
+        notifications = await self._notifications_for(session, member)
+        assert [n.type for n in notifications] == expected
+
     async def test_member_setting_is_always_present(
         self,
         session: AsyncSession,

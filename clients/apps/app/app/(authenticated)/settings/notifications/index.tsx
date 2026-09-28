@@ -100,12 +100,26 @@ export default function NotificationsPage() {
         </SettingsItem>
         <SettingsItem
           title="New Subscriptions"
-          description="Send a notification when new subscriptions are created"
+          description="Send a notification when a paid subscription starts, including when a trial converts"
           variant="static"
         >
           <Switch
             value={notificationSettings?.new_subscription ?? false}
             onValueChange={createNotificationSettingHandler('new_subscription')}
+          />
+        </SettingsItem>
+        <SettingsItem
+          title="New Trials"
+          description="Send a notification when a customer starts a trial"
+          variant="static"
+        >
+          <Switch
+            value={
+              notificationSettings?.new_trial ??
+              notificationSettings?.new_subscription ??
+              false
+            }
+            onValueChange={createNotificationSettingHandler('new_trial')}
           />
         </SettingsItem>
         <SettingsItem
@@ -122,7 +136,7 @@ export default function NotificationsPage() {
         </SettingsItem>
         <SettingsItem
           title="Exclude Free Products"
-          description="Skip new subscription and renewal notifications for free products. Paid products discounted to zero are still notified."
+          description="Skip subscription, trial and renewal notifications for free products. Paid products discounted to zero are still notified."
           variant="static"
         >
           <Switch

@@ -24,6 +24,7 @@ class OrganizationRole(StrEnum):
 class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
+    new_trial: Annotated[NotRequired[bool], Version(starting_from=V2027_01)]
     chargeback_prevention: bool
     subscription_renewal: bool
     exclude_free_products: Annotated[NotRequired[bool], Version(starting_from=V2027_01)]
@@ -32,6 +33,7 @@ class OrganizationNotificationSettings(TypedDict):
 _default_notification_settings: OrganizationNotificationSettings = {
     "new_order": True,
     "new_subscription": True,
+    "new_trial": True,
     "chargeback_prevention": True,
     "subscription_renewal": False,
     "exclude_free_products": False,

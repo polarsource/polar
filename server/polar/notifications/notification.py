@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
+    maintainer_new_trial = "MaintainerNewTrialNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_subscription_renewal = "MaintainerSubscriptionRenewalNotification"
     maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
@@ -93,6 +94,28 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
 class MaintainerNewPaidSubscriptionNotification(NotificationBase):
     type: Literal[NotificationType.maintainer_new_paid_subscription]
     payload: MaintainerNewPaidSubscriptionNotificationPayload
+
+
+class MaintainerNewTrialNotificationPayload(NotificationPayloadBase):
+    subscriber_name: str
+    subscriber_email: str | None = None
+    product_name: str
+    organization_name: str
+    organization_slug: str | None = None
+    subscription_id: str | None = None
+    trial_end: datetime | None = None
+
+    def subject(self) -> str:
+        return f"{self.subscriber_name} started a {self.product_name} trial"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_new_trial"
+
+
+class MaintainerNewTrialNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_new_trial]
+    payload: MaintainerNewTrialNotificationPayload
 
 
 class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
@@ -239,6 +262,7 @@ class MaintainerFileFlaggedMaliciousNotification(NotificationBase):
 
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
+    | MaintainerNewTrialNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerSubscriptionRenewalNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
@@ -247,6 +271,7 @@ NotificationPayload = (
 
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
+    | MaintainerNewTrialNotification
     | MaintainerNewProductSaleNotification
     | MaintainerSubscriptionRenewalNotification
     | MaintainerAccountCreditsGrantedNotification

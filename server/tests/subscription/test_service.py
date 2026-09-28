@@ -67,6 +67,7 @@ from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.order.service import order as order_service
@@ -3489,7 +3490,7 @@ class TestReinstate:
 
         reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
         new_subscription_notification_mock = mocker.patch.object(
-            subscription_service, "_send_new_subscription_notification"
+            subscription_service, "send_new_subscription_notification"
         )
 
         async with SubscriptionUpdateContext(
@@ -10566,3 +10567,60 @@ class TestFixedSeatComposition:
         assert subscription.amount == (
             fixed_price.price_amount + seat_price.calculate_amount(10)
         )
+
+
+@pytest.mark.asyncio
+class TestNewSubscriptionNotification:
+    async def test_trialing_sends_new_trial(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(subscription_service, "_send_webhook")
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service._on_subscription_activated(
+            session, subscription, False
+        )
+
+        send_to_org_members_mock.assert_called_once()
+        notif = send_to_org_members_mock.call_args.kwargs["notif"]
+        assert notif.type == NotificationType.maintainer_new_trial
+        assert notif.payload.subject() == (
+            f"{customer.display_name} started a {product.name} trial"
+        )
+
+    async def test_active_sends_new_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(subscription_service, "_send_webhook")
+        send_to_org_members_mock = mocker.patch(
+            "polar.subscription.service.notifications_service.send_to_org_members"
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        await subscription_service._on_subscription_activated(
+            session, subscription, False
+        )
+
+        send_to_org_members_mock.assert_called_once()
+        notif = send_to_org_members_mock.call_args.kwargs["notif"]
+        assert notif.type == NotificationType.maintainer_new_paid_subscription

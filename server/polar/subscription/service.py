@@ -102,6 +102,7 @@ from polar.models.subscription import CustomerCancellationReason, SubscriptionSt
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
+    MaintainerNewTrialNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -3650,7 +3651,15 @@ class SubscriptionService:
         # Only send merchant notification if the subscription is a new one,
         # not a past due that has been reactivated.
         if not reactivated and notify_new_subscription:
-            await self._send_new_subscription_notification(session, subscription)
+            if subscription.trialing:
+                await self._send_new_trial_notification(session, subscription)
+            else:
+                await self.send_new_subscription_notification(
+                    session,
+                    subscription,
+                    product=subscription.product,
+                    organization=subscription.product.organization,
+                )
 
         if reactivated:
             await event_service.create_event(
@@ -3887,14 +3896,41 @@ class SubscriptionService:
         # Void all pending orders for this subscription
         enqueue_job("order.void_pending_orders_for_subscription", subscription.id)
 
-    async def _send_new_subscription_notification(
+    async def _send_new_trial_notification(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         product = subscription.product
+        organization = product.organization
 
         await notifications_service.send_to_org_members(
             session,
-            org_id=product.organization_id,
+            org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
+            notif=PartialNotification(
+                type=NotificationType.maintainer_new_trial,
+                payload=MaintainerNewTrialNotificationPayload(
+                    subscriber_name=subscription.customer.display_name,
+                    subscriber_email=subscription.customer.email,
+                    product_name=product.name,
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                    subscription_id=str(subscription.id),
+                    trial_end=subscription.trial_end,
+                ),
+            ),
+        )
+
+    async def send_new_subscription_notification(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
             is_free_product=all(price.is_free for price in subscription.prices),
             notif=PartialNotification(
                 type=NotificationType.maintainer_new_paid_subscription,
@@ -3905,8 +3941,8 @@ class SubscriptionService:
                     tier_price_amount=subscription.amount,
                     tier_price_recurring_interval=subscription.recurring_interval,
                     tier_price_recurring_interval_count=subscription.recurring_interval_count,
-                    tier_organization_name=product.organization.name,
-                    tier_organization_slug=product.organization.slug,
+                    tier_organization_name=organization.name,
+                    tier_organization_slug=organization.slug,
                     subscription_id=str(subscription.id),
                     currency=subscription.currency,
                 ),

@@ -81,6 +81,8 @@ export type Notification = schemas['NotificationsList']['notifications'][number]
 
 export type MaintainerNewPaidSubscriptionNotificationPayload =
   schemas['MaintainerNewPaidSubscriptionNotificationPayload']
+export type MaintainerNewTrialNotificationPayload =
+  schemas['MaintainerNewTrialNotificationPayload']
 export type MaintainerNewProductSaleNotificationPayload =
   schemas['MaintainerNewProductSaleNotificationPayload']
 export type MaintainerAccountCreditsGrantedNotificationPayload =

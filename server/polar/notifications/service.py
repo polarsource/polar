@@ -90,12 +90,16 @@ class NotificationsService:
         members = await user_organization_service.list_by_org(session, org_id)
 
         for member in members:
-            if key is not None and not member.notification_settings[key]:
+            settings = member.notification_settings
+            if key is not None and not settings[key]:
                 continue
 
-            if is_free_product and member.notification_settings.get(
-                "exclude_free_products", False
+            if notif.type == NotificationType.maintainer_new_trial and not settings.get(
+                "new_trial", settings["new_subscription"]
             ):
+                continue
+
+            if is_free_product and settings.get("exclude_free_products", False):
                 continue
 
             await self.send_to_user(

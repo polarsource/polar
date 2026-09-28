@@ -1,9 +1,9 @@
-import { getSubscriptions } from '@polar-sh/sdk/2026-04/services/subscriptions'
+import { getSubscriptions } from '@polar-sh/sdk/2026-10/services/subscriptions'
 import {
   handleWebhookPayload,
   type WebhooksConfig,
 } from '@polar-sh/adapter-utils'
-import { type PolarCore, webhooks as sdkWebhooks } from '@polar-sh/sdk/2026-04'
+import { type PolarCore, webhooks as sdkWebhooks } from '@polar-sh/sdk/2026-10'
 import { APIError, createAuthEndpoint } from 'better-auth/api'
 import { DEFAULT_BETTER_AUTH_CREATOR_ROLE } from '../organization/roles'
 import {

@@ -11,11 +11,11 @@ const { mockCheckoutCreate, mockCheckoutUpdate, mockSendRedirect } = vi.hoisted(
   }),
 )
 
-vi.mock('@polar-sh/sdk/2026-04', () => ({
+vi.mock('@polar-sh/sdk/2026-10', () => ({
   createPolarCore: vi.fn(() => ({})),
 }))
 
-vi.mock('@polar-sh/sdk/2026-04/services/checkouts', () => ({
+vi.mock('@polar-sh/sdk/2026-10/services/checkouts', () => ({
   createCheckouts: () => mockCheckoutCreate,
   clientUpdateCheckouts: () => mockCheckoutUpdate,
 }))

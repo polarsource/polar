@@ -15,7 +15,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 ## Installation
 
 ```bash
-pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@next
+pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@1.0.0
 ```
 
 ## Preparation
@@ -44,7 +44,7 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { createPolarCore } from "@polar-sh/sdk/2026-04";
+import { createPolarCore } from "@polar-sh/sdk/2026-10";
 
 const polarClient = createPolarCore({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -122,7 +122,7 @@ export const authClient = createAuthClient({
 ```typescript
 import { betterAuth } from 'better-auth'
 import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
-import { createPolarCore } from '@polar-sh/sdk/2026-04'
+import { createPolarCore } from '@polar-sh/sdk/2026-10'
 import { organization } from 'better-auth/plugins'
 
 const polarClient = createPolarCore({
@@ -180,7 +180,7 @@ The SDK v1 models returned by the state, benefits, subscriptions, orders, and me
 The core client has no service properties such as `customers` or `checkouts`. Import the operation you need and pass the core client to it:
 
 ```typescript
-import { getStateExternalCustomers } from '@polar-sh/sdk/2026-04/services/customers'
+import { getStateExternalCustomers } from '@polar-sh/sdk/2026-10/services/customers'
 
 const customerState = await getStateExternalCustomers(polarClient)(userId)
 ```

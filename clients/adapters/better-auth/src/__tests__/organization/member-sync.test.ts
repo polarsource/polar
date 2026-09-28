@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { errors, type models } from '@polar-sh/sdk/2026-04'
+import { errors, type models } from '@polar-sh/sdk/2026-10'
 import {
   PolarOrganizationOwnerInvariantError,
   ensureMemberMirror,

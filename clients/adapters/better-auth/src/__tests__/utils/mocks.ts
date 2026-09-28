@@ -3,7 +3,7 @@ import {
   type models,
   type Polar,
   type PolarCore,
-} from '@polar-sh/sdk/2026-04'
+} from '@polar-sh/sdk/2026-10'
 import type { User } from 'better-auth'
 import { type Mock, vi } from 'vitest'
 

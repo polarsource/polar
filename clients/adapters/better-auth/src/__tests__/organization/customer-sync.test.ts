@@ -1,6 +1,6 @@
 import type { Organization } from 'better-auth/plugins/organization'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { errors, type models } from '@polar-sh/sdk/2026-04'
+import { errors, type models } from '@polar-sh/sdk/2026-10'
 import {
   PolarOrganizationCustomerTypeError,
   ensureTeamCustomer,

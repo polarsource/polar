@@ -4,13 +4,13 @@ import {
   updateExternalMembers,
   listExternalMembers,
   getExternalMembers,
-} from '@polar-sh/sdk/2026-04/services/customers/members'
+} from '@polar-sh/sdk/2026-10/services/customers/members'
 import {
   updateExternalCustomers,
   getExternalCustomers,
   createCustomers,
-} from '@polar-sh/sdk/2026-04/services/customers'
-import { errors, type models, type PolarCore } from '@polar-sh/sdk/2026-04'
+} from '@polar-sh/sdk/2026-10/services/customers'
+import { errors, type models, type PolarCore } from '@polar-sh/sdk/2026-10'
 import type { Organization } from 'better-auth/plugins/organization'
 import {
   DEFAULT_BETTER_AUTH_CREATOR_ROLE,

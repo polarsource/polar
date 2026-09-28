@@ -59,7 +59,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@polar-sh/sdk": "1.0.0-alpha.22",
+    "@polar-sh/sdk": "1.0.0",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "^22.20.4",
     "@typescript/native": "catalog:",
@@ -70,7 +70,7 @@
     "zod": "^3.25.0 || ^4.0.0"
   },
   "peerDependencies": {
-    "@polar-sh/sdk": "1.0.0-alpha.22",
+    "@polar-sh/sdk": "^1.0.0",
     "better-auth": "^1.7.0",
     "zod": "^3.25.0 || ^4.0.0"
   },

@@ -2,13 +2,13 @@ import {
   assignSeatCustomerSeats,
   revokeSeatCustomerSeats,
   listSeatsCustomerSeats,
-} from '@polar-sh/sdk/2026-04/services/customer_seats'
+} from '@polar-sh/sdk/2026-10/services/customer_seats'
 import {
   updateSubscriptions,
   listSubscriptions,
-} from '@polar-sh/sdk/2026-04/services/subscriptions'
-import { getProducts } from '@polar-sh/sdk/2026-04/services/products'
-import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
+} from '@polar-sh/sdk/2026-10/services/subscriptions'
+import { getProducts } from '@polar-sh/sdk/2026-10/services/products'
+import type { models, PolarCore } from '@polar-sh/sdk/2026-10'
 import type { AuthContext } from 'better-auth'
 import {
   type OrganizationOptions,

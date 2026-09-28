@@ -1,4 +1,4 @@
-import type { models } from '@polar-sh/sdk/2026-04'
+import type { models } from '@polar-sh/sdk/2026-10'
 import type { User } from 'better-auth'
 import type { Member, Organization } from 'better-auth/plugins/organization'
 

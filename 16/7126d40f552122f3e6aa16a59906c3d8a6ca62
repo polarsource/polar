@@ -1,0 +1,21 @@
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_fd528823e8d35d::t_57d3dc31e7186c 1293-1295,1306-1307
+server/polar/merchant_migration/adapters/stripe.py
+  s_fd528823e8d35d::t_a801634263c2a1 94,104-116,692,704,718,725,727-729
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "167126d40f552122f3e6aa16a59906c3d8a6ca62",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

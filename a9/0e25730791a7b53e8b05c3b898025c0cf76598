@@ -1,0 +1,19 @@
+terraform/modules/ec2_tailscale/tailscale-init.sh
+  s_20c5e070e4af64::t_93b6884483630d 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a90e25730791a7b53e8b05c3b898025c0cf76598",
+  "prompts": {},
+  "sessions": {
+    "s_20c5e070e4af64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbb1c52e-9556-4d87-ae6b-ea95f0254a6b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

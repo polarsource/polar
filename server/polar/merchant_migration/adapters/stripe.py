@@ -91,12 +91,9 @@ def _recorded_cancel_at_period_end(
     return None
 
 
-def _cancel_at_period_end(
+def _pending_period_end(
     subscription: stripe_lib.Subscription, current_period_end: int | None
 ) -> bool:
-    recorded = _recorded_cancel_at_period_end(subscription)
-    if subscription.status == "canceled" and recorded is not None:
-        return recorded
     if subscription.cancel_at_period_end:
         return True
     # A cancel date on the period end is the same end, set without the flag.
@@ -104,8 +101,19 @@ def _cancel_at_period_end(
     return cancel_at is not None and cancel_at == current_period_end
 
 
-def _cancellation_feedback(subscription: stripe_lib.Subscription) -> str | None:
-    if not subscription.cancel_at_period_end:
+def _cancel_at_period_end(
+    subscription: stripe_lib.Subscription, current_period_end: int | None
+) -> bool:
+    recorded = _recorded_cancel_at_period_end(subscription)
+    if subscription.status == "canceled" and recorded is not None:
+        return recorded
+    return _pending_period_end(subscription, current_period_end)
+
+
+def _cancellation_feedback(
+    subscription: stripe_lib.Subscription, current_period_end: int | None
+) -> str | None:
+    if not _pending_period_end(subscription, current_period_end):
         return None
     details = subscription.cancellation_details
     return details.feedback if details is not None else None
@@ -681,6 +689,7 @@ class StripeAdapter:
         items = subscription["items"]["data"]
         first_item = items[0]
         discounts = self._map_discount_attachments(subscription)
+        current_period_end = first_item.get("current_period_end")
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
@@ -692,7 +701,7 @@ class StripeAdapter:
             current_period_start=self._to_datetime(
                 first_item.get("current_period_start")
             ),
-            current_period_end=self._to_datetime(first_item.get("current_period_end")),
+            current_period_end=self._to_datetime(current_period_end),
             trialing=subscription.status == "trialing",
             paused_collection=subscription.pause_collection is not None,
             line_item_count=len(items),
@@ -706,16 +715,18 @@ class StripeAdapter:
             customer_discount_started_at=discounts.customer_started_at,
             discount_block=discounts.block,
             cancel_at_period_end=_cancel_at_period_end(
-                subscription, first_item.get("current_period_end")
+                subscription, current_period_end
             ),
             cancel_at_period_end_known=_cancel_at_period_end_known(subscription),
             cancel_at=self._to_datetime(subscription.cancel_at),
             has_scheduled_changes=self._has_scheduled_changes(subscription),
             # For a pending end Stripe dates the request, not the end itself.
             canceled_at=self._to_datetime(subscription.canceled_at)
-            if subscription.cancel_at_period_end
+            if _pending_period_end(subscription, current_period_end)
             else None,
-            cancellation_reason=_cancellation_feedback(subscription),
+            cancellation_reason=_cancellation_feedback(
+                subscription, current_period_end
+            ),
             trial_end=self._to_datetime(subscription.trial_end),
             stopped_for_migration=self._stopped_for_migration(subscription),
             latest_invoice_unpaid=with_latest_invoice

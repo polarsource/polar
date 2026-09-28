@@ -25,6 +25,7 @@ async def merchant_migration_precheck(
     actor_name="merchant_migration.import_catalog",
     priority=TaskPriority.LOW,
     time_limit=600_000,
+    max_retries=3,
 )
 async def merchant_migration_import_catalog(
     merchant_migration_id: Annotated[UUID, LoggableField],

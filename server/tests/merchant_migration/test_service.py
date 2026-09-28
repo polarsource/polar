@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import Mock
 from uuid import UUID
 
+import dramatiq
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
@@ -2823,6 +2824,41 @@ class TestImportCatalog:
         assert migration.step == MerchantMigrationStep.pre_check
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.pending
+        assert await _products(session, organization) == []
+
+    @pytest.mark.auth
+    async def test_unexpected_import_error_fails_on_the_last_retry(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        current_message: dramatiq.Message[Any],
+    ) -> None:
+        max_retries = (
+            dramatiq.get_broker()
+            .get_actor("merchant_migration.import_catalog")
+            .options["max_retries"]
+        )
+        assert max_retries == 3
+        current_message.options.update(retries=max_retries, max_retries=max_retries)
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        mocker.patch(
+            "polar.merchant_migration.importer.product_service.create",
+            side_effect=RuntimeError("boom"),
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        assert await service.execute_import(session, migration.id) is None
+
+        await session.refresh(migration)
+        assert migration.step == MerchantMigrationStep.pre_check
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.failed
         assert await _products(session, organization) == []
 
     @pytest.mark.auth

@@ -12,19 +12,19 @@ export const command = Command.make(
   {
     data,
     input: {
-      slug: Flag.string('slug').pipe(
+      slug: Flag.String('slug').pipe(
         Flag.optional,
         Flag.withDescription('Filter by slug.'),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'slug',

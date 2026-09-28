@@ -11,11 +11,11 @@ export const command = Command.make(
   'update',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      billing_name: Flag.string('billing-name').pipe(
+      billing_name: Flag.String('billing-name').pipe(
         Flag.optional,
         Flag.withDescription(
           'The name of the customer that should appear on the invoice.',

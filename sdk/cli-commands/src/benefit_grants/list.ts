@@ -12,37 +12,37 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      external_customer_id: Flag.string('external-customer-id')
+      external_customer_id: Flag.String('external-customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by customer external ID.'),
         ),
-      is_granted: Flag.boolean('is-granted').pipe(
+      is_granted: Flag.Boolean('is-granted').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. ',
         ),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'granted_at',

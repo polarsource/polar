@@ -11,7 +11,7 @@ export const command = Command.make(
   'update_external',
   {
     path: {
-      external_id: Argument.string('external_id'),
+      external_id: Argument.String('external_id'),
     },
     data,
     input: {
@@ -21,13 +21,13 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription(
           'The email address of the customer. This must be unique within the organization.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
@@ -35,11 +35,11 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('billing_address'),
       ),
-      tax_id: Flag.string('tax-id').pipe(
+      tax_id: Flag.String('tax-id').pipe(
         Flag.optional,
         Flag.withDescription('tax_id'),
       ),
-      locale: Flag.string('locale').pipe(
+      locale: Flag.String('locale').pipe(
         Flag.optional,
         Flag.withDescription('locale'),
       ),

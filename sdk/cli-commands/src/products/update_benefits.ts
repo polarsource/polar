@@ -11,11 +11,11 @@ export const command = Command.make(
   'update_benefits',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      benefits: Flag.string('benefits')
+      benefits: Flag.String('benefits')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,

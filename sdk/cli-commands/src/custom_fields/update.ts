@@ -11,7 +11,7 @@ export const command = Command.make(
   'update',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -21,15 +21,15 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      slug: Flag.string('slug').pipe(
+      slug: Flag.String('slug').pipe(
         Flag.optional,
         Flag.withDescription('slug'),
       ),
-      type: Flag.choice('type', [
+      type: Flag.Literals('type', [
         'text',
         'number',
         'date',

@@ -12,7 +12,7 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -22,11 +22,11 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      product_id: Flag.string('product-id').pipe(
+      product_id: Flag.String('product-id').pipe(
         Flag.optional,
         Flag.withDescription('Update subscription to another product.'),
       ),
-      proration_behavior: Flag.choice('proration-behavior', [
+      proration_behavior: Flag.Literals('proration-behavior', [
         'invoice',
         'prorate',
         'next_period',
@@ -37,7 +37,7 @@ export const command = Command.make(
           'Determine how to handle the proration billing. If not provided, will use the default organization setting.',
         ),
       ),
-      discount_id: Flag.string('discount-id').pipe(
+      discount_id: Flag.String('discount-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.',
@@ -49,19 +49,19 @@ export const command = Command.make(
           'Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.',
         ),
       ),
-      seats: Flag.integer('seats').pipe(
+      seats: Flag.Int('seats').pipe(
         Flag.optional,
         Flag.withDescription(
           'Update the number of seats for this subscription.',
         ),
       ),
-      units: Flag.integer('units').pipe(
+      units: Flag.Int('units').pipe(
         Flag.optional,
         Flag.withDescription(
           'Update the number of units for this subscription.',
         ),
       ),
-      current_billing_period_end: Flag.string(
+      current_billing_period_end: Flag.String(
         'current-billing-period-end',
       ).pipe(
         Flag.optional,
@@ -69,7 +69,7 @@ export const command = Command.make(
           "Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.",
         ),
       ),
-      customer_cancellation_reason: Flag.choice(
+      customer_cancellation_reason: Flag.Literals(
         'customer-cancellation-reason',
         [
           'customer_service',
@@ -85,7 +85,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('Customer reason for cancellation.'),
       ),
-      customer_cancellation_comment: Flag.string(
+      customer_cancellation_comment: Flag.String(
         'customer-cancellation-comment',
       ).pipe(
         Flag.optional,
@@ -93,7 +93,7 @@ export const command = Command.make(
           'Customer feedback and why they decided to cancel.',
         ),
       ),
-      cancel_at_period_end: Flag.boolean('cancel-at-period-end').pipe(
+      cancel_at_period_end: Flag.Boolean('cancel-at-period-end').pipe(
         Flag.optional,
         Flag.withDescription(
           'Cancel an active subscription once the current period ends.',
@@ -105,13 +105,13 @@ export const command = Command.make(
           'Cancel and revoke an active subscription immediately',
         ),
       ),
-      pause_at_period_end: Flag.boolean('pause-at-period-end').pipe(
+      pause_at_period_end: Flag.Boolean('pause-at-period-end').pipe(
         Flag.optional,
         Flag.withDescription(
           'Pause an active subscription at the end of the current period.',
         ),
       ),
-      resumes_at: Flag.string('resumes-at').pipe(
+      resumes_at: Flag.String('resumes-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Date at which the paused subscription should automatically resume.',

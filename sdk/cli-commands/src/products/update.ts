@@ -12,7 +12,7 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -22,7 +22,7 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      trial_interval: Flag.choice('trial-interval', [
+      trial_interval: Flag.Literals('trial-interval', [
         'day',
         'week',
         'month',
@@ -31,21 +31,21 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('The interval unit for the trial period.'),
       ),
-      trial_interval_count: Flag.integer('trial-interval-count').pipe(
+      trial_interval_count: Flag.Int('trial-interval-count').pipe(
         Flag.optional,
         Flag.withDescription(
           'The number of interval units for the trial period.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      description: Flag.string('description').pipe(
+      description: Flag.String('description').pipe(
         Flag.optional,
         Flag.withDescription('The description of the product.'),
       ),
-      recurring_interval: Flag.choice('recurring-interval', [
+      recurring_interval: Flag.Literals('recurring-interval', [
         'day',
         'week',
         'month',
@@ -56,19 +56,19 @@ export const command = Command.make(
           "The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**",
         ),
       ),
-      recurring_interval_count: Flag.integer('recurring-interval-count').pipe(
+      recurring_interval_count: Flag.Int('recurring-interval-count').pipe(
         Flag.optional,
         Flag.withDescription(
           "Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**",
         ),
       ),
-      is_archived: Flag.boolean('is-archived').pipe(
+      is_archived: Flag.Boolean('is-archived').pipe(
         Flag.optional,
         Flag.withDescription(
           "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.",
         ),
       ),
-      visibility: Flag.choice('visibility', [
+      visibility: Flag.Literals('visibility', [
         'draft',
         'private',
         'public',
@@ -82,7 +82,7 @@ export const command = Command.make(
           'List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.',
         ),
       ),
-      medias: Flag.string('medias')
+      medias: Flag.String('medias')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,

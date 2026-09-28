@@ -120,7 +120,7 @@ export const layer = Layer.effect(
             }
 
             const answer = yield* Prompt.run(
-              Prompt.text({ message: "Enter 'yes' to confirm" }),
+              Prompt.String({ message: "Enter 'yes' to confirm" }),
             ).pipe(
               Effect.mapError(
                 () => new ApiCommandError({ message: 'Command cancelled.' }),

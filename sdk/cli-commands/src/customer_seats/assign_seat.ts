@@ -12,37 +12,37 @@ export const command = Command.make(
   {
     data,
     input: {
-      subscription_id: Flag.string('subscription-id').pipe(
+      subscription_id: Flag.String('subscription-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'Subscription ID. Required if neither order_id nor checkout_id is provided.',
         ),
       ),
-      order_id: Flag.string('order-id').pipe(
+      order_id: Flag.String('order-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'Order ID for one-time purchases. Required if subscription_id is not provided.',
         ),
       ),
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription('Email of the customer to assign the seat to'),
       ),
-      external_customer_id: Flag.string('external-customer-id').pipe(
+      external_customer_id: Flag.String('external-customer-id').pipe(
         Flag.optional,
         Flag.withDescription('External customer ID for the seat assignment'),
       ),
-      customer_id: Flag.string('customer-id').pipe(
+      customer_id: Flag.String('customer-id').pipe(
         Flag.optional,
         Flag.withDescription('Customer ID for the seat assignment'),
       ),
-      external_member_id: Flag.string('external-member-id').pipe(
+      external_member_id: Flag.String('external-member-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member).',
         ),
       ),
-      member_id: Flag.string('member-id').pipe(
+      member_id: Flag.String('member-id').pipe(
         Flag.optional,
         Flag.withDescription('Member ID for the seat assignment.'),
       ),
@@ -52,7 +52,7 @@ export const command = Command.make(
           'Additional metadata for the seat (max 10 keys, 1KB total)',
         ),
       ),
-      immediate_claim: Flag.boolean('immediate-claim').pipe(
+      immediate_claim: Flag.Boolean('immediate-claim').pipe(
         Flag.optional,
         Flag.withDescription(
           'If true, the seat will be immediately claimed without sending an invitation email. API-only feature.',

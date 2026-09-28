@@ -11,7 +11,7 @@ export const command = Command.make(
   'update',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -21,35 +21,35 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      code: Flag.string('code').pipe(
+      code: Flag.String('code').pipe(
         Flag.optional,
         Flag.withDescription(
           'Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.',
         ),
       ),
-      starts_at: Flag.string('starts-at').pipe(
+      starts_at: Flag.String('starts-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional timestamp after which the discount is redeemable.',
         ),
       ),
-      ends_at: Flag.string('ends-at').pipe(
+      ends_at: Flag.String('ends-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional timestamp after which the discount is no longer redeemable.',
         ),
       ),
-      max_redemptions: Flag.integer('max-redemptions').pipe(
+      max_redemptions: Flag.Int('max-redemptions').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional maximum number of times the discount can be redeemed.',
         ),
       ),
-      max_redemptions_per_customer: Flag.integer(
+      max_redemptions_per_customer: Flag.Int(
         'max-redemptions-per-customer',
       ).pipe(
         Flag.optional,
@@ -57,23 +57,24 @@ export const command = Command.make(
           'Optional maximum number of times the discount can be redeemed by a single customer.',
         ),
       ),
-      duration: Flag.choice('duration', ['once', 'forever', 'repeating']).pipe(
-        Flag.optional,
-        Flag.withDescription('duration'),
-      ),
-      duration_in_months: Flag.integer('duration-in-months').pipe(
+      duration: Flag.Literals('duration', [
+        'once',
+        'forever',
+        'repeating',
+      ]).pipe(Flag.optional, Flag.withDescription('duration')),
+      duration_in_months: Flag.Int('duration-in-months').pipe(
         Flag.optional,
         Flag.withDescription('duration_in_months'),
       ),
-      type: Flag.choice('type', ['fixed', 'percentage']).pipe(
+      type: Flag.Literals('type', ['fixed', 'percentage']).pipe(
         Flag.optional,
         Flag.withDescription('type'),
       ),
-      amount: Flag.integer('amount').pipe(
+      amount: Flag.Int('amount').pipe(
         Flag.optional,
         Flag.withDescription('amount'),
       ),
-      currency: Flag.choice('currency', [
+      currency: Flag.Literals('currency', [
         'aed',
         'all',
         'amd',
@@ -205,11 +206,11 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('amounts'),
       ),
-      basis_points: Flag.integer('basis-points').pipe(
+      basis_points: Flag.Int('basis-points').pipe(
         Flag.optional,
         Flag.withDescription('basis_points'),
       ),
-      products: Flag.string('products')
+      products: Flag.String('products')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('products')),
     },

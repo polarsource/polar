@@ -9,8 +9,8 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
-      member_id: Argument.string('member_id'),
+      id: Argument.String('id'),
+      member_id: Argument.String('member_id'),
     },
   },
   (config) =>

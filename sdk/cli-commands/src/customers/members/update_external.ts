@@ -13,20 +13,20 @@ export const command = Command.make(
   'update_external',
   {
     path: {
-      external_id: Argument.string('external_id'),
-      member_external_id: Argument.string('member_external_id'),
+      external_id: Argument.String('external_id'),
+      member_external_id: Argument.String('member_external_id'),
     },
     data,
     input: {
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription('email'),
       ),
-      role: Flag.choice('role', ['owner', 'billing_manager', 'member']).pipe(
+      role: Flag.Literals('role', ['owner', 'billing_manager', 'member']).pipe(
         Flag.optional,
         Flag.withDescription('The role of the member within the customer.'),
       ),

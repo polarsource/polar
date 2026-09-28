@@ -12,15 +12,15 @@ export const command = Command.make(
   {
     data,
     input: {
-      start_date: Flag.string('start-date').pipe(
+      start_date: Flag.String('start-date').pipe(
         Flag.optional,
         Flag.withDescription('Start date.'),
       ),
-      end_date: Flag.string('end-date').pipe(
+      end_date: Flag.String('end-date').pipe(
         Flag.optional,
         Flag.withDescription('End date.'),
       ),
-      timezone: Flag.choice('timezone', [
+      timezone: Flag.Literals('timezone', [
         'Africa/Abidjan',
         'Africa/Accra',
         'Africa/Addis_Ababa',
@@ -625,7 +625,7 @@ export const command = Command.make(
           'Timezone to use for the timestamps. Default is UTC.',
         ),
       ),
-      interval: Flag.choice('interval', [
+      interval: Flag.Literals('interval', [
         'year',
         'month',
         'week',
@@ -635,17 +635,17 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('Interval between two timestamps.'),
       ),
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      product_id: Flag.string('product-id')
+      product_id: Flag.String('product-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by product ID.')),
-      billing_type: Flag.choice('billing-type', ['one_time', 'recurring'])
+      billing_type: Flag.Literals('billing-type', ['one_time', 'recurring'])
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
@@ -653,10 +653,10 @@ export const command = Command.make(
             'Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.',
           ),
         ),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      metrics: Flag.string('metrics')
+      metrics: Flag.String('metrics')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,

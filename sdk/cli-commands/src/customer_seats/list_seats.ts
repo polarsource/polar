@@ -12,11 +12,11 @@ export const command = Command.make(
   {
     data,
     input: {
-      subscription_id: Flag.string('subscription-id').pipe(
+      subscription_id: Flag.String('subscription-id').pipe(
         Flag.optional,
         Flag.withDescription('subscription_id'),
       ),
-      order_id: Flag.string('order-id').pipe(
+      order_id: Flag.String('order-id').pipe(
         Flag.optional,
         Flag.withDescription('order_id'),
       ),

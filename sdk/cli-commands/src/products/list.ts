@@ -12,48 +12,48 @@ export const command = Command.make(
   {
     data,
     input: {
-      id: Flag.string('id')
+      id: Flag.String('id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by product ID.')),
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      query: Flag.string('query').pipe(
+      query: Flag.String('query').pipe(
         Flag.optional,
         Flag.withDescription('Filter by product name.'),
       ),
-      is_archived: Flag.boolean('is-archived').pipe(
+      is_archived: Flag.Boolean('is-archived').pipe(
         Flag.optional,
         Flag.withDescription('Filter on archived products.'),
       ),
-      is_recurring: Flag.boolean('is-recurring').pipe(
+      is_recurring: Flag.Boolean('is-recurring').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ',
         ),
       ),
-      benefit_id: Flag.string('benefit-id')
+      benefit_id: Flag.String('benefit-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter products granting specific benefit.'),
         ),
-      visibility: Flag.choice('visibility', ['draft', 'private', 'public'])
+      visibility: Flag.Literals('visibility', ['draft', 'private', 'public'])
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by visibility.')),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'name',

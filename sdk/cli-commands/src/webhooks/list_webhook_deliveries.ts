@@ -14,29 +14,29 @@ export const command = Command.make(
   {
     data,
     input: {
-      endpoint_id: Flag.string('endpoint-id')
+      endpoint_id: Flag.String('endpoint-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by webhook endpoint ID.'),
         ),
-      start_timestamp: Flag.string('start-timestamp').pipe(
+      start_timestamp: Flag.String('start-timestamp').pipe(
         Flag.optional,
         Flag.withDescription('Filter deliveries after this timestamp.'),
       ),
-      end_timestamp: Flag.string('end-timestamp').pipe(
+      end_timestamp: Flag.String('end-timestamp').pipe(
         Flag.optional,
         Flag.withDescription('Filter deliveries before this timestamp.'),
       ),
-      succeeded: Flag.boolean('succeeded').pipe(
+      succeeded: Flag.Boolean('succeeded').pipe(
         Flag.optional,
         Flag.withDescription('Filter by delivery success status.'),
       ),
-      query: Flag.string('query').pipe(
+      query: Flag.String('query').pipe(
         Flag.optional,
         Flag.withDescription('Query to filter webhook deliveries.'),
       ),
-      http_code_class: Flag.choice('http-code-class', [
+      http_code_class: Flag.Literals('http-code-class', [
         '2xx',
         '3xx',
         '4xx',
@@ -47,7 +47,7 @@ export const command = Command.make(
           'Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).',
         ),
       ),
-      event_type: Flag.choice('event-type', [
+      event_type: Flag.Literals('event-type', [
         'checkout.created',
         'checkout.updated',
         'checkout.expired',
@@ -95,11 +95,11 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by webhook event type.'),
         ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),

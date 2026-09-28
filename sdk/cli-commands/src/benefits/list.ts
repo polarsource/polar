@@ -12,14 +12,14 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      type: Flag.choice('type', [
+      type: Flag.Literals('type', [
         'custom',
         'discord',
         'github_repository',
@@ -31,28 +31,28 @@ export const command = Command.make(
       ])
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by benefit type.')),
-      id: Flag.string('id')
+      id: Flag.String('id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by benefit IDs.')),
-      exclude_id: Flag.string('exclude-id')
+      exclude_id: Flag.String('exclude-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Exclude benefits with these IDs.'),
         ),
-      query: Flag.string('query').pipe(
+      query: Flag.String('query').pipe(
         Flag.optional,
         Flag.withDescription('Filter by description.'),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'description',

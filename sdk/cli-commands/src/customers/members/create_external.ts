@@ -13,25 +13,25 @@ export const command = Command.make(
   'create_external',
   {
     path: {
-      external_id: Argument.string('external_id'),
+      external_id: Argument.String('external_id'),
     },
     data,
     input: {
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription('The email address of the member.'),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      external_id: Flag.string('external-id').pipe(
+      external_id: Flag.String('external-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'The ID of the member in your system. This must be unique within the customer. ',
         ),
       ),
-      role: Flag.choice('role', ['member', 'billing_manager']).pipe(
+      role: Flag.Literals('role', ['member', 'billing_manager']).pipe(
         Flag.optional,
         Flag.withDescription(
           'The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.',

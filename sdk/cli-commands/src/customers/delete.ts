@@ -12,11 +12,11 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      anonymize: Flag.boolean('anonymize').pipe(
+      anonymize: Flag.Boolean('anonymize').pipe(
         Flag.optional,
         Flag.withDescription(
           "If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.",

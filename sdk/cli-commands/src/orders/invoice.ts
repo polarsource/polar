@@ -7,7 +7,7 @@ export const command = Command.make(
   'invoice',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
   },
   (config) =>

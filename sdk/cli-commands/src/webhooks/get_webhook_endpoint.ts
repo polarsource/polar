@@ -7,7 +7,7 @@ export const command = Command.make(
   'get_webhook_endpoint',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
   },
   (config) =>

@@ -12,25 +12,25 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      product_id: Flag.string('product-id')
+      product_id: Flag.String('product-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by product ID.')),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'label',

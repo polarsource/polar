@@ -14,28 +14,28 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      url: Flag.string('url').pipe(Flag.optional, Flag.withDescription('url')),
-      name: Flag.string('name').pipe(
+      url: Flag.String('url').pipe(Flag.optional, Flag.withDescription('url')),
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription(
           'An optional name for the webhook endpoint to help organize and identify it.',
         ),
       ),
-      api_version: Flag.choice('api-version', ['2026-04', '2026-10']).pipe(
+      api_version: Flag.Literals('api-version', ['2026-04', '2026-10']).pipe(
         Flag.optional,
         Flag.withDescription(
           "The API version that'll be used in event payloads.",
         ),
       ),
-      format: Flag.choice('format', ['raw', 'discord', 'slack']).pipe(
+      format: Flag.Literals('format', ['raw', 'discord', 'slack']).pipe(
         Flag.optional,
         Flag.withDescription('format'),
       ),
-      events: Flag.choice('events', [
+      events: Flag.Literals('events', [
         'checkout.created',
         'checkout.updated',
         'checkout.expired',
@@ -80,7 +80,7 @@ export const command = Command.make(
       ])
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('events')),
-      enabled: Flag.boolean('enabled').pipe(
+      enabled: Flag.Boolean('enabled').pipe(
         Flag.optional,
         Flag.withDescription('Whether the webhook endpoint is enabled.'),
       ),

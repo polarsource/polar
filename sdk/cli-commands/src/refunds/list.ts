@@ -12,47 +12,47 @@ export const command = Command.make(
   {
     data,
     input: {
-      id: Flag.string('id')
+      id: Flag.String('id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by refund ID.')),
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      order_id: Flag.string('order-id')
+      order_id: Flag.String('order-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by order ID.')),
-      subscription_id: Flag.string('subscription-id')
+      subscription_id: Flag.String('subscription-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by subscription ID.'),
         ),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      external_customer_id: Flag.string('external-customer-id')
+      external_customer_id: Flag.String('external-customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by customer external ID.'),
         ),
-      succeeded: Flag.boolean('succeeded').pipe(
+      succeeded: Flag.Boolean('succeeded').pipe(
         Flag.optional,
         Flag.withDescription('Filter by `succeeded`.'),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'amount',

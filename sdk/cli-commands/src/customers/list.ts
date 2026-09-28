@@ -12,36 +12,36 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription('Filter by exact email.'),
       ),
-      query: Flag.string('query').pipe(
+      query: Flag.String('query').pipe(
         Flag.optional,
         Flag.withDescription('Filter by name, email, or external ID.'),
       ),
-      active: Flag.boolean('active').pipe(
+      active: Flag.Boolean('active').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by active customers, i.e. customers with at least one trialing, active or past_due subscription.',
         ),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'email',

@@ -12,33 +12,33 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      product_id: Flag.string('product-id')
+      product_id: Flag.String('product-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by product ID.')),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      external_customer_id: Flag.string('external-customer-id')
+      external_customer_id: Flag.String('external-customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by customer external ID.'),
         ),
-      discount_id: Flag.string('discount-id')
+      discount_id: Flag.String('discount-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by discount ID.')),
-      active: Flag.boolean('active').pipe(
+      active: Flag.Boolean('active').pipe(
         Flag.optional,
         Flag.withDescription('Filter by active or inactive subscription.'),
       ),
-      status: Flag.choice('status', [
+      status: Flag.Literals('status', [
         'incomplete',
         'incomplete_expired',
         'trialing',
@@ -53,13 +53,13 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by subscription status.'),
         ),
-      cancel_at_period_end: Flag.boolean('cancel-at-period-end').pipe(
+      cancel_at_period_end: Flag.Boolean('cancel-at-period-end').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by subscriptions that are set to cancel at period end.',
         ),
       ),
-      customer_cancellation_reason: Flag.choice(
+      customer_cancellation_reason: Flag.Literals(
         'customer-cancellation-reason',
         [
           'customer_service',
@@ -77,39 +77,39 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by customer cancellation reason.'),
         ),
-      canceled_at_after: Flag.string('canceled-at-after').pipe(
+      canceled_at_after: Flag.String('canceled-at-after').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by cancellation date (after or equal to).',
         ),
       ),
-      canceled_at_before: Flag.string('canceled-at-before').pipe(
+      canceled_at_before: Flag.String('canceled-at-before').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by cancellation date (before or equal to).',
         ),
       ),
-      started_after: Flag.string('started-after').pipe(
+      started_after: Flag.String('started-after').pipe(
         Flag.optional,
         Flag.withDescription(
           'Only include subscriptions started after this date.',
         ),
       ),
-      started_before: Flag.string('started-before').pipe(
+      started_before: Flag.String('started-before').pipe(
         Flag.optional,
         Flag.withDescription(
           'Only include subscriptions started before this date.',
         ),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'customer',
         '-customer',
         'status',

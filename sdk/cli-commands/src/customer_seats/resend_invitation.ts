@@ -7,7 +7,7 @@ export const command = Command.make(
   'resend_invitation',
   {
     path: {
-      seat_id: Argument.string('seat_id'),
+      seat_id: Argument.String('seat_id'),
     },
   },
   (config) =>

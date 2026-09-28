@@ -11,27 +11,27 @@ export const command = Command.make(
   'grants',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      is_granted: Flag.boolean('is-granted').pipe(
+      is_granted: Flag.Boolean('is-granted').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. ',
         ),
       ),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer.')),
-      member_id: Flag.string('member-id')
+      member_id: Flag.String('member-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by member.')),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),

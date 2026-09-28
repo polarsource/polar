@@ -11,7 +11,7 @@ export const command = Command.make(
   'update',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -21,13 +21,13 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription(
           'The email address of the customer. This must be unique within the organization.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
@@ -35,21 +35,21 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('billing_address'),
       ),
-      tax_id: Flag.string('tax-id').pipe(
+      tax_id: Flag.String('tax-id').pipe(
         Flag.optional,
         Flag.withDescription('tax_id'),
       ),
-      locale: Flag.string('locale').pipe(
+      locale: Flag.String('locale').pipe(
         Flag.optional,
         Flag.withDescription('locale'),
       ),
-      external_id: Flag.string('external-id').pipe(
+      external_id: Flag.String('external-id').pipe(
         Flag.optional,
         Flag.withDescription(
           "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
         ),
       ),
-      type: Flag.choice('type', ['individual', 'team']).pipe(
+      type: Flag.Literals('type', ['individual', 'team']).pipe(
         Flag.optional,
         Flag.withDescription(
           "The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.",

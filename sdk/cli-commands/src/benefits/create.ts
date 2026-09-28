@@ -18,7 +18,7 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      type: Flag.choice('type', [
+      type: Flag.Literals('type', [
         'custom',
         'discord',
         'github_repository',
@@ -28,20 +28,20 @@ export const command = Command.make(
         'feature_flag',
         'slack_shared_channel',
       ]).pipe(Flag.optional, Flag.withDescription('type')),
-      description: Flag.string('description').pipe(
+      description: Flag.String('description').pipe(
         Flag.optional,
         Flag.withDescription(
           'The description of the benefit. Will be displayed on products having this benefit.',
         ),
       ),
-      organization_id: Flag.string('organization-id').pipe(
+      organization_id: Flag.String('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(
           'The ID of the organization owning the benefit. **Required unless you use an organization token.**',
         ),
       ),
-      visibility: Flag.choice('visibility', [
+      visibility: Flag.Literals('visibility', [
         'draft',
         'private',
         'public',

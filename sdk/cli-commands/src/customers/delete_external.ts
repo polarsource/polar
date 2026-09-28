@@ -12,11 +12,11 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      external_id: Argument.string('external_id'),
+      external_id: Argument.String('external_id'),
     },
     data,
     input: {
-      anonymize: Flag.boolean('anonymize').pipe(
+      anonymize: Flag.Boolean('anonymize').pipe(
         Flag.optional,
         Flag.withDescription(
           "If true, also anonymize the customer's personal data for GDPR compliance.",

@@ -12,27 +12,27 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      status: Flag.choice('status', ['granted', 'revoked', 'disabled']).pipe(
+      status: Flag.Literals('status', ['granted', 'revoked', 'disabled']).pipe(
         Flag.optional,
         Flag.withDescription('status'),
       ),
-      usage: Flag.integer('usage').pipe(
+      usage: Flag.Int('usage').pipe(
         Flag.optional,
         Flag.withDescription('usage'),
       ),
-      limit_activations: Flag.integer('limit-activations').pipe(
+      limit_activations: Flag.Int('limit-activations').pipe(
         Flag.optional,
         Flag.withDescription('limit_activations'),
       ),
-      limit_usage: Flag.integer('limit-usage').pipe(
+      limit_usage: Flag.Int('limit-usage').pipe(
         Flag.optional,
         Flag.withDescription('limit_usage'),
       ),
-      expires_at: Flag.string('expires-at').pipe(
+      expires_at: Flag.String('expires-at').pipe(
         Flag.optional,
         Flag.withDescription('expires_at'),
       ),

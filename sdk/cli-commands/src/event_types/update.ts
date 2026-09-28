@@ -11,15 +11,15 @@ export const command = Command.make(
   'update',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      label: Flag.string('label').pipe(
+      label: Flag.String('label').pipe(
         Flag.optional,
         Flag.withDescription('The label for the event type.'),
       ),
-      label_property_selector: Flag.string('label-property-selector').pipe(
+      label_property_selector: Flag.String('label-property-selector').pipe(
         Flag.optional,
         Flag.withDescription(
           "Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').",

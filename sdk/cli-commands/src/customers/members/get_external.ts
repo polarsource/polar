@@ -7,8 +7,8 @@ export const command = Command.make(
   'get_external',
   {
     path: {
-      external_id: Argument.string('external_id'),
-      member_external_id: Argument.string('member_external_id'),
+      external_id: Argument.String('external_id'),
+      member_external_id: Argument.String('member_external_id'),
     },
   },
   (config) =>

@@ -11,19 +11,19 @@ export const command = Command.make(
   'quantities',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
-      start_timestamp: Flag.string('start-timestamp').pipe(
+      start_timestamp: Flag.String('start-timestamp').pipe(
         Flag.optional,
         Flag.withDescription('Start timestamp.'),
       ),
-      end_timestamp: Flag.string('end-timestamp').pipe(
+      end_timestamp: Flag.String('end-timestamp').pipe(
         Flag.optional,
         Flag.withDescription('End timestamp.'),
       ),
-      interval: Flag.choice('interval', [
+      interval: Flag.Literals('interval', [
         'year',
         'month',
         'week',
@@ -33,7 +33,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('Interval between two timestamps.'),
       ),
-      timezone: Flag.choice('timezone', [
+      timezone: Flag.Literals('timezone', [
         'Africa/Abidjan',
         'Africa/Accra',
         'Africa/Addis_Ababa',
@@ -638,16 +638,16 @@ export const command = Command.make(
           'Timezone to use for the timestamps. Default is UTC.',
         ),
       ),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      external_customer_id: Flag.string('external-customer-id')
+      external_customer_id: Flag.String('external-customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by external customer ID.'),
         ),
-      customer_aggregation_function: Flag.choice(
+      customer_aggregation_function: Flag.Literals(
         'customer-aggregation-function',
         ['count', 'sum', 'max', 'min', 'avg', 'unique'],
       ).pipe(

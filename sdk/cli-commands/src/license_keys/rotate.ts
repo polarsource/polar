@@ -7,7 +7,7 @@ export const command = Command.make(
   'rotate',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
   },
   (config) =>

@@ -12,49 +12,49 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      external_customer_id: Flag.string('external-customer-id')
+      external_customer_id: Flag.String('external-customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by external customer ID.'),
         ),
-      query: Flag.string('query').pipe(
+      query: Flag.String('query').pipe(
         Flag.optional,
         Flag.withDescription('Query to filter event types by name or label.'),
       ),
-      root_events: Flag.boolean('root-events').pipe(
+      root_events: Flag.Boolean('root-events').pipe(
         Flag.optional,
         Flag.withDescription(
           'When true, only return event types with root events (parent_id IS NULL).',
         ),
       ),
-      parent_id: Flag.string('parent-id').pipe(
+      parent_id: Flag.String('parent-id').pipe(
         Flag.optional,
         Flag.withDescription('Filter by specific parent event ID.'),
       ),
-      source: Flag.choice('source', ['system', 'user']).pipe(
+      source: Flag.Literals('source', ['system', 'user']).pipe(
         Flag.optional,
         Flag.withDescription('Filter by event source (system or user).'),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'name',
         '-name',
         'label',

@@ -2,21 +2,21 @@ import { Option, Schema } from 'effect'
 import { Flag } from 'effect/unstable/cli'
 
 export const jsonFlag = (name: string) =>
-  Flag.string(name).pipe(
+  Flag.String(name).pipe(
     Flag.mapTryCatch(
       (value): unknown => JSON.parse(value),
       () => `--${name} must contain valid JSON`,
     ),
   )
 
-export const data = Flag.string('data').pipe(
+export const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withSchema(Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown))),
   Flag.optional,
   Flag.withDescription('JSON object; explicitly supplied flags override its top-level keys'),
 )
 
-export const confirm = Flag.boolean('confirm').pipe(
+export const confirm = Flag.Boolean('confirm').pipe(
   Flag.withAlias('c'),
   Flag.withDefault(false),
   Flag.withDescription('Skip the confirmation prompt for destructive requests'),

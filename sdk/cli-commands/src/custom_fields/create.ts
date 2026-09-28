@@ -18,24 +18,24 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      type: Flag.choice('type', [
+      type: Flag.Literals('type', [
         'text',
         'number',
         'date',
         'checkbox',
         'select',
       ]).pipe(Flag.optional, Flag.withDescription('type')),
-      slug: Flag.string('slug').pipe(
+      slug: Flag.String('slug').pipe(
         Flag.optional,
         Flag.withDescription(
           "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.",
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('Name of the custom field.'),
       ),
-      organization_id: Flag.string('organization-id').pipe(
+      organization_id: Flag.String('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

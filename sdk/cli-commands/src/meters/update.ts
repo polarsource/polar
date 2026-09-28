@@ -12,7 +12,7 @@ export const command = Command.make(
   {
     confirm,
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -22,23 +22,23 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription(
           "The name of the meter. Will be shown on customer's invoices and usage.",
         ),
       ),
-      unit: Flag.choice('unit', ['scalar', 'token', 'custom']).pipe(
+      unit: Flag.Literals('unit', ['scalar', 'token', 'custom']).pipe(
         Flag.optional,
         Flag.withDescription('The unit of the meter.'),
       ),
-      custom_label: Flag.string('custom-label').pipe(
+      custom_label: Flag.String('custom-label').pipe(
         Flag.optional,
         Flag.withDescription(
           "The label for the custom unit. Required when unit is 'custom'.",
         ),
       ),
-      custom_multiplier: Flag.integer('custom-multiplier').pipe(
+      custom_multiplier: Flag.Int('custom-multiplier').pipe(
         Flag.optional,
         Flag.withDescription(
           "The multiplier to convert from base unit to display scale. Required when unit is 'custom'.",
@@ -56,7 +56,7 @@ export const command = Command.make(
           'The aggregation to apply on the filtered events to calculate the meter.',
         ),
       ),
-      is_archived: Flag.boolean('is-archived').pipe(
+      is_archived: Flag.Boolean('is-archived').pipe(
         Flag.optional,
         Flag.withDescription(
           'Whether the meter is archived. Archived meters are no longer used for billing.',

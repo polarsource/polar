@@ -18,23 +18,23 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription(
           "The name of the meter. Will be shown on customer's invoices and usage.",
         ),
       ),
-      unit: Flag.choice('unit', ['scalar', 'token', 'custom']).pipe(
+      unit: Flag.Literals('unit', ['scalar', 'token', 'custom']).pipe(
         Flag.optional,
         Flag.withDescription('unit'),
       ),
-      custom_label: Flag.string('custom-label').pipe(
+      custom_label: Flag.String('custom-label').pipe(
         Flag.optional,
         Flag.withDescription(
           "The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.",
         ),
       ),
-      custom_multiplier: Flag.integer('custom-multiplier').pipe(
+      custom_multiplier: Flag.Int('custom-multiplier').pipe(
         Flag.optional,
         Flag.withDescription(
           'The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.',
@@ -50,7 +50,7 @@ export const command = Command.make(
           'The aggregation to apply on the filtered events to calculate the meter.',
         ),
       ),
-      organization_id: Flag.string('organization-id').pipe(
+      organization_id: Flag.String('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

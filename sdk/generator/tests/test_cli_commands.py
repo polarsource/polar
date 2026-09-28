@@ -285,10 +285,10 @@ def test_preview_get_cannot_require_extra_input(
 @pytest.mark.parametrize(
     ("schema", "expected"),
     [
-        ({"type": "boolean"}, 'Flag.boolean("value")'),
+        ({"type": "boolean"}, 'Flag.Boolean("value")'),
         (
             {"type": "string", "enum": ["on", "off"]},
-            'Flag.choice("value", ["on", "off"])',
+            'Flag.Literals("value", ["on", "off"])',
         ),
         ({"type": "object", "additionalProperties": True}, 'jsonFlag("value")'),
     ],

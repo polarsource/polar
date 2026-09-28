@@ -23,7 +23,7 @@ export interface ApiOperation<A> {
   method: string
   requiresConfirmation: boolean
   confirm: boolean
-  organizationId?: string | ReadonlyArray<string> | null
+  organizationId?: string | ReadonlyArray<string> | null | undefined
   preview?: ApiPreview
   invoke: (client: Polar, organizationId: string) => Promise<A>
 }

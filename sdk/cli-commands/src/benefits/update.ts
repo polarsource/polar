@@ -11,7 +11,7 @@ export const command = Command.make(
   'update',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
     data,
     input: {
@@ -21,13 +21,13 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      description: Flag.string('description').pipe(
+      description: Flag.String('description').pipe(
         Flag.optional,
         Flag.withDescription(
           'The description of the benefit. Will be displayed on products having this benefit.',
         ),
       ),
-      visibility: Flag.choice('visibility', [
+      visibility: Flag.Literals('visibility', [
         'draft',
         'private',
         'public',
@@ -37,7 +37,7 @@ export const command = Command.make(
           'The visibility of the benefit in the customer portal.',
         ),
       ),
-      type: Flag.choice('type', [
+      type: Flag.Literals('type', [
         'custom',
         'discord',
         'github_repository',

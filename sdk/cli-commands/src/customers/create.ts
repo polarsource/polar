@@ -18,13 +18,13 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      external_id: Flag.string('external-id').pipe(
+      external_id: Flag.String('external-id').pipe(
         Flag.optional,
         Flag.withDescription(
           "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
         ),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
@@ -32,15 +32,15 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('billing_address'),
       ),
-      tax_id: Flag.string('tax-id').pipe(
+      tax_id: Flag.String('tax-id').pipe(
         Flag.optional,
         Flag.withDescription('tax_id'),
       ),
-      locale: Flag.string('locale').pipe(
+      locale: Flag.String('locale').pipe(
         Flag.optional,
         Flag.withDescription('locale'),
       ),
-      organization_id: Flag.string('organization-id').pipe(
+      organization_id: Flag.String('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(
@@ -53,11 +53,11 @@ export const command = Command.make(
           "Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name.",
         ),
       ),
-      type: Flag.choice('type', ['individual', 'team']).pipe(
+      type: Flag.Literals('type', ['individual', 'team']).pipe(
         Flag.optional,
         Flag.withDescription('type'),
       ),
-      email: Flag.string('email').pipe(
+      email: Flag.String('email').pipe(
         Flag.optional,
         Flag.withDescription(
           'The email address of the team customer. Optional for team customers \u2014 if omitted, an owner with an email must be provided.',

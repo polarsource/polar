@@ -7,7 +7,7 @@ export const command = Command.make(
   'reset_webhook_endpoint_secret',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
   },
   (config) =>

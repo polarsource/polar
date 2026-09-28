@@ -22,7 +22,7 @@ export const command = Command.make(
 {% if method.path_params %}
     path: {
 {% for param in method.path_params %}
-      {{ param.name }}: Argument.string({{ param.name | quote }}),
+      {{ param.name }}: Argument.String({{ param.name | quote }}),
 {% endfor %}
     },
 {% endif %}

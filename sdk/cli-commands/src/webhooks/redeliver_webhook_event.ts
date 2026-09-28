@@ -7,7 +7,7 @@ export const command = Command.make(
   'redeliver_webhook_event',
   {
     path: {
-      id: Argument.string('id'),
+      id: Argument.String('id'),
     },
   },
   (config) =>

@@ -7,7 +7,7 @@ export const command = Command.make(
   'get_claim_info',
   {
     path: {
-      invitation_token: Argument.string('invitation_token'),
+      invitation_token: Argument.String('invitation_token'),
     },
   },
   (config) =>

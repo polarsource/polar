@@ -12,17 +12,17 @@ export const command = Command.make(
   {
     data,
     input: {
-      organization_id: Flag.string('organization-id')
+      organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.withAlias('org'),
           Flag.optional,
           Flag.withDescription('Filter by organization ID.'),
         ),
-      product_id: Flag.string('product-id')
+      product_id: Flag.String('product-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by product ID.')),
-      product_billing_type: Flag.choice('product-billing-type', [
+      product_billing_type: Flag.Literals('product-billing-type', [
         'one_time',
         'recurring',
       ])
@@ -33,28 +33,28 @@ export const command = Command.make(
             'Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.',
           ),
         ),
-      discount_id: Flag.string('discount-id')
+      discount_id: Flag.String('discount-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by discount ID.')),
-      customer_id: Flag.string('customer-id')
+      customer_id: Flag.String('customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by customer ID.')),
-      external_customer_id: Flag.string('external-customer-id')
+      external_customer_id: Flag.String('external-customer-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by customer external ID.'),
         ),
-      checkout_id: Flag.string('checkout-id')
+      checkout_id: Flag.String('checkout-id')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by checkout ID.')),
-      subscription_id: Flag.string('subscription-id')
+      subscription_id: Flag.String('subscription-id')
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,
           Flag.withDescription('Filter by subscription ID.'),
         ),
-      status: Flag.choice('status', [
+      status: Flag.Literals('status', [
         'draft',
         'pending',
         'paid',
@@ -64,23 +64,23 @@ export const command = Command.make(
       ])
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by order status.')),
-      created_after: Flag.string('created-after').pipe(
+      created_after: Flag.String('created-after').pipe(
         Flag.optional,
         Flag.withDescription('Only include orders created after this date'),
       ),
-      created_before: Flag.string('created-before').pipe(
+      created_before: Flag.String('created-before').pipe(
         Flag.optional,
         Flag.withDescription('Only include orders created before this date'),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', [
+      sorting: Flag.Literals('sorting', [
         'created_at',
         '-created_at',
         'status',

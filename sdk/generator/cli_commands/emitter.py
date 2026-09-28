@@ -290,10 +290,10 @@ class CLICommandsEmitter(EmitterBase):
 
         if isinstance(type_ref, PrimitiveType):
             constructor = {
-                "string": "string",
-                "integer": "integer",
-                "number": "float",
-                "boolean": "boolean",
+                "string": "String",
+                "integer": "Int",
+                "number": "Finite",
+                "boolean": "Boolean",
             }.get(type_ref.type)
             if constructor:
                 return f"Flag.{constructor}({quoted})"
@@ -302,10 +302,10 @@ class CLICommandsEmitter(EmitterBase):
             enum = next(e for e in api.enums if e.name == type_ref.name)
             values = [v.value for v in enum.values]
             if all(isinstance(v, str) for v in values):
-                return f"Flag.choice({quoted}, {json.dumps(values)})"
+                return f"Flag.Literals({quoted}, {json.dumps(values)})"
 
         if isinstance(type_ref, LiteralType) and isinstance(type_ref.value, str):
-            return f"Flag.choice({quoted}, {json.dumps([type_ref.value])})"
+            return f"Flag.Literals({quoted}, {json.dumps([type_ref.value])})"
 
         if isinstance(type_ref, ArrayType):
             item = self._flag_expression(type_ref.items, name, api)
@@ -324,7 +324,7 @@ class CLICommandsEmitter(EmitterBase):
                 for v in variants
             ):
                 values = [v.value for v in variants if isinstance(v, LiteralType)]
-                return f"Flag.choice({quoted}, {json.dumps(values)})"
+                return f"Flag.Literals({quoted}, {json.dumps(values)})"
 
             expressions = {self._flag_expression(v, name, api) for v in variants}
             if len(expressions) == 1:

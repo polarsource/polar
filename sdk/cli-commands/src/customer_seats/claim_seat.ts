@@ -12,7 +12,7 @@ export const command = Command.make(
   {
     data,
     input: {
-      invitation_token: Flag.string('invitation-token').pipe(
+      invitation_token: Flag.String('invitation-token').pipe(
         Flag.optional,
         Flag.withDescription('Invitation token to claim the seat'),
       ),

@@ -7,8 +7,8 @@ export const command = Command.make(
   'get_activation',
   {
     path: {
-      id: Argument.string('id'),
-      activation_id: Argument.string('activation_id'),
+      id: Argument.String('id'),
+      activation_id: Argument.String('activation_id'),
     },
   },
   (config) =>

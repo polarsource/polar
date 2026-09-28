@@ -14,27 +14,27 @@ export const command = Command.make(
   {
     data,
     input: {
-      url: Flag.string('url').pipe(
+      url: Flag.String('url').pipe(
         Flag.optional,
         Flag.withDescription('The URL where the webhook events will be sent.'),
       ),
-      name: Flag.string('name').pipe(
+      name: Flag.String('name').pipe(
         Flag.optional,
         Flag.withDescription(
           'An optional name for the webhook endpoint to help organize and identify it.',
         ),
       ),
-      api_version: Flag.choice('api-version', ['2026-04', '2026-10']).pipe(
+      api_version: Flag.Literals('api-version', ['2026-04', '2026-10']).pipe(
         Flag.optional,
         Flag.withDescription(
           "The API version that'll be used in event payloads.",
         ),
       ),
-      format: Flag.choice('format', ['raw', 'discord', 'slack']).pipe(
+      format: Flag.Literals('format', ['raw', 'discord', 'slack']).pipe(
         Flag.optional,
         Flag.withDescription('format'),
       ),
-      events: Flag.choice('events', [
+      events: Flag.Literals('events', [
         'checkout.created',
         'checkout.updated',
         'checkout.expired',
@@ -82,7 +82,7 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('The events that will trigger the webhook.'),
         ),
-      organization_id: Flag.string('organization-id').pipe(
+      organization_id: Flag.String('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

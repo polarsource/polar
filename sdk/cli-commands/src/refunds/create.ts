@@ -19,11 +19,11 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      order_id: Flag.string('order-id').pipe(
+      order_id: Flag.String('order-id').pipe(
         Flag.optional,
         Flag.withDescription('order_id'),
       ),
-      reason: Flag.choice('reason', [
+      reason: Flag.Literals('reason', [
         'duplicate',
         'fraudulent',
         'customer_request',
@@ -31,15 +31,15 @@ export const command = Command.make(
         'satisfaction_guarantee',
         'other',
       ]).pipe(Flag.optional, Flag.withDescription('Reason for the refund.')),
-      amount: Flag.integer('amount').pipe(
+      amount: Flag.Int('amount').pipe(
         Flag.optional,
         Flag.withDescription('Amount to refund in cents. Minimum is 1.'),
       ),
-      comment: Flag.string('comment').pipe(
+      comment: Flag.String('comment').pipe(
         Flag.optional,
         Flag.withDescription('An internal comment about the refund.'),
       ),
-      revoke_benefits: Flag.boolean('revoke-benefits').pipe(
+      revoke_benefits: Flag.Boolean('revoke-benefits').pipe(
         Flag.optional,
         Flag.withDescription(
           'Should this refund trigger the associated customer benefits to be revoked?',

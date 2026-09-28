@@ -13,23 +13,23 @@ export const command = Command.make(
   'list_external',
   {
     path: {
-      external_id: Argument.string('external_id'),
+      external_id: Argument.String('external_id'),
     },
     data,
     input: {
-      role: Flag.choice('role', ['owner', 'billing_manager', 'member']).pipe(
+      role: Flag.Literals('role', ['owner', 'billing_manager', 'member']).pipe(
         Flag.optional,
         Flag.withDescription('Filter by member role.'),
       ),
-      page: Flag.integer('page').pipe(
+      page: Flag.Int('page').pipe(
         Flag.optional,
         Flag.withDescription('Page number, defaults to 1.'),
       ),
-      limit: Flag.integer('limit').pipe(
+      limit: Flag.Int('limit').pipe(
         Flag.optional,
         Flag.withDescription('Size of a page, defaults to 10. Maximum is 100.'),
       ),
-      sorting: Flag.choice('sorting', ['created_at', '-created_at'])
+      sorting: Flag.Literals('sorting', ['created_at', '-created_at'])
         .pipe(Flag.atLeast(1))
         .pipe(
           Flag.optional,

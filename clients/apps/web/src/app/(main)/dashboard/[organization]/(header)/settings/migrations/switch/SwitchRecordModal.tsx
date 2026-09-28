@@ -3,8 +3,8 @@
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ImportTaxPicker } from '../ImportTaxPicker'
-import { automaticTaxLabel, renewalDate } from '../recordFormat'
+import { assessmentFacts } from '../review/assessmentFacts'
+import { RecordCard, TaxAfterSwitchField } from '../review/ReviewRecordFields'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
 import { needsAttention, SwitchRow } from './switchRows'
 
@@ -17,13 +17,21 @@ export function SwitchRecordModal({
   migrationId: string
   onClose: () => void
 }) {
-  const tax = automaticTaxLabel(row)
+  const facts = assessmentFacts(row)
+  const discount = row.discount_name
+    ? row.discount_code
+      ? `${row.discount_name} (${row.discount_code})`
+      : row.discount_name
+    : null
+  const showCustomer = Boolean(
+    facts.customerName || row.customer_email || facts.customerId,
+  )
 
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
         <Text variant="heading-xs" as="h2">
-          {row.title}
+          {row.customer_email || row.title}
         </Text>
       </InlineModalHeader>
 
@@ -32,54 +40,110 @@ export function SwitchRecordModal({
         rowGap="xl"
         padding="xl"
         flex={1}
+        minWidth={0}
         overflowY="auto"
       >
-        {row.cutover_error && (
-          <Box>
-            <Alert
-              variant={needsAttention(row) ? 'warning' : 'info'}
-              title={
-                row.cutover_status === 'failed'
-                  ? 'This one failed'
-                  : 'Left on Stripe'
-              }
-              description={row.cutover_error}
-            />
+        <Box
+          flexDirection="column"
+          rowGap="l"
+          padding="l"
+          borderRadius="l"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <Box alignItems="center" justifyContent="between" columnGap="m">
+            <Text variant="heading-xs" as="h3">
+              Before switch
+            </Text>
+            <SwitchStatusIndicator row={row} />
           </Box>
-        )}
-
-        <Box flexDirection="column" rowGap="l" minWidth={0}>
-          <Text variant="body" as="h3">
-            Subscription
-          </Text>
-          <Box flexDirection="column" rowGap="m" minWidth={0}>
-            <DetailCell
-              label="Switch"
-              value={<SwitchStatusIndicator row={row} />}
-            />
-            {row.subtitle ? (
-              <DetailCell label="Status" value={row.subtitle} />
-            ) : null}
-            <DetailCell
-              label="Payment method"
-              value={row.has_payment_method ? 'Ready to charge' : null}
-            />
-            <DetailCell label="Renewal on Stripe" value={renewalDate(row)} />
-            {tax ? (
-              <DetailCell label="Stripe automatic tax" value={tax} />
-            ) : null}
-            <ImportTaxPicker
-              key={row.record_id ?? row.source_id}
-              migrationId={migrationId}
-              row={row}
-            />
-            <DetailCell
-              label="Stripe subscription ID"
-              value={row.source_id}
-              monospace
-            />
-          </Box>
+          {row.cutover_error ? (
+            <Box>
+              <Alert
+                variant={needsAttention(row) ? 'warning' : 'info'}
+                title={
+                  row.cutover_status === 'failed'
+                    ? 'This one failed'
+                    : 'Left on Stripe'
+                }
+                description={row.cutover_error}
+              />
+            </Box>
+          ) : null}
+          <TaxAfterSwitchField row={row} migrationId={migrationId} />
         </Box>
+
+        {showCustomer ? (
+          <RecordCard title="Customer">
+            {facts.customerName ? (
+              <DetailCell label="Name" value={facts.customerName} />
+            ) : null}
+            {row.customer_email ? (
+              <DetailCell label="Email" value={row.customer_email} />
+            ) : null}
+            {facts.customerId ? (
+              <DetailCell
+                label="Stripe customer ID"
+                value={facts.customerId}
+                monospace
+              />
+            ) : null}
+          </RecordCard>
+        ) : null}
+
+        {facts.showProduct ? (
+          <RecordCard title="Product">
+            {facts.productName ? (
+              <DetailCell label="Name" value={facts.productName} />
+            ) : null}
+            {facts.price ? (
+              <DetailCell label="Price" value={facts.price} />
+            ) : null}
+            {facts.interval ? (
+              <DetailCell label="Renewal interval" value={facts.interval} />
+            ) : null}
+            {facts.productId ? (
+              <DetailCell
+                label="Stripe product ID"
+                value={facts.productId}
+                monospace
+              />
+            ) : null}
+          </RecordCard>
+        ) : null}
+
+        <RecordCard
+          title="Subscription"
+          action={<SwitchStatusIndicator row={row} />}
+        >
+          {facts.status ? (
+            <DetailCell label="Status" value={facts.status} />
+          ) : null}
+          <DetailCell
+            label="Payment method"
+            value={
+              row.has_payment_method === false
+                ? 'No payment method'
+                : row.has_payment_method
+                  ? 'Ready to charge'
+                  : null
+            }
+          />
+          {discount ? <DetailCell label="Discount" value={discount} /> : null}
+          <DetailCell label="Renewal on Stripe" value={facts.renewal} />
+          {facts.automaticTax ? (
+            <DetailCell
+              label="Stripe automatic tax"
+              value={facts.automaticTax}
+            />
+          ) : null}
+          <DetailCell
+            label="Stripe subscription ID"
+            value={facts.sourceId}
+            monospace
+          />
+        </RecordCard>
       </Box>
     </Box>
   )

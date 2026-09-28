@@ -20,24 +20,24 @@ Sandbox data is a database on the production `db` instance. Test is the separate
 
 On the instance's **Connect** or **Info** page, copy the **internal** user, password, port, and database name.
 
-The internal host is a bare id such as `dpg-xxxxxxxx-a`. Do not use the external hostname (`*.render.com`).
+The internal host is a bare id such as `dpg-xxxxxxxx-c`. The trailing letter is part of the id and differs per instance, so copy the whole thing from the page you are on. Do not use the external hostname (`*.render.com`).
 
 ## 2. Build the Tailscale hostname
 
 Append `.usr-cgvspcgdh87jokuesjfg.svc.cluster.local` to that id:
 
 ```text
-dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
+dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
 ```
 
-Copy the `dpg-` id from the internal host on the Render page. `db-test` and each read replica have their own id. Use that id with the same suffix.
+`db-test` and each read replica have their own `dpg-` id. Use that id with the same `.usr-...svc.cluster.local` suffix.
 
 ## 3. Connect
 
 Use the internal port, `5432`. Leave SSH tunneling off.
 
 ```bash
-psql "host=dpg-xxxxxxxx-a.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE"
+psql "host=dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE"
 ```
 
 `psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.

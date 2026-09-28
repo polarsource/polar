@@ -9,21 +9,21 @@ const HEIGHT = 96
 const LABEL_HEIGHT = 16
 const TICK_HEIGHT = 40
 const SUBDIVISIONS = 4
-const TOKENS_PER_DOLLAR = 6
-const STARTING_TOKENS = 240_000
-const TOKENS_PER_SECOND = 4_800
+const KILOTOKENS_PER_DOLLAR = 6
+const STARTING_KILOTOKENS = 240_000
+const KILOTOKENS_PER_SECOND = 4_800
 const SWELL = 0.3
 const SWELL_PERIOD = (Math.PI * 2) / 4.8
 
 // Thousands of tokens streamed after `seconds`. The rate eases between 0.7x
 // and 1.3x on a sine wave, like a model streaming a response.
 const streamedTokens = (seconds: number) =>
-  STARTING_TOKENS +
-  TOKENS_PER_SECOND *
+  STARTING_KILOTOKENS +
+  KILOTOKENS_PER_SECOND *
     (seconds + (SWELL * (1 - Math.cos(SWELL_PERIOD * seconds))) / SWELL_PERIOD)
 
 const earnedDollars = (seconds: number) =>
-  streamedTokens(seconds) / TOKENS_PER_DOLLAR
+  streamedTokens(seconds) / KILOTOKENS_PER_DOLLAR
 
 const smoothstep = (edge0: number, edge1: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
@@ -210,10 +210,10 @@ const Ruler = ({
   )
 }
 
-const formatTokens = (thousands: number) =>
-  thousands < 1_000
-    ? `${Math.floor(thousands)}k`
-    : `${Math.floor(thousands / 1_000)}M`
+const formatTokens = (kilotokens: number) =>
+  kilotokens < 1_000
+    ? `${Math.floor(kilotokens)}k`
+    : `${Math.floor(kilotokens / 1_000)}M`
 
 const formatDollars = (dollars: number) => {
   if (dollars < 1_000) return `$${Math.floor(dollars)}`

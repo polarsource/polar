@@ -208,6 +208,18 @@ test('missing selection fails without silently using sandbox credentials', async
   expect(auth.state.resolutions).toEqual([])
 })
 
+test.each([production, undefined])(
+  'non-interactive destructive requests require --confirm before resolving organization %j',
+  async (selection) => {
+    config.state.activeOrganization = selection
+    await expect(
+      run(['products', 'update', 'product-1', '--is-archived=true']).promise,
+    ).rejects.toThrow('--confirm')
+    expect(requests).toEqual([])
+    expect(auth.state.resolutions).toEqual([])
+  },
+)
+
 test('stale selection never falls back to another organization', async () => {
   organizations = [sandbox]
   await expect(run(['products', 'list']).promise).rejects.toThrow(

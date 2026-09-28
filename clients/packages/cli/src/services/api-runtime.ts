@@ -15,6 +15,18 @@ export const layer = Layer.effect(
     return ApiRuntime.of({
       execute: (operation) =>
         Effect.gen(function* () {
+          if (operation.requiresConfirmation && !operation.confirm) {
+            const stdio = yield* Stdio.Stdio
+            if (
+              !(yield* stdio.stdinIsTerminal) ||
+              !(yield* stdio.stdoutIsTerminal)
+            ) {
+              return yield* new ApiCommandError({
+                message: `${operation.operationId} performs a destructive ${operation.method} request. Pass --confirm to proceed without an interactive terminal.`,
+              })
+            }
+          }
+
           const organization = yield* organizations
             .resolve()
             .pipe(
@@ -26,16 +38,6 @@ export const layer = Layer.effect(
           const environmentContext = ` in ${environment}`
 
           if (operation.requiresConfirmation && !operation.confirm) {
-            const stdio = yield* Stdio.Stdio
-            if (
-              !(yield* stdio.stdinIsTerminal) ||
-              !(yield* stdio.stdoutIsTerminal)
-            ) {
-              return yield* new ApiCommandError({
-                message: `${operation.operationId} performs a destructive ${operation.method} request${environmentContext}. Pass --confirm to proceed without an interactive terminal.`,
-              })
-            }
-
             yield* Console.log(
               [
                 ui.blank,

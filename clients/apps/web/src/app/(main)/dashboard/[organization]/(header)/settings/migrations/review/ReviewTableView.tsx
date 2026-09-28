@@ -4,6 +4,7 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import { CATALOG_READ_STALLED } from '../catalogReadCopy'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
@@ -48,6 +49,7 @@ interface Props {
   importError?: string
   onRerunPrecheck?: () => void
   rerunning?: boolean
+  stalled?: boolean
   refreshError?: string
   attentionCount: number
 }
@@ -72,9 +74,11 @@ export function ReviewTableView({
   importError,
   onRerunPrecheck,
   rerunning = false,
+  stalled = false,
   refreshError,
   attentionCount,
 }: Props) {
+  const refreshing = rerunning && !stalled
   const rowTotal = remainingSubscriptionCount(
     counts.subscriptions.total,
     counts.subscriptions.imported,
@@ -128,6 +132,7 @@ export function ReviewTableView({
         kind={catalogEmpty}
         onRerunPrecheck={onRerunPrecheck}
         rerunning={rerunning}
+        stalled={stalled}
         readError={refreshError}
       />
     )
@@ -140,7 +145,9 @@ export function ReviewTableView({
           variant="info"
           loading
           title={CATALOG_REFRESH_COPY.title}
-          description={CATALOG_REFRESH_COPY.description}
+          description={
+            stalled ? CATALOG_READ_STALLED : CATALOG_REFRESH_COPY.description
+          }
         />
       )}
       {refreshError && (
@@ -185,9 +192,9 @@ export function ReviewTableView({
                 size="sm"
                 variant="secondary"
                 onClick={onRerunPrecheck}
-                disabled={rerunning}
+                disabled={refreshing}
               >
-                {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
+                {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
             {canPrepare ? (

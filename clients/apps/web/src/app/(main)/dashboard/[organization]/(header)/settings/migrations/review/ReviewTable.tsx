@@ -98,6 +98,8 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     () => setSelection((prev) => toggleAll(prev)),
     [],
   )
+  const stalled =
+    !rerunPrecheck.isPending && migration?.operation?.stalled === true
   const refreshError = rerunPrecheck.isError
     ? rerunPrecheck.error?.message ||
       "We couldn't start the refresh from Stripe. Please try again."
@@ -156,7 +158,8 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
           : undefined
       }
       onRerunPrecheck={() => rerunPrecheck.mutate()}
-      rerunning={refreshing || rerunPrecheck.isPending}
+      rerunning={refreshing || stalled || rerunPrecheck.isPending}
+      stalled={stalled}
       refreshError={refreshError}
     />
   )

@@ -22,7 +22,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Aggregate into meters',
-    desc: 'Raw events roll up into a live meter per customer. No batch jobs, no lag.',
+    desc: 'Raw events roll up into a live meter for every customer, updated in real time. No batch jobs, no lag.',
     Graphic: GaugeSweep,
   },
   {

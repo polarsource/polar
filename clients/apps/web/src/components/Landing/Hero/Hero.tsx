@@ -4,7 +4,6 @@ import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
-import { FeatureCards } from '../FeatureCards'
 import { MissionRulers } from './MissionRulers'
 
 export const Hero = () => {
@@ -42,7 +41,6 @@ export const Hero = () => {
             </Box>
           </Grid>
           <MissionRulers />
-          <FeatureCards />
         </Box>
       </motion.div>
     </Box>

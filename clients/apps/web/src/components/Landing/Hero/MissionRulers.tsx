@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useRef } from 'react'
 
 const HEIGHT = 96
+const LABEL_HEIGHT = 16
 const TOKENS_PER_DOLLAR = 6
 const BURST = (Math.PI * 2) / 3.2
 const EDGE_FADE =
@@ -63,8 +64,31 @@ const Ruler = ({
 
     let width = 0
     let pillWidth = 0
+    let dpr = 1
+    const labels = new Map<string, HTMLCanvasElement>()
+
+    const labelSprite = (text: string) => {
+      const cached = labels.get(text)
+      if (cached) return cached
+      if (labels.size > 64) labels.clear()
+      const sprite = document.createElement('canvas')
+      const spriteCtx = sprite.getContext('2d')!
+      spriteCtx.font = font
+      const spriteWidth = Math.ceil(spriteCtx.measureText(text).width) + 2
+      sprite.width = spriteWidth * dpr
+      sprite.height = LABEL_HEIGHT * dpr
+      spriteCtx.scale(dpr, dpr)
+      spriteCtx.font = font
+      spriteCtx.fillStyle = stroke
+      spriteCtx.textBaseline = 'middle'
+      spriteCtx.fillText(text, 1, LABEL_HEIGHT / 2)
+      labels.set(text, sprite)
+      return sprite
+    }
+
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio ?? 1, 2)
+      dpr = Math.min(window.devicePixelRatio ?? 1, 2)
+      labels.clear()
       width = canvas.clientWidth
       canvas.width = width * dpr
       canvas.height = HEIGHT * dpr
@@ -99,7 +123,7 @@ const Ruler = ({
       ctx.globalAlpha = 0.35
       ctx.beginPath()
       for (let v = first; xAt(v) <= width + spacing; v += step) {
-        const x = Math.round(xAt(v)) + 0.5
+        const x = xAt(v)
         ctx.moveTo(x, y(0))
         ctx.lineTo(x, y(40))
       }
@@ -111,8 +135,16 @@ const Ruler = ({
         const distance = Math.abs(x - pointerX)
         const alpha = 0.5 * smoothstep(clearance, clearance + 28, distance)
         if (alpha <= 0) continue
+        const sprite = labelSprite(format(v))
+        const spriteWidth = sprite.width / dpr
         ctx.globalAlpha = alpha
-        ctx.fillText(format(v), x, labelY)
+        ctx.drawImage(
+          sprite,
+          x - spriteWidth / 2,
+          labelY - LABEL_HEIGHT / 2,
+          spriteWidth,
+          LABEL_HEIGHT,
+        )
       }
 
       ctx.globalAlpha = 1

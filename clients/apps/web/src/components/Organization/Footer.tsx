@@ -10,7 +10,7 @@ const Footer = () => {
   return (
     <Box
       as="footer"
-      width="100%"
+      width="1280px"
       flexDirection="column"
       marginTop={{ base: 'none', md: '2xl' }}
       paddingHorizontal={{ base: 'xl', md: 'none' }}
@@ -47,7 +47,7 @@ const Footer = () => {
                 columnGap="s"
                 color="text-primary"
               >
-                <Text as="span" variant="heading-xxs" color="inherit">
+                <Text as="span" variant="body" color="inherit">
                   Get Started
                 </Text>
                 <ArrowOutwardOutlined fontSize="inherit" />
@@ -125,11 +125,11 @@ const FooterSection = ({
   title,
   children,
 }: PropsWithChildren<{ title: string }>) => (
-  <Box flexDirection="column" rowGap="l">
+  <Box flexDirection="column" rowGap="m">
     <Text as="h3" variant="body" color="muted">
       {title}
     </Text>
-    <Box flexDirection="column" rowGap="s">
+    <Box flexDirection="column" rowGap="xs">
       {children}
     </Box>
   </Box>
@@ -149,7 +149,7 @@ const FooterLink = ({
       transitionProperty="colors"
       transitionDuration="fast"
     >
-      <Text as="span" variant="heading-xxs" color="inherit">
+      <Text as="span" variant="body" color="inherit">
         {children}
       </Text>
     </Box>

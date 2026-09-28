@@ -4,6 +4,7 @@ import { Margins } from './chapters/Margins'
 import { MerchantOfRecord } from './chapters/MerchantOfRecord'
 import { Meter } from './chapters/Meter'
 import { Platform } from './chapters/Platform'
+import { Primitives } from './chapters/Primitives'
 import { StartupProgram } from './chapters/StartupProgram'
 import { ClosingCta } from './ClosingCta'
 import { Hero } from './Hero/Hero'
@@ -14,6 +15,7 @@ export default function Page() {
   return (
     <div className="flex w-full flex-col">
       <Hero />
+      <Primitives />
       <Platform />
       <Meter />
       <MerchantOfRecord />

@@ -4,7 +4,6 @@ import Link from 'next/link'
 import type { ComponentType } from 'react'
 import { CreditArc } from './graphics/CreditArc'
 import { CycleArrow } from './graphics/CycleArrow'
-import { LinkedRings } from './graphics/LinkedRings'
 import { VennCluster } from './graphics/VennCluster'
 
 interface Feature {
@@ -28,10 +27,10 @@ const FEATURES: Feature[] = [
     Graphic: CycleArrow,
   },
   {
-    title: 'Seats',
-    desc: 'Add, remove and prorate seats automatically.',
-    href: '/features/seats',
-    Graphic: LinkedRings,
+    title: 'Credits',
+    desc: 'Prepaid balances that draw down with usage and top up automatically.',
+    href: '/features/credits',
+    Graphic: CreditArc,
   },
 ]
 

@@ -1,16 +1,22 @@
+'use client'
+
+import { useInView } from '@/hooks/useInView'
 import { Avatar, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { gsap } from 'gsap'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Chapter } from './Chapter'
 import { LogoGrid } from './LogoGrid'
+
+const QUOTE_SECONDS = 6
 
 interface Testimonial {
   link: string
   name: string
   company: string
-  avatar?: string
-  mark?: ReactNode
+  avatar: string
   quote: string[]
 }
 
@@ -38,7 +44,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
-    company: 'Hashicorp',
+    company: 'Superlogical',
     avatar: '/assets/landing/testamonials/mitchell.jpg',
     quote: [
       "I've joined Polar as an advisor!",
@@ -58,78 +64,174 @@ const TESTIMONIALS: Testimonial[] = [
 
 const isExternalLink = (link: string) => /^https?:\/\//.test(link)
 
-const TestimonialRow = ({ testimonial }: { testimonial: Testimonial }) => {
-  const content = (
-    <Grid
-      width="100%"
-      templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-      gap={{ base: 'xl', lg: 'l' }}
-      paddingVertical={{ base: '2xl', md: '3xl' }}
-      borderTopWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
-      <Box flexDirection="column" rowGap="xl">
-        {testimonial.mark ?? (
-          <Avatar
-            avatar_url={testimonial.avatar ?? ''}
-            name={testimonial.name}
-            className="size-12"
-          />
-        )}
-        <Box flexDirection="column">
-          <Text variant="heading-xxs" as="span">
-            {testimonial.name}
-          </Text>
-          <Text variant="heading-xxs" as="span" color="muted">
-            {testimonial.company}
-          </Text>
-        </Box>
-      </Box>
-      <Box flexDirection="column" rowGap="2xl">
-        {testimonial.quote.map((paragraph) => (
-          <Text key={paragraph} variant="heading-xxs" as="p">
-            {paragraph}
-          </Text>
-        ))}
-      </Box>
-    </Grid>
+const QuoteLink = ({
+  testimonial,
+  children,
+}: {
+  testimonial: Testimonial
+  children: ReactNode
+}) =>
+  isExternalLink(testimonial.link) ? (
+    <a href={testimonial.link} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ) : (
+    <Link href={testimonial.link}>{children}</Link>
   )
 
-  if (isExternalLink(testimonial.link)) {
-    return (
-      <a
-        href={testimonial.link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex w-full"
-      >
-        {content}
-      </a>
+export const Testimonials = () => {
+  const { ref, inView } = useInView()
+  const reducedMotion = useReducedMotion()
+  const [active, setActive] = useState(0)
+  const progressRefs = useRef<(HTMLElement | null)[]>([])
+  const tweenRef = useRef<gsap.core.Tween | null>(null)
+  const testimonial = TESTIMONIALS[active]
+
+  useEffect(() => {
+    const bar = progressRefs.current[active]
+    if (!bar || !inView || reducedMotion) return
+    const tween = gsap.fromTo(
+      bar,
+      { scaleX: 0 },
+      {
+        scaleX: 1,
+        duration: QUOTE_SECONDS,
+        ease: 'none',
+        onComplete: () =>
+          setActive((current) => (current + 1) % TESTIMONIALS.length),
+      },
     )
-  }
+    tweenRef.current = tween
+    return () => {
+      tween.kill()
+      gsap.set(bar, { scaleX: 0 })
+    }
+  }, [active, inView, reducedMotion])
 
   return (
-    <Link href={testimonial.link} target="_blank" className="flex w-full">
-      {content}
-    </Link>
+    <Chapter
+      index="04"
+      name="What people say"
+      title="Trusted by teams that ship daily"
+      subtitle="From AI startups to infrastructure veterans"
+    >
+      <Box flexDirection="column" rowGap="3xl" width="100%">
+        <LogoGrid />
+        <Box
+          ref={ref}
+          flexDirection="column"
+          alignItems="center"
+          rowGap={{ base: '3xl', md: '4xl' }}
+          paddingVertical={{ base: '3xl', md: '5xl' }}
+          paddingHorizontal={{ base: 'xl', md: '4xl' }}
+          backgroundColor="background-secondary"
+          onMouseEnter={() => tweenRef.current?.pause()}
+          onMouseLeave={() => tweenRef.current?.resume()}
+        >
+          <Box width="100%" maxWidth="48rem" minHeight={{ md: '18rem' }}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={testimonial.name}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              >
+                <QuoteLink testimonial={testimonial}>
+                  <figure>
+                    <Box
+                      flexDirection="column"
+                      alignItems="center"
+                      rowGap="2xl"
+                      textAlign="center"
+                      opacity={{ base: 1, hover: 0.75 }}
+                      transitionProperty="opacity"
+                      transitionDuration="base"
+                    >
+                      <blockquote>
+                        <Box flexDirection="column" rowGap="l">
+                          {testimonial.quote.map((paragraph) => (
+                            <Text key={paragraph} variant="heading-s" as="p">
+                              {paragraph}
+                            </Text>
+                          ))}
+                        </Box>
+                      </blockquote>
+                      <figcaption>
+                        <Text color="muted">
+                          {testimonial.name}, {testimonial.company}
+                        </Text>
+                      </figcaption>
+                    </Box>
+                  </figure>
+                </QuoteLink>
+              </motion.div>
+            </AnimatePresence>
+          </Box>
+
+          <Grid
+            width="100%"
+            maxWidth="64rem"
+            templateColumns="repeat(4, 1fr)"
+            gap="l"
+          >
+            {TESTIMONIALS.map((person, index) => (
+              <button
+                key={person.name}
+                type="button"
+                aria-pressed={index === active}
+                aria-label={`${person.name}, ${person.company}`}
+                onClick={() => setActive(index)}
+              >
+                <Box
+                  flexDirection="column"
+                  rowGap="l"
+                  opacity={index === active ? 1 : 0.5}
+                  transitionProperty="opacity"
+                  transitionDuration="slow"
+                >
+                  <Box
+                    display="block"
+                    height={1}
+                    backgroundColor="background-card"
+                    overflow="hidden"
+                  >
+                    <Box
+                      ref={(element) => {
+                        progressRefs.current[index] = element
+                      }}
+                      height="100%"
+                      backgroundColor="background-inverse"
+                      transformOrigin="left"
+                      transform={
+                        index === active && reducedMotion
+                          ? 'scaleX(1)'
+                          : 'scaleX(0)'
+                      }
+                    />
+                  </Box>
+                  <Box alignItems="center" columnGap="m" textAlign="left">
+                    <Avatar
+                      avatar_url={person.avatar}
+                      name={person.name}
+                      className="size-8"
+                    />
+                    <Box
+                      display={{ base: 'none', md: 'flex' }}
+                      flexDirection="column"
+                    >
+                      <Text as="span">{person.name}</Text>
+                      <Text as="span" color="muted">
+                        {person.company}
+                      </Text>
+                    </Box>
+                  </Box>
+                </Box>
+              </button>
+            ))}
+          </Grid>
+        </Box>
+      </Box>
+    </Chapter>
   )
 }
-
-export const Testimonials = () => (
-  <Chapter
-    index="04"
-    name="What people say"
-    title="Trusted by teams that ship daily"
-    subtitle="From AI startups to infrastructure veterans"
-  >
-    <Box flexDirection="column" rowGap="3xl" width="100%">
-      <LogoGrid />
-      <Box flexDirection="column">
-        {TESTIMONIALS.map((testimonial) => (
-          <TestimonialRow key={testimonial.name} testimonial={testimonial} />
-        ))}
-      </Box>
-    </Box>
-  </Chapter>
-)

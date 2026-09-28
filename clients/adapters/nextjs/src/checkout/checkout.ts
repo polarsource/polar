@@ -1,8 +1,8 @@
 import {
   clientUpdateCheckouts,
   createCheckouts,
-} from '@polar-sh/sdk/2026-04/services/checkouts'
-import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-04'
+} from '@polar-sh/sdk/2026-10/services/checkouts'
+import { createPolarCore, type Environment } from '@polar-sh/sdk/2026-10'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 

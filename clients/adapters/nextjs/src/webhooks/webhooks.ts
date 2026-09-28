@@ -2,7 +2,7 @@ import {
   type WebhooksConfig,
   handleWebhookPayload,
 } from '@polar-sh/adapter-utils'
-import { webhooks } from '@polar-sh/sdk/2026-04'
+import { webhooks } from '@polar-sh/sdk/2026-10'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export {

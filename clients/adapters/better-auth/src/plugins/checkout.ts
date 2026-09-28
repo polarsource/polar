@@ -1,8 +1,8 @@
 import {
   clientUpdateCheckouts,
   createCheckouts,
-} from '@polar-sh/sdk/2026-04/services/checkouts'
-import type { PolarCore } from '@polar-sh/sdk/2026-04'
+} from '@polar-sh/sdk/2026-10/services/checkouts'
+import type { PolarCore } from '@polar-sh/sdk/2026-10'
 import {
   APIError,
   createAuthEndpoint,

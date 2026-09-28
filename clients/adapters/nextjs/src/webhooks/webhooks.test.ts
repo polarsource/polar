@@ -5,7 +5,7 @@ vi.mock('@polar-sh/adapter-utils', () => ({
   handleWebhookPayload: vi.fn(),
 }))
 
-vi.mock('@polar-sh/sdk/2026-04', () => {
+vi.mock('@polar-sh/sdk/2026-10', () => {
   class PolarWebhookError extends Error {}
   class PolarWebhookVerificationError extends PolarWebhookError {
     constructor(message: string) {
@@ -31,7 +31,7 @@ vi.mock('@polar-sh/sdk/2026-04', () => {
 })
 
 import { handleWebhookPayload } from '@polar-sh/adapter-utils'
-import { webhooks } from '@polar-sh/sdk/2026-04'
+import { webhooks } from '@polar-sh/sdk/2026-10'
 import { Webhooks } from './webhooks'
 
 const mockHandleWebhookPayload = vi.mocked(handleWebhookPayload) as ReturnType<

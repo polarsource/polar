@@ -4,4 +4,4 @@
 '@polar-sh/tanstack-start': major
 ---
 
-Migrate to the new Polar SDK (`@polar-sh/sdk/2026-04`) and use standalone SDK functions so application bundles include only the API operations used by each adapter.
+Migrate to the new Polar SDK (`@polar-sh/sdk/2026-10`) and use standalone SDK functions so application bundles include only the API operations used by each adapter.

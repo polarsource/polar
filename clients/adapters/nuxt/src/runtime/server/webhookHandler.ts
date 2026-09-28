@@ -1,6 +1,6 @@
 import { handleWebhookPayload } from '@polar-sh/adapter-utils'
 import type { WebhooksConfig } from '@polar-sh/adapter-utils'
-import { webhooks } from '@polar-sh/sdk/2026-04'
+import { webhooks } from '@polar-sh/sdk/2026-10'
 import type { H3Event } from 'h3'
 import { getHeader, readRawBody, setResponseStatus } from 'h3'
 

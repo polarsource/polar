@@ -7,7 +7,7 @@ import type {
   OrganizationOptions,
 } from 'better-auth/plugins/organization'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { errors, type models } from '@polar-sh/sdk/2026-04'
+import { errors, type models } from '@polar-sh/sdk/2026-10'
 import { installOrganizationHooks } from '../../organization/hooks'
 import { createTestPolarOptions } from '../utils/helpers'
 import { createMockPolarClient, createMockUser } from '../utils/mocks'

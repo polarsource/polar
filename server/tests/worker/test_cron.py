@@ -8,7 +8,7 @@ from polar.worker._cron import resolve_cron_triggers
 
 
 def test_maintenance_window_is_stable_and_spaced() -> None:
-    declarations = [
+    declarations: list[tuple[str, CronTrigger | MaintenanceWindow]] = [
         ("zulu", MaintenanceWindow()),
         ("alpha", MaintenanceWindow()),
         ("hourly", CronTrigger(minute=15)),

@@ -49,7 +49,7 @@ class MeteredLineItem:
     start_timestamp: datetime
     end_timestamp: datetime
     consumed_units: float
-    credited_units: int
+    credited_units: float
     amount: int
     currency: str
     label: str
@@ -59,6 +59,7 @@ class MeteredLineItem:
 @dataclasses.dataclass(frozen=True)
 class PendingByPrice:
     product_price_id: uuid.UUID
+    credit_product_price_ids: tuple[uuid.UUID, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -109,6 +110,13 @@ class BillingEntryService:
                     order_item.id,
                     cutoff=cutoff,
                 )
+                if selector.credit_product_price_ids:
+                    await repository.link_pending_credits_by_subscription_and_prices(
+                        subscription.id,
+                        selector.credit_product_price_ids,
+                        order_item.id,
+                        cutoff=cutoff,
+                    )
             elif isinstance(selector, PendingByMeter):
                 await repository.link_pending_by_subscription_and_meter(
                     subscription.id,
@@ -217,12 +225,9 @@ class BillingEntryService:
         # performance issues and even OOM on large subscriptions.
         product_price_repository = ProductPriceRepository.from_session(session)
 
-        # Track which meters we've already processed to avoid duplicates
-        # For non-summable aggregations (max, min, avg, unique), we process each meter only once
-        # (even if there are billing entries with multiple prices) because these aggregations
-        # must be computed across ALL events, not per-price
-        processed_meters: set[uuid.UUID] = set()
-
+        pending_by_meter: dict[
+            uuid.UUID, list[tuple[uuid.UUID, datetime, datetime]]
+        ] = {}
         async for (
             product_price_id,
             meter_id,
@@ -231,6 +236,12 @@ class BillingEntryService:
         ) in repository.get_pending_metered_by_subscription_tuples(
             subscription.id, cutoff=cutoff
         ):
+            pending_by_meter.setdefault(meter_id, []).append(
+                (product_price_id, start_timestamp, end_timestamp)
+            )
+
+        for meter_id, price_groups in pending_by_meter.items():
+            product_price_id, start_timestamp, end_timestamp = price_groups[0]
             metered_price = cast(
                 MeteredPrice, await product_price_repository.get_by_id(product_price_id)
             )
@@ -241,10 +252,6 @@ class BillingEntryService:
             # - MAX(3 servers on priceA, 2 servers on priceB) = 3 servers (not 3+2=5)
             # - We bill this at the currently active price from subscription
             if not metered_price.meter.aggregation.is_summable():
-                if meter_id in processed_meters:
-                    continue
-                processed_meters.add(meter_id)
-
                 # Find the currently active price for this meter from the subscription
                 # This is the source of truth - even if all billing entries used priceA,
                 # if the customer changed to priceB, we bill at priceB
@@ -267,36 +274,78 @@ class BillingEntryService:
                     session,
                     active_price,
                     subscription,
-                    start_timestamp,
-                    end_timestamp,
+                    min(start for _, start, _ in price_groups),
+                    max(end for _, _, end in price_groups),
                     cutoff=cutoff,
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
             else:
-                # For summable aggregations (sum, count), we also need to verify
-                # the price is still active on the subscription. This prevents
-                # billing entries from discontinued prices being re-billed
-                # every cycle after a product/price change.
-                is_active_price = any(
-                    spp.product_price_id == product_price_id
+                active_price_ids = {
+                    spp.product_price_id
                     for spp in subscription.subscription_product_prices
+                }
+                price_groups.sort(
+                    key=lambda group: (group[0] not in active_price_ids, group[1])
                 )
-                if not is_active_price:
-                    log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
+                event_repository = EventRepository.from_session(session)
+                credit_events = await event_repository.get_all(
+                    event_repository.get_by_pending_entries_for_meter_statement(
+                        subscription.id, meter_id, cutoff=cutoff
+                    ).where(
+                        Event.organization_id == metered_price.meter.organization_id,
+                        Event.customer_id == subscription.customer_id,
+                        Event.source == EventSource.system,
+                        Event.name == SystemEvent.meter_credited,
                     )
-                    continue
-
-                metered_line_item = await self._get_metered_line_item(
-                    session,
-                    metered_price,
-                    subscription,
-                    start_timestamp,
-                    end_timestamp,
-                    cutoff=cutoff,
                 )
-                selector = PendingByPrice(product_price_id)
+                remaining_credits: float = non_negative_running_sum(
+                    event.user_metadata["units"] for event in credit_events
+                )
+                line_items: list[tuple[uuid.UUID, MeteredLineItem]] = []
+                for product_price_id, start_timestamp, end_timestamp in price_groups:
+                    price = cast(
+                        MeteredPrice,
+                        await product_price_repository.get_by_id(product_price_id),
+                    )
+                    metered_line_item = await self._get_metered_line_item(
+                        session,
+                        price,
+                        subscription,
+                        start_timestamp,
+                        end_timestamp,
+                        cutoff=cutoff,
+                    )
+                    credited_units = min(
+                        remaining_credits, max(0, metered_line_item.consumed_units)
+                    )
+                    remaining_credits -= credited_units
+                    metered_line_item.credited_units = credited_units
+                    metered_line_item.amount, amount_label = price.get_amount_and_label(
+                        metered_line_item.consumed_units - credited_units
+                    )
+                    metered_line_item.label = f"{price.meter.name} — {amount_label}"
+                    line_items.append((product_price_id, metered_line_item))
+
+                if credit_events:
+                    recipient_index = next(
+                        (
+                            index
+                            for index, (_, item) in enumerate(line_items)
+                            if item.credited_units > 0
+                        ),
+                        0,
+                    )
+                    recipient_price_id, recipient_item = line_items.pop(recipient_index)
+                    yield (
+                        recipient_item,
+                        PendingByPrice(
+                            recipient_price_id,
+                            tuple(price_id for price_id, _ in line_items),
+                        ),
+                    )
+                for product_price_id, metered_line_item in line_items:
+                    yield metered_line_item, PendingByPrice(product_price_id)
+                continue
 
             yield metered_line_item, selector
 
@@ -434,19 +483,7 @@ class BillingEntryService:
                     Event.source == EventSource.user,
                 ),
             )
-        credit_events_statement = events_statement.where(
-            # Filter on organization_id + customer_id and unpack `is_meter_credit`
-            # so we hit the ix_events_org_source_name_customer_id_ingested_at index.
-            Event.organization_id == meter.organization_id,
-            Event.customer_id == subscription.customer_id,
-            Event.source == EventSource.system,
-            Event.name == SystemEvent.meter_credited,
-        )
-        credit_events = await event_repository.get_all(credit_events_statement)
-        credited_units = non_negative_running_sum(
-            event.user_metadata["units"] for event in credit_events
-        )
-        amount, amount_label = price.get_amount_and_label(units - credited_units)
+        amount, amount_label = price.get_amount_and_label(units)
         label = f"{meter.name} — {amount_label}"
 
         return MeteredLineItem(
@@ -454,7 +491,7 @@ class BillingEntryService:
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
             consumed_units=units,
-            credited_units=credited_units,
+            credited_units=0,
             amount=amount,
             currency=price.price_currency,
             label=label,

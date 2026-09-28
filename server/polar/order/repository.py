@@ -97,6 +97,7 @@ class OrderRepository(
         )
         kept_amount = Order.net_amount - Order.refunded_amount
         kept_usd_amount = case(
+            (kept_amount == 0, 0),
             (order_currency == "usd", kept_amount),
             else_=func.round(
                 kept_amount
@@ -108,27 +109,31 @@ class OrderRepository(
             ),
         )
         net_revenue = func.coalesce(func.sum(kept_usd_amount), 0)
-        statement = (
+        revenue_statement = (
             select(
-                Customer,
-                func.count(Order.id),
-                net_revenue,
+                Order.customer_id,
+                func.count(Order.id).label("order_count"),
+                net_revenue.label("net_revenue"),
             )
-            .select_from(Order)
-            .join(Customer, Customer.id == Order.customer_id)
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
                 ~Order.is_deleted,
             )
-            .group_by(Customer.id)
+            .group_by(Order.customer_id)
             .order_by(net_revenue.desc())
             .limit(limit)
         )
         if start is not None:
-            statement = statement.where(Order.created_at >= start)
+            revenue_statement = revenue_statement.where(Order.created_at >= start)
         if end is not None:
-            statement = statement.where(Order.created_at < end)
+            revenue_statement = revenue_statement.where(Order.created_at < end)
+        revenue = revenue_statement.subquery("revenue")
+        statement = (
+            select(Customer, revenue.c.order_count, revenue.c.net_revenue)
+            .join(revenue, revenue.c.customer_id == Customer.id)
+            .order_by(revenue.c.net_revenue.desc())
+        )
         result = await self.session.execute(statement)
         return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
 

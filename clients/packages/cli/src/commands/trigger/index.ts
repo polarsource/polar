@@ -136,4 +136,24 @@ export const trigger = Command.make(
   Command.withDescription(
     'Send a sample webhook event to your local server through polar listen. Run with --list to see every event.',
   ),
+  Command.withExamples([
+    { command: 'polar trigger', description: 'Pick an event from a list' },
+    {
+      command: 'polar trigger order.paid',
+      description: 'Send a sample order.paid event',
+    },
+    {
+      command:
+        'polar trigger order.paid --override data.customer.email=jane@example.com',
+      description: 'Change a field in the payload',
+    },
+    {
+      command: 'polar trigger order.paid --seed 7',
+      description: 'Generate the same IDs every time',
+    },
+    {
+      command: 'polar trigger order.paid --json',
+      description: 'Print the payload instead of sending it',
+    },
+  ]),
 )

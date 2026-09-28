@@ -10,6 +10,12 @@ describe('ui', () => {
     expect(stripAnsi(ui.command('polar update'))).toBe('polar update')
   })
 
+  test('strips control characters from terminal titles', () => {
+    expect(ui.pushTitle('Acme\x07\x1b]0;evil\n')).toBe(
+      '\x1b[22;0t\x1b]0;Acme]0;evil\x07',
+    )
+  })
+
   test('renders failures with an optional hint', () => {
     expect(stripAnsi(ui.failure('Broken'))).toBe('  ✖ Broken')
     expect(stripAnsi(ui.failure('Broken', 'Try again'))).toBe(

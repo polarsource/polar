@@ -67,6 +67,20 @@ const chooseEnvironment = (
     })
   })
 
+const activate = (organization: ActiveOrganization) =>
+  Effect.gen(function* () {
+    const organizations = yield* Organizations
+    yield* organizations.select({
+      id: organization.id,
+      environment: organization.environment,
+    })
+    yield* Console.log(ui.blank)
+    yield* Console.log(
+      ui.success(`Active organization ${describe(organization)}`),
+    )
+    yield* Console.log(ui.blank)
+  })
+
 const selectOrganization = Effect.gen(function* () {
   const organizations = yield* Organizations
   const items = yield* organizations.listAll
@@ -80,6 +94,7 @@ const selectOrganization = Effect.gen(function* () {
     yield* Console.log(ui.blank)
     return
   }
+  if (items.length === 1) return yield* activate(items[0]!)
   if (!(yield* interactive)) {
     yield* Console.log(
       ui.warning('Organization selection requires an interactive terminal'),
@@ -101,15 +116,7 @@ const selectOrganization = Effect.gen(function* () {
       description: organization.slug,
     })),
   })
-  yield* organizations.select({
-    id: organization.id,
-    environment: organization.environment,
-  })
-  yield* Console.log(ui.blank)
-  yield* Console.log(
-    ui.success(`Active organization ${describe(organization)}`),
-  )
-  yield* Console.log(ui.blank)
+  yield* activate(organization)
 })
 
 const login = Command.make(
@@ -152,7 +159,23 @@ const login = Command.make(
       yield* Console.log(ui.blank)
       yield* selectOrganization
     }),
-).pipe(Command.withDescription('Sign in to Polar through your browser'))
+).pipe(
+  Command.withDescription('Sign in to Polar through your browser'),
+  Command.withExamples([
+    {
+      command: 'polar auth login',
+      description: 'Choose sandbox or production, then sign in',
+    },
+    {
+      command: 'polar auth login --sandbox',
+      description: 'Sign in to sandbox',
+    },
+    {
+      command: 'polar auth login --production --new-session',
+      description: 'Sign in to production again, replacing the saved session',
+    },
+  ]),
+)
 
 const whoami = Command.make('whoami', {}, () =>
   Effect.gen(function* () {
@@ -261,15 +284,15 @@ const logoutTargets = (flags: {
     if (flags.sandbox || flags.production) {
       return environments.filter((environment) => flags[environment])
     }
+    const auth = yield* Auth
+    const sessions = yield* auth.environments
+    if (sessions.length <= 1) return sessions
     if (!(yield* interactive)) {
       return yield* new AuthError({
         message:
           'Pass --sandbox, --production or --all to log out outside an interactive terminal.',
       })
     }
-    const auth = yield* Auth
-    const sessions = yield* auth.environments
-    if (sessions.length === 0) return []
     const choices = sessions.map((environment) => ({
       title: environment === 'production' ? 'Production' : 'Sandbox',
       value: [environment] as PolarEnvironment[],
@@ -318,7 +341,19 @@ const logout = Command.make(
       }
       yield* Console.log(ui.blank)
     }),
-).pipe(Command.withDescription('Sign out and remove saved sessions'))
+).pipe(
+  Command.withDescription('Sign out and remove saved sessions'),
+  Command.withExamples([
+    {
+      command: 'polar auth logout',
+      description: 'Sign out, asking which session only if you have both',
+    },
+    {
+      command: 'polar auth logout --all',
+      description: 'Remove every saved session',
+    },
+  ]),
+)
 
 export const auth = Command.make('auth').pipe(
   Command.withDescription('Manage your Polar sessions and active organization'),

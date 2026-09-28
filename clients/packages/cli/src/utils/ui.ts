@@ -50,3 +50,13 @@ export const timestamp = (date: Date = new Date()) =>
 
 export const duration = (milliseconds: number) =>
   pc.dim(`${Math.round(milliseconds)}ms`)
+
+const isPrintable = (character: string) => {
+  const code = character.codePointAt(0) ?? 0
+  return code >= 0x20 && (code < 0x7f || code > 0x9f)
+}
+
+export const pushTitle = (title: string) =>
+  `\x1b[22;0t\x1b]0;${[...title].filter(isPrintable).join('')}\x07`
+
+export const popTitle = '\x1b]0;\x07\x1b[23;0t'

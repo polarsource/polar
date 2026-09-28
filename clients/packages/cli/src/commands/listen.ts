@@ -1,3 +1,4 @@
+import { connect } from 'node:net'
 import {
   Console,
   Data,
@@ -6,6 +7,7 @@ import {
   Exit,
   Option,
   Schema,
+  Stdio,
   Stream,
 } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
@@ -39,11 +41,17 @@ const printError = (line: string) =>
     process.stderr.write(`${line}\n`)
   })
 
+const refusedCodes = new Set(['ConnectionRefused', 'ECONNREFUSED'])
+
 const describeForwardFailure = (error: unknown) => {
   const cause =
     error instanceof Error && error.cause instanceof Error ? error.cause : error
+  const code =
+    typeof cause === 'object' && cause !== null && 'code' in cause
+      ? String(cause.code)
+      : undefined
   const message = cause instanceof Error ? cause.message : String(cause)
-  if (/ECONNREFUSED/i.test(message)) {
+  if ((code && refusedCodes.has(code)) || /ECONNREFUSED/i.test(message)) {
     return 'connection refused, is your server running?'
   }
   return message
@@ -257,14 +265,76 @@ export const startListening = ({
     ),
   )
 
+export const forwardTarget = (input: string): URL | undefined => {
+  const value = input.trim()
+  const expanded = /^\d+(\/|$)/.test(value)
+    ? `http://localhost:${value}`
+    : value.startsWith(':')
+      ? `http://localhost${value}`
+      : /^[a-z][a-z\d+.-]*:\/\//i.test(value)
+        ? value
+        : `http://${value}`
+  try {
+    const url = new URL(expanded)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export const connectionRefused = (url: URL) =>
+  Effect.callback<boolean>((resume) => {
+    let settled = false
+    const socket = connect({
+      host: url.hostname.replace(/^\[|\]$/g, ''),
+      port: Number(url.port) || (url.protocol === 'https:' ? 443 : 80),
+    })
+    const settle = (refused: boolean) => {
+      socket.destroy()
+      if (settled) return
+      settled = true
+      resume(Effect.succeed(refused))
+    }
+    socket.setTimeout(1000)
+    socket.once('connect', () => settle(false))
+    socket.once('timeout', () => settle(false))
+    socket.once('error', (error: NodeJS.ErrnoException) =>
+      settle(error.code === 'ECONNREFUSED'),
+    )
+    return Effect.sync(() => socket.destroy())
+  })
+
+export const withTerminalTitle = <A, E, R>(
+  title: string,
+  effect: Effect.Effect<A, E, R>,
+) =>
+  Effect.gen(function* () {
+    const stdio = yield* Stdio.Stdio
+    if (!(yield* stdio.stdoutIsTerminal)) return yield* effect
+    return yield* Effect.acquireUseRelease(
+      Effect.sync(() => process.stdout.write(ui.pushTitle(title))),
+      () => effect,
+      () => Effect.sync(() => process.stdout.write(ui.popTitle)),
+    )
+  })
+
 const url = Argument.String('url').pipe(
   Argument.withDescription(
-    'Local URL to forward webhook events to, e.g. http://localhost:3000/api/webhooks',
+    'Where to forward webhook events: a port like 3000, or a URL like http://localhost:3000/api/webhooks',
   ),
 )
 
 export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
   Effect.gen(function* () {
+    const target = forwardTarget(url)
+    if (!target) {
+      return yield* new ListenError({
+        code: 0,
+        message: `"${url}" is not a port or an http(s) URL. Try polar listen 3000 or polar listen http://localhost:3000/api/webhooks.`,
+      })
+    }
     const organizations = yield* Organizations
     const organization = yield* organizations.resolve(
       Option.getOrUndefined(org),
@@ -274,20 +344,30 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
       environment,
       `/cli/listen/${organization.id}`,
     )
-    return yield* startListening({
-      listenUrl,
-      forwardUrl: url,
-      organizationName: organization.name,
-      environment,
-    }).pipe(
-      Effect.provide(FetchHttpClient.layer),
-      Effect.mapError((error) =>
-        error.code === 401
-          ? new ListenError({
-              code: 401,
-              message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
-            })
-          : error,
+    if (yield* connectionRefused(target)) {
+      yield* Console.log(ui.blank)
+      yield* Console.log(ui.warning(`Nothing is running on ${target.host} yet`))
+      yield* Console.log(
+        ui.step('Start your server, events that arrive before then will fail'),
+      )
+    }
+    return yield* withTerminalTitle(
+      `polar listen · ${organization.name}`,
+      startListening({
+        listenUrl,
+        forwardUrl: target.href,
+        organizationName: organization.name,
+        environment,
+      }).pipe(
+        Effect.provide(FetchHttpClient.layer),
+        Effect.mapError((error) =>
+          error.code === 401
+            ? new ListenError({
+                code: 401,
+                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
+              })
+            : error,
+        ),
       ),
     )
   }),
@@ -295,4 +375,18 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
   Command.withDescription(
     'Forward webhook events for an organization to a local URL',
   ),
+  Command.withExamples([
+    {
+      command: 'polar listen 3000',
+      description: 'Forward events to http://localhost:3000',
+    },
+    {
+      command: 'polar listen 3000/api/webhooks',
+      description: 'Forward events to a route on your local server',
+    },
+    {
+      command: 'polar listen http://localhost:3000/api/webhooks --org <id>',
+      description: 'Forward events for a specific organization',
+    },
+  ]),
 )

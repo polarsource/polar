@@ -31,11 +31,10 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
 
   const { data: migration } = useMerchantMigration(migrationId)
   const operation = migration?.operation
-  const importingOperation =
-    operation?.kind === 'import' && isActiveMigrationOperation(operation)
-  const refreshing =
-    isActiveMigrationOperation(operation) && operation?.kind !== 'import'
-  const pollMs = refreshing || importingOperation ? 2000 : false
+  const active = isActiveMigrationOperation(operation)
+  const importingOperation = active && operation?.kind === 'import'
+  const refreshing = active && operation?.kind !== 'import'
+  const pollMs = active ? 2000 : false
 
   const records = useMigrationRecords(
     migrationId,
@@ -71,31 +70,19 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   } = useRecordSummary(migrationId, pollMs)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
-  const wasRefreshing = useRef(false)
-  const wasImporting = useRef(false)
+  const wasActive = useRef(false)
   const pendingSelection = useRef<SelectionState | null>(null)
 
   useEffect(() => {
-    if (refreshing) {
-      wasRefreshing.current = true
+    if (active) {
+      wasActive.current = true
       return
     }
-    if (wasRefreshing.current) {
-      wasRefreshing.current = false
+    if (wasActive.current) {
+      wasActive.current = false
       invalidateMigrationRecords(migrationId)
     }
-  }, [refreshing, migrationId])
-
-  useEffect(() => {
-    if (importingOperation) {
-      wasImporting.current = true
-      return
-    }
-    if (wasImporting.current) {
-      wasImporting.current = false
-      invalidateMigrationRecords(migrationId)
-    }
-  }, [importingOperation, migrationId])
+  }, [active, migrationId])
 
   useEffect(() => {
     if (operation?.kind !== 'import' || pendingSelection.current == null) {
@@ -134,16 +121,12 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     !rerunPrecheck.isPending &&
     operation?.kind !== 'import' &&
     operation?.stalled === true
-  const refreshError =
-    operation?.kind === 'import'
-      ? undefined
-      : rerunPrecheck.isError
-        ? rerunPrecheck.error?.message ||
-          "We couldn't start the refresh from Stripe. Please try again."
-        : operation?.status === 'failed'
-          ? operation.error ||
-            "We couldn't refresh from Stripe. Please try again."
-          : undefined
+  const refreshError = rerunPrecheck.isError
+    ? rerunPrecheck.error?.message ||
+      "We couldn't start the refresh from Stripe. Please try again."
+    : operation?.kind !== 'import' && operation?.status === 'failed'
+      ? operation.error || "We couldn't refresh from Stripe. Please try again."
+      : undefined
   const importFailed =
     operation?.kind === 'import' &&
     (operation.status === 'failed' || operation.stalled)
@@ -193,8 +176,13 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onToggle={toggle}
       onToggleAll={onToggleAll}
       onImport={() => {
-        pendingSelection.current = selection
-        importCatalog.mutate(selectionPayload(selection))
+        const submitted = selection
+        rerunPrecheck.reset()
+        importCatalog.mutate(selectionPayload(submitted), {
+          onSuccess: () => {
+            pendingSelection.current = submitted
+          },
+        })
       }}
       importing={importCatalog.isPending || importingOperation}
       importError={importError}

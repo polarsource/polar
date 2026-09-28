@@ -15,9 +15,11 @@ export function PrecheckPanel({
   migration: schemas['MerchantMigration']
 }) {
   const precheck = useRunMerchantMigrationPrecheck(migration.id)
-  const running =
-    precheck.isPending || isActiveMigrationOperation(migration.operation)
   const stalled = !precheck.isPending && migration.operation?.stalled === true
+  const running =
+    precheck.isPending ||
+    stalled ||
+    isActiveMigrationOperation(migration.operation)
   const failed = migration.operation?.status === 'failed'
   const error =
     (failed ? migration.operation?.error : null) ||

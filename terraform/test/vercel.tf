@@ -2,11 +2,6 @@
 # Vercel — Test frontend (test.polar.sh)
 # =============================================================================
 
-import {
-  to = module.vercel.cloudflare_dns_record.this["test.polar.sh"]
-  id = "22bcd1b07ec25452aab472486bc8df94/7eee3c07157a8904f30fc3fd27b7ba27"
-}
-
 module "vercel" {
   source = "../modules/vercel"
 
@@ -40,7 +35,6 @@ module "vercel" {
     s3_public_images_bucket_pathname                = "/product_media/**"
     s3_upload_origins                               = "https://polar-test-files.s3.amazonaws.com https://polar-test-files.s3.us-east-2.amazonaws.com https://polar-test-public-files.s3.amazonaws.com https://polar-test-public-files.s3.us-east-2.amazonaws.com"
     polar_checkout_embed_script_allowed_origins     = "https://polar.sh,https://sandbox.polar.sh,https://test.polar.sh"
-    polar_openapi_schema_url                        = "https://api.polar.sh/openapi.json"
     enable_experimental_corepack                    = "1"
   }
 

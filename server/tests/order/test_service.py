@@ -4218,6 +4218,59 @@ class TestHandlePaymentFailure:
         mock_mark_past_due.assert_not_called()
 
     @freeze_time("2024-01-01 12:00:00")
+    @pytest.mark.parametrize(
+        ("past_due_days_ago", "failed_payments", "next_retry_in_days"),
+        [(2, 0, 5), (7, 0, 7), (14, 0, 7), (21, 0, None), (7, 1, 7)],
+    )
+    async def test_consecutive_retry_without_a_charge_follows_schedule(
+        self,
+        past_due_days_ago: int,
+        failed_payments: int,
+        next_retry_in_days: int | None,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=utc_now() - timedelta(days=past_due_days_ago),
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+        for _ in range(failed_payments):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        if next_retry_in_days is None:
+            assert result_order.next_payment_attempt_at is None
+            assert subscription.status == SubscriptionStatus.canceled
+        else:
+            assert result_order.next_payment_attempt_at == utc_now() + timedelta(
+                days=next_retry_in_days
+            )
+            assert subscription.status == SubscriptionStatus.past_due
+
+    @freeze_time("2024-01-01 12:00:00")
     async def test_final_attempt_cancels_subscription(
         self,
         session: AsyncSession,

@@ -116,7 +116,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount_create: DiscountCreate,
         auth_subject: AuthSubject[User | Organization],
+        *,
+        notify: bool = True,
     ) -> Discount:
+        """``notify=False`` skips the webhook, for bulk internal writes such as a
+        catalog import."""
         organization = await get_payload_organization(
             session, auth_subject, discount_create
         )
@@ -183,7 +187,10 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
             raise
 
-        await self._send_webhook(session, discount, WebhookEventType.discount_created)
+        if notify:
+            await self._send_webhook(
+                session, discount, WebhookEventType.discount_created
+            )
 
         return discount
 

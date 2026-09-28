@@ -21,6 +21,7 @@ import { SwitchRow } from './switchRows'
 const numberFormat = new Intl.NumberFormat('en-US')
 
 interface Props {
+  migrationId: string
   report: schemas['MerchantMigrationCutoverReport']
   filter: SwitchFilter
   onFilterChange: (filter: SwitchFilter) => void
@@ -42,6 +43,7 @@ interface Props {
 }
 
 export function SwitchPanelView({
+  migrationId,
   report,
   filter,
   onFilterChange,
@@ -177,7 +179,11 @@ export function SwitchPanelView({
         hide={() => setOpenRow(null)}
         modalContent={
           openRow ? (
-            <SwitchRecordModal row={openRow} onClose={() => setOpenRow(null)} />
+            <SwitchRecordModal
+              row={openRow}
+              migrationId={migrationId}
+              onClose={() => setOpenRow(null)}
+            />
           ) : (
             <Box />
           )

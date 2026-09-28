@@ -1,20 +1,31 @@
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { CATALOG_READ_DURATION } from '../catalogReadCopy'
-import { CATALOG_EMPTY_COPY, ReviewCatalogEmptyKind } from './reviewCatalog'
+import {
+  CATALOG_EMPTY_COPY,
+  CATALOG_READ_ERROR_TITLE,
+  CATALOG_REFRESH_COPY,
+  type ReviewCatalogEmptyKind,
+} from './reviewCatalog'
 
 interface Props {
   kind: ReviewCatalogEmptyKind
   onRerunPrecheck?: () => void
   rerunning?: boolean
+  readError?: string
 }
 
 export function CatalogEmptyPanel({
   kind,
   onRerunPrecheck,
   rerunning = false,
+  readError,
 }: Props) {
-  const { title, description } = CATALOG_EMPTY_COPY[kind]
+  const failed = Boolean(readError) && !rerunning
+  const { title, description } = rerunning
+    ? CATALOG_REFRESH_COPY
+    : readError
+      ? { title: CATALOG_READ_ERROR_TITLE, description: readError }
+      : CATALOG_EMPTY_COPY[kind]
 
   return (
     <Box
@@ -30,17 +41,16 @@ export function CatalogEmptyPanel({
       textAlign="center"
     >
       <Box flexDirection="column" rowGap="xs" alignItems="center">
-        <Text variant="heading-xs" as="h3">
+        <Text
+          variant="heading-xs"
+          as="h3"
+          color={failed ? 'danger' : 'default'}
+        >
           {title}
         </Text>
         <Text variant="caption" color="muted">
           {description}
         </Text>
-        {rerunning ? (
-          <Text variant="caption" color="muted">
-            {CATALOG_READ_DURATION}
-          </Text>
-        ) : null}
       </Box>
       {onRerunPrecheck && (
         <Button

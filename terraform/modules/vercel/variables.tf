@@ -131,7 +131,6 @@ variable "config" {
     s3_public_images_bucket_pathname                = string
     s3_upload_origins                               = string
     polar_checkout_embed_script_allowed_origins     = string
-    polar_openapi_schema_url                        = string
     enable_experimental_corepack                    = string
   })
 }

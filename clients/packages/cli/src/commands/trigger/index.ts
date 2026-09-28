@@ -7,31 +7,31 @@ import { Organizations } from '@/services/organizations'
 import { Trigger, TriggerError, type TriggerEvent } from '@/services/trigger'
 import * as ui from '@/utils/ui'
 
-const event = Argument.string('event').pipe(
+const event = Argument.String('event').pipe(
   Argument.withDescription(
     'Webhook event to send, e.g. order.created. Omit to pick from a list.',
   ),
   Argument.optional,
 )
 
-const override = Flag.string('override').pipe(
+const override = Flag.String('override').pipe(
   Flag.withDescription(
     'Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable.',
   ),
   Flag.atLeast(0),
 )
 
-const seed = Flag.integer('seed').pipe(
+const seed = Flag.Int('seed').pipe(
   Flag.withDescription('Seed for generated IDs, for a reproducible payload'),
   Flag.optional,
 )
 
-const json = Flag.boolean('json').pipe(
+const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Print the payload as JSON instead of sending it'),
 )
 
-const list = Flag.boolean('list').pipe(
+const list = Flag.Boolean('list').pipe(
   Flag.withDefault(false),
   Flag.withDescription('List every event you can trigger, with descriptions'),
 )
@@ -42,7 +42,7 @@ const interactive = Effect.gen(function* () {
 })
 
 const pickEvent = (events: ReadonlyArray<TriggerEvent>) =>
-  Prompt.autoComplete({
+  Prompt.AutoComplete({
     message: 'Select an event to send',
     filterPlaceholder: 'Type to filter, e.g. order',
     choices: events.map((item) => ({

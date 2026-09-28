@@ -4,7 +4,7 @@ from typing import Any
 import structlog
 
 from polar.config import settings
-from polar.integrations.slack.client import SlackClient
+from polar.integrations.slack.client import client as slack_client
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
 from polar.logging import Logger
 from polar.postgres import AsyncReadSession
@@ -64,9 +64,6 @@ def _format_invariant_failure_payload(error: InvariantError) -> SlackPayload:
 
 
 class InvariantService:
-    def __init__(self) -> None:
-        self._slack = SlackClient()
-
     async def check(
         self, session: AsyncReadSession, invariant_cls: type[Invariant]
     ) -> None:
@@ -99,7 +96,7 @@ class InvariantService:
                 )
                 return
             payload = _format_invariant_failure_payload(e)
-            await self._slack.chat_post_message(
+            await slack_client.chat_post_message(
                 bot_token=settings.SLACK_BOT_TOKEN,
                 channel=settings.SLACK_CHANNEL,
                 **payload,

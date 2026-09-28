@@ -28,7 +28,6 @@ from polar.merchant_migration.service import (
     merchant_migration as merchant_migration_service,
 )
 from polar.models import MerchantMigration
-from polar.models.merchant_migration import MerchantMigrationStep
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 from polar.postgres import (
     AsyncReadSession,
@@ -64,9 +63,11 @@ from .status import (
     Attention,
     attention,
     current_pan_step,
+    is_finished,
     progress,
     step_inputs,
     step_position,
+    visible_step,
 )
 
 router = BackofficeRouter()
@@ -94,9 +95,9 @@ class Row:
             case View.needs_ops:
                 return self.attention.needs_ops
             case View.active:
-                return self.migration.step != MerchantMigrationStep.completed
+                return not is_finished(self.migration)
             case View.completed:
-                return self.migration.step == MerchantMigrationStep.completed
+                return is_finished(self.migration)
             case View.all:
                 return True
 
@@ -389,7 +390,9 @@ async def get_migration(
 
             with tag.div(classes="grid grid-cols-2 lg:grid-cols-4 gap-4"):
                 with metric_card(
-                    "Step", f"{position}/{total}", subtitle=STEP_LABELS[migration.step]
+                    "Step",
+                    f"{position}/{total}",
+                    subtitle=STEP_LABELS[visible_step(migration.step)],
                 ):
                     pass
                 with metric_card(

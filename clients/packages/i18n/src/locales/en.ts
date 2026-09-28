@@ -369,6 +369,7 @@ export default {
       paymentSuccessful: 'Payment successful! Getting your products ready...',
       confirmationTokenFailed:
         'Failed to create confirmation token, please try again later.',
+      paymentNotCompleted: 'Payment was not completed. Please try again.',
     },
     cta: {
       startTrial: 'Start trial',

@@ -26,15 +26,18 @@ import logging.config
 from functools import wraps
 from typing import Any
 
+import dramatiq
 import structlog
 import typer
 from sqlalchemy import or_, select
 
+from polar import tasks  # noqa: F401  -- registers dramatiq actors
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import create_async_engine
-from polar.worker import enqueue_job
+from polar.redis import create_redis
+from polar.worker import JobQueueManager, enqueue_job
 
 cli = typer.Typer()
 
@@ -127,10 +130,13 @@ async def prepare(
     typer.echo()
 
     enqueued_count = 0
-    for org in organizations:
-        enqueue_job("organization.prepare_members", organization_id=org.id)
-        enqueued_count += 1
-        typer.echo(f"  [{enqueued_count}/{len(organizations)}] {org.slug}")
+    broker = dramatiq.get_broker()
+    async with create_redis("script") as redis:
+        async with JobQueueManager.open(broker, redis):
+            for org in organizations:
+                enqueue_job("organization.prepare_members", organization_id=org.id)
+                enqueued_count += 1
+                typer.echo(f"  [{enqueued_count}/{len(organizations)}] {org.slug}")
 
     typer.echo()
     typer.echo(f"Enqueued {enqueued_count} task(s).")

@@ -52,13 +52,45 @@ class TestResolveMember:
         assert result is not None
         assert result.id == member.id
 
-    async def test_feature_flag_disabled_no_member_id_returns_none(
+    async def test_feature_flag_disabled_resolves_owner_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        """When feature flag is disabled and no member_id, returns None."""
+        """A direct purchase links the owner member even before the flip."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": False}
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.id == owner.id
+
+    async def test_feature_flag_disabled_creates_owner_member_when_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A legacy customer without an owner member gets one."""
         organization = await create_organization(
             save_fixture, account, feature_settings={"member_model_enabled": False}
         )
@@ -67,6 +99,52 @@ class TestResolveMember:
         result = await resolve_member(
             session,
             customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.customer_id == customer.id
+        assert result.role == MemberRole.owner
+        assert result.email == customer.email
+
+    async def test_feature_flag_disabled_seat_based_returns_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A seat grant without a member must not fall back to the buyer."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": False}
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=True,
+        )
+
+        assert result is None
+
+    async def test_feature_flag_disabled_missing_customer_returns_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A legacy grant never fails because the owner member cannot be made."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": False}
+        )
+
+        result = await resolve_member(
+            session,
+            customer_id=uuid.uuid4(),
             organization=organization,
             member_id=None,
             is_seat_based=False,

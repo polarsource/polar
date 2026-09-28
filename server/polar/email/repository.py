@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import delete
 
 from polar.enums import EmailSender
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -37,6 +39,10 @@ class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, U
             EmailLog.processor_id == processor_id
         )
         return await self.get_one_or_none(statement)
+
+    async def delete_before(self, before: datetime) -> None:
+        statement = delete(EmailLog).where(EmailLog.created_at < before)
+        await self.session.execute(statement)
 
     async def mark_failed(self, email_log: EmailLog, error: str) -> EmailLog:
         return await self.update(

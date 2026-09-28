@@ -64,12 +64,19 @@ variable "logfire" {
 }
 
 variable "database" {
-  description = "Postgres endpoint PgBouncer proxies to."
+  description = "Postgres endpoint PgBouncer proxies to. Set additional_user/additional_password during a credential rotation to keep both roles accepted while services redeploy."
   type = object({
-    host     = string
-    port     = string
-    user     = string
-    password = string
+    host                = string
+    port                = string
+    user                = string
+    password            = string
+    additional_user     = optional(string)
+    additional_password = optional(string)
   })
   sensitive = true
+
+  validation {
+    condition     = (var.database.additional_user == null) == (var.database.additional_password == null)
+    error_message = "Set additional_user and additional_password together, or neither."
+  }
 }

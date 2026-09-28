@@ -91,7 +91,11 @@ async def subscribe(
                     )
 
                     if message is not None:
-                        log.debug("redis.pubsub", message=message["data"])
+                        log.debug(
+                            "redis.pubsub",
+                            message_char_count=len(message["data"]),
+                            channel_count=len(channels),
+                        )
                         yield message["data"]
                 except asyncio.CancelledError:
                     raise

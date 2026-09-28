@@ -1,10 +1,12 @@
 from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Self
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, ConfigDict, Field, model_validator
 
+from polar.enums import TaxBehavior
+from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -53,6 +55,7 @@ class PrecheckEntity(StrEnum):
     products = "products"
     prices = "prices"
     customers = "customers"
+    discounts = "discounts"
     subscriptions = "subscriptions"
 
 
@@ -128,8 +131,22 @@ class MerchantMigrationRecordItem(Schema):
     )
     customer_country: str | None = Field(
         description=(
-            "The customer billing country. None for product and price rows, or "
-            "when the source customer has none."
+            "The billing country Polar will import. This is the source customer "
+            "country, or a payment-method fallback. None for product and price "
+            "rows, or when neither is available."
+        ),
+    )
+    customer_country_hint: str | None = Field(
+        description=(
+            "The payment-method country used as the billing-country fallback. "
+            "Present only to disclose fallback provenance; Polar tax still uses "
+            "the imported customer billing address."
+        ),
+    )
+    customer_billing_address: Address | None = Field(
+        description=(
+            "The billing address Polar will import for the customer. None when "
+            "only a payment-method country fallback or no address is available."
         ),
     )
     amount: int | None = Field(
@@ -154,6 +171,25 @@ class MerchantMigrationRecordItem(Schema):
             "non-subscription rows, or when the source doesn't say."
         ),
     )
+    tax_behavior: TaxBehavior | None = Field(
+        description=(
+            "Polar tax after the switch. Defaults from the source when Stripe "
+            "was collecting tax on an inclusive or exclusive price; otherwise "
+            "inclusive. None for non-subscription rows."
+        ),
+    )
+    discount_name: str | None = Field(
+        description=(
+            "The coupon Polar will keep on this subscription. None for "
+            "non-subscription rows, or when the subscription has no importable coupon."
+        ),
+    )
+    discount_code: str | None = Field(
+        description=(
+            "The checkout code of the coupon Polar will keep on this subscription. "
+            "None when there is no coupon, or the coupon has no Polar-valid code."
+        ),
+    )
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."
     )
@@ -174,6 +210,12 @@ class MerchantMigrationRecordItem(Schema):
             "fix something, `info` when there is nothing to fix. Null without a "
             "reason."
         )
+    )
+    conflicting_customer_id: UUID4 | None = Field(
+        description=(
+            "The Polar customer that already exists for this email, when the skip "
+            "reason is a Stripe id conflict. None otherwise."
+        ),
     )
     cutover_status: MerchantMigrationCutoverStatus | None = Field(
         description=(
@@ -204,6 +246,41 @@ class MerchantMigrationRecordItem(Schema):
             "so it can be created at cutover. Null for non-subscription rows."
         ),
     )
+
+
+class MerchantMigrationRecordTaxUpdate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    tax_behavior: TaxBehavior = Field(
+        description="Polar tax after the switch: `inclusive` or `exclusive`.",
+    )
+
+
+class MerchantMigrationRecordBillingAddressUpdate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    billing_address: AddressInput = Field(
+        description="Billing address Polar will store on the imported customer.",
+    )
+
+    @model_validator(mode="after")
+    def validate_billing_address(self) -> Self:
+        address = self.billing_address
+        if address.country == "US" and not all(
+            (address.line1, address.city, address.postal_code, address.state)
+        ):
+            raise ValueError(
+                "United States billing addresses require line 1, city, "
+                "postal code, and state."
+            )
+        if address.country == "CA" and not address.state:
+            raise ValueError("Canadian billing addresses require a province.")
+        return self
+
+
+type MerchantMigrationRecordUpdate = (
+    MerchantMigrationRecordTaxUpdate | MerchantMigrationRecordBillingAddressUpdate
+)
 
 
 class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):

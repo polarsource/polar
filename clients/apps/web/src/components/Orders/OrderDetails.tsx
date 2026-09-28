@@ -38,11 +38,12 @@ export const OrderDetails = ({
                 display="inline-flex"
                 alignItems="center"
                 columnGap="s"
+                maxWidth="100%"
               >
                 <Text as="span" variant="body" truncate>
                   {product.name}
                 </Text>
-                <Box as="span" display="inline-flex">
+                <Box as="span" display="inline-flex" flexShrink={0}>
                   <ArrowUpRightIcon size={16} />
                 </Box>
               </Box>
@@ -83,11 +84,12 @@ export const OrderDetails = ({
                 display="inline-flex"
                 alignItems="center"
                 columnGap="s"
+                maxWidth="100%"
               >
                 <Text as="span" variant="body" truncate>
                   {order.discount.name}
                 </Text>
-                <Box as="span" display="inline-flex">
+                <Box as="span" display="inline-flex" flexShrink={0}>
                   <ArrowUpRightIcon size={16} />
                 </Box>
               </Box>

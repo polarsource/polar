@@ -94,11 +94,17 @@
               {
                 "group": "Checkout",
                 "pages": [
-                  "features/checkout/embed",
-                  "features/checkout/embed-payment-method",
                   "features/checkout/links",
                   "features/checkout/session",
-                  "features/checkout/localization"
+                  "features/checkout/payment-methods",
+                  "features/checkout/localization",
+                  {
+                    "group": "Embeds",
+                    "pages": [
+                      "features/checkout/embed",
+                      "features/checkout/embed-payment-method"
+                    ]
+                  }
                 ]
               },
               "features/seat-based-pricing",
@@ -215,7 +221,7 @@
               "merchant-of-record/introduction",
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
-              "merchant-of-record/acceptable-use",
+              "merchant-of-record/acceptable-use/introduction",
               "merchant-of-record/account-reviews",
               "migrate-away"
             ]
@@ -337,6 +343,7 @@
                       "GET /v1/products/",
                       "POST /v1/products/",
                       "PATCH /v1/products/{id}",
+                      "DELETE /v1/products/{id}",
                       "POST /v1/products/{id}/benefits"
                     ]
                   },
@@ -746,6 +753,7 @@
                       "GET /v1/products/",
                       "POST /v1/products/",
                       "PATCH /v1/products/{id}",
+                      "DELETE /v1/products/{id}",
                       "POST /v1/products/{id}/benefits"
                     ]
                   },
@@ -2205,7 +2213,7 @@
     },
     {
       "source": "/documentation/polar-as-merchant-of-record/acceptable-products-use",
-      "destination": "/merchant-of-record/acceptable-use"
+      "destination": "/merchant-of-record/acceptable-use/introduction"
     },
     {
       "source": "/merchant-of-record/acceptable-use",

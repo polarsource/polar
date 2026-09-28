@@ -2,13 +2,19 @@ import { act } from '@testing-library/react'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithCheckout } from '../test-utils/renderWithCheckout'
-import type { CheckoutFormContextProps } from './CheckoutFormProvider'
+import {
+  isShownToBuyer,
+  type CheckoutFormContextProps,
+} from './CheckoutFormProvider'
 import type { CheckoutContextProps } from './CheckoutProvider'
 
 type CheckoutResult = Awaited<ReturnType<CheckoutFormContextProps['update']>>
 
 type UpdateResult = Awaited<ReturnType<CheckoutContextProps['update']>>
 type ConfirmResult = Awaited<ReturnType<CheckoutContextProps['confirm']>>
+type CancelPaymentResult = Awaited<
+  ReturnType<CheckoutContextProps['cancelPayment']>
+>
 
 type UpdateError = Extract<UpdateResult, { ok: false }>['error']
 type ConfirmError = Extract<ConfirmResult, { ok: false }>['error']
@@ -464,6 +470,36 @@ describe('CheckoutFormProvider', () => {
       )
     })
 
+    it.each([
+      ['PaymentError', true],
+      ['ResourceNotFound', false],
+      ['ExpiredCheckoutError', false],
+      ['UnexpectedError', false],
+    ] as const)(
+      'marks a %s rejection as displayed: %s',
+      async (errorCode, displayed) => {
+        const getCtx = renderWithCheckout({
+          checkout: freeCheckout,
+          update: vi.fn(),
+          confirm: vi.fn<CheckoutContextProps['confirm']>(async () =>
+            confirmErrorResult({
+              error: errorCode,
+              detail: 'detail',
+            } as ConfirmError),
+          ),
+        })
+
+        let rejection: unknown
+        await act(async () => {
+          rejection = await getCtx()
+            .confirm({ customer_email: 'a@b.com' }, null, null)
+            .catch((error: unknown) => error)
+        })
+
+        expect(isShownToBuyer(rejection)).toBe(displayed)
+      },
+    )
+
     it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {
       const getCtx = renderWithCheckout({
         checkout: {
@@ -673,6 +709,130 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(getCtx().trialUnavailable).toBe(false)
+    })
+  })
+
+  describe('confirm (payment next action)', () => {
+    const paidCheckout = { is_payment_form_required: true }
+
+    const confirmedCheckout = {
+      id: 'ch_confirmed',
+      status: 'confirmed',
+      payment_processor_metadata: {
+        intent_status: 'requires_action',
+        intent_client_secret: 'pi_secret',
+      },
+    }
+
+    const elements = {
+      submit: vi.fn(async () => ({})),
+    } as unknown as StripeElements
+
+    const makeStripe = (handleNextAction: ReturnType<typeof vi.fn>): Stripe =>
+      ({
+        createConfirmationToken: vi.fn(async () => ({
+          confirmationToken: { id: 'ctoken_1' },
+        })),
+        handleNextAction,
+      }) as unknown as Stripe
+
+    const makeConfirm = () =>
+      vi.fn<CheckoutContextProps['confirm']>(
+        async () =>
+          ({ ok: true, value: confirmedCheckout }) as unknown as ConfirmResult,
+      )
+
+    const makeCancelPayment = (status: 'open' | 'confirmed') =>
+      vi.fn<CheckoutContextProps['cancelPayment']>(
+        async () =>
+          ({
+            ok: true,
+            value: { ...confirmedCheckout, status },
+          }) as unknown as CancelPaymentResult,
+      )
+
+    it('cancels the payment and shows an error when the buyer dismisses the next action', async () => {
+      const handleNextAction = vi.fn(async () => ({
+        paymentIntent: { status: 'requires_action' },
+      }))
+      const stripe = makeStripe(handleNextAction)
+      const cancelPayment = makeCancelPayment('open')
+
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm: makeConfirm(),
+        cancelPayment,
+      })
+
+      await act(async () => {
+        const error = await getCtx()
+          .confirm({ customer_email: 'a@b.com' }, stripe, elements)
+          .catch((e) => e)
+        expect(isShownToBuyer(error)).toBe(true)
+      })
+
+      expect(handleNextAction).toHaveBeenCalledTimes(1)
+      expect(cancelPayment).toHaveBeenCalledTimes(1)
+      expect(getCtx().loadingLabel).toBe('Processing payment')
+      expect(getCtx().loading).toBe(false)
+      expect(getCtx().form.formState.errors.root?.message).toBeDefined()
+    })
+
+    it('resolves with the confirmed checkout when the payment went through before the dismissal', async () => {
+      const handleNextAction = vi.fn(async () => ({
+        paymentIntent: { status: 'requires_action' },
+      }))
+      const stripe = makeStripe(handleNextAction)
+
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm: makeConfirm(),
+        cancelPayment: makeCancelPayment('confirmed'),
+      })
+
+      let result: unknown
+      await act(async () => {
+        result = await getCtx().confirm(
+          { customer_email: 'a@b.com' },
+          stripe,
+          elements,
+        )
+      })
+
+      expect(result).toEqual(confirmedCheckout)
+      expect(getCtx().form.formState.errors.root).toBeUndefined()
+    })
+
+    it('starts a new payment on the next submit after a dismissal', async () => {
+      const handleNextAction = vi
+        .fn()
+        .mockResolvedValueOnce({ paymentIntent: { status: 'requires_action' } })
+        .mockResolvedValueOnce({ paymentIntent: { status: 'succeeded' } })
+      const stripe = makeStripe(handleNextAction)
+      const confirm = makeConfirm()
+
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm,
+        cancelPayment: makeCancelPayment('open'),
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements),
+        ).rejects.toBeDefined()
+      })
+
+      await act(async () => {
+        await getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements)
+      })
+
+      expect(confirm).toHaveBeenCalledTimes(2)
+      expect(stripe.createConfirmationToken).toHaveBeenCalledTimes(2)
+      expect(handleNextAction).toHaveBeenCalledTimes(2)
     })
   })
 })

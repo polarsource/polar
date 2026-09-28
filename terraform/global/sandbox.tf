@@ -53,18 +53,6 @@ resource "tfe_variable" "google_service_account_json_sandbox" {
   }
 }
 
-resource "tfe_variable" "openai_api_key_sandbox" {
-  key             = "openai_api_key_sandbox"
-  category        = "terraform"
-  description     = "OpenAI API Key for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "pydantic_ai_gateway_api_key_sandbox" {
   key             = "pydantic_ai_gateway_api_key_sandbox"
   category        = "terraform"
@@ -165,18 +153,6 @@ resource "tfe_variable" "backend_logo_dev_publishable_key_sandbox" {
   key             = "backend_logo_dev_publishable_key_sandbox"
   category        = "terraform"
   description     = "Logo.dev Publishable Key for sandbox"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "backend_secret_sandbox" {
-  key             = "backend_secret_sandbox"
-  category        = "terraform"
-  description     = "Backend Secret for sandbox"
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 
@@ -708,30 +684,6 @@ resource "tfe_variable" "worker_sqs_actors_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
-resource "tfe_variable" "stripe_app_client_id_sandbox" {
-  key             = "stripe_app_client_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client ID for sandbox"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_link_id_sandbox" {
-  key             = "stripe_app_client_link_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client link ID for sandbox"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "turnstile_secret_sandbox" {
   key             = "turnstile_secret"
   category        = "terraform"
@@ -814,6 +766,65 @@ resource "tfe_variable" "ec2_tailscale_oauth_client_secret_sandbox" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
   description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "linear_api_key_sandbox" {
+  key             = "linear_api_key"
+  category        = "terraform"
+  description     = "Linear API key for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "linear_team_id_sandbox" {
+  key             = "linear_team_id"
+  category        = "terraform"
+  description     = "Linear team ID for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "linear_payout_amount_mismatch_template_id_sandbox" {
+  key             = "linear_payout_amount_mismatch_template_id"
+  category        = "terraform"
+  description     = "Linear payout amount mismatch issue template ID for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "postgres_user_sandbox" {
+  key             = "postgres_user"
+  category        = "terraform"
+  description     = "Sandbox Postgres user"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "postgres_password_sandbox" {
+  key             = "postgres_password"
+  category        = "terraform"
+  description     = "Sandbox Postgres password"
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 

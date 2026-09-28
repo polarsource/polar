@@ -6,7 +6,7 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
-from polar.integrations.slack.client import SlackClient
+from polar.integrations.slack.client import client as slack_client
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.locker import Locker, TimeoutLockError
 from polar.logging import Logger
@@ -55,7 +55,7 @@ class BenefitSlackSharedChannelService(
         BenefitGrantSlackSharedChannelProperties,
     ]
 ):
-    _client = SlackClient()
+    _client = slack_client
 
     async def grant(
         self,
@@ -235,15 +235,7 @@ class BenefitSlackSharedChannelService(
                 benefit.organization_id, "channel_id", channel_id
             )
         )
-        own_grants = await grant_repository.list_granted_by_benefit_and_customer(
-            benefit, customer
-        )
-        own_count = sum(
-            1
-            for grant in own_grants
-            if grant.properties.get("channel_id") == channel_id
-        )
-        if total_grants - own_count > 0:
+        if total_grants > 1:
             bound_logger.info(
                 "Slack channel still used by other grants; skipping archive",
                 channel_id=channel_id,

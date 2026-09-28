@@ -94,6 +94,7 @@ const CountryStatePicker = ({
   disabled,
   placeholder = 'State',
   fallbackPlaceholder = 'State / Province',
+  'data-testid': testId,
 }: {
   className?: string
   contentClassName?: string
@@ -105,6 +106,7 @@ const CountryStatePicker = ({
   disabled?: boolean
   placeholder?: string
   fallbackPlaceholder?: string
+  'data-testid'?: string
 }) => {
   const states = country ? FIXED_STATE_OPTIONS[country] : undefined
   if (states) {
@@ -115,7 +117,7 @@ const CountryStatePicker = ({
         autoComplete={autoComplete}
         disabled={disabled}
       >
-        <SelectTrigger className={className}>
+        <SelectTrigger className={className} data-testid={testId}>
           <SelectValue
             placeholder={placeholder}
             // Avoids issues due to browser automatic translation
@@ -143,6 +145,7 @@ const CountryStatePicker = ({
 
   return (
     <Input
+      data-testid={testId}
       type="text"
       placeholder={fallbackPlaceholder}
       value={value}

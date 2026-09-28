@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from dataclasses import replace
 from typing import Any
 from uuid import UUID
@@ -18,6 +18,7 @@ from sqlalchemy.orm import aliased, joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
+from polar.enums import TaxBehavior
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
@@ -41,12 +42,17 @@ from polar.models.merchant_migration_record import (
 )
 
 from .canonical import (
+    CanonicalDiscount,
     CanonicalPrice,
     CanonicalProduct,
     CanonicalRecord,
+    CanonicalSubscription,
     canonical_price_key,
     deserialize,
+    earlier_datetime,
+    parse_tax_behavior,
     serialize,
+    tighter_cap,
 )
 
 type RecordCounts = dict[
@@ -381,19 +387,52 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def list_imported_catalog_dependencies(
-        self, organization_id: UUID
+    async def get_imported_discount_dependency(
+        self, organization_id: UUID, discount_source_id: str
+    ) -> MerchantMigrationRecord | None:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == MerchantMigrationRecordType.discount,
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+            MerchantMigrationRecord.source_id == discount_source_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def list_discount_records(
+        self, organization_id: UUID, source_ids: Sequence[str]
     ) -> Sequence[MerchantMigrationRecord]:
+        if not source_ids:
+            return []
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == MerchantMigrationRecordType.discount,
+            MerchantMigrationRecord.source_id.in_(source_ids),
+        )
+        return await self.get_all(statement)
+
+    async def list_imported_catalog_dependencies(
+        self, organization_id: UUID, *, include_skipped: bool = False
+    ) -> Sequence[MerchantMigrationRecord]:
+        imported = and_(
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.target_id.is_not(None),
+        )
         statement = self.get_base_statement().where(
             MerchantMigrationRecord.organization_id == organization_id,
             MerchantMigrationRecord.type.in_(
                 (
                     MerchantMigrationRecordType.customer,
                     MerchantMigrationRecordType.product,
+                    MerchantMigrationRecordType.discount,
                 )
             ),
-            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
-            MerchantMigrationRecord.target_id.is_not(None),
+            or_(
+                imported,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.skipped,
+            )
+            if include_skipped
+            else imported,
         )
         return await self.get_all(statement)
 
@@ -406,6 +445,83 @@ class MerchantMigrationRecordRepository(
         """
         CustomerRecord = aliased(MerchantMigrationRecord)
         ProductRecord = aliased(MerchantMigrationRecord)
+        DiscountRecord = aliased(MerchantMigrationRecord)
+        EarlierDiscount = aliased(MerchantMigrationRecord)
+        no_discount = and_(
+            or_(
+                MerchantMigrationRecord.canonical["discount_source_ids"].is_(None),
+                func.jsonb_array_length(
+                    MerchantMigrationRecord.canonical["discount_source_ids"]
+                )
+                == 0,
+            ),
+            func.coalesce(
+                MerchantMigrationRecord.canonical["has_discount"].astext, "false"
+            )
+            != "true",
+        )
+        kept_idx = (
+            select(
+                func.generate_series(
+                    0,
+                    func.jsonb_array_length(
+                        MerchantMigrationRecord.canonical["discount_source_ids"]
+                    )
+                    - 1,
+                ).label("idx")
+            )
+            .correlate(MerchantMigrationRecord)
+            .lateral("kept_discount_idx")
+        )
+        earlier_idx = (
+            select(func.generate_series(0, kept_idx.c.idx - 1).label("idx"))
+            .correlate(kept_idx)
+            .lateral("earlier_discount_idx")
+        )
+        kept_source_id = func.jsonb_array_element_text(
+            MerchantMigrationRecord.canonical["discount_source_ids"], kept_idx.c.idx
+        )
+        earlier_source_id = func.jsonb_array_element_text(
+            MerchantMigrationRecord.canonical["discount_source_ids"],
+            earlier_idx.c.idx,
+        )
+        earlier_importable = exists(
+            select(1)
+            .select_from(earlier_idx)
+            .join(
+                EarlierDiscount,
+                and_(
+                    EarlierDiscount.source_id == earlier_source_id,
+                    EarlierDiscount.organization_id
+                    == MerchantMigrationRecord.organization_id,
+                    EarlierDiscount.type == MerchantMigrationRecordType.discount,
+                    EarlierDiscount.status.in_(
+                        (
+                            MerchantMigrationRecordStatus.pending,
+                            MerchantMigrationRecordStatus.imported,
+                        )
+                    ),
+                    EarlierDiscount.deleted_at.is_(None),
+                ),
+            )
+        )
+        discount_imported = exists(
+            select(1)
+            .select_from(kept_idx)
+            .join(
+                DiscountRecord,
+                and_(
+                    DiscountRecord.source_id == kept_source_id,
+                    DiscountRecord.organization_id
+                    == MerchantMigrationRecord.organization_id,
+                    DiscountRecord.type == MerchantMigrationRecordType.discount,
+                    DiscountRecord.status == MerchantMigrationRecordStatus.imported,
+                    DiscountRecord.target_id.is_not(None),
+                    DiscountRecord.deleted_at.is_(None),
+                ),
+            )
+            .where(~earlier_importable)
+        )
         pending_ready = and_(
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             exists().where(
@@ -436,6 +552,7 @@ class MerchantMigrationRecordRepository(
                 ),
                 ProductRecord.deleted_at.is_(None),
             ),
+            or_(no_discount, discount_imported),
         )
         return (
             self.get_base_statement()
@@ -639,12 +756,58 @@ class MerchantMigrationRecordRepository(
                 record, update_dict={"cutover_status": None, "cutover_error": None}
             )
 
+    async def pending_subscription_tax_behaviors(
+        self, migration_id: UUID
+    ) -> dict[str, TaxBehavior]:
+        tax_behavior = MerchantMigrationRecord.canonical["tax_behavior"].astext
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+                MerchantMigrationRecord.type
+                == MerchantMigrationRecordType.subscription,
+            )
+            .with_only_columns(MerchantMigrationRecord.source_id, tax_behavior)
+            .order_by(None)
+            .with_for_update(of=MerchantMigrationRecord)
+        )
+        return {
+            source_id: behavior
+            for source_id, raw in (await self.session.execute(statement)).all()
+            if (behavior := parse_tax_behavior(raw)) is not None
+        }
+
     async def delete_pending(self, migration_id: UUID) -> None:
         await self.session.execute(
             delete(MerchantMigrationRecord).where(
                 MerchantMigrationRecord.merchant_migration_id == migration_id,
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             )
+        )
+
+    def _restore_subscription_tax(
+        self,
+        record: CanonicalRecord,
+        *,
+        existing: MerchantMigrationRecord | None,
+        preserved_tax_behavior: Mapping[str, TaxBehavior] | None,
+    ) -> CanonicalRecord:
+        if (
+            not isinstance(record, CanonicalSubscription)
+            or record.tax_behavior is not None
+        ):
+            return record
+        preserved = None
+        if (
+            existing is not None
+            and existing.status == MerchantMigrationRecordStatus.pending
+        ):
+            preserved = parse_tax_behavior(existing.canonical.get("tax_behavior"))
+        if preserved is None and preserved_tax_behavior is not None:
+            preserved = preserved_tax_behavior.get(record.source_id)
+        return (
+            replace(record, tax_behavior=preserved) if preserved is not None else record
         )
 
     async def upsert(
@@ -654,6 +817,7 @@ class MerchantMigrationRecordRepository(
         record: CanonicalRecord,
         *,
         merge_product_prices: bool = False,
+        preserved_tax_behavior: Mapping[str, TaxBehavior] | None = None,
     ) -> MerchantMigrationRecord:
         """Idempotently stage a record, keyed per org by (type, source_id). A
         re-run refreshes a still-pending row; imported/skipped/failed rows are
@@ -662,6 +826,11 @@ class MerchantMigrationRecordRepository(
             organization_id=organization.id,
             type=record.type,
             source_id=record.source_id,
+        )
+        record = self._restore_subscription_tax(
+            record,
+            existing=existing,
+            preserved_tax_behavior=preserved_tax_behavior,
         )
         canonical = serialize(record)
         if existing is not None:
@@ -674,6 +843,14 @@ class MerchantMigrationRecordRepository(
                     current = deserialize(existing.type, existing.canonical)
                     if isinstance(current, CanonicalProduct):
                         record = replace(record, prices=_merged_prices(current, record))
+                        canonical = serialize(record)
+                if (
+                    existing.merchant_migration_id == merchant_migration.id
+                    and isinstance(record, CanonicalDiscount)
+                ):
+                    current = deserialize(existing.type, existing.canonical)
+                    if isinstance(current, CanonicalDiscount):
+                        record = self._merge_discount_code(current, record)
                         canonical = serialize(record)
                 return await self.update(
                     existing,
@@ -693,4 +870,37 @@ class MerchantMigrationRecordRepository(
                 canonical=canonical,
             ),
             flush=True,
+        )
+
+    @staticmethod
+    def _merge_discount_code(
+        current: CanonicalDiscount, incoming: CanonicalDiscount
+    ) -> CanonicalDiscount:
+        """Refresh coupon terms on re-extract and attach the first Polar-valid
+        promotion code. Extra codes are counted so the precheck can warn."""
+        if incoming.code is None:
+            return replace(
+                incoming,
+                code=current.code,
+                extra_codes=current.extra_codes,
+                max_redemptions=tighter_cap(
+                    incoming.max_redemptions, current.max_redemptions
+                ),
+                ends_at=earlier_datetime(incoming.ends_at, current.ends_at),
+            )
+        if current.code is None:
+            return replace(
+                current,
+                code=incoming.code,
+                max_redemptions=incoming.max_redemptions,
+                ends_at=earlier_datetime(current.ends_at, incoming.ends_at),
+            )
+        if current.code != incoming.code:
+            return replace(current, extra_codes=current.extra_codes + 1)
+        return replace(
+            current,
+            max_redemptions=tighter_cap(
+                incoming.max_redemptions, current.max_redemptions
+            ),
+            ends_at=earlier_datetime(incoming.ends_at, current.ends_at),
         )

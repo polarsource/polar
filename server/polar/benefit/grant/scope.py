@@ -86,6 +86,27 @@ def scope_to_args(scope: BenefitGrantScope) -> BenefitGrantScopeArgs:
     return args
 
 
+async def _resolve_owner_member(
+    session: AsyncSession,
+    customer_id: UUID,
+    organization: Organization,
+    *,
+    include_deleted: bool,
+) -> Member | None:
+    member_repository = MemberRepository.from_session(session)
+    member = await member_repository.get_owner_by_customer_id(
+        customer_id, include_deleted=include_deleted
+    )
+    if member is not None:
+        return member
+
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(customer_id)
+    if customer is None or customer.email is None:
+        return None
+    return await member_service.create_owner_member(session, customer, organization)
+
+
 async def resolve_member(
     session: AsyncSession,
     customer_id: UUID,
@@ -105,7 +126,13 @@ async def resolve_member(
         if member_id is not None:
             member = await member_repository.get_by_id(member_id)
             return member  # may be None if member was deleted
-        return None
+
+        if is_seat_based:
+            return None
+
+        return await _resolve_owner_member(
+            session, customer_id, organization, include_deleted=include_deleted
+        )
 
     if member_id is not None:
         member = await member_repository.get_by_id(member_id)
@@ -122,23 +149,15 @@ async def resolve_member(
     if is_seat_based:
         raise MemberIdRequired()
 
-    member = await member_repository.get_owner_by_customer_id(
-        customer_id, include_deleted=include_deleted
+    member = await _resolve_owner_member(
+        session, customer_id, organization, include_deleted=include_deleted
     )
     if member is None:
-        # Auto-create owner member (graceful fallback during migration)
-        customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(customer_id)
-        if customer is not None:
-            member = await member_service.create_owner_member(
-                session, customer, organization
-            )
-        if member is None:
-            log.error(
-                "Owner member not found for benefit grant",
-                customer_id=str(customer_id),
-                organization_id=str(organization.id),
-            )
-            raise CustomerDoesntHaveOwnerMember(customer_id)
+        log.error(
+            "Owner member not found for benefit grant",
+            customer_id=str(customer_id),
+            organization_id=str(organization.id),
+        )
+        raise CustomerDoesntHaveOwnerMember(customer_id)
 
     return member

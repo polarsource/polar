@@ -12,6 +12,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import ClientContext, CorrelationID, Logger
+from polar.observability.http_telemetry import request_path_template
 from polar.operational_errors import handle_operational_error
 from polar.worker import JobQueueManager
 
@@ -28,7 +29,9 @@ class LogCorrelationIdMiddleware:
 
         correlation_id = CorrelationID.set()
         structlog.contextvars.bind_contextvars(
-            correlation_id=correlation_id, method=scope["method"], path=scope["path"]
+            correlation_id=correlation_id,
+            method=scope["method"],
+            path=request_path_template(scope),
         )
         sentry_sdk.set_tag("correlation_id", correlation_id)
 
@@ -169,7 +172,7 @@ class PathRewriteMiddleware:
                 "PathRewriteMiddleware",
                 pattern=self.pattern,
                 replacement=self.replacement,
-                path=scope["path"],
+                path=request_path_template(scope),
             )
 
         send = functools.partial(self.send, send=send, replacements=replacements)

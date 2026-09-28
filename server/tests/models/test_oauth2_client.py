@@ -2,6 +2,7 @@ import pytest
 from cryptography.exceptions import InvalidTag
 from sqlalchemy import select
 
+from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.encryption import EncryptedString
 from polar.models import OAuth2Client, User
@@ -12,8 +13,6 @@ from tests.fixtures.database import SaveFixture
 def _build(user: User) -> OAuth2Client:
     client = OAuth2Client(
         client_id="polar_ci_test",
-        client_secret="polar_cs_test",
-        registration_access_token="polar_crt_test",
         user=user,
     )
     client.id = OAuth2Client.generate_id()
@@ -33,6 +32,39 @@ class TestHashSecret:
 
     def test_none_returns_none(self) -> None:
         assert OAuth2Client.hash_secret(None) is None
+
+
+class TestCheckClientSecret:
+    def test_accepts_the_stored_secret(self, user: User) -> None:
+        client = _build(user)
+        client.client_secret_hash = OAuth2Client.hash_secret("cs-test")
+
+        assert client.check_client_secret("cs-test")
+
+    def test_rejects_another_secret(self, user: User) -> None:
+        client = _build(user)
+        client.client_secret_hash = OAuth2Client.hash_secret("cs-test")
+
+        assert not client.check_client_secret("cs-other")
+
+    def test_rejects_a_client_with_no_hash(self, user: User) -> None:
+        client = _build(user)
+
+        assert not client.check_client_secret("cs-test")
+
+    def test_accepts_a_hash_from_a_retired_secret(
+        self, user: User, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            settings, "HASH_SECRETS", {"k1": "retired", "k2": "current"}
+        )
+        monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "k1")
+        client = _build(user)
+        client.client_secret_hash = OAuth2Client.hash_secret("cs-test")
+
+        monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "k2")
+
+        assert client.check_client_secret("cs-test")
 
 
 @pytest.mark.asyncio
@@ -97,7 +129,6 @@ class TestSetters:
 
         await client.set_client_secret("cs-new")
 
-        assert client.client_secret == "cs-new"
         assert client.client_secret_hash == OAuth2Client.hash_secret("cs-new")
         assert isinstance(client.client_secret_encrypted, EncryptedString)
         assert (
@@ -111,7 +142,6 @@ class TestSetters:
 
         await client.set_registration_access_token("crt-new")
 
-        assert client.registration_access_token == "crt-new"
         assert client.registration_access_token_hash == OAuth2Client.hash_secret(
             "crt-new"
         )
@@ -120,6 +150,27 @@ class TestSetters:
             await client.registration_access_token_encrypted.decrypt(id=str(client.id))
             == "crt-new"
         )
+
+
+@pytest.mark.asyncio
+class TestReveal:
+    async def test_get_client_secret_sync(self, user: User) -> None:
+        client = _build(user)
+        await client.set_client_secret("cs-test")
+
+        assert client.get_client_secret_sync() == "cs-test"
+
+    async def test_get_registration_access_token_sync(self, user: User) -> None:
+        client = _build(user)
+        await client.set_registration_access_token("crt-test")
+
+        assert client.get_registration_access_token_sync() == "crt-test"
+
+    def test_returns_none_without_a_ciphertext(self, user: User) -> None:
+        client = _build(user)
+
+        assert client.get_client_secret_sync() is None
+        assert client.get_registration_access_token_sync() is None
 
 
 @pytest.mark.asyncio

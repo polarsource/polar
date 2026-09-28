@@ -243,6 +243,7 @@ export default {
       paymentSuccessful: 'Betalning lyckades! Förbereder dina produkter...',
       confirmationTokenFailed:
         'Kunde inte skapa bekräftelsetoken, försök igen senare.',
+      paymentNotCompleted: 'Betalningen genomfördes inte. Försök igen.',
     },
     cta: {
       startTrial: 'Starta testperiod',

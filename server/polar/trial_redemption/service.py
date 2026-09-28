@@ -1,4 +1,4 @@
-from polar.kit.email import unalias_email
+from polar.kit.email import normalize_email
 from polar.models import Customer, Organization, Product, TrialRedemption
 from polar.postgres import AsyncSession
 from polar.trial_redemption.repository import TrialRedemptionRepository
@@ -20,7 +20,7 @@ class TrialRedemptionService:
         repository = TrialRedemptionRepository.from_session(session)
         trial_redemptions = await repository.get_all_by_organization_and_hints(
             organization.id,
-            customer_email=unalias_email(customer.email),
+            customer_email=normalize_email(customer.email),
             product=product.id if product else None,
             payment_method_fingerprint=payment_method_fingerprint,
         )
@@ -40,7 +40,7 @@ class TrialRedemptionService:
         repository = TrialRedemptionRepository.from_session(session)
         return await repository.create(
             TrialRedemption(
-                customer_email=unalias_email(customer.email),
+                customer_email=normalize_email(customer.email),
                 customer=customer,
                 product=product,
                 payment_method_fingerprint=payment_method_fingerprint,

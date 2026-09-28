@@ -354,7 +354,10 @@ class AuthorizedPayoutAccount:
     auth_subject: AuthSubject[User]
 
 
-def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
+def AccountPolicyGuard(
+    policy_fn: PolicyFn,
+    required_scopes: set[Scope] | None = None,
+) -> Any:
     """FastAPI dependency: resolve account by {id}, find owning org, check policy.
 
     Raises:
@@ -364,14 +367,16 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         NotPermitted (403): Subject is a member but the policy denied access.
     """
 
+    _scopes = required_scopes or {
+        Scope.transactions_read,
+        Scope.transactions_write,
+        Scope.payouts_read,
+        Scope.payouts_write,
+    }
+
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes={
-            Scope.transactions_read,
-            Scope.transactions_write,
-            Scope.payouts_read,
-            Scope.payouts_write,
-        },
+        required_scopes=_scopes,
     )
 
     async def dependency(
@@ -452,7 +457,12 @@ AuthorizeAccountRead = Annotated[
 ]
 AuthorizeAccountWrite = Annotated[
     AuthorizedAccount,
-    Depends(AccountPolicyGuard(finance_policy.can_manage)),
+    Depends(
+        AccountPolicyGuard(
+            finance_policy.can_manage,
+            required_scopes={Scope.transactions_write, Scope.payouts_write},
+        )
+    ),
 ]
 AuthorizePayoutAccountRead = Annotated[
     AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard())

@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Annotated, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -26,6 +26,7 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
+from polar.observability.task_logging import LoggableField
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitGrantProperties
@@ -46,12 +47,15 @@ class BenefitGrantScope(TypedDict, total=False):
 if TYPE_CHECKING:
 
     class BenefitGrantScopeArgs(TypedDict, total=False):
-        subscription_id: UUID
-        order_id: UUID
+        subscription_id: Annotated[UUID, LoggableField]
+        order_id: Annotated[UUID, LoggableField]
 
 else:
 
     class BenefitGrantScopeArgs(dict):
+        subscription_id: Annotated[UUID, LoggableField]
+        order_id: Annotated[UUID, LoggableField]
+
         def __init__(
             self, subscription_id: UUID | None = None, order_id: UUID | None = None
         ) -> None:

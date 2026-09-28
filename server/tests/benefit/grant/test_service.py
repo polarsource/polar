@@ -1107,6 +1107,61 @@ class TestEnqueueCustomerGrantDeletions:
 
 
 @pytest.mark.asyncio
+class TestEnqueueMemberGrantDeletions:
+    async def test_includes_errored_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        member: Member,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        benefit_organization_third: Benefit,
+    ) -> None:
+        granted_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        errored_grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            member=member,
+            benefit=benefit_organization_second,
+        )
+        errored_grant.set_grant_failed(Exception("OAuth account missing"))
+        await save_fixture(errored_grant)
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_third,
+            granted=False,
+            member=member,
+            subscription=subscription,
+        )
+
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        await benefit_grant_service.enqueue_member_grant_deletions(session, member.id)
+
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_has_calls(
+            [
+                call("benefit.delete_grant", benefit_grant_id=granted_grant.id),
+                call("benefit.delete_grant", benefit_grant_id=errored_grant.id),
+            ],
+            any_order=True,
+        )
+
+
+@pytest.mark.asyncio
 class TestDeleteBenefitGrant:
     async def test_revoked_grant(
         self,

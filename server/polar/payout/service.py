@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import uuid
 from collections.abc import AsyncGenerator, Sequence
 from typing import Any, cast
@@ -14,6 +15,7 @@ from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.integrations.linear.client import linear as linear_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
@@ -483,33 +485,79 @@ class PayoutService:
             )
             return payout
 
-        # The payout pins the payout account it was created against. If the org
-        # has since swapped its payout account (a release can win the race
-        # against the swap-cancel job), transferring would send funds to the
-        # abandoned account. Before any transfer is made, cancel + refund instead
-        # so the merchant re-requests against the current account.
         payout_transaction_repository = PayoutTransactionRepository.from_session(
             session
         )
         transaction = await payout_transaction_repository.get_by_payout_id(payout.id)
         assert transaction is not None
-        if transaction.transfer_id is None:
-            organization_repository = OrganizationRepository.from_session(session)
-            organization = await organization_repository.get_by_account(
-                payout.account_id
+
+        if transaction.transfer_id is not None:
+            log.warning(
+                "payout.transfer.skipped_already_transferred",
+                payout_id=str(payout.id),
+                transfer_id=transaction.transfer_id,
             )
+            return payout
+
+        # The payout pins the payout account it was created against. If the org
+        # has since swapped its payout account (a release can win the race
+        # against the swap-cancel job), transferring would send funds to the
+        # abandoned account. Before any transfer is made, cancel + refund instead
+        # so the merchant re-requests against the current account.
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_account(payout.account_id)
+        if (
+            organization is not None
+            and organization.payout_account_id is not None
+            and organization.payout_account_id != payout.payout_account_id
+        ):
+            log.warning(
+                "payout.transfer.skipped_payout_account_changed",
+                payout_id=str(payout.id),
+                pinned_payout_account_id=str(payout.payout_account_id),
+                current_payout_account_id=str(organization.payout_account_id),
+            )
+            return await self.cancel(session, payout)
+
+        # Validate the payout amount matches the sum of concerned transactions.
+        # This is a compliance check to make sure we transfer the exact amount we expect to, and not more or less.
+        (
+            transaction_sum,
+            transaction_sum_currency,
+        ) = await payout_transaction_repository.get_paid_transactions_sum(
+            transaction.id
+        )
+        if (
+            transaction_sum != payout.amount
+            or transaction_sum_currency != payout.currency
+        ):
             if (
-                organization is not None
-                and organization.payout_account_id is not None
-                and organization.payout_account_id != payout.payout_account_id
+                settings.LINEAR_TEAM_ID is None
+                or settings.LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID is None
             ):
                 log.warning(
-                    "payout.transfer.skipped_payout_account_changed",
+                    "payout.transfer.amount_mismatch",
                     payout_id=str(payout.id),
-                    pinned_payout_account_id=str(payout.payout_account_id),
-                    current_payout_account_id=str(organization.payout_account_id),
+                    payout_amount=payout.amount,
+                    payout_currency=payout.currency,
+                    transaction_sum=transaction_sum,
+                    transaction_sum_currency=transaction_sum_currency,
                 )
-                return await self.cancel(session, payout)
+            else:
+                await linear_service.create_issue_from_template(
+                    teamId=settings.LINEAR_TEAM_ID,
+                    templateId=settings.LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID,
+                    description=inspect.cleandoc(f"""
+                        * Payout ID: {payout.id}
+                        * Payout amount: {format_currency(payout.amount, payout.currency)}
+                        * Transaction ID: {transaction.id}
+                        * Sum of paid transactions: {format_currency(transaction_sum, transaction_sum_currency or payout.currency)}
+                    """),
+                )
+            repository = PayoutRepository.from_session(session)
+            return await repository.update(
+                payout, update_dict={"status": PayoutStatus.held}
+            )
 
         if payout.processor == PayoutAccountType.stripe:
             return await self.transfer_stripe(session, payout)

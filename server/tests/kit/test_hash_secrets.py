@@ -82,12 +82,31 @@ def test_fetches_once_per_process(
     assert client.list_secret_version_ids.call_count == 1
 
 
-def test_rejects_a_version_without_an_id(
+def test_ignores_a_version_left_with_only_awsprevious(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Moving AWSCURRENT leaves the old version labelled but with no id."""
+    monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
+    stub_client(
+        mocker,
+        [
+            {"VersionId": "v1", "VersionStages": ["AWSPREVIOUS"]},
+            {"VersionId": "v2", "VersionStages": ["k2", "LEGACY", "AWSCURRENT"]},
+        ],
+    )
+
+    hash_secrets = get_hash_secrets()
+
+    assert hash_secrets.secrets == {"k2": "secret-for-v2"}
+    assert hash_secrets.current_id == "k2"
+
+
+def test_rejects_a_version_with_two_ids(
     mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(settings, "AWS_HASH_SECRET_ARN", ARN)
     stub_client(
-        mocker, [{"VersionId": "v1", "VersionStages": ["LEGACY", "AWSCURRENT"]}]
+        mocker, [{"VersionId": "v1", "VersionStages": ["k1", "k2", "AWSCURRENT"]}]
     )
 
     with pytest.raises(HashSecretsError, match="custom staging labels"):

@@ -1611,6 +1611,43 @@ class CheckoutService:
 
         return checkout
 
+    async def cancel_payment(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> Checkout:
+        """
+        Cancel the pending payment intent of a confirmed checkout and reopen it,
+        e.g. when the customer dismissed a next action like a Cash App Pay QR code.
+
+        If the intent can't be canceled anymore because the customer completed it
+        in the meantime, the checkout is left confirmed.
+        """
+        if checkout.status != CheckoutStatus.confirmed:
+            return checkout
+
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            intent_id = checkout.payment_processor_metadata.get("intent_id")
+            if intent_id is None:
+                return checkout
+
+            intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
+            try:
+                if checkout.is_payment_required:
+                    intent = await stripe_service.cancel_payment_intent(intent_id)
+                else:
+                    intent = await stripe_service.cancel_setup_intent(intent_id)
+            except stripe_lib.InvalidRequestError:
+                if checkout.is_payment_required:
+                    intent = await stripe_service.get_payment_intent(intent_id)
+                else:
+                    intent = await stripe_service.get_setup_intent(intent_id)
+
+            if intent.status != "canceled":
+                return checkout
+        else:
+            raise NotImplementedError()
+
+        return await self.handle_failure(session, checkout)
+
     async def get_by_client_secret(
         self, session: AsyncSession, client_secret: str, *, for_update: bool = False
     ) -> Checkout:

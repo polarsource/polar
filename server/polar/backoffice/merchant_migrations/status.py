@@ -43,6 +43,12 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
 
 STEP_ORDER = list(MerchantMigrationStep)
 
+# Cutover lands on `cleanup`; there is no close-out step after that. Ops reads
+# those the same way the merchant dashboard does: finished.
+FINISHED_STEPS = frozenset(
+    {MerchantMigrationStep.cleanup, MerchantMigrationStep.completed}
+)
+
 METHOD_LABELS: dict[PanTransferMethod, str] = {
     PanTransferMethod.pan_copy: "Stripe to Stripe copy",
     PanTransferMethod.pan_import: "Vault import via Stripe",
@@ -186,7 +192,19 @@ def progress(counts: RecordCounts, migration_id: UUID) -> RecordProgress:
 
 def step_position(step: MerchantMigrationStep) -> tuple[int, int]:
     """1-based position of the migration's step, for a `3 of 7` readout."""
-    return STEP_ORDER.index(step) + 1, len(STEP_ORDER)
+    return STEP_ORDER.index(visible_step(step)) + 1, len(STEP_ORDER)
+
+
+def is_finished(migration: MerchantMigration) -> bool:
+    """Whether the merchant's work on this migration is done."""
+    return migration.step in FINISHED_STEPS
+
+
+def visible_step(step: MerchantMigrationStep) -> MerchantMigrationStep:
+    """The step ops should read. `cleanup` displays as completed."""
+    if step == MerchantMigrationStep.cleanup:
+        return MerchantMigrationStep.completed
+    return step
 
 
 def current_pan_step(migration: MerchantMigration) -> PanTransferStep | None:
@@ -275,7 +293,7 @@ def attention(migration: MerchantMigration, failed_records: int) -> Attention:
             _stale_days(step) if step is not None else None,
         )
 
-    if migration.step == MerchantMigrationStep.completed:
+    if is_finished(migration):
         return Attention(AttentionLevel.done, "Done", "Migration completed", None)
 
     if step is not None:

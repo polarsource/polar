@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from typing import Annotated
 
 from dramatiq import Retry
 
@@ -14,6 +15,7 @@ from polar.integrations.tinybird.service import count_user_events_by_organizatio
 from polar.kit.utils import utc_now
 from polar.models.external_event import ExternalEventSource
 from polar.models.member import MemberRole
+from polar.observability.task_logging import LoggableField
 from polar.v2026_04.errors import ResourceNotFound
 from polar.v2026_04.webhooks import (
     WebhookBenefitGrantCreatedPayload,
@@ -37,12 +39,15 @@ from .exceptions import PolarSelfInvoiceNotReady, PolarSelfOrderNotEligible
 from .service import polar_self
 
 
-@actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.create_customer",
+    priority=TaskPriority.LOW,
+)
 async def create_customer(
-    external_id: str,
+    external_id: Annotated[str, LoggableField],
     name: str,
     slug: str,
-    owner_external_id: str,
+    owner_external_id: Annotated[str, LoggableField],
     owner_email: str,
     owner_name: str,
 ) -> None:
@@ -70,13 +75,16 @@ async def create_customer(
     )
 
 
-@actor(actor_name="polar_self.add_member", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.add_member",
+    priority=TaskPriority.LOW,
+)
 async def add_member(
-    external_customer_id: str,
+    external_customer_id: Annotated[str, LoggableField],
     email: str,
     name: str,
-    external_id: str,
-    role: str = MemberRole.member.value,
+    external_id: Annotated[str, LoggableField],
+    role: Annotated[str, LoggableField] = MemberRole.member.value,
 ) -> None:
     client = get_client()
     try:
@@ -103,9 +111,15 @@ async def add_member(
     )
 
 
-@actor(actor_name="polar_self.update_member", priority=TaskPriority.LOW)
+@actor(
+    actor_name="polar_self.update_member",
+    priority=TaskPriority.LOW,
+)
 async def update_member(
-    external_customer_id: str, external_id: str, name: str, role: str | None = None
+    external_customer_id: Annotated[str, LoggableField],
+    external_id: Annotated[str, LoggableField],
+    name: str,
+    role: Annotated[str | None, LoggableField] = None,
 ) -> None:
     client = get_client()
     try:
@@ -128,8 +142,13 @@ async def update_member(
     )
 
 
-@actor(actor_name="polar_self.update_customer_slug", priority=TaskPriority.LOW)
-async def update_customer_slug(external_id: str, slug: str) -> None:
+@actor(
+    actor_name="polar_self.update_customer_slug",
+    priority=TaskPriority.LOW,
+)
+async def update_customer_slug(
+    external_id: Annotated[str, LoggableField], slug: str
+) -> None:
     client = get_client()
     customer = await client.get_customer_by_external_id_or_none(external_id)
     if customer is None:
@@ -139,8 +158,14 @@ async def update_customer_slug(external_id: str, slug: str) -> None:
     await client.update_customer_metadata(external_id=external_id, metadata=metadata)
 
 
-@actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
-async def remove_member(external_customer_id: str, external_id: str) -> None:
+@actor(
+    actor_name="polar_self.remove_member",
+    priority=TaskPriority.LOW,
+)
+async def remove_member(
+    external_customer_id: Annotated[str, LoggableField],
+    external_id: Annotated[str, LoggableField],
+) -> None:
     client = get_client()
 
     await client.remove_member(
@@ -153,8 +178,11 @@ async def remove_member(external_customer_id: str, external_id: str) -> None:
     )
 
 
-@actor(actor_name="polar_self.delete_customer", priority=TaskPriority.LOW)
-async def delete_customer(external_id: str) -> None:
+@actor(
+    actor_name="polar_self.delete_customer",
+    priority=TaskPriority.LOW,
+)
+async def delete_customer(external_id: Annotated[str, LoggableField]) -> None:
     await get_client().delete_customer(external_id=external_id)
 
 
@@ -188,14 +216,14 @@ async def track_event_ingestion() -> None:
     priority=TaskPriority.LOW,
 )
 async def track_organization_review_usage(
-    external_customer_id: str,
-    review_context: str,
-    vendor: str,
-    model: str,
-    input_tokens: int,
-    output_tokens: int,
-    cost_usd: str,
-    usage_id: str | None = None,
+    external_customer_id: Annotated[str, LoggableField],
+    review_context: Annotated[str, LoggableField],
+    vendor: Annotated[str, LoggableField],
+    model: Annotated[str, LoggableField],
+    input_tokens: Annotated[int, LoggableField],
+    output_tokens: Annotated[int, LoggableField],
+    cost_usd: Annotated[str, LoggableField],
+    usage_id: Annotated[str | None, LoggableField] = None,
 ) -> None:
     await get_client().track_organization_review_usage(
         external_customer_id=external_customer_id,
@@ -214,13 +242,13 @@ async def track_organization_review_usage(
     priority=TaskPriority.LOW,
 )
 async def track_compass_assistant_usage(
-    external_customer_id: str,
-    vendor: str,
-    model: str,
-    input_tokens: int,
-    output_tokens: int,
-    cost_usd: str,
-    usage_id: str,
+    external_customer_id: Annotated[str, LoggableField],
+    vendor: Annotated[str, LoggableField],
+    model: Annotated[str, LoggableField],
+    input_tokens: Annotated[int, LoggableField],
+    output_tokens: Annotated[int, LoggableField],
+    cost_usd: Annotated[str, LoggableField],
+    usage_id: Annotated[str, LoggableField],
 ) -> None:
     await get_client().track_compass_assistant_usage(
         external_customer_id=external_customer_id,
@@ -233,8 +261,13 @@ async def track_compass_assistant_usage(
     )
 
 
-@actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
-async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.benefit_grant.created",
+    priority=TaskPriority.LOW,
+)
+async def webhook_benefit_grant_created(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
@@ -243,8 +276,13 @@ async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.benefit_grant.updated", priority=TaskPriority.LOW)
-async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.benefit_grant.updated",
+    priority=TaskPriority.LOW,
+)
+async def webhook_benefit_grant_updated(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
@@ -253,8 +291,13 @@ async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.benefit_grant.revoked", priority=TaskPriority.LOW)
-async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.benefit_grant.revoked",
+    priority=TaskPriority.LOW,
+)
+async def webhook_benefit_grant_revoked(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
@@ -263,8 +306,11 @@ async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.order.created", priority=TaskPriority.LOW)
-async def webhook_order_created(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.order.created",
+    priority=TaskPriority.LOW,
+)
+async def webhook_order_created(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
@@ -282,8 +328,13 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
                 return
 
 
-@actor(actor_name="polar_self.webhook.subscription.canceled", priority=TaskPriority.LOW)
-async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.subscription.canceled",
+    priority=TaskPriority.LOW,
+)
+async def webhook_subscription_canceled(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
@@ -292,8 +343,13 @@ async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
             await polar_self.handle_subscription_canceled_event(payload)
 
 
-@actor(actor_name="polar_self.webhook.subscription.past_due", priority=TaskPriority.LOW)
-async def webhook_subscription_past_due(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.subscription.past_due",
+    priority=TaskPriority.LOW,
+)
+async def webhook_subscription_past_due(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
@@ -302,8 +358,13 @@ async def webhook_subscription_past_due(event_id: uuid.UUID) -> None:
             await polar_self.handle_subscription_past_due_event(payload)
 
 
-@actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
-async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
+@actor(
+    actor_name="polar_self.webhook.subscription.revoked",
+    priority=TaskPriority.LOW,
+)
+async def webhook_subscription_revoked(
+    event_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id

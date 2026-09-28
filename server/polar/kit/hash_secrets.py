@@ -28,7 +28,10 @@ class HashSecrets(NamedTuple):
 
 def get_hash_secrets() -> HashSecrets:
     """Do not cache this: the fetch is cached instead, so local settings stay
-    readable."""
+    readable.
+
+    Rotating or retiring a secret: handbook/engineering/oncall/rotate-secret.mdx.
+    """
     arn = settings.AWS_HASH_SECRET_ARN
     if arn is None:
         return HashSecrets(
@@ -84,18 +87,24 @@ def _fetch_hash_secrets(arn: str) -> HashSecrets:
     for version in _iter_versions(client, arn):
         stages = set(version["VersionStages"])
         labels = stages - RESERVED_STAGES
-        if len(labels) != 1:
+        if len(labels) > 1:
             raise HashSecretsError(
                 f"Version {version['VersionId']} of {arn} carries {len(labels)} "
-                "custom staging labels, expected exactly one"
+                "custom staging labels, expected at most one"
             )
-        secret_id = labels.pop()
+        # A version with no id carries no hash of ours. AWS leaves one behind
+        # on every AWSCURRENT move.
+        if not labels and LEGACY_STAGE not in stages:
+            continue
+
         secret = client.get_secret_value(SecretId=arn, VersionId=version["VersionId"])[
             "SecretString"
         ]
-        secrets[secret_id] = secret
-        if "AWSCURRENT" in stages:
-            current = secret_id
+        if labels:
+            secret_id = labels.pop()
+            secrets[secret_id] = secret
+            if "AWSCURRENT" in stages:
+                current = secret_id
         if LEGACY_STAGE in stages:
             legacy = secret
 

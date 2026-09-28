@@ -1,0 +1,92 @@
+---
+title: "ADR-0013: Minimize personal data in telemetry"
+description: "Log selected operational facts, not customer payloads. Keep useful diagnostics without copying personal data or secrets into telemetry."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Cross-cutting
+
+**Date**: 2026-09-24
+
+</Info>
+
+## Context
+
+Polar's logs, traces, and error reports can copy customer data through explicit log
+fields, automatic request and worker instrumentation, URLs, and exception messages.
+Removing a field from one log does not remove the same value from a captured exception
+or another exporter. We need useful debugging context without turning telemetry into
+another store of customer payloads.
+
+## Decision
+
+**Log explicitly selected operational facts, not whole inputs or objects.** Exclude
+personal content and secrets by default, and apply the same rule to backend and
+frontend logs, spans, error reports, breadcrumbs, and fingerprints at every log level.
+
+### What to retain
+
+- Operation names, outcomes, status and error codes, durations, counts, sizes, and
+  selected operational values such as currency, amounts, enums, and booleans.
+- Internal/resource IDs and correlation IDs needed to investigate an operation.
+  These can still identify a person through a lookup; retaining them is a deliberate
+  debugging choice, not anonymization. A field called `id` is not automatically safe:
+  merchant-supplied external IDs can contain emails or other personal content.
+- Known schema field names and system event names. Arbitrary metadata keys and
+  merchant-defined event names are user input, not inherently safe labels.
+
+### What to exclude by default
+
+- Emails, personal names, addresses, tax IDs, device tokens, and free text such as
+  email subjects, filenames, cancellation comments, review summaries, and deletion reasons.
+- Passwords, API keys, access/refresh tokens, OTPs, invitation tokens, checkout client
+  secrets, and credentials in headers or URLs.
+- Whole models, SDK objects, request/response bodies, worker messages, metadata,
+  serialized events, and header collections. Select needed fields instead of logging
+  an object and maintaining a growing list of fields to scrub afterward.
+
+Personal data may be necessary for a specific security/audit event, such as an IP
+address or user agent. Make that purpose and the fields retained explicit in review;
+do not treat the exception as permission to include them in general diagnostics.
+Existing deliberate exceptions, such as selected external IDs used for reconciliation,
+also need to remain explicit rather than becoming a blanket rule for all identifiers.
+
+### Apply the rule at capture points
+
+- **Worker arguments are opt-in.** Use `Annotated[..., LoggableField]` for selected
+  fields, including selected nested fields. Apply the selection to enqueue logs,
+  worker spans, failure logs, and Sentry context; keep the execution payload intact.
+- **Request capture is opt-in.** Do not automatically attach validated arguments or
+  request/response headers. Keep method, route template, status, timing, and correlation
+  context. Validation diagnostics can retain counts, known fields, and recognized error
+  codes, but not rejected input, arbitrary locations, or free-form messages.
+- **URLs are data too.** Prefer route templates to raw request paths. Exclude credentials,
+  identifying path values, and query values from HTTP telemetry and fingerprints;
+  when no route template is available, retain a safe operation or destination instead.
+- **Inspect the recorded exception, not just the log arguments.** Exception messages,
+  causes, stack traces, and SQL error details can repeat payloads or bound values.
+  Raising inside a span can record them automatically. Preserve useful stack locations,
+  exception types, status codes, and database diagnostics such as SQLSTATE and constraint
+  name; keep client-visible error details separate from the telemetry representation.
+
+## Consequences
+
+- Prefer selection at the source; exporter scrubbing is a backstop. Logfire, Sentry,
+  application output, and S3 can have different filtering. Verify representative emitted
+  records, including failure paths, rather than assuming a renamed field or removed log
+  eliminates every copy.
+- Telemetry changes must preserve business execution and API responses. If a log is the
+  only retained business/audit record, explicitly call out the information lost when
+  removing it; persist it in the appropriate application record when retention is needed.
+- Some input-dependent failures become harder to diagnose. IDs and structured diagnostics
+  are the default compromise; do not restore whole payloads just to recover that convenience.
+
+## References
+
+- [Worker telemetry selection (#14776)](https://github.com/polarsource/polar/pull/14776)
+- [Structured database error diagnostics (#14786)](https://github.com/polarsource/polar/pull/14786)
+- [Validation response versus exception telemetry (#14806)](https://github.com/polarsource/polar/pull/14806)
+- [Retaining startup names, removing applicant email (#14799)](https://github.com/polarsource/polar/pull/14799)
+- [Deletion-reason retention trade-off (#14809)](https://github.com/polarsource/polar/pull/14809)

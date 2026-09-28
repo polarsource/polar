@@ -13,9 +13,10 @@ description: "Daily cron tasks are spread across the 04:00–05:00 UTC window."
 
 ## Context
 
-Daily cron tasks were declared independently, each one picking its own schedule, and twelve of
-the fourteen we run picked `CronTrigger(hour=0, minute=0)` — the obvious default. Those twelve
-fired at the same instant, most of them bulk `DELETE`s over session, token and event tables.
+Daily cron tasks were declared independently, each one picking its own schedule. Twelve of
+the fourteen present when this decision was proposed picked `CronTrigger(hour=0, minute=0)` —
+the obvious default. Those twelve fired at the same instant, most of them bulk `DELETE`s over
+session, token and event tables.
 That put a spike on the primary database that nothing in our traffic caused: we made it
 ourselves, and it grew every time someone added another "prune expired rows" task.
 
@@ -41,8 +42,8 @@ running them frequently.
 
 ## Consequences
 
-- The database sees fourteen small maintenance jobs spread over an hour instead of twelve
-  firing at once, during the hour when it has the most headroom to absorb them.
+- The database sees daily maintenance jobs spread over an hour instead of many firing at
+  midnight, during the hour when it has the most headroom to absorb them.
 - Every daily job has a predictable minute, so an incident at 04:3x can be traced to a specific
   task from the scheduled jobs table.
 - Slots are a finite resource: the hour has 59 interior minutes. As jobs are added, the gap
@@ -50,14 +51,14 @@ running them frequently.
   resolution.
 - Adding or removing a maintenance actor changes the spacing and can shift any job. Renaming
   one can change the order. A deployment between a job's old and new slots may run it twice or
-  skip it that day;
-  deploy after 05:00 UTC when changing the set of jobs. Today's jobs tolerate a double run.
+  skip it that day. Deploy after 05:00 UTC when changing the set of jobs. Today's jobs tolerate
+  a double run.
 - Anything genuinely time-of-day sensitive (a report a human reads in the morning, a job that
   must close a financial day) does not belong in the window and should not be forced into it.
 - A missed run stays missed, and the window widens the odds. Cron jobs live in a
   `MemoryJobStore` with APScheduler's default one-second misfire grace, so a worker restart
   recomputes the next run from now and silently drops any slot it stepped over. The daily jobs
-  used to occupy three instants; they now occupy a 52-minute band, so more restart times drop a
+  used to occupy a few instants; they now occupy most of the hour, so more restart times drop a
   run. We accept that rather than add catch-up: every job in the window is a periodic cleanup
   that the next day's run subsumes. A job for which a skipped day matters needs its own
   liveness check, not a slot.

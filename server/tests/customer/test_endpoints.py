@@ -29,6 +29,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_order,
     create_payment_method,
+    create_payment_transaction,
     create_subscription,
 )
 
@@ -471,6 +472,218 @@ class TestTopCustomers:
         assert json[0]["avatar_url"] == _avatar_url_for_email("best@example.com")
         assert json[1]["net_revenue"] == 4_000
         assert json[1]["order_count"] == 1
+
+    @pytest.mark.auth
+    async def test_multi_currency_converted_to_usd(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        usd_customer = await create_customer(
+            save_fixture, organization=organization, email="usd@example.com"
+        )
+        multi_currency_customer = await create_customer(
+            save_fixture, organization=organization, email="multi@example.com"
+        )
+        no_payment_customer = await create_customer(
+            save_fixture, organization=organization, email="balance@example.com"
+        )
+        await create_order(
+            save_fixture, customer=usd_customer, product=product, subtotal_amount=70_000
+        )
+        krw_order = await create_order(
+            save_fixture,
+            customer=multi_currency_customer,
+            product=product,
+            subtotal_amount=826_090,
+            currency="krw",
+        )
+        await create_payment_transaction(
+            save_fixture,
+            order=krw_order,
+            amount=59_478,
+            presentment_currency="krw",
+            presentment_amount=826_090,
+            charge_id="KRW_CHARGE",
+        )
+        eur_order = await create_order(
+            save_fixture,
+            customer=multi_currency_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="eur",
+        )
+        await create_payment_transaction(
+            save_fixture,
+            order=eur_order,
+            amount=11_000,
+            presentment_currency="eur",
+            presentment_amount=10_000,
+            exchange_rate=1.2,
+            charge_id="EUR_CHARGE",
+        )
+        await create_order(
+            save_fixture,
+            customer=no_payment_customer,
+            product=product,
+            subtotal_amount=500_000,
+            currency="krw",
+        )
+
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [
+            (item["id"], item["net_revenue"], item["order_count"]) for item in json
+        ] == [
+            (str(multi_currency_customer.id), 59_478 + 12_000, 2),
+            (str(usd_customer.id), 70_000, 1),
+            (str(no_payment_customer.id), 36_000, 1),
+        ]
+
+    @pytest.mark.auth
+    async def test_balance_order_skips_closest_day_without_rate(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        paying_customer = await create_customer(
+            save_fixture, organization=organization, email="paying@example.com"
+        )
+        balance_customer = await create_customer(
+            save_fixture, organization=organization, email="balance@example.com"
+        )
+        no_rate_customer = await create_customer(
+            save_fixture, organization=organization, email="no.rate@example.com"
+        )
+        for day, rate in ((1, 0.1), (3, 0.2), (6, 0.3)):
+            order = await create_order(
+                save_fixture,
+                customer=paying_customer,
+                product=product,
+                subtotal_amount=10_000,
+                currency="krw",
+                created_at=datetime(2026, 1, day, tzinfo=UTC),
+            )
+            await create_payment_transaction(
+                save_fixture,
+                order=order,
+                amount=int(10_000 * rate),
+                presentment_currency="krw",
+                presentment_amount=10_000,
+                exchange_rate=rate,
+                created_at=datetime(2026, 1, day, 1, tzinfo=UTC),
+                charge_id=f"KRW_CHARGE_{day}",
+            )
+        incomplete_order = await create_order(
+            save_fixture,
+            customer=paying_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="krw",
+            created_at=datetime(2026, 1, 5, tzinfo=UTC),
+        )
+        await create_payment_transaction(
+            save_fixture,
+            order=incomplete_order,
+            amount=1_000,
+            presentment_currency="krw",
+            presentment_amount=0,
+            created_at=datetime(2026, 1, 5, 1, tzinfo=UTC),
+            charge_id="KRW_CHARGE_INCOMPLETE",
+        )
+        await create_order(
+            save_fixture,
+            customer=balance_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="krw",
+            created_at=datetime(2026, 1, 5, tzinfo=UTC),
+        )
+        await create_order(
+            save_fixture,
+            customer=no_rate_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="jpy",
+            created_at=datetime(2026, 1, 5, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        balance_result = next(
+            item for item in response.json() if item["id"] == str(balance_customer.id)
+        )
+        assert balance_result["net_revenue"] == 3_000
+        no_rate_result = next(
+            item for item in response.json() if item["id"] == str(no_rate_customer.id)
+        )
+        assert no_rate_result["net_revenue"] == 10_000
+
+    @pytest.mark.auth
+    async def test_balance_order_uses_organization_daily_average_rate(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        paying_customer = await create_customer(
+            save_fixture, organization=organization, email="paying@example.com"
+        )
+        balance_customer = await create_customer(
+            save_fixture, organization=organization, email="balance@example.com"
+        )
+        for hour, rate in ((9, 0.1), (10, 0.3)):
+            order = await create_order(
+                save_fixture,
+                customer=paying_customer,
+                product=product,
+                subtotal_amount=10_000,
+                currency="krw",
+                created_at=datetime(2026, 1, 5, hour, tzinfo=UTC),
+            )
+            await create_payment_transaction(
+                save_fixture,
+                order=order,
+                amount=int(10_000 * rate),
+                presentment_currency="krw",
+                presentment_amount=10_000,
+                exchange_rate=rate,
+                created_at=datetime(2026, 1, 5, hour, 1, tzinfo=UTC),
+                charge_id=f"KRW_CHARGE_{hour}",
+            )
+        await create_order(
+            save_fixture,
+            customer=balance_customer,
+            product=product,
+            subtotal_amount=10_000,
+            currency="krw",
+            created_at=datetime(2026, 1, 5, 12, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        balance_result = next(
+            item for item in response.json() if item["id"] == str(balance_customer.id)
+        )
+        assert balance_result["net_revenue"] == 2_000
 
     @pytest.mark.auth
     async def test_team_customer_without_email_uses_owner_avatar(

@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
@@ -71,6 +72,7 @@ from polar.merchant_migration.service import (
 from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
+    Discount,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -102,6 +104,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
@@ -111,6 +114,7 @@ from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    canonical_discount,
     canonical_subscription,
     copied_cards,
     pan_steps_until,
@@ -1110,6 +1114,7 @@ class TestListRecords:
             save_fixture,
             organization=organization,
             email="shared@example.com",
+            stripe_customer_id="cus_reused",
         )
         await save_fixture(
             MerchantMigrationRecord(
@@ -1209,6 +1214,29 @@ def _catalog_with_subscription() -> list[CanonicalRecord]:
     ]
 
 
+async def _imported_discounts(
+    session: AsyncSession, organization: Organization
+) -> list[Discount]:
+    result = await session.execute(
+        select(Discount).where(Discount.organization_id == organization.id)
+    )
+    return list(result.scalars().all())
+
+
+def _catalog_with_discounted_subscription(
+    *, max_redemptions: int | None = None
+) -> list[CanonicalRecord]:
+    """Same catalog as `_catalog_with_subscription`, with a coupon on the sub."""
+    return [
+        *_importable_catalog(),
+        canonical_discount(max_redemptions=max_redemptions),
+        canonical_subscription(
+            has_discount=True,
+            discount_source_ids=["coupon_1"],
+        ),
+    ]
+
+
 def _multi_currency_catalog() -> list[CanonicalRecord]:
     return [
         CanonicalProduct(
@@ -1268,6 +1296,65 @@ async def _products(session: AsyncSession, organization: Organization) -> list[P
 @pytest.mark.asyncio
 class TestImportCatalog:
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("payment_method", "expected_country"),
+        [
+            (
+                CanonicalPaymentMethod(
+                    source_id="pm_1",
+                    type=CanonicalPaymentMethodType.card,
+                    billing_country="DE",
+                    card_country="US",
+                ),
+                "DE",
+            ),
+            (None, None),
+        ],
+    )
+    async def test_missing_billing_country_does_not_block_import(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        payment_method: CanonicalPaymentMethod | None,
+        expected_country: str | None,
+    ) -> None:
+        records = _catalog_with_subscription()
+        customer = next(
+            record for record in records if isinstance(record, CanonicalCustomer)
+        )
+        customer.country = None
+        subscription = next(
+            record for record in records if isinstance(record, CanonicalSubscription)
+        )
+        subscription.payment_method = payment_method
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.customers].imported == 1
+        imported = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("alice@example.com", organization.id)
+        assert imported is not None
+        if expected_country is None:
+            assert imported.billing_address is None
+        else:
+            assert imported.billing_address is not None
+            assert imported.billing_address.country == expected_country
+
+    @pytest.mark.auth
     async def test_imports_catalog_and_advances_step(
         self,
         mocker: MockerFixture,
@@ -1309,11 +1396,65 @@ class TestImportCatalog:
         assert customer.stripe_customer_id == "cus_1"
         assert customer.billing_address is not None
         assert customer.billing_address.country == "US"
+        assert customer.tax_id is None
 
         migration_repository = MerchantMigrationRepository.from_session(session)
         updated = await migration_repository.get_by_id(migration.id)
         assert updated is not None
         assert updated.step == MerchantMigrationStep.create_catalog
+
+    @pytest.mark.auth
+    async def test_copies_tax_id_onto_polar_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            *_catalog(),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="FR",
+                tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+            ),
+            CanonicalSubscription(
+                source_id="sub_1",
+                customer_source_id="cus_1",
+                price_source_id="price_1",
+                status=CanonicalSubscriptionStatus.active,
+                collection_method=CanonicalCollectionMethod.charge_automatically,
+                current_period_start=None,
+                current_period_end=None,
+                trialing=False,
+                paused_collection=False,
+                line_item_count=1,
+                quantity=1,
+                payment_method=None,
+                currency="usd",
+            ),
+        ]
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_email_and_organization(
+            "alice@example.com", organization.id
+        )
+        assert customer is not None
+        assert customer.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
 
     @pytest.mark.auth
     async def test_imports_archived_catalog_product_as_subscription_dependency(
@@ -1532,6 +1673,196 @@ class TestImportCatalog:
         await service.import_catalog(session, auth_subject, migration.id)
 
         after_created.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_imports_discounts_without_notify(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(),
+        )
+        send_webhook = mocker.spy(discount_service, "_send_webhook")
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 1
+        send_webhook.assert_not_called()
+
+        discounts = await _imported_discounts(session, organization)
+        assert len(discounts) == 1
+        assert discounts[0].name == "Launch"
+        assert discounts[0].code == "LAUNCH"
+        assert discounts[0].user_metadata["stripe_coupon_id"] == "coupon_1"
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].dependencies_imported is True
+
+    @pytest.mark.auth
+    async def test_exhausted_discount_imports_without_checkout_code(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(max_redemptions=0),
+        )
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        discounts = await _imported_discounts(session, organization)
+        assert len(discounts) == 1
+        assert discounts[0].code is None
+        assert discounts[0].max_redemptions == 0
+        assert discounts[0].ends_at is not None
+
+    @pytest.mark.auth
+    async def test_product_restricted_discount_skips_when_products_were_not_imported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_importable_catalog(),
+                canonical_discount(product_source_ids=["prod_1"]),
+                canonical_subscription(
+                    has_discount=True,
+                    discount_source_ids=["coupon_1"],
+                ),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        for record in await record_repository.list_by_migration(migration.id):
+            if record.type == MerchantMigrationRecordType.product:
+                await record_repository.update(
+                    record,
+                    update_dict={"status": MerchantMigrationRecordStatus.skipped},
+                )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 0
+        assert results[PrecheckEntity.discounts].skipped == 1
+        discount_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert discount_record is not None
+        assert discount_record.status == MerchantMigrationRecordStatus.skipped
+        assert discount_record.error is not None
+        assert "weren't imported" in discount_record.error
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].dependencies_imported is False
+
+    @pytest.mark.auth
+    async def test_subscription_waits_for_kept_coupon_not_a_later_imported_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_importable_catalog(),
+                canonical_discount(source_id="coupon_kept", name="Kept", code="KEPT"),
+                canonical_discount(
+                    source_id="coupon_other", name="Other", code="OTHER"
+                ),
+                canonical_subscription(
+                    has_discount=True,
+                    discount_source_ids=["coupon_kept", "coupon_other"],
+                ),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        kept = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_kept",
+        )
+        assert kept is not None
+        await record_repository.update(
+            kept,
+            update_dict={
+                "status": MerchantMigrationRecordStatus.pending,
+                "target_id": None,
+            },
+        )
+        other = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_other",
+        )
+        assert other is not None
+        assert other.status == MerchantMigrationRecordStatus.imported
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].dependencies_imported is False
 
     @pytest.mark.auth
     async def test_listing_reflects_import_status_after_import(
@@ -1802,7 +2133,7 @@ class TestImportCatalog:
     ) -> None:
         # An existing Polar customer sharing the email but carrying a different
         # Stripe id must not be reused, or the card would land on the wrong record.
-        await customer_service.create_for_organization(
+        polar_customer = await customer_service.create_for_organization(
             session,
             organization,
             email="alice@example.com",
@@ -1828,6 +2159,18 @@ class TestImportCatalog:
         assert customer_record is not None
         assert customer_record.status == MerchantMigrationRecordStatus.skipped
         assert customer_record.error is not None
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].reason_code == "customer_stripe_id_conflict"
+        assert items[0].conflicting_customer_id == polar_customer.id
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
 
     @pytest.mark.auth
     async def test_rerunning_precheck_does_not_regress_step(
@@ -2156,6 +2499,122 @@ class TestImportCatalog:
             if isinstance(price, ProductPriceFixed)
         } == {("eur", 900), ("usd", 1000)}
 
+    @pytest.mark.auth
+    async def test_product_restricted_discount_waits_until_every_product_settles(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                CanonicalProduct(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="Pro",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_1",
+                            currency="usd",
+                            amount=1000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                ),
+                CanonicalProduct(
+                    source_id="prod_2:month:1",
+                    product_source_id="prod_2",
+                    name="Team",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_2",
+                            currency="usd",
+                            amount=2000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                ),
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="alice@example.com",
+                    name="Alice",
+                    country="US",
+                ),
+                canonical_discount(
+                    name="Both",
+                    code="BOTH",
+                    product_source_ids=["prod_1", "prod_2"],
+                ),
+                canonical_subscription(source_id="sub_1", price_source_id="price_1"),
+                canonical_subscription(source_id="sub_2", price_source_id="price_2"),
+            ],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        first_subscription = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        second_subscription = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_2",
+        )
+        assert first_subscription is not None
+        assert second_subscription is not None
+
+        first = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            record_ids=[first_subscription.id],
+        )
+        first_results = {result.entity: result for result in first.results}
+        assert first_results[PrecheckEntity.discounts].imported == 0
+        assert first_results[PrecheckEntity.discounts].skipped == 0
+        assert await _imported_discounts(session, organization) == []
+        discount_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert discount_record is not None
+        assert discount_record.status == MerchantMigrationRecordStatus.pending
+
+        second = await service.import_catalog(
+            session,
+            auth_subject,
+            migration.id,
+            record_ids=[second_subscription.id],
+        )
+        second_results = {result.entity: result for result in second.results}
+        assert second_results[PrecheckEntity.discounts].imported == 1
+
+        result = await session.execute(
+            select(Discount)
+            .where(Discount.organization_id == organization.id)
+            .options(selectinload(Discount.discount_products))
+        )
+        discounts = list(result.scalars().unique().all())
+        assert len(discounts) == 1
+        products = await _products(session, organization)
+        assert {product.name for product in products} == {"Pro", "Team"}
+        assert {link.product_id for link in discounts[0].discount_products} == {
+            product.id for product in products
+        }
+
 
 @pytest.mark.asyncio
 class TestSummarizeRecords:
@@ -2181,6 +2640,7 @@ class TestSummarizeRecords:
         assert set(by_entity) == {
             PrecheckEntity.products,
             PrecheckEntity.customers,
+            PrecheckEntity.discounts,
             PrecheckEntity.subscriptions,
         }
 

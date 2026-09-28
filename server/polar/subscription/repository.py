@@ -39,6 +39,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    BenefitGrant,
     Customer,
     CustomerSeat,
     Discount,
@@ -50,7 +51,7 @@ from polar.models import (
     SubscriptionUpdate,
 )
 from polar.models.customer_seat import SeatStatus
-from polar.models.email_log import EmailLog, EmailLogStatus
+from polar.models.email_log import EmailLog
 from polar.models.subscription import SubscriptionStatus
 from polar.product.guard import is_metered_price
 
@@ -455,7 +456,6 @@ class SubscriptionRepository(
             select(EmailLog.id)
             .where(
                 EmailLog.email_template == "subscription_renewal_reminder",
-                EmailLog.status == EmailLogStatus.sent,
                 EmailLog.deduplication_key
                 == subscription_renewal_reminder_key_sql(
                     Subscription.id, Subscription.current_period_end
@@ -503,7 +503,6 @@ class SubscriptionRepository(
             select(EmailLog.id)
             .where(
                 EmailLog.email_template == "subscription_trial_conversion_reminder",
-                EmailLog.status == EmailLogStatus.sent,
                 EmailLog.deduplication_key
                 == subscription_trial_conversion_reminder_key_sql(
                     Subscription.id, Subscription.trial_end
@@ -551,6 +550,41 @@ class SubscriptionRepository(
             .options(*options)
         )
         return await self.get_all(statement)
+
+    async def get_grace_expired_past_due_ids(self, now: datetime) -> Sequence[UUID]:
+        grace_period_days = Organization.subscription_settings[
+            "benefit_revocation_grace_period"
+        ].as_integer()
+
+        active_grant_exists = (
+            select(BenefitGrant.id)
+            .where(
+                BenefitGrant.subscription_id == Subscription.id,
+                BenefitGrant.granted_at.is_not(None),
+                BenefitGrant.revoked_at.is_(None),
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .correlate(Subscription)
+            .exists()
+        )
+
+        statement = (
+            select(Subscription.id)
+            .join(Organization, Organization.id == Subscription.organization_id)
+            .where(
+                Subscription.status.in_(
+                    [SubscriptionStatus.past_due, SubscriptionStatus.unpaid]
+                ),
+                Subscription.past_due_at.is_not(None),
+                grace_period_days > 0,
+                Subscription.past_due_at + grace_period_days * timedelta(days=1)
+                <= sa.literal(now, sa.TIMESTAMP(timezone=True)),
+                active_grant_exists,
+                ~Subscription.is_deleted,
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     def get_sorting_clause(self, property: SubscriptionSortProperty) -> SortingClause:
         match property:

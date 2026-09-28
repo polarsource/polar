@@ -9,12 +9,6 @@ resource "render_env_group" "google" {
   env_vars       = { for name, value in var.environment_groups.google : name => { value = value } if value != null }
 }
 
-resource "render_env_group" "openai" {
-  environment_id = var.render_environment_id
-  name           = "openai-${var.environment}"
-  env_vars       = { for name, value in var.environment_groups.openai : name => { value = value } if value != null }
-}
-
 resource "render_env_group" "pydantic_ai_gateway" {
   environment_id = var.render_environment_id
   name           = "pydantic-ai-gateway-${var.environment}"
@@ -356,11 +350,6 @@ resource "render_env_group_link" "logfire" {
   service_ids  = local.all_service_ids
 }
 
-resource "render_env_group_link" "openai" {
-  env_group_id = render_env_group.openai.id
-  service_ids  = local.all_service_ids
-}
-
 resource "render_env_group_link" "pydantic_ai_gateway" {
   env_group_id = render_env_group.pydantic_ai_gateway.id
   service_ids  = local.all_service_ids
@@ -423,5 +412,14 @@ resource "cloudflare_dns_record" "resend_spf_txt" {
   name    = "send.${var.email_from_domain}"
   type    = "TXT"
   content = var.resend_domain.spf_policy
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "resend_mail" {
+  zone_id = var.resend_domain.zone_id
+  name    = "mail.${var.email_from_domain}"
+  type    = "CNAME"
+  content = "send.forge.rmta.net"
+  proxied = false
   ttl     = 1
 }

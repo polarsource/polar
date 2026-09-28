@@ -17,11 +17,6 @@ variable "google_secrets" {
   sensitive = true
 }
 
-variable "openai_secrets" {
-  type      = object({ api_key = string })
-  sensitive = true
-}
-
 variable "pydantic_ai_gateway_secrets" {
   type      = object({ api_key = string })
   sensitive = true
@@ -37,7 +32,6 @@ variable "backend_config" {
     user_session_cookie_key                          = optional(string, "")
     authentication_session_cookie_domain             = string
     oauth2_session_state_cookie_domain               = string
-    debug                                            = string
     email_sender                                     = string
     email_from_name                                  = string
     email_from_domain                                = string
@@ -45,7 +39,6 @@ variable "backend_config" {
     checkout_base_url                                = string
     log_level                                        = string
     testing                                          = string
-    auth_cookie_domain                               = string
     auth_cookie_key                                  = optional(string, "")
     invoices_additional_info                         = optional(string, "")
     invoices_vat_numbers                             = optional(string, "{}")
@@ -53,6 +46,8 @@ variable "backend_config" {
     tax_record_processor                             = optional(string, "stripe")
     customer_portal_url_overrides                    = optional(string, "{}")
     plain_default_tier_external_id                   = optional(string, "")
+    linear_team_id                                   = optional(string, "")
+    linear_payout_amount_mismatch_template_id        = optional(string, "")
     merchant_migration_destination_stripe_account_id = optional(string, "")
   })
 }
@@ -64,13 +59,11 @@ variable "backend_secrets" {
     discord_client_id              = string
     discord_client_secret          = string
     discord_proxy_url              = optional(string, "")
-    discord_webhook_url            = optional(string, "")
     posthog_project_api_key        = optional(string, "")
     resend_api_key                 = string
     resend_active_users_segment_id = optional(string, "")
     resend_webhook_secret          = optional(string, "")
     logo_dev_publishable_key       = optional(string, "")
-    secret                         = string
     sentry_dsn                     = string
     plain_request_signing_secret   = optional(string, "")
     plain_token                    = optional(string, "")
@@ -80,6 +73,7 @@ variable "backend_secrets" {
     chargeback_stop_webhook_secret = optional(string, "")
     numeral_api_key                = optional(string, "")
     firecrawl_api_key              = optional(string, "")
+    linear_api_key                 = optional(string, "")
     turnstile_secret               = string
   })
   sensitive = true
@@ -151,16 +145,13 @@ variable "stripe_secrets" {
     secret_key                  = string
     webhook_secret              = string
     account_risk_webhook_secret = optional(string, "")
-    app_client_id               = optional(string, "")
-    app_client_link_id          = optional(string, "")
   })
   sensitive = true
 }
 
 variable "logfire_config" {
   type = object({
-    project_name = optional(string, "polar")
-    token        = string
+    token = string
   })
   default   = null
   sensitive = true

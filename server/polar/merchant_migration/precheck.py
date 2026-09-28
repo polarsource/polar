@@ -9,11 +9,17 @@ something, `info` when there is nothing to fix.
 """
 
 from collections import Counter
-from collections.abc import AsyncIterable, Iterable, Sequence
+from collections.abc import AsyncIterable, Container, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
+from uuid import UUID
 
-from polar.enums import SubscriptionRecurringInterval
+from pydantic import TypeAdapter, ValidationError
+
+from polar.discount.schemas import BasisPoints, DurationInMonths
+from polar.enums import SubscriptionRecurringInterval, TaxBehavior
+from polar.kit.address import Address
 from polar.kit.currency import (
     PresentmentCurrency,
     format_currency,
@@ -28,6 +34,11 @@ from .canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalDiscount,
+    CanonicalDiscountDuration,
+    CanonicalDiscountType,
+    CanonicalPaymentMethod,
+    CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -36,6 +47,9 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     PriceKey,
     canonical_price_key,
+    customer_country_fallbacks,
+    discount_started_at_for,
+    polar_discount_amounts,
     subscription_price_key,
 )
 from .schemas import (
@@ -79,19 +93,24 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
-    "subscription_has_discount",
+}
+DISCOUNT_DROP_CODES = {
+    "unsupported_percentage",
+    "unsupported_fixed_amount",
+    "unsupported_repeating_duration",
+    "discount_products_not_importable",
 }
 # Reasons the merchant has to act on. Every other code is informational: the
 # record either imports as-is, or Polar can't take it and there is nothing to do.
 ACTION_REQUIRED_CODES = {
-    "customer_missing_country",
     "customer_missing_email",
     "duplicate_customer_email",
     "product_name_too_short",
     "missing_default_currency_price",
     "multiple_prices_same_currency",
-    "subscription_has_discount",
     "send_invoice_collection",
+    "customer_stripe_id_conflict",
+    "customer_tax_id_dropped",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -113,21 +132,68 @@ _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
 )
+CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
+    "A Polar customer already exists for this email, bound to a different "
+    "Stripe customer. Open that Polar customer to reconcile them; this one "
+    "stays on Stripe."
+)
 _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."
 )
 _MISSING_COUNTRY_REASON = (
-    "No billing country. Confirm it before the first renewal so tax is correct."
+    "No billing or payment-method country was found. The customer will import, "
+    "but Polar won't calculate tax until a billing country is added."
+)
+_TAX_ID_DROPPED_REASON = (
+    "This customer had a tax ID or reverse charge on Stripe that can't be "
+    "imported. Add a valid tax ID on Polar before the first renewal, or they'll "
+    "be charged tax as a consumer."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
-    "The payment method can't be copied. Ask the customer to re-enter their "
-    "billing details."
+    "The payment method can't be copied. It still moves to Polar, but its next "
+    "renewal fails and goes to dunning unless the customer re-enters their "
+    "billing details first."
 )
+_PAYMENT_METHOD_MISSING_REASON = (
+    "The source has no payment method for this subscription. It still moves "
+    "to Polar, but its next renewal fails and goes to dunning unless the "
+    "customer adds one first."
+)
+_PAYMENT_METHOD_NOT_CARD_REASON = (
+    "Bank debits are copied without a card check, so the first Polar renewal is "
+    "their first real charge. If it fails, the subscription goes to dunning."
+)
+_SUBSCRIPTION_DISCOUNT_REASON = (
+    "This subscription's coupon isn't one Polar can import, so it stays on the "
+    "source rather than renewing at full price."
+)
+_SUBSCRIPTION_DISCOUNT_START_REASON = (
+    "The source doesn't say when this coupon was applied, so Polar can't "
+    "continue its remaining duration. It stays on the source."
+)
+_MULTIPLE_DISCOUNTS_REASON = (
+    "This subscription has more than one coupon. Polar keeps one; the others "
+    "are dropped."
+)
+_EXTRA_PROMO_CODES_REASON = (
+    "This coupon has extra promotion codes. Polar imports one checkout code "
+    "and drops the rest."
+)
+_BASIS_POINTS = TypeAdapter(BasisPoints)
+_DURATION_IN_MONTHS = TypeAdapter(DurationInMonths)
 
 
 def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
     return status.value.replace("_", " ").capitalize()
+
+
+def _is_valid(adapter: TypeAdapter[Any], value: object) -> bool:
+    try:
+        adapter.validate_python(value)
+        return True
+    except ValidationError:
+        return False
 
 
 def _is_supported_currency(currency: str) -> bool:
@@ -136,6 +202,13 @@ def _is_supported_currency(currency: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _importable_fixed_amounts(amounts: dict[str, int]) -> dict[str, int]:
+    return {
+        currency.value: amount
+        for currency, amount in polar_discount_amounts(amounts).items()
+    }
 
 
 class PrecheckEngine:
@@ -154,6 +227,7 @@ class PrecheckEngine:
 
         products: list[CanonicalProduct] = []
         products_by_name: dict[str, set[str]] = {}
+        discounts: list[CanonicalDiscount] = []
         email_counts: Counter[str] = Counter()
         customers_without_country = 0
         customers_without_email = 0
@@ -174,7 +248,15 @@ class PrecheckEngine:
                     customers_without_country += 1
             elif isinstance(record, CanonicalSubscription):
                 issues.extend(self._check_subscription(record))
+            elif isinstance(record, CanonicalDiscount):
+                discounts.append(record)
+                issues.extend(self._check_discount(record))
 
+        issues.extend(
+            self._check_discount_product_eligibility(
+                discounts, products, default_currency
+            )
+        )
         issues.extend(self._check_default_currency(products, default_currency))
         issues.extend(self._check_duplicate_names(products_by_name))
         issues.extend(
@@ -484,8 +566,9 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="customer_missing_country",
                 message=(
-                    f"{count} customers have no billing country; the payment "
-                    "card's country will be used as a default."
+                    f"{count} customers have no billing country on Stripe. Polar "
+                    "will use a payment-method country when available; otherwise "
+                    "they import without a country and tax isn't calculated."
                 ),
                 source_id=None,
             )
@@ -512,16 +595,6 @@ class PrecheckEngine:
                     f"Subscription has quantity {subscription.quantity}; Polar "
                     "doesn't support per-subscription quantity, so it won't be "
                     "imported."
-                ),
-                source_id=source_id,
-            )
-        if subscription.has_discount:
-            yield PrecheckIssue(
-                level=PrecheckIssueLevel.warning,
-                code="subscription_has_discount",
-                message=(
-                    "Subscription has a discount, which isn't migrated yet; it "
-                    "won't be imported so the customer isn't overcharged."
                 ),
                 source_id=source_id,
             )
@@ -563,17 +636,84 @@ class PrecheckEngine:
                 message="Subscription is on trial.",
                 source_id=source_id,
             )
-        payment_method = subscription.payment_method
-        if payment_method is not None and payment_method.type.requires_reentry:
+        payment_method_note = payment_method_reason(subscription.payment_method)
+        if payment_method_note is not None:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
-                code="payment_method_requires_reentry",
+                code=payment_method_note.code,
+                message=payment_method_note.message,
+                source_id=source_id,
+            )
+
+    def _check_discount(self, discount: CanonicalDiscount) -> Iterable[PrecheckIssue]:
+        source_id = discount.source_id
+        if discount.discount_type == CanonicalDiscountType.percentage:
+            if not _is_valid(_BASIS_POINTS, discount.basis_points):
+                yield PrecheckIssue(
+                    level=PrecheckIssueLevel.warning,
+                    code="unsupported_percentage",
+                    message=(
+                        f"Coupon '{discount.name}' has a percentage Polar can't "
+                        "represent, so it and subscriptions using it won't be imported."
+                    ),
+                    source_id=source_id,
+                )
+        elif not _importable_fixed_amounts(discount.amounts):
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="unsupported_fixed_amount",
                 message=(
-                    f"Payment method ({payment_method.type.value}) can't be "
-                    "copied; the customer must re-enter their billing details."
+                    f"Coupon '{discount.name}' has no fixed amount in a currency "
+                    "Polar supports, so it and subscriptions using it won't be imported."
                 ),
                 source_id=source_id,
             )
+        if discount.duration == CanonicalDiscountDuration.repeating and not _is_valid(
+            _DURATION_IN_MONTHS, discount.duration_in_months
+        ):
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="unsupported_repeating_duration",
+                message=(
+                    f"Coupon '{discount.name}' repeats for a duration Polar can't "
+                    "represent, so it and subscriptions using it won't be imported."
+                ),
+                source_id=source_id,
+            )
+        if discount.extra_codes:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="discount_extra_codes",
+                message=(
+                    f"Coupon '{discount.name}' has extra promotion codes; Polar "
+                    "imports one checkout code and drops the rest."
+                ),
+                source_id=source_id,
+            )
+
+    def _check_discount_product_eligibility(
+        self,
+        discounts: Sequence[CanonicalDiscount],
+        products: Sequence[CanonicalProduct],
+        default_currency: str,
+    ) -> Iterable[PrecheckIssue]:
+        product_plans = plan_product_imports(products, default_currency)
+        importable_product_source_ids = {
+            product.product_source_id
+            for product in products
+            if product_plans[product.source_id].importable
+        }
+        for discount in discounts:
+            skip = _discount_products_not_importable(
+                discount, importable_product_source_ids
+            )
+            if skip is not None:
+                yield PrecheckIssue(
+                    level=PrecheckIssueLevel.warning,
+                    code=skip.code,
+                    message=skip.message,
+                    source_id=discount.source_id,
+                )
 
 
 precheck_engine = PrecheckEngine()
@@ -594,6 +734,7 @@ class Reason:
 
     code: str
     message: str
+    polar_customer_id: UUID | None = None
 
     @property
     def level(self) -> PrecheckReasonLevel:
@@ -634,6 +775,22 @@ def subscription_import_reason(
     )
 
 
+def payment_method_reason(
+    payment_method: CanonicalPaymentMethod | None,
+) -> Reason | None:
+    """What to know about the method a subscription will renew with on Polar.
+
+    Never a reason to skip: the switch moves it either way, and a first renewal
+    that can't be charged goes to dunning like any other."""
+    if payment_method is None:
+        return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
+    if payment_method.type.requires_reentry:
+        return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
+    if payment_method.type != CanonicalPaymentMethodType.card:
+        return Reason("payment_method_not_card", _PAYMENT_METHOD_NOT_CARD_REASON)
+    return None
+
+
 def _drop_reason(issues: Iterable[PrecheckIssue], codes: set[str]) -> Reason | None:
     for issue in issues:
         if issue.code in codes:
@@ -665,8 +822,13 @@ def _item(
     customer_name: str | None = None,
     customer_source_id: str | None = None,
     customer_country: str | None = None,
+    customer_country_hint: str | None = None,
+    customer_billing_address: Address | None = None,
     renews_at: datetime | None = None,
     automatic_tax: bool | None = None,
+    tax_behavior: TaxBehavior | None = None,
+    discount_name: str | None = None,
+    discount_code: str | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -687,6 +849,8 @@ def _item(
         customer_name=customer_name,
         customer_source_id=customer_source_id,
         customer_country=customer_country,
+        customer_country_hint=customer_country_hint,
+        customer_billing_address=customer_billing_address,
         amount=price.amount,
         currency=price.currency,
         recurring_interval=price.recurring_interval,
@@ -697,10 +861,14 @@ def _item(
         reason=reason.message if reason else None,
         reason_code=reason.code if reason else None,
         reason_level=reason.level if reason else None,
+        conflicting_customer_id=reason.polar_customer_id if reason else None,
         cutover_status=None,
         cutover_error=None,
         renews_at=renews_at,
         automatic_tax=automatic_tax,
+        tax_behavior=tax_behavior,
+        discount_name=discount_name,
+        discount_code=discount_code,
         has_payment_method=None,
         dependencies_imported=None,
     )
@@ -833,29 +1001,47 @@ def _price_items(
 
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
+    subscriptions: Sequence[CanonicalSubscription],
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a customer it will skip.
-    plans = plan_customer_imports(customers)
+    plans = plan_customer_imports(customers, existing_customers)
+    hints = customer_country_fallbacks(customers, subscriptions)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
-        # It imports either way, but without a country tax can't be computed.
-        note = (
+        country_fallback = hints.get(customer.source_id)
+        note = _pick_note(
+            Reason(
+                "customer_country_from_payment_method",
+                (
+                    f"Billing country {country_fallback} came from a payment "
+                    "method. Review it after import."
+                ),
+            )
+            if not customer.country and country_fallback
+            else None,
             Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
-            if not customer.country
-            else None
+            if not customer.country and not country_fallback
+            else None,
+            Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
+            if customer.tax_id_dropped
+            else None,
         )
+        effective_country = customer.country or country_fallback
         items.append(
             _item(
                 PrecheckEntity.customers,
                 customer.source_id,
                 customer.email or customer.name or customer.source_id,
-                customer.country or "No billing country",
+                effective_country or "No billing country",
                 skip=plans[customer.source_id],
                 note=note,
                 customer_email=customer.email or None,
                 customer_name=customer.name,
                 customer_source_id=customer.source_id,
-                customer_country=customer.country,
+                customer_country=effective_country,
+                customer_country_hint=country_fallback,
+                customer_billing_address=customer.billing_address,
             )
         )
     return items
@@ -865,28 +1051,57 @@ def _subscription_items(
     subscriptions: Sequence[CanonicalSubscription],
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
+    discounts: Sequence[CanonicalDiscount],
     default_currency: str,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(
-        subscriptions, products, customers, default_currency
+        subscriptions,
+        products,
+        customers,
+        default_currency,
+        existing_customers,
+        discounts,
     )
     customer_by_source = {c.source_id: c for c in customers}
+    hints = customer_country_fallbacks(customers, subscriptions)
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
     price_by_key = _price_display_by_key(products)
+    discounts_by_source = {discount.source_id: discount for discount in discounts}
+    discount_plans = plan_discount_imports(discounts, products, default_currency)
+    importable_discount_ids = _importable_discount_source_ids(discount_plans)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
-        payment_method = subscription.payment_method
+        customer = customer_by_source.get(subscription.customer_source_id)
+        country_fallback = (
+            hints.get(customer.source_id) if customer is not None else None
+        )
         note = _pick_note(
-            Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
-            if payment_method is not None and payment_method.type.requires_reentry
+            Reason(
+                "customer_country_from_payment_method",
+                (
+                    f"Billing country {country_fallback} came from a payment "
+                    "method. Review it after import."
+                ),
+            )
+            if customer is not None and not customer.country and country_fallback
             else None,
+            Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
+            if customer is not None and not customer.country and not country_fallback
+            else None,
+            Reason("customer_tax_id_dropped", _TAX_ID_DROPPED_REASON)
+            if customer is not None and customer.tax_id_dropped
+            else None,
+            payment_method_reason(subscription.payment_method),
             Reason("subscription_trialing", _TRIALING_REASON)
             if subscription.trialing
             else None,
+            Reason("subscription_multiple_discounts", _MULTIPLE_DISCOUNTS_REASON)
+            if len(subscription.discount_source_ids) > 1
+            else None,
         )
-        customer = customer_by_source.get(subscription.customer_source_id)
         product = _product_for_subscription(
             subscription, product_by_price, product_by_price_id
         )
@@ -896,6 +1111,8 @@ def _subscription_items(
             else subscription.customer_source_id
         )
         key = subscription_price_key(subscription)
+        kept_id = kept_discount_source_id(subscription, importable_discount_ids)
+        kept_discount = discounts_by_source.get(kept_id) if kept_id else None
         items.append(
             _item(
                 PrecheckEntity.subscriptions,
@@ -912,9 +1129,20 @@ def _subscription_items(
                 customer_email=customer.email if customer is not None else None,
                 customer_name=customer.name if customer is not None else None,
                 customer_source_id=subscription.customer_source_id,
-                customer_country=customer.country if customer is not None else None,
+                customer_country=(
+                    customer.country or country_fallback
+                    if customer is not None
+                    else None
+                ),
+                customer_country_hint=country_fallback,
+                customer_billing_address=(
+                    customer.billing_address if customer is not None else None
+                ),
                 renews_at=subscription.current_period_end,
                 automatic_tax=subscription.automatic_tax,
+                tax_behavior=subscription.import_tax_behavior(),
+                discount_name=kept_discount.name if kept_discount is not None else None,
+                discount_code=kept_discount.code if kept_discount is not None else None,
             )
         )
     return items
@@ -990,10 +1218,11 @@ class SplitRecords:
     products: list[CanonicalProduct]
     customers: list[CanonicalCustomer]
     subscriptions: list[CanonicalSubscription]
+    discounts: list[CanonicalDiscount]
 
     @classmethod
     def of(cls, records: Sequence[CanonicalRecord]) -> "SplitRecords":
-        split = cls([], [], [])
+        split = cls([], [], [], [])
         for record in records:
             if isinstance(record, CanonicalProduct):
                 split.products.append(record)
@@ -1001,6 +1230,8 @@ class SplitRecords:
                 split.customers.append(record)
             elif isinstance(record, CanonicalSubscription):
                 split.subscriptions.append(record)
+            elif isinstance(record, CanonicalDiscount):
+                split.discounts.append(record)
         return split
 
 
@@ -1031,6 +1262,7 @@ def classify_records(
     entity: PrecheckEntity,
     default_currency: str,
     existing_product_names: set[str] | None = None,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
@@ -1042,9 +1274,16 @@ def classify_records(
     if entity == PrecheckEntity.prices:
         return _price_items(split.products, default_currency)
     if entity == PrecheckEntity.customers:
-        return _customer_items(split.customers)
+        return _customer_items(split.customers, split.subscriptions, existing_customers)
+    if entity == PrecheckEntity.discounts:
+        return _discount_items(split.discounts, split.products, default_currency)
     return _subscription_items(
-        split.subscriptions, split.products, split.customers, default_currency
+        split.subscriptions,
+        split.products,
+        split.customers,
+        split.discounts,
+        default_currency,
+        existing_customers,
     )
 
 
@@ -1104,12 +1343,14 @@ def plan_product_imports(
 
 def plan_customer_imports(
     customers: Sequence[CanonicalCustomer],
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
 ) -> dict[str, Reason | None]:
     """Per customer ``source_id``, the skip reason or ``None`` when importable.
     A Polar customer is unique by email and carries a single source id, so of
     several customers sharing an email only the first can be imported; a customer
     with no email can't be imported at all."""
     duplicates = _duplicate_customer_source_ids(customers)
+    existing = existing_customers or {}
     plans: dict[str, Reason | None] = {}
     for customer in customers:
         if customer.source_id in duplicates:
@@ -1121,8 +1362,142 @@ def plan_customer_imports(
                 "customer_missing_email", _MISSING_EMAIL_REASON
             )
         else:
-            plans[customer.source_id] = None
+            polar = existing.get(customer.email.lower())
+            if polar and polar[1] and polar[1] != customer.source_id:
+                plans[customer.source_id] = Reason(
+                    "customer_stripe_id_conflict",
+                    CUSTOMER_STRIPE_ID_CONFLICT_REASON,
+                    polar_customer_id=polar[0],
+                )
+            else:
+                plans[customer.source_id] = None
     return plans
+
+
+def _discount_items(
+    discounts: Sequence[CanonicalDiscount],
+    products: Sequence[CanonicalProduct],
+    default_currency: str,
+) -> list[MerchantMigrationRecordItem]:
+    plans = plan_discount_imports(discounts, products, default_currency)
+    items: list[MerchantMigrationRecordItem] = []
+    for discount in discounts:
+        note = (
+            Reason("discount_extra_codes", _EXTRA_PROMO_CODES_REASON)
+            if discount.extra_codes
+            else None
+        )
+        subtitle = discount.code or discount.discount_type.value
+        items.append(
+            _item(
+                PrecheckEntity.discounts,
+                discount.source_id,
+                discount.name,
+                subtitle,
+                skip=plans[discount.source_id],
+                note=note,
+            )
+        )
+    return items
+
+
+def plan_discount_imports(
+    discounts: Sequence[CanonicalDiscount],
+    products: Sequence[CanonicalProduct],
+    default_currency: str,
+) -> dict[str, Reason | None]:
+    """Per coupon ``source_id``, the skip reason or ``None`` when importable.
+
+    A coupon restricted to source products Polar won't take is skipped rather
+    than imported unrestricted (that would apply it to every Polar product).
+    """
+    product_plans = plan_product_imports(products, default_currency)
+    importable_product_source_ids = {
+        product.product_source_id
+        for product in products
+        if product_plans[product.source_id].importable
+    }
+    plans: dict[str, Reason | None] = {}
+    for discount in discounts:
+        skip = _drop_reason(
+            precheck_engine._check_discount(discount), DISCOUNT_DROP_CODES
+        )
+        if skip is None:
+            skip = _discount_products_not_importable(
+                discount, importable_product_source_ids
+            )
+        plans[discount.source_id] = skip
+    return plans
+
+
+def _discount_products_not_importable(
+    discount: CanonicalDiscount, importable_product_source_ids: set[str]
+) -> Reason | None:
+    if discount.product_source_ids and not any(
+        product_source_id in importable_product_source_ids
+        for product_source_id in discount.product_source_ids
+    ):
+        return Reason(
+            "discount_products_not_importable",
+            (
+                f"Coupon '{discount.name}' only applies to products that "
+                "won't be imported, so it stays on the source."
+            ),
+        )
+    return None
+
+
+def kept_discount_source_id(
+    subscription: CanonicalSubscription,
+    importable_discount_source_ids: Container[str],
+) -> str | None:
+    """The first coupon Polar will keep on this subscription, if any."""
+    for source_id in subscription.discount_source_ids:
+        if source_id in importable_discount_source_ids:
+            return source_id
+    return None
+
+
+def _importable_discount_source_ids(
+    discount_plans: dict[str, Reason | None],
+) -> set[str]:
+    return {source_id for source_id, skip in discount_plans.items() if skip is None}
+
+
+def _subscription_discount_skip(
+    subscription: CanonicalSubscription,
+    discounts_by_source: dict[str, CanonicalDiscount],
+    discount_plans: dict[str, Reason | None],
+) -> Reason | None:
+    if not subscription.has_discount and not subscription.discount_source_ids:
+        return None
+    kept = kept_discount_source_id(
+        subscription, _importable_discount_source_ids(discount_plans)
+    )
+    if kept is None:
+        return Reason(
+            "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+        )
+    discount = discounts_by_source.get(kept)
+    if discount is None:
+        return Reason(
+            "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+        )
+    if discount.discount_type == CanonicalDiscountType.fixed:
+        amounts = _importable_fixed_amounts(discount.amounts)
+        currency = subscription.currency.lower() if subscription.currency else None
+        if currency is None or currency not in amounts:
+            return Reason(
+                "subscription_discount_not_importable", _SUBSCRIPTION_DISCOUNT_REASON
+            )
+    if (
+        discount.duration != CanonicalDiscountDuration.forever
+        and discount_started_at_for(subscription, kept) is None
+    ):
+        return Reason(
+            "subscription_discount_missing_start", _SUBSCRIPTION_DISCOUNT_START_REASON
+        )
+    return None
 
 
 def plan_subscription_imports(
@@ -1130,21 +1505,29 @@ def plan_subscription_imports(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
     default_currency: str,
+    existing_customers: Mapping[str, tuple[UUID, str | None]] | None = None,
+    discounts: Sequence[CanonicalDiscount] = (),
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when
     importable. Mirrors the review drawer's per-subscription classification: a
-    subscription can't import if its own checks fail or the product/price or
-    customer it depends on won't import."""
+    subscription can't import if its own checks fail or the product/price,
+    customer, or coupon it depends on won't import."""
     product_plans = plan_product_imports(products, default_currency)
     importable_prices = {
         price for plan in product_plans.values() for price in plan.importable_prices
     }
     product_by_price = _product_by_price_key(products)
     product_by_price_id = _product_by_price_source_id(products)
-    customer_plans = plan_customer_imports(customers)
+    customer_plans = plan_customer_imports(customers, existing_customers)
+    discount_plans = plan_discount_imports(discounts, products, default_currency)
+    discounts_by_source = {discount.source_id: discount for discount in discounts}
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         skip = subscription_import_reason(subscription)
+        if skip is None:
+            skip = _subscription_discount_skip(
+                subscription, discounts_by_source, discount_plans
+            )
         if (
             skip is None
             and subscription_price_key(subscription) not in importable_prices

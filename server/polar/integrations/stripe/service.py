@@ -88,7 +88,6 @@ class StripeService:
     async def create_account(
         self, country: str, name: str | None
     ) -> stripe_lib.Account:
-        log.info("stripe.account.create", country=country, name=name)
         create_params: AccountCreateParams = {
             "country": country,
             "type": "express",
@@ -107,11 +106,6 @@ class StripeService:
         return await stripe_lib.Account.create_async(**create_params)
 
     async def update_account(self, id: str, name: str | None) -> None:
-        log.info(
-            "stripe.account.update",
-            account_id=id,
-            name=name,
-        )
         obj = {}
         if name:
             obj["business_profile"] = {"name": name}
@@ -395,6 +389,10 @@ class StripeService:
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
+    async def cancel_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
+        log.info("stripe.payment_intent.cancel", payment_intent_id=id)
+        return await stripe_lib.PaymentIntent.cancel_async(id)
+
     async def create_setup_intent(
         self, **params: Unpack[SetupIntentCreateParams]
     ) -> stripe_lib.SetupIntent:
@@ -428,14 +426,13 @@ class StripeService:
     ) -> stripe_lib.SetupIntent:
         return await stripe_lib.SetupIntent.retrieve_async(id, **params)
 
+    async def cancel_setup_intent(self, id: str) -> stripe_lib.SetupIntent:
+        log.info("stripe.setup_intent.cancel", setup_intent_id=id)
+        return await stripe_lib.SetupIntent.cancel_async(id)
+
     async def create_customer(
         self, **params: Unpack[CustomerCreateParams]
     ) -> stripe_lib.Customer:
-        log.info(
-            "stripe.customer.create",
-            email=params.get("email"),
-            name=params.get("name"),
-        )
         return await stripe_lib.Customer.create_async(**params)
 
     async def update_customer(
@@ -444,13 +441,6 @@ class StripeService:
         tax_id: CustomerCreateParamsTaxIdDatum | None = None,
         **params: Unpack[CustomerModifyParams],
     ) -> stripe_lib.Customer:
-        log.info(
-            "stripe.customer.update",
-            customer_id=id,
-            email=params.get("email"),
-            name=params.get("name"),
-            tax_id_type=tax_id.get("type") if tax_id else None,
-        )
         params = {**params, "expand": ["tax_ids"]}
         customer = await stripe_lib.Customer.modify_async(id, **params)
         if tax_id is None:

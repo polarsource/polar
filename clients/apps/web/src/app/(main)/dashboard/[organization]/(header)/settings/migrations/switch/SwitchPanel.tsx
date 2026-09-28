@@ -103,6 +103,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
 
   return (
     <SwitchPanelView
+      migrationId={migrationId}
       report={report}
       filter={filter}
       onFilterChange={onFilterChange}

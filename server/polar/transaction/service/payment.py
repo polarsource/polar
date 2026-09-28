@@ -79,7 +79,7 @@ class PaymentTransactionService(BaseTransactionService):
         exchange_rate = balance_transaction.exchange_rate or 1.0
         settlement_tax_amount = polar_round(tax_amount * exchange_rate)
 
-        risk = getattr(charge, "outcome", {})
+        risk = getattr(charge, "outcome", None) or {}
         transaction = Transaction(
             type=TransactionType.payment,
             processor=Processor.stripe,

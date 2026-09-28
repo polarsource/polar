@@ -196,7 +196,7 @@ class TestSeedsLoad:
             organization.payout_account_id is not None for organization in organizations
         )
         assert await session.scalar(select(func.count(UserOrganization.user_id))) == 9
-        expected_product_count = 30 + len(POLAR_SELF_PRODUCTS)
+        expected_product_count = 31 + len(POLAR_SELF_PRODUCTS)
         assert await session.scalar(select(func.count(Product.id))) == (
             expected_product_count
         )

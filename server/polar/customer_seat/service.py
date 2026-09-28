@@ -364,9 +364,12 @@ class SeatService:
         if immediate_claim:
             log.info(
                 "Seat immediately claimed",
+                seat_id=seat.id,
+                organization_id=organization_id,
+                product_id=product.id,
+                member_id=seat.member_id,
                 subscription_id=seat.subscription_id,
                 order_id=seat.order_id,
-                email=target.seat_member_email,
                 customer_id=seat.customer_id,
             )
             await self._publish_seat_claimed_event(seat, product.id)
@@ -375,11 +378,13 @@ class SeatService:
         else:
             log.info(
                 "Seat assigned",
+                seat_id=seat.id,
+                organization_id=organization_id,
+                product_id=product.id,
+                member_id=seat.member_id,
                 subscription_id=seat.subscription_id,
                 order_id=seat.order_id,
-                email=target.seat_member_email,
                 customer_id=seat.customer_id,
-                invitation_token=invitation_token or "none",
             )
             if organization:
                 if target.seat_member_email is not None:
@@ -428,7 +433,6 @@ class SeatService:
         self,
         session: AsyncSession,
         invitation_token: str,
-        request_metadata: dict[str, Any] | None = None,
     ) -> tuple[CustomerSeat, str]:
         repository = CustomerSeatRepository.from_session(session)
 
@@ -548,8 +552,9 @@ class SeatService:
             customer_id=seat.customer_id,
             member_id=seat.member_id,
             subscription_id=seat.subscription_id,
+            order_id=seat.order_id,
+            organization_id=organization_id,
             member_model_enabled=member_model_enabled,
-            **(request_metadata or {}),
         )
 
         await self._send_seat_claimed_webhook(session, organization_id, seat)
@@ -981,8 +986,6 @@ class SeatService:
                 member_id=member.id,
                 customer_id=billing_customer_id,
                 organization_id=organization_id,
-                email=email,
-                external_id=external_member_id,
             )
         elif member.external_id != external_member_id:
             raise MemberEmailMismatch(external_member_id, email)

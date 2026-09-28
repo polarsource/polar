@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import { CONFIG } from '@/utils/config'
+import { isInjectedScriptError } from '@/utils/sentry'
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
@@ -41,11 +42,23 @@ Sentry.init({
     /QuotaExceededError/i,
     /ResizeObserver loop/i,
     /Non-Error promise rejection/i,
+    /Event `Event` \(type=error\) captured as promise rejection/i,
+    /Failed to load Stripe\.js/i,
+    /Failed to connect to MetaMask/i,
+    /__firefox__/,
+    /Java object is gone/i,
+    /Error invoking post: Method not found/i,
+    /analytics\.google\.com/i,
+    /Third-party iframes are not allowed to request payments/i,
   ],
 
   denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
 
   beforeSend: (event) => {
+    if (isInjectedScriptError(event)) {
+      return null
+    }
+
     // Do not flag PostHog errors
     if (
       event.request?.url?.includes('/ingest/flags') ||

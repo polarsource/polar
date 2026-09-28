@@ -9,7 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.email.schemas import OAuth2LeakedClientEmail, OAuth2LeakedClientProps
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
-from polar.kit.crypto import generate_token
+from polar.kit.crypto import generate_token, get_token_hash_candidates
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
@@ -59,10 +59,13 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
     ) -> bool:
         statement = select(OAuth2Client).options(joinedload(OAuth2Client.user))
 
+        candidates = get_token_hash_candidates(token).values()
         if token_type == TokenType.client_secret:
-            statement = statement.where(OAuth2Client.client_secret == token)
+            statement = statement.where(OAuth2Client.client_secret_hash.in_(candidates))
         elif token_type == TokenType.client_registration_token:
-            statement = statement.where(OAuth2Client.registration_access_token == token)
+            statement = statement.where(
+                OAuth2Client.registration_access_token_hash.in_(candidates)
+            )
         else:
             raise ValueError(f"Unsupported token type: {token_type}")
 

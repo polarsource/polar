@@ -1,12 +1,14 @@
 locals {
   backend_config = {
+    linear_team_id                            = var.linear_team_id
+    linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
+
     base_url                                         = "https://sandbox-api.polar.sh"
     backoffice_host                                  = local.private_backoffice_hostname
     user_session_cookie_domain                       = "polar.sh"
     user_session_cookie_key                          = "polar_sandbox_session"
     authentication_session_cookie_domain             = "polar.sh"
     oauth2_session_state_cookie_domain               = "polar.sh"
-    debug                                            = "0"
     email_sender                                     = "resend"
     email_from_name                                  = "[SANDBOX] Polar"
     email_from_domain                                = "notifications.sandbox.polar.sh"
@@ -14,7 +16,6 @@ locals {
     checkout_base_url                                = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
     log_level                                        = "INFO"
     testing                                          = "0"
-    auth_cookie_domain                               = "polar.sh"
     auth_cookie_key                                  = "polar_sandbox_session"
     tax_processors                                   = "[\"numeral\",\"stripe\"]"
     tax_record_processor                             = "numeral"
@@ -24,6 +25,7 @@ locals {
   }
 
   backend_secrets = {
+    linear_api_key                 = var.linear_api_key
     stripe_publishable_key         = var.stripe_publishable_key_sandbox
     discord_bot_token              = var.backend_discord_bot_token_sandbox
     discord_client_id              = var.backend_discord_client_id_sandbox
@@ -34,7 +36,6 @@ locals {
     resend_webhook_secret          = var.backend_resend_webhook_secret
     firecrawl_api_key              = var.firecrawl_api_key
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_sandbox
-    secret                         = var.backend_secret_sandbox
     sentry_dsn                     = var.backend_sentry_dsn_sandbox
     numeral_api_key                = var.numeral_api_key_sandbox
     turnstile_secret               = var.turnstile_secret
@@ -46,7 +47,6 @@ locals {
     service_account_json = var.google_service_account_json
   }
 
-  openai_secrets              = { api_key = var.openai_api_key_sandbox }
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_sandbox }
 
   aws_s3_config = {
@@ -80,8 +80,6 @@ locals {
     secret_key                  = var.stripe_secret_key_sandbox
     webhook_secret              = var.stripe_webhook_secret_sandbox
     account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_sandbox
-    app_client_id               = var.stripe_app_client_id
-    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = { token = var.logfire_token }
@@ -126,7 +124,6 @@ module "backend_environment" {
   backend_config              = local.backend_config
   backend_secrets             = local.backend_secrets
   google_secrets              = local.google_secrets
-  openai_secrets              = local.openai_secrets
   pydantic_ai_gateway_secrets = local.pydantic_ai_gateway_secrets
   aws_s3_config               = local.aws_s3_config
   aws_s3_secrets              = local.aws_s3_secrets

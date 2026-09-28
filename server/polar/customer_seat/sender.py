@@ -23,7 +23,9 @@ def send_seat_invitation_email(
         log.warning(
             "seat_invitation.no_token",
             seat_id=seat.id,
-            customer_email=customer_email,
+            customer_id=seat.customer_id,
+            member_id=seat.member_id,
+            organization_id=organization.id,
         )
         return
 
@@ -51,6 +53,7 @@ def send_seat_invitation_email(
     log.info(
         "seat_invitation.sent",
         seat_id=seat.id,
-        customer_email=customer_email,
+        customer_id=seat.customer_id,
+        member_id=seat.member_id,
         organization_id=organization.id,
     )

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -13,6 +13,14 @@ if TYPE_CHECKING:
 
 class WebhookDelivery(RecordModel):
     __tablename__ = "webhook_deliveries"
+    __table_args__ = (
+        Index(
+            "ix_webhook_deliveries_created_at_with_response",
+            "created_at",
+            "id",
+            postgresql_where="response IS NOT NULL",
+        ),
+    )
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(
         Uuid,

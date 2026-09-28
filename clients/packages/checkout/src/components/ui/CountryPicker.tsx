@@ -21,6 +21,7 @@ const CountryPicker = ({
   itemClassName,
   contentClassName,
   placeholder = 'Country',
+  'data-testid': testId,
 }: {
   allowedCountries: readonly string[]
   locale?: string
@@ -32,6 +33,7 @@ const CountryPicker = ({
   itemClassName?: string
   contentClassName?: string
   placeholder?: string
+  'data-testid'?: string
 }) => {
   const countryList = useMemo(() => {
     const displayNames = new Intl.DisplayNames(locale ? [locale] : [], {
@@ -52,7 +54,7 @@ const CountryPicker = ({
       autoComplete={autoComplete}
       disabled={disabled}
     >
-      <SelectTrigger className={className}>
+      <SelectTrigger className={className} data-testid={testId}>
         <SelectValue
           placeholder={placeholder}
           // Avoids issues due to browser automatic translation

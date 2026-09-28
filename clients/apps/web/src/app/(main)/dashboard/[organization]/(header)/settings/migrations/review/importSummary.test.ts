@@ -8,14 +8,22 @@ import {
 } from './importSummary'
 
 function counts(overrides: Partial<ImportedCounts> = {}): ImportedCounts {
-  return { subscriptions: 0, products: 0, customers: 0, ...overrides }
+  return {
+    subscriptions: 0,
+    products: 0,
+    customers: 0,
+    discounts: 0,
+    ...overrides,
+  }
 }
 
 describe('importedTotal', () => {
   it('sums every entity', () => {
     expect(
-      importedTotal(counts({ subscriptions: 1, products: 3, customers: 13 })),
-    ).toBe(17)
+      importedTotal(
+        counts({ subscriptions: 1, products: 3, customers: 13, discounts: 2 }),
+      ),
+    ).toBe(19)
   })
 
   it('is zero when nothing landed', () => {
@@ -27,9 +35,9 @@ describe('importedCountsText', () => {
   it('joins three entities with a final "and"', () => {
     expect(
       importedCountsText(
-        counts({ subscriptions: 1, products: 3, customers: 13 }),
+        counts({ subscriptions: 1, products: 3, customers: 13, discounts: 2 }),
       ),
-    ).toBe('1 subscription, 3 products and 13 customers')
+    ).toBe('1 subscription, 3 products, 2 discounts and 13 customers')
   })
 
   it('drops entities that landed nothing', () => {

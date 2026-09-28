@@ -300,3 +300,24 @@ export const useMerchantMigrationRecordSummary = (
     enabled: !!id,
     refetchInterval: refetchInterval ?? false,
   })
+
+export const useUpdateMigrationRecord = (id: string) =>
+  useMutation({
+    mutationFn: ({
+      recordId,
+      update,
+    }: {
+      recordId: string
+      update: schemas['MerchantMigrationRecordUpdate']
+    }) =>
+      dataOrThrow(
+        api.PATCH('/v1/merchant-migrations/{id}/records/{record_id}', {
+          params: { path: { id, record_id: recordId } },
+          body: update,
+        }),
+        "We couldn't save the migration record.",
+      ),
+    onSuccess: () => {
+      invalidateMigrationRecords(id)
+    },
+  })

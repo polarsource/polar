@@ -98,7 +98,11 @@ class BenefitGitHubRepositoryService(
                         "Revoke before granting because repository, permission or account changed"
                     )
                     await self.revoke(
-                        benefit, customer, grant_properties, attempt=attempt
+                        benefit,
+                        customer,
+                        grant_properties,
+                        attempt=attempt,
+                        member=member,
                     )
 
             if (account_id := grant_properties.get("account_id")) is None:
@@ -123,6 +127,20 @@ class BenefitGitHubRepositoryService(
                 )
 
             try:
+                # GitHub doesn't resend an expired invitation: delete it first
+                if update:
+                    invitation = await self._get_invitation(
+                        client,
+                        repository_owner=repository_owner,
+                        repository_name=repository_name,
+                        user_id=int(oauth_account.account_id),
+                    )
+                    if invitation is not None and invitation.expired:
+                        bound_logger.info("Removing expired invitation")
+                        await client.rest.repos.async_delete_invitation(
+                            repository_owner, repository_name, invitation.id
+                        )
+
                 await client.rest.repos.async_add_collaborator(
                     owner=repository_owner,
                     repo=repository_name,

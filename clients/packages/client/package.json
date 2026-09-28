@@ -25,16 +25,17 @@
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
-    "openapi-typescript": "^7.10.1",
+    "@typescript/native": "catalog:",
+    "openapi-typescript": "^7.13.0",
     "tsup": "catalog:",
-    "typescript": "latest"
+    "typescript": "catalog:"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
     "date-fns": "catalog:",
-    "openapi-fetch": "^0.15.0",
+    "openapi-fetch": "^0.15.2",
     "openapi-typescript-helpers": "^0.0.15"
   }
 }

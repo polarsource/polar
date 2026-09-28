@@ -244,6 +244,7 @@ export default {
       paymentSuccessful: 'Fizetés sikeres! Készítjük termékeit...',
       confirmationTokenFailed:
         'Nem sikerült megerősítő tokent létrehozni, kérjük, próbálja újra később.',
+      paymentNotCompleted: 'A fizetés nem sikerült. Kérjük, próbálja újra.',
     },
     cta: {
       startTrial: 'Próbaidőszak indítása',

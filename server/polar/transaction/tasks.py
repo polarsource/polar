@@ -1,8 +1,10 @@
 import uuid
+from typing import Annotated
 
 from dramatiq import Retry
 
 from polar.exceptions import PolarTaskError
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     MaintenanceWindow,
@@ -42,8 +44,13 @@ async def sync_stripe_fees() -> None:
         await processor_fee_transaction_service.sync_stripe_fees(session)
 
 
-@actor(actor_name="processor_fee.create_payment_fees", priority=TaskPriority.LOW)
-async def create_payment_fees(payment_transaction_id: uuid.UUID) -> None:
+@actor(
+    actor_name="processor_fee.create_payment_fees",
+    priority=TaskPriority.LOW,
+)
+async def create_payment_fees(
+    payment_transaction_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentTransactionRepository.from_session(session)
         payment_transaction = await repository.get_by_id(payment_transaction_id)

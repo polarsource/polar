@@ -51,7 +51,7 @@ from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantError
 from polar.models.customer import CustomerOAuthPlatform
 
-from .customer import CustomerPortalCustomer
+from .customer import CustomerPortalCustomer, CustomerPortalOAuthAccount
 
 
 class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
@@ -67,14 +67,20 @@ class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
     error: BenefitGrantError | None = None
 
 
+class CustomerBenefitGrantMember(IDSchema):
+    oauth_accounts: dict[str, CustomerPortalOAuthAccount]
+
+
 class CustomerBenefitGrantDiscord(CustomerBenefitGrantBase):
     customer: CustomerPortalCustomer
+    member: CustomerBenefitGrantMember | None = None
     benefit: BenefitDiscordSubscriber
     properties: BenefitGrantDiscordProperties
 
 
 class CustomerBenefitGrantGitHubRepository(CustomerBenefitGrantBase):
     customer: CustomerPortalCustomer
+    member: CustomerBenefitGrantMember | None = None
     benefit: BenefitGitHubRepositorySubscriber
     properties: BenefitGrantGitHubRepositoryProperties
 

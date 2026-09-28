@@ -555,7 +555,7 @@ export interface paths {
     head?: never
     /**
      * Patch
-     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     * @description **Scopes**: `payouts:write` `transactions:write`
      */
     patch: operations['accounts:patch']
     trace?: never
@@ -2449,7 +2449,16 @@ export interface paths {
     get: operations['products:get']
     put?: never
     post?: never
-    delete?: never
+    /**
+     * Delete Product
+     * @description Delete a product.
+     *
+     *     Only products without orders, subscriptions, trials or discounts can be deleted.
+     *     Products that are in use can only be archived.
+     *
+     *     **Scopes**: `products:write`
+     */
+    delete: operations['products:delete']
     options?: never
     head?: never
     /**
@@ -2927,6 +2936,28 @@ export interface paths {
      *     Orders and subscriptions will be processed.
      */
     post: operations['checkouts:client_confirm']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/checkouts/client/{client_secret}/cancel-payment': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Cancel Checkout Session Payment from Client
+     * @description Cancel the pending payment of a confirmed checkout session and reopen it.
+     *
+     *     If the payment already went through, the checkout session stays confirmed.
+     */
+    post: operations['checkouts:client_cancel_payment']
     delete?: never
     options?: never
     head?: never
@@ -5549,6 +5580,26 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/records/{record_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Merchant Migration Record
+     * @description **Scopes**: `organizations:write`
+     */
+    patch: operations['merchant-migrations:update_record']
     trace?: never
   }
   '/v1/email-update/request': {
@@ -13547,6 +13598,7 @@ export interface components {
     CheckoutForbiddenError:
       | components['schemas']['AlreadyActiveSubscriptionError']
       | components['schemas']['NotOpenCheckout']
+      | components['schemas']['NotPermitted']
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
       | components['schemas']['DiscountRedemptionLimitReached']
@@ -14082,6 +14134,17 @@ export interface components {
        * @description When set, a back button will be shown in the checkout to return to this URL.
        */
       return_url?: string | null
+    }
+    /** CheckoutLocked */
+    CheckoutLocked: {
+      /**
+       * Error
+       * @example CheckoutLocked
+       * @constant
+       */
+      error: 'CheckoutLocked'
+      /** Detail */
+      detail: string
     }
     /** CheckoutOrganization */
     CheckoutOrganization: {
@@ -17004,6 +17067,7 @@ export interface components {
       is_revoked: boolean
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
+      member?: components['schemas']['CustomerBenefitGrantMember'] | null
       benefit: components['schemas']['BenefitDiscordSubscriber']
       properties: components['schemas']['BenefitGrantDiscordProperties']
     }
@@ -17181,6 +17245,7 @@ export interface components {
       is_revoked: boolean
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
+      member?: components['schemas']['CustomerBenefitGrantMember'] | null
       benefit: components['schemas']['BenefitGitHubRepositorySubscriber']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
     }
@@ -17254,6 +17319,19 @@ export interface components {
        * @enum {string}
        */
       benefit_type: 'license_keys'
+    }
+    /** CustomerBenefitGrantMember */
+    CustomerBenefitGrantMember: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Oauth Accounts */
+      oauth_accounts: {
+        [key: string]: components['schemas']['CustomerPortalOAuthAccount']
+      }
     }
     /** CustomerBenefitGrantMeterCredit */
     CustomerBenefitGrantMeterCredit: {
@@ -25172,6 +25250,11 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /** MerchantMigrationRecordBillingAddressUpdate */
+    MerchantMigrationRecordBillingAddressUpdate: {
+      /** @description Billing address Polar will store on the imported customer. */
+      billing_address: components['schemas']['AddressInput']
+    }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -25223,9 +25306,16 @@ export interface components {
       customer_source_id: string | null
       /**
        * Customer Country
-       * @description The customer billing country. None for product and price rows, or when the source customer has none.
+       * @description The billing country Polar will import. This is the source customer country, or a payment-method fallback. None for product and price rows, or when neither is available.
        */
       customer_country: string | null
+      /**
+       * Customer Country Hint
+       * @description The payment-method country used as the billing-country fallback. Present only to disclose fallback provenance; Polar tax still uses the imported customer billing address.
+       */
+      customer_country_hint: string | null
+      /** @description The billing address Polar will import for the customer. None when only a payment-method country fallback or no address is available. */
+      customer_billing_address: components['schemas']['Address'] | null
       /**
        * Amount
        * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
@@ -25251,6 +25341,18 @@ export interface components {
        * @description Whether the source computed tax on this subscription. None for non-subscription rows, or when the source doesn't say.
        */
       automatic_tax: boolean | null
+      /** @description Polar tax after the switch. Defaults from the source when Stripe was collecting tax on an inclusive or exclusive price; otherwise inclusive. None for non-subscription rows. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
+      /**
+       * Discount Name
+       * @description The coupon Polar will keep on this subscription. None for non-subscription rows, or when the subscription has no importable coupon.
+       */
+      discount_name: string | null
+      /**
+       * Discount Code
+       * @description The checkout code of the coupon Polar will keep on this subscription. None when there is no coupon, or the coupon has no Polar-valid code.
+       */
+      discount_code: string | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
       /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
@@ -25269,6 +25371,11 @@ export interface components {
       reason_code: string | null
       /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
       reason_level: components['schemas']['PrecheckReasonLevel'] | null
+      /**
+       * Conflicting Customer Id
+       * @description The Polar customer that already exists for this email, when the skip reason is a Stripe id conflict. None otherwise.
+       */
+      conflicting_customer_id: string | null
       /** @description What the switch did with this subscription: `moved` (Polar bills it now), `skipped` (left on the source, see `cutover_error`) or `failed` (retryable). Null when the switch hasn't reached it, and for every entity other than subscriptions. */
       cutover_status:
         | components['schemas']['MerchantMigrationCutoverStatus']
@@ -25293,6 +25400,17 @@ export interface components {
        * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
        */
       dependencies_imported: boolean | null
+    }
+    /** MerchantMigrationRecordNotFound */
+    MerchantMigrationRecordNotFound: {
+      /**
+       * Error
+       * @example MerchantMigrationRecordNotFound
+       * @constant
+       */
+      error: 'MerchantMigrationRecordNotFound'
+      /** Detail */
+      detail: string
     }
     /**
      * MerchantMigrationRecordStatus
@@ -25358,6 +25476,14 @@ export interface components {
        */
       selectable: number
     }
+    /** MerchantMigrationRecordTaxUpdate */
+    MerchantMigrationRecordTaxUpdate: {
+      /** @description Polar tax after the switch: `inclusive` or `exclusive`. */
+      tax_behavior: components['schemas']['TaxBehavior']
+    }
+    MerchantMigrationRecordUpdate:
+      | components['schemas']['MerchantMigrationRecordTaxUpdate']
+      | components['schemas']['MerchantMigrationRecordBillingAddressUpdate']
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -26465,8 +26591,6 @@ export interface components {
       modified_at: string | null
       /** Client Id */
       client_id: string
-      /** Client Secret */
-      client_secret: string
       /** Client Id Issued At */
       client_id_issued_at: number
       /** Client Secret Expires At */
@@ -31972,7 +32096,12 @@ export interface components {
      * PrecheckEntity
      * @enum {string}
      */
-    PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
+    PrecheckEntity:
+      | 'products'
+      | 'prices'
+      | 'customers'
+      | 'discounts'
+      | 'subscriptions'
     /**
      * PrecheckReasonLevel
      * @enum {string}
@@ -32193,6 +32322,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /**
+       * Is Deletable
+       * @description Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted.
+       */
+      is_deletable: boolean
       /**
        * Prices
        * @description List of prices for this product.
@@ -32475,6 +32609,17 @@ export interface components {
       readonly size_readable: string
       /** Public Url */
       readonly public_url: string
+    }
+    /** ProductNotDeletable */
+    ProductNotDeletable: {
+      /**
+       * Error
+       * @example ProductNotDeletable
+       * @constant
+       */
+      error: 'ProductNotDeletable'
+      /** Detail */
+      detail: string
     }
     ProductPrice:
       | components['schemas']['ProductPriceFixed']
@@ -33671,6 +33816,28 @@ export interface components {
       totals?: {
         [key: string]: string
       }
+    }
+    /** RecordNotSubscription */
+    RecordNotSubscription: {
+      /**
+       * Error
+       * @example RecordNotSubscription
+       * @constant
+       */
+      error: 'RecordNotSubscription'
+      /** Detail */
+      detail: string
+    }
+    /** RecordTaxLocked */
+    RecordTaxLocked: {
+      /**
+       * Error
+       * @example RecordTaxLocked
+       * @constant
+       */
+      error: 'RecordTaxLocked'
+      /** Detail */
+      detail: string
     }
     /**
      * RecurringInterval
@@ -37101,7 +37268,7 @@ export interface components {
       discount_id?: string | null
       /**
        * Trial End
-       * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+       * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.
        */
       trial_end?: string | 'now' | null
     }
@@ -37933,7 +38100,7 @@ export interface components {
       order_count: number
       /**
        * Net Revenue
-       * @description The net revenue from this customer in the period, in cents, with refunded amounts subtracted.
+       * @description The net revenue from this customer in the period, in USD cents, with refunded amounts subtracted.
        */
       net_revenue: number
     }
@@ -44091,16 +44258,18 @@ export interface operations {
           'application/json': components['schemas']['Subscription']
         }
       }
-      /** @description Payment required to apply the subscription update. */
+      /** @description The charge failed, or requires customer authentication that can't be completed off-session. */
       402: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentFailed']
+          'application/json':
+            | components['schemas']['PaymentFailed']
+            | components['schemas']['PaymentActionRequired']
         }
       }
-      /** @description Subscription is already canceled or will be at the end of the period, or is not active. */
+      /** @description Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions. */
       403: {
         headers: {
           [name: string]: unknown
@@ -44109,6 +44278,7 @@ export interface operations {
           'application/json':
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['InactiveSubscription']
+            | components['schemas']['PaymentNotReady']
         }
       }
       /** @description Subscription not found. */
@@ -46690,6 +46860,62 @@ export interface operations {
       }
     }
   }
+  'products:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Product deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description You don't have the permission to delete this product. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Product is in use and cannot be deleted. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNotDeletable']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'products:update': {
     parameters: {
       query?: never
@@ -47869,6 +48095,15 @@ export interface operations {
           'application/json': components['schemas']['CheckoutPublic']
         }
       }
+      /** @description The organization is not allowed to accept payments. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Checkout session not found. */
       404: {
         headers: {
@@ -47941,6 +48176,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
+        }
+      }
       /** @description The checkout session is expired. */
       410: {
         headers: {
@@ -48011,6 +48255,83 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
+        }
+      }
+      /** @description The checkout session is expired. */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ExpiredCheckoutError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'checkouts:client_cancel_payment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The checkout session client secret. */
+        client_secret: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Checkout session payment canceled. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutPublic']
+        }
+      }
+      /** @description The organization is not allowed to accept payments. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Checkout session not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The checkout session is being processed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutLocked']
         }
       }
       /** @description The checkout session is expired. */
@@ -56888,6 +57209,82 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:update_record': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+        record_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['MerchantMigrationRecordTaxUpdate']
+          | components['schemas']['MerchantMigrationRecordBillingAddressUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationRecordUpdate']
+        }
+      }
+      /** @description Only subscription records can be updated. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecordNotSubscription']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration or record not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['MerchantMigrationNotFound']
+            | components['schemas']['MerchantMigrationRecordNotFound']
+        }
+      }
+      /** @description The subscription has already switched to Polar. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecordTaxLocked']
         }
       }
       /** @description Validation Error */
@@ -71902,7 +72299,7 @@ export const pledgeStateValues: ReadonlyArray<
 ]
 export const precheckEntityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
-> = ['products', 'prices', 'customers', 'subscriptions']
+> = ['products', 'prices', 'customers', 'discounts', 'subscriptions']
 export const precheckReasonLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
 > = ['action_required', 'info']

@@ -9,7 +9,7 @@ import {
 } from '@polar-sh/sdk/2026-04/services/subscriptions'
 import { getProducts } from '@polar-sh/sdk/2026-04/services/products'
 import type { models, PolarCore } from '@polar-sh/sdk/2026-04'
-import type { AuthContext, BetterAuthPlugin } from 'better-auth'
+import type { AuthContext } from 'better-auth'
 import {
   type OrganizationOptions,
   getOrgAdapter,
@@ -20,11 +20,7 @@ import type {
   SelectSeatProductsForMember,
   SelectSeatProductsForMemberInput,
 } from './types'
-
-type BetterAuthOrganizationPlugin = BetterAuthPlugin & {
-  id: 'organization'
-  options: OrganizationOptions
-}
+import { getBetterAuthOrganizationPlugin } from './roles'
 
 export const MANAGED_SUBSCRIPTION_STATUSES: ReadonlySet<
   models.Subscription['status']
@@ -65,8 +61,7 @@ const mapWithConcurrency = async <Input, Output>(
 export const getBetterAuthOrganizationOptions = (
   authContext: AuthContext,
 ): OrganizationOptions => {
-  const plugin =
-    authContext.getPlugin<BetterAuthOrganizationPlugin>('organization')
+  const plugin = getBetterAuthOrganizationPlugin(authContext)
   if (!plugin) {
     throw new Error(
       "Polar organization support requires Better Auth's organization plugin",

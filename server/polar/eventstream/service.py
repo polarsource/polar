@@ -50,7 +50,9 @@ async def send_event(redis: Redis, event_json: str, channels: list[str]) -> None
     for channel in channels:
         await redis.publish(channel, event_json)
     log.debug(
-        "Published event to eventstream", event_json=event_json, channels=channels
+        "Published event to eventstream",
+        event_char_count=len(event_json),
+        channel_count=len(channels),
     )
 
 

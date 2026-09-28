@@ -11,6 +11,7 @@ from typing import Any, Literal, TypeIs, Unpack
 import pytest_asyncio
 
 from polar.enums import (
+    EmailSender,
     PaymentProcessor,
     PayoutAccountType,
     SubscriptionRecurringInterval,
@@ -39,6 +40,7 @@ from polar.models import (
     DiscountProduct,
     DiscountRedemption,
     Dispute,
+    EmailLog,
     Event,
     EventType,
     File,
@@ -108,6 +110,7 @@ from polar.models.discount import (
     DiscountType,
 )
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
+from polar.models.email_log import EmailLogStatus
 from polar.models.event import EventSource
 from polar.models.file import FileServiceTypes
 from polar.models.member import MemberRole
@@ -2109,6 +2112,9 @@ async def create_payment_transaction(
     order: Order | None = None,
     issue_reward: IssueReward | None = None,
     created_at: datetime | None = None,
+    presentment_currency: str = "usd",
+    presentment_amount: int | None = None,
+    exchange_rate: float | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.payment,
@@ -2123,8 +2129,9 @@ async def create_payment_transaction(
         pledge=pledge,
         order=order,
         issue_reward=issue_reward,
-        presentment_currency="usd",
-        presentment_amount=amount,
+        presentment_currency=presentment_currency,
+        presentment_amount=amount if presentment_amount is None else presentment_amount,
+        exchange_rate=exchange_rate,
         created_at=created_at,
     )
     await save_fixture(transaction)
@@ -2336,7 +2343,16 @@ async def create_payout(
     attempts: list[PayoutAttemptStatus] | None = None,
 ) -> Payout:
     if attempts is None:
-        attempts = [PayoutAttemptStatus.succeeded]
+        match status:
+            case PayoutStatus.pending | PayoutStatus.held:
+                attempts = []
+            case PayoutStatus.in_transit:
+                attempts = [PayoutAttemptStatus.in_transit]
+            case PayoutStatus.succeeded:
+                attempts = [PayoutAttemptStatus.succeeded]
+            case PayoutStatus.failed | PayoutStatus.canceled:
+                attempts = [PayoutAttemptStatus.failed]
+
     payout = Payout(
         created_at=created_at,
         account=account,
@@ -2889,3 +2905,23 @@ async def create_support_case_attachment_file(
     )
     await save_fixture(file)
     return file
+
+
+async def create_email_log(
+    save_fixture: SaveFixture,
+    *,
+    created_at: datetime,
+    status: EmailLogStatus = EmailLogStatus.sent,
+) -> EmailLog:
+    email_log = EmailLog(
+        created_at=created_at,
+        status=status,
+        processor=EmailSender.resend,
+        to_email_addr="customer@example.com",
+        from_email_addr="acme@polar.sh",
+        from_name="Acme",
+        subject="Receipt",
+        email_props={},
+    )
+    await save_fixture(email_log)
+    return email_log

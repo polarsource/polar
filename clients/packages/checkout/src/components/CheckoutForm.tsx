@@ -40,7 +40,10 @@ import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
-import { useCheckoutForm } from '../providers/CheckoutFormProvider'
+import {
+  isShownToBuyer,
+  useCheckoutForm,
+} from '../providers/CheckoutFormProvider'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
 import { CheckoutBanner } from './CheckoutBanner'
@@ -263,11 +266,17 @@ const BaseCheckoutForm = ({
       delete data.discount_code
     }
 
-    await confirm({
-      ...data,
-      locale: localeProp,
-      custom_field_data: cleanedFieldData,
-    })
+    try {
+      await confirm({
+        ...data,
+        locale: localeProp,
+        custom_field_data: cleanedFieldData,
+      })
+    } catch (error) {
+      if (!isShownToBuyer(error)) {
+        throw error
+      }
+    }
   }
 
   const validTaxID = !!checkout.customer_tax_id
@@ -457,7 +466,7 @@ const BaseCheckoutForm = ({
                                   : false,
                               }}
                               render={({ field }) => (
-                                <div>
+                                <div className="space-y-2">
                                   <Input
                                     type="text"
                                     autoComplete="billing postal-code"
@@ -488,7 +497,7 @@ const BaseCheckoutForm = ({
                                   : false,
                               }}
                               render={({ field }) => (
-                                <div>
+                                <div className="space-y-2">
                                   <Input
                                     type="text"
                                     autoComplete="billing address-level2"
@@ -524,6 +533,7 @@ const BaseCheckoutForm = ({
                             <>
                               <CountryStatePicker
                                 autoComplete="billing address-level1"
+                                data-testid="billing-state"
                                 country={country}
                                 value={field.value || ''}
                                 onChange={field.onChange}
@@ -559,6 +569,7 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryPicker
+                                data-testid="billing-country"
                                 allowedCountries={
                                   enums.addressInputCountryValues
                                 }
@@ -628,6 +639,7 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="billing organization"
+                                data-testid="business-name"
                                 placeholder={t('checkout.form.businessName')}
                                 {...field}
                                 value={field.value || ''}
@@ -647,6 +659,7 @@ const BaseCheckoutForm = ({
                                 <Input
                                   type="text"
                                   autoComplete="off"
+                                  data-testid="tax-id"
                                   placeholder={`${t('checkout.form.taxId')} (${t('checkout.form.optional')})`}
                                   {...field}
                                   value={field.value || ''}

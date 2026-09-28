@@ -1,12 +1,15 @@
 from collections.abc import AsyncIterator
 from dataclasses import replace
+from datetime import UTC, datetime
 
 import pytest
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalDiscountDuration,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -32,6 +35,7 @@ from polar.merchant_migration.schemas import (
 )
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
+from tests.merchant_migration._helpers import canonical_discount
 
 
 async def aiter_records(
@@ -115,6 +119,9 @@ def build_product(
     )
 
 
+CARD = CanonicalPaymentMethod(source_id="pm_card", type=CanonicalPaymentMethodType.card)
+
+
 def build_subscription(
     *,
     source_id: str = "sub_1",
@@ -126,8 +133,11 @@ def build_subscription(
     paused_collection: bool = False,
     line_item_count: int = 1,
     quantity: int = 1,
-    payment_method: CanonicalPaymentMethod | None = None,
+    payment_method: CanonicalPaymentMethod | None = CARD,
     has_discount: bool = False,
+    discount_source_ids: list[str] | None = None,
+    discount_started_at: datetime | None = None,
+    discount_starts: dict[str, datetime] | None = None,
     currency: str | None = "usd",
 ) -> CanonicalSubscription:
     return CanonicalSubscription(
@@ -144,6 +154,9 @@ def build_subscription(
         quantity=quantity,
         payment_method=payment_method,
         has_discount=has_discount,
+        discount_source_ids=discount_source_ids or [],
+        discount_started_at=discount_started_at,
+        discount_starts=discount_starts or {},
         currency=currency,
     )
 
@@ -444,6 +457,14 @@ class TestPrecheckEngine:
                 ),
                 build_subscription(source_id="sub_paused", paused_collection=True),
                 build_subscription(source_id="sub_trial", trialing=True),
+                build_subscription(source_id="sub_no_pm", payment_method=None),
+                build_subscription(
+                    source_id="sub_bank",
+                    payment_method=CanonicalPaymentMethod(
+                        source_id="pm_bank",
+                        type=CanonicalPaymentMethodType.sepa_debit,
+                    ),
+                ),
                 build_subscription(
                     source_id="sub_link",
                     payment_method=CanonicalPaymentMethod(
@@ -460,6 +481,8 @@ class TestPrecheckEngine:
         assert "subscription_paused_collection" in warnings
         assert "subscription_trialing" in warnings
         assert "payment_method_requires_reentry" in warnings
+        assert "payment_method_missing" in warnings
+        assert "payment_method_not_card" in warnings
         assert report.can_start is True
 
     async def test_copyable_payment_method_does_not_warn(self) -> None:
@@ -473,6 +496,23 @@ class TestPrecheckEngine:
             ]
         )
         assert "payment_method_requires_reentry" not in codes(
+            report, PrecheckIssueLevel.warning
+        )
+
+    async def test_product_restricted_discount_warns_in_report(self) -> None:
+        report = await run(
+            [
+                build_product(
+                    product_source_id="prod_1",
+                    prices=[
+                        build_price(pricing_scheme=CanonicalPricingScheme.tiered),
+                    ],
+                ),
+                canonical_discount(product_source_ids=["prod_1"]),
+            ]
+        )
+
+        assert "discount_products_not_importable" in codes(
             report, PrecheckIssueLevel.warning
         )
 
@@ -510,7 +550,107 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "no_importable_price"
 
-    def test_subscription_with_discount_skipped(self) -> None:
+    def test_subscription_with_importable_discount_imports(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_1"],
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code is None
+        assert items[0].discount_name == "Launch"
+        assert items[0].discount_code == "LAUNCH"
+
+    def test_subscription_keeps_first_importable_coupon(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(source_id="coupon_bad", name="Bad", basis_points=0),
+            canonical_discount(source_id="coupon_ok", name="Keep", code="KEEP"),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_bad", "coupon_ok"],
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].discount_name == "Keep"
+        assert items[0].discount_code == "KEEP"
+
+    def test_discount_classifies_as_importable(self) -> None:
+        records: list[CanonicalRecord] = [
+            canonical_discount(),
+        ]
+
+        items = classify_records(records, PrecheckEntity.discounts, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].title == "Launch"
+        assert items[0].subtitle == "LAUNCH"
+
+    def test_product_restricted_discount_skipped_when_products_are_not_importable(
+        self,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(pricing_scheme=CanonicalPricingScheme.tiered),
+                ],
+            ),
+            canonical_discount(product_source_ids=["prod_1"]),
+        ]
+
+        items = classify_records(records, PrecheckEntity.discounts, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "discount_products_not_importable"
+
+    def test_kept_repeating_coupon_without_its_own_start_is_skipped(self) -> None:
+        first_start = datetime(2023, 11, 14, 22, 13, 20, tzinfo=UTC)
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            canonical_discount(source_id="coupon_bad", name="Bad", basis_points=0),
+            canonical_discount(
+                source_id="coupon_ok",
+                name="Keep",
+                code="KEEP",
+                duration=CanonicalDiscountDuration.repeating,
+                duration_in_months=3,
+            ),
+            build_subscription(
+                source_id="sub_1",
+                has_discount=True,
+                discount_source_ids=["coupon_bad", "coupon_ok"],
+                discount_started_at=first_start,
+                discount_starts={"coupon_bad": first_start},
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_discount_missing_start"
+
+    def test_subscription_with_unresolved_discount_skipped(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
@@ -522,7 +662,7 @@ class TestClassifyRecords:
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "subscription_has_discount"
+        assert items[0].reason_code == "subscription_discount_not_importable"
 
     def test_prices_drop_unsupported_scheme(self) -> None:
         records: list[CanonicalRecord] = [
@@ -549,7 +689,7 @@ class TestClassifyRecords:
         assert by_id["price_metered"].status == PrecheckRecordStatus.skipped
         assert by_id["price_metered"].reason_code == "unsupported_pricing_scheme"
 
-    def test_missing_country_is_importable_and_action_required(self) -> None:
+    def test_missing_country_is_importable_with_info(self) -> None:
         records: list[CanonicalRecord] = [
             build_customer(source_id="cus_1", email="a@example.com", country=None)
         ]
@@ -558,7 +698,66 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "customer_missing_country"
-        assert items[0].reason_level == PrecheckReasonLevel.action_required
+        assert items[0].reason_level == PrecheckReasonLevel.info
+        assert items[0].customer_country is None
+        assert items[0].customer_country_hint is None
+
+    def test_dropped_tax_id_requires_action(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            replace(build_customer(country="FR"), tax_id_dropped=True),
+            build_subscription(source_id="sub_1"),
+        ]
+
+        customer_items = classify_records(records, PrecheckEntity.customers, "usd")
+        subscription_items = classify_records(
+            records, PrecheckEntity.subscriptions, "usd"
+        )
+
+        for item in (customer_items[0], subscription_items[0]):
+            assert item.status == PrecheckRecordStatus.importable
+            assert item.reason_code == "customer_tax_id_dropped"
+            assert item.reason_level == PrecheckReasonLevel.action_required
+
+    def test_payment_method_country_is_used_with_info(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="a@example.com",
+                name="A",
+                country=None,
+                country_hint="DE",
+            ),
+            build_subscription(
+                source_id="sub_1",
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_1",
+                    type=CanonicalPaymentMethodType.card,
+                    billing_country="FR",
+                    card_country="US",
+                ),
+            ),
+        ]
+
+        customer_items = classify_records(records, PrecheckEntity.customers, "usd")
+        subscription_items = classify_records(
+            records, PrecheckEntity.subscriptions, "usd"
+        )
+
+        assert customer_items[0].customer_country == "DE"
+        assert customer_items[0].customer_country_hint == "DE"
+        assert customer_items[0].reason_code == "customer_country_from_payment_method"
+        assert customer_items[0].reason_level == PrecheckReasonLevel.info
+        assert subscription_items[0].customer_country == "DE"
+        assert subscription_items[0].customer_country_hint == "DE"
+        assert (
+            subscription_items[0].reason_code == "customer_country_from_payment_method"
+        )
 
     def test_trialing_subscription_is_importable_with_info(self) -> None:
         records: list[CanonicalRecord] = [
@@ -573,6 +772,35 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "subscription_trialing"
+        assert items[0].reason_level == PrecheckReasonLevel.info
+
+    @pytest.mark.parametrize(
+        ("payment_method", "reason_code"),
+        [
+            (None, "payment_method_missing"),
+            (
+                CanonicalPaymentMethod(
+                    source_id="pm_1", type=CanonicalPaymentMethodType.us_bank_account
+                ),
+                "payment_method_not_card",
+            ),
+        ],
+    )
+    def test_payment_method_the_switch_cant_check_is_importable_with_info(
+        self, payment_method: CanonicalPaymentMethod | None, reason_code: str
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1", payment_method=payment_method),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code == reason_code
         assert items[0].reason_level == PrecheckReasonLevel.info
 
     def test_payment_method_reentry_is_importable_with_info(self) -> None:
@@ -601,7 +829,10 @@ class TestClassifyRecords:
                 product_source_id="prod_1", prices=[build_price(source_id="price_1")]
             ),
             build_customer(source_id="cus_1", email="a@example.com"),
-            build_subscription(source_id="sub_1", has_discount=True),
+            build_subscription(
+                source_id="sub_1",
+                collection_method=CanonicalCollectionMethod.send_invoice,
+            ),
         ]
 
         items = classify_records(records, PrecheckEntity.subscriptions, "usd")
@@ -1043,7 +1274,11 @@ class TestClassifyCascade:
         assert items[0].amount == 1000
 
     def test_subscription_carries_its_product_and_customer_detail(self) -> None:
-        subscription = replace(build_subscription(), automatic_tax=True)
+        subscription = replace(
+            build_subscription(),
+            automatic_tax=True,
+            price_tax_behavior=TaxBehavior.exclusive,
+        )
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1",
@@ -1066,6 +1301,7 @@ class TestClassifyCascade:
         assert items[0].customer_source_id == "cus_1"
         assert items[0].customer_country == "US"
         assert items[0].automatic_tax is True
+        assert items[0].tax_behavior == TaxBehavior.exclusive
 
     def test_subscription_keeps_its_customer_id_when_the_customer_is_missing(
         self,

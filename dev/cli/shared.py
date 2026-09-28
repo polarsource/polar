@@ -17,6 +17,29 @@ from rich.text import Text
 
 from secrets_io import SECRETS_FILE, read_secrets, update_secrets
 
+GRADIENT_START = (0x22, 0xD3, 0xEE)
+GRADIENT_END = (0x4F, 0x7C, 0xFF)
+
+
+def gradient(
+    word: str,
+    start: tuple[int, int, int] = GRADIENT_START,
+    end: tuple[int, int, int] = GRADIENT_END,
+) -> Text:
+    """Bold `word` with a per-letter color gradient from start→end (RGB)."""
+    text = Text()
+    last = max(len(word) - 1, 1)
+    for i, char in enumerate(word):
+        f = i / last
+        r, g, b = (round(s + (e - s) * f) for s, e in zip(start, end))
+        text.append(char, style=f"bold #{r:02x}{g:02x}{b:02x}")
+    return text
+
+
+def gradient_title(text: str) -> Text:
+    """A panel title in the shared cyan→blue gradient."""
+    return gradient(text)
+
 __all__ = ["SECRETS_FILE", "read_secrets", "update_secrets"]
 
 console = Console()

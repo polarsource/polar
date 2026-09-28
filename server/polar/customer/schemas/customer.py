@@ -294,7 +294,7 @@ class TopCustomer(Schema):
     order_count: int = Field(description="The number of paid orders in the period.")
     net_revenue: int = Field(
         description=(
-            "The net revenue from this customer in the period, in cents, "
+            "The net revenue from this customer in the period, in USD cents, "
             "with refunded amounts subtracted."
         )
     )

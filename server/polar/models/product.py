@@ -1,11 +1,12 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
+    TIMESTAMP,
     Boolean,
     ColumnElement,
     ForeignKey,
@@ -13,14 +14,26 @@ from sqlalchemy import (
     Integer,
     Text,
     Uuid,
+    and_,
     case,
+    column,
+    event,
+    exists,
     or_,
     select,
+    table,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, TSVECTOR
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    column_property,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
+from sqlalchemy.orm.attributes import set_committed_value
 
 from polar.enums import MeterInterval, SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
@@ -53,6 +66,24 @@ class ProductBillingType(StrEnum):
 # Alias over the shared `Visibility` enum that keeps the public OpenAPI/SDK
 # component named `ProductVisibility` for backwards compatibility.
 ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility")]
+
+
+# Referenced by table name rather than model to avoid circular imports: these
+# models import from `polar.product` while this module is still loading.
+_orders = table("orders", column("product_id", Uuid))
+_subscriptions = table("subscriptions", column("product_id", Uuid))
+_subscription_updates = table(
+    "subscription_updates",
+    column("product_id", Uuid),
+    column("deleted_at", TIMESTAMP(timezone=True)),
+)
+_trial_redemptions = table("trial_redemptions", column("product_id", Uuid))
+_discount_products = table(
+    "discount_products", column("product_id", Uuid), column("discount_id", Uuid)
+)
+_discounts = table(
+    "discounts", column("id", Uuid), column("deleted_at", TIMESTAMP(timezone=True))
+)
 
 
 class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):
@@ -172,6 +203,43 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
         back_populates="product",
     )
 
+    @declared_attr
+    def is_deletable(cls) -> Mapped[bool]:
+        """
+        Whether the product can be permanently deleted.
+
+        Only products without orders, subscriptions, trials or discounts can be
+        deleted; the others can only be archived.
+        """
+        return column_property(
+            and_(
+                ~exists()
+                .where(_orders.c.product_id == cls.id)
+                .correlate_except(_orders),
+                ~exists()
+                .where(_subscriptions.c.product_id == cls.id)
+                .correlate_except(_subscriptions),
+                ~exists()
+                .where(
+                    _subscription_updates.c.product_id == cls.id,
+                    _subscription_updates.c.deleted_at.is_(None),
+                )
+                .correlate_except(_subscription_updates),
+                ~exists()
+                .where(_trial_redemptions.c.product_id == cls.id)
+                .correlate_except(_trial_redemptions),
+                ~exists()
+                .where(
+                    _discount_products.c.product_id == cls.id,
+                    _discounts.c.id == _discount_products.c.discount_id,
+                    _discounts.c.deleted_at.is_(None),
+                )
+                .correlate_except(_discount_products, _discounts),
+            ),
+            # References come from other flows, never from a product flush
+            expire_on_flush=False,
+        )
+
     def get_price(
         self, id: UUID, *, include_archived: bool = False
     ) -> "ProductPrice | None":
@@ -234,6 +302,13 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
             (cls.is_recurring, ProductBillingType.recurring),
             else_=ProductBillingType.one_time,
         )
+
+
+@event.listens_for(Product, "init")
+def _set_new_product_deletable(target: Product, args: Any, kwargs: Any) -> None:
+    # `is_deletable` is only loaded from the database on query: a product
+    # instantiated in-session has no sales yet, so populate it upfront.
+    set_committed_value(target, "is_deletable", True)
 
 
 products_search_vector_update_function = PGFunction(

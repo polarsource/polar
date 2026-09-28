@@ -38,6 +38,7 @@ from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
+    TaxBehavior,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -57,6 +58,7 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.exceptions import (
+    PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
     ResourceUnavailable,
@@ -482,7 +484,7 @@ class SubscriptionUpdateContext:
         self._previous_is_canceled = subscription.canceled
         self._notify_customer = notify_customer
 
-        self._billing_effect: Literal["invoice", "cycle"] | None = None
+        self._billing_effect: Literal["invoice", "cycle", "cycle_sync"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
 
@@ -502,6 +504,13 @@ class SubscriptionUpdateContext:
         match self._billing_effect:
             case "cycle":
                 await self.service.cycle(self.session, self, self.subscription)
+            case "cycle_sync":
+                await self.service.cycle(
+                    self.session,
+                    self,
+                    self.subscription,
+                    payment_mode=PaymentMode.sync,
+                )
             case "invoice":
                 await self.service._create_subscription_update_order(
                     self.session, self.subscription
@@ -533,11 +542,10 @@ class SubscriptionUpdateContext:
     def mark_unchanged(self) -> None:
         self._has_changes = False
 
-    def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
-        if effect == "cycle":
-            self._billing_effect = "cycle"
-        elif effect == "invoice" and self._billing_effect != "cycle":
-            self._billing_effect = "invoice"
+    def set_billing_effect(
+        self, effect: Literal["invoice", "cycle", "cycle_sync"]
+    ) -> None:
+        self._billing_effect = effect
 
     def add_event_metadata(
         self, **metadata: Unpack[SubscriptionUpdatedMetadataFields]
@@ -861,6 +869,10 @@ class SubscriptionService:
         current_period_end: datetime | None,
         anchor_day: int | None = None,
         user_metadata: dict[str, Any],
+        tax_behavior: TaxBehavior = TaxBehavior.inclusive,
+        tax_exempted: bool = False,
+        discount: Discount | None = None,
+        discount_applied_at: datetime | None = None,
     ) -> Subscription:
         """Create a subscription migrated from another provider. It starts paused
         so nothing bills until the merchant cuts over, and grants no benefits.
@@ -903,7 +915,14 @@ class SubscriptionService:
             currency=price.price_currency,
             user_metadata=user_metadata,
             pending_update=None,
+            tax_behavior=tax_behavior,
+            tax_exempted=tax_exempted,
+            discount=discount,
         )
+        # The discount listener clears applied_at on set; restore the source start
+        # so once/repeating duration does not restart at cutover.
+        if discount is not None:
+            subscription.discount_applied_at = discount_applied_at or start
         subscription.initialize_meter_period(start)
 
         repository = SubscriptionRepository.from_session(session)
@@ -918,7 +937,7 @@ class SubscriptionService:
         current_period_end: datetime,
         trial_end: datetime | None,
         anchor_day: int | None = None,
-        payment_method: PaymentMethod,
+        payment_method: PaymentMethod | None,
         provider: str,
         provider_subscription_id: str,
     ) -> Subscription:
@@ -927,6 +946,9 @@ class SubscriptionService:
         Unlike ``resume``, this starts no fresh period and charges nothing: the
         customer already paid the old provider through ``current_period_end``. It
         skips the resumed side effects too, since nothing paused for them.
+
+        With no ``payment_method``, the first renewal falls back to the
+        customer's default, and goes to dunning when there is none.
         """
         assert subscription.status == SubscriptionStatus.paused
 
@@ -1131,6 +1153,8 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         update_cycle_dates: bool = True,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
     ) -> Subscription:
         if not subscription.billable:
             raise NotBillableSubscription(subscription)
@@ -1274,11 +1298,6 @@ class SubscriptionService:
         reset_at = min(cycle_at, utc_now())
         await self.reset_meters(session, subscription, reset_at=reset_at)
 
-        if not revoke:
-            await self._send_webhook(
-                session, subscription, WebhookEventType.subscription_cycled
-            )
-
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
         elif previous_status == SubscriptionStatus.trialing:
@@ -1286,12 +1305,22 @@ class SubscriptionService:
         else:
             billing_reason = OrderBillingReasonInternal.subscription_cycle
 
-        enqueue_job(
-            "order.create_subscription_order",
-            subscription.id,
-            billing_reason,
-            cutoff=cycle_at.isoformat(),
-        )
+        if payment_mode == PaymentMode.sync:
+            await self._create_subscription_update_order(
+                session, subscription, billing_reason, cutoff=cycle_at
+            )
+        else:
+            enqueue_job(
+                "order.create_subscription_order",
+                subscription.id,
+                billing_reason,
+                cutoff=cycle_at.isoformat(),
+            )
+
+        if not revoke:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_cycled
+            )
 
         return subscription
 
@@ -2243,9 +2272,12 @@ class SubscriptionService:
         if subscription.trialing:
             # End trial immediately
             if trial_end == "now":
+                if not subscription.organization.can_renew_subscriptions:
+                    raise PaymentNotReady(
+                        "Organization is not ready to renew subscriptions"
+                    )
                 subscription.trial_end = subscription.current_period_end = utc_now()
-                # Make sure to cycle the subscription immediately to update status and trigger order
-                ctx.set_billing_effect("cycle")
+                ctx.set_billing_effect("cycle_sync")
             # Set new trial end date
             else:
                 subscription.trial_end = subscription.current_period_end = trial_end
@@ -4427,14 +4459,22 @@ class SubscriptionService:
             await repository.update(subscription)
 
     async def _create_subscription_update_order(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        billing_reason: OrderBillingReasonInternal = (
+            OrderBillingReasonInternal.subscription_update
+        ),
+        *,
+        cutoff: datetime | None = None,
     ) -> Order:
         from polar.order.service import order as order_service
 
         return await order_service.create_subscription_order(
             session,
             subscription,
-            OrderBillingReasonInternal.subscription_update,
+            billing_reason,
+            cutoff=cutoff,
             payment_mode=PaymentMode.sync,
         )
 

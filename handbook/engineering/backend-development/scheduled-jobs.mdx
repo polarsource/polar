@@ -40,24 +40,27 @@ schedule resolution changes.
 
 | Slot (UTC) | Actor | Module | What it does |
 |---|---|---|---|
-| 04:04 | `auth.delete_expired` | `auth` | Delete expired user sessions |
-| 04:08 | `authentication_session.delete_expired` | `auth` | Delete expired authentication sessions |
-| 04:12 | `customer_email_update.delete_expired` | `customer_email_update` | Delete expired customer email change requests |
-| 04:16 | `customer_session.delete_expired` | `customer_session` | Delete expired customer sessions |
-| 04:20 | `customer_session_code.delete_expired` | `customer_portal` | Delete expired customer portal login codes |
-| 04:24 | `email_otp.delete_expired` | `auth` | Delete expired email OTPs |
-| 04:28 | `email_update.delete_expired_record` | `email_update` | Delete expired user email change requests |
-| 04:32 | `external_event.prune` | `external_event` | Prune external events older than 30 days |
-| 04:36 | `member_session.delete_expired` | `member_session` | Delete expired member sessions |
+| 04:03 | `auth.delete_expired` | `auth` | Delete expired user sessions |
+| 04:06 | `authentication_session.delete_expired` | `auth` | Delete expired authentication sessions |
+| 04:10 | `customer_email_update.delete_expired` | `customer_email_update` | Delete expired customer email change requests |
+| 04:13 | `customer_session.delete_expired` | `customer_session` | Delete expired customer sessions |
+| 04:16 | `customer_session_code.delete_expired` | `customer_portal` | Delete expired customer portal login codes |
+| 04:20 | `email_log.prune` | `email` | Prune old email logs |
+| 04:23 | `email_otp.delete_expired` | `auth` | Delete expired email OTPs |
+| 04:26 | `email_update.delete_expired_record` | `email_update` | Delete expired user email change requests |
+| 04:30 | `external_event.prune` | `external_event` | Prune external events older than 30 days |
+| 04:33 | `member_session.delete_expired` | `member_session` | Delete expired member sessions |
+| 04:36 | `oauth2_state.delete_expired` | `auth` | Delete expired OAuth2 states |
 | 04:40 | `oauth2_token.delete_expired` | `oauth2` | Delete expired OAuth2 tokens |
-| 04:44 | `organization.cancel_expired_subscriptions` | `organization` | Cancel subscriptions of denied, blocked or offboarded orgs |
-| 04:48 | `organization.offboard_expired` | `organization` | Fan out offboarding for orgs past the wind-down floor |
-| 04:52 | `processor_fee.sync_stripe_fees` | `transaction` | Import Stripe fee balance transactions |
+| 04:43 | `organization.cancel_expired_subscriptions` | `organization` | Cancel subscriptions of denied, blocked or offboarded orgs |
+| 04:46 | `organization.offboard_expired` | `organization` | Fan out offboarding for orgs past the wind-down floor |
+| 04:50 | `processor_fee.sync_stripe_fees` | `transaction` | Import Stripe fee balance transactions |
+| 04:53 | `webhook_delivery.archive` | `webhook` | Archive old webhook delivery payloads |
 | 04:56 | `webhook_event.archive` | `webhook` | Archive webhook events past the retention period |
 
 Slots avoid `:00`: six recurring jobs already land on the top of the hour. With the current
-fourteen jobs, 04:20 and 04:40 share their minute with the five-minutely job below, and the
-five-second wait sampler runs inside every slot.
+seventeen jobs, 04:10, 04:20, 04:30, 04:40, and 04:50 share their minute with the
+five-minutely job below, and the five-second wait sampler runs inside every slot.
 
 The two `organization` jobs are independent despite sitting next to each other:
 `cancel_expired_subscriptions` only picks up organizations whose terminal status is at least

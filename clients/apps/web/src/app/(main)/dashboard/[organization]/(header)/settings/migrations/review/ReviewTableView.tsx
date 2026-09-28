@@ -4,7 +4,6 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
-import { CATALOG_READ_DURATION } from '../catalogReadCopy'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import {
@@ -21,6 +20,7 @@ import {
   SelectionState,
 } from '../selection'
 import {
+  CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
 } from './reviewCatalog'
@@ -29,6 +29,7 @@ import { ReviewRow } from './reviewRows'
 const numberFormat = new Intl.NumberFormat('en-US')
 
 interface Props {
+  migrationId: string
   filter: ReviewFilter
   onFilterChange: (filter: ReviewFilter) => void
   counts: Record<CountEntity, EntityCount>
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export function ReviewTableView({
+  migrationId,
   filter,
   onFilterChange,
   counts,
@@ -126,6 +128,7 @@ export function ReviewTableView({
         kind={catalogEmpty}
         onRerunPrecheck={onRerunPrecheck}
         rerunning={rerunning}
+        readError={refreshError}
       />
     )
   }
@@ -136,8 +139,8 @@ export function ReviewTableView({
         <Alert
           variant="info"
           loading
-          title="Refreshing from Stripe"
-          description={CATALOG_READ_DURATION}
+          title={CATALOG_REFRESH_COPY.title}
+          description={CATALOG_REFRESH_COPY.description}
         />
       )}
       {refreshError && (
@@ -239,7 +242,11 @@ export function ReviewTableView({
         hide={() => setOpenRow(null)}
         modalContent={
           openRow ? (
-            <ReviewRecordModal row={openRow} onClose={() => setOpenRow(null)} />
+            <ReviewRecordModal
+              row={openRow}
+              migrationId={migrationId}
+              onClose={() => setOpenRow(null)}
+            />
           ) : (
             <Box />
           )

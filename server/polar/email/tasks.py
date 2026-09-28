@@ -1,12 +1,14 @@
 import json
-from typing import Any
+from typing import Annotated, Any
 
 import structlog
 
 from polar.config import settings
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.email_log import EmailLogStatus
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.observability.task_logging import LoggableField
+from polar.worker import AsyncSessionMaker, MaintenanceWindow, TaskPriority, actor
 
 from .react import render_from_json
 from .repository import EmailLogRepository, extract_organization_id
@@ -35,7 +37,7 @@ async def email_send(
     email_headers: dict[str, str] | None,
     reply_to_name: str | None,
     reply_to_email_addr: str | None,
-    template: str | None = None,
+    template: Annotated[str | None, LoggableField] = None,
     props_json: str | None = None,
     attachments: list[Attachment] | None = None,
     deduplication_key: str | None = None,
@@ -88,3 +90,15 @@ async def email_send(
                 )
         except Exception:
             log.exception("Failed to write email log")
+
+
+@actor(
+    actor_name="email_log.prune",
+    cron_trigger=MaintenanceWindow(),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def email_log_prune() -> None:
+    async with AsyncSessionMaker() as session:
+        repository = EmailLogRepository.from_session(session)
+        await repository.delete_before(utc_now() - settings.EMAIL_LOG_RETENTION_PERIOD)

@@ -135,12 +135,7 @@ export async function POST(req: Request) {
       linkedinUrl: data.linkedin,
       companyRecordId: company.id.record_id,
     })
-    console.log(
-      '[startup-program] upserted Person:',
-      person.id.record_id,
-      'email:',
-      data.email,
-    )
+    console.log('[startup-program] upserted Person:', person.id.record_id)
 
     const entry = await addToList({
       listId,

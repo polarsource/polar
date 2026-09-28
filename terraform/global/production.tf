@@ -53,18 +53,6 @@ resource "tfe_variable" "google_service_account_json_production" {
   }
 }
 
-resource "tfe_variable" "openai_api_key_production" {
-  key             = "openai_api_key_production"
-  category        = "terraform"
-  description     = "OpenAI API Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
   key             = "pydantic_ai_gateway_api_key_production"
   category        = "terraform"
@@ -125,18 +113,6 @@ resource "tfe_variable" "backend_discord_proxy_url_production" {
   }
 }
 
-resource "tfe_variable" "backend_discord_webhook_url_production" {
-  key             = "backend_discord_webhook_url_production"
-  category        = "terraform"
-  description     = "Discord Webhook URL for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "backend_posthog_project_api_key_production" {
   key             = "backend_posthog_project_api_key_production"
   category        = "terraform"
@@ -189,18 +165,6 @@ resource "tfe_variable" "backend_logo_dev_publishable_key_production" {
   key             = "backend_logo_dev_publishable_key_production"
   category        = "terraform"
   description     = "Logo.dev Publishable Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "backend_secret_production" {
-  key             = "backend_secret_production"
-  category        = "terraform"
-  description     = "Backend Secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 
@@ -834,30 +798,6 @@ resource "tfe_variable" "worker_sqs_actors_production" {
   }
 }
 
-resource "tfe_variable" "stripe_app_client_id_production" {
-  key             = "stripe_app_client_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client ID for production"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "stripe_app_client_link_id_production" {
-  key             = "stripe_app_client_link_id"
-  category        = "terraform"
-  description     = "Stripe App OAuth client link ID for production"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "turnstile_secret_production" {
   key             = "turnstile_secret"
   category        = "terraform"
@@ -1001,6 +941,42 @@ resource "tfe_variable" "backup_alert_slack_bot_token_production" {
   category        = "terraform"
   description     = "Slack bot token for database backup copy failure alerts"
   sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "linear_api_key_production" {
+  key             = "linear_api_key"
+  category        = "terraform"
+  description     = "Linear API key for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "linear_team_id_production" {
+  key             = "linear_team_id"
+  category        = "terraform"
+  description     = "Linear team ID for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "linear_payout_amount_mismatch_template_id_production" {
+  key             = "linear_payout_amount_mismatch_template_id"
+  category        = "terraform"
+  description     = "Linear payout amount mismatch issue template ID for production"
+  sensitive       = false
   variable_set_id = tfe_variable_set.production.id
 
   lifecycle {

@@ -24,7 +24,7 @@ Create an [organization access token](https://polar.sh/docs/integrate/oat) and u
 the current API version:
 
 ```python
-from polar.v2026_04 import Polar
+from polar.v2026_10 import Polar
 
 polar = Polar("polar_oat_xxx")
 
@@ -39,7 +39,7 @@ Use `PolarAsync` in asynchronous applications:
 ```python
 import asyncio
 
-from polar.v2026_04 import PolarAsync
+from polar.v2026_10 import PolarAsync
 
 
 async def main() -> None:
@@ -59,7 +59,7 @@ block exits.
 For synchronous applications, use `Polar` with `with`:
 
 ```python
-from polar.v2026_04 import Polar
+from polar.v2026_10 import Polar
 
 with Polar("polar_oat_xxx") as polar:
     customer_state = polar.customers.get_state_external("customer_external_id")
@@ -71,7 +71,7 @@ For asynchronous applications, use `PolarAsync` with `async with`:
 ```python
 import asyncio
 
-from polar.v2026_04 import PolarAsync
+from polar.v2026_10 import PolarAsync
 
 
 async def main() -> None:
@@ -127,7 +127,7 @@ Use `deserialize` to convert arbitrary data into a generated SDK model or union 
 
 ```python
 from polar import deserialize
-from polar.v2026_04.outputs import Customer
+from polar.v2026_10.outputs import Customer
 
 customer = deserialize(data, Customer)
 ```
@@ -143,7 +143,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Request
 
-from polar.v2026_04.webhooks import (
+from polar.v2026_10.webhooks import (
     PolarWebhookError,
     PolarWebhookVerificationError,
     validate_event,

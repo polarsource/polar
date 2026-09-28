@@ -10,11 +10,13 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2026_04.errors import (
+    CheckoutLocked,
     CheckoutsClientConfirm403Error,
     CheckoutsClientUpdate403Error,
     CheckoutsUpdate403Error,
     ExpiredCheckoutError,
     HTTPValidationError,
+    NotPermitted,
     PaymentError,
     ResourceNotFound,
 )
@@ -308,6 +310,7 @@ class CheckoutsSync(SyncServiceBase):
 
 
         Raises:
+            NotPermitted: The organization is not allowed to accept payments.
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
@@ -327,6 +330,7 @@ class CheckoutsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             404: ResourceNotFound,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
@@ -354,6 +358,7 @@ class CheckoutsSync(SyncServiceBase):
         Raises:
             CheckoutsClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
+            CheckoutLocked: The checkout session is being processed.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -375,6 +380,7 @@ class CheckoutsSync(SyncServiceBase):
         method_errors = {
             403: CheckoutsClientUpdate403Error,
             404: ResourceNotFound,
+            409: CheckoutLocked,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
@@ -404,6 +410,7 @@ class CheckoutsSync(SyncServiceBase):
             PaymentError: The payment failed.
             CheckoutsClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
+            CheckoutLocked: The checkout session is being processed.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -426,6 +433,7 @@ class CheckoutsSync(SyncServiceBase):
             400: PaymentError,
             403: CheckoutsClientConfirm403Error,
             404: ResourceNotFound,
+            409: CheckoutLocked,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
@@ -705,6 +713,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
 
         Raises:
+            NotPermitted: The organization is not allowed to accept payments.
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
@@ -724,6 +733,7 @@ class CheckoutsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             404: ResourceNotFound,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
@@ -751,6 +761,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Raises:
             CheckoutsClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
+            CheckoutLocked: The checkout session is being processed.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -772,6 +783,7 @@ class CheckoutsAsync(AsyncServiceBase):
         method_errors = {
             403: CheckoutsClientUpdate403Error,
             404: ResourceNotFound,
+            409: CheckoutLocked,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
@@ -801,6 +813,7 @@ class CheckoutsAsync(AsyncServiceBase):
             PaymentError: The payment failed.
             CheckoutsClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
+            CheckoutLocked: The checkout session is being processed.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -823,6 +836,7 @@ class CheckoutsAsync(AsyncServiceBase):
             400: PaymentError,
             403: CheckoutsClientConfirm403Error,
             404: ResourceNotFound,
+            409: CheckoutLocked,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }

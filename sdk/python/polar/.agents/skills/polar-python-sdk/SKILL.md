@@ -26,7 +26,7 @@ Keep production and sandbox access tokens separate. Never expose an organization
 ```python
 import os
 
-from polar.v2026_04 import Polar
+from polar.v2026_10 import Polar
 
 with Polar(
     os.environ["POLAR_ACCESS_TOKEN"],
@@ -42,7 +42,7 @@ Use the async client with an application-lifetime async context in async service
 ```python
 import os
 
-from polar.v2026_04 import PolarAsync
+from polar.v2026_10 import PolarAsync
 
 
 async def load_customer_state() -> None:
@@ -107,7 +107,7 @@ Validate return URLs and never let an untrusted caller choose another customer's
 Prefer a `feature_flag` benefit attached to the relevant products over inferring access from subscription statuses. Reconcile both access grants and access revocations.
 
 ```python
-from polar.v2026_04.outputs import CustomerState
+from polar.v2026_10.outputs import CustomerState
 
 
 def has_feature_access(customer_state: CustomerState, benefit_id: str) -> bool:

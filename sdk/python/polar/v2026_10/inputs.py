@@ -162,7 +162,8 @@ You can store up to **50 key-value pairs**."""
 class BenefitDiscordCreateProperties(typing.TypedDict):
     """Properties to create a benefit of type `discord`."""
 
-    guild_token: str
+    guild_id: str
+    """The ID of the Discord server."""
 
     role_id: str
     """The ID of the Discord role to grant."""
@@ -3723,7 +3724,7 @@ You can store up to **50 key-value pairs**."""
     """Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle."""
 
     trial_end: typing.NotRequired[str | typing.Literal["now"] | None]
-    """Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately."""
+    """Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails."""
 
 
 class SubscriptionUpdateBillingPeriod(typing.TypedDict):

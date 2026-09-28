@@ -38,7 +38,7 @@ describe("sendRequest", () => {
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
     const client = new ClientBase({
       baseUrl: "https://api.polar.sh",
-      version: "2026-04",
+      version: "2026-10",
       accessToken: "polar_at_u_xxx",
       timeout: 10,
     });
@@ -57,7 +57,7 @@ describe("sendRequest", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
     const client = new ClientBase({
       baseUrl: "https://api.polar.sh",
-      version: "2026-04",
+      version: "2026-10",
       accessToken: "polar_at_u_xxx",
       timeout: 10,
     });
@@ -76,7 +76,7 @@ describe("sendRequest", () => {
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
     const client = new ClientBase({
       baseUrl: "https://api.polar.sh",
-      version: "2026-04",
+      version: "2026-10",
       accessToken: "polar_at_u_xxx",
       timeout: 10,
     });
@@ -123,7 +123,7 @@ describe("sendRequest", () => {
   test("does not create a timeout signal when no timeout is configured", async () => {
     const client = new ClientBase({
       baseUrl: "https://api.polar.sh",
-      version: "2026-04",
+      version: "2026-10",
       accessToken: "polar_at_u_xxx",
       timeout: undefined,
     });

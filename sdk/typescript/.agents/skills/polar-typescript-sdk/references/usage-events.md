@@ -7,7 +7,7 @@ Use these instructions whenever implementing metered usage or sending events use
 Send events from trusted server-side code. Use the application's customer ID as `external_customer_id` when the Polar customer has the same `external_id`.
 
 ```typescript
-import { createPolar } from "@polar-sh/sdk/2026-04";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
 const accessToken = process.env.POLAR_ACCESS_TOKEN;
 if (!accessToken) {

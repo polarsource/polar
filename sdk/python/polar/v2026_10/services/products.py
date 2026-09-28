@@ -8,10 +8,12 @@ from polar.base import (
     RequestTimeout,
     SyncServiceBase,
     parse_response_json,
+    parse_response_none,
 )
 from polar.v2026_10.errors import (
     HTTPValidationError,
     NotPermitted,
+    ProductNotDeletable,
     ResourceNotFound,
 )
 from polar.v2026_10.inputs import (
@@ -268,6 +270,55 @@ class ProductsSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Product, method_errors)
+
+    def delete(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> None:
+        """
+        Delete a product.
+
+        Only products without orders, subscriptions, trials or discounts can be deleted.
+        Products that are in use can only be archived.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            NotPermitted: You don't have the permission to delete this product.
+            ResourceNotFound: Product not found.
+            ProductNotDeletable: Product is in use and cannot be deleted.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: ProductNotDeletable,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
 
     def update(
         self,
@@ -602,6 +653,55 @@ class ProductsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Product, method_errors)
+
+    async def delete(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> None:
+        """
+        Delete a product.
+
+        Only products without orders, subscriptions, trials or discounts can be deleted.
+        Products that are in use can only be archived.
+
+        **Scopes**: `products:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            NotPermitted: You don't have the permission to delete this product.
+            ResourceNotFound: Product not found.
+            ProductNotDeletable: Product is in use and cannot be deleted.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/products/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: ProductNotDeletable,
+            422: HTTPValidationError,
+        }
+        return parse_response_none(response, method_errors)
 
     async def update(
         self,

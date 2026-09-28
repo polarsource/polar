@@ -10,6 +10,8 @@ import {
 } from '@polar-sh/orbit'
 import React from 'react'
 
+export type LicenseKeyStatusFilter = schemas['LicenseKeyStatus'] | 'any'
+
 export const licenseKeyStatusDisplayNames: {
   [key in schemas['LicenseKeyStatus']]: string
 } = {
@@ -20,8 +22,8 @@ export const licenseKeyStatusDisplayNames: {
 
 interface LicenseKeyStatusSelectProps {
   statuses: schemas['LicenseKeyStatus'][]
-  value: string
-  onChange: (value: string) => void
+  value: LicenseKeyStatusFilter
+  onChange: (value: LicenseKeyStatusFilter) => void
 }
 
 const LicenseKeyStatusSelect: React.FC<LicenseKeyStatusSelectProps> = ({
@@ -30,7 +32,10 @@ const LicenseKeyStatusSelect: React.FC<LicenseKeyStatusSelectProps> = ({
   onChange,
 }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v as LicenseKeyStatusFilter)}
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select a status" />
       </SelectTrigger>

@@ -1,7 +1,9 @@
 'use client'
 
 import { LicenseKeyModal } from '@/components/Benefit/LicenseKeys/LicenseKeyModal'
-import LicenseKeyStatusSelect from '@/components/Benefit/LicenseKeys/LicenseKeyStatusSelect'
+import LicenseKeyStatusSelect, {
+  LicenseKeyStatusFilter,
+} from '@/components/Benefit/LicenseKeys/LicenseKeyStatusSelect'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { toast } from '@/components/Toast/use-toast'
@@ -10,14 +12,9 @@ import {
   useLicenseKeyRotate,
   useOrganizationLicenseKeys,
 } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  parseSearchParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import {
   InlineModal,
@@ -28,9 +25,19 @@ import {
   Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
 import { useCallback, useState } from 'react'
 import { BenefitPage } from './BenefitPage'
+
+const filterParsers = {
+  status: parseAsStringLiteral<LicenseKeyStatusFilter>([
+    'any',
+    'granted',
+    'disabled',
+    'revoked',
+  ]).withDefault('any'),
+  license_key_id: parseAsString,
+}
 
 export const LicenseKeysPage = ({
   organization,
@@ -39,11 +46,11 @@ export const LicenseKeysPage = ({
   organization: schemas['Organization']
   benefit: schemas['Benefit']
 }) => {
-  const searchParamsMap = useSearchParams()
-  const searchParams = Object.fromEntries(searchParamsMap.entries())
-  const { pagination, sorting } = parseSearchParams(searchParams)
-  const status = searchParams['status'] ?? 'any'
-  const deepLinkedLicenseKeyId = searchParams['license_key_id']
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState()
+
+  const [{ status, license_key_id: deepLinkedLicenseKeyId }, setFilters] =
+    useQueryStates(filterParsers)
 
   const [selectedLicenseKeyId, setSelectedLicenseKeyId] = useState<
     string | null
@@ -56,98 +63,24 @@ export const LicenseKeysPage = ({
     organization_id: organization.id,
     benefit_id: benefit.id,
     ...getAPIParams(pagination, sorting),
-    ...(status !== 'any'
-      ? { status: status as schemas['LicenseKeyStatus'] }
-      : {}),
+    ...(status !== 'any' ? { status } : {}),
   })
 
   const { data: selectedLicenseKey } = useLicenseKey(
     selectedLicenseKeyId ?? undefined,
   )
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    status: string,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-    if (status !== 'any') {
-      params.append('status', status)
-    }
-    if (deepLinkedLicenseKeyId) {
-      params.append('license_key_id', deepLinkedLicenseKeyId)
-    }
-    return params
-  }
-
   const rotateLicenseKey = useLicenseKeyRotate(organization.id)
 
-  const router = useRouter()
-
   const setDeepLinkParam = useCallback(
-    (licenseKeyId: string | null) => {
-      const params = new URLSearchParams(searchParamsMap.toString())
-      if (licenseKeyId) {
-        params.set('license_key_id', licenseKeyId)
-      } else {
-        params.delete('license_key_id')
-      }
-      const query = params.toString()
-      router.replace(
-        `/dashboard/${organization.slug}/products/benefits/${benefit.id}${
-          query ? `?${query}` : ''
-        }`,
-      )
-    },
-    [searchParamsMap, router, organization.slug, benefit.id],
+    (licenseKeyId: string | null) =>
+      setFilters({ license_key_id: licenseKeyId }),
+    [setFilters],
   )
 
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
-        updatedPagination,
-        sorting,
-        status,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
-        pagination,
-        updatedSorting,
-        status,
-      )}`,
-    )
-  }
-
-  const setStatus = (status: string) => {
-    router.push(
-      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
-        pagination,
-        sorting,
-        status,
-      )}`,
-    )
+  const setStatus = (status: LicenseKeyStatusFilter) => {
+    setFilters({ status })
+    resetPage()
   }
 
   const closeLicenseKeyModal = useCallback(() => {

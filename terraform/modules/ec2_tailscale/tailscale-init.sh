@@ -28,7 +28,7 @@ oauth_client_secret=$(AWS_RETRY_MODE=standard AWS_MAX_ATTEMPTS=10 aws secretsman
   --query SecretString \
   --output text)
 
-printf '%s?ephemeral=false&preauthorized=true' "$oauth_client_secret" > "$auth_key_file"
+printf '%s?ephemeral=true&preauthorized=true' "$oauth_client_secret" > "$auth_key_file"
 unset oauth_client_secret
 
 tailscale up \

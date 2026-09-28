@@ -15,7 +15,7 @@ export const checkoutForOrganization = (organizationId: string) =>
 
 export const openOrganizationPortal = (organizationId: string) =>
   authClient.customer.portal({
-    query: { organizationId },
+    fetchOptions: { query: { organizationId } },
   })
 
 export const { signIn, signUp, useSession } = authClient

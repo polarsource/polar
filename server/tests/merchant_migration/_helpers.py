@@ -4,11 +4,15 @@ from typing import Any
 
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxBehavior
 from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
+    CanonicalDiscount,
+    CanonicalDiscountDuration,
+    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -134,6 +138,39 @@ def pan_steps_until(
         )
 
 
+def canonical_discount(
+    *,
+    source_id: str = "coupon_1",
+    name: str = "Launch",
+    discount_type: CanonicalDiscountType = CanonicalDiscountType.percentage,
+    duration: CanonicalDiscountDuration = CanonicalDiscountDuration.forever,
+    duration_in_months: int | None = None,
+    basis_points: int | None = 1000,
+    amounts: dict[str, int] | None = None,
+    code: str | None = "LAUNCH",
+    extra_codes: int = 0,
+    ends_at: datetime | None = None,
+    max_redemptions: int | None = None,
+    product_source_ids: list[str] | None = None,
+) -> CanonicalDiscount:
+    return CanonicalDiscount(
+        source_id=source_id,
+        name=name,
+        discount_type=discount_type,
+        duration=duration,
+        duration_in_months=duration_in_months,
+        basis_points=(
+            basis_points if discount_type == CanonicalDiscountType.percentage else None
+        ),
+        amounts=amounts or {},
+        code=code,
+        extra_codes=extra_codes,
+        ends_at=ends_at,
+        max_redemptions=max_redemptions,
+        product_source_ids=product_source_ids or [],
+    )
+
+
 def canonical_subscription(
     *,
     source_id: str = "sub_1",
@@ -148,12 +185,19 @@ def canonical_subscription(
     line_item_count: int = 1,
     quantity: int = 1,
     has_discount: bool = False,
+    discount_source_ids: list[str] | None = None,
+    discount_started_at: datetime | None = None,
+    discount_starts: dict[str, datetime] | None = None,
     cancel_at_period_end: bool = False,
     trial_end: datetime | None = None,
     stopped_for_migration: bool = False,
     anchor_day: int | None = None,
     payment_method: CanonicalPaymentMethod | None = None,
     currency: str | None = "usd",
+    automatic_tax: bool | None = None,
+    price_tax_behavior: TaxBehavior | None = None,
+    has_tax_rates: bool = False,
+    tax_behavior: TaxBehavior | None = None,
 ) -> CanonicalSubscription:
     """Renews outside the safety window, so a test only states its own field."""
     return CanonicalSubscription(
@@ -170,11 +214,18 @@ def canonical_subscription(
         quantity=quantity,
         payment_method=payment_method,
         has_discount=has_discount,
+        discount_source_ids=discount_source_ids or [],
+        discount_started_at=discount_started_at,
+        discount_starts=discount_starts or {},
         cancel_at_period_end=cancel_at_period_end,
         trial_end=trial_end,
         stopped_for_migration=stopped_for_migration,
         anchor_day=anchor_day,
         currency=currency,
+        automatic_tax=automatic_tax,
+        price_tax_behavior=price_tax_behavior,
+        has_tax_rates=has_tax_rates,
+        tax_behavior=tax_behavior,
     )
 
 

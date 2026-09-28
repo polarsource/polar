@@ -22,6 +22,7 @@ class DiscountProduct(RecordModel):
         Uuid,
         ForeignKey("products.id", ondelete="cascade"),
         primary_key=True,
+        index=True,
     )
 
     @declared_attr

@@ -10,6 +10,16 @@ log = structlog.get_logger()
 BASE_URL = "https://discord.com/api/v10"
 
 
+def is_everyone_role(guild_id: str, role_id: str) -> bool:
+    """
+    In Discord, the role sharing the guild's ID is the `@everyone` role.
+
+    Every member has it implicitly: it can't be added to or removed from a member,
+    and the roles endpoints return a `Unknown Role` error if we try.
+    """
+    return guild_id == role_id
+
+
 class DiscordClient:
     def __init__(self, scheme: Literal["Bot", "Bearer"], token: str) -> None:
         self.client = httpx.AsyncClient(
@@ -73,6 +83,14 @@ class DiscordClient:
         discord_user_id: str,
         role_id: str,
     ) -> None:
+        if is_everyone_role(guild_id, role_id):
+            log.debug(
+                "discord.add_member_role.everyone_role",
+                guild_id=guild_id,
+                discord_user_id=discord_user_id,
+            )
+            return
+
         endpoint = f"/guilds/{guild_id}/members/{discord_user_id}/roles/{role_id}"
 
         response = await self.client.put(endpoint)
@@ -91,6 +109,14 @@ class DiscordClient:
         discord_user_id: str,
         role_id: str,
     ) -> None:
+        if is_everyone_role(guild_id, role_id):
+            log.debug(
+                "discord.remove_member_role.everyone_role",
+                guild_id=guild_id,
+                discord_user_id=discord_user_id,
+            )
+            return
+
         endpoint = f"/guilds/{guild_id}/members/{discord_user_id}/roles/{role_id}"
 
         response = await self.client.delete(endpoint)
@@ -122,4 +148,4 @@ class DiscordClient:
 
 bot_client = DiscordClient("Bot", settings.DISCORD_BOT_TOKEN)
 
-__all__ = ["DiscordClient", "bot_client"]
+__all__ = ["DiscordClient", "bot_client", "is_everyone_role"]

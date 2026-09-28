@@ -58,6 +58,10 @@ class KeyProvider(Protocol):
         """Unwrap a previously wrapped data key."""
         ...
 
+    def decrypt_data_key_sync(self, wrapped: bytes, context: dict[str, str]) -> bytes:
+        """Blocking variant of :meth:`decrypt_data_key` for callers that cannot await."""
+        ...
+
 
 class LocalKeyProvider:
     """Wraps the data key with a static key. Used for local development and CI,
@@ -75,9 +79,12 @@ class LocalKeyProvider:
     async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
         return self.generate_data_key_sync(context)
 
-    async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
+    def decrypt_data_key_sync(self, wrapped: bytes, context: dict[str, str]) -> bytes:
         nonce, ciphertext = wrapped[:NONCE_SIZE], wrapped[NONCE_SIZE:]
         return self._key.decrypt(nonce, ciphertext, _encode_context(context))
+
+    async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
+        return self.decrypt_data_key_sync(wrapped, context)
 
 
 class KMSKeyProvider:
@@ -112,11 +119,14 @@ class KMSKeyProvider:
     async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
         return await asyncio.to_thread(self.generate_data_key_sync, context)
 
-    async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
-        response = await asyncio.to_thread(
-            self._client.decrypt, CiphertextBlob=wrapped, EncryptionContext=context
+    def decrypt_data_key_sync(self, wrapped: bytes, context: dict[str, str]) -> bytes:
+        response = self._client.decrypt(
+            CiphertextBlob=wrapped, EncryptionContext=context
         )
         return response["Plaintext"]
+
+    async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
+        return await asyncio.to_thread(self.decrypt_data_key_sync, wrapped, context)
 
 
 @functools.cache
@@ -170,17 +180,33 @@ class EncryptedString:
         data_key, wrapped = provider.generate_data_key_sync(context)
         return cls(cls._seal(data_key, wrapped, plaintext, context), context)
 
-    async def decrypt(self, *, id: str | None = None) -> str:
+    def _unpack(self, id: str | None) -> tuple[bytes, bytes, bytes, dict[str, str]]:
         context = {**self.context, "id": id} if id is not None else self.context
         version, wrapped, nonce, ciphertext = self.encrypted_value.split(".")
         if version != VERSION:
             raise ValueError(f"Unsupported encryption version: {version}")
-        provider = get_key_provider()
-        data_key = await provider.decrypt_data_key(_b64decode(wrapped), context)
+        return _b64decode(wrapped), _b64decode(nonce), _b64decode(ciphertext), context
+
+    @staticmethod
+    def _open(
+        data_key: bytes, nonce: bytes, ciphertext: bytes, context: dict[str, str]
+    ) -> str:
         plaintext = AESGCM(data_key).decrypt(
-            _b64decode(nonce), _b64decode(ciphertext), _encode_context(context)
+            nonce, ciphertext, _encode_context(context)
         )
         return plaintext.decode("utf-8")
+
+    async def decrypt(self, *, id: str | None = None) -> str:
+        wrapped, nonce, ciphertext, context = self._unpack(id)
+        data_key = await get_key_provider().decrypt_data_key(wrapped, context)
+        return self._open(data_key, nonce, ciphertext, context)
+
+    def decrypt_sync(self, *, id: str | None = None) -> str:
+        """Blocking decryption for callers that cannot await; keep it to
+        low-volume paths since it blocks on the KMS call."""
+        wrapped, nonce, ciphertext, context = self._unpack(id)
+        data_key = get_key_provider().decrypt_data_key_sync(wrapped, context)
+        return self._open(data_key, nonce, ciphertext, context)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}("***", {self.context!r})'

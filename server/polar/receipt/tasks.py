@@ -1,10 +1,12 @@
 import uuid
+from typing import Annotated
 
 import structlog
 
 from polar.exceptions import PolarTaskError
 from polar.locker import Locker, TimeoutLockError
 from polar.logging import Logger
+from polar.observability.task_logging import LoggableField
 from polar.order.repository import OrderRepository
 from polar.worker import (
     AsyncSessionMaker,
@@ -60,5 +62,5 @@ async def _run_receipt_render(order_id: uuid.UUID) -> None:
     queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
     time_limit=180_000,  # 3 min: 120s lock TTL + 60s render budget + headroom
 )
-async def receipt_render(order_id: uuid.UUID) -> None:
+async def receipt_render(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
     await _run_receipt_render(order_id)

@@ -1,7 +1,6 @@
-from datetime import timedelta
-
 from apscheduler.triggers.cron import CronTrigger
 
+from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
@@ -17,4 +16,6 @@ from .repository import ExternalEventRepository
 async def external_event_prune() -> None:
     async with AsyncSessionMaker() as session:
         repository = ExternalEventRepository.from_session(session)
-        await repository.delete_before(utc_now() - timedelta(days=30))
+        await repository.delete_before(
+            utc_now() - settings.EXTERNAL_EVENT_RETENTION_PERIOD
+        )

@@ -14,7 +14,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import Customer, PaymentMethod, Subscription
-from polar.models.email_log import EmailLog, EmailLogStatus
+from polar.models.email_log import EmailLog
 from polar.models.payment_method import card_expiration
 
 
@@ -146,7 +146,6 @@ class PaymentMethodRepository(
             select(EmailLog.id)
             .where(
                 EmailLog.email_template == "payment_method_expiration_reminder",
-                EmailLog.status == EmailLogStatus.sent,
                 EmailLog.deduplication_key
                 == payment_method_expiration_reminder_key_sql(
                     PaymentMethod.id, exp_year, exp_month

@@ -11,6 +11,17 @@ resource "aws_secretsmanager_secret_version" "database_password" {
   secret_string = var.database.password
 }
 
+resource "aws_secretsmanager_secret" "database_password_additional" {
+  count = var.database.additional_user == null ? 0 : 1
+  name  = "polar-${var.environment}-pgbouncer-db-password-2"
+}
+
+resource "aws_secretsmanager_secret_version" "database_password_additional" {
+  count         = var.database.additional_user == null ? 0 : 1
+  secret_id     = aws_secretsmanager_secret.database_password_additional[0].id
+  secret_string = var.database.additional_password
+}
+
 resource "aws_service_discovery_service" "this" {
   name = "pgbouncer"
 
@@ -110,16 +121,31 @@ module "service" {
     arn = var.repository_credentials_arn
   }
 
-  environment_variables = {
-    DB_HOST            = var.database.host
-    DB_PORT            = var.database.port
-    DB_USER            = var.database.user
-    SERVER_TLS_SSLMODE = "verify-full"
-  }
+  # ECS resolves the secret ARNs at task start, so a new secret version alone leaves the
+  # task definition identical and running containers keep the old password. Carrying the
+  # version ids forces a new revision, and PgBouncer ignores the extra variables.
+  environment_variables = merge(
+    {
+      DB_HOST             = var.database.host
+      DB_PORT             = var.database.port
+      DB_USER             = var.database.user
+      DB_PASSWORD_VERSION = aws_secretsmanager_secret_version.database_password.version_id
+      SERVER_TLS_SSLMODE  = "verify-full"
+    },
+    var.database.additional_user == null ? {} : {
+      DB_USER_2             = var.database.additional_user
+      DB_PASSWORD_2_VERSION = aws_secretsmanager_secret_version.database_password_additional[0].version_id
+    },
+  )
 
-  secrets = {
-    DB_PASSWORD = aws_secretsmanager_secret.database_password.arn
-  }
+  secrets = merge(
+    {
+      DB_PASSWORD = aws_secretsmanager_secret.database_password.arn
+    },
+    var.database.additional_user == null ? {} : {
+      DB_PASSWORD_2 = aws_secretsmanager_secret.database_password_additional[0].arn
+    },
+  )
 
   depends_on = [aws_iam_role_policy.execute_command]
 }

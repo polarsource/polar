@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# Cleanup Polar development environment when Conductor archives workspace
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-"$SCRIPT_DIR/cli/dev" docker cleanup --force

@@ -69,7 +69,7 @@ const FeaturedPost = ({ post }: { post: ContentPost }) => (
           </Text>
           {post.description ? (
             <Box display="block">
-              <Text variant="heading-s" color="muted" wrap="pretty">
+              <Text variant="heading-s" as="p" color="muted" wrap="pretty">
                 {post.description}
               </Text>
             </Box>

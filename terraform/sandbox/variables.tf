@@ -14,6 +14,17 @@ variable "ghcr_username" {
   sensitive   = true
 }
 
+variable "postgres_user" {
+  description = "Postgres user"
+  type        = string
+}
+
+variable "postgres_password" {
+  description = "Postgres password"
+  type        = string
+  sensitive   = true
+}
+
 variable "google_client_id_sandbox" {
   description = "Google Client ID for sandbox"
   type        = string
@@ -28,12 +39,6 @@ variable "google_client_secret_sandbox" {
 
 variable "google_service_account_json" {
   description = "Google service account JSON key for fetching the organization review AUP"
-  type        = string
-  sensitive   = true
-}
-
-variable "openai_api_key_sandbox" {
-  description = "OpenAI API Key for sandbox"
   type        = string
   sensitive   = true
 }
@@ -90,12 +95,6 @@ variable "backend_resend_webhook_secret" {
 
 variable "backend_logo_dev_publishable_key_sandbox" {
   description = "Logo.dev Publishable Key for sandbox"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_secret_sandbox" {
-  description = "Backend Secret for sandbox"
   type        = string
   sensitive   = true
 }
@@ -427,18 +426,6 @@ variable "worker_sqs_actors" {
   default     = "[\"dummy\"]"
 }
 
-variable "stripe_app_client_id" {
-  description = "Stripe App OAuth client ID"
-  type        = string
-  default     = ""
-}
-
-variable "stripe_app_client_link_id" {
-  description = "Stripe App OAuth client link ID"
-  type        = string
-  default     = ""
-}
-
 variable "turnstile_secret" {
   description = "Cloudflare Turnstile secret"
   type        = string
@@ -493,4 +480,23 @@ variable "private_backoffice_tailscale_ip" {
     )
     error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
   }
+}
+
+variable "linear_api_key" {
+  description = "Linear API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "linear_team_id" {
+  description = "Linear team ID"
+  type        = string
+  default     = ""
+}
+
+variable "linear_payout_amount_mismatch_template_id" {
+  description = "Linear payout amount mismatch issue template ID"
+  type        = string
+  default     = ""
 }

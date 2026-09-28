@@ -1,7 +1,8 @@
 """Recompute OAuth2Client secret hashes under the current secret.
 
-No lookup reads these two columns, so nothing migrates them. This script
-recomputes them from the plaintext on the row.
+Lookups read these two columns, but none can rewrite a stale hit:
+``check_client_secret`` is a model method and holds no session. This script
+rewrites them, from the ciphertext on the row.
 
 Run once per rotation, after naming a new current secret and before retiring
 the old one.
@@ -49,12 +50,17 @@ def _stale_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
     )
 
 
-def _rehash(client: OAuth2Client) -> None:
+async def _rehash(client: OAuth2Client) -> None:
+    row_id = str(client.id)
     if client.client_secret_hash is not None:
-        client.client_secret_hash = OAuth2Client.hash_secret(client.client_secret)
+        assert client.client_secret_encrypted is not None
+        client.client_secret_hash = OAuth2Client.hash_secret(
+            await client.client_secret_encrypted.decrypt(id=row_id)
+        )
     if client.registration_access_token_hash is not None:
+        assert client.registration_access_token_encrypted is not None
         client.registration_access_token_hash = OAuth2Client.hash_secret(
-            client.registration_access_token
+            await client.registration_access_token_encrypted.decrypt(id=row_id)
         )
 
 
@@ -141,7 +147,7 @@ async def run_rehash(
                     break
 
                 for client in clients:
-                    _rehash(client)
+                    await _rehash(client)
 
                 await session.commit()
                 session.expunge_all()

@@ -1,7 +1,9 @@
 import uuid
+from typing import Annotated
 
 from polar.exceptions import PolarTaskError
 from polar.integrations.resend.service import resend as resend_service
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import UserRepository
@@ -17,8 +19,11 @@ class UserDoesNotExist(UserTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="user.on_after_signup", priority=TaskPriority.LOW)
-async def user_on_after_signup(user_id: uuid.UUID) -> None:
+@actor(
+    actor_name="user.on_after_signup",
+    priority=TaskPriority.LOW,
+)
+async def user_on_after_signup(user_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = UserRepository.from_session(session)
         user = await repository.get_by_id(user_id)

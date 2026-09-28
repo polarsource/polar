@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from polar.exceptions import PolarTaskError
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -41,7 +44,7 @@ async def enqueue_invariants() -> None:
     priority=TaskPriority.HIGH,
     max_retries=0,
 )
-async def check_invariant(invariant_cls_name: str) -> None:
+async def check_invariant(invariant_cls_name: Annotated[str, LoggableField]) -> None:
     try:
         invariant_cls = next(
             cls

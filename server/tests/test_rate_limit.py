@@ -232,14 +232,18 @@ class TestAuthenticate:
 
 
 def _select_rule(
-    rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
+    rules: dict[str, Sequence[Rule]],
+    path: str,
+    group: RateLimitGroup,
+    method: str = "GET",
 ) -> Rule | None:
-    """Mirror the rule selection in ratelimit/core.py for GET requests."""
+    """Mirror the rule selection in ratelimit/core.py."""
+    method = method.lower()
     for pattern, pattern_rules in rules.items():
         if not re.compile(pattern).match(path):
             continue
         for rule in pattern_rules:
-            if rule.group == group and rule.method.lower() in ("get", "*"):
+            if rule.group == group and rule.method.lower() in (method, "*"):
                 return rule
     return None
 
@@ -321,3 +325,47 @@ class TestCompassAssistantZone:
             f"Group {group.value!r} resolved to zone {rule.zone!r} — it would "
             f"fall through to the catch-all allowance"
         )
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize("path", ["/v1/refunds", "/v1/refunds/"])
+@pytest.mark.parametrize(
+    "group",
+    [
+        RateLimitGroup.default,
+        RateLimitGroup.web,
+        RateLimitGroup.restricted,
+        RateLimitGroup.pending_auth,
+    ],
+)
+class TestRefundsPostZone:
+    """Refund creation is capped for normal groups. Elevated is omitted so it
+    falls through to the catch-all `api` zone."""
+
+    def test_post_resolves_to_refunds_zone(
+        self, rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, path, group, method="POST")
+        assert rule is not None, (
+            f"No rule selected for path={path!r} group={group.value!r} POST"
+        )
+        assert rule.zone == "refunds"
+        assert rule.hour == 10
+        assert rule.block_time == 3600
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+class TestRefundsElevatedAndGetFallThrough:
+    def test_elevated_post_falls_through_to_api(
+        self, rules: dict[str, Sequence[Rule]]
+    ) -> None:
+        rule = _select_rule(
+            rules, "/v1/refunds/", RateLimitGroup.elevated, method="POST"
+        )
+        assert rule is not None
+        assert rule.zone == "api"
+
+    def test_get_uses_api_zone(self, rules: dict[str, Sequence[Rule]]) -> None:
+        rule = _select_rule(rules, "/v1/refunds/", RateLimitGroup.default, method="GET")
+        assert rule is not None
+        assert rule.zone == "api"

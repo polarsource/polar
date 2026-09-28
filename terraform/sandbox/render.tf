@@ -56,8 +56,10 @@ locals {
   db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string)[0])
   db_port          = "5432"
   # db_name          = data.render_postgres.db.database_name
-  db_user     = data.render_postgres.db.database_user
-  db_password = data.render_postgres.db.connection_info.password
+
+  # What the API, the workers and the Lambda workers connect as.
+  db_user     = var.postgres_user
+  db_password = var.postgres_password
 
   # Read replica connection info
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
@@ -96,6 +98,11 @@ import {
 import {
   to = module.sandbox.cloudflare_dns_record.resend_spf_txt
   id = "22bcd1b07ec25452aab472486bc8df94/eb6326cb55c1a417eacc2f984c9ecf88"
+}
+
+import {
+  to = module.sandbox.cloudflare_dns_record.resend_mail
+  id = "22bcd1b07ec25452aab472486bc8df94/af131d86b4ecaae21255fb5a69434984"
 }
 
 module "sandbox" {
@@ -168,7 +175,7 @@ module "sandbox" {
   email_from_domain  = local.backend_config.email_from_domain
 
   memory_profile_config = {
-    s3_bucket_name = "polar-sandbox-logs"
+    s3_bucket_name = local.diagnostics_bucket_name
   }
 
   depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis, render_redis.redis_sandbox]

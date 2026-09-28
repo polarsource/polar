@@ -53,7 +53,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
-from polar.tax.tax_id import InvalidTaxID, validate_tax_id
+from polar.tax.tax_id import InvalidTaxID, TaxID, validate_tax_id
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -340,6 +340,7 @@ class CustomerService:
         name: str | None = None,
         billing_address: Address | None = None,
         stripe_customer_id: str | None = None,
+        tax_id: TaxID | None = None,
         send_webhooks: bool = False,
     ) -> Customer:
         """Create a customer for a known organization (internal flows)."""
@@ -362,6 +363,7 @@ class CustomerService:
             name=name,
             billing_address=billing_address,
             stripe_customer_id=stripe_customer_id,
+            tax_id=tax_id,
             organization=organization,
         )
 

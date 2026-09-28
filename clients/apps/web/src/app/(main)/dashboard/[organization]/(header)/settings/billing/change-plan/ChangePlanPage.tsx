@@ -37,6 +37,13 @@ const PLAN_CHANGE_STATUSES: schemas['OrganizationStatus'][] = [
   'snoozed',
 ]
 
+// Offboarding orgs are past review, so the account-review notice doesn't
+// apply to them.
+const OFFBOARDING_STATUSES: schemas['OrganizationStatus'][] = [
+  'offboarding',
+  'offboarded',
+]
+
 export default function ChangePlanPage({
   organization,
 }: {
@@ -56,6 +63,13 @@ export default function ChangePlanPage({
   const startCheckout = useStartSubscriptionCheckout(organization.id)
 
   const blockChanges = !PLAN_CHANGE_STATUSES.includes(organization.status)
+  const isOffboarding = OFFBOARDING_STATUSES.includes(organization.status)
+
+  // Downgrading to the free plan cancels the subscription, which the backend
+  // never gates on the organization's status: an org being offboarded must
+  // still be able to stop paying. Only switches to a paid plan are blocked.
+  const isPlanBlocked = (plan: schemas['OrganizationPlan']) =>
+    blockChanges && (plan.price?.amount ?? 0) > 0
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const {
@@ -296,7 +310,7 @@ export default function ChangePlanPage({
                   key={key}
                   plan={plan}
                   isCurrent={key === currentKey}
-                  isLocked={blockChanges}
+                  isLocked={isPlanBlocked(plan)}
                   isSelected={key === selectedPlanId}
                   onSelect={() => setSelectedPlanId(key)}
                   startupProgramOffer={
@@ -316,14 +330,22 @@ export default function ChangePlanPage({
             padding="l"
           >
             <Text>
-              Your organization must{' '}
-              <Link
-                href={`/dashboard/${organization.slug}/finance/account`}
-                className="underline"
-              >
-                complete the account review
-              </Link>{' '}
-              and be approved before changing plan.
+              {isOffboarding ? (
+                'Your organization is being offboarded and can no longer switch to another paid plan.'
+              ) : (
+                <>
+                  Your organization must{' '}
+                  <Link
+                    href={`/dashboard/${organization.slug}/finance/account`}
+                    className="underline"
+                  >
+                    complete the account review
+                  </Link>{' '}
+                  and be approved before switching to another paid plan.
+                </>
+              )}
+              {!isCurrentPlanFree &&
+                ' You can still cancel your subscription and move to the free plan.'}
             </Text>
           </Box>
         )}
@@ -332,7 +354,7 @@ export default function ChangePlanPage({
           <Box flexDirection="row-reverse" columnGap="s">
             <Button
               onClick={showConfirm}
-              disabled={isSubmitting || blockChanges}
+              disabled={isSubmitting || isPlanBlocked(selectedPlan)}
               loading={isSubmitting}
               size="lg"
             >

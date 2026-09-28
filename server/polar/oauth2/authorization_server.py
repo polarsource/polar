@@ -1,5 +1,4 @@
 import json
-import secrets
 import time
 import typing
 import uuid
@@ -21,7 +20,7 @@ from authlib.oauth2.rfc7592 import (
 )
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from authlib.oauth2.rfc9207 import IssuerParameter as _IssuerParameter
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
@@ -81,12 +80,13 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     def generate_client_registration_info(
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> dict[str, str]:
-        assert client.registration_access_token is not None
+        registration_access_token = client.get_registration_access_token_sync()
+        assert registration_access_token is not None
         return {
             "registration_client_uri": str(
                 request.url_for("oauth2:get_client", client_id=client.client_id)
             ),
-            "registration_access_token": client.registration_access_token,
+            "registration_access_token": registration_access_token,
         }
 
     def generate_client_id(self, request: StarletteJsonRequest) -> str:
@@ -129,6 +129,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         client_metadata: dict[str, typing.Any],
         request: StarletteJsonRequest,
     ) -> OAuth2Client:
+        client_secret = client_info.pop("client_secret")
         oauth2_client = OAuth2Client(**client_info)
         oauth2_client.set_client_metadata(client_metadata)
 
@@ -136,7 +137,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
             oauth2_client.user_id = request.user.id
 
         # Sync: must run while we hold the plaintext, and authlib can't await.
-        oauth2_client.set_client_secret_sync(oauth2_client.client_secret)
+        oauth2_client.set_client_secret_sync(client_secret)
         oauth2_client.set_registration_access_token_sync(
             generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )
@@ -152,11 +153,13 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
     def generate_client_registration_info(
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> dict[str, str]:
+        registration_access_token = client.get_registration_access_token_sync()
+        assert registration_access_token is not None
         return {
             "registration_client_uri": str(
                 request.url_for("oauth2:get_client", client_id=client.client_id)
             ),
-            "registration_access_token": client.registration_access_token,
+            "registration_access_token": registration_access_token,
         }
 
     def create_read_client_response(
@@ -214,9 +217,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             credential is None
             or (
                 isinstance(credential, str)
-                and not secrets.compare_digest(
-                    client.registration_access_token, credential
-                )
+                and not client.check_registration_access_token(credential)
             )
             or (isinstance(credential, User) and client.user_id != credential.id)
         ):
@@ -238,6 +239,18 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
         self, client: OAuth2Client, request: StarletteJsonRequest
     ) -> None:
         client.set_deleted_at()
+        now = int(time.time())
+        self.server.session.execute(
+            update(OAuth2Token)
+            .where(
+                OAuth2Token.client_id == client.client_id,
+                or_(
+                    OAuth2Token.access_token_revoked_at == 0,
+                    OAuth2Token.refresh_token_revoked_at == 0,
+                ),
+            )
+            .values(access_token_revoked_at=now, refresh_token_revoked_at=now)
+        )
         self.server.session.flush()
 
     def update_client(

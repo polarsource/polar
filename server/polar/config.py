@@ -116,6 +116,7 @@ class Settings(BaseSettings):
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=90)
+    WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD: timedelta = timedelta(days=90)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
     WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
@@ -253,6 +254,9 @@ class Settings(BaseSettings):
     EMAIL_FROM_LOCAL: str = "mail"
     EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
     EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
+    EMAIL_LOG_RETENTION_PERIOD: timedelta = timedelta(days=660)
+
+    EXTERNAL_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
 
     TURNSTILE_SECRET: str = ""
 
@@ -383,6 +387,10 @@ class Settings(BaseSettings):
     # S3 logs storage
     S3_LOGS_BUCKET_NAME: str | None = None
 
+    LINEAR_API_KEY: str | None = None
+    LINEAR_TEAM_ID: str | None = None
+    LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID: str | None = None
+
     # Plain
     PLAIN_REQUEST_SIGNING_SECRET: str | None = None
     PLAIN_TOKEN: str | None = None
@@ -410,6 +418,10 @@ class Settings(BaseSettings):
     # (AWS_JWKS_KMS_KEY_ID); elsewhere the key set in JWKS signs in process.
     AWS_JWKS_KMS_KEY_ID: str | None = None
     AWS_JWKS_KMS_PUBLISHED_KEY_IDS: list[str] = []
+
+    # Token hashing. Unset, HASH_SECRETS and CURRENT_HASH_SECRET_ID are read
+    # instead.
+    AWS_HASH_SECRET_ARN: str | None = None
 
     # Worker SQS/Lambda execution engine (POC)
     # When enabled, jobs enqueued for an allowlisted actor are routed to an

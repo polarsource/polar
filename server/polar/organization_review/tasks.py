@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
 import structlog
 
@@ -16,6 +17,7 @@ from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessageAuthorKind,
 )
+from polar.observability.task_logging import LoggableField
 from polar.organization.repository import (
     OrganizationRepository,
 )
@@ -136,10 +138,12 @@ async def _persist_agent_result(
     debounce_min_threshold=300,
 )
 async def run_review_agent(
-    organization_id: uuid.UUID,
-    context: str = ReviewContext.THRESHOLD,
-    auto_approve_eligible: bool = False,
-    plain_thread_id: str | None = None,  # kept for in-flight job compatibility
+    organization_id: Annotated[uuid.UUID, LoggableField],
+    context: Annotated[str, LoggableField] = ReviewContext.THRESHOLD,
+    auto_approve_eligible: Annotated[bool, LoggableField] = False,
+    plain_thread_id: Annotated[
+        str | None, LoggableField
+    ] = None,  # kept for in-flight job compatibility
 ) -> None:
     """Run the organization review agent as a background task.
 
@@ -359,7 +363,7 @@ async def run_review_agent(
     max_retries=4,
     min_backoff=30_000,
 )
-async def review_appeal(organization_id: uuid.UUID) -> None:
+async def review_appeal(organization_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Auto-review a submitted appeal with the AI agent.
 
     The merchant's appeal is decisive: APPROVE activates the org, DENY closes
@@ -427,7 +431,7 @@ async def review_appeal(organization_id: uuid.UUID) -> None:
     actor_name="organization_review.post_appeal_greeting",
     priority=TaskPriority.LOW,
 )
-async def post_appeal_greeting(case_id: uuid.UUID) -> None:
+async def post_appeal_greeting(case_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Post the automated greeting to a freshly opened human-review case."""
     async with AsyncSessionMaker() as session:
         case = await SupportCaseRepository.from_session(session).get_by_id(case_id)

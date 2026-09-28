@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import and_, or_, select
@@ -11,6 +12,7 @@ from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Event, Meter, MeterEvent
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 
@@ -38,8 +40,12 @@ async def meter_enqueue_billing() -> None:
         await meter_service.enqueue_billing(session)
 
 
-@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW, max_retries=0)
-async def meter_billing_entries(meter_id: uuid.UUID) -> None:
+@actor(
+    actor_name="meter.billing_entries",
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def meter_billing_entries(meter_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)
         # Load the watermark after acquiring the meter lock. A joinedload can return
@@ -63,11 +69,14 @@ BACKFILL_BATCH_SIZE = 1000
 BACKFILL_INSERT_CHUNK_SIZE = 500
 
 
-@actor(actor_name="meter.backfill_events", priority=TaskPriority.LOW)
+@actor(
+    actor_name="meter.backfill_events",
+    priority=TaskPriority.LOW,
+)
 async def meter_backfill_events(
-    meter_id: uuid.UUID,
-    last_ingested_at: str | None = None,
-    last_event_id: str | None = None,
+    meter_id: Annotated[uuid.UUID, LoggableField],
+    last_ingested_at: Annotated[str | None, LoggableField] = None,
+    last_event_id: Annotated[str | None, LoggableField] = None,
 ) -> None:
     """Backfill meter_events for a meter from historical events."""
     async with AsyncSessionMaker() as session:

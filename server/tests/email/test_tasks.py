@@ -1,12 +1,26 @@
+import contextlib
+from collections.abc import AsyncIterator
+from datetime import timedelta
+
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
+from polar.config import settings
+from polar.email.repository import EmailLogRepository
 from polar.email.sender import SendEmailError
-from polar.email.tasks import email_send
+from polar.email.tasks import email_log_prune, email_send
 from polar.enums import EmailSender
+from polar.kit.utils import utc_now
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_email_log
+
+
+@contextlib.asynccontextmanager
+async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
+    yield session
 
 
 @pytest.mark.asyncio
@@ -259,3 +273,30 @@ class TestEmailSend:
             )
 
         log_exception.assert_called_once_with("Failed to write email log")
+
+
+@pytest.mark.asyncio
+class TestEmailLogPrune:
+    async def test_deletes_logs_past_retention_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.email.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        retention = settings.EMAIL_LOG_RETENTION_PERIOD
+        expired = await create_email_log(
+            save_fixture, created_at=utc_now() - retention - timedelta(days=1)
+        )
+        retained = await create_email_log(
+            save_fixture, created_at=utc_now() - retention + timedelta(days=1)
+        )
+
+        await email_log_prune()
+
+        repository = EmailLogRepository.from_session(session)
+        assert await repository.get_by_id(expired.id) is None
+        assert await repository.get_by_id(retained.id) is not None

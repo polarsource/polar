@@ -5,7 +5,7 @@ import structlog
 from polar.account.repository import AccountRepository
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
-from polar.models import Account, IssueReward, Order, Pledge, Transaction
+from polar.models import Account, IssueReward, Order, Pledge, Refund, Transaction
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
@@ -125,6 +125,7 @@ class BalanceTransactionService(BaseTransactionService):
         platform_fee_type: PlatformFeeType | None = None,
         outgoing_incurred_by: Transaction | None = None,
         incoming_incurred_by: Transaction | None = None,
+        refund: Refund | None = None,
     ) -> tuple[Transaction, Transaction]:
         currency = "usd"  # FIXME: Main Polar currency
 
@@ -155,6 +156,7 @@ class BalanceTransactionService(BaseTransactionService):
             order_id=outgoing.order_id,
             balance_reversal_transaction=incoming,
             incurred_by_transaction=outgoing_incurred_by,
+            refund=refund,
         )
         incoming_reversal = Transaction(
             id=generate_uuid(),
@@ -172,6 +174,7 @@ class BalanceTransactionService(BaseTransactionService):
             order_id=outgoing.order_id,
             balance_reversal_transaction=outgoing,
             incurred_by_transaction=incoming_incurred_by,
+            refund=refund,
         )
 
         session.add(outgoing_reversal)

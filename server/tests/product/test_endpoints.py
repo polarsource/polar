@@ -6,6 +6,7 @@ from httpx import AsyncClient
 
 from polar.models import (
     Benefit,
+    Customer,
     Organization,
     Product,
     ProductPriceFixed,
@@ -16,6 +17,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
+    create_order,
     create_product,
     create_product_unit_based,
     set_product_benefits,
@@ -565,3 +567,65 @@ class TestUpdateProductBenefits:
 
         json = response.json()
         assert len(json["benefits"]) == 1
+
+
+@pytest.mark.asyncio
+class TestDeleteProduct:
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.delete(f"/v1/products/{product.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.delete(f"/v1/products/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.delete(f"/v1/products/{product_organization_second.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_deletable(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_order(save_fixture, customer=customer, product=product)
+
+        response = await client.get(f"/v1/products/{product.id}")
+        assert response.status_code == 200
+        assert response.json()["is_deletable"] is False
+
+        response = await client.delete(f"/v1/products/{product.id}")
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+        assert response.status_code == 200
+        assert response.json()["is_deletable"] is True
+
+        response = await client.delete(f"/v1/products/{product.id}")
+
+        assert response.status_code == 204
+
+        response = await client.get(f"/v1/products/{product.id}")
+        assert response.status_code == 404

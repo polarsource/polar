@@ -59,7 +59,9 @@ jobs:
             }
 
             const isEmergency = (pr) => pr.labels.nodes.some((label) => label.name === 'emergency-merge');
-            const hasHumanApproval = (pr) => pr.reviews.nodes.some((r) => r.author?.__typename === 'User');
+            const APPROVER_BOTS = ['cubic-dev-ai'];
+            const hasApproval = (pr) =>
+              pr.reviews.nodes.some((r) => r.author?.__typename === 'User' || APPROVER_BOTS.includes(r.author?.login));
             const summarize = (pr) => ({
               number: pr.number,
               title: pr.title,
@@ -68,11 +70,11 @@ jobs:
               login: pr.author?.login ?? null,
             });
             const emergency = prs.filter(isEmergency).map(summarize);
-            const unapproved = prs.filter((pr) => !isEmergency(pr) && !hasHumanApproval(pr)).map(summarize);
+            const unapproved = prs.filter((pr) => !isEmergency(pr) && !hasApproval(pr)).map(summarize);
 
             core.info(
               `${prs.length} PR(s) merged ${start}..${end}: ${emergency.length} emergency merge(s), ` +
-              `${unapproved.length} other without human approval`,
+              `${unapproved.length} other without approval`,
             );
             core.setOutput('report', JSON.stringify({ emergency, unapproved }));
             core.setOutput('count', String(emergency.length + unapproved.length));
@@ -109,7 +111,7 @@ jobs:
               lines.push('*Emergency merges* (`/emergency` — skipped review and checks)', ...emergency.map(line));
             }
             if (unapproved.length) {
-              lines.push('*Other merges without a human approval*', ...unapproved.map(line));
+              lines.push('*Other merges without an approval* (no engineer or Cubic review)', ...unapproved.map(line));
             }
 
             const section = (text) => ({ type: 'section', text: { type: 'mrkdwn', text } });
@@ -128,8 +130,9 @@ jobs:
             blocks.push(section(chunk.join('\n')));
             blocks.push(
               section(
-                `<@${process.env.REVIEWER_SLACK_ID}> please review the list, and check if any emergency merge ` +
-                'warrants an incident or postmortem. If not, react with :white_check_mark:.',
+                `<@${process.env.REVIEWER_SLACK_ID}> please look through the emergency merges. If they all look ` +
+                'fine, react with :white_check_mark:. If one of them caused an incident or affected customers, ' +
+                'it needs a postmortem.',
               ),
             );
 

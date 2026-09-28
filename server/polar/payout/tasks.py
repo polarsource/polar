@@ -1,19 +1,18 @@
 import uuid
-from time import monotonic
+from typing import Annotated
 
 import structlog
-from sqlalchemy.exc import DBAPIError
 
 from polar.exceptions import PolarTaskError
-from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.payout import PayoutStatus
+from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
     TaskPriority,
+    TaskQueue,
     actor,
-    get_message_timestamp,
 )
 
 from .repository import PayoutRepository
@@ -36,52 +35,8 @@ class PayoutDoesNotExist(PayoutTaskError):
         super().__init__(message)
 
 
-@actor(
-    actor_name="payout.sample_database_waits",
-    cron_trigger=CronTrigger(second="*/5"),
-    priority=TaskPriority.LOW,
-    max_age=60_000,
-    max_retries=0,
-)
-async def sample_database_waits() -> None:
-    started_at = monotonic()
-    queue_delay_seconds = (utc_now() - get_message_timestamp()).total_seconds()
-    # Observe the primary: replica activity cannot explain payout UPDATE waits.
-    async with AsyncSessionMaker() as session:
-        repository = PayoutRepository(session)
-        samples = await repository.sample_database_waits()
-        for sample in samples:
-            log.info("payout.database_wait_sample", **sample)
-        statistics = await repository.sample_database_statistics()
-        log.info(
-            "payout.database_statistics",
-            **statistics,
-            queue_delay_seconds=queue_delay_seconds,
-            capture_duration_seconds=monotonic() - started_at,
-            slow_update_count=len(samples),
-        )
-        if not samples:
-            log.info("payout.database_wait_no_samples")
-        if statistics["statement_statistics_available"]:
-            try:
-                statement_started_at = monotonic()
-                async with session.begin_nested():
-                    query_statistics = await repository.sample_payout_query_statistics()
-                log.info(
-                    "payout.database_query_statistics",
-                    sampled_at=utc_now(),
-                    database_name=statistics["database_name"],
-                    capture_duration_seconds=monotonic() - statement_started_at,
-                    statements=[dict(row) for row in query_statistics],
-                )
-            except DBAPIError:
-                log.warning(
-                    "payout.database_query_statistics_unavailable", exc_info=True
-                )
-
-
 @actor(actor_name="payout.created", priority=TaskPriority.LOW)
-async def payout_created(payout_id: uuid.UUID) -> None:
+async def payout_created(payout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     # Event-only hook (fires for held payouts too); the Stripe transfer is the
     # separate `payout.transfer` task.
     async with AsyncSessionMaker() as session:
@@ -92,7 +47,7 @@ async def payout_created(payout_id: uuid.UUID) -> None:
 
 
 @actor(actor_name="payout.transfer", priority=TaskPriority.LOW)
-async def payout_transfer(payout_id: uuid.UUID) -> None:
+async def payout_transfer(payout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         # Lock the payout row up front: a queued transfer can race a cancel
@@ -118,9 +73,13 @@ async def trigger_stripe_payouts() -> None:
         await payout_service.trigger_stripe_payouts(session)
 
 
-@actor(actor_name="payout.trigger_stripe_payout", priority=TaskPriority.LOW)
+@actor(
+    actor_name="payout.trigger_stripe_payout",
+    priority=TaskPriority.LOW,
+)
 async def trigger_payout(
-    payout_id: uuid.UUID, account_amount: int | None = None
+    payout_id: Annotated[uuid.UUID, LoggableField],
+    account_amount: Annotated[int | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
@@ -142,8 +101,12 @@ async def trigger_payout(
             pass
 
 
-@actor(actor_name="payout.invoice", priority=TaskPriority.LOW)
-async def order_invoice(payout_id: uuid.UUID) -> None:
+@actor(
+    actor_name="payout.invoice",
+    priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
+)
+async def order_invoice(payout_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         payout = await repository.get_by_id(
@@ -155,8 +118,11 @@ async def order_invoice(payout_id: uuid.UUID) -> None:
         await payout_service.generate_invoice(session, payout)
 
 
-@actor(actor_name="payout.release_held_payouts", priority=TaskPriority.LOW)
-async def release_held_payouts(account_id: uuid.UUID) -> None:
+@actor(
+    actor_name="payout.release_held_payouts",
+    priority=TaskPriority.LOW,
+)
+async def release_held_payouts(account_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Release held payouts for an account once its org becomes ACTIVE.
 
     Enqueued by ``confirm_organization_reviewed`` after a REVIEW/SNOOZED org is
@@ -167,8 +133,13 @@ async def release_held_payouts(account_id: uuid.UUID) -> None:
         await payout_service.release_held_payouts(session, account_id)
 
 
-@actor(actor_name="payout.cancel_account_payouts", priority=TaskPriority.LOW)
-async def cancel_account_payouts(account_id: uuid.UUID) -> None:
+@actor(
+    actor_name="payout.cancel_account_payouts",
+    priority=TaskPriority.LOW,
+)
+async def cancel_account_payouts(
+    account_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Cancel in-flight payouts for an account leaving the review flow.
 
     Enqueued when an org is denied, blocked or set to offboarding. Cancels both
@@ -179,9 +150,13 @@ async def cancel_account_payouts(account_id: uuid.UUID) -> None:
         await payout_service.cancel_account_payouts(session, account_id)
 
 
-@actor(actor_name="payout.cancel_held_payouts", priority=TaskPriority.LOW)
+@actor(
+    actor_name="payout.cancel_held_payouts",
+    priority=TaskPriority.LOW,
+)
 async def cancel_held_payouts(
-    account_id: uuid.UUID, payout_account_id: uuid.UUID | None = None
+    account_id: Annotated[uuid.UUID, LoggableField],
+    payout_account_id: Annotated[uuid.UUID | None, LoggableField] = None,
 ) -> None:
     """Cancel only held payouts for an account.
 

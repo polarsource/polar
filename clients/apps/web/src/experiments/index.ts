@@ -1,6 +1,4 @@
-import { experiments } from './experiments'
-
-export { experiments }
+import { experiments as registry } from './experiments'
 
 export interface ExperimentDefinition<V extends readonly string[]> {
   description: string
@@ -13,10 +11,15 @@ export type ExperimentRegistry = Record<
   ExperimentDefinition<readonly string[]>
 >
 
-export type ExperimentName = keyof typeof experiments
+export type ExperimentName = keyof typeof registry
 
 export type ExperimentVariant<T extends ExperimentName> =
-  (typeof experiments)[T]['variants'][number]
+  (typeof registry)[T]['variants'][number]
+
+export const experiments: Record<
+  ExperimentName,
+  ExperimentDefinition<readonly string[]>
+> = registry
 
 export type ExperimentResult<T extends ExperimentName> = {
   variant: ExperimentVariant<T>

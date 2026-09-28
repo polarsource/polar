@@ -42,6 +42,7 @@ from polar.integrations.polar.service import polar_self
 from polar.models.member import MemberRole
 from polar.models.organization import Organization, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.version import CURRENT_API_VERSION
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 ORG_A = uuid.UUID("00000000-0000-0000-0000-00000000000a")
@@ -181,6 +182,7 @@ def _make_payload(
     return {
         "type": event_type,
         "timestamp": "2026-01-01T00:00:00Z",
+        "api_version": str(CURRENT_API_VERSION),
         "data": {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
@@ -1452,6 +1454,28 @@ class TestCancelSubscription:
             subscription_id="sub_existing",
         )
 
+    async def test_cancels_without_consulting_organization_status(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+    ) -> None:
+        """Unlike ``change_plan``, cancelling is never gated on the status.
+
+        An organization that is denied or being offboarded must still be able
+        to stop paying, so the organization is never even loaded.
+        """
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing"
+        )
+
+        await polar_self.cancel_subscription(organization_id=ORG_A)
+
+        organization_repository_mock.get_by_id.assert_not_awaited()
+        client_mock.cancel_subscription.assert_awaited_once_with(
+            subscription_id="sub_existing",
+        )
+
 
 @pytest.mark.asyncio
 class TestListPlans:
@@ -2283,6 +2307,7 @@ def _make_order_created_payload(**kwargs: Any) -> WebhookOrderCreatedPayload:
         {
             "type": "order.created",
             "timestamp": "2026-01-01T00:00:00Z",
+            "api_version": str(CURRENT_API_VERSION),
             "data": _order_dict(**kwargs),
         },
         WebhookOrderCreatedPayload,
@@ -2692,6 +2717,7 @@ def _make_subscription_canceled_payload(
         {
             "type": "subscription.canceled",
             "timestamp": "2026-01-01T00:00:00Z",
+            "api_version": str(CURRENT_API_VERSION),
             "data": data,
         },
         WebhookSubscriptionCanceledPayload,
@@ -2705,6 +2731,7 @@ def _make_subscription_past_due_payload(
         {
             "type": "subscription.past_due",
             "timestamp": "2026-01-01T00:00:00Z",
+            "api_version": str(CURRENT_API_VERSION),
             "data": dataclasses.asdict(_make_subscription(**kwargs)),
         },
         WebhookSubscriptionPastDuePayload,
@@ -2718,6 +2745,7 @@ def _make_subscription_revoked_payload(
         {
             "type": "subscription.revoked",
             "timestamp": "2026-01-01T00:00:00Z",
+            "api_version": str(CURRENT_API_VERSION),
             "data": dataclasses.asdict(_make_subscription(**kwargs)),
         },
         WebhookSubscriptionRevokedPayload,

@@ -15,7 +15,10 @@ uv run task lint_types   # Type checking with mypy
 # Database migrations
 uv run alembic revision --autogenerate -m "description"  # Create migration
 uv run alembic upgrade head                              # Apply migrations
+uv run task check_migrations                             # single Alembic head + later filename
 ```
+
+When rebasing a PR that adds a migration, rename the file so its `YYYY-MM-DD-HHMM` prefix is after the latest migration on the target branch (`uv run task db_reparent` only updates `down_revision`).
 
 ## Module Structure
 
@@ -253,6 +256,9 @@ class ResourceUpdate(Schema):
 
 ```python
 # polar/{module}/tasks.py
+from typing import Annotated
+
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 
@@ -260,7 +266,7 @@ class ResourceTaskError(PolarTaskError): ...
 
 
 @actor(actor_name="resource.created", priority=TaskPriority.LOW)
-async def resource_created(resource_id: UUID) -> None:
+async def resource_created(resource_id: Annotated[UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         repository = ResourceRepository.from_session(session)
         resource = await repository.get_by_id(resource_id)
@@ -269,6 +275,13 @@ async def resource_created(resource_id: UUID) -> None:
 
         # Do work... session commits automatically at end
 ```
+
+Task arguments are excluded from telemetry unless marked with
+`Annotated[Type, LoggableField]`. Mark only approved operational fields, never
+personal data, secrets, or arbitrary payloads. For nested dictionaries and unpacked
+keyword arguments, mark individual fields on their `TypedDict` or runtime dict
+class; annotations must be available at runtime. Logging paths are cached when
+the actor is registered.
 
 ## Testing
 

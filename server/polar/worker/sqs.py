@@ -2,6 +2,7 @@ import asyncio
 import json
 from typing import Any
 
+import sentry_sdk
 import structlog
 import typer
 
@@ -49,35 +50,36 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                     MessageSystemAttributeNames=["ApproximateReceiveCount"],
                 )
                 for message in response.get("Messages", []):
-                    envelope = parse_envelope(message["Body"])
-                    sqs_receive_count = int(
-                        message.get("Attributes", {}).get(
-                            "ApproximateReceiveCount", "1"
+                    with sentry_sdk.isolation_scope():
+                        envelope = parse_envelope(message["Body"])
+                        sqs_receive_count = int(
+                            message.get("Attributes", {}).get(
+                                "ApproximateReceiveCount", "1"
+                            )
                         )
-                    )
-                    receive_count = envelope.attempt + (sqs_receive_count - 1)
-                    try:
-                        await run_task(
-                            envelope.actor,
-                            envelope.args,
-                            envelope.kwargs,
-                            receive_count=receive_count,
-                            source_correlation_id=envelope.correlation_id,
-                            message_timestamp=envelope.message_timestamp,
-                            message_id=envelope.message_id,
-                            debounce_key=envelope.debounce_key,
-                            message_options=envelope.message_options,
+                        receive_count = envelope.attempt + (sqs_receive_count - 1)
+                        try:
+                            await run_task(
+                                envelope.actor,
+                                envelope.args,
+                                envelope.kwargs,
+                                receive_count=receive_count,
+                                source_correlation_id=envelope.correlation_id,
+                                message_timestamp=envelope.message_timestamp,
+                                message_id=envelope.message_id,
+                                debounce_key=envelope.debounce_key,
+                                message_options=envelope.message_options,
+                            )
+                        except Exception:
+                            log.exception(
+                                "polar.worker.sqs_poll_failed", actor=envelope.actor
+                            )
+                            continue
+                        await asyncio.to_thread(
+                            client.delete_message,
+                            QueueUrl=url,
+                            ReceiptHandle=message["ReceiptHandle"],
                         )
-                    except Exception:
-                        log.exception(
-                            "polar.worker.sqs_poll_failed", actor=envelope.actor
-                        )
-                        continue
-                    await asyncio.to_thread(
-                        client.delete_message,
-                        QueueUrl=url,
-                        ReceiptHandle=message["ReceiptHandle"],
-                    )
     finally:
         await shutdown()
 

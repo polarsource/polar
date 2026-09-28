@@ -19,6 +19,7 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
+from polar.observability.http_telemetry import url_without_request_values
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Event, Hint
@@ -45,6 +46,13 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     tags = event.get("tags", {})
     if tags and tags.get("is_operational_error") == "true":
         return None
+    request = event.get("request")
+    if request is not None:
+        url = request.get("url")
+        if isinstance(url, str):
+            request["url"] = url_without_request_values(url)
+        request.pop("query_string", None)
+        request.pop("fragment", None)
     return event
 
 
@@ -56,6 +64,8 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
         release=os.environ.get("RELEASE_VERSION", "development"),
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
         environment=settings.ENV,
+        # Stack frame locals here carry customer, order and payment objects.
+        include_local_variables=False,
         default_integrations=False,
         auto_enabling_integrations=False,
         before_send=before_send,
@@ -83,5 +93,5 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
 def set_sentry_user(auth_subject: AuthSubject[Subject]) -> None:
     if is_user(auth_subject):
         user = auth_subject.subject
-        sentry_sdk.set_user({"id": str(user.id), "email": user.email})
+        sentry_sdk.set_user({"id": str(user.id)})
         sentry_sdk.set_tag(POSTHOG_ID_TAG, user.posthog_distinct_id)

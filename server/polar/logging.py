@@ -8,6 +8,7 @@ import structlog
 from logfire.integrations.structlog import LogfireProcessor
 
 from polar.config import settings
+from polar.observability.task_logging import TaskLogFilter
 
 Logger = structlog.stdlib.BoundLogger
 
@@ -63,6 +64,7 @@ class Logging[RendererType]:
             {
                 "version": 1,
                 "disable_existing_loggers": True,
+                "filters": {"task_message": {"()": TaskLogFilter}},
                 "formatters": {
                     "polar": {
                         "()": structlog.stdlib.ProcessorFormatter,
@@ -92,6 +94,7 @@ class Logging[RendererType]:
                         "level": level,
                         "class": "logging.StreamHandler",
                         "formatter": "polar",
+                        "filters": ["task_message"],
                     },
                 },
                 "loggers": {
@@ -115,6 +118,12 @@ class Logging[RendererType]:
                             "apscheduler",
                             "reauth",
                         ]
+                    },
+                    # Access messages contain raw request targets; use HTTP spans.
+                    "uvicorn.access": {
+                        "level": "WARNING",
+                        "handlers": [],
+                        "propagate": False,
                     },
                 },
             }

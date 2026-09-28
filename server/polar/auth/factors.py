@@ -27,7 +27,11 @@ from polar.config import settings
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import ResourceNotFound
-from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.crypto import (
+    get_current_secret_id,
+    get_legacy_secret,
+    get_token_hash_candidates,
+)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import BackupCodesEnrollment, EmailOTP, TOTPEnrollment
@@ -52,7 +56,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         super().__init__(
-            hash_secret=settings.SECRET,
+            hash_secret=get_legacy_secret(),
             code_length=settings.EMAIL_OTP_CODE_LENGTH,
             lifetime=settings.EMAIL_OTP_TTL,
         )
@@ -224,7 +228,7 @@ class TOTPFactor(TOTPFactorBase):
 class BackupCodesFactor(BackupCodesFactorBase):
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        super().__init__(hash_secret=settings.SECRET)
+        super().__init__(hash_secret=get_legacy_secret())
 
     async def verify(
         self, identity_id: typing.Any, code: str
@@ -259,7 +263,7 @@ class BackupCodesFactor(BackupCodesFactorBase):
             )
             raise AlreadyUsedBackupCodeException()
 
-        current = candidates[settings.CURRENT_HASH_SECRET_ID]
+        current = candidates[get_current_secret_id()]
         enrollment.codes_hashes = [
             current if candidate == stored else candidate
             for candidate in enrollment.codes_hashes

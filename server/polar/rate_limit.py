@@ -230,6 +230,32 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="checkout-confirm",
         ),
     ],
+    # Caps refund creation well below the catch-all. Elevated is omitted so it
+    # falls through to `^/v1`. POST-only so GET listing is unaffected.
+    "^/v1/refunds": [
+        Rule(method="POST", hour=10, block_time=3600, zone="refunds"),
+        Rule(
+            group=RateLimitGroup.web,
+            method="POST",
+            hour=10,
+            block_time=3600,
+            zone="refunds",
+        ),
+        Rule(
+            group=RateLimitGroup.restricted,
+            method="POST",
+            hour=10,
+            block_time=3600,
+            zone="refunds",
+        ),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            method="POST",
+            hour=10,
+            block_time=3600,
+            zone="refunds",
+        ),
+    ],
     # Each call is a live Stripe API read, so it's capped well below the `web` group's
     # catch-all allowance.
     "^/v1/payout-accounts/[^/]+/sync": [

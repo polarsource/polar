@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     String,
     Uuid,
+    text,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -256,6 +257,13 @@ class Transaction(RecordModel):
             postgresql_where="payout_id IS NOT NULL",
         ),
         Index(
+            "ix_transactions_recorded_payment_rate",
+            text("lower(currency)"),
+            text("lower(presentment_currency)"),
+            "created_at",
+            postgresql_where=text("type = 'payment' AND exchange_rate IS NOT NULL"),
+        ),
+        Index(
             "ix_transactions_account_type_amount",
             "account_id",
             "type",
@@ -374,7 +382,6 @@ class Transaction(RecordModel):
         Uuid,
         ForeignKey("accounts.id", ondelete="restrict"),
         nullable=True,
-        index=True,
     )
     """
     ID of the `Account` concerned by this transaction.

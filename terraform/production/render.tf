@@ -11,6 +11,15 @@ resource "render_registry_credential" "ghcr" {
 }
 
 # =============================================================================
+# Remote references that are managed by a different state.
+# =============================================================================
+
+data "tfe_outputs" "sandbox" {
+  organization = "polar-sh"
+  workspace    = "sandbox"
+}
+
+# =============================================================================
 # Locals
 # =============================================================================
 
@@ -25,6 +34,19 @@ locals {
   db_password = render_postgres.db.connection_info.password
 
   db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
+
+  # Workloads that reach the database over the public internet: the AWS pgbouncers
+  # fronting the Lambda workers, each behind its VPC's static NAT egress IP.
+  db_ip_allow_list = [
+    {
+      cidr_block  = "${module.egress_ip.public_ip}/32"
+      description = "AWS production NAT egress"
+    },
+    {
+      cidr_block  = "${data.tfe_outputs.sandbox.values.egress_ip}/32"
+      description = "AWS sandbox NAT egress"
+    },
+  ]
 
   # Read replica connection info
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
@@ -84,10 +106,11 @@ resource "render_postgres" "db" {
     { name = "polar-replica" }
   ]
 
+  ip_allow_list = local.db_ip_allow_list
+
   lifecycle {
     prevent_destroy = true
     ignore_changes = [
-      ip_allow_list,
       disk_size_gb,
       database_name,
     ]
@@ -244,7 +267,7 @@ module "production" {
   email_from_domain  = local.backend_config.email_from_domain
 
   memory_profile_config = {
-    s3_bucket_name = "polar-production-logs"
+    s3_bucket_name = local.diagnostics_bucket_name
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]

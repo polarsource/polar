@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Effect-TS/language-service/refs/heads/main/schema.json",
+  "$schema": "./node_modules/@effect/tsgo/schema.json",
   "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
     "outDir": "dist",

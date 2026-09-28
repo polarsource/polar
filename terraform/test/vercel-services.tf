@@ -82,10 +82,6 @@ locals {
       value     = "https://polar.sh,https://sandbox.polar.sh,https://test.polar.sh"
       sensitive = false
     }
-    POLAR_OPENAPI_SCHEMA_URL = {
-      value     = "https://api.polar.sh/openapi.json"
-      sensitive = false
-    }
     ENABLE_EXPERIMENTAL_COREPACK = {
       value     = "1"
       sensitive = false
@@ -114,10 +110,6 @@ locals {
     }
     POLAR_ENV = {
       value     = "test"
-      sensitive = false
-    }
-    POLAR_DEBUG = {
-      value     = "0"
       sensitive = false
     }
     POLAR_TESTING = {
@@ -156,6 +148,8 @@ locals {
       value     = "notifications.test.polar.sh"
       sensitive = false
     }
+    # This service reaches AWS with static keys, not the assumed role the
+    # hash_secret module grants, so it stays on the environment variable.
     POLAR_SECRET = {
       value = var.backend_secret
     }
@@ -222,9 +216,6 @@ locals {
     POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = {
       value = var.google_service_account_json
     }
-    POLAR_OPENAI_API_KEY = {
-      value = var.openai_api_key
-    }
     POLAR_PYDANTIC_AI_GATEWAY_API_KEY = {
       value = var.pydantic_ai_gateway_api_key
     }
@@ -264,12 +255,6 @@ locals {
     }
     POLAR_STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET = {
       value = var.stripe_account_risk_webhook_secret
-    }
-    POLAR_STRIPE_APP_CLIENT_ID = {
-      value = var.stripe_app_client_id
-    }
-    POLAR_STRIPE_APP_CLIENT_LINK_ID = {
-      value = var.stripe_app_client_link_id
     }
     POLAR_APPLE_CLIENT_ID = {
       value = var.apple_client_id
@@ -336,10 +321,6 @@ locals {
     }
     POLAR_S3_FILES_DOWNLOAD_SECRET = {
       value = var.s3_files_download_secret
-    }
-    POLAR_LOGFIRE_PROJECT_NAME = {
-      value     = "polar"
-      sensitive = false
     }
     POLAR_LOGFIRE_TOKEN = {
       value = var.logfire_token

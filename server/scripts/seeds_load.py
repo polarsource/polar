@@ -51,6 +51,7 @@ from polar.integrations.tinybird.service import ingest_events as tinybird_ingest
 from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import CountAggregation
@@ -227,6 +228,7 @@ class ProductDict(TypedDict):
     cap_amount: NotRequired[int | None]
     seat_based: NotRequired[bool]
     price_per_seat: NotRequired[int]
+    trial: NotRequired[tuple[TrialInterval, int]]
 
 
 class BenefitDictBase(TypedDict):
@@ -1419,6 +1421,13 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                     "price": 5000,
                     "recurring": None,
                 },
+                {
+                    "name": "E2E Trial",
+                    "description": "Subscription with a free trial, used by the E2E tests",
+                    "price": 1000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "trial": (TrialInterval.day, 7),
+                },
             ],
         },
         {
@@ -2062,12 +2071,15 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                     prices=[price_create],
                 )
             else:
+                trial = product_data.get("trial")
                 product_create = ProductCreateRecurring(
                     name=product_data["name"],
                     description=product_data["description"],
                     organization_id=organization.id,
                     recurring_interval=recurring_interval,
                     prices=[price_create],
+                    trial_interval=trial[0] if trial else None,
+                    trial_interval_count=trial[1] if trial else None,
                 )
 
             product = await product_service.create(
@@ -2096,6 +2108,14 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
 
         # Create CheckoutLink with all products
         if org_products:
+            free_discount = DiscountPercentage(
+                name="Free",
+                code="free",
+                basis_points=10000,
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
+            session.add(free_discount)
             checkout_links = [
                 CheckoutLink(
                     payment_processor=PaymentProcessor.stripe,
@@ -2111,31 +2131,20 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             ]
 
             if org_data["slug"] == "acme-corp":
+                e2e_product = next(p for p in org_products if p.name == "E2E Trial")
                 checkout_links.append(
                     CheckoutLink(
                         payment_processor=PaymentProcessor.stripe,
-                        client_secret="polar_cl_e2e_seed_checkout_link_subscription",
+                        client_secret="polar_cl_e2e_seed_trial_subscription",
                         organization=organization,
                         label="E2E test checkout",
-                        allow_discount_codes=True,
+                        allow_discount_codes=False,
                         checkout_link_products=[
-                            CheckoutLinkProduct(product=product, order=order)
-                            for order, product in enumerate(org_products)
+                            CheckoutLinkProduct(product=e2e_product, order=0)
                         ],
                     )
                 )
             session.add_all(checkout_links)
-
-        if org_products:
-            session.add(
-                DiscountPercentage(
-                    name="Free",
-                    code="free",
-                    basis_points=10000,
-                    duration=DiscountDuration.once,
-                    organization=organization,
-                )
-            )
 
         # Create customers for organization (skip if seat_based_customers are defined)
         num_customers = (

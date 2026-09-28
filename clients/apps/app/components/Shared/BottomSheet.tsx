@@ -45,7 +45,7 @@ export const BottomSheet = ({
           disappearsOnIndex={-1}
           style={[
             { flex: 1, backgroundColor: theme.colors.overlay },
-            StyleSheet.absoluteFillObject,
+            StyleSheet.absoluteFill,
           ]}
         />
       )}

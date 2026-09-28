@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import httpx
 import logfire
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, WebSocket
 from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
@@ -17,6 +17,7 @@ from opentelemetry.sdk.trace.sampling import (
     SamplingResult,
 )
 
+from polar.observability.http_telemetry import HttpURLSpanProcessor, server_request_hook
 from polar.observability.s3_span_exporter import S3SpanExporter
 
 if TYPE_CHECKING:
@@ -165,7 +166,10 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     if render_instance_id:
         resource_attributes["service.instance.id"] = render_instance_id
 
-    additional_span_processors: list[SpanProcessor] = [PidSpanProcessor()]
+    additional_span_processors: list[SpanProcessor] = [
+        HttpURLSpanProcessor(),
+        PidSpanProcessor(),
+    ]
     if settings.S3_LOGS_BUCKET_NAME is not None:
         access_key_id, secret_access_key = get_credentials()
         additional_span_processors.append(
@@ -179,10 +183,10 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                     region_name=settings.AWS_REGION,
                     scrub_patterns=[
                         r"email",
-                        r"user\.?name",
-                        r"full\.?name",
-                        r"first\.?name",
-                        r"last\.?name",
+                        r"user[._]?name",
+                        r"full[._]?name",
+                        r"first[._]?name",
+                        r"last[._]?name",
                         r"phone",
                         r"address",
                         r"ip_?address",
@@ -216,7 +220,24 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
-        scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
+        scrubbing=logfire.ScrubbingOptions(
+            callback=_scrubbing_callback,
+            # Logfire's defaults cover secrets, keys and credentials, but not
+            # access and refresh tokens.
+            extra_patterns=[
+                r"access_?token",
+                r"refresh_?token",
+                # Share boundary checks to avoid repeating them for every scanned character.
+                (
+                    r'(?:^|[._"])(?:'
+                    r"(?:customer_?)?email|"
+                    r"(?:to|from|reply_to)_email_addr|"
+                    r"(?:user|full|first|last)[._]?name|"
+                    r"phone|address|ip_?address"
+                    r')(?=$|")'
+                ),
+            ],
+        ),
         additional_span_processors=additional_span_processors or None,
     )
 
@@ -228,8 +249,28 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
         HTTPXClientInstrumentor().instrument()
 
 
+def _request_attributes_mapper(
+    request: Request | WebSocket, attributes: dict[str, Any]
+) -> dict[str, Any] | None:
+    errors = attributes["errors"]
+    if not errors:
+        return None
+    return {
+        "fastapi.validation_error_count": len(errors),
+        "fastapi.validation_error_types": [error["type"] for error in errors],
+    }
+
+
 def instrument_fastapi(app: FastAPI) -> None:
-    logfire.instrument_fastapi(app, capture_headers=True)
+    logfire.instrument_fastapi(
+        app,
+        capture_headers=False,
+        request_attributes_mapper=_request_attributes_mapper,
+        server_request_hook=server_request_hook,
+        # Empty lists fall back to OTEL environment settings; match no headers instead.
+        http_capture_headers_server_request=[r"(?!)"],
+        http_capture_headers_server_response=[r"(?!)"],
+    )
 
 
 _meter_provider = PrometheusMeterProvider()

@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Annotated, TypedDict
 from uuid import UUID
 
 import structlog
@@ -13,6 +13,7 @@ from polar.notification_recipient.service import (
     notification_recipient as notification_recipient_service,
 )
 from polar.notifications.service import notifications
+from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 log = structlog.get_logger()
@@ -52,7 +53,10 @@ def send_push_message(
         log.error("notifications.push.server_error", error=str(exc))
         raise
     except DeviceNotRegisteredError:
-        log.warning("notifications.push.device_not_registered", token=token)
+        log.warning(
+            "notifications.push.device_not_registered",
+            notification_id=extra.get("notification_id") if extra else None,
+        )
         raise
     except Exception as exc:
         log.error("notifications.push.unknown_error", error=str(exc))
@@ -65,8 +69,11 @@ def send_push_message(
         raise
 
 
-@actor(actor_name="notifications.push", priority=TaskPriority.LOW)
-async def notifications_push(notification_id: UUID) -> None:
+@actor(
+    actor_name="notifications.push",
+    priority=TaskPriority.LOW,
+)
+async def notifications_push(notification_id: Annotated[UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
         notif = await notifications.get(session, notification_id)
         if not notif:

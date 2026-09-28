@@ -180,6 +180,32 @@ class TestGetByAccessToken:
         assert result is not None
         assert result.client_id == oauth2_client.client_id
 
+    async def test_deleted_client(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_123",
+            refresh_token="polar_rt_u_123",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()),
+            expires_in=3600,
+        )
+        oauth2_client.set_deleted_at()
+        await save_fixture(oauth2_client)
+
+        result = await oauth2_token_service.get_by_access_token(
+            session, "polar_at_u_123"
+        )
+
+        assert result is None
+
     async def test_revoked_token(
         self,
         save_fixture: SaveFixture,

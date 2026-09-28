@@ -1,10 +1,12 @@
 import uuid
+from typing import Annotated
 
 from polar.kit.utils import utc_now
 from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessageAuthorKind,
 )
+from polar.observability.task_logging import LoggableField
 from polar.support_case.repository import (
     SupportCaseMessageRepository,
     SupportCaseRepository,
@@ -24,8 +26,11 @@ from .service import DISPUTE_AUTO_ACCEPT_DELAY
 from .service import dispute as dispute_service
 
 
-@actor(actor_name="dispute.post_dispute_greeting", priority=TaskPriority.LOW)
-async def post_dispute_greeting(case_id: uuid.UUID) -> None:
+@actor(
+    actor_name="dispute.post_dispute_greeting",
+    priority=TaskPriority.LOW,
+)
+async def post_dispute_greeting(case_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Post the automated greeting after the merchant's first dispute reply."""
     async with AsyncSessionMaker() as session:
         case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
@@ -63,8 +68,11 @@ async def enqueue_auto_accepts() -> None:
             enqueue_job("dispute.auto_accept", dispute.id)
 
 
-@actor(actor_name="dispute.auto_accept", priority=TaskPriority.LOW)
-async def auto_accept(dispute_id: uuid.UUID) -> None:
+@actor(
+    actor_name="dispute.auto_accept",
+    priority=TaskPriority.LOW,
+)
+async def auto_accept(dispute_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """Concede a single dispute. The sweep only narrows, so re-check first."""
     async with AsyncSessionMaker() as session:
         repository = DisputeRepository.from_session(session)

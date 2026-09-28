@@ -245,6 +245,7 @@ export default {
         '¡Pago realizado con éxito! Preparando tus productos...',
       confirmationTokenFailed:
         'Error al crear el token de confirmación, inténtalo de nuevo más tarde.',
+      paymentNotCompleted: 'El pago no se completó. Inténtalo de nuevo.',
     },
     cta: {
       startTrial: 'Iniciar prueba',

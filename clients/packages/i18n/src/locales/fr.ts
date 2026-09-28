@@ -248,6 +248,8 @@ export default {
       paymentSuccessful: 'Paiement réussi ! Préparation de vos produits...',
       confirmationTokenFailed:
         'Échec de la création du jeton de confirmation, veuillez réessayer plus tard.',
+      paymentNotCompleted:
+        'Le paiement n’a pas été effectué. Veuillez réessayer.',
     },
     cta: {
       startTrial: "Commencer l'essai",

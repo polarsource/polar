@@ -6,7 +6,7 @@ Manage the Polar local development environment using Docker.
 
 When the user invokes this command, help them manage their local development environment based on their request.
 
-**Instance auto-detection:** The `dev docker` command automatically detects the correct instance from `CONDUCTOR_PORT` or the workspace path. No manual `-i` flag is needed.
+**Instance auto-detection:** The `dev docker` command automatically detects the correct instance from the stored pin or the workspace path. No manual `-i` flag is needed.
 
 ### Quick Actions
 

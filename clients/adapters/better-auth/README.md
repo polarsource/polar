@@ -445,7 +445,7 @@ await authClient.customer.portal()
 
 // Explicit organization portal access (membership is checked server-side)
 await authClient.customer.portal({
-  query: { organizationId },
+  fetchOptions: { query: { organizationId } },
 })
 ```
 

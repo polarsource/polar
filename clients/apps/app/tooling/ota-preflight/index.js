@@ -111,7 +111,7 @@ function resolveEasCommand() {
     execFileSync('eas', ['--version'], { stdio: 'ignore' })
     return ['eas']
   } catch {
-    return ['npx', '--yes', 'eas-cli']
+    return ['pnpm', 'dlx', 'eas-cli']
   }
 }
 

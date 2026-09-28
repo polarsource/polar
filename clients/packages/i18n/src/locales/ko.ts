@@ -241,6 +241,7 @@ export default {
       paymentSuccessful: '결제 성공! 상품을 준비하고 있습니다...',
       confirmationTokenFailed:
         '확인 토큰 생성에 실패했습니다. 나중에 다시 시도해 주세요.',
+      paymentNotCompleted: '결제가 완료되지 않았습니다. 다시 시도해 주세요.',
     },
     cta: {
       startTrial: '체험 시작하기',

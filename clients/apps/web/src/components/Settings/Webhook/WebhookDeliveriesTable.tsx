@@ -233,11 +233,18 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
 
 export default DeliveriesTable
 
+const PAYLOAD_RETENTION_DAYS = 90
+
+const isPastPayloadRetention = (createdAt: string): boolean =>
+  Date.now() - new Date(createdAt).getTime() >
+  PAYLOAD_RETENTION_DAYS * 24 * 60 * 60 * 1000
+
 const ExpandedRow = (props: DataTableCellContext<DeliveryRow, unknown>) => {
   const { row } = props
 
   const { original: delivery } = row
   const isArchived = delivery.webhook_event.is_archived
+  const isResponsePastRetention = isPastPayloadRetention(delivery.created_at)
   const payload = delivery.webhook_event.payload
     ? JSON.stringify(JSON.parse(delivery.webhook_event.payload), undefined, 2)
     : null
@@ -321,11 +328,19 @@ const ExpandedRow = (props: DataTableCellContext<DeliveryRow, unknown>) => {
       ) : (
         <div className="text-sm text-gray-500 italic">Archived event</div>
       )}
-      {delivery.response && (
+      {(delivery.response || isResponsePastRetention) && (
         <>
           <hr />
           <div className="font-medium">Response</div>
-          <pre className="text-xs whitespace-pre-wrap">{delivery.response}</pre>
+          {delivery.response ? (
+            <pre className="text-xs whitespace-pre-wrap">
+              {delivery.response}
+            </pre>
+          ) : (
+            <div className="text-sm text-gray-500 italic">
+              Response archived
+            </div>
+          )}
         </>
       )}
     </div>

@@ -2,6 +2,7 @@ import {
   createCheckout,
   createCustomPrice,
 } from '@polar-sh/checkout/test-utils'
+import type { schemas } from '@polar-sh/client'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -15,7 +16,6 @@ import {
 } from '@/test-utils/checkout'
 import { stubLocationReload } from '@/test-utils/location'
 import { apiError } from '@/test-utils/server'
-import { setViewport } from '@/test-utils/viewport'
 
 describe('Checkout page', () => {
   it('renders the product and reports the checkout as opened', async () => {
@@ -55,73 +55,29 @@ describe('Checkout page', () => {
     ).toBeGreaterThan(0)
   })
 
-  describe('collapsed order summary experiment', () => {
-    const mobile = { width: 375, coarsePointer: true }
-    const exposures = (
-      events: { event: string; properties?: Record<string, unknown> }[],
-    ) =>
-      events.filter(
-        (e) =>
-          e.event === '$feature_flag_called' &&
-          e.properties?.$feature_flag === 'checkout_collapsed_order_summary',
-      )
+  describe('collapsed order summary', () => {
+    const orderSummaryToggle = () =>
+      screen.queryByRole('button', { name: /order summary/i })
 
-    it('collapses the summary on mobile for the treatment and records exposure', async () => {
-      setViewport(mobile)
-      const { posthog } = renderCheckout({
-        experiments: { checkout_collapsed_order_summary: 'treatment' },
-      })
+    it('collapses the summary on hosted single-price checkouts', () => {
+      renderCheckout()
 
-      expect(
-        screen.getByRole('button', { name: /order summary/i }),
-      ).toHaveAttribute('aria-expanded', 'false')
-      await waitFor(() => expect(exposures(posthog.events)).toHaveLength(1))
-      expect(exposures(posthog.events)[0].properties).toMatchObject({
-        $feature_flag_response: 'treatment',
-      })
+      expect(orderSummaryToggle()).toHaveAttribute('aria-expanded', 'false')
     })
 
-    it('records exposure for control without collapsing', async () => {
-      setViewport(mobile)
-      const { posthog } = renderCheckout({
-        experiments: { checkout_collapsed_order_summary: 'control' },
-      })
+    it('keeps the full summary for pay-what-you-want checkouts', () => {
+      renderCheckout({ checkout: { product_price: createCustomPrice() } })
 
-      expect(
-        screen.queryByRole('button', { name: /order summary/i }),
-      ).not.toBeInTheDocument()
-      await waitFor(() => expect(exposures(posthog.events)).toHaveLength(1))
+      expect(orderSummaryToggle()).not.toBeInTheDocument()
     })
 
-    it('does not expose desktop visitors', async () => {
-      const { posthog } = renderCheckout({
-        experiments: { checkout_collapsed_order_summary: 'treatment' },
+    it('never collapses the embedded checkout', () => {
+      renderCheckout({
+        embed: true,
+        checkout: { embed_origin: window.location.origin },
       })
 
-      await waitFor(() =>
-        expect(posthog.events.map((e) => e.event)).toContain(
-          'storefront:checkout:page:view',
-        ),
-      )
-      expect(exposures(posthog.events)).toHaveLength(0)
-    })
-
-    it('does not expose or collapse pay-what-you-want checkouts', async () => {
-      setViewport(mobile)
-      const { posthog } = renderCheckout({
-        checkout: { product_price: createCustomPrice() },
-        experiments: { checkout_collapsed_order_summary: 'treatment' },
-      })
-
-      expect(
-        screen.queryByRole('button', { name: /order summary/i }),
-      ).not.toBeInTheDocument()
-      await waitFor(() =>
-        expect(posthog.events.map((e) => e.event)).toContain(
-          'storefront:checkout:page:view',
-        ),
-      )
-      expect(exposures(posthog.events)).toHaveLength(0)
+      expect(orderSummaryToggle()).not.toBeInTheDocument()
     })
   })
 
@@ -169,6 +125,31 @@ describe('Checkout page', () => {
       (await screen.findAllByText('Polar Penguin is in test mode')).length,
     ).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Get for free' })).toBeEnabled()
+    expect(
+      screen.queryByRole('link', { name: /find out why/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('links organization members to the reason for test mode', async () => {
+    renderCheckout({
+      checkout: freeProductCheckout(),
+      authenticatedUser: {
+        member_organizations: [{ id: 'org_1' }],
+      } as schemas['UserRead'],
+      paymentStatus: {
+        payment_ready: false,
+        organization_status: 'created',
+        onboarding_resubmission_requested_at: null,
+      },
+    })
+
+    const accountReviewLink = await screen.findByRole('link', {
+      name: /find out why/i,
+    })
+    expect(accountReviewLink).toHaveAttribute(
+      'href',
+      '/dashboard/polar-penguin/finance/account',
+    )
   })
 
   it('sends the customer to the portal login when no session comes back', async () => {

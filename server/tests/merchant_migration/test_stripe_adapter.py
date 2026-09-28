@@ -5,11 +5,16 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.adapters.stripe import (
     CANCELLATION_COMMENT_PREFIX,
     StripeAdapter,
+    StripeMissingScope,
 )
 from polar.merchant_migration.canonical import (
+    CanonicalCustomer,
+    CanonicalDiscount,
+    CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPricingScheme,
@@ -17,6 +22,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from polar.tax.tax_id import TaxIDFormat
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -33,6 +39,8 @@ def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
         "prices",
         "subscriptions",
         "payment_methods",
+        "coupons",
+        "promotion_codes",
     ):
         getattr(client.v1, resource).list_async = mocker.AsyncMock(
             return_value=mocker.MagicMock(data=[])
@@ -242,7 +250,12 @@ def _stripe_subscription(
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
     automatic_tax: dict[str, Any] | None = None,
+    default_tax_rates: list[dict[str, Any]] | None = None,
+    price_tax_behavior: str | None = None,
 ) -> stripe_lib.Subscription:
+    price: dict[str, Any] = {"id": "price_1", "currency": "usd"}
+    if price_tax_behavior is not None:
+        price["tax_behavior"] = price_tax_behavior
     return stripe_lib.Subscription.construct_from(
         {
             "id": id,
@@ -256,6 +269,7 @@ def _stripe_subscription(
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,
+            "default_tax_rates": default_tax_rates or [],
             "discounts": [],
             "cancellation_details": (
                 {"comment": cancellation_comment} if cancellation_comment else None
@@ -265,8 +279,9 @@ def _stripe_subscription(
                 if items is not None
                 else [
                     {
-                        "price": {"id": "price_1", "currency": "usd"},
+                        "price": price,
                         "quantity": 1,
+                        "tax_rates": [],
                         "current_period_start": 1_700_000_000,
                         "current_period_end": 1_702_000_000,
                     }
@@ -457,7 +472,7 @@ class TestExtractProducts:
             "starting_after": None,
         }
 
-    async def test_last_inactive_price_page_advances_to_customers(
+    async def test_last_inactive_price_page_advances_to_coupons(
         self, mocker: MockerFixture
     ) -> None:
         adapter, client = _adapter(mocker)
@@ -470,7 +485,7 @@ class TestExtractProducts:
         page = await adapter.extract_page({"phase": "inactive_prices"})
 
         assert page.next_cursor == {
-            "phase": "customers",
+            "phase": "coupons",
             "starting_after": None,
         }
         client.v1.prices.list_async.assert_awaited_once_with(
@@ -548,6 +563,158 @@ class TestExtractProducts:
         assert products == []
 
 
+def _customer_with_tax_ids(
+    *tax_ids: dict[str, Any],
+    country: str | None = None,
+    tax_exempt: str = "none",
+) -> stripe_lib.Customer:
+    payload: dict[str, Any] = {
+        "id": "cus_1",
+        "email": "a@example.com",
+        "name": "A",
+        "tax_exempt": tax_exempt,
+        "tax_ids": {
+            "object": "list",
+            "data": list(tax_ids),
+            "has_more": False,
+        },
+    }
+    if country is not None:
+        payload["address"] = {"country": country}
+    return stripe_lib.Customer.construct_from(payload, None)
+
+
+_EIN = {
+    "id": "txi_ein",
+    "object": "tax_id",
+    "type": "us_ein",
+    "value": "12-3456789",
+}
+_EU_VAT = {
+    "id": "txi_vat",
+    "object": "tax_id",
+    "type": "eu_vat",
+    "value": "FR61954506077",
+}
+
+
+class TestMapTaxId:
+    def test_country_match_prefers_map_order_over_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="US")
+        )
+
+        assert mapped.tax_id == ("12-3456789", TaxIDFormat.us_ein)
+
+    def test_country_match_picks_eu_vat_for_eu_address(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="FR")
+        )
+
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_known_country_no_matching_type_is_none(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, country="FR")
+        )
+
+        assert mapped.tax_id is None
+        assert mapped.tax_id_dropped is True
+
+    def test_missing_country_prefers_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT)
+        )
+
+        assert mapped.country is None
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_unknown_country_prefers_eu_vat(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="ZZ")
+        )
+
+        assert mapped.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_missing_country_without_eu_vat_is_none(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(_customer_with_tax_ids(_EIN))
+
+        assert mapped.country is None
+        assert mapped.tax_id is None
+
+    def test_skips_unknown_type_for_matching_country(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(
+                {
+                    "id": "txi_unknown",
+                    "object": "tax_id",
+                    "type": "not_a_tax_id",
+                    "value": "XX123",
+                },
+                {
+                    "id": "txi_gb",
+                    "object": "tax_id",
+                    "type": "gb_vat",
+                    "value": "GB123456789",
+                },
+                country="GB",
+            )
+        )
+
+        assert mapped.tax_id == ("GB123456789", TaxIDFormat.gb_vat)
+
+    def test_ca_map_order_prefers_qst_over_bn(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(
+                {
+                    "id": "txi_bn",
+                    "object": "tax_id",
+                    "type": "ca_bn",
+                    "value": "123456789",
+                },
+                {
+                    "id": "txi_qst",
+                    "object": "tax_id",
+                    "type": "ca_qst",
+                    "value": "1234567890TQ1234",
+                },
+                country="CA",
+            )
+        )
+
+        assert mapped.tax_id == ("1234567890TQ1234", TaxIDFormat.ca_qst)
+
+    def test_lowercase_country_still_matches_map(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EIN, _EU_VAT, country="us")
+        )
+
+        assert mapped.country == "us"
+        assert mapped.tax_id == ("12-3456789", TaxIDFormat.us_ein)
+
+    def test_mapped_tax_id_is_not_dropped(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(_EU_VAT, country="FR", tax_exempt="reverse")
+        )
+
+        assert mapped.tax_id_dropped is False
+
+    def test_no_tax_id_is_not_dropped(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(country="FR")
+        )
+
+        assert mapped.tax_id_dropped is False
+
+    def test_reverse_charge_without_tax_id_is_dropped(self) -> None:
+        mapped = StripeAdapter("rk_test")._map_customer(
+            _customer_with_tax_ids(country="FR", tax_exempt="reverse")
+        )
+
+        assert mapped.tax_id is None
+        assert mapped.tax_id_dropped is True
+
+
 @pytest.mark.asyncio
 class TestExtractPages:
     async def test_customer_page_resumes_and_advances_to_subscriptions(
@@ -577,8 +744,71 @@ class TestExtractPages:
             "starting_after": None,
         }
         client.v1.customers.list_async.assert_awaited_once_with(
-            params={"limit": 100, "starting_after": "cus_1"}
+            params={
+                "limit": 100,
+                "expand": [
+                    "data.invoice_settings.default_payment_method",
+                    "data.tax_ids",
+                ],
+                "starting_after": "cus_1",
+            }
         )
+
+    async def test_copies_vat_id_onto_canonical_customer(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_vat",
+                "email": "b2b@example.com",
+                "name": "B2B",
+                "address": {"country": "FR"},
+                "tax_ids": {
+                    "object": "list",
+                    "data": [
+                        {
+                            "id": "txi_1",
+                            "object": "tax_id",
+                            "type": "eu_vat",
+                            "value": "FR61954506077",
+                        }
+                    ],
+                    "has_more": False,
+                },
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "customers"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalCustomer)
+        assert record.tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    async def test_no_tax_ids_maps_to_none(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_2",
+                "email": "customer@example.com",
+                "name": "Customer",
+                "address": {"country": "US"},
+            },
+            None,
+        )
+        client.v1.customers.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[customer], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "customers"})
+
+        record = page.records[0]
+        assert isinstance(record, CanonicalCustomer)
+        assert record.tax_id is None
 
     async def test_skipped_subscription_still_advances_the_page_cursor(
         self, mocker: MockerFixture
@@ -648,6 +878,254 @@ class TestExtractPages:
         ] == []
         assert len(page.records) == 1
         assert isinstance(page.records[0], CanonicalSubscription)
+
+
+def _stripe_coupon(
+    *,
+    id: str = "coupon_1",
+    name: str = "Launch",
+    percent_off: float | None = 10,
+    amount_off: int | None = None,
+    currency: str | None = None,
+    duration: str = "forever",
+    duration_in_months: int | None = None,
+    max_redemptions: int | None = None,
+    times_redeemed: int = 0,
+    redeem_by: int | None = None,
+    applies_to: dict[str, Any] | None = None,
+) -> stripe_lib.Coupon:
+    payload: dict[str, Any] = {
+        "id": id,
+        "name": name,
+        "percent_off": percent_off,
+        "amount_off": amount_off,
+        "currency": currency,
+        "duration": duration,
+        "duration_in_months": duration_in_months,
+        "max_redemptions": max_redemptions,
+        "times_redeemed": times_redeemed,
+        "redeem_by": redeem_by,
+        "currency_options": None,
+        "applies_to": applies_to,
+    }
+    return stripe_lib.Coupon.construct_from(payload, None)
+
+
+def _stripe_promotion_code(
+    *,
+    id: str = "promo_1",
+    code: str = "LAUNCH-10",
+    coupon: stripe_lib.Coupon | None = None,
+    max_redemptions: int | None = None,
+    times_redeemed: int = 0,
+    expires_at: int | None = None,
+    customer: str | None = None,
+    first_time_transaction: bool = False,
+    minimum_amount: int | None = None,
+) -> stripe_lib.PromotionCode:
+    return stripe_lib.PromotionCode.construct_from(
+        {
+            "id": id,
+            "code": code,
+            "max_redemptions": max_redemptions,
+            "times_redeemed": times_redeemed,
+            "expires_at": expires_at,
+            "customer": customer,
+            "promotion": {"coupon": coupon or _stripe_coupon()},
+            "restrictions": {
+                "first_time_transaction": first_time_transaction,
+                "minimum_amount": minimum_amount,
+            },
+        },
+        None,
+    )
+
+
+@pytest.mark.asyncio
+class TestExtractCoupons:
+    async def test_coupon_page_maps_remaining_and_advances(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.coupons.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_coupon(),
+                    _stripe_coupon(
+                        id="coupon_exhausted", max_redemptions=10, times_redeemed=10
+                    ),
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "coupons"})
+
+        launch, exhausted = page.records
+        assert isinstance(launch, CanonicalDiscount)
+        assert launch.discount_type == CanonicalDiscountType.percentage
+        assert launch.basis_points == 1000
+        assert isinstance(exhausted, CanonicalDiscount)
+        assert exhausted.max_redemptions == 0
+        assert page.next_cursor == {
+            "phase": "promotion_codes",
+            "starting_after": None,
+        }
+
+    async def test_promotion_code_caps_remaining_and_advances(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        code="LAUNCH-10",
+                        coupon=_stripe_coupon(max_redemptions=100, times_redeemed=0),
+                        max_redemptions=10,
+                        times_redeemed=7,
+                    )
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.source_id == "coupon_1"
+        assert discount.code == "LAUNCH10"
+        assert discount.max_redemptions == 3
+        assert page.next_cursor == {
+            "phase": "customers",
+            "starting_after": None,
+        }
+
+    async def test_restricted_promotion_codes_are_not_staged(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(id="promo_customer", customer="cus_1"),
+                    _stripe_promotion_code(
+                        id="promo_first", first_time_transaction=True
+                    ),
+                    _stripe_promotion_code(id="promo_min", minimum_amount=1000),
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        assert page.records == []
+
+    async def test_invalid_promotion_code_is_not_staged(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        id="promo_short",
+                        code="AB",
+                        coupon=_stripe_coupon(max_redemptions=100),
+                        max_redemptions=1,
+                        expires_at=1_700_000_000,
+                    ),
+                    _stripe_promotion_code(
+                        id="promo_ok",
+                        code="LAUNCH-10",
+                        coupon=_stripe_coupon(max_redemptions=100),
+                        max_redemptions=10,
+                    ),
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        assert len(page.records) == 1
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.code == "LAUNCH10"
+        assert discount.max_redemptions == 10
+
+    async def test_promotion_code_caps_ends_at_with_expires_at(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        coupon=_stripe_coupon(redeem_by=2_000_000_000),
+                        expires_at=1_800_000_000,
+                    )
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.ends_at == datetime(2027, 1, 15, 8, 0, tzinfo=UTC)
+
+    async def test_subscription_page_maps_each_coupon_start(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        subscription = _stripe_subscription()
+        subscription["discounts"] = [
+            {
+                "id": "di_1",
+                "start": 1_700_000_000,
+                "source": {"coupon": {"id": "coupon_old"}},
+            },
+            {
+                "id": "di_2",
+                "start": 1_710_000_000,
+                "source": {"coupon": {"id": "coupon_kept"}},
+            },
+            "di_unexpanded",
+        ]
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[subscription], has_more=False)
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        kwargs = client.v1.subscriptions.list_async.await_args.kwargs
+        assert "data.discounts" in kwargs["params"]["expand"]
+        record = page.records[0]
+        assert isinstance(record, CanonicalSubscription)
+        assert record.has_discount is True
+        assert record.discount_source_ids == ["coupon_old", "coupon_kept"]
+        assert record.discount_started_at == datetime(
+            2023, 11, 14, 22, 13, 20, tzinfo=UTC
+        )
+        assert record.discount_starts["coupon_kept"] == datetime(
+            2024, 3, 9, 16, 0, tzinfo=UTC
+        )
+
+    async def test_missing_coupon_scope_is_named(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.coupons.list_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError("missing coupon scope")
+        )
+
+        with pytest.raises(StripeMissingScope) as exc:
+            await adapter.extract_page({"phase": "coupons"})
+
+        assert exc.value.label == "Coupons"
+        assert exc.value.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -735,6 +1213,35 @@ class TestGetSubscription:
             exp_year=2030,
         )
 
+    async def test_card_countries_are_hints_not_billing_country(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                payment_method={
+                    "id": "pm_source",
+                    "object": "payment_method",
+                    "type": "card",
+                    "billing_details": {"address": {"country": "DE"}},
+                    "card": {
+                        "last4": "4242",
+                        "brand": "visa",
+                        "country": "US",
+                        "exp_month": 4,
+                        "exp_year": 2030,
+                    },
+                }
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.payment_method is not None
+        assert subscription.payment_method.billing_country == "DE"
+        assert subscription.payment_method.card_country == "US"
+
     async def test_reads_whether_the_source_calculated_tax(
         self, mocker: MockerFixture
     ) -> None:
@@ -760,6 +1267,48 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.automatic_tax is None
+
+    @pytest.mark.parametrize(
+        ("kwargs", "expected"),
+        [
+            (
+                {
+                    "automatic_tax": {"enabled": True},
+                    "price_tax_behavior": "exclusive",
+                },
+                TaxBehavior.exclusive,
+            ),
+            (
+                {
+                    "automatic_tax": {"enabled": True},
+                    "price_tax_behavior": "unspecified",
+                },
+                TaxBehavior.inclusive,
+            ),
+            (
+                {
+                    "default_tax_rates": [{"id": "txr_1"}],
+                    "price_tax_behavior": "exclusive",
+                },
+                TaxBehavior.exclusive,
+            ),
+        ],
+    )
+    async def test_maps_source_tax_into_import_default(
+        self,
+        mocker: MockerFixture,
+        kwargs: dict[str, Any],
+        expected: TaxBehavior,
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(**kwargs)
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.import_tax_behavior() == expected
 
     async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
         """The cutover keeps the trial running rather than billing at once, so
@@ -865,3 +1414,109 @@ class TestStopSourceSubscription:
 
         with pytest.raises(stripe_lib.InvalidRequestError):
             await adapter.stop_source_subscription("sub_1", reference="abc")
+
+
+class TestMapCustomer:
+    def test_customer_country_takes_priority(self, mocker: MockerFixture) -> None:
+        adapter, _ = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_1",
+                "email": "a@example.com",
+                "name": "A",
+                "address": {"country": "FR"},
+                "invoice_settings": {
+                    "default_payment_method": {
+                        "id": "pm_1",
+                        "object": "payment_method",
+                        "type": "card",
+                        "billing_details": {"address": {"country": "DE"}},
+                        "card": {"country": "US", "last4": "4242", "brand": "visa"},
+                    }
+                },
+            },
+            None,
+        )
+
+        mapped = adapter._map_customer(customer)
+
+        assert mapped.country == "FR"
+        assert mapped.country_hint is None
+        assert mapped.billing_address is not None
+        assert mapped.billing_address.country == "FR"
+
+    @pytest.mark.parametrize(
+        ("fields", "expected"),
+        [
+            (
+                {
+                    "invoice_settings": {
+                        "default_payment_method": {
+                            "id": "pm_1",
+                            "object": "payment_method",
+                            "type": "card",
+                            "billing_details": {"address": {"country": "DE"}},
+                            "card": {"country": "US"},
+                        }
+                    }
+                },
+                "DE",
+            ),
+            (
+                {
+                    "invoice_settings": {
+                        "default_payment_method": {
+                            "id": "pm_1",
+                            "object": "payment_method",
+                            "type": "card",
+                            "billing_details": {"address": None},
+                            "card": {"country": "US"},
+                        }
+                    }
+                },
+                "US",
+            ),
+            (
+                {
+                    "default_source": {
+                        "id": "card_1",
+                        "object": "card",
+                        "address_country": "IE",
+                        "country": "US",
+                    }
+                },
+                "IE",
+            ),
+            (
+                {
+                    "tax": {
+                        "automatic_tax": "supported",
+                        "location": {"country": "IE", "source": "ip_address"},
+                    }
+                },
+                None,
+            ),
+        ],
+    )
+    def test_country_fallbacks(
+        self,
+        mocker: MockerFixture,
+        fields: dict[str, object],
+        expected: str | None,
+    ) -> None:
+        adapter, _ = _adapter(mocker)
+        customer = stripe_lib.Customer.construct_from(
+            {
+                "id": "cus_1",
+                "email": "a@example.com",
+                "name": "A",
+                "address": None,
+                **fields,
+            },
+            None,
+        )
+
+        mapped = adapter._map_customer(customer)
+
+        assert mapped.country is None
+        assert mapped.country_hint == expected

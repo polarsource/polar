@@ -161,7 +161,7 @@ class MeterService:
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_meter_statement(meter)
-            .order_by(Event.timestamp.desc())
+            .order_by(Event.ingested_at.desc(), Event.id.desc())
             .limit(1)
         )
         last_billed_event = await event_repository.get_one_or_none(statement)

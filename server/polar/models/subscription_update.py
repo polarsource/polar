@@ -68,7 +68,7 @@ class SubscriptionUpdate(RecordModel):
         return relationship("Subscription", lazy="raise")
 
     product_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=True
+        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=True, index=True
     )
     """ID of the new `Product` to apply to the subscription."""
 

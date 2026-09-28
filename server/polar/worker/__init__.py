@@ -12,6 +12,7 @@ from polar.config import settings
 
 # Import metrics FIRST to set PROMETHEUS_MULTIPROC_DIR before prometheus_client is imported
 from polar.observability import metrics as _prometheus_metrics
+from polar.observability.task_logging import register_task_logging
 
 from ._broker import get_broker
 from ._encoder import JSONEncoder
@@ -98,7 +99,7 @@ def actor[**P, R](
             ):
                 return await fn(*args, **kwargs)
 
-        _actor(
+        declared_actor = _actor(
             _wrapped_fn,  # type: ignore
             actor_class=actor_class,
             actor_name=actor_name,
@@ -107,6 +108,7 @@ def actor[**P, R](
             broker=broker,
             **options,
         )
+        register_task_logging(declared_actor)
 
         return _wrapped_fn
 

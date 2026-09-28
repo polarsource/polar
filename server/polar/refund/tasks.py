@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 from sqlalchemy.orm import joinedload
 
@@ -9,6 +10,7 @@ from polar.email.schemas import (
 from polar.email.sender import enqueue_email_template
 from polar.models import Order, Refund
 from polar.models.user_organization import OrganizationRole
+from polar.observability.task_logging import LoggableField
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -23,7 +25,9 @@ _NOTICE_RECIPIENT_ROLES = (OrganizationRole.owner, OrganizationRole.admin)
     actor_name="refund.send_chargeback_prevention_notice",
     priority=TaskPriority.LOW,
 )
-async def send_chargeback_prevention_notice(refund_id: uuid.UUID) -> None:
+async def send_chargeback_prevention_notice(
+    refund_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = RefundRepository.from_session(session)
         refund = await repository.get_by_id(

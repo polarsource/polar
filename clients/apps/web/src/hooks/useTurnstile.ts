@@ -10,7 +10,7 @@ interface TurnstileRenderOptions {
   execution?: 'render' | 'execute'
   size?: 'normal' | 'flexible' | 'compact'
   callback?: (token: string) => void
-  'error-callback'?: () => void
+  'error-callback'?: () => boolean
   'expired-callback'?: () => void
 }
 
@@ -86,9 +86,12 @@ export const useTurnstile = (action: string) => {
       // A failed or expired challenge leaves the widget without a token and
       // Turnstile doesn't queue another execute on its own, so re-arm it for
       // the next getToken() instead of letting that one wait out the timeout.
+      // Returning true tells Turnstile the error is handled, so it doesn't
+      // rethrow it as an uncaught TurnstileError.
       'error-callback': () => {
         settleToken(null)
         reset()
+        return true
       },
       'expired-callback': reset,
     })

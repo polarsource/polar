@@ -39,12 +39,14 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0-alpha.20"
+    "@polar-sh/sdk": "1.0.0-alpha.22"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
+    "@typescript/native": "catalog:",
+    "next": "^16.3.6",
     "tsup": "catalog:",
-    "typescript": "^5.9.3",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "ava": {

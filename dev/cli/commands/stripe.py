@@ -31,6 +31,14 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             console.print("  [bold]dev stripe --listen[/bold]\n")
 
 
+def _listen_event_flags() -> list[str]:
+    """Stripe CLI 1.51+ requires an event selection; older versions reject the flag."""
+    result = run_command(["stripe", "listen", "--help"], capture=True)
+    if result and "--all-snapshot" in result.stdout:
+        return ["--all-snapshot"]
+    return []
+
+
 def _start_webhook_listener(port: int = 8000) -> None:
     """Start Stripe webhook forwarding."""
     base = f"http://127.0.0.1:{port}"
@@ -42,6 +50,7 @@ def _start_webhook_listener(port: int = 8000) -> None:
         [
             "stripe", "listen",
             "-p", stripe_config.STRIPE_CLI_PROFILE,
+            *_listen_event_flags(),
             "--forward-to", f"{base}/v1/integrations/stripe/webhook",
             "--forward-connect-to", f"{base}/v1/integrations/stripe/webhook-connect",
         ],

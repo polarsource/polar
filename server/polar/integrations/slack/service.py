@@ -12,7 +12,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import SlackApp
 
-from .client import SlackClient
+from .client import client as slack_client
 from .manifest import BOT_SCOPES
 from .repository import SlackAppRepository
 from .schemas import SlackIntegrationCredentialsUpdate
@@ -55,7 +55,7 @@ _VALID_CREDENTIALS_ERRORS = {"invalid_code", "bad_redirect_uri"}
 
 class SlackAppService:
     def __init__(self) -> None:
-        self._client = SlackClient()
+        self._client = slack_client
 
     async def get(
         self, session: AsyncReadSession, integration_id: UUID

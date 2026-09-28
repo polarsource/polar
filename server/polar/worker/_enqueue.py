@@ -103,7 +103,7 @@ class JobQueueManager:
         ]
 
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
-        all_messages: list[tuple[str, Any]] = []
+        all_messages: list[tuple[str, str]] = []
 
         for actor_name, args, kwargs, delay in redis_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
@@ -145,7 +145,7 @@ class JobQueueManager:
             queue_messages[message.queue_name].append(
                 (redis_message_id, encoded_message)
             )
-            all_messages.append((fn.actor_name, message.encode()))
+            all_messages.append((fn.actor_name, message.message_id))
 
         for queue_name, messages in queue_messages.items():
             for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
@@ -154,9 +154,9 @@ class JobQueueManager:
                     redis, queue_name, (message_id for message_id, _ in batch)
                 )
 
-        for actor_name, encoded_message in all_messages:
+        for actor_name, message_id in all_messages:
             log.debug(
-                "polar.worker.job_flushed", actor=actor_name, message=encoded_message
+                "polar.worker.job_flushed", actor=actor_name, message_id=message_id
             )
 
         # Send SQS last so an SQS failure can't drop the Redis jobs above.

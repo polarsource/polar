@@ -266,7 +266,17 @@ async def update(
     log.info(
         "customer_portal.subscription.update",
         subscription_id=id,
-        updates=subscription_update.model_dump(exclude_unset=True),
+        updated_fields=sorted(subscription_update.model_fields_set),
+        updates=subscription_update.model_dump(
+            include={
+                "product_id",
+                "cancel_at_period_end",
+                "cancellation_reason",
+                "pause_at_period_end",
+                "resume",
+            },
+            exclude_unset=True,
+        ),
         **get_audit_context(auth_subject),
     )
     return await customer_subscription_service.update(

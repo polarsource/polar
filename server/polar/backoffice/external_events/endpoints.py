@@ -25,7 +25,7 @@ from ..toast import add_toast
 
 def _get_logfire_url(event: ExternalEvent) -> str:
     params = {
-        "q": f"attributes->>'actor' = '{event.task_name}' AND attributes->'message'->'args'->>0 = '{event.id}'",
+        "q": f"attributes->>'actor' = '{event.task_name}' AND attributes->'message'->'arguments'->>'event_id' = '{event.id}'",
         "since": event.created_at.isoformat(),
     }
     return (

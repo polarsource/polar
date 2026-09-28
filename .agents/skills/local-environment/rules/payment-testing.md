@@ -64,9 +64,9 @@ Stripe CLI keys expire after 90 days. An expired key shows up as
 `The API key provided has expired` — `dev stripe` detects it and re-runs the
 link flow.
 
-`--port` defaults to `8000`. Conductor worktrees and multi-instance setups
-land outside the 0–2 base-port table, so read the api port from
-`dev docker ports` rather than computing it.
+`--port` defaults to `8000`. Multi-instance setups land outside the 0–2
+base-port table, so read the api port from `dev docker ports` rather than
+computing it.
 
 Leave it running and `stripe listen` will log each event with the API's
 2xx response. Missing webhook → confirm the api port matches

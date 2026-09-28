@@ -7,8 +7,7 @@
 
 # testing
 /coverage
-/playwright-report
-/test-results
+/e2e/artifacts
 
 # next.js
 /.next/

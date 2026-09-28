@@ -58,7 +58,7 @@ const chooseEnvironment = (
         message: `Pass --sandbox or --production to ${action} outside an interactive terminal.`,
       })
     }
-    return yield* Prompt.select<PolarEnvironment>({
+    return yield* Prompt.Select<PolarEnvironment>({
       message: `Which environment do you want to ${action}?`,
       choices: [
         { title: 'Sandbox', value: 'sandbox', description: 'sandbox.polar.sh' },
@@ -93,7 +93,7 @@ const selectOrganization = Effect.gen(function* () {
     return
   }
   const selection = yield* organizations.selected
-  const organization = yield* Prompt.select({
+  const organization = yield* Prompt.Select({
     message: 'Select organization',
     choices: items.map((organization) => ({
       value: organization,
@@ -116,7 +116,7 @@ const login = Command.make(
   'login',
   {
     ...environmentFlags,
-    newSession: Flag.boolean('new-session').pipe(
+    newSession: Flag.Boolean('new-session').pipe(
       Flag.withDefault(false),
       Flag.withDescription('Sign in again even if a session is already saved'),
     ),
@@ -277,7 +277,7 @@ const logoutTargets = (flags: {
     if (sessions.length > 1) {
       choices.push({ title: 'All sessions', value: [...sessions] })
     }
-    return yield* Prompt.select({
+    return yield* Prompt.Select({
       message: 'Which session do you want to log out of?',
       choices,
     })
@@ -287,7 +287,7 @@ const logout = Command.make(
   'logout',
   {
     ...environmentFlags,
-    all: Flag.boolean('all').pipe(
+    all: Flag.Boolean('all').pipe(
       Flag.withDefault(false),
       Flag.withDescription('Remove every saved session'),
     ),

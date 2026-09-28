@@ -33,13 +33,6 @@ variable "google_service_account_json" {
   sensitive   = true
 }
 
-# OpenAI
-variable "openai_api_key_production" {
-  description = "OpenAI API Key for production"
-  type        = string
-  sensitive   = true
-}
-
 # Pydantic AI Gateway
 variable "pydantic_ai_gateway_api_key_production" {
   description = "Pydantic AI Gateway API Key for production"
@@ -72,12 +65,6 @@ variable "backend_discord_proxy_url" {
   sensitive   = true
 }
 
-variable "backend_discord_webhook_url_production" {
-  description = "Discord Webhook URL for production"
-  type        = string
-  sensitive   = true
-}
-
 variable "backend_posthog_project_api_key_production" {
   description = "PostHog Project API Key for production"
   type        = string
@@ -105,12 +92,6 @@ variable "backend_resend_webhook_secret" {
 
 variable "backend_logo_dev_publishable_key_production" {
   description = "Logo.dev Publishable Key for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_secret_production" {
-  description = "Backend Secret for production"
   type        = string
   sensitive   = true
 }
@@ -516,18 +497,6 @@ variable "worker_sqs_actors" {
   default     = "[\"dummy\"]"
 }
 
-variable "stripe_app_client_id" {
-  description = "Stripe App OAuth client ID"
-  type        = string
-  default     = ""
-}
-
-variable "stripe_app_client_link_id" {
-  description = "Stripe App OAuth client link ID"
-  type        = string
-  default     = ""
-}
-
 variable "turnstile_secret" {
   description = "Cloudflare Turnstile secret"
   type        = string
@@ -594,4 +563,23 @@ variable "backup_alert_slack_bot_token" {
   description = "Slack bot token for database backup copy failure alerts"
   type        = string
   sensitive   = true
+}
+
+variable "linear_api_key" {
+  description = "Linear API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "linear_team_id" {
+  description = "Linear team ID"
+  type        = string
+  default     = ""
+}
+
+variable "linear_payout_amount_mismatch_template_id" {
+  description = "Linear payout amount mismatch issue template ID"
+  type        = string
+  default     = ""
 }

@@ -1020,6 +1020,45 @@ class TestClientConfirm:
 
 
 @pytest.mark.asyncio
+class TestClientCancelPayment:
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
+        response = await client.post(f"{api_prefix}/client/123/cancel-payment")
+
+        assert response.status_code == 404
+
+    async def test_valid(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            payment_processor_metadata={
+                "intent_id": "pi_current",
+                "intent_client_secret": "pi_current_secret_test",
+                "intent_status": "requires_action",
+            },
+        )
+        stripe_service_mock.cancel_payment_intent.return_value = SimpleNamespace(
+            status="canceled"
+        )
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout.client_secret}/cancel-payment"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["status"] == "open"
+        assert "intent_client_secret" not in json["payment_processor_metadata"]
+
+
+@pytest.mark.asyncio
 class TestClientOpened:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.post(f"{api_prefix}/client/123/opened", json={})

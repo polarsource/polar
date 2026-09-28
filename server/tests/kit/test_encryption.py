@@ -29,6 +29,12 @@ async def test_encrypt_sync_roundtrips_through_async_decrypt() -> None:
 
 
 @pytest.mark.asyncio
+async def test_decrypt_sync_roundtrips_through_async_encrypt() -> None:
+    secret = await EncryptedString.encrypt("xoxb-1234", context=CONTEXT)
+    assert secret.decrypt_sync() == "xoxb-1234"
+
+
+@pytest.mark.asyncio
 async def test_each_encryption_uses_a_fresh_data_key() -> None:
     first = await EncryptedString.encrypt("same", context=CONTEXT)
     second = await EncryptedString.encrypt("same", context=CONTEXT)
@@ -50,6 +56,18 @@ async def test_context_binds_ciphertext_to_its_row() -> None:
 
     with pytest.raises(InvalidTag):
         await loaded.decrypt()
+
+
+def test_decrypt_sync_binds_ciphertext_to_its_row() -> None:
+    encrypted = EncryptedString.encrypt_sync(
+        "xoxb-1234", context={**CONTEXT, "id": "row-1"}
+    )
+    loaded = EncryptedString(encrypted.encrypted_value, CONTEXT)
+
+    assert loaded.decrypt_sync(id="row-1") == "xoxb-1234"
+
+    with pytest.raises(InvalidTag):
+        loaded.decrypt_sync(id="row-2")
 
 
 @pytest.mark.asyncio

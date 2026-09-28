@@ -80,7 +80,7 @@ resource "aws_vpc_endpoint_service" "this" {
 data "archive_file" "refresh" {
   type        = "zip"
   source_file = "${path.module}/refresh.py"
-  output_path = "${path.module}/refresh.zip"
+  output_path = "${path.root}/${var.name}-refresh.zip"
 }
 
 resource "aws_iam_role" "refresh" {

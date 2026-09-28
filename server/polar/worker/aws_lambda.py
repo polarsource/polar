@@ -51,6 +51,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         for record in event.get("Records", []):
             message_id = record["messageId"]
             with contextlib.ExitStack() as stack:
+                stack.enter_context(sentry_sdk.isolation_scope())
                 try:
                     envelope = parse_envelope(record["body"])
                     task_telemetry: contextlib.AbstractContextManager[Any]

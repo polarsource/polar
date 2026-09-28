@@ -20,6 +20,7 @@ from redis.retry import Retry
 
 from polar.config import settings
 from polar.logging import CorrelationID, Logger
+from polar.observability.task_logging import set_sentry_task_context, task_log_context
 from polar.operational_errors import handle_operational_error
 from polar.redis import REDIS_RETRY_ON_ERRROR, SyncFailoverRedis
 
@@ -105,6 +106,7 @@ class LogContextMiddleware(dramatiq.Middleware):
         sentry_sdk.set_tag("correlation_id", correlation_id)
         if source_correlation_id is not None:
             sentry_sdk.set_tag("source_correlation_id", source_correlation_id)
+        set_sentry_task_context(message)
 
     def after_process_message(
         self,
@@ -149,7 +151,7 @@ class LogfireMiddleware(dramatiq.Middleware):
                 logfire.span(
                     "TASK {actor}",
                     actor=actor_name,
-                    message=message.asdict(),
+                    message=task_log_context(message),
                     correlation_id=CorrelationID.get(),
                     source_correlation_id=message.options.get("source_correlation_id"),
                 )

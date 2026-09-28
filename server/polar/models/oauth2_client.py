@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.kit.crypto import get_token_hash
+from polar.kit.crypto import get_token_hash, get_token_hash_candidates
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.oauth2.sub_type import SubType
@@ -28,7 +28,8 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     __table_args__ = (UniqueConstraint("client_id"),)
 
     client_id: Mapped[str] = mapped_column(String(52), nullable=False)
-    client_secret: Mapped[str] = mapped_column(String(52), nullable=False)
+    # Cancels the plaintext column authlib's mixin declares.
+    client_secret = None
     # HMAC for synchronous verification and value lookup; the encrypted
     # column reveals the plaintext. See the secrets-encryption design doc.
     client_secret_hash: Mapped[str | None] = mapped_column(
@@ -38,9 +39,6 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         EncryptedStringType(OAUTH2_CLIENT_SECRET_CONTEXT),
         nullable=True,
         default=None,
-    )
-    registration_access_token: Mapped[str] = mapped_column(
-        String, index=True, nullable=False
     )
     registration_access_token_hash: Mapped[str | None] = mapped_column(
         "registration_access_token_hash_v2",
@@ -70,6 +68,30 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
             return SubType(self.client_metadata["default_sub_type"])
         except KeyError:
             return SubType.user
+
+    @property
+    def client_info(self) -> dict[str, Any]:
+        return {
+            "client_id": self.client_id,
+            "client_secret": self.get_client_secret_sync(),
+            "client_id_issued_at": self.client_id_issued_at,
+            "client_secret_expires_at": self.client_secret_expires_at,
+        }
+
+    def check_client_secret(self, client_secret: str) -> bool:
+        if self.client_secret_hash is None:
+            return False
+        return (
+            self.client_secret_hash in get_token_hash_candidates(client_secret).values()
+        )
+
+    def check_registration_access_token(self, registration_access_token: str) -> bool:
+        if self.registration_access_token_hash is None:
+            return False
+        return (
+            self.registration_access_token_hash
+            in get_token_hash_candidates(registration_access_token).values()
+        )
 
     @staticmethod
     def hash_secret(value: str | None) -> str | None:
@@ -130,7 +152,6 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     async def set_client_secret(self, client_secret: str) -> None:
         if self.id is None:
             self.id = self.generate_id()
-        self.client_secret = client_secret  # pyright: ignore
         self.client_secret_hash = self.hash_secret(client_secret)
         self.client_secret_encrypted = await self.encrypt_client_secret(
             self.id, client_secret
@@ -141,7 +162,6 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     ) -> None:
         if self.id is None:
             self.id = self.generate_id()
-        self.registration_access_token = registration_access_token
         self.registration_access_token_hash = self.hash_secret(
             registration_access_token
         )
@@ -154,7 +174,6 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     def set_client_secret_sync(self, client_secret: str) -> None:
         if self.id is None:
             self.id = self.generate_id()
-        self.client_secret = client_secret  # pyright: ignore
         self.client_secret_hash = self.hash_secret(client_secret)
         self.client_secret_encrypted = self.encrypt_client_secret_sync(
             self.id, client_secret
@@ -165,7 +184,6 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     ) -> None:
         if self.id is None:
             self.id = self.generate_id()
-        self.registration_access_token = registration_access_token
         self.registration_access_token_hash = self.hash_secret(
             registration_access_token
         )
@@ -174,3 +192,13 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
                 self.id, registration_access_token
             )
         )
+
+    def get_client_secret_sync(self) -> str | None:
+        if self.client_secret_encrypted is None:
+            return None
+        return self.client_secret_encrypted.decrypt_sync(id=str(self.id))
+
+    def get_registration_access_token_sync(self) -> str | None:
+        if self.registration_access_token_encrypted is None:
+            return None
+        return self.registration_access_token_encrypted.decrypt_sync(id=str(self.id))

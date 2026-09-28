@@ -67,7 +67,6 @@ class OAuth2ClientConfigurationUpdate(OAuth2ClientConfiguration):
 
 class OAuth2Client(TimestampedSchema, OAuth2ClientConfiguration):
     client_id: str
-    client_secret: str
     client_id_issued_at: int
     client_secret_expires_at: int
 

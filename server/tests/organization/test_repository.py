@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -14,6 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
+    create_payout_account,
 )
 
 
@@ -54,6 +56,39 @@ class TestGetOwnerUser:
         repo = OrganizationRepository.from_session(session)
         owner_after_removal = await repo.get_owner_user(organization)
         assert owner_after_removal is None
+
+
+@pytest.mark.asyncio
+class TestRemovePayoutAccount:
+    async def test_removes_matching_payout_account(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        repo = OrganizationRepository.from_session(session)
+        await repo.remove_payout_account(organization.id, payout_account.id)
+        await session.refresh(organization)
+
+        assert organization.payout_account_id is None
+
+    async def test_ignores_concurrently_rebound_payout_account(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        repo = OrganizationRepository.from_session(session)
+        await repo.remove_payout_account(organization.id, uuid.uuid4())
+        await session.refresh(organization)
+
+        assert organization.payout_account_id == payout_account.id
 
 
 async def _set_status(

@@ -247,6 +247,7 @@ export default {
       paymentSuccessful: 'Betaling geslaagd! Je producten worden klaargezet...',
       confirmationTokenFailed:
         'Bevestigingstoken aanmaken mislukt, probeer het later opnieuw.',
+      paymentNotCompleted: 'De betaling is niet voltooid. Probeer het opnieuw.',
     },
     cta: {
       startTrial: 'Proefperiode starten',

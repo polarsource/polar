@@ -20,6 +20,13 @@ module "jwks_signing_key" {
   current_generation = "2026-09"
 }
 
+module "hash_secret" {
+  source = "../modules/hash_secret"
+
+  environment = "sandbox"
+  role_name   = module.secrets_kms.role_name
+}
+
 module "lambda_worker_ecr" {
   source = "../modules/ecr_repository"
 
@@ -97,6 +104,7 @@ resource "aws_vpc_security_group_ingress_rule" "redis_nlb_b" {
 locals {
   files_bucket_name        = "polar-sandbox-files"
   files_public_bucket_name = "polar-public-sandbox-files"
+  diagnostics_bucket_name  = "polar-sandbox-diagnostics"
 
   worker_sqs_queue_prefix = "polar-sandbox-tasks"
 
@@ -162,7 +170,10 @@ module "lambda_worker" {
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker.version_id
   kms_key_arn        = module.secrets_kms.key_arn
 
-  additional_policy_documents = [data.aws_iam_policy_document.s3_access.json]
+  additional_policy_documents = [
+    data.aws_iam_policy_document.s3_access.json,
+    module.hash_secret.read_policy_json,
+  ]
 }
 
 module "lambda_worker_queue" {
@@ -189,7 +200,10 @@ module "lambda_worker_queue" {
   secrets_version_id = aws_secretsmanager_secret_version.lambda_worker.version_id
   kms_key_arn        = module.secrets_kms.key_arn
 
-  additional_policy_documents = [data.aws_iam_policy_document.s3_access.json]
+  additional_policy_documents = [
+    data.aws_iam_policy_document.s3_access.json,
+    module.hash_secret.read_policy_json,
+  ]
 }
 
 moved {
@@ -246,6 +260,12 @@ data "aws_iam_policy_document" "s3_access" {
     sid       = "LogsWrite"
     actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${local.aws_s3_config.logs_bucket_name}/*"]
+  }
+
+  statement {
+    sid       = "DiagnosticsWrite"
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${local.diagnostics_bucket_name}/*"]
   }
 }
 

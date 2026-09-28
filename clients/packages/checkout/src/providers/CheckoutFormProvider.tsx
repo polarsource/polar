@@ -41,6 +41,16 @@ const createDeferred = <T,>(): Deferred<T> => {
   return { promise, resolve, reject }
 }
 
+const errorsShownToBuyer = new WeakSet<object>()
+
+const shownToBuyer = (error: object) => {
+  errorsShownToBuyer.add(error)
+  return error
+}
+
+export const isShownToBuyer = (error: unknown) =>
+  errorsShownToBuyer.has(error as object)
+
 export interface CheckoutFormContextProps {
   checkout: schemas['CheckoutPublic']
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>
@@ -65,7 +75,12 @@ export const CheckoutFormProvider = ({
   children,
   locale = DEFAULT_LOCALE,
 }: React.PropsWithChildren<{ locale?: AcceptedLocale }>) => {
-  const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
+  const {
+    checkout,
+    update: updateOuter,
+    confirm: confirmOuter,
+    cancelPayment,
+  } = useCheckout()
   const t = useTranslations(locale)
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
@@ -219,10 +234,10 @@ export const CheckoutFormProvider = ({
             setTrialUnavailable(true)
             await update({ allow_trial: false })
             break
-          case 'ResourceNotFound':
-          case 'ExpiredCheckoutError':
-            break
+          default:
+            throw error
         }
+        throw shownToBuyer(error)
       }
 
       throw error
@@ -263,7 +278,7 @@ export const CheckoutFormProvider = ({
           setError('root', { message: submitError.message })
         }
         setLoading(false)
-        throw new Error(submitError.message)
+        throw shownToBuyer(new Error(submitError.message))
       }
 
       let confirmationToken: ConfirmationToken | undefined
@@ -304,7 +319,7 @@ export const CheckoutFormProvider = ({
           message: error?.message || fallbackMessage,
         })
         setLoading(false)
-        throw new Error(error?.message || fallbackMessage)
+        throw shownToBuyer(new Error(error?.message || fallbackMessage))
       }
 
       let updatedCheckout: schemas['CheckoutPublicConfirmed']
@@ -318,30 +333,40 @@ export const CheckoutFormProvider = ({
         throw error
       }
 
-      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
-
       const { intent_status, intent_client_secret } =
         updatedCheckout.payment_processor_metadata
-
-      let currentIntentStatus = intent_status
-      while (currentIntentStatus === 'requires_action') {
-        const { error, paymentIntent, setupIntent } =
-          await stripe.handleNextAction({
-            clientSecret: intent_client_secret,
-          })
-        if (error) {
+      if (intent_status === 'requires_action') {
+        const {
+          error: nextActionError,
+          paymentIntent,
+          setupIntent,
+        } = await stripe.handleNextAction({
+          clientSecret: intent_client_secret,
+        })
+        if (nextActionError) {
           setLoading(false)
-          setError('root', { message: error.message })
-          throw new Error(error.message)
+          setError('root', { message: nextActionError.message })
+          throw shownToBuyer(new Error(nextActionError.message))
         }
-        currentIntentStatus =
-          paymentIntent?.status || setupIntent?.status || intent_status
+
+        // Buyer dismissed the action (e.g. closed the Cash App Pay QR code): cancel the intent and reopen the checkout, unless they completed it first
+        const status = (paymentIntent ?? setupIntent)?.status ?? intent_status
+        if (status === 'requires_action') {
+          const { ok, value } = await cancelPayment()
+          if (!ok || value.status === 'open') {
+            const message = t('checkout.loading.paymentNotCompleted')
+            setLoading(false)
+            setError('root', { message })
+            throw shownToBuyer(new Error(message))
+          }
+        }
       }
 
+      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
       setLoading(false)
       return updatedCheckout
     },
-    [checkout, setError, _confirm, t, setTrialUnavailable],
+    [checkout, setError, _confirm, t, setTrialUnavailable, cancelPayment],
   )
 
   return (

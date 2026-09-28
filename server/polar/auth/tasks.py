@@ -3,6 +3,7 @@ import structlog
 from polar.logging import Logger
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
+from .oauth2.state import OAuth2StateService
 from .repository import AuthenticationSessionRepository, EmailOTPRepository
 from .service import auth as auth_service
 
@@ -40,3 +41,14 @@ async def email_otp_delete_expired() -> None:
 async def authentication_session_delete_expired() -> None:
     async with AsyncSessionMaker() as session:
         await AuthenticationSessionRepository.from_session(session).delete_expired()
+
+
+@actor(
+    actor_name="oauth2_state.delete_expired",
+    cron_trigger=CronTrigger(hour=0, minute=0),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def oauth2_state_delete_expired() -> None:
+    async with AsyncSessionMaker() as session:
+        await OAuth2StateService(session).delete_expired()

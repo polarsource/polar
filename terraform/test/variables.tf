@@ -29,13 +29,6 @@ variable "google_service_account_json" {
   sensitive   = true
 }
 
-# OpenAI
-variable "openai_api_key" {
-  description = "OpenAI API Key for production"
-  type        = string
-  sensitive   = true
-}
-
 # Pydantic AI Gateway
 variable "pydantic_ai_gateway_api_key" {
   description = "Pydantic AI Gateway API Key for test"
@@ -88,7 +81,7 @@ variable "backend_logo_dev_publishable_key" {
 }
 
 variable "backend_secret" {
-  description = "Backend Secret for production"
+  description = "Backend Secret for the test Vercel service"
   type        = string
   sensitive   = true
 }
@@ -423,18 +416,6 @@ variable "worker_sqs_actors" {
   default     = "[\"dummy\"]"
 }
 
-variable "stripe_app_client_id" {
-  description = "Stripe App OAuth client ID"
-  type        = string
-  default     = ""
-}
-
-variable "stripe_app_client_link_id" {
-  description = "Stripe App OAuth client link ID"
-  type        = string
-  default     = ""
-}
-
 variable "turnstile_secret" {
   description = "Cloudflare Turnstile secret"
   type        = string
@@ -483,4 +464,23 @@ variable "private_backoffice_tailscale_ip" {
     )
     error_message = "private_backoffice_tailscale_ip must be an IPv4 address in Tailscale's 100.64.0.0/10 range."
   }
+}
+
+variable "linear_api_key" {
+  description = "Linear API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "linear_team_id" {
+  description = "Linear team ID"
+  type        = string
+  default     = ""
+}
+
+variable "linear_payout_amount_mismatch_template_id" {
+  description = "Linear payout amount mismatch issue template ID"
+  type        = string
+  default     = ""
 }

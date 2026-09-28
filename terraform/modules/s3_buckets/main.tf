@@ -132,6 +132,7 @@ locals {
     files             = local.app_access_read_write_delete
     public_files      = local.app_access_read_write_delete
     logs              = ["s3:PutObject"]
+    diagnostics       = ["s3:PutObject"]
   }
 
   app_access_bucket_arns = {
@@ -141,6 +142,7 @@ locals {
     files             = aws_s3_bucket.files.arn
     public_files      = aws_s3_bucket.public_files.arn
     logs              = aws_s3_bucket.logs.arn
+    diagnostics       = aws_s3_bucket.diagnostics.arn
   }
 
   app_access_statements = local.app_access_enabled ? {
@@ -407,5 +409,45 @@ resource "aws_s3_bucket_policy" "logs" {
   policy = jsonencode({
     Version   = "2012-10-17"
     Statement = local.app_access_statements["logs"]
+  })
+}
+
+resource "aws_s3_bucket" "diagnostics" {
+  bucket = "${local.full_name_prefix}-diagnostics"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "diagnostics" {
+  bucket = aws_s3_bucket.diagnostics.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "diagnostics" {
+  bucket = aws_s3_bucket.diagnostics.id
+
+  rule {
+    id     = "expire-diagnostics-after-90-days"
+    status = "Enabled"
+    filter {}
+    expiration {
+      days = 90
+    }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "diagnostics" {
+  count = local.app_access_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.diagnostics.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = local.app_access_statements["diagnostics"]
   })
 }

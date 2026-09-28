@@ -9,6 +9,7 @@ const SINGULAR_LABELS: Record<ReviewEntity, string> = {
   customers: 'Customer',
   products: 'Product',
   prices: 'Price',
+  discounts: 'Discount',
 }
 
 export function entityLabelSingular(entity: ReviewEntity): string {

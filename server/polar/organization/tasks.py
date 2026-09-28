@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
 import structlog
 from sqlalchemy import CursorResult, select
@@ -20,6 +20,7 @@ from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
+from polar.observability.task_logging import LoggableField
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
@@ -69,8 +70,13 @@ class UserDoesNotExist(OrganizationTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="organization.created", priority=TaskPriority.LOW)
-async def organization_created(organization_id: uuid.UUID) -> None:
+@actor(
+    actor_name="organization.created",
+    priority=TaskPriority.LOW,
+)
+async def organization_created(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id)
@@ -106,7 +112,9 @@ async def organization_offboard_expired() -> None:
     actor_name="organization.offboard_expired_one",
     priority=TaskPriority.LOW,
 )
-async def organization_offboard_expired_one(organization_id: uuid.UUID) -> None:
+async def organization_offboard_expired_one(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Complete offboarding for one org if the chargeback window has also elapsed."""
     async with AsyncSessionMaker() as session:
         await organization_service.complete_expired_offboarding(
@@ -127,8 +135,13 @@ async def organization_cancel_expired_subscriptions() -> None:
         await organization_service.cancel_expired_organizations_subscriptions(session)
 
 
-@actor(actor_name="organization.offboarded", priority=TaskPriority.LOW)
-async def organization_offboarded(organization_id: uuid.UUID) -> None:
+@actor(
+    actor_name="organization.offboarded",
+    priority=TaskPriority.LOW,
+)
+async def organization_offboarded(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Notify an organization's members that it has been offboarded."""
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -165,7 +178,9 @@ def _check_threshold_debounce_key(account_id: uuid.UUID) -> str:
     priority=TaskPriority.LOW,
     debounce_key=_check_threshold_debounce_key,
 )
-async def organization_check_threshold(account_id: uuid.UUID) -> None:
+async def organization_check_threshold(
+    account_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """Refresh the cached ``total_balance`` for the organization owning
     ``account_id`` and re-evaluate the review threshold.
 
@@ -189,8 +204,13 @@ async def organization_check_threshold(account_id: uuid.UUID) -> None:
         await organization_service.check_review_threshold(session, organization)
 
 
-@actor(actor_name="organization.under_review", priority=TaskPriority.LOW)
-async def organization_under_review(organization_id: uuid.UUID) -> None:
+@actor(
+    actor_name="organization.under_review",
+    priority=TaskPriority.LOW,
+)
+async def organization_under_review(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id)
@@ -210,11 +230,14 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
         )
 
 
-@actor(actor_name="organization.deletion_requested", priority=TaskPriority.HIGH)
+@actor(
+    actor_name="organization.deletion_requested",
+    priority=TaskPriority.HIGH,
+)
 async def organization_deletion_requested(
-    organization_id: uuid.UUID,
-    user_id: uuid.UUID,
-    blocked_reasons: list[str],
+    organization_id: Annotated[uuid.UUID, LoggableField],
+    user_id: Annotated[uuid.UUID, LoggableField],
+    blocked_reasons: Annotated[list[str], LoggableField],
 ) -> None:
     """Handle organization deletion request that requires support review."""
     async with AsyncSessionMaker() as session:
@@ -240,7 +263,9 @@ async def organization_deletion_requested(
     time_limit=600_000,  # 10 min timeout
     max_retries=0,
 )
-async def backfill_members(organization_id: uuid.UUID) -> None:
+async def backfill_members(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     """
     Backfill members when member_model_enabled is turned on for an organization.
 
@@ -693,8 +718,9 @@ async def _backfill_benefit_grants(
                 if existing_id is not None:
                     if grant.order_id is not None:
                         # One-off order — each purchase is distinct, keep both
-                        grant.member_id = target_member_id
-                        count += 1
+                        if grant.revoked_at is None:
+                            grant.member_id = target_member_id
+                            count += 1
                     else:
                         # The existing member-linked grant is the one the system
                         # actively manages. The old unlinked grant is stale
@@ -708,7 +734,8 @@ async def _backfill_benefit_grants(
                             existing_grant.properties = grant.properties
                         grant.set_deleted_at()
                         duplicates_deleted += 1
-                else:
+
+                elif grant.revoked_at is None:
                     grant.member_id = target_member_id
                     count += 1
 
@@ -899,7 +926,7 @@ _PREPARE_BATCH_SIZE = 100
     time_limit=600_000,  # 10 min timeout
     max_retries=0,
 )
-async def prepare_members(organization_id: uuid.UUID) -> None:
+async def prepare_members(organization_id: Annotated[uuid.UUID, LoggableField]) -> None:
     """
     Non-destructive version of backfill_members.
 
@@ -1189,7 +1216,7 @@ async def _prepare_benefit_grants(
                 )
                 if scope_conflict_id is not None:
                     skipped_conflicts += 1
-                else:
+                elif grant.revoked_at is None:
                     grant.member_id = target_member_id
                     count += 1
 
@@ -1212,8 +1239,13 @@ async def _prepare_benefit_grants(
     return count
 
 
-@actor(actor_name="organization.evaluate_website_risk", priority=TaskPriority.LOW)
-async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
+@actor(
+    actor_name="organization.evaluate_website_risk",
+    priority=TaskPriority.LOW,
+)
+async def evaluate_website_risk(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id)
@@ -1223,9 +1255,13 @@ async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
         await organization_service.evaluate_website_risk(session, organization)
 
 
-@actor(actor_name="organization.sync_payout_account_website", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.sync_payout_account_website",
+    priority=TaskPriority.LOW,
+)
 async def sync_payout_account_website(
-    organization_id: uuid.UUID, payout_account_id: uuid.UUID | None = None
+    organization_id: Annotated[uuid.UUID, LoggableField],
+    payout_account_id: Annotated[uuid.UUID | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)

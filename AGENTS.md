@@ -162,8 +162,8 @@ Treat **Accepted** ADRs as binding:
   `handbook/engineering/decisions/template.mdx` rather than losing the rationale in the diff.
 - **ADR-0012:** AI API prompts send only the fields the feature needs. Do not
   dump a whole org, customer, or payment object into a model call.
-- **ADR-0013:** Daily scheduled tasks run staggered in the 04:00–05:00 UTC
-  maintenance window, one per slot, and are listed in the handbook's
+- **ADR-0014:** Daily scheduled tasks use `MaintenanceWindow()` and are spread
+  across 04:00–05:00 UTC based on the number of registered jobs. They are listed in the handbook's
   [Scheduled jobs](handbook/engineering/backend-development/scheduled-jobs.mdx) page.
 
 ## Skills

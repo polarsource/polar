@@ -13,7 +13,7 @@ from polar.config import settings
 from polar.observability import metrics as _prometheus_metrics
 
 from ._broker import get_broker
-from ._cron import CronTrigger
+from ._cron import CronTrigger, MaintenanceWindow
 from ._encoder import JSONEncoder
 from ._enqueue import (
     BulkJobDelayCalculator,
@@ -121,6 +121,7 @@ __all__ = [
     "CronTrigger",
     "HTTPXMiddleware",
     "JobQueueManager",
+    "MaintenanceWindow",
     "RedisMiddleware",
     "TaskPriority",
     "TaskQueue",

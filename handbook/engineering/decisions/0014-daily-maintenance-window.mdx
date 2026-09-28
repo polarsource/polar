@@ -1,6 +1,6 @@
 ---
-title: "ADR-0013: Daily scheduled jobs run staggered in a 04:00–05:00 UTC maintenance window"
-description: "Every daily cron task gets its own minute in the 04:00–05:00 UTC window, recorded in the scheduled jobs registry."
+title: "ADR-0014: Daily scheduled jobs run staggered in a 04:00–05:00 UTC maintenance window"
+description: "Daily cron tasks are spread across the 04:00–05:00 UTC window."
 ---
 
 <Info>
@@ -25,12 +25,15 @@ not by a wide margin, but consistently the trough.
 ## Decision
 
 Daily scheduled tasks run in a **maintenance window between 04:00 and 05:00 UTC**, staggered
-one job per slot, four minutes apart. Declare them with `CronTrigger(hour=4, minute=<minute>)`,
-imported from `polar.worker`.
+one job per minute. Declare them with `MaintenanceWindow()` from `polar.worker`. At scheduler
+startup, the jobs are sorted by actor name and spread evenly through the interior minutes of
+the window. For N jobs, job i (starting at 1) runs at minute `floor(60 × i / (N + 1))` after
+04:00 UTC. Registration order does not affect the schedule. The scheduler rejects a sixtieth
+maintenance job rather than assigning two to the same minute.
 
-When you add a daily task, take the next free slot, and add a row for it to
-[Scheduled jobs](/engineering/backend-development/scheduled-jobs). No two daily jobs share a
-minute.
+When you add a daily task, add a row for it to
+[Scheduled jobs](/engineering/backend-development/scheduled-jobs). The table records the
+resolved schedule, rather than defining it.
 
 This covers *daily* jobs only. Hourly and sub-hourly tasks keep their own schedules: they are
 already spread across the hour, and pinning them to the window would defeat the point of
@@ -40,11 +43,15 @@ running them frequently.
 
 - The database sees fourteen small maintenance jobs spread over an hour instead of twelve
   firing at once, during the hour when it has the most headroom to absorb them.
-- Every daily job has a known minute, so an incident at 04:3x can be traced to a specific task
-  without reading the scheduler.
-- Slots are a finite resource: fifteen fit at four-minute spacing. When the window fills up,
-  tighten the spacing rather than spilling out of the window — the crowding this ADR prevents is
-  simultaneity, not proximity.
+- Every daily job has a predictable minute, so an incident at 04:3x can be traced to a specific
+  task from the scheduled jobs table.
+- Slots are a finite resource: the hour has 59 interior minutes. As jobs are added, the gap
+  between them shrinks. A sixtieth job requires an explicit decision about window bounds or
+  resolution.
+- Adding or removing a maintenance actor changes the spacing and can shift any job. Renaming
+  one can change the order. A deployment between a job's old and new slots may run it twice or
+  skip it that day;
+  deploy after 05:00 UTC when changing the set of jobs. Today's jobs tolerate a double run.
 - Anything genuinely time-of-day sensitive (a report a human reads in the morning, a job that
   must close a financial day) does not belong in the window and should not be forced into it.
 - A missed run stays missed, and the window widens the odds. Cron jobs live in a
@@ -55,7 +62,8 @@ running them frequently.
   that the next day's run subsumes. A job for which a skipped day matters needs its own
   liveness check, not a slot.
 - A slot is a start time, not an exclusive lease: a long job can overlap the next one. That is
-  fine for the pruning work we run today.
+  fine for the pruning work we run today. Closer spacing as the set grows makes overlap more
+  likely.
 - "UTC" is enforced rather than assumed. APScheduler resolves an unspecified trigger timezone to
   the machine's, so `polar.worker` exports a `CronTrigger` subclass defaulting to UTC and the
   scheduler is built with `timezone=datetime.UTC`. A task importing `CronTrigger` straight from
@@ -67,8 +75,10 @@ running them frequently.
   least want one.
 - **Spread jobs across the whole day**: lowest peak load, but daily maintenance could then land
   in peak traffic, and there is no window to reason about during an incident.
-- **Derive the slot from a hash of the actor name**: no registry to maintain, but the schedule
-  stops being readable at the call site and silently reshuffles when an actor is renamed.
+- **Derive the slot from a hash of the actor name**: stable for unrelated additions, but hashes
+  can collide and would need a collision-resolution policy to preserve spacing.
+- **Assign slots manually**: keeps existing times stable when a new job is added, but requires
+  each new declaration to coordinate with a separate registry.
 - **One "daily maintenance" task calling each job in sequence**: one slot and no overlap, but it
   couples unrelated modules and one failure stalls everything behind it.
 

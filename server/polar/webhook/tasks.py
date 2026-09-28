@@ -20,8 +20,8 @@ from polar.models.webhook_delivery import WebhookDelivery
 from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
 from polar.worker import (
     AsyncSessionMaker,
-    CronTrigger,
     HTTPXMiddleware,
+    MaintenanceWindow,
     TaskPriority,
     TaskQueue,
     actor,
@@ -271,7 +271,7 @@ async def webhook_event_failed(
 
 @actor(
     actor_name="webhook_event.archive",
-    cron_trigger=CronTrigger(hour=4, minute=42),
+    cron_trigger=MaintenanceWindow(),
     priority=TaskPriority.LOW,
 )
 async def webhook_event_archive() -> None:

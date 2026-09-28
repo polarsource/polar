@@ -65,7 +65,7 @@ def start() -> None:
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
     scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
 
-    for func, cron_trigger in scheduler_middleware.cron_triggers:
+    for func, cron_trigger in scheduler_middleware.resolved_cron_triggers():
         scheduler.add_job(func, cron_trigger, jobstore="memory")
 
     try:

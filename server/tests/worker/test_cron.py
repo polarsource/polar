@@ -4,37 +4,76 @@ import dramatiq
 import pytest
 
 import polar.tasks  # noqa: F401 — imported so every actor is declared on the broker
-from polar.worker import CronTrigger
+from polar.worker import CronTrigger, MaintenanceWindow
+from polar.worker._cron import resolve_cron_triggers
 
 
-@pytest.fixture
-def cron_actors() -> list[tuple[str, CronTrigger]]:
-    actors = [
-        (actor.actor_name, cron_trigger)
-        for actor in dramatiq.get_broker().actors.values()
-        if (cron_trigger := actor.options.get("cron_trigger")) is not None
+def test_maintenance_window_is_stable_and_spaced() -> None:
+    declarations = [
+        ("zulu", MaintenanceWindow()),
+        ("alpha", MaintenanceWindow()),
+        ("hourly", CronTrigger(minute=15)),
     ]
-    assert actors
-    return actors
+
+    resolved = resolve_cron_triggers(declarations)
+
+    assert resolved["hourly"] is declarations[2][1]
+    assert str(resolved["alpha"].fields[6]) == "20"
+    assert str(resolved["zulu"].fields[6]) == "40"
+    assert (
+        resolve_cron_triggers(reversed(declarations))["alpha"].fields[6]
+        == (resolved["alpha"].fields[6])
+    )
 
 
-def test_triggers_run_in_utc(cron_actors: list[tuple[str, CronTrigger]]) -> None:
-    for actor_name, cron_trigger in cron_actors:
-        assert cron_trigger.timezone == datetime.UTC, (
-            f"{actor_name} is scheduled in {cron_trigger.timezone}"
-        )
+def test_maintenance_window_rejects_overflow() -> None:
+    declarations = ((str(index), MaintenanceWindow()) for index in range(60))
+
+    with pytest.raises(ValueError, match="no free slots"):
+        resolve_cron_triggers(declarations)
 
 
-def test_daily_jobs_have_their_own_maintenance_window_slot(
-    cron_actors: list[tuple[str, CronTrigger]],
-) -> None:
-    slots: dict[str, str] = {}
-    for actor_name, cron_trigger in cron_actors:
-        fields = {field.name: str(field) for field in cron_trigger.fields}
-        if fields["hour"] != "4" or fields["day_of_week"] != "*":
-            continue
-        minute = fields["minute"]
-        assert minute not in slots, (
-            f"{actor_name} shares slot 04:{minute} with {slots[minute]}"
-        )
-        slots[minute] = actor_name
+def test_maintenance_window_spacing_changes_with_job_count() -> None:
+    single = resolve_cron_triggers([("alpha", MaintenanceWindow())])
+    three = resolve_cron_triggers(
+        [(name, MaintenanceWindow()) for name in ("alpha", "bravo", "charlie")]
+    )
+
+    assert str(single["alpha"].fields[6]) == "30"
+    assert [str(three[name].fields[6]) for name in ("alpha", "bravo", "charlie")] == [
+        "15",
+        "30",
+        "45",
+    ]
+
+
+def test_registered_triggers_run_in_utc_and_maintenance_jobs_have_distinct_slots() -> (
+    None
+):
+    declarations = {
+        actor.actor_name: trigger
+        for actor in dramatiq.get_broker().actors.values()
+        if (trigger := actor.options.get("cron_trigger")) is not None
+    }
+    assert declarations
+    maintenance_jobs = {
+        name
+        for name, trigger in declarations.items()
+        if isinstance(trigger, MaintenanceWindow)
+    }
+    assert maintenance_jobs
+
+    resolved = resolve_cron_triggers(declarations.items())
+    minutes = []
+    for name, trigger in resolved.items():
+        assert trigger.timezone == datetime.UTC, name
+        if name in maintenance_jobs:
+            fields = {field.name: str(field) for field in trigger.fields}
+            assert fields["hour"] == "4"
+            assert fields["day_of_week"] == "*"
+            minutes.append(int(fields["minute"]))
+
+    assert sorted(minutes) == [
+        (index + 1) * 60 // (len(maintenance_jobs) + 1)
+        for index in range(len(maintenance_jobs))
+    ]

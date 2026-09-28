@@ -141,6 +141,32 @@ def _covered_source_ids(
     return covered
 
 
+def _polar_product_ids_by_source(
+    product_records: Sequence[MerchantMigrationRecord],
+    products: Sequence[CanonicalProduct],
+) -> dict[str, list[UUID]]:
+    ids_by_source: dict[str, list[UUID]] = {}
+    for record, product in zip(product_records, products, strict=True):
+        if (
+            record.status == MerchantMigrationRecordStatus.imported
+            and record.target_id is not None
+        ):
+            ids_by_source.setdefault(product.product_source_id, []).append(
+                record.target_id
+            )
+    return ids_by_source
+
+
+def _polar_product_ids(
+    discount: CanonicalDiscount, ids_by_source: dict[str, list[UUID]]
+) -> list[UUID]:
+    return [
+        product_id
+        for product_source_id in discount.product_source_ids or []
+        for product_id in ids_by_source.get(product_source_id, [])
+    ]
+
+
 def find_imported_price(
     product: Product,
     canonical_product: CanonicalProduct,
@@ -226,6 +252,7 @@ class _ImportContext:
     customer_records: list[MerchantMigrationRecord]
     discount_records: list[MerchantMigrationRecord]
     product_source_ids: set[str]
+    covered_product_source_ids: set[str]
     customer_source_ids: set[str]
     country_fallbacks: dict[str, str]
 
@@ -264,8 +291,9 @@ class CatalogImporter:
         """Import one batch, products then discounts then customers.
 
         A phase that still has more than the remaining budget stops the task
-        there. Discounts waiting on a product that is still pending stay pending
-        and do not keep the pass open.
+        there. A restricted discount with none of its products on Polar yet,
+        while one of them is still pending, stays pending and does not keep the
+        pass open.
         """
         ctx = await self._load_context()
         budget = IMPORT_BATCH_SIZE
@@ -274,12 +302,25 @@ class CatalogImporter:
         )
 
         pending_products = self._pending_selected(
-            ctx.product_records, ctx.product_source_ids
+            ctx.product_records,
+            ctx.product_source_ids | ctx.covered_product_source_ids,
         )
         if pending_products:
             batch = pending_products[:budget]
             await self._import_products(
-                batch, selected_source_ids=ctx.product_source_ids
+                batch,
+                selected_source_ids=ctx.product_source_ids,
+                covered_source_ids=ctx.covered_product_source_ids,
+            )
+            await self._restrict_imported_discounts(
+                self._records_of(ctx.catalog, MerchantMigrationRecordType.discount),
+                product_records=catalog_products,
+                new_product_ids={
+                    record.target_id
+                    for record in batch
+                    if record.status == MerchantMigrationRecordStatus.imported
+                    and record.target_id is not None
+                },
             )
             budget -= len(batch)
             if len(pending_products) > len(batch) or budget == 0:
@@ -407,6 +448,9 @@ class CatalogImporter:
             customer_records=customer_records,
             discount_records=discount_records,
             product_source_ids=product_source_ids,
+            covered_product_source_ids=_covered_source_ids(
+                catalog_products, price_owners
+            ),
             customer_source_ids=customer_source_ids,
             country_fallbacks=country_fallbacks,
         )
@@ -503,8 +547,9 @@ class CatalogImporter:
         records: Sequence[MerchantMigrationRecord],
         product_records: Sequence[MerchantMigrationRecord],
     ) -> list[MerchantMigrationRecord]:
-        """Pending discounts this pass can settle. Ones whose products are still
-        pending stay out: importing them now would skip them for good."""
+        """Pending discounts this pass can settle. A restricted one with none of
+        its products on Polar yet stays out while any of them is still pending:
+        importing it now would skip it for good."""
         discounts = [
             self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
             for record in records
@@ -521,6 +566,9 @@ class CatalogImporter:
             for record, product in zip(product_records, products, strict=True)
             if record.status == MerchantMigrationRecordStatus.pending
         }
+        polar_product_ids_by_source = _polar_product_ids_by_source(
+            product_records, products
+        )
         actionable: list[MerchantMigrationRecord] = []
         for record, discount in zip(records, discounts, strict=True):
             if record.status != MerchantMigrationRecordStatus.pending:
@@ -528,9 +576,13 @@ class CatalogImporter:
             if plans[discount.source_id] is not None:
                 actionable.append(record)
                 continue
-            if discount.product_source_ids and any(
-                product_source_id in pending_product_source_ids
-                for product_source_id in discount.product_source_ids
+            if (
+                discount.product_source_ids
+                and not _polar_product_ids(discount, polar_product_ids_by_source)
+                and any(
+                    product_source_id in pending_product_source_ids
+                    for product_source_id in discount.product_source_ids
+                )
             ):
                 continue
             actionable.append(record)
@@ -623,16 +675,13 @@ class CatalogImporter:
         self,
         records: Sequence[MerchantMigrationRecord],
         *,
-        catalog_discount_records: Sequence[MerchantMigrationRecord],
         product_records: Sequence[MerchantMigrationRecord],
-        new_product_ids: set[UUID],
     ) -> MerchantMigrationImportResult:
         """Import coupons, restricted to the Polar products of their Stripe ones.
 
         A restricted coupon imports once any of its products is on Polar: waiting
         for every catalog row would wait forever on rows nothing selects, like a
-        yearly price nobody is on. Rows imported later join the restriction, even
-        when an earlier migration imported the coupon.
+        yearly price nobody is on.
         """
         discounts = [
             self._as(deserialize(record.type, record.canonical), CanonicalDiscount)
@@ -645,41 +694,18 @@ class CatalogImporter:
         plans = plan_discount_imports(
             discounts, products, self.organization.default_presentment_currency
         )
-        polar_product_ids_by_source: dict[str, list[UUID]] = {}
-        pending_product_source_ids: set[str] = set()
-        for record, product in zip(product_records, products, strict=True):
-            if record.status == MerchantMigrationRecordStatus.pending:
-                pending_product_source_ids.add(product.product_source_id)
-            if (
-                record.status != MerchantMigrationRecordStatus.imported
-                or record.target_id is None
-            ):
-                continue
-            polar_product_ids_by_source.setdefault(
-                product.product_source_id, []
-            ).append(record.target_id)
-
-        def polar_product_ids(discount: CanonicalDiscount) -> list[UUID]:
-            return [
-                product_id
-                for product_source_id in discount.product_source_ids or []
-                for product_id in polar_product_ids_by_source.get(product_source_id, [])
-            ]
-
-        for record in catalog_discount_records:
-            if record.status != MerchantMigrationRecordStatus.imported:
-                continue
-            imported = self._as(
-                deserialize(record.type, record.canonical), CanonicalDiscount
-            )
-            await self._restrict_to_new_products(
-                record,
-                [id for id in polar_product_ids(imported) if id in new_product_ids],
-            )
+        polar_product_ids_by_source = _polar_product_ids_by_source(
+            product_records, products
+        )
+        pending_product_source_ids = {
+            product.product_source_id
+            for record, product in zip(product_records, products, strict=True)
+            if record.status == MerchantMigrationRecordStatus.pending
+        }
 
         counts = ImportCounts()
         for record, discount in zip(records, discounts, strict=True):
-            product_ids = polar_product_ids(discount)
+            product_ids = _polar_product_ids(discount, polar_product_ids_by_source)
             if record.status != MerchantMigrationRecordStatus.pending:
                 counts.settle(record.status)
                 continue
@@ -716,6 +742,41 @@ class CatalogImporter:
             imported=counts.imported,
             skipped=counts.skipped,
         )
+
+    async def _restrict_imported_discounts(
+        self,
+        records: Sequence[MerchantMigrationRecord],
+        *,
+        product_records: Sequence[MerchantMigrationRecord],
+        new_product_ids: set[UUID],
+    ) -> None:
+        """Rows imported later join a restricted coupon's products, even when an
+        earlier migration imported the coupon."""
+        if not new_product_ids:
+            return
+        polar_product_ids_by_source = _polar_product_ids_by_source(
+            product_records,
+            [
+                self._as(deserialize(record.type, record.canonical), CanonicalProduct)
+                for record in product_records
+            ],
+        )
+        for record in records:
+            if record.status != MerchantMigrationRecordStatus.imported:
+                continue
+            imported = self._as(
+                deserialize(record.type, record.canonical), CanonicalDiscount
+            )
+            await self._restrict_to_new_products(
+                record,
+                [
+                    product_id
+                    for product_id in _polar_product_ids(
+                        imported, polar_product_ids_by_source
+                    )
+                    if product_id in new_product_ids
+                ],
+            )
 
     async def _restrict_to_new_products(
         self, record: MerchantMigrationRecord, product_ids: list[UUID]

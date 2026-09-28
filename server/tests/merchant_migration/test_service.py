@@ -1629,7 +1629,7 @@ class TestImportCatalog:
         sibling.created_at = utc_now() + timedelta(hours=1)
         await save_fixture(sibling)
 
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         [polar_product] = await _products(session, organization)
         record = await record_repository.get_imported_product_dependency(
@@ -1652,7 +1652,7 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
         archived = CanonicalProduct(
             source_id="prod_1:month:1:archived",
             product_source_id="prod_1",
@@ -1681,7 +1681,7 @@ class TestImportCatalog:
         )
         await service.run_precheck(session, auth_subject, migration.id)
 
-        await service.import_catalog(session, auth_subject, migration.id)
+        await _import_catalog(session, auth_subject, migration.id)
 
         [polar_product] = await _products(session, organization)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -2970,7 +2970,7 @@ class TestImportCatalog:
         assert first_subscription is not None
         assert second_subscription is not None
 
-        first = await service.import_catalog(
+        first = await _import_catalog(
             session, auth_subject, migration.id, record_ids=[first_subscription.id]
         )
 
@@ -2978,7 +2978,7 @@ class TestImportCatalog:
         assert first_results[PrecheckEntity.discounts].imported == 0
         assert first_results[PrecheckEntity.discounts].skipped == 0
 
-        await service.import_catalog(
+        await _import_catalog(
             session, auth_subject, migration.id, record_ids=[second_subscription.id]
         )
 
@@ -3030,7 +3030,7 @@ class TestImportCatalog:
             ],
         )
 
-        report = await service.import_catalog(session, auth_subject, migration.id)
+        report = await _import_catalog(session, auth_subject, migration.id)
 
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.discounts].imported == 1

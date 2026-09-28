@@ -15,7 +15,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 ## Installation
 
 ```bash
-pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@next
+pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk@1.0.0
 ```
 
 ## Preparation

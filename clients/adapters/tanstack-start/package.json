@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.0-alpha.22",
+    "@polar-sh/sdk": "1.0.0",
     "@tanstack/react-start": "^1.168.57"
   },
   "devDependencies": {

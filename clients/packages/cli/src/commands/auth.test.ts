@@ -75,7 +75,30 @@ describe('auth login', () => {
     expect(output()).toContain('Logged in to Polar production')
   })
 
-  test('requires a flag outside a terminal', async () => {
+  test.each(['sandbox', 'production'] as const)(
+    'logs out of the only %s session without asking',
+    async (environment) => {
+      auth.state.sessions = [environment]
+      const { promise, output, terminal } = run(['logout'], {
+        interactive: true,
+      })
+      await promise
+
+      expect(terminal()).not.toContain('Which session')
+      expect(output()).toContain(`Logged out of Polar ${environment}`)
+      expect(auth.state.sessions).toEqual([])
+    },
+  )
+
+  test('logs out of the only session outside a terminal too', async () => {
+    auth.state.sessions = ['sandbox']
+    const { promise, output } = run(['logout'])
+    await promise
+
+    expect(output()).toContain('Logged out of Polar sandbox')
+  })
+
+  test('requires a flag outside a terminal when logged in to both', async () => {
     const { promise } = run(['login'])
 
     await expect(promise).rejects.toThrow('Pass --sandbox or --production')
@@ -108,6 +131,33 @@ describe('auth login', () => {
       'Organization selection requires an interactive terminal',
     )
     expect(organizations.state.selected).toBeUndefined()
+  })
+
+  test('selects the only organization without asking', async () => {
+    organizations.state.items = [acme]
+    const { promise, output, terminal } = run(['login', '--sandbox'], {
+      interactive: true,
+    })
+    await promise
+
+    expect(terminal()).not.toContain('Select organization')
+    expect(organizations.state.selected).toEqual({
+      id: 'org-1',
+      environment: 'sandbox',
+    })
+    expect(output()).toContain('Active organization Acme acme sandbox')
+  })
+
+  test('selects the only organization outside a terminal too', async () => {
+    organizations.state.items = [beta]
+    const { promise, output } = run(['login', '--production'])
+    await promise
+
+    expect(organizations.state.selected).toEqual({
+      id: 'org-2',
+      environment: 'production',
+    })
+    expect(output()).not.toContain('requires an interactive terminal')
   })
 
   test('offers organizations from every environment after login', async () => {

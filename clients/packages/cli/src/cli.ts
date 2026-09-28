@@ -5,6 +5,7 @@ import { FetchHttpClient } from 'effect/unstable/http'
 import { listen } from '@/commands/listen'
 import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
+import { home } from '@/commands/home'
 import { update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
 import * as Auth from '@/services/auth'
@@ -22,7 +23,7 @@ import {
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
-const mainCommand = Command.make('polar').pipe(
+const mainCommand = Command.make('polar', {}, () => home).pipe(
   Command.withSubcommands([auth, listen, trigger, update]),
 )
 

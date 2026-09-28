@@ -1,9 +1,13 @@
 export type CallbackOutcome = 'success' | 'denied' | 'invalid'
 
-const copy: Record<CallbackOutcome, { title: string; message: string }> = {
+const copy: Record<
+  CallbackOutcome,
+  { title: string; message: string; note?: string }
+> = {
   success: {
     title: 'You are signed in',
-    message: 'Return to your terminal to continue. You can close this tab.',
+    message: 'Return to your terminal to continue.',
+    note: 'You can close this tab.',
   },
   denied: {
     title: 'Sign-in canceled',
@@ -17,6 +21,31 @@ const copy: Record<CallbackOutcome, { title: string; message: string }> = {
   },
 }
 
+export const autoCloseScript = `(() => {
+  if (history.length > 1) return
+  const note = document.getElementById("note")
+  const fallback = note.textContent
+  let seconds = 5
+  const tick = () => {
+    if (seconds === 0) {
+      window.close()
+      setTimeout(() => {
+        note.textContent = fallback
+      }, 300)
+      return
+    }
+    note.innerHTML =
+      "Closing this tab in <span class='seconds'>" + seconds + "</span>\u2026"
+    seconds -= 1
+    setTimeout(tick, 1000)
+  }
+  tick()
+})()`
+
+const autoClose = `<script>
+${autoCloseScript}
+</script>`
+
 const logo = `<svg width="88" height="88" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <path fill-rule="evenodd" clip-rule="evenodd" d="M9.07727 23.0572C13.8782 26.307 20.4046 25.0496 23.6545 20.2487C26.9043 15.4478 25.6469 8.92133 20.846 5.67149C16.0451 2.42165 9.51862 3.67905 6.26878 8.47998C3.01894 13.2809 4.27634 19.8073 9.07727 23.0572ZM10.4703 23.1428C14.862 25.3897 20.433 23.2807 22.9135 18.4322C25.394 13.5838 23.8447 7.83194 19.4531 5.58511C15.0614 3.33829 9.49042 5.4473 7.00991 10.2957C4.52939 15.1442 6.07867 20.896 10.4703 23.1428Z" fill="currentColor"/>
 <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7222 24.2898C15.6865 25.58 20.35 22.1715 22.1385 16.6765C23.927 11.1815 22.1632 5.68099 18.1989 4.39071C14.2346 3.10043 9.5711 6.509 7.78261 12.004C5.99412 17.4989 7.75793 22.9995 11.7222 24.2898ZM12.9347 23.872C16.2897 24.5876 19.9174 20.9108 21.0374 15.6596C22.1574 10.4084 20.3457 5.57134 16.9907 4.85575C13.6357 4.14016 10.008 7.817 8.88797 13.0682C7.76793 18.3194 9.57971 23.1564 12.9347 23.872Z" fill="currentColor"/>
@@ -24,7 +53,7 @@ const logo = `<svg width="88" height="88" viewBox="0 0 29 29" fill="none" xmlns=
 </svg>`
 
 export const callbackPage = (outcome: CallbackOutcome) => {
-  const { title, message } = copy[outcome]
+  const { title, message, note } = copy[outcome]
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -41,9 +70,18 @@ export const callbackPage = (outcome: CallbackOutcome) => {
     -webkit-font-smoothing: antialiased;
   }
   main { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 32px; max-width: 28rem; }
-  svg { display: block; margin-bottom: 32px; }
+  svg {
+    display: block; margin-bottom: 32px;
+    animation: appear 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes appear {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { svg { animation: none; } }
   h1 { font-size: 20px; font-weight: 500; margin: 0 0 12px; letter-spacing: -0.01em; }
   p { font-size: 15px; line-height: 1.6; margin: 0; color: rgba(255, 255, 255, 0.6); }
+  .seconds { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; }
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 13px; color: rgba(255, 255, 255, 0.85);
@@ -56,8 +94,9 @@ export const callbackPage = (outcome: CallbackOutcome) => {
 <main>
 ${logo}
 <h1>${title}</h1>
-<p>${message}</p>
+<p>${message}${note ? ` <span id="note">${note}</span>` : ''}</p>
 </main>
+${outcome === 'success' ? autoClose : ''}
 </body>
 </html>
 `

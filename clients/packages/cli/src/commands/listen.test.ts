@@ -1,12 +1,24 @@
 import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
-import { Console, Effect, Fiber, Redacted } from 'effect'
+import { Console, Effect, Fiber, Redacted, Stdio } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { startListening } from '@/commands/listen'
+import { Organizations } from '@/services/organizations'
+import {
+  connectionRefused,
+  forwardTarget,
+  listen,
+  startListening,
+  withTerminalTitle,
+} from '@/commands/listen'
 import { authenticatedClient } from '@/services/api'
-import { captureConsole } from '@/utils/test-utils/cli'
-import { fakeAuth, overrideCredential } from '@/utils/test-utils/services'
+import { captureConsole, runCli, stripAnsi } from '@/utils/test-utils/cli'
+import * as ui from '@/utils/ui'
+import {
+  fakeAuth,
+  fakeOrganizations,
+  overrideCredential,
+} from '@/utils/test-utils/services'
 
 describe('startListening', () => {
   const { auth } = fakeAuth({ credential: overrideCredential('test-token') })
@@ -145,6 +157,33 @@ describe('startListening', () => {
     emit(ack, 1)
     await tick()
     expect(output.filter((line) => line.includes('Connected'))).toHaveLength(1)
+  })
+
+  test('hints that the server is down when Bun refuses the connection', async () => {
+    const log = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    forward.mockRejectedValueOnce(
+      Object.assign(
+        new TypeError(
+          'Unable to connect. Is the computer able to access the url?',
+        ),
+        { code: 'ConnectionRefused' },
+      ),
+    )
+    run()
+    await tick()
+    emit({
+      id: 'evt_1',
+      key: 'webhook',
+      payload: {
+        webhook_event_id: 'whid_1',
+        payload: '{ "type": "order.paid" }',
+      },
+      headers: {},
+    })
+    await tick()
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('connection refused, is your server running?'),
+    )
   })
 
   test('logs malformed JSON without terminating the stream', async () => {
@@ -307,5 +346,118 @@ describe('authenticatedClient', () => {
       Effect.runPromise(Effect.scoped(stream.get('https://example.test'))),
     ).rejects.toThrow('refresh failed')
     expect(requests).toEqual([])
+  })
+})
+
+describe('forwardTarget', () => {
+  test.each([
+    ['3000', 'http://localhost:3000/'],
+    ['3000/api/webhooks', 'http://localhost:3000/api/webhooks'],
+    [':3000/api/webhooks', 'http://localhost:3000/api/webhooks'],
+    ['localhost:3000/api/webhooks', 'http://localhost:3000/api/webhooks'],
+    ['  3000  ', 'http://localhost:3000/'],
+    ['http://127.0.0.1:8080/hooks', 'http://127.0.0.1:8080/hooks'],
+    ['https://my-app.ngrok.dev/webhooks', 'https://my-app.ngrok.dev/webhooks'],
+  ])('expands %j to %s', (input, expected) => {
+    expect(forwardTarget(input)?.href).toBe(expected)
+  })
+
+  test.each(['ftp://localhost/hooks', '99999', 'not a url', ''])(
+    'rejects %j',
+    (input) => {
+      expect(forwardTarget(input)).toBeUndefined()
+    },
+  )
+})
+
+describe('connectionRefused', () => {
+  test('is false when a server is listening', async () => {
+    const server = Bun.serve({ port: 0, fetch: () => new Response('ok') })
+    try {
+      expect(
+        await Effect.runPromise(
+          connectionRefused(new URL(`http://localhost:${server.port}/`)),
+        ),
+      ).toBe(false)
+    } finally {
+      server.stop(true)
+    }
+  })
+
+  test('is true when nothing is listening', async () => {
+    const server = Bun.serve({ port: 0, fetch: () => new Response('ok') })
+    const { port } = server
+    server.stop(true)
+    expect(
+      await Effect.runPromise(
+        connectionRefused(new URL(`http://localhost:${port}/`)),
+      ),
+    ).toBe(true)
+  })
+})
+
+describe('withTerminalTitle', () => {
+  let writes: string[]
+
+  beforeEach(() => {
+    writes = []
+    vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+      writes.push(String(chunk))
+      return true
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const run = <A, E>(effect: Effect.Effect<A, E>, terminal: boolean) =>
+    Effect.runPromise(
+      withTerminalTitle('polar listen · Acme', effect).pipe(
+        Effect.provide(
+          Stdio.layerTest({ stdoutIsTerminal: Effect.succeed(terminal) }),
+        ),
+        Effect.result,
+      ),
+    )
+
+  test('sets the title while running and restores it afterwards', async () => {
+    await run(Effect.void, true)
+    expect(writes).toEqual([ui.pushTitle('polar listen · Acme'), ui.popTitle])
+  })
+
+  test('restores the title when listening fails', async () => {
+    await run(Effect.fail('stream closed'), true)
+    expect(writes.at(-1)).toBe(ui.popTitle)
+  })
+
+  test('leaves the title alone outside a terminal', async () => {
+    await run(Effect.void, false)
+    expect(writes).toEqual([])
+  })
+})
+
+describe('listen command', () => {
+  const run = (args: string[]) => {
+    const cli = runCli(listen, args)
+    const promise = Effect.runPromise(
+      cli.effect.pipe(
+        Effect.provideService(Auth, fakeAuth().auth),
+        Effect.provideService(Organizations, fakeOrganizations().organizations),
+      ),
+    )
+    return { promise, output: cli.output }
+  }
+
+  test('shows examples in its help', async () => {
+    const { promise, output } = run(['--help'])
+    await promise
+    expect(stripAnsi(output())).toContain('polar listen 3000')
+  })
+
+  test('rejects a target that is not a port or http URL', async () => {
+    await expect(run(['ftp://localhost/hooks']).promise).rejects.toThrow(
+      'is not a port or an http(s) URL',
+    )
   })
 })

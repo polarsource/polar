@@ -119,6 +119,7 @@ class TestSerialize:
             "billing_address": None,
             "tax_id": None,
             "tax_id_dropped": False,
+            "tax_exempt": False,
         }
 
 
@@ -136,7 +137,20 @@ class TestDeserialize:
 
         assert result == customer
 
-    def test_customer_tax_id_dropped_defaults_false_for_legacy_payload(
+    def test_customer_tax_exempt_round_trips(self) -> None:
+        customer = CanonicalCustomer(
+            source_id="cus_1",
+            email="a@example.com",
+            name=None,
+            country="US",
+            tax_exempt=True,
+        )
+
+        result = deserialize(MerchantMigrationRecordType.customer, serialize(customer))
+
+        assert result == customer
+
+    def test_customer_tax_flags_default_false_for_legacy_payload(
         self,
     ) -> None:
         customer = CanonicalCustomer(
@@ -144,6 +158,7 @@ class TestDeserialize:
         )
         legacy = serialize(customer)
         del legacy["tax_id_dropped"]
+        del legacy["tax_exempt"]
 
         result = deserialize(MerchantMigrationRecordType.customer, legacy)
 

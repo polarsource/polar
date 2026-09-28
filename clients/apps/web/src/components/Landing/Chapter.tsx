@@ -81,7 +81,7 @@ export const Chapter = ({
         <ChapterHeadline title={title} subtitle={subtitle} />
         {description ? (
           <Box display="block" width="100%">
-            <Text variant="heading-xs" color="muted" wrap="pretty">
+            <Text variant="heading-xs" as="p" color="muted" wrap="pretty">
               {description}
             </Text>
           </Box>

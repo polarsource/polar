@@ -49,7 +49,7 @@ export const HowWeWork = () => (
           </Text>
         </Box>
         <Box flex={1}>
-          <Text variant="heading-xs" color="muted">
+          <Text variant="heading-xs" as="p" color="muted">
             {principle.description}
           </Text>
         </Box>

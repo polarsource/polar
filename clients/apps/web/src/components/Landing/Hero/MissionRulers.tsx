@@ -7,21 +7,20 @@ import { RefObject, useEffect, useRef } from 'react'
 
 const HEIGHT = 96
 const LABEL_HEIGHT = 16
+const TICK_HEIGHT = 40
+const SUBDIVISIONS = 4
 const TOKENS_PER_DOLLAR = 6
 const STARTING_TOKENS = 240_000
-const TOKENS_PER_SECOND = 6_000
-const BURST = (Math.PI * 2) / 3.2
+const TOKENS_PER_SECOND = 4_800
+const SWELL = 0.3
+const SWELL_PERIOD = (Math.PI * 2) / 4.8
 
-// Thousands of tokens streamed after `seconds`. The rate swells and eases
-// on a (1 - cos)^2 curve, like a model streaming a response.
+// Thousands of tokens streamed after `seconds`. The rate eases between 0.7x
+// and 1.3x on a sine wave, like a model streaming a response.
 const streamedTokens = (seconds: number) =>
   STARTING_TOKENS +
   TOKENS_PER_SECOND *
-    (0.4 * seconds +
-      0.4 *
-        (1.5 * seconds -
-          (2 * Math.sin(BURST * seconds)) / BURST +
-          Math.sin(2 * BURST * seconds) / (4 * BURST)))
+    (seconds + (SWELL * (1 - Math.cos(SWELL_PERIOD * seconds))) / SWELL_PERIOD)
 
 const earnedDollars = (seconds: number) =>
   streamedTokens(seconds) / TOKENS_PER_DOLLAR
@@ -138,7 +137,7 @@ const Ruler = ({
 
       ctx.clearRect(0, 0, width, HEIGHT)
 
-      const step = unit / 2
+      const step = unit / SUBDIVISIONS
       const first =
         Math.floor((value - (pointerX / spacing) * unit) / step) * step
       ctx.globalAlpha = 0.35
@@ -146,7 +145,7 @@ const Ruler = ({
       for (let v = first; xAt(v) <= width + spacing; v += step) {
         const x = xAt(v)
         ctx.moveTo(x, y(0))
-        ctx.lineTo(x, y(40))
+        ctx.lineTo(x, y(TICK_HEIGHT))
       }
       ctx.stroke()
 

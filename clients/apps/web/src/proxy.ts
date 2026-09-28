@@ -8,11 +8,12 @@ import {
   DISTINCT_ID_COOKIE,
   DISTINCT_ID_HEADER,
 } from './experiments/constants'
-import { checkoutCSP } from './csp.mjs'
+import { frameAncestorsCSP } from './csp.mjs'
 import { getServerURL } from './utils/api'
 import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
 import { POLAR_ENV_COOKIE } from './utils/cookies'
+import { POLAR_EMBED_ORIGIN_HEADER } from './utils/embed'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -96,6 +97,7 @@ const requiresAuthentication = (request: NextRequest): boolean => {
 }
 
 const CHECKOUT_CLIENT_SECRET = /^\/checkout\/([^/]+)/
+const PAYMENT_METHOD_EMBED = /^\/embed\/payment-method\/?$/
 const NO_FRAME_ANCESTORS = ["'none'"]
 
 const FRAMING_DESTINATIONS = ['iframe', 'frame', 'object', 'embed']
@@ -105,10 +107,35 @@ const isFramed = (request: NextRequest): boolean => {
   return destination === null || FRAMING_DESTINATIONS.includes(destination)
 }
 
-const getFrameAncestors = async (
+interface EmbedPolicy {
+  frame_ancestors: string[]
+  embed_origin?: string | null
+}
+
+const NO_EMBED_POLICY: EmbedPolicy = { frame_ancestors: NO_FRAME_ANCESTORS }
+
+const fetchEmbedPolicy = async (
+  path: string,
+  headers: Record<string, string>,
+): Promise<EmbedPolicy> => {
+  try {
+    const response = await fetch(getServerURL(path), {
+      headers,
+      cache: 'no-store',
+    })
+    if (!response.ok) {
+      return NO_EMBED_POLICY
+    }
+    return await response.json()
+  } catch {
+    return NO_EMBED_POLICY
+  }
+}
+
+const getCheckoutEmbedPolicy = (
   request: NextRequest,
   clientSecret: string,
-): Promise<string[]> => {
+): Promise<EmbedPolicy> => {
   const headers: Record<string, string> = {}
   for (const header of ['Referer', 'Sec-Fetch-Dest']) {
     const value = request.headers.get(header)
@@ -117,21 +144,48 @@ const getFrameAncestors = async (
     }
   }
 
-  try {
-    const response = await fetch(
-      getServerURL(
-        `/v1/checkouts/client/${encodeURIComponent(clientSecret)}/embed-policy`,
-      ),
-      { headers, cache: 'no-store' },
-    )
-    if (!response.ok) {
-      return NO_FRAME_ANCESTORS
-    }
-    const { frame_ancestors } = await response.json()
-    return frame_ancestors
-  } catch {
-    return NO_FRAME_ANCESTORS
+  return fetchEmbedPolicy(
+    `/v1/checkouts/client/${encodeURIComponent(clientSecret)}/embed-policy`,
+    headers,
+  )
+}
+
+const getPaymentMethodEmbedPolicy = async (
+  request: NextRequest,
+): Promise<EmbedPolicy> => {
+  const { searchParams } = request.nextUrl
+  const sessionToken = searchParams.get('session_token')
+  if (!sessionToken) {
+    return NO_EMBED_POLICY
   }
+
+  const embedOrigin = searchParams.get('embed_origin')
+  const query = embedOrigin
+    ? `?${new URLSearchParams({ embed_origin: embedOrigin })}`
+    : ''
+  const policy = await fetchEmbedPolicy(
+    `/v1/customer-portal/customers/me/embed-policy${query}`,
+    { Authorization: `Bearer ${sessionToken}` },
+  )
+
+  return isFramed(request)
+    ? policy
+    : { ...policy, frame_ancestors: NO_FRAME_ANCESTORS }
+}
+
+const getEmbedPolicy = async (
+  request: NextRequest,
+): Promise<EmbedPolicy | undefined> => {
+  const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
+  if (checkout) {
+    return isFramed(request)
+      ? getCheckoutEmbedPolicy(request, checkout[1])
+      : NO_EMBED_POLICY
+  }
+  if (PAYMENT_METHOD_EMBED.test(request.nextUrl.pathname)) {
+    return getPaymentMethodEmbedPolicy(request)
+  }
+  return undefined
 }
 
 const getLoginResponse = (request: NextRequest): NextResponse => {
@@ -146,6 +200,7 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.delete(POLAR_USER_HEADER)
+  requestHeaders.delete(POLAR_EMBED_ORIGIN_HEADER)
 
   // Do not run middleware for forwarded routes
   // @pieterbeulque added this because the `config.matcher` behavior below
@@ -329,20 +384,21 @@ export async function proxy(request: NextRequest) {
     )
   }
 
+  const embedPolicy = await getEmbedPolicy(request)
+  if (embedPolicy?.embed_origin) {
+    requestHeaders.set(POLAR_EMBED_ORIGIN_HEADER, embedPolicy.embed_origin)
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   })
 
-  const checkout = request.nextUrl.pathname.match(CHECKOUT_CLIENT_SECRET)
-  if (checkout) {
-    const frameAncestors = isFramed(request)
-      ? await getFrameAncestors(request, checkout[1])
-      : NO_FRAME_ANCESTORS
+  if (embedPolicy) {
     response.headers.set(
       'Content-Security-Policy',
-      checkoutCSP(frameAncestors.join(' ')),
+      frameAncestorsCSP(embedPolicy.frame_ancestors.join(' ')),
     )
   }
 

@@ -21,7 +21,6 @@ from sqlalchemy import (
 )
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
-from sqlalchemy.orm.attributes import flag_modified
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.event.system import CustomerUpdatedFields, SystemEvent
@@ -170,8 +169,10 @@ class CustomerRepository(
         # Clear external_id for future recycling
         if customer.external_id:
             # Store external_id in `user_metadata` for support debugging
-            customer.user_metadata[EXTERNAL_ID_METADATA_KEY] = customer.external_id
-            flag_modified(customer, "user_metadata")
+            customer.user_metadata = {
+                **customer.user_metadata,
+                EXTERNAL_ID_METADATA_KEY: customer.external_id,
+            }
             customer.external_id = None
 
         enqueue_job("customer.webhook", WebhookEventType.customer_deleted, customer.id)

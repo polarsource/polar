@@ -340,6 +340,38 @@ class TestCreate:
         )
 
     @pytest.mark.auth
+    async def test_product_no_price_in_default_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        product_recurring_free_price: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.default_presentment_currency = PresentmentCurrency.eur
+        await save_fixture(organization)
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_price.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product has no price in the organization's default currency."
+        )
+
+    @pytest.mark.auth
     async def test_customer_does_not_exist_by_id(
         self,
         save_fixture: SaveFixture,

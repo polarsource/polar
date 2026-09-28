@@ -721,22 +721,33 @@ class SubscriptionService:
                     "input": subscription_create.product_id,
                 }
             )
-        elif (
-            default_price := PriceSet.from_product(
-                product, product.organization.default_presentment_currency
-            ).get_default_price()
-        ) and not default_price.is_free:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "product_id"),
-                    "msg": (
-                        "Product is not free. "
-                        "The customer should go through a checkout to create a paid subscription."
-                    ),
-                    "input": subscription_create.product_id,
-                }
-            )
+        else:
+            try:
+                default_price = PriceSet.from_product(
+                    product, product.organization.default_presentment_currency
+                ).get_default_price()
+            except NoPricesForCurrencies:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product has no price in the organization's default currency.",
+                        "input": subscription_create.product_id,
+                    }
+                )
+            else:
+                if not default_price.is_free:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "product_id"),
+                            "msg": (
+                                "Product is not free. "
+                                "The customer should go through a checkout to create a paid subscription."
+                            ),
+                            "input": subscription_create.product_id,
+                        }
+                    )
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)

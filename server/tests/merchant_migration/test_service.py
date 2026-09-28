@@ -884,6 +884,75 @@ class TestExecutePrecheck:
         assert updated is not None
         assert updated.step == MerchantMigrationStep.source_setup
 
+    async def test_leaves_an_active_import_alone(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        import_operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.pending,
+            kind=MerchantMigrationOperationKind.import_catalog,
+            last_progress_at=utc_now(),
+        )
+        migration.operation = import_operation
+        await save_fixture(migration)
+        adapter = _FakeAdapter(_catalog())
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        extract_page = mocker.spy(adapter, "extract_page")
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        await service.execute_precheck(session, migration.id)
+
+        extract_page.assert_not_called()
+        enqueue.assert_not_called()
+        assert migration.operation == import_operation
+
+    @pytest.mark.auth
+    async def test_leaves_an_import_started_during_the_read_alone(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = _FakeAdapter(_catalog())
+        extract_page = adapter.extract_page
+        import_operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.pending,
+            kind=MerchantMigrationOperationKind.import_catalog,
+            last_progress_at=utc_now(),
+        )
+
+        async def replaced_by_import(
+            cursor: dict[str, Any] | None = None,
+        ) -> ExtractionPage:
+            migration.operation = import_operation
+            await save_fixture(migration)
+            return await extract_page(cursor)
+
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=adapter,
+        )
+        mocker.patch.object(adapter, "extract_page", side_effect=replaced_by_import)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        await service.start_precheck(session, auth_subject, migration.id)
+        enqueue.reset_mock()
+
+        await service.execute_precheck(session, migration.id)
+
+        enqueue.assert_not_called()
+        assert migration.operation == import_operation
+
     @pytest.mark.auth
     async def test_marks_failed_on_merchant_migration_error(
         self,

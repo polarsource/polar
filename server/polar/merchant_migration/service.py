@@ -116,6 +116,8 @@ IMPORTABLE_STEPS = {
 }
 
 _IMPORT_TASK = "merchant_migration.import_catalog"
+# None is a pre-check started before operations recorded their kind.
+_PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 
 
@@ -560,7 +562,11 @@ class MerchantMigrationService:
         if migration is None:
             return
         operation = migration.operation
-        if operation is None or not operation.is_active:
+        if (
+            operation is None
+            or not operation.is_active
+            or operation.kind not in _PRECHECK_KINDS
+        ):
             return
         cursor = operation.cursor
         try:
@@ -574,6 +580,7 @@ class MerchantMigrationService:
             if (
                 current_operation is None
                 or not current_operation.is_active
+                or current_operation.kind not in _PRECHECK_KINDS
                 or current_operation.cursor != cursor
             ):
                 return
@@ -591,6 +598,7 @@ class MerchantMigrationService:
         if (
             current_operation is None
             or not current_operation.is_active
+            or current_operation.kind not in _PRECHECK_KINDS
             or current_operation.cursor != cursor
         ):
             return

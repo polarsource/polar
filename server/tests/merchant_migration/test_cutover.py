@@ -320,6 +320,55 @@ class TestRun:
         assert subscription.tax_behavior == tax
         assert subscription.tax_exempted is False
 
+    async def test_price_on_a_later_imported_product_moves_onto_the_first(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        migration: MerchantMigration,
+        organization: Organization,
+        product: Product,
+        product_second: Product,
+    ) -> None:
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.product,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="prod_1:month:1:archived",
+                target_id=product_second.id,
+                created_at=utc_now() + timedelta(minutes=1),
+                canonical=serialize(
+                    CanonicalProduct(
+                        source_id="prod_1:month:1:archived",
+                        product_source_id="prod_1",
+                        name="Product",
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id="price_1",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                        archived=True,
+                    )
+                ),
+            )
+        )
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.product_id == product.id
+
     async def test_applies_imported_discount(
         self,
         mocker: MockerFixture,

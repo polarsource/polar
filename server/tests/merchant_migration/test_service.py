@@ -1555,6 +1555,131 @@ class TestImportCatalog:
         assert by_source["sub_legacy"].dependencies_imported is True
 
     @pytest.mark.auth
+    async def test_skipped_row_sharing_a_price_does_not_hold_back_the_pending_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        archived = CanonicalProduct(
+            source_id="prod_1:month:1:archived",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+            archived=True,
+        )
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[*_catalog_with_subscription(), archived],
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        sibling = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id=archived.source_id,
+        )
+        assert sibling is not None
+        sibling.status = MerchantMigrationRecordStatus.skipped
+        sibling.created_at = utc_now() + timedelta(hours=1)
+        await save_fixture(sibling)
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        [polar_product] = await _products(session, organization)
+        record = await record_repository.get_imported_product_dependency(
+            organization.id, "price_1"
+        )
+        assert record is not None
+        assert record.source_id == "prod_1:month:1"
+        assert record.target_id == polar_product.id
+
+    @pytest.mark.auth
+    async def test_reprecheck_after_archiving_a_price_keeps_one_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+        archived = CanonicalProduct(
+            source_id="prod_1:month:1:archived",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+            archived=True,
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                [
+                    archived,
+                    *_catalog_with_subscription()[1:],
+                    canonical_discount(product_source_ids=["prod_1"]),
+                ]
+            ),
+        )
+        await service.run_precheck(session, auth_subject, migration.id)
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        [polar_product] = await _products(session, organization)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        record = await record_repository.get_imported_product_dependency(
+            organization.id, "price_1"
+        )
+        assert record is not None
+        assert record.target_id == polar_product.id
+        coupon = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.discount,
+            source_id="coupon_1",
+        )
+        assert coupon is not None
+        assert coupon.status == MerchantMigrationRecordStatus.imported
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        [subscription] = items
+        assert subscription.status == PrecheckRecordStatus.importable
+        assert subscription.dependencies_imported is True
+
+    @pytest.mark.auth
     async def test_rejects_while_precheck_is_running(
         self,
         mocker: MockerFixture,

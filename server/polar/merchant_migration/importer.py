@@ -48,6 +48,7 @@ from .canonical import (
     CanonicalDiscountType,
     CanonicalProduct,
     CanonicalSubscription,
+    PriceKey,
     canonical_price_key,
     customer_country_fallbacks,
     deserialize,
@@ -73,11 +74,66 @@ from .schemas import (
 _CanonicalT = TypeVar("_CanonicalT")
 
 _DEPENDENCY_CODE = "subscription_dependency_not_imported"
+_PRICES_ALREADY_IMPORTED = Reason(
+    "product_prices_already_imported",
+    "Its prices are already on a product imported earlier, so it isn't imported again.",
+)
 _CUSTOMER_ALREADY_SUBSCRIBED = Reason(
     _DEPENDENCY_CODE,
     "This customer already has a live subscription to the product on Polar, so a "
     "duplicate isn't created. It stays on the source.",
 )
+
+
+def _price_keys(record: MerchantMigrationRecord) -> list[PriceKey]:
+    product = deserialize(record.type, record.canonical)
+    assert isinstance(product, CanonicalProduct)
+    return [canonical_price_key(price) for price in product.prices]
+
+
+def _price_owners(
+    product_records: Sequence[MerchantMigrationRecord],
+) -> dict[PriceKey, MerchantMigrationRecord]:
+    """The row each price resolves to. Archiving a Stripe price stages it again
+    on an `:archived` sibling row, while the row imported before keeps it.
+    Imported rows win, the oldest first, in the cutover lookup's order; a
+    skipped or failed row never takes a price from a pending one."""
+    owners = {
+        key: record
+        for record in product_records
+        if record.status == MerchantMigrationRecordStatus.pending
+        for key in _price_keys(record)
+    }
+    imported: dict[PriceKey, MerchantMigrationRecord] = {}
+    for record in sorted(
+        (
+            record
+            for record in product_records
+            if record.status == MerchantMigrationRecordStatus.imported
+        ),
+        key=lambda record: (record.created_at, record.id),
+    ):
+        for key in _price_keys(record):
+            imported.setdefault(key, record)
+    return owners | imported
+
+
+def _covered_source_ids(
+    product_records: Sequence[MerchantMigrationRecord],
+    owners: dict[PriceKey, MerchantMigrationRecord],
+) -> set[str]:
+    """Pending rows whose every price resolves to an imported row. Left
+    pending, they would hold back coupons restricted to their product."""
+    covered: set[str] = set()
+    for record in product_records:
+        if record.status != MerchantMigrationRecordStatus.pending:
+            continue
+        keys = _price_keys(record)
+        if keys and all(
+            owners[key].status == MerchantMigrationRecordStatus.imported for key in keys
+        ):
+            covered.add(record.source_id)
+    return covered
 
 
 def find_imported_price(
@@ -203,12 +259,17 @@ class CatalogImporter:
             records, MerchantMigrationRecordType.subscription
         )
 
+        catalog_products = self._records_of(
+            catalog, MerchantMigrationRecordType.product
+        )
+        price_owners = _price_owners(catalog_products)
         product_source_ids, customer_source_ids = (
             self._selected_subscription_dependencies(
                 subscription_records,
-                self._records_of(catalog, MerchantMigrationRecordType.product),
+                catalog_products,
                 self._records_of(catalog, MerchantMigrationRecordType.customer),
                 self._records_of(catalog, MerchantMigrationRecordType.discount),
+                price_owners,
             )
         )
         country_fallbacks = customer_country_fallbacks(
@@ -227,7 +288,9 @@ class CatalogImporter:
         )
 
         product_result = await self._import_products(
-            product_records, selected_source_ids=product_source_ids
+            product_records,
+            selected_source_ids=product_source_ids,
+            covered_source_ids=_covered_source_ids(catalog_products, price_owners),
         )
         discount_result = await self._import_discounts(
             discount_records,
@@ -288,6 +351,7 @@ class CatalogImporter:
         product_records: Sequence[MerchantMigrationRecord],
         customer_records: Sequence[MerchantMigrationRecord],
         discount_records: Sequence[MerchantMigrationRecord],
+        price_owners: dict[PriceKey, MerchantMigrationRecord],
     ) -> tuple[set[str], set[str]]:
         subscriptions = [
             self._as(deserialize(record.type, record.canonical), CanonicalSubscription)
@@ -313,12 +377,6 @@ class CatalogImporter:
             None,
             discounts,
         )
-        product_by_price = {
-            canonical_price_key(price): product
-            for product in products
-            for price in product.prices
-        }
-
         product_source_ids: set[str] = set()
         customer_source_ids: set[str] = set()
         for record, subscription in zip(
@@ -332,9 +390,9 @@ class CatalogImporter:
                 continue
             customer_source_ids.add(subscription.customer_source_id)
             key = subscription_price_key(subscription)
-            product = product_by_price.get(key) if key is not None else None
-            if product is not None:
-                product_source_ids.add(product.source_id)
+            owner = price_owners.get(key) if key is not None else None
+            if owner is not None:
+                product_source_ids.add(owner.source_id)
         return product_source_ids, customer_source_ids
 
     async def _import_products(
@@ -342,6 +400,7 @@ class CatalogImporter:
         records: Sequence[MerchantMigrationRecord],
         *,
         selected_source_ids: set[str],
+        covered_source_ids: set[str],
     ) -> MerchantMigrationImportResult:
         products = [
             self._as(deserialize(record.type, record.canonical), CanonicalProduct)
@@ -353,6 +412,10 @@ class CatalogImporter:
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
+            if record.source_id in covered_source_ids:
+                await self._mark_skipped(record, _PRICES_ALREADY_IMPORTED)
+                counts.skipped += 1
+                continue
             if record.source_id not in selected_source_ids:
                 continue
             if record.status != MerchantMigrationRecordStatus.pending:

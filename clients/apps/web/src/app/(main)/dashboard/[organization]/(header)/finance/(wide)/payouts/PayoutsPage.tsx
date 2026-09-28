@@ -9,12 +9,8 @@ import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { getServerURL } from '@/utils/api'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { getAPIParams } from '@/utils/datatable'
 import { platformFeesDisplayNames } from '@/utils/transaction'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -34,7 +30,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { EllipsisVertical } from 'lucide-react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
 
 const isPayout = (
   item: schemas['Payout'] | schemas['TransactionEmbedded'],
@@ -43,46 +38,15 @@ const isPayout = (
 }
 
 export default function ClientPage({
-  pagination,
-  sorting,
   organization,
 }: {
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
   organization: schemas['Organization']
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `${pathname}?${serializeSearchParams(updatedPagination, sorting)}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `${pathname}?${serializeSearchParams(pagination, updatedSorting)}`,
-    )
-  }
+  const { pagination, setPagination, sorting, setSorting } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'created_at', desc: true }],
+      defaultPageSize: 50,
+    })
 
   const { data: account } = useOrganizationAccount(organization.id)
 

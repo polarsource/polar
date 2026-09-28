@@ -1,6 +1,4 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { isDisputeStatus } from '@/utils/dispute'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -14,9 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
-  searchParams: Promise<DataTableSearchParams & { status?: string | string[] }>
 }) {
-  const searchParams = await props.searchParams
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
@@ -28,23 +24,5 @@ export default async function Page(props: {
     notFound()
   }
 
-  const { pagination, sorting } = parseSearchParams(
-    searchParams,
-    [{ id: 'created_at', desc: true }],
-    50,
-  )
-
-  const rawStatus = Array.isArray(searchParams.status)
-    ? searchParams.status[0]
-    : searchParams.status
-  const status = rawStatus && isDisputeStatus(rawStatus) ? rawStatus : 'any'
-
-  return (
-    <DisputesPage
-      organization={organization}
-      pagination={pagination}
-      sorting={sorting}
-      status={status}
-    />
-  )
+  return <DisputesPage organization={organization} />
 }

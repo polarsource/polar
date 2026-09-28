@@ -3,13 +3,10 @@
 import { DisputeStatusSelect } from '@/components/Disputes/DisputeStatusSelect'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useSupportCases } from '@/hooks/queries/supportCases'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { getAPIParams } from '@/utils/datatable'
 import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
-import {
+  disputeStatusValues,
   type DisputeStatusFilter,
   getDisputeDisplayStatus,
   getDisputeReasonDisplay,
@@ -25,61 +22,31 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useRouter } from 'next/navigation'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React from 'react'
 
 interface Props {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  status?: DisputeStatusFilter
 }
 
-const DisputesPage = ({
-  organization,
-  pagination,
-  sorting,
-  status = 'any',
-}: Props) => {
+const DisputesPage = ({ organization }: Props) => {
   const router = useRouter()
 
-  const buildUrl = (
-    nextPagination: DataTablePaginationState,
-    nextSorting: DataTableSortingState,
-    nextStatus: DisputeStatusFilter,
-  ) => {
-    const params = serializeSearchParams(nextPagination, nextSorting)
-    if (nextStatus !== 'any') {
-      params.append('status', nextStatus)
-    }
-    return `/dashboard/${organization.slug}/sales/disputes?${params}`
-  }
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'created_at', desc: true }],
+      defaultPageSize: 50,
+    })
 
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updated =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-    router.push(buildUrl(updated, sorting, status))
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updated =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-    router.push(buildUrl(pagination, updated, status))
-  }
+  const [statusParam, setStatusParam] = useQueryState(
+    'status',
+    parseAsStringLiteral(disputeStatusValues),
+  )
+  const status: DisputeStatusFilter = statusParam ?? 'any'
 
   const setStatus = (value: DisputeStatusFilter) => {
-    router.push(buildUrl(pagination, sorting, value))
+    setStatusParam(value === 'any' ? null : value)
+    resetPage()
   }
 
   const { data: supportCases, isLoading } = useSupportCases(organization.id, {

@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
-from sqlalchemy import String
+from sqlalchemy import Index, String, text
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.auth.scope import Scope, scope_to_set
@@ -16,6 +16,18 @@ if TYPE_CHECKING:
 
 class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
     __tablename__ = "oauth2_tokens"
+    __table_args__ = (
+        # Supports the `oauth2_token.delete_expired` cron: the expiration is an
+        # expression, and the partial predicate leaves out the tokens it can
+        # never delete, i.e. those still holding a live refresh token.
+        Index(
+            "ix_oauth2_tokens_expires_at",
+            text("(issued_at + expires_in)"),
+            postgresql_where=text(
+                "refresh_token IS NULL OR refresh_token_revoked_at != 0"
+            ),
+        ),
+    )
 
     client_id: Mapped[str] = mapped_column(String(52), nullable=False)
     nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)

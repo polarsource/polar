@@ -20,7 +20,7 @@ class EmailVerification(RecordModel):
     email: Mapped[str] = mapped_column(String, nullable=False)
     token_hash: Mapped[str] = mapped_column(String, index=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=get_expires_at
+        TIMESTAMP(timezone=True), nullable=False, index=True, default=get_expires_at
     )
     user_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=False

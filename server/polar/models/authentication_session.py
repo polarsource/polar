@@ -17,7 +17,7 @@ class AuthenticationSession(RecordModel):
     __tablename__ = "authentication_sessions"
 
     token_hash: Mapped[TokenHash] = mapped_column(CHAR(64), nullable=False, unique=True)
-    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     step: Mapped[int] = mapped_column(SmallInteger(), nullable=False)
     authentication_method_references: Mapped[list[AuthenticationMethodReference]] = (
         mapped_column(JSONB, nullable=False)

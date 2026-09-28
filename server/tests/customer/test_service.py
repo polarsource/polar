@@ -1291,11 +1291,12 @@ class TestDelete:
         )
         assert customer.deleted_at is None
         soft_deleted = await customer_service.delete(session, customer)
+        await session.flush()
+        await session.refresh(soft_deleted)
         assert soft_deleted.deleted_at is not None
         assert soft_deleted.external_id is None
         assert soft_deleted.user_metadata["__external_id"] == "external-id"
         assert soft_deleted.user_metadata["user_id"] == "ABC"
-        await session.flush()
 
     async def test_valid_recycled_email(
         self,

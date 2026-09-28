@@ -27,7 +27,7 @@ export const StartupProgram = () => (
         justifyContent="center"
         backgroundColor="background-secondary"
         padding="2xl"
-        aspectRatio="1 / 1"
+        aspectRatio={{ base: '1 / 1', md: 'auto', xl: '1 / 1' }}
       >
         <Box width={{ base: '60%', md: '50%' }} aspectRatio="1 / 1">
           <VolumetricSlices />
@@ -38,7 +38,7 @@ export const StartupProgram = () => (
         justifyContent="center"
         backgroundColor="background-secondary"
         padding={{ base: 'l', md: '3xl' }}
-        aspectRatio="1 / 1"
+        aspectRatio={{ xl: '1 / 1' }}
       >
         <Box
           flexDirection="column"

@@ -5,9 +5,14 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { RefObject, useEffect, useRef } from 'react'
 
-const HEIGHT = 96
+const HEIGHT = 72
 const LABEL_HEIGHT = 16
-const TICK_HEIGHT = 40
+const TICK_HEIGHT = 28
+const TICK_ALPHA = 0.35
+const HANDOFF = 0.25
+const BASE_TICK_HEIGHT = 12
+const LABEL_ALPHA = 0.35
+const BUMP_REACH = 2
 const SUBDIVISIONS = 4
 const KILOTOKENS_PER_DOLLAR = 6
 const STARTING_KILOTOKENS = 240_000
@@ -119,7 +124,7 @@ const Ruler = ({
     observer.observe(canvas)
 
     const y = (offset: number) => (flip ? HEIGHT - offset : offset)
-    const labelY = y(66)
+    const labelY = y(TICK_HEIGHT + 26)
 
     const draw = (now: number) => {
       const value = valueAt(
@@ -140,20 +145,46 @@ const Ruler = ({
       const step = unit / SUBDIVISIONS
       const first =
         Math.floor((value - (pointerX / spacing) * unit) / step) * step
-      ctx.globalAlpha = 0.35
+      const pitch = spacing / SUBDIVISIONS
+      const tickLength = (x: number) => {
+        const distance = Math.abs(x - pointerX) / (pitch * BUMP_REACH)
+        const bump = Math.max(0, 1 - distance * distance)
+        return BASE_TICK_HEIGHT + (TICK_HEIGHT - BASE_TICK_HEIGHT) * bump
+      }
+      const highlighted: { x: number; strength: number }[] = []
+      ctx.globalAlpha = TICK_ALPHA
       ctx.beginPath()
       for (let v = first; xAt(v) <= width + spacing; v += step) {
         const x = xAt(v)
+        const strength =
+          1 -
+          smoothstep(
+            pitch * (0.5 - HANDOFF),
+            pitch * (0.5 + HANDOFF),
+            Math.abs(x - pointerX),
+          )
+        if (strength > 0) {
+          highlighted.push({ x, strength })
+          continue
+        }
         ctx.moveTo(x, y(0))
-        ctx.lineTo(x, y(TICK_HEIGHT))
+        ctx.lineTo(x, y(tickLength(x)))
       }
       ctx.stroke()
+      for (const { x, strength } of highlighted) {
+        ctx.globalAlpha = TICK_ALPHA + (1 - TICK_ALPHA) * strength
+        ctx.beginPath()
+        ctx.moveTo(x, y(0))
+        ctx.lineTo(x, y(tickLength(x)))
+        ctx.stroke()
+      }
 
       const firstLabel = Math.floor(first / unit) * unit
       for (let v = firstLabel; xAt(v) <= width + spacing; v += unit) {
         const x = xAt(v)
         const distance = Math.abs(x - pointerX)
-        const alpha = 0.5 * smoothstep(clearance, clearance + 28, distance)
+        const alpha =
+          LABEL_ALPHA * smoothstep(clearance, clearance + 28, distance)
         if (alpha <= 0) continue
         const sprite = labelSprite(format(v))
         const spriteWidth = sprite.width / dpr
@@ -169,9 +200,9 @@ const Ruler = ({
 
       ctx.globalAlpha = 1
       ctx.beginPath()
-      ctx.moveTo(pointerX, y(40))
-      ctx.lineTo(pointerX - 4, y(47))
-      ctx.lineTo(pointerX + 4, y(47))
+      ctx.moveTo(pointerX, y(TICK_HEIGHT + 3))
+      ctx.lineTo(pointerX - 4, y(TICK_HEIGHT + 10))
+      ctx.lineTo(pointerX + 4, y(TICK_HEIGHT + 10))
       ctx.closePath()
       ctx.roundRect(pointerX - clearance, labelY - 11, pillWidth, 22, 11)
       ctx.fill()

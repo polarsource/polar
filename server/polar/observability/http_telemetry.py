@@ -18,7 +18,8 @@ def url_without_request_values(url: str, path: str = "/") -> str:
 
 def route_path_template(scope: Scope) -> str | None:
     # Since FastAPI 0.141, scope["route"] is the route as declared on its own
-    # router, without the prefixes of the routers including it.
+    # router, without the prefixes of the routers including it. Routes declared
+    # directly on the app have no effective context and keep scope["route"].
     route_context = _get_scope_effective_route_context(scope)
     path = getattr(route_context, "path", None) or getattr(
         scope.get("route"), "path", None

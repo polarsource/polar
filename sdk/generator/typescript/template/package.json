@@ -7,7 +7,7 @@
   "files": [
     "dist", "README.md", "LICENSE", ".agents"
   ],
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=24" },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "exports": {
@@ -46,7 +46,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.13.6",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "standardwebhooks": "^1.0.0",

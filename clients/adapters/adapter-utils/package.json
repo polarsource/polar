@@ -12,7 +12,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "exports": {
     "import": {

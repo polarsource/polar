@@ -457,7 +457,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
-          cache-dependency-path: "clients/pnpm-lock.yaml"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
 
       - name: 📬 Build server/emails
         if: steps.emails.outputs.cache-hit != 'true'

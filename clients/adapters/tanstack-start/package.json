@@ -21,7 +21,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsup ./src/index.ts --format esm,cjs --dts --clean --sourcemap",

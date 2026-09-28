@@ -1,13 +1,14 @@
 from starlette.types import Scope
 
 from .http_metrics import METRICS_DENY_LIST, METRICS_EXCLUDED_APPS
+from .http_telemetry import route_path_template
 
 
 def get_path_template(scope: Scope) -> str | None:
     """
     Get the normalized path template for metrics labeling.
 
-    Uses scope["route"].path, set by FastAPI after routing.
+    Uses the full route path template, set by FastAPI after routing.
 
     Returns None — no metrics recorded — for excluded apps, deny-listed paths,
     and requests that matched no route.
@@ -26,13 +27,8 @@ def get_path_template(scope: Scope) -> str | None:
         if path.startswith(denied):
             return None
 
-    # Primary: Use FastAPI's route object (most reliable)
-    # This is populated after routing completes, which is why we
-    # call this in the finally block after the request
-    route = scope.get("route")
-    if route and hasattr(route, "path"):
-        return route.path  # e.g., "/v1/checkouts/{id}"
-
-    # No route matched (404 on unknown path) - skip metrics
+    # Populated after routing completes, which is why we
+    # call this in the finally block after the request.
+    # None when no route matched (404 on unknown path) - skip metrics
     # to prevent cardinality explosion from bots/attackers
-    return None
+    return route_path_template(scope)  # e.g., "/v1/checkouts/{id}"

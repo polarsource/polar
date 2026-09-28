@@ -137,6 +137,9 @@ class CheckoutRepository(
                     Checkout.customer_tax_id: null(),
                     Checkout.customer_metadata: {},
                     Checkout.custom_field_data: {},
+                    # Holds the Stripe `cus_` id, which points at the buyer's
+                    # name, email and address on Stripe's side.
+                    Checkout.payment_processor_metadata: {},
                     # `distinct_id` falls back to the customer's email.
                     # `opened_at` stays: it drives the checkout funnel metrics.
                     Checkout.analytics_metadata: Checkout.analytics_metadata.op("-")(

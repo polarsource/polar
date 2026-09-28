@@ -118,6 +118,7 @@ class TestAnonymizeExpired:
             customer=customer,
             external_customer_id="EXTERNAL_ID",
             customer_metadata={"key": "value"},
+            payment_processor_metadata={"customer_id": "cus_123"},
             customer_billing_address=Address(country=CountryAlpha2("FR")),
             analytics_metadata={
                 "opened_at": "2026-01-01T00:00:00+00:00",
@@ -167,6 +168,7 @@ class TestAnonymizeExpired:
         assert checkout.customer_tax_id is None
         assert checkout.customer_metadata == {}
         assert checkout.custom_field_data == {}
+        assert checkout.payment_processor_metadata == {}
         assert checkout.anonymized_at is not None
 
         # `distinct_id` falls back to the customer's email, `opened_at` is

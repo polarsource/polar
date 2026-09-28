@@ -1,8 +1,8 @@
 """index expires_at for delete_expired crons
 
 Revision ID: 1a1d29060b39
-Revises: 8aa7e7e94a61
-Create Date: 2026-09-21 08:59:59.982095
+Revises: 76c870dc15ed
+Create Date: 2026-09-28 09:04:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1a1d29060b39"
-down_revision = "8aa7e7e94a61"
+down_revision = "76c870dc15ed"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

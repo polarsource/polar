@@ -3,7 +3,7 @@ FROM ghcr.io/astral-sh/uv:0.11.24 AS uv
 FROM tailscale/tailscale:v1.98.4 AS tailscale
 
 # Build the email renderer and backoffice assets with the same Node/pnpm setup.
-FROM node:22-slim AS node-builder
+FROM node:24-slim AS node-builder
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"

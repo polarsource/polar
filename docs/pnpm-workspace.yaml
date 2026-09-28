@@ -1,3 +1,8 @@
+allowBuilds:
+  '@scarf/scarf': false
+  esbuild: false
+  keytar: false
+  puppeteer: false
 minimumReleaseAge: 1440
 
 overrides:

@@ -61,7 +61,7 @@ jobs:
           node-version: "24"
 
       - name: Install pnpm
-        run: npm install --global pnpm@11.13.1
+        run: npm install --global pnpm@12.8.0
 
       - name: Install just
         uses: extractions/setup-just@v4

@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v7.0.0
         with:
-          node-version-file: clients/.node-version
+          node-version-file: .nvmrc
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 

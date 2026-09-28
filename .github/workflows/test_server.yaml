@@ -108,7 +108,7 @@ jobs:
       - name: 📬 Setup Node.js environment for server/emails
         uses: actions/setup-node@v7.0.0
         with:
-          node-version-file: server/emails/.node-version
+          node-version-file: .nvmrc
           cache: "pnpm"
           cache-dependency-path: "server/emails/pnpm-lock.yaml"
 
@@ -444,7 +444,7 @@ jobs:
         uses: actions/cache@v6.1.0
         with:
           path: server/emails/bin
-          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', 'server/emails/.node-version') }}
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsup.config.js', '.nvmrc') }}
 
       - uses: pnpm/action-setup@v6.1.0
         if: steps.emails.outputs.cache-hit != 'true'
@@ -455,7 +455,7 @@ jobs:
         if: steps.emails.outputs.cache-hit != 'true'
         uses: actions/setup-node@v7.0.0
         with:
-          node-version-file: server/emails/.node-version
+          node-version-file: .nvmrc
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 

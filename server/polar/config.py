@@ -197,6 +197,7 @@ class Settings(BaseSettings):
 
     # Checkout
     CHECKOUT_TTL_SECONDS: int = 60 * 60 * 24  # 24 hours
+    EXPIRED_CHECKOUT_RETENTION_PERIOD: timedelta = timedelta(days=90)
     IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent
     IP_GEOLOCATION_DATABASE_NAME: str = "ip-geolocation.mmdb"
 

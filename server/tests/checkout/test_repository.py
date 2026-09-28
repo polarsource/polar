@@ -1,13 +1,16 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 
 from polar.checkout.repository import CheckoutRepository
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
-from polar.models import Organization, Product
+from polar.models import Checkout, Customer, Organization, Product
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_discount
 
@@ -93,3 +96,217 @@ async def test_for_update_eager_loading(
         assert fetched_product.product_medias == []
     assert fetched_checkout.discount is not None
     assert fetched_checkout.discount.products == [product]
+
+
+@pytest.mark.asyncio
+class TestAnonymizeExpired:
+    async def _create_checkout_with_pii(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        *,
+        status: CheckoutStatus,
+        created_at: datetime,
+        customer: Customer | None = None,
+        deleted: bool = False,
+    ) -> Checkout:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=status,
+            created_at=created_at,
+            customer=customer,
+            external_customer_id="EXTERNAL_ID",
+            customer_metadata={"key": "value"},
+            customer_billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        checkout.customer_name = "John Doe"
+        checkout.customer_email = "john@example.com"
+        checkout.customer_ip_address = "1.2.3.4"
+        checkout.customer_billing_name = "John Doe"
+        checkout.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
+        checkout.custom_field_data = {"phone": "+33600000000"}
+        if deleted:
+            checkout.deleted_at = utc_now()
+        await save_fixture(checkout)
+        return checkout
+
+    async def test_scrubs_expired_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await self._create_checkout_with_pii(
+            save_fixture,
+            product,
+            status=CheckoutStatus.expired,
+            created_at=utc_now() - timedelta(days=91),
+            customer=customer,
+        )
+
+        repository = CheckoutRepository.from_session(session)
+        anonymized = await repository.anonymize_expired(
+            utc_now() - timedelta(days=90), batch_size=100
+        )
+
+        assert anonymized == 1
+        await session.refresh(checkout)
+        assert checkout.customer_id is None
+        assert checkout.external_customer_id is None
+        assert checkout.customer_name is None
+        assert checkout.customer_email is None
+        assert checkout.customer_ip_address is None
+        assert checkout.customer_billing_name is None
+        assert checkout.customer_billing_address is None
+        assert checkout.customer_tax_id is None
+        assert checkout.customer_metadata == {}
+        assert checkout.custom_field_data == {}
+        assert checkout.anonymized_at is not None
+
+        # The ORM reads a JSONB `null` back as `None`, so assert SQL NULL.
+        sql_null = await session.execute(
+            select(Checkout.id).where(
+                Checkout.id == checkout.id,
+                Checkout.customer_billing_address.is_(None),
+            )
+        )
+        assert sql_null.scalar_one_or_none() == checkout.id
+
+    async def test_scrubs_soft_deleted_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await self._create_checkout_with_pii(
+            save_fixture,
+            product,
+            status=CheckoutStatus.expired,
+            created_at=utc_now() - timedelta(days=91),
+            customer=customer,
+            deleted=True,
+        )
+
+        repository = CheckoutRepository.from_session(session)
+        anonymized = await repository.anonymize_expired(
+            utc_now() - timedelta(days=90), batch_size=100
+        )
+
+        assert anonymized == 1
+        await session.refresh(checkout)
+        assert checkout.customer_email is None
+
+    @pytest.mark.parametrize(
+        ("status", "age_days"),
+        [
+            (CheckoutStatus.expired, 89),
+            (CheckoutStatus.open, 91),
+            (CheckoutStatus.confirmed, 91),
+            (CheckoutStatus.succeeded, 91),
+            # Legacy status, migrated to `expired` by its own backfill.
+            (CheckoutStatus.failed, 91),
+        ],
+    )
+    async def test_preserves_out_of_scope_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        status: CheckoutStatus,
+        age_days: int,
+    ) -> None:
+        checkout = await self._create_checkout_with_pii(
+            save_fixture,
+            product,
+            status=status,
+            created_at=utc_now() - timedelta(days=age_days),
+            customer=customer,
+        )
+
+        repository = CheckoutRepository.from_session(session)
+        anonymized = await repository.anonymize_expired(
+            utc_now() - timedelta(days=90), batch_size=100
+        )
+
+        assert anonymized == 0
+        await session.refresh(checkout)
+        assert checkout.customer_id == customer.id
+        assert checkout.customer_email == "john@example.com"
+        assert checkout.anonymized_at is None
+
+    async def test_skips_already_anonymized_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await self._create_checkout_with_pii(
+            save_fixture,
+            product,
+            status=CheckoutStatus.expired,
+            created_at=utc_now() - timedelta(days=91),
+            customer=customer,
+        )
+
+        repository = CheckoutRepository.from_session(session)
+        older_than = utc_now() - timedelta(days=90)
+        assert await repository.anonymize_expired(older_than, batch_size=100)
+        assert await repository.anonymize_expired(older_than, batch_size=100) == 0
+
+    async def test_honors_batch_size(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        for _ in range(3):
+            await self._create_checkout_with_pii(
+                save_fixture,
+                product,
+                status=CheckoutStatus.expired,
+                created_at=utc_now() - timedelta(days=91),
+                customer=customer,
+            )
+
+        repository = CheckoutRepository.from_session(session)
+        older_than = utc_now() - timedelta(days=90)
+
+        assert await repository.anonymize_expired(older_than, batch_size=2) == 2
+        assert await repository.anonymize_expired(older_than, batch_size=2) == 1
+
+    async def test_counts_only_pending(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        for status, age_days in (
+            (CheckoutStatus.expired, 91),
+            (CheckoutStatus.expired, 91),
+            (CheckoutStatus.expired, 89),
+            (CheckoutStatus.failed, 91),
+            (CheckoutStatus.succeeded, 91),
+        ):
+            await self._create_checkout_with_pii(
+                save_fixture,
+                product,
+                status=status,
+                created_at=utc_now() - timedelta(days=age_days),
+                customer=customer,
+            )
+
+        repository = CheckoutRepository.from_session(session)
+        older_than = utc_now() - timedelta(days=90)
+
+        assert await repository.count_expired_pending_anonymization(older_than) == 2
+
+        await repository.anonymize_expired(older_than, batch_size=100)
+
+        assert await repository.count_expired_pending_anonymization(older_than) == 0

@@ -12,6 +12,7 @@ from sqlalchemy import (
     ColumnElement,
     Connection,
     ForeignKey,
+    Index,
     Integer,
     String,
     Uuid,
@@ -105,6 +106,13 @@ class Checkout(
     TrialConfigurationMixin, CustomFieldDataMixin, MetadataMixin, RecordModel
 ):
     __tablename__ = "checkouts"
+    __table_args__ = (
+        Index(
+            "ix_checkouts_created_at_pending_anonymization",
+            "created_at",
+            postgresql_where="anonymized_at IS NULL AND status = 'expired'",
+        ),
+    )
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(
         String, nullable=False, default=PaymentProcessor.stripe, index=True
@@ -257,6 +265,9 @@ class Checkout(
         TaxIDType, nullable=True, default=None
     )
     customer_metadata: Mapped[MetadataColumn]
+    anonymized_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
 
     # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).
     # For subscriptions created by the checkout itself, see `Subscription.checkout_id`.

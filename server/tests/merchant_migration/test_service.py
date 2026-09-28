@@ -73,6 +73,7 @@ from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     Customer,
     Discount,
+    DiscountProduct,
     MerchantMigration,
     MerchantMigrationRecord,
     Organization,
@@ -1221,6 +1222,18 @@ async def _imported_discounts(
         select(Discount).where(Discount.organization_id == organization.id)
     )
     return list(result.scalars().all())
+
+
+async def _discount_product_names(
+    session: AsyncSession, organization: Organization
+) -> set[str]:
+    result = await session.execute(
+        select(Product.name)
+        .join(DiscountProduct, DiscountProduct.product_id == Product.id)
+        .join(Discount, Discount.id == DiscountProduct.discount_id)
+        .where(Discount.organization_id == organization.id)
+    )
+    return set(result.scalars().all())
 
 
 def _catalog_with_discounted_subscription(
@@ -2625,8 +2638,19 @@ class TestImportCatalog:
         } == {("eur", 900), ("usd", 1000)}
 
     @pytest.mark.auth
-    async def test_product_restricted_discount_waits_until_every_product_settles(
+    @pytest.mark.parametrize(
+        ("deleted_in_between", "in_a_new_migration", "expected"),
+        [
+            (False, False, {"Pro", "Team"}),
+            (True, False, {"Pro"}),
+            (False, True, {"Pro", "Team"}),
+        ],
+    )
+    async def test_product_restricted_discount_follows_products_imported_later(
         self,
+        deleted_in_between: bool,
+        in_a_new_migration: bool,
+        expected: set[str],
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2634,57 +2658,53 @@ class TestImportCatalog:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        records: list[CanonicalRecord] = [
+            CanonicalProduct(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_1",
+                        currency="usd",
+                        amount=1000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            ),
+            CanonicalProduct(
+                source_id="prod_2:month:1",
+                product_source_id="prod_2",
+                name="Team",
+                recurring_interval="month",
+                recurring_interval_count=1,
+                prices=[
+                    CanonicalPrice(
+                        source_id="price_2",
+                        currency="usd",
+                        amount=2000,
+                        pricing_scheme=CanonicalPricingScheme.fixed,
+                    )
+                ],
+            ),
+            CanonicalCustomer(
+                source_id="cus_1",
+                email="alice@example.com",
+                name="Alice",
+                country="US",
+            ),
+            canonical_discount(
+                name="Both",
+                code="BOTH",
+                product_source_ids=["prod_1", "prod_2"],
+            ),
+            canonical_subscription(source_id="sub_1", price_source_id="price_1"),
+            canonical_subscription(source_id="sub_2", price_source_id="price_2"),
+        ]
         migration = await _staged_migration(
-            mocker,
-            session,
-            save_fixture,
-            auth_subject,
-            organization,
-            records=[
-                CanonicalProduct(
-                    source_id="prod_1:month:1",
-                    product_source_id="prod_1",
-                    name="Pro",
-                    recurring_interval="month",
-                    recurring_interval_count=1,
-                    prices=[
-                        CanonicalPrice(
-                            source_id="price_1",
-                            currency="usd",
-                            amount=1000,
-                            pricing_scheme=CanonicalPricingScheme.fixed,
-                        )
-                    ],
-                ),
-                CanonicalProduct(
-                    source_id="prod_2:month:1",
-                    product_source_id="prod_2",
-                    name="Team",
-                    recurring_interval="month",
-                    recurring_interval_count=1,
-                    prices=[
-                        CanonicalPrice(
-                            source_id="price_2",
-                            currency="usd",
-                            amount=2000,
-                            pricing_scheme=CanonicalPricingScheme.fixed,
-                        )
-                    ],
-                ),
-                CanonicalCustomer(
-                    source_id="cus_1",
-                    email="alice@example.com",
-                    name="Alice",
-                    country="US",
-                ),
-                canonical_discount(
-                    name="Both",
-                    code="BOTH",
-                    product_source_ids=["prod_1", "prod_2"],
-                ),
-                canonical_subscription(source_id="sub_1", price_source_id="price_1"),
-                canonical_subscription(source_id="sub_2", price_source_id="price_2"),
-            ],
+            mocker, session, save_fixture, auth_subject, organization, records=records
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         first_subscription = await record_repository.get_by_source(
@@ -2707,38 +2727,160 @@ class TestImportCatalog:
             record_ids=[first_subscription.id],
         )
         first_results = {result.entity: result for result in first.results}
-        assert first_results[PrecheckEntity.discounts].imported == 0
-        assert first_results[PrecheckEntity.discounts].skipped == 0
-        assert await _imported_discounts(session, organization) == []
-        discount_record = await record_repository.get_by_source(
-            organization_id=organization.id,
-            type=MerchantMigrationRecordType.discount,
-            source_id="coupon_1",
-        )
-        assert discount_record is not None
-        assert discount_record.status == MerchantMigrationRecordStatus.pending
+        assert first_results[PrecheckEntity.discounts].imported == 1
+        assert await _discount_product_names(session, organization) == {"Pro"}
+        if deleted_in_between:
+            [discount] = await _imported_discounts(session, organization)
+            discount.deleted_at = utc_now()
+            await session.flush()
+        if in_a_new_migration:
+            migration = await _staged_migration(
+                mocker,
+                session,
+                save_fixture,
+                auth_subject,
+                organization,
+                records=records,
+            )
 
-        second = await service.import_catalog(
+        await service.import_catalog(
             session,
             auth_subject,
             migration.id,
             record_ids=[second_subscription.id],
         )
-        second_results = {result.entity: result for result in second.results}
-        assert second_results[PrecheckEntity.discounts].imported == 1
 
-        result = await session.execute(
-            select(Discount)
-            .where(Discount.organization_id == organization.id)
-            .options(selectinload(Discount.discount_products))
+        assert len(await _imported_discounts(session, organization)) == 1
+        assert await _discount_product_names(session, organization) == expected
+
+    @pytest.mark.auth
+    async def test_product_restricted_discount_waits_for_a_product_still_pending(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *(
+                    CanonicalProduct(
+                        source_id=f"{product}:month:1",
+                        product_source_id=product,
+                        name=name,
+                        recurring_interval="month",
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id=price,
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                    for product, name, price in (
+                        ("prod_1", "Pro", "price_1"),
+                        ("prod_2", "Team", "price_2"),
+                    )
+                ),
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="alice@example.com",
+                    name="Alice",
+                    country="US",
+                ),
+                canonical_discount(product_source_ids=["prod_2"]),
+                canonical_subscription(source_id="sub_1", price_source_id="price_1"),
+                canonical_subscription(source_id="sub_2", price_source_id="price_2"),
+            ],
         )
-        discounts = list(result.scalars().unique().all())
-        assert len(discounts) == 1
-        products = await _products(session, organization)
-        assert {product.name for product in products} == {"Pro", "Team"}
-        assert {link.product_id for link in discounts[0].discount_products} == {
-            product.id for product in products
-        }
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        first_subscription = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        second_subscription = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_2",
+        )
+        assert first_subscription is not None
+        assert second_subscription is not None
+
+        first = await service.import_catalog(
+            session, auth_subject, migration.id, record_ids=[first_subscription.id]
+        )
+
+        first_results = {result.entity: result for result in first.results}
+        assert first_results[PrecheckEntity.discounts].imported == 0
+        assert first_results[PrecheckEntity.discounts].skipped == 0
+
+        await service.import_catalog(
+            session, auth_subject, migration.id, record_ids=[second_subscription.id]
+        )
+
+        assert await _discount_product_names(session, organization) == {"Team"}
+
+    @pytest.mark.auth
+    async def test_product_restricted_discount_skips_an_interval_nobody_is_on(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *(
+                    CanonicalProduct(
+                        source_id=f"prod_1:{interval}:1",
+                        product_source_id="prod_1",
+                        name=f"Pro {interval}",
+                        recurring_interval=interval,
+                        recurring_interval_count=1,
+                        prices=[
+                            CanonicalPrice(
+                                source_id=f"price_{interval}",
+                                currency="usd",
+                                amount=1000,
+                                pricing_scheme=CanonicalPricingScheme.fixed,
+                            )
+                        ],
+                    )
+                    for interval in ("month", "year")
+                ),
+                CanonicalCustomer(
+                    source_id="cus_1",
+                    email="alice@example.com",
+                    name="Alice",
+                    country="US",
+                ),
+                canonical_discount(product_source_ids=["prod_1"]),
+                canonical_subscription(price_source_id="price_month"),
+            ],
+        )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.discounts].imported == 1
+        assert await _discount_product_names(session, organization) == {"Pro month"}
 
 
 @pytest.mark.asyncio

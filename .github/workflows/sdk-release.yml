@@ -107,23 +107,9 @@ jobs:
         working-directory: sdk/typescript
         run: pnpm run build
 
-      - name: Select npm dist-tag
-        id: npm_tag
-        working-directory: sdk/typescript
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
-            tag=next
-          else
-            tag=latest
-          fi
-
-          echo "Publishing @polar-sh/sdk@$version with dist-tag '$tag'"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
       - name: Publish to npm (Trusted Publishing)
         working-directory: sdk/typescript
-        run: npm publish --tag "${{ steps.npm_tag.outputs.tag }}"
+        run: npm publish --tag latest
 
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
@@ -133,8 +119,21 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: "sdk/${{ needs.detect-release.outputs.version }}"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+
+      - name: Extract release notes
+        working-directory: sdk/generator
+        env:
+          RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+        run: uv run --locked keepachangelog show "$RELEASE_VERSION" ../CHANGELOG.md > "$RUNNER_TEMP/sdk-release-notes.md"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: "sdk/${{ needs.detect-release.outputs.version }}"
           name: "SDK ${{ needs.detect-release.outputs.version }}"
+          body_path: ${{ runner.temp }}/sdk-release-notes.md

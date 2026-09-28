@@ -24,7 +24,7 @@ Read [Migration from the `<1.0.0` SDK](references/migration-from-v0.md) before c
 Keep production and sandbox access tokens separate. Never expose an organization access token in browser, mobile, or other public client code. Pass `environment: "sandbox"` while testing; omit it or pass `environment: "production"` in production.
 
 ```typescript
-import { createPolar } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
+import { createPolar } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
 
 const accessToken = process.env.POLAR_ACCESS_TOKEN;
 if (!accessToken) {
@@ -44,8 +44,8 @@ Create the client once for a long-running server and reuse it. The TypeScript cl
 For tree-shakable individual functions, create a core client and bind only the operations the application uses:
 
 ```typescript
-import { createPolarCore } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
-import { getStateExternalCustomers } from "@polar-sh/sdk/{{ ir.versions[0].version }}/services/customers";
+import { createPolarCore } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
+import { getStateExternalCustomers } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}/services/customers";
 
 const polarCore = createPolarCore({ accessToken });
 const getCustomerState = getStateExternalCustomers(polarCore);

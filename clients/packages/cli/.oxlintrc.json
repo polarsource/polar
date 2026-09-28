@@ -7,13 +7,13 @@
   "rules": {
     "import/no-cycle": "error",
     "unicorn/no-process-exit": "error",
-    "polar/command-boundaries": "error",
-    "polar/command-descriptions": "error",
-    "polar/no-ansi-escapes": "error",
-    "polar/no-effect-run-outside-entrypoint": "error",
-    "polar/no-hardcoded-hosts": "error",
-    "polar/no-process-env": "error",
-    "polar/service-boundaries": "error",
-    "polar/test-colocation": "error"
+    "polar-cli/command-boundaries": "error",
+    "polar-cli/command-descriptions": "error",
+    "polar-cli/no-ansi-escapes": "error",
+    "polar-cli/no-effect-run-outside-entrypoint": "error",
+    "polar-cli/no-hardcoded-hosts": "error",
+    "polar-cli/no-process-env": "error",
+    "polar-cli/service-boundaries": "error",
+    "polar-cli/test-colocation": "error"
   }
 }

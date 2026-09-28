@@ -8,7 +8,7 @@ import serviceBoundaries from './rules/service-boundaries.js'
 import testColocation from './rules/test-colocation.js'
 
 export default {
-  meta: { name: 'polar' },
+  meta: { name: 'polar-cli' },
   rules: {
     'command-boundaries': commandBoundaries,
     'command-descriptions': commandDescriptions,

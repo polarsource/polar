@@ -2,7 +2,7 @@
 
 Payments and Checkouts made dead simple with Next.js.
 
-`pnpm install @polar-sh/nextjs zod`
+`pnpm install @polar-sh/nextjs`
 
 ## Checkout
 
@@ -25,7 +25,7 @@ export const GET = Checkout({
 
 Pass query params to this route.
 
-- products `?products=123`
+- products `?products=123` - Repeat the parameter for multiple products: `?products=123&products=456`
 - customer_id (optional) `?products=123&customer_id=xxx`
 - external_customer_id (optional) `?products=123&external_customer_id=xxx`
 - customer_email (optional) `?products=123&customer_email=janedoe@gmail.com`
@@ -51,9 +51,11 @@ export const GET = CustomerPortal({
 })
 ```
 
+If you identify customers by your own user ID, pass `getExternalCustomerId` instead of `getCustomerId`.
+
 ## Webhooks
 
-A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
+A simple utility which resolves incoming webhook payloads by verifying their signature with your webhook secret.
 
 ```typescript
 // api/webhook/polar/route.ts
@@ -72,6 +74,7 @@ export const POST = Webhooks({
 
 The Webhook handler also supports granular handlers for easy integration.
 
+- onPayload: (payload) => - Called for every event, in addition to the matching handler below
 - onCheckoutCreated: (payload) =>
 - onCheckoutExpired: (payload) =>
 - onCheckoutUpdated: (payload) =>
@@ -114,4 +117,4 @@ The Webhook handler also supports granular handlers for easy integration.
 - onMemberUpdated: (payload) =>
 - onMemberDeleted: (payload) =>
 
-Webhook payloads use the generated SDK's snake_case fields. Signed events unknown to the installed SDK version are acknowledged and ignored so newly introduced event types do not cause retries.
+Handlers are `async` functions. Webhook payloads use the generated SDK's snake_case fields. Signed events unknown to the installed SDK version are acknowledged and ignored so newly introduced event types do not cause retries.

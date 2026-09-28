@@ -91,11 +91,17 @@ def _recorded_cancel_at_period_end(
     return None
 
 
-def _cancel_at_period_end(subscription: stripe_lib.Subscription) -> bool:
+def _cancel_at_period_end(
+    subscription: stripe_lib.Subscription, current_period_end: int | None
+) -> bool:
     recorded = _recorded_cancel_at_period_end(subscription)
     if subscription.status == "canceled" and recorded is not None:
         return recorded
-    return bool(subscription.cancel_at_period_end)
+    if subscription.cancel_at_period_end:
+        return True
+    # A cancel date on the period end is the same end, set without the flag.
+    cancel_at = subscription.cancel_at
+    return cancel_at is not None and cancel_at == current_period_end
 
 
 def _cancellation_feedback(subscription: stripe_lib.Subscription) -> str | None:
@@ -699,7 +705,9 @@ class StripeAdapter:
             customer_discount_source_id=discounts.customer_source_id,
             customer_discount_started_at=discounts.customer_started_at,
             discount_block=discounts.block,
-            cancel_at_period_end=_cancel_at_period_end(subscription),
+            cancel_at_period_end=_cancel_at_period_end(
+                subscription, first_item.get("current_period_end")
+            ),
             cancel_at_period_end_known=_cancel_at_period_end_known(subscription),
             cancel_at=self._to_datetime(subscription.cancel_at),
             has_scheduled_changes=self._has_scheduled_changes(subscription),

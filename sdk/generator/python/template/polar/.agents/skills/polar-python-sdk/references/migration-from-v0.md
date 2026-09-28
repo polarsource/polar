@@ -14,7 +14,7 @@ Use these instructions when an application depends on `polar-sdk<1.0.0` or impor
 ## Migration workflow
 
 1. Inventory every `polar_sdk` import, client construction, operation call, model import, error handler, webhook receiver, retry configuration, and pagination loop.
-2. Select the new API version once and use its `polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}` namespace consistently.
+2. Select the new API version once and use its `polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}` namespace consistently.
 3. Replace client setup before migrating operation calls.
 4. Migrate request construction and response access from the generated types, not by applying broad search-and-replace rules.
 5. Replace pagination, error handling, and webhook validation explicitly.
@@ -36,7 +36,7 @@ organization = await polar.organizations.get_async(organization_id)
 
 ```python
 # After
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import PolarAsync
 
 polar = PolarAsync(access_token)
 organization = await polar.organizations.get(organization_id)
@@ -112,7 +112,7 @@ Use `async for` with `PolarAsync`. If the application needs page metadata, call 
 
 ## Migrate webhook validation
 
-Import `validate_event` and webhook errors from `polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.webhooks`. Pass the unmodified request body, request headers, and signing secret.
+Import `validate_event` and webhook errors from `polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}.webhooks`. Pass the unmodified request body, request headers, and signing secret.
 
 Rename old `WebhookVerificationError`, `WebhookUnknownTypeError`, and broad webhook error handlers to their new `PolarWebhookVerificationError`, `PolarWebhookUnknownTypeError`, and `PolarWebhookError` equivalents. Preserve the behavior of acknowledging unknown but correctly signed event types.
 

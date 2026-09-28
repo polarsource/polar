@@ -17,7 +17,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/products": {
                             "get": {
@@ -83,7 +83,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -180,7 +180,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {},
                     "webhooks": {
                         "customer.updated": {
@@ -293,7 +293,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [],
                         "input_models": [],
@@ -439,7 +439,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/users": {
                             "post": {
@@ -498,7 +498,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -595,7 +595,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {},
                     "components": {
                         "schemas": {
@@ -611,7 +611,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [],
                         "input_models": [],
@@ -629,7 +629,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/products": {
                             "get": {
@@ -703,7 +703,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -798,7 +798,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/orders": {
                             "get": {
@@ -859,7 +859,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -952,7 +952,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/products": {
                             "get": {
@@ -1006,7 +1006,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1100,7 +1100,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/accounts": {
                             "get": {
@@ -1144,7 +1144,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1211,7 +1211,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/events": {
                             "get": {
@@ -1267,7 +1267,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1348,7 +1348,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/payments": {
                             "get": {
@@ -1397,7 +1397,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1471,7 +1471,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/metadata": {
                             "get": {
@@ -1513,7 +1513,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1567,7 +1567,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/products/{id}": {
                             "get": {
@@ -1644,7 +1644,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1757,7 +1757,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/items": {
                             "get": {
@@ -1855,7 +1855,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -1970,7 +1970,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/items": {
                             "post": {
@@ -2024,7 +2024,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -2098,7 +2098,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/checkout": {
                             "post": {
@@ -2150,7 +2150,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -2240,7 +2240,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/payment": {
                             "get": {
@@ -2302,7 +2302,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -2396,7 +2396,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/files/{id}": {
                             "post": {
@@ -2448,7 +2448,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -2533,7 +2533,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {
                         "/export": {
                             "get": {
@@ -2597,7 +2597,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [
                             {
@@ -2678,7 +2678,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "servers": [
                         {
                             "url": "https://api.example.com",
@@ -2697,7 +2697,7 @@ _STRING = {"kind": "primitive", "type": "string"}
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [
                             {
                                 "environment": "production",
@@ -2726,19 +2726,19 @@ _STRING = {"kind": "primitive", "type": "string"}
             [
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {},
                 },
                 {
                     "openapi": "3.1.0",
-                    "info": {"title": "Test API", "version": "2.0.0"},
+                    "info": {"title": "Test API", "version": "2026-10"},
                     "paths": {},
                 },
             ],
             {
                 "versions": [
                     {
-                        "version": "1.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [],
                         "input_models": [],
@@ -2749,7 +2749,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         "output_unions": [],
                     },
                     {
-                        "version": "2.0.0",
+                        "version": "2026-10",
                         "servers": [],
                         "services": [],
                         "input_models": [],
@@ -2778,7 +2778,7 @@ def test_model_preserves_additional_properties_alongside_fields() -> None:
     spec = op.OpenAPI.model_validate(
         {
             "openapi": "3.1.0",
-            "info": {"title": "Test API", "version": "1.0.0"},
+            "info": {"title": "Test API", "version": "2026-10"},
             "paths": {
                 "/events": {
                     "post": {

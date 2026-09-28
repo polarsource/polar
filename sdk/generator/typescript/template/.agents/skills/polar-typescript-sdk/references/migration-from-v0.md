@@ -65,7 +65,7 @@ const polar = new Polar({ accessToken });
 
 ```typescript
 // After
-import { createPolar } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
+import { createPolar } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
 
 const polar = createPolar({ accessToken });
 ```

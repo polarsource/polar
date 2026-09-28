@@ -24,7 +24,7 @@ Create an [organization access token](https://polar.sh/docs/integrate/oat) and u
 the current API version:
 
 ```python
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar
+from polar.v{{ (ir.versions[-2] | default({})).version | default("") | replace("-", "_") | replace(".", "_") }} import Polar
 
 polar = Polar("polar_oat_xxx")
 
@@ -39,7 +39,7 @@ Use `PolarAsync` in asynchronous applications:
 ```python
 import asyncio
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import PolarAsync
 
 
 async def main() -> None:
@@ -61,7 +61,7 @@ block exits.
 For synchronous applications, use `Polar` with `with`:
 
 ```python
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import Polar
 
 with Polar("polar_oat_xxx") as polar:
     customer_state = polar.customers.get_state_external("customer_external_id")
@@ -73,7 +73,7 @@ For asynchronous applications, use `PolarAsync` with `async with`:
 ```python
 import asyncio
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import PolarAsync
 
 
 async def main() -> None:
@@ -129,7 +129,7 @@ Use `deserialize` to convert arbitrary data into a generated SDK model or union 
 
 ```python
 from polar import deserialize
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.outputs import Customer
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}.outputs import Customer
 
 customer = deserialize(data, Customer)
 ```
@@ -145,7 +145,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Request
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }}.webhooks import (
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }}.webhooks import (
     PolarWebhookError,
     PolarWebhookVerificationError,
     validate_event,

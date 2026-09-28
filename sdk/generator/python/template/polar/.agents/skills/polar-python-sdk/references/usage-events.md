@@ -9,7 +9,7 @@ Send events from trusted server-side code. Use the application's customer ID as 
 ```python
 import os
 
-from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar
+from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | replace(".", "_") }} import Polar
 
 
 with Polar(os.environ["POLAR_ACCESS_TOKEN"]) as polar:

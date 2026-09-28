@@ -1370,6 +1370,17 @@ def _generate_ir_version(
     )
 
 
+_API_VERSION_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
+
+
+def _get_api_version_sorting_key(spec: op.OpenAPI) -> tuple[int, int]:
+    match = _API_VERSION_PATTERN.match(spec.info.version)
+    if not match:
+        raise ValueError(f"Invalid API version format: {spec.info.version}")
+    year, month = match.groups()
+    return int(year), int(month)
+
+
 def generate_ir(
     *specs: op.OpenAPI,
     is_private_operation: IsPrivateOperationFilter = _default_is_private_operation,
@@ -1381,6 +1392,7 @@ def generate_ir(
     """
     Generate an intermediate representation of a list of OpenAPI specs.
     """
+    sorted_specs = sorted(specs, key=_get_api_version_sorting_key)
     versions = [
         _generate_ir_version(
             spec,
@@ -1390,6 +1402,6 @@ def generate_ir(
             normalize_model_name=normalize_model_name,
             normalize_service_name=normalize_service_name,
         )
-        for spec in specs
+        for spec in sorted_specs
     ]
     return APIIR(versions=versions)

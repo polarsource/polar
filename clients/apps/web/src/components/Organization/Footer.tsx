@@ -10,7 +10,8 @@ const Footer = () => {
   return (
     <Box
       as="footer"
-      width="1280px"
+      width="100%"
+      maxWidth="80rem"
       flexDirection="column"
       marginTop={{ base: 'none', md: '2xl' }}
       paddingHorizontal={{ base: 'xl', md: 'none' }}

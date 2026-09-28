@@ -37,10 +37,10 @@ export default function CompanyPage() {
             rowGap="2xl"
           >
             <Box display="block" maxWidth="32rem">
-              <Text variant="heading-s" wrap="pretty">
+              <Text variant="heading-s" as="h1" wrap="pretty">
                 A small, senior team working remotely across the world.
               </Text>
-              <Text variant="heading-s" color="muted" wrap="pretty">
+              <Text variant="heading-s" as="p" color="muted" wrap="pretty">
                 Building the finance layer for the next generation of AI
                 products.
               </Text>

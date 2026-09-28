@@ -3,7 +3,7 @@
 import { useInView } from '@/hooks/useInView'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useEffect, useRef } from 'react'
+import { RefObject, useEffect, useRef } from 'react'
 
 const HEIGHT = 96
 const LABEL_HEIGHT = 16
@@ -29,7 +29,18 @@ const smoothstep = (edge0: number, edge1: number, x: number) => {
   return t * t * (3 - 2 * t)
 }
 
+interface Clock {
+  elapsed: number
+  resumedAt: number | null
+}
+
+const clockSeconds = (clock: Clock, now: number) =>
+  (clock.elapsed + (clock.resumedAt === null ? 0 : now - clock.resumedAt)) /
+  1000
+
 interface RulerProps {
+  active: boolean
+  clock: RefObject<Clock>
   valueAt: (seconds: number) => number
   unit: number
   pointer: number
@@ -38,6 +49,8 @@ interface RulerProps {
 }
 
 const Ruler = ({
+  active,
+  clock,
   valueAt,
   unit,
   pointer,
@@ -45,12 +58,11 @@ const Ruler = ({
   format,
 }: RulerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { ref: wrapperRef, inView } = useInView()
 
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
-    if (!canvas || !ctx || !inView) return
+    if (!canvas || !ctx || !active) return
 
     const styles = getComputedStyle(canvas)
     const stroke =
@@ -107,7 +119,9 @@ const Ruler = ({
     const labelY = y(66)
 
     const draw = (now: number) => {
-      const value = valueAt(reducedMotion ? 0 : now / 1000)
+      const value = valueAt(
+        reducedMotion ? 0 : clockSeconds(clock.current, now),
+      )
       const spacing = width < 640 ? 56 : 72
       const pointerX = width * pointer
       const xAt = (v: number) => pointerX + ((v - value) / unit) * spacing
@@ -171,10 +185,10 @@ const Ruler = ({
       cancelAnimationFrame(frame)
       observer.disconnect()
     }
-  }, [inView, valueAt, unit, pointer, flip, format])
+  }, [active, clock, valueAt, unit, pointer, flip, format])
 
   return (
-    <Box ref={wrapperRef} display="block">
+    <Box display="block">
       <canvas
         ref={canvasRef}
         aria-hidden
@@ -191,32 +205,52 @@ const Ruler = ({
 const formatTokens = (value: number) => `${Math.floor(value)}k`
 const formatDollars = (value: number) => `$${Math.floor(value)}`
 
-export const MissionRulers = () => (
-  <Box
-    flexDirection="column"
-    rowGap={{ base: '2xl', md: '4xl' }}
-    paddingVertical="xl"
-  >
-    <Ruler
-      valueAt={streamedTokens}
-      unit={20}
-      pointer={0.72}
-      format={formatTokens}
-    />
-    <Box flexDirection="column" alignItems="center" textAlign="center">
-      <Text variant="heading-l" as="h2">
-        Tokens in,
-      </Text>
-      <Text variant="heading-l" as="p" color="muted">
-        revenue out
-      </Text>
+export const MissionRulers = () => {
+  const { ref, inView } = useInView()
+  const clock = useRef<Clock>({ elapsed: 0, resumedAt: null })
+
+  useEffect(() => {
+    if (!inView) return
+    const current = clock.current
+    current.resumedAt = performance.now()
+    return () => {
+      current.elapsed += performance.now() - (current.resumedAt ?? 0)
+      current.resumedAt = null
+    }
+  }, [inView])
+
+  return (
+    <Box
+      ref={ref}
+      flexDirection="column"
+      rowGap={{ base: '2xl', md: '4xl' }}
+      paddingVertical="xl"
+    >
+      <Ruler
+        active={inView}
+        clock={clock}
+        valueAt={streamedTokens}
+        unit={20}
+        pointer={0.72}
+        format={formatTokens}
+      />
+      <Box flexDirection="column" alignItems="center" textAlign="center">
+        <Text variant="heading-l" as="h2">
+          Tokens in,
+        </Text>
+        <Text variant="heading-l" as="p" color="muted">
+          revenue out
+        </Text>
+      </Box>
+      <Ruler
+        active={inView}
+        clock={clock}
+        valueAt={earnedDollars}
+        unit={10}
+        pointer={0.3}
+        flip
+        format={formatDollars}
+      />
     </Box>
-    <Ruler
-      valueAt={earnedDollars}
-      unit={10}
-      pointer={0.3}
-      flip
-      format={formatDollars}
-    />
-  </Box>
-)
+  )
+}

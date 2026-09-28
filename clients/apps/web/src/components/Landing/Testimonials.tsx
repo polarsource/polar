@@ -85,6 +85,7 @@ export const Testimonials = () => {
   const [active, setActive] = useState(0)
   const progressRefs = useRef<(HTMLElement | null)[]>([])
   const tweenRef = useRef<gsap.core.Tween | null>(null)
+  const hoveredRef = useRef(false)
   const testimonial = TESTIMONIALS[active]
 
   useEffect(() => {
@@ -101,6 +102,7 @@ export const Testimonials = () => {
           setActive((current) => (current + 1) % TESTIMONIALS.length),
       },
     )
+    if (hoveredRef.current) tween.pause()
     tweenRef.current = tween
     return () => {
       tween.kill()
@@ -125,8 +127,14 @@ export const Testimonials = () => {
           paddingVertical={{ base: '3xl', md: '5xl' }}
           paddingHorizontal={{ base: 'xl', md: '4xl' }}
           backgroundColor="background-secondary"
-          onMouseEnter={() => tweenRef.current?.pause()}
-          onMouseLeave={() => tweenRef.current?.resume()}
+          onMouseEnter={() => {
+            hoveredRef.current = true
+            tweenRef.current?.pause()
+          }}
+          onMouseLeave={() => {
+            hoveredRef.current = false
+            tweenRef.current?.resume()
+          }}
         >
           <Box width="100%" maxWidth="48rem" minHeight={{ md: '18rem' }}>
             <AnimatePresence mode="wait" initial={false}>

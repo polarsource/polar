@@ -566,6 +566,91 @@ class TestCreate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
+    async def test_retry_with_the_same_email_and_external_id_is_idempotent(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="retry@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            external_id="same-external-id",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.create(
+            session,
+            auth_subject,
+            customer_id=customer.id,
+            email="member@example.com",
+            external_id="same-external-id",
+            role=MemberRole.member,
+        )
+
+        assert member.id == existing.id
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_external_id_already_taken(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="first@example.com",
+            external_id="shared-external-id",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.create(
+                session,
+                auth_subject,
+                customer_id=customer.id,
+                email="second@example.com",
+                external_id="shared-external-id",
+                role=MemberRole.member,
+            )
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
     async def test_team_customer_can_have_multiple_members(
         self,
         save_fixture: SaveFixture,

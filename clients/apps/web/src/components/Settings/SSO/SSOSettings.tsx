@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks'
 import {
   useDeleteSSOConnection,
   useSSOConnections,
+  useSSODomains,
   useUpdateOrganization,
   useUpdateSSOConnection,
 } from '@/hooks/queries'
@@ -19,6 +20,7 @@ import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
 import EditSSOConnectionModal from './EditSSOConnectionModal'
 import NewSSOConnectionModal from './NewSSOConnectionModal'
+import SSODomains from './SSODomains'
 
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { isShown, show, hide } = useModal()
@@ -30,8 +32,10 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { currentUser } = useAuth()
   const router = useRouter()
   const connections = useSSOConnections(org.id)
+  const domains = useSSODomains(org.id)
   const updateOrganization = useUpdateOrganization()
 
+  const isAutomatic = org.sso_enforced && (domains.data?.items.length ?? 0) > 0
   const hasEnabledConnection = connections.data?.items?.some(
     (connection) => connection.enabled,
   )
@@ -59,17 +63,19 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   return (
     <>
       <Box flexDirection="column" gap="l">
-        <Box flexDirection="column" gap="xs">
-          <Text variant="label">Login link</Text>
-          <CopyToClipboardInput
-            value={getSSOLoginURL(org.slug)}
-            variant="mono"
-            onCopy={() => toast({ title: 'Copied to clipboard' })}
-          />
-          <Text variant="caption" color="muted">
-            Share this link with your members to sign in via SSO.
-          </Text>
-        </Box>
+        {!isAutomatic && (
+          <Box flexDirection="column" gap="xs">
+            <Text variant="label">Login link</Text>
+            <CopyToClipboardInput
+              value={getSSOLoginURL(org.slug)}
+              variant="mono"
+              onCopy={() => toast({ title: 'Copied to clipboard' })}
+            />
+            <Text variant="caption" color="muted">
+              Share this link with your members to sign in via SSO.
+            </Text>
+          </Box>
+        )}
         <ListGroup>
           {connections.data?.items && connections.data.items.length > 0 ? (
             connections.data.items.map((connection) => (
@@ -121,6 +127,7 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
             {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
           </Button>
         </Box>
+        {org.sso_enforced && <SSODomains organizationId={org.id} />}
       </Box>
       <ConfirmModal
         isShown={enforceModalShown}

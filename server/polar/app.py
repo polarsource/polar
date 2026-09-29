@@ -9,7 +9,9 @@ from polar import worker  # noqa
 from polar.api import router
 from polar.auth.exception_handlers import (
     PolarAuthRedirectionError,
+    SSORequired,
     auth_redirection_error_exception_handler,
+    sso_required_exception_handler,
 )
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.models import ORGANIZATION_HEADER
@@ -234,6 +236,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(
         PolarAuthRedirectionError, auth_redirection_error_exception_handler
     )
+    app.add_exception_handler(SSORequired, sso_required_exception_handler)
 
     # /.well-known
     app.include_router(well_known_router)

@@ -80,6 +80,10 @@ const EmailOTPForm = ({
         turnstileToken,
       })
       if (error) {
+        if ('error' in error && error.error === 'SSORequired') {
+          window.location.assign(error.redirect_url)
+          return
+        }
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError)
         } else if (error.detail) {

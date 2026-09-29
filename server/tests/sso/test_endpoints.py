@@ -5,8 +5,10 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
+from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
+    OrganizationDomain,
     OrganizationSSOConnection,
     User,
     UserOrganization,
@@ -105,6 +107,48 @@ class TestListSSOConnections:
         item = json["items"][0]
         assert item["id"] == str(sso_connection.id)
         assert "client_secret" not in item["configuration"]
+
+
+@pytest.mark.asyncio
+class TestListSSODomains:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/sso-domains/")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/sso-domains/")
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        verified = OrganizationDomain(
+            organization=organization, domain="acme.com", verified_at=utc_now()
+        )
+        await save_fixture(verified)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="unverified.com", verified_at=None
+            )
+        )
+
+        response = await client.get(f"/v1/organizations/{organization.id}/sso-domains/")
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["domain"] == "acme.com"
 
 
 @pytest.mark.asyncio

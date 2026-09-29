@@ -120,9 +120,8 @@ async def create_sso_connection(
         "client_id": CLIENT_ID,
         "auth_method": OIDCAuthMethod.client_secret,
         "client_secret": "secret",
+        "authorization_parameters": authorization_parameters or {},
     }
-    if authorization_parameters is not None:
-        configuration["authorization_parameters"] = authorization_parameters
     organization.feature_settings = {
         **organization.feature_settings,
         "sso_enabled": True,

@@ -1,3 +1,7 @@
+from typing import Literal
+
+from pydantic import BaseModel, Field, create_model
+
 from polar.config import settings
 from polar.exceptions import PolarError
 
@@ -54,6 +58,29 @@ class RequestedOrganizationNotAccessible(PolarAuthError):
             "is not accessible with this credential."
         )
         super().__init__(message, 403)
+
+
+class SSORequired(PolarAuthError):
+    """
+    Exception raised when the email belongs to a domain whose organization
+    enforces SSO.
+    """
+
+    def __init__(self, redirect_url: str) -> None:
+        self.redirect_url = redirect_url
+        message = "This email domain signs in through single sign-on."
+        super().__init__(message, 409)
+
+    @classmethod
+    def schema(cls) -> type[BaseModel]:
+        if cls._schema is None:
+            cls._schema = create_model(
+                cls.__name__,
+                error=(Literal["SSORequired"], Field(examples=[cls.__name__])),
+                detail=(str, ...),
+                redirect_url=(str, ...),
+            )
+        return cls._schema
 
 
 class GetEmailError(PolarAuthError):

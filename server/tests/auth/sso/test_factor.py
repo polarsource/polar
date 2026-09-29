@@ -39,6 +39,7 @@ class TestBuildSSOFactor:
                 "client_id": "client-id",
                 "auth_method": OIDCAuthMethod.client_secret,
                 "client_secret": "secret",
+                "authorization_parameters": {},
             }
         )
 
@@ -64,6 +65,7 @@ class TestBuildSSOFactor:
                 "issuer": "https://idp.example.com",
                 "client_id": "client-id",
                 "auth_method": OIDCAuthMethod.private_key_jwt,
+                "authorization_parameters": {},
             }
         )
 
@@ -89,6 +91,7 @@ class TestBuildSSOFactor:
                 "client_id": "client-id",
                 "auth_method": OIDCAuthMethod.client_secret,
                 "client_secret": "secret",
+                "authorization_parameters": {},
             }
         )
 

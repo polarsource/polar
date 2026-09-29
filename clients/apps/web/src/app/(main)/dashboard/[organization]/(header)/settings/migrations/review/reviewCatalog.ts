@@ -22,6 +22,18 @@ export function reviewCatalogEmptyKind(
   return null
 }
 
+export type ReviewPrimaryAction = 'prepare' | 'continue'
+
+// Subscriptions an earlier migration of the same account already prepared
+// arrive ready, leaving nothing to select. The import still has to run once to
+// move the migration on, so the merchant continues instead of preparing.
+export function reviewPrimaryAction(
+  selectable: number,
+  ready: number,
+): ReviewPrimaryAction {
+  return selectable <= 0 && ready > 0 ? 'continue' : 'prepare'
+}
+
 export const CATALOG_EMPTY_COPY: Record<
   ReviewCatalogEmptyKind,
   { title: string; description: string }

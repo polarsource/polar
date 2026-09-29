@@ -1859,6 +1859,50 @@ class TestImportCatalog:
         assert await _products(session, organization) == []
 
     @pytest.mark.auth
+    async def test_continues_subscriptions_an_earlier_migration_prepared(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        earlier = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await _import_catalog(session, auth_subject, earlier.id)
+        later = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        summary = await service.summarize_records(session, auth_subject, later.id)
+        subscriptions = next(
+            entity
+            for entity in summary.entities
+            if entity.entity == PrecheckEntity.subscriptions
+        )
+        assert subscriptions.selectable == 0
+        assert subscriptions.ready == 1
+
+        report = await _import_catalog(session, auth_subject, later.id)
+
+        assert report.step == MerchantMigrationStep.create_catalog
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 0
+        assert results[PrecheckEntity.customers].imported == 0
+        assert len(await _products(session, organization)) == 1
+        subscription = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.subscription,
+            source_id="sub_1",
+        )
+        assert subscription is not None
+        assert subscription.merchant_migration_id == later.id
+        assert subscription.status == MerchantMigrationRecordStatus.pending
+
+    @pytest.mark.auth
     async def test_import_does_not_notify_for_each_product(
         self,
         mocker: MockerFixture,

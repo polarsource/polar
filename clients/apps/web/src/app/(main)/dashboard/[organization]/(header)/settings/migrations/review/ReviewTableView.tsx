@@ -24,6 +24,7 @@ import {
   CATALOG_REFRESH_COPY,
   remainingSubscriptionCount,
   reviewCatalogEmptyKind,
+  reviewPrimaryAction,
 } from './reviewCatalog'
 import { ReviewRow } from './reviewRows'
 
@@ -45,6 +46,7 @@ interface Props {
   onToggle: (id: string) => void
   onToggleAll: () => void
   onImport: () => void
+  onContinue: () => void
   importing?: boolean
   importError?: string
   onRerunPrecheck?: () => void
@@ -70,6 +72,7 @@ export function ReviewTableView({
   onToggle,
   onToggleAll,
   onImport,
+  onContinue,
   importing = false,
   importError,
   onRerunPrecheck,
@@ -97,6 +100,10 @@ export function ReviewTableView({
         }`
       : 'Prepare subscriptions'
   const canPrepare = filter === 'all' || filter === 'to_prepare'
+  const primaryAction = reviewPrimaryAction(
+    selectableTotal,
+    counts.subscriptions.ready,
+  )
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
@@ -197,7 +204,11 @@ export function ReviewTableView({
                 {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
-            {canPrepare ? (
+            {primaryAction === 'continue' ? (
+              <Button size="sm" onClick={onContinue} disabled={importing}>
+                {importing ? 'Continuing…' : 'Continue'}
+              </Button>
+            ) : canPrepare ? (
               <Button
                 size="sm"
                 onClick={onImport}
@@ -210,8 +221,9 @@ export function ReviewTableView({
         </Box>
 
         <Text variant="caption" color="muted">
-          Preparing a subscription brings its customer and product to Polar.
-          Polar starts billing only when you switch.
+          {primaryAction === 'continue'
+            ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
+            : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
         </Text>
 
         {rows.length === 0 ? (

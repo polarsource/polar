@@ -184,6 +184,10 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
           },
         })
       }}
+      onContinue={() => {
+        rerunPrecheck.reset()
+        importCatalog.mutate({})
+      }}
       importing={importCatalog.isPending || importingOperation}
       importError={importError}
       onRerunPrecheck={() => rerunPrecheck.mutate()}

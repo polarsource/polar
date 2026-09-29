@@ -14,6 +14,7 @@ def cli_spec() -> dict:
     spec: dict = {
         "openapi": "3.1.0",
         "info": {"title": "Widgets", "version": "2026-10"},
+        "security": [{"bearerAuth": []}],
         "paths": {
             "/widgets/{id}": {
                 "parameters": [

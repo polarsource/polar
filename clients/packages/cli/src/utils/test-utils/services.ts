@@ -1,4 +1,4 @@
-import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
+import { createPolarCore, type Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { Effect, Redacted } from 'effect'
 import {
   AuthError,
@@ -263,7 +263,10 @@ export const fakePolar = (client: unknown) => {
       Effect.tryPromise({
         try: () => {
           state.requests.push(environment)
-          return fn(sdk)
+          return fn(
+            sdk,
+            createPolarCore({ accessToken: 'test-token', environment }),
+          )
         },
         catch: (error) =>
           new AuthError({

@@ -1,4 +1,9 @@
-import { createPolar, type Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
+import {
+  createPolar,
+  createPolarCore,
+  type Polar as PolarSDK,
+  type PolarCore,
+} from '@polar-sh/sdk/2026-10'
 import { Context, Effect, Layer, Redacted } from 'effect'
 import { AuthError, loginCommand, type PolarEnvironment } from '@/schemas/Auth'
 import { apiOrigin } from '@/services/api'
@@ -11,9 +16,9 @@ interface PolarImpl {
     environment?: PolarEnvironment,
   ) => Effect.Effect<PolarSDK, AuthError>
   use: <A>(
-    fn: (client: PolarSDK) => Promise<A>,
+    fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
     environment?: PolarEnvironment,
-    options?: { timeout: number },
+    options?: { timeout?: number; authenticated?: boolean },
   ) => Effect.Effect<A, AuthError>
 }
 
@@ -32,24 +37,30 @@ export const make = Effect.gen(function* () {
     })
 
   const use = <A>(
-    fn: (client: PolarSDK) => Promise<A>,
+    fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
     environment: PolarEnvironment = 'sandbox',
-    options?: { timeout: number },
+    options?: { timeout?: number; authenticated?: boolean },
   ) =>
     Effect.gen(function* () {
-      const credential = yield* auth.resolve(environment)
+      const { authenticated = true, ...requestOptions } = options ?? {}
+      const credential = authenticated
+        ? yield* auth.resolve(environment)
+        : undefined
       const baseUrl = yield* apiOrigin(environment)
-      const request = (accessToken: Redacted.Redacted<string>) =>
+      const request = (accessToken?: Redacted.Redacted<string>) =>
         Effect.tryPromise({
-          try: () =>
-            fn(
-              createPolar({
-                environment,
-                baseUrl,
-                accessToken: Redacted.value(accessToken),
-                ...options,
-              }),
-            ),
+          try: () => {
+            const clientOptions = {
+              environment,
+              baseUrl,
+              accessToken: accessToken ? Redacted.value(accessToken) : '',
+              ...requestOptions,
+            }
+            return fn(
+              createPolar(clientOptions),
+              createPolarCore(clientOptions),
+            )
+          },
           catch: (error) => ({
             statusCode:
               typeof error === 'object' &&
@@ -61,10 +72,10 @@ export const make = Effect.gen(function* () {
           }),
         })
 
-      return yield* request(credential.accessToken).pipe(
+      return yield* request(credential?.accessToken).pipe(
         Effect.catch((error) =>
           Effect.gen(function* () {
-            if (credential.source !== 'keyring' || error.statusCode !== 401)
+            if (credential?.source !== 'keyring' || error.statusCode !== 401)
               return yield* Effect.fail(error)
 
             const refreshed = yield* auth.resolve(

@@ -2,7 +2,7 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
+import { ApiRuntime, executeRequest } from '../runtime'
 import { data, mergeInput } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customerSeats']['claimSeat']>[0]>
@@ -10,6 +10,10 @@ type Body = NonNullable<Parameters<Polar['customerSeats']['claimSeat']>[0]>
 export const command = Command.make(
   'claim_seat',
   {
+    environment: Flag.Literals('environment', ['production', 'sandbox']).pipe(
+      Flag.withDefault('production'),
+      Flag.withDescription('Environment for this unauthenticated request'),
+    ),
     data,
     input: {
       invitation_token: Flag.String('invitation-token').pipe(
@@ -29,7 +33,23 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.customerSeats.claimSeat(body),
+        requiresAuthentication: false,
+        environment: config.environment,
+        invoke: (_client, _organizationId, core) =>
+          executeRequest(
+            core,
+            core.buildRequest(
+              'POST',
+              '/v1/customer-seats/claim',
+              undefined,
+              undefined,
+              body,
+            ),
+            'json',
+            {
+              anonymous: true,
+            },
+          ),
       })
     }),
 ).pipe(Command.withDescription('claim_seat'))

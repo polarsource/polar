@@ -3,8 +3,8 @@
 import type { Polar } from '@polar-sh/sdk/{{ api.version }}'
 {% endif %}
 import { Effect{% if confirmation_fields %}, Schema{% endif %} } from 'effect'
-import { {% if method.path_params %}Argument, {% endif %}Command{% if fields %}, Flag{% endif %} } from 'effect/unstable/cli'
-import { ApiRuntime{% if confirmation_fields %}, ApiCommandError{% endif %} } from '{{ runtime_path }}runtime'
+import { {% if method.path_params %}Argument, {% endif %}Command{% if fields or not method.requires_authentication %}, Flag{% endif %} } from 'effect/unstable/cli'
+import { ApiRuntime{% if confirmation_fields %}, ApiCommandError{% endif %}{% if not method.requires_authentication or method.pending_response %}, executeRequest{% endif %} } from '{{ runtime_path }}runtime'
 {% if helpers %}
 import { {{ helpers | join(', ') }} } from '{{ runtime_path }}inputs'
 {% endif %}
@@ -16,6 +16,12 @@ type {{ input_type }} = NonNullable<Parameters<{{ sdk_type }}['{{ sdk_method }}'
 export const command = Command.make(
   {{ method.name | quote }},
   {
+{% if not method.requires_authentication %}
+    environment: Flag.Literals('environment', ['production', 'sandbox']).pipe(
+      Flag.withDefault('production'),
+      Flag.withDescription('Environment for this unauthenticated request'),
+    ),
+{% endif %}
 {% if needs_confirmation %}
     confirm,
 {% endif %}
@@ -43,7 +49,7 @@ export const command = Command.make(
     },
 {% endif %}
   },
-  ({% if method.path_params or input_type or needs_confirmation %}config{% endif %}) => Effect.gen(function* () {
+  ({% if method.path_params or input_type or needs_confirmation or not method.requires_authentication %}config{% endif %}) => Effect.gen(function* () {
     const api = yield* ApiRuntime
 {% if input_type %}
     const {{ input_type | lower }} = mergeInput<{{ input_type }}>(config.data, {
@@ -68,6 +74,10 @@ export const command = Command.make(
       method: {{ method.http_method | quote }},
       requiresConfirmation: {{ confirmation_expression }},
       confirm: {% if needs_confirmation %}config.confirm{% else %}false{% endif %},
+{% if not method.requires_authentication %}
+      requiresAuthentication: false,
+      environment: config.environment,
+{% endif %}
 {% if has_organization %}
       organizationId: {{ input_type | lower }}.organization_id,
 {% endif %}
@@ -81,7 +91,33 @@ export const command = Command.make(
         invoke: (client) => {{ preview.invoke }},
       },
 {% endif %}
+{% if not method.requires_authentication or method.pending_response %}
+      invoke: (_client, {% if has_organization %}organizationId{% else %}_organizationId{% endif %}, core) => executeRequest(
+        core,
+        core.buildRequest(
+          {{ method.http_method | quote }},
+          {{ method.path | quote }},
+{% if method.path_params %}
+          { {% for param in method.path_params %}{{ param.name }}: config.path.{{ param.name }}{% if not loop.last %}, {% endif %}{% endfor %} },
+{% else %}
+          undefined,
+{% endif %}
+          {% if input_type == 'Query' %}{{ arguments[-1] }}{% else %}undefined{% endif %},
+          {% if input_type == 'Body' %}{{ arguments[-1] }}{% else %}undefined{% endif %},
+        ),
+        {{ method.response_type | quote }},
+        {
+{% if not method.requires_authentication %}
+          anonymous: true,
+{% endif %}
+{% if method.pending_response %}
+          pendingResponse: {{ method.pending_response | quote }},
+{% endif %}
+        },
+      ),
+{% else %}
       invoke: (client{% if has_organization %}, organizationId{% endif %}) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
+{% endif %}
     })
   }),
 ).pipe(Command.withDescription({{ description | quote }}))

@@ -1,4 +1,4 @@
-import type { Polar } from '@polar-sh/sdk/2026-10'
+import type { Environment, Polar, PolarCore } from '@polar-sh/sdk/2026-10'
 import { Context, Data, type Effect, type Stdio } from 'effect'
 import type { Prompt } from 'effect/unstable/cli'
 
@@ -23,9 +23,29 @@ export interface ApiOperation<A> {
   method: string
   requiresConfirmation: boolean
   confirm: boolean
+  requiresAuthentication?: boolean
+  environment?: Environment
   organizationId?: string | ReadonlyArray<string> | null | undefined
   preview?: ApiPreview
-  invoke: (client: Polar, organizationId: string) => Promise<A>
+  invoke: (client: Polar, organizationId: string | null, core: PolarCore) => Promise<A>
+}
+
+export const executeRequest = async (
+  core: PolarCore,
+  [url, init]: [string, RequestInit],
+  responseType: 'json' | 'text' | 'none',
+  options: { anonymous?: boolean; pendingResponse?: string },
+): Promise<unknown> => {
+  if (options.anonymous) {
+    const headers = new Headers(init.headers)
+    headers.delete('Authorization')
+    init = { ...init, headers }
+  }
+  const response = await core.sendRequest([url, init])
+  if (response.status === 202 && options.pendingResponse) {
+    return { status: 202, message: options.pendingResponse }
+  }
+  return core.parseResponse(response, responseType)
 }
 
 export class ApiRuntime extends Context.Service<

@@ -33,14 +33,19 @@ export const layer = Layer.effect(
               : typeof operation.organizationId === 'string'
                 ? [operation.organizationId]
                 : operation.organizationId
-          const organization = yield* organizations
-            .resolve(organizationIds[0])
-            .pipe(
-              Effect.mapError(
-                (error) => new ApiCommandError({ message: error.message }),
-              ),
-            )
-          const { environment } = organization
+          const organization =
+            operation.requiresAuthentication === false
+              ? undefined
+              : yield* organizations
+                  .resolve(organizationIds[0])
+                  .pipe(
+                    Effect.mapError(
+                      (error) =>
+                        new ApiCommandError({ message: error.message }),
+                    ),
+                  )
+          const environment =
+            organization?.environment ?? operation.environment ?? 'production'
           for (const id of organizationIds.slice(1)) {
             const other = yield* organizations
               .resolve(id)
@@ -66,7 +71,9 @@ export const layer = Layer.effect(
                 ui.blank,
                 ui.keyValue([
                   ['Operation', ui.command(operation.operationId)],
-                  ['Organization', ui.bold(organization.name)],
+                  ...(organization
+                    ? [['Organization', ui.bold(organization.name)] as const]
+                    : []),
                   ['Environment', ui.bold(environment)],
                 ]),
                 ui.blank,
@@ -136,8 +143,10 @@ export const layer = Layer.effect(
 
           const result = yield* polar
             .use(
-              (client) => operation.invoke(client, organization.id),
+              (client, core) =>
+                operation.invoke(client, organization?.id ?? null, core),
               environment,
+              { authenticated: operation.requiresAuthentication !== false },
             )
             .pipe(
               Effect.mapError(

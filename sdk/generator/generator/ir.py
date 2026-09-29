@@ -316,6 +316,12 @@ class Method(BaseModel):
     deprecated: bool | None = None
     pagination: Pagination | None = None
     cli_preview: CLIPreview | None = None
+    security: list[dict[str, list[str]]] | None = None
+    pending_response: str | None = None
+
+    @property
+    def requires_authentication(self) -> bool:
+        return bool(self.security and all(self.security))
 
 
 class Service(BaseModel):
@@ -1302,6 +1308,14 @@ def _generate_ir_version(
                     if preview_extension is not None
                     else None
                 )
+                security = (
+                    operation.security
+                    if operation.security is not None
+                    else spec.security
+                )
+                accepted_response = (operation.responses or {}).get("202")
+                if accepted_response is not None:
+                    accepted_response = _resolve_reference(accepted_response, spec)
                 method = Method(
                     name=method_name,
                     operation_id=typing.cast(str, operation.operationId),
@@ -1317,6 +1331,14 @@ def _generate_ir_version(
                     deprecated=True if operation.deprecated else None,
                     pagination=pagination,
                     cli_preview=cli_preview,
+                    security=security,
+                    pending_response=(
+                        accepted_response.description
+                        if accepted_response is not None
+                        and not accepted_response.content
+                        and response_type == "json"
+                        else None
+                    ),
                 )
                 current_service.methods.append(method)
 

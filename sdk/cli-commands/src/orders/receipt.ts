@@ -1,7 +1,7 @@
 // Generated from orders:receipt (2026-10). Do not edit.
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
+import { ApiRuntime, executeRequest } from '../runtime'
 
 export const command = Command.make(
   'receipt',
@@ -18,7 +18,21 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (client) => client.orders.receipt(config.path.id),
+        invoke: (_client, _organizationId, core) =>
+          executeRequest(
+            core,
+            core.buildRequest(
+              'GET',
+              '/v1/orders/{id}/receipt',
+              { id: config.path.id },
+              undefined,
+              undefined,
+            ),
+            'json',
+            {
+              pendingResponse: 'Receipt generation in progress.',
+            },
+          ),
       })
     }),
 ).pipe(

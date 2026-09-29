@@ -30,6 +30,8 @@ runtime/input templates, not generated files. The package never imports the CLI.
 ## Generate and try it
 
 From `clients/`, install dependencies with `pnpm install`.
+From `sdk/generator/`, run `just openapi` to generate the versioned specs from
+the configured backend environment.
 Then, from `clients/packages/cli/` (generation also refreshes the installed local package):
 
 ```bash
@@ -44,9 +46,16 @@ bun src/cli.ts customers delete <id> --confirm
 ```
 
 Requests use the organization selected with `polar auth org`, including its
-sandbox or production environment and saved OAuth credentials. Resource commands
-have no environment flags. These are real API calls, including mutations: select
+sandbox or production environment and saved OAuth credentials. Authenticated resource
+commands have no environment flags. These are real API calls, including mutations: select
 a sandbox organization when experimenting.
+
+`customer_seats get_claim_info` and `customer_seats claim_seat` use only the
+invitation token, without a login or selected organization. They default to
+production; pass `--environment=sandbox` for sandbox invitations.
+
+`orders receipt <id>` prints a JSON status and message when receipt generation
+is still in progress (`202`). Run the command again to retrieve the download URL.
 
 With `POLAR_ACCESS_TOKEN`, the CLI uses the token's sole accessible organization
 and `POLAR_ENVIRONMENT` (production by default), rather than the saved selection.

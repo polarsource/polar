@@ -20,7 +20,6 @@ import {
   ACCOUNT_REVIEW_REPLY,
   REJECTION_OFF_TOPIC_TEXT,
   REJECTION_PRE_APPROVAL_TEXT,
-  REJECTION_UNCLEAR_TEXT,
 } from './constants'
 
 type ValidationOutcome =
@@ -80,12 +79,6 @@ export const FeedbackForm = ({
         status: ValidationStatus
       }
       switch (status) {
-        case 'unclear':
-          setValidationOutcome({
-            kind: 'rejection',
-            text: REJECTION_UNCLEAR_TEXT,
-          })
-          return
         case 'off_topic':
           setValidationOutcome({
             kind: 'rejection',

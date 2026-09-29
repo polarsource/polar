@@ -84,7 +84,7 @@ describe('CreateMigrationModal', () => {
 
     expect(screen.getByText('Accounts')).toBeTruthy()
     expect(
-      screen.getByText(/in the\s+Connect group/, { exact: false }),
+      screen.getByText(/Listed under Connect/, { exact: false }),
     ).toBeTruthy()
     expect(
       screen.getByRole('link', { name: /Create a restricted key in Stripe/ }),

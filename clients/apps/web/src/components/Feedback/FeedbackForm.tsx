@@ -55,54 +55,61 @@ export const FeedbackForm = ({
   const [validationOutcome, setValidationOutcome] =
     useState<ValidationOutcome | null>(null)
 
-  const onSubmit = async (formData: FormSchema) => {
-    setValidationOutcome(null)
-    setIsValidating(true)
+  const validate = async (
+    message: string,
+  ): Promise<ValidationStatus | null> => {
     try {
       const response = await fetch('/feedback/question/validate', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: formData.message,
+          message,
           conversationId,
           organizationId: organization.id,
         }),
       })
       if (!response.ok) {
-        // Fall through to the assistant on validation outage so the user
-        // isn't blocked by a transient classifier failure.
-        onAskQuestion(formData.message)
-        return
+        return null
       }
       const { status } = (await response.json()) as {
         status: ValidationStatus
       }
-      switch (status) {
-        case 'off_topic':
-          setValidationOutcome({
-            kind: 'rejection',
-            text: REJECTION_OFF_TOPIC_TEXT,
-          })
-          return
-        case 'pre_approval':
-          setValidationOutcome({
-            kind: 'rejection',
-            text: REJECTION_PRE_APPROVAL_TEXT,
-          })
-          return
-        case 'account_review':
-          setValidationOutcome({
-            kind: 'info',
-            markdown: ACCOUNT_REVIEW_REPLY,
-          })
-          return
-        case 'answerable':
-          onAskQuestion(formData.message)
-          return
-      }
-    } finally {
-      setIsValidating(false)
+      return status
+    } catch {
+      return null
+    }
+  }
+
+  const onSubmit = async (formData: FormSchema) => {
+    setValidationOutcome(null)
+    setIsValidating(true)
+    const status = await validate(formData.message)
+    setIsValidating(false)
+
+    switch (status) {
+      case 'off_topic':
+        setValidationOutcome({
+          kind: 'rejection',
+          text: REJECTION_OFF_TOPIC_TEXT,
+        })
+        return
+      case 'pre_approval':
+        setValidationOutcome({
+          kind: 'rejection',
+          text: REJECTION_PRE_APPROVAL_TEXT,
+        })
+        return
+      case 'account_review':
+        setValidationOutcome({
+          kind: 'info',
+          markdown: ACCOUNT_REVIEW_REPLY,
+        })
+        return
+      default:
+        // Fall through to the assistant on validation outage so the user
+        // isn't blocked by a transient classifier failure.
+        onAskQuestion(formData.message)
     }
   }
 

@@ -248,6 +248,8 @@ export default {
       confirmationTokenFailed:
         'Nie udało się utworzyć tokena potwierdzenia, spróbuj ponownie później.',
       paymentNotCompleted: 'Płatność nie została zakończona. Spróbuj ponownie.',
+      paymentFormNotLoaded:
+        'Nie udało się załadować formularza płatności. Odśwież stronę i spróbuj ponownie.',
     },
     cta: {
       startTrial: 'Rozpocznij okres próbny',

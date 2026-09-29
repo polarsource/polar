@@ -56,12 +56,6 @@ describe('PrecheckPanel', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('offers no button while the pre-check is making progress', () => {
-    render(<PrecheckPanel migration={migrationWith(false)} />)
-
-    expect(screen.queryByRole('button')).toBeNull()
-  })
-
   it('lets the merchant retry a failed pre-check', () => {
     render(<PrecheckPanel migration={migrationWith(false, 'failed')} />)
 

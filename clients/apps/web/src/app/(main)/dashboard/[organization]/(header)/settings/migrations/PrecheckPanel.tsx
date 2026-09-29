@@ -26,9 +26,8 @@ export function PrecheckPanel({
     (precheck.isError
       ? "We couldn't start the pre-check. Please try again."
       : null)
-  // Creating a migration starts the pre-check, so the button only appears when
-  // the merchant has to act: a stalled or failed run, or a migration created
-  // before the pre-check started on its own.
+  // Creating a migration starts the pre-check, so there's nothing to click
+  // while it runs.
   const action = stalled
     ? 'Start again'
     : running

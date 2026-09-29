@@ -1908,6 +1908,11 @@ class TestSkips:
                 "credit balance on Stripe",
                 id="customer-credit-since-the-import",
             ),
+            pytest.param(
+                {"managed_payments": True},
+                "Stripe Managed Payments",
+                id="sold-through-managed-payments",
+            ),
         ],
     )
     async def test_source_is_no_longer_handable(

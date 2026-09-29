@@ -205,6 +205,9 @@ class CanonicalSubscription:
     # applies it to the next invoice and Polar has nowhere to carry it. None when
     # the customer wasn't expanded.
     customer_balance: int | None = None
+    # Sold through Stripe Managed Payments: Link is the seller and holds the card
+    # authorization, so the merchant can't hand it to Polar.
+    managed_payments: bool = False
 
     type = MerchantMigrationRecordType.subscription
 
@@ -573,6 +576,7 @@ def deserialize(
                 tax_rate_behavior=parse_tax_behavior(data.get("tax_rate_behavior")),
                 tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
                 customer_balance=data.get("customer_balance"),
+                managed_payments=data.get("managed_payments", False),
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(

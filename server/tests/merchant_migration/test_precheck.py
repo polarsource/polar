@@ -1213,6 +1213,11 @@ class TestClassifyRecords:
                 "subscription_scheduled_change",
                 id="schedule-changes-it-later",
             ),
+            pytest.param(
+                {"managed_payments": True},
+                "subscription_managed_payments",
+                id="sold-through-managed-payments",
+            ),
         ],
     )
     def test_scheduled_end_drops_subscription(

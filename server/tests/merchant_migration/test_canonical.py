@@ -192,6 +192,24 @@ class TestDeserialize:
         assert result.currency == "usd"
         assert result.import_tax_behavior() == TaxBehavior.inclusive
 
+    def test_managed_payments_round_trips(self) -> None:
+        subscription = canonical_subscription(managed_payments=True)
+
+        result = deserialize(
+            MerchantMigrationRecordType.subscription, serialize(subscription)
+        )
+
+        assert result == subscription
+
+    def test_managed_payments_defaults_false_for_legacy_payload(self) -> None:
+        subscription = canonical_subscription()
+        legacy = serialize(subscription)
+        del legacy["managed_payments"]
+
+        result = deserialize(MerchantMigrationRecordType.subscription, legacy)
+
+        assert result == subscription
+
     def test_tax_rate_behavior_round_trips(self) -> None:
         subscription = canonical_subscription(
             has_tax_rates=True, tax_rate_behavior=TaxBehavior.exclusive

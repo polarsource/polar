@@ -288,6 +288,7 @@ def _stripe_subscription(
     item_tax_rates: list[dict[str, Any]] | None = None,
     price_tax_behavior: str | None = None,
     customer: str | dict[str, Any] = "cus_1",
+    managed_payments: dict[str, Any] | None = None,
 ) -> stripe_lib.Subscription:
     price: dict[str, Any] = {"id": "price_1", "currency": "usd"}
     if price_tax_behavior is not None:
@@ -304,6 +305,7 @@ def _stripe_subscription(
             "cancel_at": None,
             "canceled_at": canceled_at,
             "pause_collection": None,
+            "managed_payments": managed_payments,
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
             "default_payment_method": payment_method,
@@ -1630,6 +1632,30 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.import_tax_behavior() == expected
+
+    @pytest.mark.parametrize(
+        ("managed_payments", "expected"),
+        [
+            pytest.param({"enabled": True}, True, id="enabled"),
+            pytest.param({"enabled": False}, False, id="disabled"),
+            pytest.param(None, False, id="absent"),
+        ],
+    )
+    async def test_reads_managed_payments(
+        self,
+        mocker: MockerFixture,
+        managed_payments: dict[str, Any] | None,
+        expected: bool,
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(managed_payments=managed_payments)
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.managed_payments is expected
 
     async def test_reads_the_customer_balance(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

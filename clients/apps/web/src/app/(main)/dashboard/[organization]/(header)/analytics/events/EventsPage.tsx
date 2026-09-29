@@ -153,13 +153,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       : 0
 
   const searchParams = useSearchParams()
+  const resetPage = useCallback(() => setCurrentPage(1), [setCurrentPage])
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
       setStartDate(dateRange.from)
       setEndDate(dateRange.to)
+      resetPage()
     },
-    [setStartDate, setEndDate],
+    [setStartDate, setEndDate, resetPage],
   )
 
   const [hasScrolled, setHasScrolled] = useState(false)
@@ -236,7 +238,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 <Input
                   placeholder="Search Events"
                   value={query ?? undefined}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    resetPage()
+                  }}
                   preSlot={<Search fontSize="small" />}
                 />
               </div>
@@ -261,9 +266,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 <h3 className="text-sm">Sorting</h3>
                 <Select
                   value={sorting}
-                  onValueChange={(value) =>
+                  onValueChange={(value) => {
                     setSorting(value as '-timestamp' | 'timestamp')
-                  }
+                    resetPage()
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sort by" />
@@ -293,7 +299,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                             selected={selectedEventTypes?.includes(
                               eventType.name,
                             )}
-                            onSelect={() =>
+                            onSelect={() => {
                               setSelectedEventTypes((prev) =>
                                 prev && prev.includes(eventType.name)
                                   ? prev.filter(
@@ -304,7 +310,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                                       eventType.name,
                                     ] as string[]),
                               )
-                            }
+                              resetPage()
+                            }}
                           >
                             <span className="w-full truncate">
                               {eventType.label}
@@ -329,7 +336,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               <CustomerSelector
                 organizationId={organization.id}
                 selectedCustomerIds={selectedCustomerIds}
-                onSelectCustomerIds={setSelectedCustomerIds}
+                onSelectCustomerIds={(customerIds) => {
+                  setSelectedCustomerIds(customerIds)
+                  resetPage()
+                }}
               />
 
               <EventMetadataFilter
@@ -349,6 +359,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                       {} as Record<string, string | number | boolean>,
                     ),
                   )
+                  resetPage()
                 }}
               />
             </div>

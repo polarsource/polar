@@ -241,10 +241,10 @@ class MerchantMigrationRecordRepository(
     ) -> AsyncGenerator[str]:
         """Stripe customers whose cards Stripe Copy still has to move.
 
-        The customers this migration imported, plus the ones behind subscriptions
-        it took over from an earlier migration of the account, less those whose
-        every subscription here already has its card on Polar. Copying those
-        again would only add a second copy of the same card.
+        The customers this migration imported, plus the ones behind pending
+        subscriptions it took over from an earlier migration of the account,
+        less those whose every pending switchable subscription here already has
+        its card on Polar. Copying those again would only duplicate the card.
         """
         covered = await self.payment_method_coverage(migration_id, exact=True)
         customer_source_id = MerchantMigrationRecord.canonical.op("->>")(

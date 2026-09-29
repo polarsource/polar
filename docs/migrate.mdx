@@ -139,6 +139,31 @@ At the next renewal after a successful switch, Polar attempts to charge the
 copied card. If a payment method is missing, the renewal fails and Polar emails
 the customer to add their card again.
 
+### Communications during the switch
+
+Polar stops each subscription on Stripe by cancelling it immediately, without
+proration or a final invoice. Stripe and your own systems treat that as a
+regular cancellation, so prepare them before you switch:
+
+- **Stripe cancellation emails.** If Stripe emails customers when a
+  subscription is canceled, every switched customer receives one. Turn off the
+  canceled subscription email under **Settings → Billing → Subscriptions and
+  emails**, and pause any Billing automation triggered by **Subscription is
+  canceled**. Polar cannot turn these off for you.
+- **Your `customer.subscription.deleted` handling.** Make sure it does not
+  revoke access or send a cancellation email for switched subscriptions. Their
+  `cancellation_details.comment` starts with `Migrated to Polar`.
+- **Tools connected to Stripe.** Churn, analytics, and retention tools report
+  the cancellation as churn and can start win-back emails.
+
+Stripe does not email customers about the card copy, and Polar does not email
+them when their subscription switches. Polar's first email to a switched
+customer states that billing has moved from Stripe to Polar. If you want
+customers to hear it first from you, send your own notice before switching.
+
+Turn Stripe's cancellation emails back on after the switch if subscriptions
+remain on Stripe.
+
 **Continue when:** Every selected subscription shows as moved, skipped, or
 failed, and every subscription left on Stripe has a clear next action.
 
@@ -171,6 +196,12 @@ unchanged, and their next renewal happens in Polar after the switch.
 
 For a subscription in a trial, Polar keeps the trial end date and takes over
 billing when the trial ends.
+
+Polar sends nothing when a subscription switches. The first Polar email, such
+as a renewal receipt or a reminder before it, explains that billing has moved
+from Stripe to Polar and that Stripe will no longer bill them. Stripe may send
+its own cancellation email unless you turn it off first. See
+[Communications during the switch](#communications-during-the-switch).
 
 If Polar cannot charge a card at renewal, the payment fails and the customer
 receives an email asking them to add their card again. A copied card can still

@@ -67,6 +67,7 @@ from polar.merchant_migration.service import (
     InvalidSourceCredentials,
     MigrationOperationInProgress,
     MissingStripeScopes,
+    OrganizationNotOnboarded,
     SourceAccountAlreadyMigrated,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
@@ -246,6 +247,65 @@ class TestCreate:
         assert credentials["livemode"] is False
         assert credentials["api_key_encrypted"].startswith("v1.")
         assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_rejects_organization_not_onboarded(
+        self,
+        status: OrganizationStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.status = status
+        await _enable_feature(save_fixture, organization)
+        stripe_adapter = mocker.patch("polar.merchant_migration.service.StripeAdapter")
+
+        with pytest.raises(OrganizationNotOnboarded):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        stripe_adapter.assert_not_called()
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "status", [OrganizationStatus.ACTIVE, OrganizationStatus.REVIEW]
+    )
+    async def test_allows_active_or_review_organization(
+        self,
+        status: OrganizationStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.status = status
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        assert migration.organization_id == organization.id
 
     @pytest.mark.auth
     async def test_rejects_stripe_account_used_by_another_migration(

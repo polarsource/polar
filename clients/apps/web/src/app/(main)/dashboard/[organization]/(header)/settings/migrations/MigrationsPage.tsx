@@ -18,6 +18,13 @@ const GRID_COLUMNS = {
   xl: 'repeat(3, minmax(0, 1fr))',
 }
 
+// Mirrors the server's create guard: only organizations that finished
+// onboarding (active or under review) can start a migration.
+const MIGRATION_ENABLED_STATUSES: schemas['OrganizationStatus'][] = [
+  'active',
+  'review',
+]
+
 interface Props {
   organization: schemas['Organization']
 }
@@ -29,6 +36,7 @@ export default function MigrationsPage({ organization }: Props) {
 
   const migrations = data?.items ?? []
   const basePath = `/dashboard/${organization.slug}/settings/migrations`
+  const canCreate = MIGRATION_ENABLED_STATUSES.includes(organization.status)
 
   const onCreated = useCallback(
     (migration: schemas['MerchantMigration']) => {
@@ -52,13 +60,30 @@ export default function MigrationsPage({ organization }: Props) {
             Migrate your billing from Stripe to Polar. Each migration connects
             one Stripe account and runs in guided steps.
           </Text>
-          <Button onClick={show}>
+          <Button onClick={show} disabled={!canCreate}>
             <Box alignItems="center" columnGap="s">
               <AddOutlined fontSize="inherit" />
               New migration
             </Box>
           </Button>
         </Box>
+
+        {!canCreate && (
+          <Alert
+            variant="warning"
+            title="Finish onboarding before migrating from Stripe."
+            description="Migrations open once your organization has completed onboarding."
+            actions={[
+              {
+                text: 'Finish onboarding',
+                onClick: () =>
+                  router.push(
+                    `/dashboard/${organization.slug}/finance/account`,
+                  ),
+              },
+            ]}
+          />
+        )}
 
         {isLoading ? (
           <SkeletonGrid />
@@ -69,7 +94,7 @@ export default function MigrationsPage({ organization }: Props) {
             description="Something went wrong. Please refresh the page and try again."
           />
         ) : migrations.length === 0 ? (
-          <EmptyState onStart={show} />
+          <EmptyState onStart={show} disabled={!canCreate} />
         ) : (
           <Grid templateColumns={GRID_COLUMNS} gap="l">
             {migrations.map((migration) => (
@@ -98,7 +123,13 @@ export default function MigrationsPage({ organization }: Props) {
   )
 }
 
-function EmptyState({ onStart }: { onStart: () => void }) {
+function EmptyState({
+  onStart,
+  disabled,
+}: {
+  onStart: () => void
+  disabled: boolean
+}) {
   return (
     <Box
       flexDirection="column"
@@ -118,7 +149,7 @@ function EmptyState({ onStart }: { onStart: () => void }) {
       <Text color="muted">
         Start a migration to bring your Stripe billing to Polar.
       </Text>
-      <Button variant="secondary" onClick={onStart}>
+      <Button variant="secondary" onClick={onStart} disabled={disabled}>
         <Box alignItems="center" columnGap="s">
           <AddOutlined fontSize="inherit" />
           New migration

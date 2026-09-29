@@ -1901,8 +1901,6 @@ class TestImportCatalog:
         assert subscription is not None
         assert subscription.merchant_migration_id == later.id
         assert subscription.status == MerchantMigrationRecordStatus.pending
-        # The customer and product stay on the earlier migration, so this one
-        # reports nothing imported while its subscription is ready to switch.
         after = {
             entity.entity: entity
             for entity in (

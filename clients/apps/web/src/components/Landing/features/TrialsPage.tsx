@@ -1,14 +1,10 @@
 'use client'
 
-import EditCalendarOutlined from '@mui/icons-material/EditCalendarOutlined'
-import HourglassTopOutlined from '@mui/icons-material/HourglassTopOutlined'
-import NotificationsActiveOutlined from '@mui/icons-material/NotificationsActiveOutlined'
-import ShieldOutlined from '@mui/icons-material/ShieldOutlined'
 import { VectorField } from '../graphics/VectorField'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const TrialsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={VectorField}
         title="Trials with automatic conversion"
         description="Capture the card. Convert when the trial ends."
         docsHref="/docs/features/subscriptions/trials"
       />
-
-      <FeaturePageGraphic graphic={VectorField} />
 
       <FeaturePageIntro>
         Trials in Polar collect the payment method up front, defer the charge
@@ -36,9 +31,9 @@ export const TrialsPage = () => {
       <FeatureSection title="How trials work">
         <p>
           When a customer checks out with a trial, the subscription is created
-          in a <strong>trialing</strong> state with full access to every benefit
-          on the product. The card is captured at checkout, but no money moves
-          yet.
+          in a <FeatureHighlight>trialing</FeatureHighlight> state with full
+          access to every benefit on the product. The card is captured at
+          checkout, but no money moves yet.
         </p>
         <p>
           When the trial period ends, Polar charges the saved card and the first
@@ -57,25 +52,21 @@ export const TrialsPage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <HourglassTopOutlined fontSize="large" />,
             title: 'Automatic conversion',
             description:
               'When the trial ends, the subscription charges and continues. No manual step.',
           },
           {
-            icon: <NotificationsActiveOutlined fontSize="large" />,
             title: 'Conversion reminders',
             description:
               'Polar emails the customer before the trial ends so the charge is expected.',
           },
           {
-            icon: <ShieldOutlined fontSize="large" />,
             title: 'Abuse prevention',
             description:
               'Block repeat trial sign-ups by normalized email or payment-method fingerprint.',
           },
           {
-            icon: <EditCalendarOutlined fontSize="large" />,
             title: 'Edit any trial',
             description:
               'Extend, shorten, or end a trial from the dashboard or the API.',
@@ -138,12 +129,13 @@ export const TrialsPage = () => {
           across your products without any setup beyond a toggle.
         </p>
         <p>
-          When <strong>Prevent trial abuse</strong> is enabled, a new checkout
-          is matched against past trial redemptions on two signals: the
-          customer&apos;s normalized email (so{' '}
-          <strong>user+alias@example.com</strong> is treated as{' '}
-          <strong>user@example.com</strong>) and the fingerprint of the payment
-          method on file. A match on either blocks the trial.
+          When <FeatureHighlight>Prevent trial abuse</FeatureHighlight> is
+          enabled, a new checkout is matched against past trial redemptions on
+          two signals: the customer&apos;s normalized email (so{' '}
+          <FeatureHighlight>user+alias@example.com</FeatureHighlight> is treated
+          as <FeatureHighlight>user@example.com</FeatureHighlight>) and the
+          fingerprint of the payment method on file. A match on either blocks
+          the trial.
         </p>
         <p>
           The customer never hits a dead end. Polar refreshes the session

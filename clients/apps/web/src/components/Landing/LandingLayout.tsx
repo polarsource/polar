@@ -14,7 +14,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import { motion } from 'motion/react'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { AuthModal } from '../Auth/AuthModal'
@@ -181,15 +180,8 @@ const LandingPageTopbar = () => {
 
 const LandingPageFooter = () => {
   return (
-    <motion.div
-      initial="initial"
-      className="relative flex w-full flex-col items-center"
-      variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
-      transition={{ duration: 0.5, ease: 'easeInOut' }}
-      whileInView="animate"
-      viewport={{ once: true }}
-    >
+    <div className="relative flex w-full flex-col items-center">
       <Footer />
-    </motion.div>
+    </div>
   )
 }

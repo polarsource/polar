@@ -1,14 +1,10 @@
 'use client'
 
-import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined'
-import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
-import CreditCardOutlined from '@mui/icons-material/CreditCardOutlined'
-import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
 import { CycleArrow } from '../graphics/CycleArrow'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const SubscriptionsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={CycleArrow}
         title="Subscriptions, end to end"
         description="Renewals, proration, dunning, and benefits."
         docsHref="/docs/features/subscriptions/introduction"
       />
-
-      <FeaturePageGraphic graphic={CycleArrow} />
 
       <FeaturePageIntro>
         At the close of each cycle, Polar advances the period and charges the
@@ -38,8 +33,8 @@ export const SubscriptionsPage = () => {
         <p>
           A subscription is created the moment a customer checks out a product
           with a recurring price. Polar issues the first order, collects the
-          first payment, and grants every <strong>benefit</strong> attached to
-          the product.
+          first payment, and grants every{' '}
+          <FeatureHighlight>benefit</FeatureHighlight> attached to the product.
         </p>
         <p>
           From that point on, the subscription advances itself. At the end of
@@ -58,25 +53,21 @@ export const SubscriptionsPage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <CreditCardOutlined fontSize="large" />,
             title: 'Flexible pricing',
             description:
               'Fixed, pay-what-you-want, or free recurring prices on any cadence.',
           },
           {
-            icon: <TrendingUpOutlined fontSize="large" />,
             title: 'Plan changes',
             description:
               'Upgrades and downgrades with prorated charges and credits.',
           },
           {
-            icon: <AutorenewOutlined fontSize="large" />,
             title: 'Payment recovery',
             description:
               'Automatic retries on past_due with optional grace periods.',
           },
           {
-            icon: <AccountCircleOutlined fontSize="large" />,
             title: 'Customer Portal',
             description:
               'Subscribers update payment, change plans, and cancel from a hosted page.',
@@ -135,18 +126,19 @@ export const SubscriptionsPage = () => {
 
       <FeatureSection title="The Customer Portal">
         <p>
-          Every Polar account includes a hosted <strong>Customer Portal</strong>{' '}
-          where subscribers can update payment methods, download invoices,
-          change plans, manage seats, and cancel. You can either link to it
-          directly or embed it inside your product.
+          Every Polar account includes a hosted{' '}
+          <FeatureHighlight>Customer Portal</FeatureHighlight> where subscribers
+          can update payment methods, download invoices, change plans, manage
+          seats, and cancel. You can either link to it directly or embed it
+          inside your product.
         </p>
         <p>
           Cancellation comes in two flavors that work the same way from the
           dashboard, the API, and the portal.{' '}
-          <strong>Cancel at period end</strong> keeps benefits live until the
-          paid term runs out and is reversible until the end date.{' '}
-          <strong>Revoke immediately</strong> ends access on the spot and
-          isn&apos;t reversible.
+          <FeatureHighlight>Cancel at period end</FeatureHighlight> keeps
+          benefits live until the paid term runs out and is reversible until the
+          end date. <FeatureHighlight>Revoke immediately</FeatureHighlight> ends
+          access on the spot and isn&apos;t reversible.
         </p>
       </FeatureSection>
 

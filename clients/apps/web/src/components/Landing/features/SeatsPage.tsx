@@ -1,14 +1,10 @@
 'use client'
 
-import GroupAddOutlined from '@mui/icons-material/GroupAddOutlined'
-import HubOutlined from '@mui/icons-material/HubOutlined'
-import MailOutlineOutlined from '@mui/icons-material/MailOutlineOutlined'
-import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { LinkedRings } from '../graphics/LinkedRings'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const SeatsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={LinkedRings}
         title="Per-seat pricing for team products"
         description="One billing manager, many seats. Prorated automatically."
         docsHref="/docs/features/seat-based-pricing"
       />
-
-      <FeaturePageGraphic graphic={LinkedRings} />
 
       <FeaturePageIntro>
         Sell a product where one customer pays for a team. Invitations, claims,
@@ -37,9 +32,9 @@ export const SeatsPage = () => {
       <FeatureSection title="One product, many seats">
         <p>
           A seat-based product is purchased by a single{' '}
-          <strong>billing manager</strong> who decides how many seats they need.
-          From there, they assign seats to teammates by email or by your own
-          external customer ID.
+          <FeatureHighlight>billing manager</FeatureHighlight> who decides how
+          many seats they need. From there, they assign seats to teammates by
+          email or by your own external customer ID.
         </p>
         <p>
           Benefits only fire when a seat is actually claimed by the recipient,
@@ -49,36 +44,33 @@ export const SeatsPage = () => {
           use.
         </p>
         <p>
-          The same primitive covers <strong>recurring subscriptions</strong> and{' '}
-          <strong>perpetual licenses</strong>. Subscriptions stay in sync with
-          the team while the plan is active; licenses grant benefits forever
-          once a seat is claimed, and growth happens through new orders rather
-          than mutating the original purchase.
+          The same primitive covers{' '}
+          <FeatureHighlight>recurring subscriptions</FeatureHighlight> and{' '}
+          <FeatureHighlight>perpetual licenses</FeatureHighlight>. Subscriptions
+          stay in sync with the team while the plan is active; licenses grant
+          benefits forever once a seat is claimed, and growth happens through
+          new orders rather than mutating the original purchase.
         </p>
       </FeatureSection>
 
       <FeatureCardGrid
         cards={[
           {
-            icon: <MailOutlineOutlined fontSize="large" />,
             title: 'Invite by email',
             description:
               'Assign seats by email or external customer ID. Claim links handle onboarding.',
           },
           {
-            icon: <TuneOutlined fontSize="large" />,
             title: 'Prorated changes',
             description:
               'Adding seats charges immediately, prorated. Reducing seats issues a credit.',
           },
           {
-            icon: <GroupAddOutlined fontSize="large" />,
             title: 'Customer Portal',
             description:
               'Customers manage their own team without you in the loop.',
           },
           {
-            icon: <HubOutlined fontSize="large" />,
             title: 'API and webhooks',
             description:
               'Assign seats programmatically and react to seat.claimed and seat.revoked events.',
@@ -142,16 +134,18 @@ export const SeatsPage = () => {
           teammate inside your app, and revoke them through the same endpoint.
         </p>
         <p>
-          On the receiving side, <strong>seat.claimed</strong>,{' '}
-          <strong>seat.revoked</strong>, and{' '}
-          <strong>subscription.updated</strong> webhooks let your own permission
-          system stay in lockstep without polling.
+          On the receiving side,{' '}
+          <FeatureHighlight>seat.claimed</FeatureHighlight>,{' '}
+          <FeatureHighlight>seat.revoked</FeatureHighlight>, and{' '}
+          <FeatureHighlight>subscription.updated</FeatureHighlight> webhooks let
+          your own permission system stay in lockstep without polling.
         </p>
         <p>
           The model supports up to 1,000 seats per subscription and arbitrary
           metadata on every seat, so role, team, or external user ID can travel
           with the assignment. Seat-based pricing is in beta today; enable it
-          under <strong>Settings → General → Features</strong>.
+          under{' '}
+          <FeatureHighlight>Settings → General → Features</FeatureHighlight>.
         </p>
       </FeatureSection>
 

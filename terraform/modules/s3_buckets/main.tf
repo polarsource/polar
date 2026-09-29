@@ -387,7 +387,7 @@ resource "aws_s3_bucket_object_lock_configuration" "logs" {
   rule {
     default_retention {
       mode  = "GOVERNANCE"
-      years = 7
+      years = 11
     }
   }
 }

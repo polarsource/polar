@@ -4391,6 +4391,43 @@ class TestStreamCustomerIdsToCopy:
             "cus_sub_missing",
         ]
 
+    @pytest.mark.auth
+    async def test_drops_its_own_customers_whose_card_is_on_polar(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        for source_id in ("sub_moved", "sub_missing"):
+            await _imported_subscription(
+                save_fixture,
+                migration,
+                organization,
+                product,
+                source_id=source_id,
+                email=f"{source_id}@example.com",
+                payment_method=CanonicalPaymentMethod(
+                    source_id=f"pm_{source_id}",
+                    type=CanonicalPaymentMethodType.card,
+                ),
+            )
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("sub_moved@example.com", organization.id)
+        assert customer is not None
+        await create_payment_method(save_fixture, customer, processor_id="pm_sub_moved")
+
+        source_ids = await service.stream_imported_customer_source_ids(
+            session, auth_subject, migration.id
+        )
+
+        # Imported here and still missing a card: listed once, not twice.
+        assert [source_id async for source_id in source_ids] == ["cus_sub_missing"]
+
 
 @pytest.mark.asyncio
 class TestRunCutover:

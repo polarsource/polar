@@ -1220,6 +1220,18 @@ class TestClassifyRecords:
             else PrecheckRecordStatus.skipped
         )
 
+    def test_schedule_needs_the_merchant_to_release_it(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(),
+            build_customer(),
+            replace(build_subscription(), has_scheduled_changes=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].reason_code == "subscription_scheduled_change"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+
     def test_zero_quantity_drops_subscription(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(

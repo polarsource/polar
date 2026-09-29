@@ -1111,21 +1111,9 @@ class StripeAdapter:
         )
 
     def _has_scheduled_changes(self, subscription: stripe_lib.Subscription) -> bool:
-        """A schedule we can't read counts, unexpanded or missing a phase date:
-        we can't tell what it will do."""
-        schedule = subscription.get("schedule")
-        if not schedule:
-            return False
-        if isinstance(schedule, str):
-            return True
-        if schedule.get("end_behavior") == "cancel":
-            return True
-        current_phase = schedule.get("current_phase")
-        current_start = current_phase.get("start_date") if current_phase else None
-        starts = [phase.get("start_date") for phase in schedule.get("phases") or []]
-        if current_start is None or None in starts:
-            return True
-        return any(start > current_start for start in starts)
+        """Any attached schedule counts, even one only running its current phase:
+        the merchant can add a phase to it at any time."""
+        return bool(subscription.get("schedule"))
 
     def _tax_rate_behavior(
         self, subscription: stripe_lib.Subscription, first_item: Any

@@ -1294,45 +1294,12 @@ class TestGetSubscription:
                     "current_phase": {"start_date": 100, "end_date": 200},
                     "phases": [{"start_date": 100, "end_date": 200}],
                 },
-                False,
+                True,
                 id="only-the-current-phase",
-            ),
-            pytest.param(
-                {
-                    "status": "active",
-                    "end_behavior": "cancel",
-                    "current_phase": {"start_date": 100, "end_date": 200},
-                    "phases": [{"start_date": 100, "end_date": 200}],
-                },
-                True,
-                id="cancels-at-the-end",
-            ),
-            pytest.param(
-                {
-                    "status": "active",
-                    "end_behavior": "release",
-                    "current_phase": {"start_date": 100, "end_date": 200},
-                    "phases": [
-                        {"start_date": 100, "end_date": 200},
-                        {"start_date": 200, "end_date": 300},
-                    ],
-                },
-                True,
-                id="a-later-phase",
-            ),
-            pytest.param(
-                {
-                    "status": "active",
-                    "end_behavior": "release",
-                    "current_phase": {"start_date": 100, "end_date": 200},
-                    "phases": [{"end_date": 200}],
-                },
-                True,
-                id="a-phase-without-a-date",
             ),
         ],
     )
-    async def test_flags_schedules_that_change_it_later(
+    async def test_flags_any_attached_schedule(
         self, mocker: MockerFixture, schedule: Any, expected: bool
     ) -> None:
         stripe_subscription = _stripe_subscription()

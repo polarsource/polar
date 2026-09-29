@@ -163,7 +163,8 @@ class CanonicalSubscription:
     # A fixed date the source stops it on. Stripe also fills it in for
     # ``cancel_at_period_end``, so only a date without that flag is its own end.
     cancel_at: datetime | None = None
-    # A source schedule will change or end it later, which Polar can't carry.
+    # A source schedule is attached. It can change or end it later, which Polar
+    # can't carry.
     has_scheduled_changes: bool = False
     # When the source trial ends, so the cutover can keep the subscription
     # trialing on Polar until then instead of billing it early.

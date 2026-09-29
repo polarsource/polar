@@ -1034,11 +1034,14 @@ class TestValidateLicenseKey:
         )
 
         assert response.status_code == 200
-        subscription = response.json()["subscription"]
-        assert subscription["id"] == str(grant.subscription_id)
-        assert subscription["current_period_end"] is not None
+        data = response.json()
+        assert data["subscription_id"] == str(grant.subscription_id)
+        assert data["subscription"]["id"] == str(grant.subscription_id)
+        assert data["subscription"]["current_period_end"] is not None
+        assert data["order_id"] is None
+        assert data["order"] is None
 
-    async def test_no_subscription(
+    async def test_returns_order(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -1078,7 +1081,11 @@ class TestValidateLicenseKey:
         )
 
         assert response.status_code == 200
-        assert response.json()["subscription"] is None
+        data = response.json()
+        assert data["subscription_id"] is None
+        assert data["subscription"] is None
+        assert data["order_id"] == str(order.id)
+        assert data["order"]["id"] == str(order.id)
 
 
 @pytest.mark.asyncio

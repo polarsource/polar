@@ -24033,6 +24033,30 @@ export interface components {
        */
       external_id: string | null
     }
+    /** LicenseKeyOrder */
+    LicenseKeyOrder: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /** @example paid */
+      status: components['schemas']['OrderStatus']
+      /**
+       * Paid
+       * @description Whether the order has been paid for.
+       * @example true
+       */
+      paid: boolean
+    }
     /** LicenseKeyRead */
     LicenseKeyRead: {
       /**

@@ -304,6 +304,15 @@ class PaymentMethodService:
                 # No alternative payment method available, raise exception
                 raise PaymentMethodInUseByActiveSubscription(requiring_subscription_ids)
 
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(
+            payment_method.customer_id, include_deleted=True
+        )
+        if customer and customer.default_payment_method_id == payment_method.id:
+            await customer_repository.update(
+                customer, update_dict={"default_payment_method_id": None}
+            )
+
         if payment_method.processor == PaymentProcessor.stripe:
             try:
                 await stripe_service.delete_payment_method(payment_method.processor_id)

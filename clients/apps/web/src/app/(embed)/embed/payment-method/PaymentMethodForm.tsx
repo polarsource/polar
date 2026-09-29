@@ -178,9 +178,8 @@ export const PaymentMethodForm = ({
         return
       }
 
-      let tokenResult: Awaited<ReturnType<Stripe['createConfirmationToken']>>
-      try {
-        tokenResult = await stripe.createConfirmationToken({
+      const { confirmationToken, error: tokenError } = await stripe
+        .createConfirmationToken({
           elements,
           params: {
             payment_method_data: {
@@ -188,12 +187,8 @@ export const PaymentMethodForm = ({
             },
           },
         })
-      } catch {
-        reportError(fallbackError)
-        return
-      }
+        .catch(() => ({ confirmationToken: undefined, error: undefined }))
 
-      const { confirmationToken, error: tokenError } = tokenResult
       if (tokenError || !confirmationToken) {
         reportError(tokenError?.message ?? fallbackError)
         return

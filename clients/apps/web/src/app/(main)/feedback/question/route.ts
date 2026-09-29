@@ -145,7 +145,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const sonnet = wrapWithTracing(anthropic('claude-sonnet-4-6'), {
+  const sonnet = wrapWithTracing(anthropic('claude-sonnet-5'), {
     userId: user.id,
     conversationId,
     organizationId: trustedOrganizationId,

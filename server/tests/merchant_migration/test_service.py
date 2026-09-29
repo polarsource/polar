@@ -4048,6 +4048,56 @@ class TestRunCutover:
         # Still to switch, so the migration isn't finished.
         assert migration.step != MerchantMigrationStep.cleanup
 
+    async def test_a_later_switch_of_the_rest_finishes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.activate_subscriptions
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, None
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running
+        )
+        await save_fixture(migration)
+        moved = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_moved",
+            email="moved@example.com",
+        )
+        await MerchantMigrationRecordRepository.from_session(session).update(
+            moved,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.moved},
+            flush=True,
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_rest",
+            email="rest@example.com",
+        )
+
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+        await service.run_cutover(session, migration.id)
+        await session.flush()
+
+        await session.refresh(migration)
+        assert runner.run.await_count == 1
+        assert migration.step == MerchantMigrationStep.cleanup
+
     async def test_skips_when_renewals_disabled(
         self,
         mocker: MockerFixture,

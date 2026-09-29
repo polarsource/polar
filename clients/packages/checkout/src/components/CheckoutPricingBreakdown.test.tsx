@@ -997,6 +997,35 @@ describe('CheckoutPricingBreakdown', () => {
       expect(paidRow).toHaveTextContent('$30')
     })
 
+    it('renders the free tier as included when the minimum is above its bound', () => {
+      const checkout = createCheckout({
+        amount: 7000,
+        net_amount: 7000,
+        tax_amount: null,
+        total_amount: 7000,
+        seats: 12,
+        product_price: createSeatBasedPrice({
+          tiers: {
+            type: 'graduated',
+            tiers: [
+              { bound: 5, unit_amount: '0' },
+              { bound: null, unit_amount: '1000' },
+            ],
+          },
+          minimum_units: 10,
+          maximum_units: null,
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const includedRow = screen.getByTestId('detail-row-5 seats included')
+      expect(includedRow).not.toHaveTextContent('$')
+
+      const paidRow = screen.getByTestId('detail-row-7 seats')
+      expect(paidRow).toHaveTextContent('$70')
+    })
+
     it('uses the singular "One seat included" when a single seat is free', () => {
       const checkout = createCheckout({
         amount: 1000,

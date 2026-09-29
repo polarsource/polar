@@ -18,10 +18,7 @@ export function getSeatRows(
   if (!seats) return null
 
   const tiers = sortTiers(price.tiers.tiers).map((tier, index, sorted) => ({
-    min_seats:
-      index === 0
-        ? (price.minimum_units ?? 1)
-        : (sorted[index - 1].bound ?? 0) + 1,
+    min_seats: index === 0 ? 1 : (sorted[index - 1].bound ?? 0) + 1,
     max_seats: tier.bound ?? null,
     price_per_seat: Number(tier.unit_amount),
   }))

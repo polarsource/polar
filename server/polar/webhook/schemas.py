@@ -100,6 +100,11 @@ EndpointEvents = Annotated[
 def _is_available_version(api_version: APIVersion) -> APIVersion:
     if api_version not in VERSIONS:
         raise ValueError(f"Invalid API version: {api_version}")
+    active_version = _ACTIVE_API_VERSION.get()
+    if active_version is None:
+        active_version = CURRENT_API_VERSION
+    if api_version > active_version:
+        raise ValueError(f"API version {api_version} is not available")
     return api_version
 
 

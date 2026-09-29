@@ -77,7 +77,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   locale?: AcceptedLocale
   isWalletPayment?: boolean
-  isPaymentElementReady?: boolean
+  isPaymentFormReady?: boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
 }
@@ -94,7 +94,7 @@ const BaseCheckoutForm = ({
   children,
   locale: localeProp,
   isWalletPayment,
-  isPaymentElementReady = true,
+  isPaymentFormReady = true,
   beforeSubmit,
   embed,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -736,7 +736,7 @@ const BaseCheckoutForm = ({
                 size="lg"
                 wrapperClassNames="text-base"
                 className="w-full"
-                disabled={disabled || isUpdatePending || !isPaymentElementReady}
+                disabled={disabled || isUpdatePending || !isPaymentFormReady}
                 loading={loading}
               >
                 {checkoutLabel}
@@ -807,6 +807,7 @@ interface CheckoutFormProps {
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const {
+    form,
     checkout,
     confirm,
     update,
@@ -830,8 +831,20 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const isWalletPayment = selectedPaymentMethod
     ? WALLET_PAYMENT_METHODS.includes(selectedPaymentMethod)
     : false
-  const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
   const t = useTranslations(locale ?? 'en')
+  const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+  const isPaymentFormReady =
+    !checkout.is_payment_form_required || isPaymentElementReady
+
+  const onPaymentElementReady = useCallback(() => {
+    setIsPaymentElementReady(true)
+  }, [])
+
+  const onPaymentElementLoadError = useCallback(() => {
+    form.setError('root', {
+      message: t('checkout.loading.paymentFormNotLoaded'),
+    })
+  }, [form, t])
 
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
@@ -904,9 +917,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             checkout={checkout}
             confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
-            isPaymentElementReady={
-              !checkout.is_payment_form_required || isPaymentElementReady
-            }
+            isPaymentFormReady={isPaymentFormReady}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement
@@ -939,12 +950,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                   },
                 }}
                 onChange={onPaymentElementChange}
-                onReady={() => setIsPaymentElementReady(true)}
-                onLoadError={() =>
-                  props.form.setError('root', {
-                    message: t('checkout.loading.paymentFormNotLoaded'),
-                  })
-                }
+                onReady={onPaymentElementReady}
+                onLoadError={onPaymentElementLoadError}
               />
             )}
           </BaseCheckoutForm>

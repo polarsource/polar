@@ -293,7 +293,7 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 
 ### Reading the account
 
-We can't reuse Polar's platform Stripe service (it's bound to the global platform key). Read the merchant account with a dedicated `StripeClient(api_key="rk_…")`. Required restricted-key read and write scopes: Customers, Payment Methods, Products, Prices, (read and write)Subscriptions, Accounts (Connect group), Coupons (and Invoices / Charges for the refund/dispute precheck). Mention those scopes in the merchant UI.
+We can't reuse Polar's platform Stripe service (it's bound to the global platform key). Read the merchant account with a dedicated `StripeClient(api_key="rk_…")`. Required restricted-key read and write scopes: Customers, Payment Methods, Products, Prices, (read and write)Subscriptions, Accounts (read, Connect group), Coupons (and Invoices / Charges for the refund/dispute precheck). Mention those scopes in the merchant UI.
 
 ### Stripe-specific prechecks
 

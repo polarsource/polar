@@ -51,7 +51,6 @@ resource "aws_kms_key" "signing" {
   deletion_window_in_days  = 30
 }
 
-# The first generation predates for_each; can go once every environment has applied.
 resource "aws_kms_alias" "signing" {
   name          = "alias/polar-${var.environment}-jwks"
   target_key_id = aws_kms_key.signing[var.current_generation].key_id

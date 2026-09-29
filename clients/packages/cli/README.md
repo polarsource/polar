@@ -98,12 +98,13 @@ its version from `package.json`; do not edit `src/version.ts` for releases.
 
 Merging a CLI version bump into `main` starts
 [Release CLI](../../../.github/workflows/release_cli.yml). It tests the CLI,
-compiles the three supported targets, signs and notarizes the macOS binaries,
+compiles the four supported targets, signs and notarizes the macOS binaries,
 and uploads these assets to a draft release in `polarsource/polar`:
 
 - `polar-darwin-arm64.zip`
 - `polar-darwin-x64.zip`
 - `polar-linux-x64.tar.gz`
+- `polar-windows-x64.zip`
 - `checksums.txt`
 
 Only after every upload succeeds does the workflow publish the release, tagged

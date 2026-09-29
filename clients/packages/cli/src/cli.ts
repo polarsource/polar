@@ -6,7 +6,7 @@ import { listen } from '@/commands/listen'
 import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
 import { home } from '@/commands/home'
-import { update } from '@/commands/update'
+import { removeRetiredBinary, update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
@@ -100,6 +100,7 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
     BunRuntime.runMain({ disableErrorReporting: true }),
   )
 } else {
+  removeRetiredBinary()
   showUpdateNotice()
   checkForUpdateInBackground()
   instrumented.pipe(

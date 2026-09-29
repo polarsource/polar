@@ -1,14 +1,10 @@
 'use client'
 
-import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
-import PaidOutlined from '@mui/icons-material/PaidOutlined'
-import RouteOutlined from '@mui/icons-material/RouteOutlined'
-import StackedLineChartOutlined from '@mui/icons-material/StackedLineChartOutlined'
 import { GaugeSweep } from '../graphics/GaugeSweep'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const CostInsightsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={GaugeSweep}
         title="See what each customer costs to serve"
         description="Annotate events with cost. Get profit and LTV per customer."
         docsHref="/docs/features/cost-insights/introduction"
       />
-
-      <FeaturePageGraphic graphic={GaugeSweep} />
 
       <FeaturePageIntro>
         Polar already tracks revenue from orders and subscriptions. Cost
@@ -37,9 +32,10 @@ export const CostInsightsPage = () => {
       <FeatureSection title="How it works">
         <p>
           The mechanism is intentionally small. When you ingest an event through
-          the Polar API, you can attach a <strong>_cost</strong> property with
-          an amount and a currency, and Polar will treat that as the cost of
-          serving the event.
+          the Polar API, you can attach a{' '}
+          <FeatureHighlight>_cost</FeatureHighlight> property with an amount and
+          a currency, and Polar will treat that as the cost of serving the
+          event.
         </p>
         <p>
           Those costs are aggregated alongside revenue on the same pipeline that
@@ -56,25 +52,21 @@ export const CostInsightsPage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <PaidOutlined fontSize="large" />,
             title: 'Cost events',
             description:
               'Annotate any ingested event with a _cost amount and currency.',
           },
           {
-            icon: <RouteOutlined fontSize="large" />,
             title: 'Cost traces',
             description:
               'Drill into individual events to see which calls drove cost.',
           },
           {
-            icon: <StackedLineChartOutlined fontSize="large" />,
             title: 'Profit metrics',
             description:
               'Revenue minus cost, computed automatically and available through the Metrics API.',
           },
           {
-            icon: <InsightsOutlined fontSize="large" />,
             title: 'Customer LTV',
             description:
               'Per-customer lifetime value, computed against the actual cost to serve.',

@@ -1,14 +1,10 @@
 'use client'
 
-import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined'
-import AddShoppingCartOutlined from '@mui/icons-material/AddShoppingCartOutlined'
-import CardGiftcardOutlined from '@mui/icons-material/CardGiftcardOutlined'
-import QueryStatsOutlined from '@mui/icons-material/QueryStatsOutlined'
 import { CreditArc } from '../graphics/CreditArc'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const CreditsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={CreditArc}
         title="Prepaid credits on your meters"
         description="Customers prepay. Credits draw down per event."
         docsHref="/docs/features/usage-based-billing/credits"
       />
-
-      <FeaturePageGraphic graphic={CreditArc} />
 
       <FeaturePageIntro>
         Customers prepay for usage and Polar deducts from the balance as events
@@ -42,9 +37,10 @@ export const CreditsPage = () => {
           underlying behavior is correct.
         </p>
         <p>
-          <strong>Credits</strong> rebuild that predictability without giving up
-          usage-based pricing. The customer prepays for a defined amount of
-          usage, draws it down over time, and only pays again when they top up.
+          <FeatureHighlight>Credits</FeatureHighlight> rebuild that
+          predictability without giving up usage-based pricing. The customer
+          prepays for a defined amount of usage, draws it down over time, and
+          only pays again when they top up.
         </p>
         <p>
           Underneath, credits ride on the meters you already have. Incoming
@@ -62,25 +58,21 @@ export const CreditsPage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <CardGiftcardOutlined fontSize="large" />,
             title: 'Credits Benefit',
             description:
               'Attach credits to any product. Recurring grants on subscriptions, one-time grants on purchases.',
           },
           {
-            icon: <AccountBalanceWalletOutlined fontSize="large" />,
             title: 'Per-meter balances',
             description:
               'Each meter carries its own balance, so different units stay isolated.',
           },
           {
-            icon: <QueryStatsOutlined fontSize="large" />,
             title: 'Customer State API',
             description:
               'Read every active meter and remaining balance in a single call.',
           },
           {
-            icon: <AddShoppingCartOutlined fontSize="large" />,
             title: 'Top-up products',
             description:
               'Sell credit packs as one-time products. Customers stack them on top of an existing balance.',

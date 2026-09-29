@@ -1,14 +1,10 @@
 'use client'
 
-import ElectricMeterOutlined from '@mui/icons-material/ElectricMeterOutlined'
-import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
-import KeyboardDoubleArrowRightOutlined from '@mui/icons-material/KeyboardDoubleArrowRightOutlined'
-import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import { VennCluster } from '../graphics/VennCluster'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
+  FeatureHighlight,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -21,12 +17,11 @@ export const UsageBillingPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={VennCluster}
         title="Usage-based billing on events"
         description="Ingest events. Aggregate them into meters. Bill on the result."
         docsHref="/docs/features/usage-based-billing/introduction"
       />
-
-      <FeaturePageGraphic graphic={VennCluster} />
 
       <FeaturePageIntro>
         Send events from your application. Polar aggregates them into meters and
@@ -36,21 +31,21 @@ export const UsageBillingPage = () => {
       <FeatureSection title="Events, meters, prices">
         <p>
           The model is built on three primitives that compose. It starts with{' '}
-          <strong>events</strong>, immutable records of something that happened
-          in your product, posted with a customer ID and any metadata you want
-          to keep.
+          <FeatureHighlight>events</FeatureHighlight>, immutable records of
+          something that happened in your product, posted with a customer ID and
+          any metadata you want to keep.
         </p>
         <p>
-          On top of those events sit <strong>meters</strong>, which filter and
-          aggregate the stream into a number per customer. Pick how the number
-          is calculated (count, sum, average, min, max, or unique) and the rest
-          is bookkeeping.
+          On top of those events sit <FeatureHighlight>meters</FeatureHighlight>
+          , which filter and aggregate the stream into a number per customer.
+          Pick how the number is calculated (count, sum, average, min, max, or
+          unique) and the rest is bookkeeping.
         </p>
         <p>
           A meter only matters once it&apos;s priced, which is what{' '}
-          <strong>metered prices</strong> are for. Attach one to a product and
-          Polar reads the meter at the end of each cycle, then adds the
-          corresponding line item to the next invoice.
+          <FeatureHighlight>metered prices</FeatureHighlight> are for. Attach
+          one to a product and Polar reads the meter at the end of each cycle,
+          then adds the corresponding line item to the next invoice.
         </p>
         <p>
           The whole pipeline reuses the rest of the system. Renewals, proration,
@@ -63,25 +58,21 @@ export const UsageBillingPage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <KeyboardDoubleArrowRightOutlined fontSize="large" />,
             title: 'Event ingestion',
             description:
               'Post events from your application or use SDK strategies for LLMs, streams, and S3.',
           },
           {
-            icon: <ElectricMeterOutlined fontSize="large" />,
             title: 'Customer meters',
             description:
               'Per-customer meters that update in real time as events arrive.',
           },
           {
-            icon: <ReceiptLongOutlined fontSize="large" />,
             title: 'Metered prices',
             description:
               'Attach a meter to a product. Polar bills the consumed amount on the next invoice.',
           },
           {
-            icon: <InsightsOutlined fontSize="large" />,
             title: 'Customer state',
             description:
               'A single API call returns every active meter and current balance.',
@@ -150,11 +141,11 @@ export const UsageBillingPage = () => {
 
       <FeatureSection title="Customer meters">
         <p>
-          Every metered customer carries a live <strong>customer meter</strong>{' '}
-          that updates as events arrive, readable from the API or shown directly
-          in the Customer Portal. Your dashboards and your customers&apos;
-          in-app views can read from the same source without you keeping a
-          parallel ledger.
+          Every metered customer carries a live{' '}
+          <FeatureHighlight>customer meter</FeatureHighlight> that updates as
+          events arrive, readable from the API or shown directly in the Customer
+          Portal. Your dashboards and your customers&apos; in-app views can read
+          from the same source without you keeping a parallel ledger.
         </p>
         <p>
           One thing Polar deliberately does not do is block usage when a

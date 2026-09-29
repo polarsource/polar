@@ -1,14 +1,9 @@
 'use client'
 
-import GavelOutlined from '@mui/icons-material/GavelOutlined'
-import LanguageOutlined from '@mui/icons-material/LanguageOutlined'
-import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
-import VerifiedOutlined from '@mui/icons-material/VerifiedOutlined'
 import { OrbitingSpheres } from '../graphics/OrbitingSpheres'
 import {
   FeatureCardGrid,
   FeatureCTA,
-  FeaturePageGraphic,
   FeaturePageHeader,
   FeaturePageIntro,
   FeaturePageLayout,
@@ -20,12 +15,11 @@ export const MerchantOfRecordPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
+        graphic={OrbitingSpheres}
         title="Sell globally, without the tax compliance"
         description="Polar as your Merchant of Record."
         docsHref="/docs/merchant-of-record/introduction"
       />
-
-      <FeaturePageGraphic graphic={OrbitingSpheres} />
 
       <FeaturePageIntro>
         Most jurisdictions tax digital sales, and the rules differ country by
@@ -57,25 +51,21 @@ export const MerchantOfRecordPage = () => {
       <FeatureCardGrid
         cards={[
           {
-            icon: <LanguageOutlined fontSize="large" />,
             title: 'Global coverage',
             description:
               'Sell into every country we support. We monitor thresholds and expand registrations as our volume grows.',
           },
           {
-            icon: <ReceiptLongOutlined fontSize="large" />,
             title: 'Tax-correct invoices',
             description:
               'Every order ships with a compliant invoice and the right VAT, GST, or Sales Tax line.',
           },
           {
-            icon: <GavelOutlined fontSize="large" />,
             title: 'Liability on us',
             description:
               "We're on the hook for capturing and remitting international sales tax.",
           },
           {
-            icon: <VerifiedOutlined fontSize="large" />,
             title: 'EU B2B reverse charge',
             description:
               'VAT-registered EU businesses get reverse-charge handling automatically.',

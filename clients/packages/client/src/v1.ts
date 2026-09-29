@@ -39853,7 +39853,7 @@ export interface components {
        * @default 2026-04
        * @enum {string}
        */
-      api_version: '2026-04' | '2026-10'
+      api_version: '2026-04' | '2026-10' | '2027-01'
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -39883,7 +39883,7 @@ export interface components {
        * Api Version
        * @description The API version that'll be used in event payloads.
        */
-      api_version?: ('2026-04' | '2026-10') | null
+      api_version?: ('2026-04' | '2026-10' | '2027-01') | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -73294,10 +73294,10 @@ export const walletTypeValues: ReadonlyArray<
 > = ['usage', 'billing']
 export const webhookEndpointCreateApi_versionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointCreate']['api_version']
-> = ['2026-04', '2026-10']
+> = ['2026-04', '2026-10', '2027-01']
 export const webhookEndpointUpdateApi_versionAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['api_version']
-> = ['2026-04', '2026-10']
+> = ['2026-04', '2026-10', '2027-01']
 export const webhookEventTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEventType']
 > = [

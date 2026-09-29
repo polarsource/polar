@@ -49,6 +49,7 @@ variable "backend_config" {
     linear_team_id                                   = optional(string, "")
     linear_payout_amount_mismatch_template_id        = optional(string, "")
     merchant_migration_destination_stripe_account_id = optional(string, "")
+    merchant_migration_slack_channel                 = optional(string, "")
   })
 }
 
@@ -180,9 +181,8 @@ variable "prometheus_config" {
 
 variable "slo_report_config" {
   type = object({
-    slack_bot_token                  = string
-    slack_channel                    = string
-    merchant_migration_slack_channel = optional(string)
+    slack_bot_token = string
+    slack_channel   = string
   })
   default   = null
   sensitive = true

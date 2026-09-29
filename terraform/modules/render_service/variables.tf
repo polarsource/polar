@@ -134,6 +134,7 @@ variable "environment_groups" {
       POLAR_LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID = optional(string)
 
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
+      POLAR_MERCHANT_MIGRATION_SLACK_CHANNEL                 = optional(string)
     })
     backend_production = object({
       POLAR_CHECKOUT_LINK_HOST             = string
@@ -206,9 +207,8 @@ variable "environment_groups" {
       POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY      = optional(string)
     })
     slo_report = object({
-      POLAR_SLACK_BOT_TOKEN                  = string
-      POLAR_SLACK_CHANNEL                    = string
-      POLAR_MERCHANT_MIGRATION_SLACK_CHANNEL = optional(string)
+      POLAR_SLACK_BOT_TOKEN = string
+      POLAR_SLACK_CHANNEL   = string
     })
     tinybird = object({
       POLAR_TINYBIRD_API_URL             = string

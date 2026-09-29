@@ -327,4 +327,4 @@ jobs:
           merge-multiple: true
 
       - name: Publish to npm
-        run: bun scripts/npm-publish.ts ${{ needs.prepare.outputs.publish == 'true' && '' || '--dry-run' }}
+        run: bun scripts/npm-publish.ts ${{ needs.prepare.outputs.publish != 'true' && '--dry-run' || '' }}

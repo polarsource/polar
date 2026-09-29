@@ -1,4 +1,12 @@
-import { mkdir, mkdtemp, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
@@ -254,11 +262,13 @@ describe('upgradeWithPackageManager', () => {
     ).rejects.toThrow('exited with code 2')
   })
 
-  test('keeps a second link to the running executable on windows', async () => {
+  test('keeps a second link beside the running executable on windows', async () => {
     let linksDuringUpgrade = 0
+    let entriesDuringUpgrade: string[] = []
     const exec: Exec = () =>
       Effect.promise(async () => {
         linksDuringUpgrade = (await stat(executable)).nlink
+        entriesDuringUpgrade = await readdir(dir)
         return { code: 0, stdout: '', stderr: '' }
       })
 
@@ -267,7 +277,32 @@ describe('upgradeWithPackageManager', () => {
     )
 
     expect(linksDuringUpgrade).toBe(2)
+    expect(entriesDuringUpgrade).toContainEqual(
+      expect.stringMatching(/^polar-update-/),
+    )
     expect((await stat(executable)).nlink).toBe(1)
+    await expect(readdir(dir)).resolves.toEqual(['polar.exe'])
+  })
+
+  test('proceeds without the extra link when it cannot be created', async () => {
+    let ran = false
+    const exec: Exec = () => {
+      ran = true
+      return Effect.succeed({ code: 0, stdout: '', stderr: '' })
+    }
+
+    await run(
+      upgradeWithPackageManager(
+        'npm',
+        'v1.4.0',
+        exec,
+        join(dir, 'missing.exe'),
+        'win32',
+      ),
+    )
+
+    expect(ran).toBe(true)
+    await expect(readdir(dir)).resolves.toEqual(['polar.exe'])
   })
 })
 

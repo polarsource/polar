@@ -185,16 +185,18 @@ const retainRunningImage = (
     ? Effect.succeed(Effect.void)
     : Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem
+        // Hard links cannot cross volumes, so keep the link beside the executable.
         const directory = yield* fs.makeTempDirectory({
+          directory: path.dirname(executable),
           prefix: 'polar-update-',
         })
-        yield* fs.link(
-          executable,
-          path.join(directory, path.basename(executable)),
-        )
-        return fs
+        const remove = fs
           .remove(directory, { recursive: true, force: true })
           .pipe(Effect.ignore)
+        yield* fs
+          .link(executable, path.join(directory, path.basename(executable)))
+          .pipe(Effect.tapError(() => remove))
+        return remove
       }).pipe(Effect.orElseSucceed((): Effect.Effect<void> => Effect.void))
 
 export const upgradeWithPackageManager = (

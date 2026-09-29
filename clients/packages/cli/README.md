@@ -142,7 +142,8 @@ release workflow for the other packages.
 
 ### npm
 
-The same signed binaries are also published to npm as `@polar-sh/cli`, installed
+The same binaries (signed and notarized on macOS, unsigned elsewhere) are also
+published to npm as `@polar-sh/cli`, installed
 with `npm install -g @polar-sh/cli`. The layout follows opencode's: one
 `@polar-sh/cli-<platform>-<arch>` package per target that ships only
 `bin/polar`, restricted with `os`/`cpu` so package managers download a single

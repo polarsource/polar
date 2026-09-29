@@ -1,11 +1,8 @@
-from collections.abc import AsyncIterator
 from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
 import pytest
-import pytest_asyncio
-from fastapi import FastAPI
 from pytest_mock import MockerFixture
 from reauth.factors.oauth2.base import OAuth2Account, OAuth2Enrollment
 from sqlalchemy import select
@@ -16,21 +13,7 @@ from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain, User
 from polar.postgres import AsyncSession
 from tests.auth.sso.test_endpoints import create_sso_connection
-from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
-
-
-@pytest_asyncio.fixture
-async def login_client(
-    app: FastAPI, session: AsyncSession
-) -> AsyncIterator[httpx.AsyncClient]:
-    async with IsolatedSessionTestClient(
-        session=session,
-        auto_expunge=False,
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://127.0.0.1",
-    ) as client:
-        yield client
 
 
 async def create_sso_domain(

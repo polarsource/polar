@@ -1,7 +1,6 @@
 import secrets
 import typing
 from collections.abc import Awaitable
-from urllib.parse import urlencode
 
 from fastapi import Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
@@ -19,7 +18,6 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
 from polar.kit.http import ReturnTo
-from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
@@ -32,22 +30,20 @@ from ..authentication_session import (
     get_optional_authentication_session,
 )
 from ..exceptions import GetEmailError, PolarAuthRedirectionError
-from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
+from ..helpers import (
+    OIDC_ERROR_MESSAGE,
+    check_factor,
+    get_sso_redirect_url,
+    set_state_cookie,
+)
 from .factor import OAuth2FactorMixin
 
 
 async def _get_sso_redirect(
     session: AsyncSession, email: str, return_to: str | None
 ) -> RedirectResponse | None:
-    _, domain = email.rsplit("@", 1)
-    organization_repository = OrganizationRepository.from_session(session)
-    organization = await organization_repository.get_sso_enforced_by_domain(domain)
-    if organization is None:
-        return None
-    path = f"/auth/sso/{organization.slug}"
-    if return_to is not None:
-        path = f"{path}?{urlencode({'return_to': return_to})}"
-    return RedirectResponse(settings.generate_frontend_url(path), status_code=303)
+    url = await get_sso_redirect_url(session, email, return_to)
+    return RedirectResponse(url, status_code=303) if url is not None else None
 
 
 def get_oauth_login_router(

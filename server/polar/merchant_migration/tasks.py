@@ -28,6 +28,27 @@ async def merchant_migration_precheck(
         )
 
 
+def _classify_records_debounce_key(merchant_migration_id: UUID) -> str:
+    return f"merchant_migration.classify_records:{merchant_migration_id}"
+
+
+@actor(
+    actor_name="merchant_migration.classify_records",
+    priority=TaskPriority.LOW,
+    time_limit=600_000,
+    debounce_key=_classify_records_debounce_key,
+    debounce_min_threshold=2,
+)
+async def merchant_migration_classify_records(
+    merchant_migration_id: Annotated[UUID, LoggableField],
+) -> None:
+    """Store the review row of every record, one run per burst of changes."""
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.classify_records(
+            session, merchant_migration_id
+        )
+
+
 @actor(
     actor_name="merchant_migration.import_catalog",
     priority=TaskPriority.LOW,

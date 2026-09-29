@@ -17,7 +17,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.discount.service import discount as discount_service
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxBehavior
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
@@ -59,6 +59,7 @@ from polar.merchant_migration.repository import (
 from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
     MerchantMigrationImportReport,
+    MerchantMigrationRecordTaxUpdate,
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
@@ -1038,7 +1039,9 @@ class TestExecutePrecheck:
             == MerchantMigrationOperationStatus.done.value
         )
         assert migration.operation.cursor is None
-        enqueue.assert_not_called()
+        enqueue.assert_called_once_with(
+            "merchant_migration.classify_records", merchant_migration_id=migration.id
+        )
 
     @pytest.mark.auth
     async def test_merges_prices_for_a_product_split_across_pages(
@@ -3700,6 +3703,124 @@ class TestSummarizeRecords:
         subscriptions = by_entity[PrecheckEntity.subscriptions]
         assert subscriptions.ready == 0
         assert subscriptions.selectable == 1
+
+
+_REVIEW_QUERIES: list[dict[str, Any]] = [
+    {"entity": None, "status": None},
+    {"entity": PrecheckEntity.subscriptions, "status": None},
+    {"entity": PrecheckEntity.products, "status": PrecheckRecordStatus.skipped},
+    {
+        "entity": None,
+        "status": None,
+        "reason_level": PrecheckReasonLevel.action_required,
+    },
+    {
+        "entity": PrecheckEntity.subscriptions,
+        "status": PrecheckRecordStatus.importable,
+        "import_status": MerchantMigrationRecordStatus.pending,
+        "dependencies_imported": True,
+    },
+    {
+        "entity": PrecheckEntity.subscriptions,
+        "status": None,
+        "exclude_import_status": MerchantMigrationRecordStatus.imported,
+        "dependencies_imported": False,
+    },
+]
+
+
+@pytest.mark.asyncio
+class TestClassifyRecords:
+    @pytest.mark.auth
+    @pytest.mark.parametrize("imported", [False, True])
+    async def test_stored_review_matches_live_classification(
+        self,
+        imported: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        if imported:
+            await _import_catalog(session, auth_subject, migration.id)
+        pagination = PaginationParams(page=1, limit=100)
+        live = [
+            await service.list_records(
+                session, auth_subject, migration.id, **query, pagination=pagination
+            )
+            for query in _REVIEW_QUERIES
+        ]
+        live_summary = await service.summarize_records(
+            session, auth_subject, migration.id
+        )
+
+        await service.classify_records(session, migration.id)
+        classify_staged = mocker.spy(service, "_classify_staged")
+
+        stored = [
+            await service.list_records(
+                session, auth_subject, migration.id, **query, pagination=pagination
+            )
+            for query in _REVIEW_QUERIES
+        ]
+        assert stored == live
+        assert (
+            await service.summarize_records(session, auth_subject, migration.id)
+            == live_summary
+        )
+        classify_staged.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_an_edit_clears_the_stored_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await service.classify_records(session, migration.id)
+        pagination = PaginationParams(page=1, limit=100)
+        [item], _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=pagination,
+        )
+        assert item.record_id is not None
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        await service.update_record(
+            session,
+            auth_subject,
+            migration.id,
+            item.record_id,
+            MerchantMigrationRecordTaxUpdate(tax_behavior=TaxBehavior.exclusive),
+        )
+
+        enqueue.assert_called_once_with(
+            "merchant_migration.classify_records", merchant_migration_id=migration.id
+        )
+        [edited], _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=pagination,
+        )
+        assert edited.tax_behavior == TaxBehavior.exclusive
 
 
 def _canonical_subscription(

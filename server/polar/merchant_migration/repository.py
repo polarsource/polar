@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator, Mapping, Sequence
 from dataclasses import replace
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 from uuid import UUID
 
 from sqlalchemy import (
@@ -60,6 +60,18 @@ from .canonical import (
     serialize,
     tighter_cap,
 )
+
+
+class ReviewColumns(NamedTuple):
+    record_id: UUID
+    type: MerchantMigrationRecordType
+    status: MerchantMigrationRecordStatus
+    target_id: UUID | None
+    cutover_status: MerchantMigrationCutoverStatus | None
+    classification_status: str | None
+    reason_level: str | None
+    dependencies_imported: bool | None
+
 
 type RecordCounts = dict[
     tuple[UUID, MerchantMigrationRecordType, MerchantMigrationRecordStatus], int
@@ -248,6 +260,80 @@ class MerchantMigrationRecordRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def list_review_columns(
+        self,
+        migration_id: UUID,
+        types: Sequence[MerchantMigrationRecordType],
+    ) -> list[ReviewColumns]:
+        """The columns review filters and counts read, without the canonical
+        blobs. A null classification status means the record isn't classified."""
+        classification = MerchantMigrationRecord.classification
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(
+                MerchantMigrationRecord.id,
+                MerchantMigrationRecord.type,
+                MerchantMigrationRecord.status,
+                MerchantMigrationRecord.target_id,
+                MerchantMigrationRecord.cutover_status,
+                classification["status"].astext,
+                classification["reason_level"].astext,
+                classification["dependencies_imported"].as_boolean(),
+            )
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type.in_(types),
+            )
+            .order_by(MerchantMigrationRecord.created_at, MerchantMigrationRecord.id)
+        )
+        result = await self.session.execute(statement)
+        return [ReviewColumns(*row) for row in result.all()]
+
+    async def get_classifications(
+        self, record_ids: Sequence[UUID]
+    ) -> dict[UUID, tuple[dict[str, Any], str | None]]:
+        """Stored classification and cutover error by record id."""
+        statement = self.get_base_statement().with_only_columns(
+            MerchantMigrationRecord.id,
+            MerchantMigrationRecord.classification,
+            MerchantMigrationRecord.cutover_error,
+        )
+        result = await self.session.execute(
+            statement.where(MerchantMigrationRecord.id.in_(record_ids))
+        )
+        return {
+            record_id: (classification, cutover_error)
+            for record_id, classification, cutover_error in result.all()
+            if classification is not None
+        }
+
+    async def set_classifications(
+        self, classifications: Mapping[UUID, dict[str, Any]]
+    ) -> None:
+        if not classifications:
+            return
+        await self.session.execute(
+            update(MerchantMigrationRecord),
+            [
+                {"id": record_id, "classification": classification}
+                for record_id, classification in classifications.items()
+            ],
+        )
+
+    async def clear_classifications(self, organization_id: UUID) -> set[UUID]:
+        """Clear the organization's stored classifications, and return the
+        migrations that had any."""
+        result = await self.session.execute(
+            update(MerchantMigrationRecord)
+            .where(
+                MerchantMigrationRecord.organization_id == organization_id,
+                MerchantMigrationRecord.classification.is_not(None),
+            )
+            .values(classification=None)
+            .returning(MerchantMigrationRecord.merchant_migration_id)
+        )
+        return set(result.scalars().all())
 
     async def stream_imported_customer_source_ids(
         self, migration_id: UUID

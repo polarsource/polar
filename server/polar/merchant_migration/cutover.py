@@ -10,6 +10,7 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.customer.repository import CustomerRepository
@@ -95,6 +96,10 @@ _DISCOUNT_MISSING_START = (
     "The source doesn't say when this coupon was applied, so Polar can't "
     "continue its remaining duration. It stays on the source."
 )
+_DISCOUNT_END_UNREPRESENTABLE = (
+    "Polar can't end this coupon on the same renewal the source does, so it "
+    "would discount a renewal the source charges in full. It stays on the source."
+)
 _NO_PAYMENT_METHOD = (
     "No copied payment method has landed on Polar for this customer. Unless "
     "they have a default one by the next renewal, it fails and goes to dunning."
@@ -145,7 +150,58 @@ class CutoverOutcome:
 class ImportedDiscount:
     discount: Discount | None = None
     skip: str | None = None
-    started_at: datetime | None = None
+    applied_at: datetime | None = None
+
+
+def _imported_discount_at(
+    discount: Discount,
+    started_at: datetime | None,
+    first_renewal: datetime | None,
+    product: Product,
+    anchor_day: int | None,
+) -> ImportedDiscount:
+    """The ``discount_applied_at`` that makes Polar discount the renewals the
+    source still would.
+
+    Polar counts a discount from the start of the first period it discounted.
+    The source doesn't: a ``once`` coupon still attached hasn't discounted an
+    invoice yet, and a ``repeating`` one discounts every invoice before
+    ``start + N months``, wherever that start falls in the period.
+    """
+    if started_at is None or first_renewal is None:
+        return ImportedDiscount(discount=discount, applied_at=started_at)
+    if discount.duration == DiscountDuration.once:
+        return ImportedDiscount(discount=discount, applied_at=first_renewal)
+    months = discount.duration_in_months
+    interval = product.recurring_interval
+    if (
+        discount.duration != DiscountDuration.repeating
+        or months is None
+        or interval is None
+    ):
+        return ImportedDiscount(discount=discount, applied_at=started_at)
+
+    source_end = started_at + relativedelta(months=months)
+    anchor = anchor_day or first_renewal.day
+    last_discounted: datetime | None = None
+    renewal = first_renewal
+    while renewal < source_end:
+        last_discounted = renewal
+        renewal = interval.get_next_period(
+            renewal, anchor, product.recurring_interval_count or 1
+        )
+    if last_discounted is None:
+        return ImportedDiscount(discount=discount, applied_at=started_at)
+
+    applied_at = last_discounted - relativedelta(months=months - 1)
+    # Going back to a shorter month clamps the day, so counting the months forward
+    # again can end before the renewal it has to keep.
+    while discount.is_repetition_expired(applied_at, last_discounted):
+        applied_at += timedelta(days=1)
+    # Renewals a day apart can fall in a gap no month count lands in.
+    if not discount.is_repetition_expired(applied_at, renewal):
+        return ImportedDiscount(skip=_DISCOUNT_END_UNREPRESENTABLE)
+    return ImportedDiscount(discount=discount, applied_at=applied_at)
 
 
 def _moved(message: str | None = None) -> CutoverOutcome:
@@ -419,7 +475,7 @@ class SubscriptionCutover:
         ):
             return _skip(_CUSTOMER_ALREADY_SUBSCRIBED.message)
 
-        imported = await self._imported_discount(source, staged)
+        imported = await self._imported_discount(source, staged, product)
         if imported.skip is not None:
             return _skip(imported.skip)
 
@@ -459,7 +515,7 @@ class SubscriptionCutover:
 
         subscription = await create_imported_subscription(
             self.session,
-            replace(staged, discount_started_at=imported.started_at),
+            replace(staged, discount_started_at=imported.applied_at),
             product,
             price,
             customer,
@@ -638,7 +694,10 @@ class SubscriptionCutover:
         return kept not in set(source.discount_source_ids)
 
     async def _imported_discount(
-        self, source: CanonicalSubscription, staged: CanonicalSubscription
+        self,
+        source: CanonicalSubscription,
+        staged: CanonicalSubscription,
+        product: Product,
     ) -> ImportedDiscount:
         importable = await self._importable_discount_source_ids(
             staged.discount_source_ids
@@ -661,7 +720,13 @@ class SubscriptionCutover:
         started_at = discount_started_at_for(source, kept)
         if discount.duration != DiscountDuration.forever and started_at is None:
             return ImportedDiscount(skip=_DISCOUNT_MISSING_START)
-        return ImportedDiscount(discount=discount, started_at=started_at)
+        return _imported_discount_at(
+            discount,
+            started_at,
+            self._trial_end(source) or source.current_period_end,
+            product,
+            source.anchor_day,
+        )
 
     def _renewal_reason(self, source: CanonicalSubscription) -> str | None:
         # Nothing is about to charge, so the handover window does not apply.

@@ -33,7 +33,7 @@ from typing import Any, cast
 import dramatiq
 import structlog
 import typer
-from sqlalchemy import and_, distinct, func, or_, select
+from sqlalchemy import Select, and_, distinct, func, or_, select
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import aliased, joinedload
 from sqlalchemy.sql.expression import CTE
@@ -1075,109 +1075,119 @@ async def enable(
     typer.echo(f"  - Failed: {failed}")
 
 
+def _flipped_organizations() -> Select[tuple[uuid.UUID]]:
+    return select(Organization.id).where(
+        Organization.deleted_at.is_(None),
+        Organization.status != OrganizationStatus.BLOCKED,
+        Organization.feature_settings["member_model_enabled"].as_boolean(),
+    )
+
+
 async def _count_work_left(
     session: AsyncReadSession,
-    organization_ids: Sequence[uuid.UUID],
-    chunk_size: int,
 ) -> dict[uuid.UUID, tuple[int, int, int]]:
-    """Per organization: seats and grants still on a holder, and holders step D
+    """Per organization: seats and grants still on a holder, and the holders step D
     would then soft-delete.
 
     Mirrors what `_backfill_seats` and `_backfill_benefit_grants` select, so the
     counts predict what a re-run does. A holder is only deleted once it has no
     subscription and no order of its own.
     """
-    seats_left: dict[uuid.UUID, int] = {}
-    grants_left: dict[uuid.UUID, int] = {}
-    holders: dict[uuid.UUID, int] = {}
+    flipped = _flipped_organizations().scalar_subquery()
+    container_customer = func.coalesce(Subscription.customer_id, Order.customer_id)
 
-    for chunk in _chunked(organization_ids, chunk_size):
-        container_customer = func.coalesce(Subscription.customer_id, Order.customer_id)
-        seat_statement = (
-            select(Product.organization_id, func.count(CustomerSeat.id))
-            .select_from(CustomerSeat)
-            .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
-            .outerjoin(Order, CustomerSeat.order_id == Order.id)
-            .join(
-                Product,
-                Product.id == func.coalesce(Subscription.product_id, Order.product_id),
-            )
-            .where(
-                Product.organization_id.in_(chunk),
-                CustomerSeat.deleted_at.is_(None),
-                CustomerSeat.status != SeatStatus.revoked,
-                or_(
-                    CustomerSeat.member_id.is_(None),
-                    CustomerSeat.customer_id.is_distinct_from(container_customer),
-                ),
-            )
-            .group_by(Product.organization_id)
+    seat_statement = (
+        select(Product.organization_id, func.count(CustomerSeat.id))
+        .select_from(CustomerSeat)
+        .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .outerjoin(Order, CustomerSeat.order_id == Order.id)
+        .join(
+            Product,
+            Product.id == func.coalesce(Subscription.product_id, Order.product_id),
         )
-        for organization_id, count in await session.execute(seat_statement):
-            seats_left[organization_id] = count
+        .where(
+            Product.organization_id.in_(flipped),
+            CustomerSeat.deleted_at.is_(None),
+            CustomerSeat.status != SeatStatus.revoked,
+            or_(
+                CustomerSeat.member_id.is_(None),
+                CustomerSeat.customer_id.is_distinct_from(container_customer),
+            ),
+        )
+        .group_by(Product.organization_id)
+    )
 
-        grant_statement = (
-            select(Customer.organization_id, func.count(BenefitGrant.id))
-            .select_from(BenefitGrant)
-            .join(Customer, BenefitGrant.customer_id == Customer.id)
-            .outerjoin(Subscription, BenefitGrant.subscription_id == Subscription.id)
-            .outerjoin(Order, BenefitGrant.order_id == Order.id)
-            .where(
-                Customer.organization_id.in_(chunk),
-                BenefitGrant.deleted_at.is_(None),
-                or_(
-                    BenefitGrant.member_id.is_(None),
-                    BenefitGrant.customer_id != container_customer,
-                ),
-            )
-            .group_by(Customer.organization_id)
+    grant_statement = (
+        select(Customer.organization_id, func.count(BenefitGrant.id))
+        .select_from(BenefitGrant)
+        .join(Customer, BenefitGrant.customer_id == Customer.id)
+        .outerjoin(Subscription, BenefitGrant.subscription_id == Subscription.id)
+        .outerjoin(Order, BenefitGrant.order_id == Order.id)
+        .where(
+            Customer.organization_id.in_(flipped),
+            BenefitGrant.deleted_at.is_(None),
+            or_(
+                BenefitGrant.member_id.is_(None),
+                BenefitGrant.customer_id != container_customer,
+            ),
         )
-        for organization_id, count in await session.execute(grant_statement):
-            grants_left[organization_id] = count
+        .group_by(Customer.organization_id)
+    )
 
-        own_subscription = (
-            select(Subscription.id)
-            .where(Subscription.customer_id == Customer.id)
-            .correlate(Customer)
-            .exists()
+    own_subscription = (
+        select(Subscription.id)
+        .where(Subscription.customer_id == Customer.id)
+        .correlate(Customer)
+        .exists()
+    )
+    own_order = (
+        select(Order.id)
+        .where(Order.customer_id == Customer.id)
+        .correlate(Customer)
+        .exists()
+    )
+    holder_statement = (
+        select(Product.organization_id, func.count(distinct(Customer.id)))
+        .select_from(CustomerSeat)
+        .join(Customer, Customer.id == CustomerSeat.customer_id)
+        .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .outerjoin(Order, CustomerSeat.order_id == Order.id)
+        .join(
+            Product,
+            Product.id == func.coalesce(Subscription.product_id, Order.product_id),
         )
-        own_order = (
-            select(Order.id)
-            .where(Order.customer_id == Customer.id)
-            .correlate(Customer)
-            .exists()
+        .where(
+            Product.organization_id.in_(flipped),
+            CustomerSeat.deleted_at.is_(None),
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.customer_id.is_distinct_from(container_customer),
+            Customer.deleted_at.is_(None),
+            ~own_subscription,
+            ~own_order,
         )
-        holder_statement = (
-            select(Product.organization_id, func.count(distinct(Customer.id)))
-            .select_from(CustomerSeat)
-            .join(Customer, Customer.id == CustomerSeat.customer_id)
-            .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
-            .outerjoin(Order, CustomerSeat.order_id == Order.id)
-            .join(
-                Product,
-                Product.id == func.coalesce(Subscription.product_id, Order.product_id),
-            )
-            .where(
-                Product.organization_id.in_(chunk),
-                CustomerSeat.deleted_at.is_(None),
-                CustomerSeat.status != SeatStatus.revoked,
-                CustomerSeat.customer_id != container_customer,
-                Customer.deleted_at.is_(None),
-                ~own_subscription,
-                ~own_order,
-            )
-            .group_by(Product.organization_id)
-        )
-        for organization_id, count in await session.execute(holder_statement):
-            holders[organization_id] = count
+        .group_by(Product.organization_id)
+    )
+
+    seats = {
+        organization_id: count
+        for organization_id, count in await session.execute(seat_statement)
+    }
+    grants = {
+        organization_id: count
+        for organization_id, count in await session.execute(grant_statement)
+    }
+    holders = {
+        organization_id: count
+        for organization_id, count in await session.execute(holder_statement)
+    }
 
     return {
         organization_id: (
-            seats_left.get(organization_id, 0),
-            grants_left.get(organization_id, 0),
+            seats.get(organization_id, 0),
+            grants.get(organization_id, 0),
             holders.get(organization_id, 0),
         )
-        for organization_id in organization_ids
+        for organization_id in seats.keys() | grants.keys() | holders.keys()
     }
 
 
@@ -1187,8 +1197,8 @@ async def repair_backfill(
     dry_run: bool = typer.Option(
         True, help="If True, only show what a re-run would do"
     ),
-    chunk_size: int = typer.Option(
-        20, min=1, help="Organizations per query for the customer-wide counts"
+    command_timeout: float = typer.Option(
+        300.0, help="Seconds a single query may run before the server kills it"
     ),
     batch_size: int = typer.Option(
         20, min=1, help="Organizations re-enqueued before pausing"
@@ -1203,37 +1213,30 @@ async def repair_backfill(
     and the holders that step D then soft-deletes. Those deletions are permanent,
     so read the totals before passing --no-dry-run.
     """
-    engine = create_async_engine("script")
+    engine = read_engine(command_timeout)
     sessionmaker = create_async_sessionmaker(engine)
 
     async with sessionmaker() as session:
-        statement = (
-            select(Organization.id, Organization.slug)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings["member_model_enabled"].as_boolean(),
-            )
-            .order_by(Organization.slug.asc())
-        )
-        organizations = list(await session.execute(statement))
-        if not organizations:
-            typer.echo("No organizations on the member model.")
+        work = await _count_work_left(session)
+        if not work:
+            typer.echo("Nothing to repair.")
             return
 
-        work = await _count_work_left(
-            session,
-            [organization_id for organization_id, _ in organizations],
-            chunk_size,
-        )
+        slugs: dict[uuid.UUID, str] = {
+            organization_id: organization_slug
+            for organization_id, organization_slug in await session.execute(
+                select(Organization.id, Organization.slug)
+                .where(Organization.id.in_(work.keys()))
+                .order_by(Organization.slug.asc())
+            )
+        }
 
     unfinished = [
         (organization_id, organization_slug)
-        for organization_id, organization_slug in organizations
+        for organization_id, organization_slug in slugs.items()
         if any(work[organization_id])
     ]
 
-    typer.echo(f"Organizations on the member model: {len(organizations)}")
     typer.echo(f"Unfinished: {len(unfinished)}")
     typer.echo()
 

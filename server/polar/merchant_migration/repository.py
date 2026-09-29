@@ -882,7 +882,8 @@ class MerchantMigrationRecordRepository(
         current: CanonicalDiscount, incoming: CanonicalDiscount
     ) -> CanonicalDiscount:
         """Refresh coupon terms on re-extract and attach the first Polar-valid
-        promotion code. Extra codes are counted so the precheck can warn."""
+        promotion code, preferring one that can still be redeemed. Extra usable
+        codes are counted so the precheck can warn."""
         if incoming.code is None:
             return replace(
                 incoming,
@@ -901,6 +902,10 @@ class MerchantMigrationRecordRepository(
                 ends_at=earlier_datetime(current.ends_at, incoming.ends_at),
             )
         if current.code != incoming.code:
+            if incoming.max_redemptions == 0:
+                return current
+            if current.max_redemptions == 0:
+                return replace(incoming, extra_codes=current.extra_codes)
             return replace(current, extra_codes=current.extra_codes + 1)
         return replace(
             current,

@@ -382,6 +382,30 @@ class TestUpsert:
         assert merged.canonical["extra_codes"] == 1
         assert merged.canonical["ends_at"] == promo_ends.isoformat()
 
+    async def test_usable_promotion_code_replaces_a_spent_one(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRecordRepository.from_session(session)
+        coupon = canonical_discount(code=None, max_redemptions=None)
+        await repository.upsert(migration, organization, coupon)
+        await repository.upsert(
+            migration, organization, replace(coupon, code="OLD", max_redemptions=0)
+        )
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="NEW", max_redemptions=5)
+        )
+        merged = await repository.upsert(
+            migration, organization, replace(coupon, code="OLDER", max_redemptions=0)
+        )
+
+        assert merged.canonical["code"] == "NEW"
+        assert merged.canonical["max_redemptions"] == 5
+        assert merged.canonical["extra_codes"] == 0
+
     async def test_coupon_reextract_refreshes_terms_and_keeps_promo_code(
         self,
         session: AsyncSession,

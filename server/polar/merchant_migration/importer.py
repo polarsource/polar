@@ -17,7 +17,6 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Discount,
@@ -778,26 +777,21 @@ class CatalogImporter:
     async def _create_discount(
         self, discount: CanonicalDiscount, product_ids: list[UUID]
     ) -> Discount:
+        # Polar can't store the source's used count, so ``max_redemptions`` is
+        # what's left. A spent code keeps its name at 0 left, which blocks it.
         exhausted = discount.max_redemptions == 0
         duration = DiscountDuration(discount.duration.value)
-        ends_at = discount.ends_at
-        if exhausted:
-            now = utc_now()
-            ends_at = now if ends_at is None or ends_at > now else ends_at
         shared: dict[str, Any] = {
             "name": discount.name,
-            "code": (
-                None
-                if exhausted
-                else await self._available_discount_code(discount.code)
-            ),
+            "code": await self._available_discount_code(discount.code),
             "duration": duration,
             "duration_in_months": (
                 discount.duration_in_months
                 if duration == DiscountDuration.repeating
                 else None
             ),
-            "ends_at": ends_at,
+            "ends_at": discount.ends_at,
+            # The create schema rejects 0; it's set once the row exists.
             "max_redemptions": None if exhausted else discount.max_redemptions,
             "products": product_ids or None,
             # An organization token rejects an explicit organization_id.

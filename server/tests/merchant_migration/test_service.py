@@ -27,6 +27,7 @@ from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
+    CanonicalDiscountDuration,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -88,6 +89,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -1921,7 +1923,7 @@ class TestImportCatalog:
         assert items[0].dependencies_imported is True
 
     @pytest.mark.auth
-    async def test_exhausted_discount_imports_without_checkout_code(
+    async def test_exhausted_discount_keeps_its_code_and_terms_at_its_limit(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1936,16 +1938,28 @@ class TestImportCatalog:
             save_fixture,
             auth_subject,
             organization,
-            records=_catalog_with_discounted_subscription(max_redemptions=0),
+            records=[
+                *_importable_catalog(),
+                canonical_discount(
+                    code="MIGRATIONS",
+                    duration=CanonicalDiscountDuration.repeating,
+                    duration_in_months=6,
+                    max_redemptions=0,
+                ),
+            ],
         )
 
         await _import_catalog(session, auth_subject, migration.id)
 
         discounts = await _imported_discounts(session, organization)
         assert len(discounts) == 1
-        assert discounts[0].code is None
-        assert discounts[0].max_redemptions == 0
-        assert discounts[0].ends_at is not None
+        discount = discounts[0]
+        assert discount.code == "MIGRATIONS"
+        assert discount.max_redemptions == 0
+        assert discount.ends_at is None
+        assert discount.duration == DiscountDuration.repeating
+        assert discount.duration_in_months == 6
+        assert not await discount_service.is_redeemable_discount(session, discount)
 
     @pytest.mark.auth
     async def test_product_restricted_discount_skips_when_products_were_not_imported(

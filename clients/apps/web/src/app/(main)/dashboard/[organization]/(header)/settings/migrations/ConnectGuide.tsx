@@ -122,8 +122,8 @@ export function ConnectGuide({
       <Box flexDirection="column" rowGap="m">
         <Text variant="label">1. Create a restricted key in Stripe</Text>
         <Text variant="caption" color="muted">
-          Name it something like &ldquo;Polar migration&rdquo;. Use a{' '}
-          {`${mode}-mode`} key ({stripeKeyPlaceholder(mode)}).
+          Name it something like &ldquo;Polar migration&rdquo;. This environment
+          needs a {`${mode}-mode`} key ({stripeKeyPlaceholder(mode)}).
         </Text>
         <Button variant="secondary" fullWidth asChild>
           <a

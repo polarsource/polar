@@ -250,7 +250,7 @@ async def export_customer_ids(
     session: AsyncSession = Depends(get_db_session),
 ) -> CSVStreamingResponse:
     """One imported Stripe customer ID per row, no header — for Stripe Copy upload."""
-    source_ids = await merchant_migration_service.stream_imported_customer_source_ids(
+    source_ids = await merchant_migration_service.stream_customer_source_ids_to_copy(
         session, auth_subject, id
     )
 

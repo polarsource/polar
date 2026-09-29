@@ -250,22 +250,24 @@ class MerchantMigrationRecordRepository(
         customer_source_id = MerchantMigrationRecord.canonical.op("->>")(
             "customer_source_id"
         )
-        result = await self.session.execute(
+        results = await self.session.stream(
             self._switchable_subscriptions_statement(migration_id)
             .where(
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending
             )
-            .with_only_columns(MerchantMigrationRecord.id, customer_source_id)
+            .with_only_columns(MerchantMigrationRecord.id, customer_source_id),
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
         )
         to_copy: dict[str, None] = {}
         has_card: set[str] = set()
-        for record_id, source_id in result.all():
-            if source_id is None:
-                continue
-            if record_id in covered:
-                has_card.add(source_id)
-            else:
-                to_copy[source_id] = None
+        try:
+            async for record_id, source_id in results:
+                if record_id in covered:
+                    has_card.add(source_id)
+                else:
+                    to_copy[source_id] = None
+        finally:
+            await results.close()
         fully_covered = has_card - to_copy.keys()
 
         async for source_id in self.stream_imported_customer_source_ids(migration_id):

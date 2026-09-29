@@ -34327,6 +34327,19 @@ export interface components {
        */
       name: string | null
     }
+    /** SSORequired */
+    SSORequired: {
+      /**
+       * Error
+       * @example SSORequired
+       * @constant
+       */
+      error: 'SSORequired'
+      /** Detail */
+      detail: string
+      /** Redirect Url */
+      redirect_url: string
+    }
     /**
      * Scope
      * @enum {string}
@@ -45393,6 +45406,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The email domain signs in through single sign-on */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSORequired']
         }
       }
       /** @description Validation Error */

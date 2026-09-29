@@ -455,7 +455,7 @@ async def _backfill_seats(
             # holder rather than the billing customer.
             or_(
                 CustomerSeat.member_id.is_(None),
-                CustomerSeat.customer_id != Subscription.customer_id,
+                CustomerSeat.customer_id.is_distinct_from(Subscription.customer_id),
             ),
         )
         .order_by(CustomerSeat.id)
@@ -473,7 +473,7 @@ async def _backfill_seats(
             CustomerSeat.order_id.is_not(None),
             or_(
                 CustomerSeat.member_id.is_(None),
-                CustomerSeat.customer_id != Order.customer_id,
+                CustomerSeat.customer_id.is_distinct_from(Order.customer_id),
             ),
         )
         .order_by(CustomerSeat.id)

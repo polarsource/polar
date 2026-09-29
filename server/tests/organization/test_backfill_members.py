@@ -3153,3 +3153,51 @@ class TestBackfillAfterPrepare:
         assert migrated is not None
         assert migrated.customer_id == billing_customer.id
         assert migrated.member_id is not None
+
+    async def test_prepared_pending_seat_gets_the_billing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A pending seat carries an email and no customer, so comparing its
+        customer to the buyer must treat NULL as different."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": False},
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="pending-billing@test.com",
+            stripe_customer_id="stripe_pending_billing",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=2
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.pending,
+            email="pending-holder@test.com",
+        )
+        seat_id = seat.id
+
+        session.expunge_all()
+        await prepare_members(organization.id)
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        migrated = await session.get(CustomerSeat, seat_id)
+        assert migrated is not None
+        assert migrated.customer_id == billing_customer.id

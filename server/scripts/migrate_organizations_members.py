@@ -1106,7 +1106,10 @@ async def _count_work_left(
                 Product.organization_id.in_(chunk),
                 CustomerSeat.deleted_at.is_(None),
                 CustomerSeat.status != SeatStatus.revoked,
-                CustomerSeat.customer_id != container_customer,
+                or_(
+                    CustomerSeat.member_id.is_(None),
+                    CustomerSeat.customer_id.is_distinct_from(container_customer),
+                ),
             )
             .group_by(Product.organization_id)
         )
@@ -1122,7 +1125,10 @@ async def _count_work_left(
             .where(
                 Customer.organization_id.in_(chunk),
                 BenefitGrant.deleted_at.is_(None),
-                BenefitGrant.customer_id != container_customer,
+                or_(
+                    BenefitGrant.member_id.is_(None),
+                    BenefitGrant.customer_id != container_customer,
+                ),
             )
             .group_by(Customer.organization_id)
         )

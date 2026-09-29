@@ -236,6 +236,46 @@ class MerchantMigrationRecordRepository(
         finally:
             await results.close()
 
+    async def stream_customer_source_ids_to_copy(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[str]:
+        """Stripe customers whose cards Stripe Copy still has to move.
+
+        The customers this migration imported, plus the ones behind subscriptions
+        it took over from an earlier migration of the account, less those whose
+        every subscription here already has its card on Polar. Copying those
+        again would only add a second copy of the same card.
+        """
+        covered = await self.payment_method_coverage(migration_id, exact=True)
+        customer_source_id = MerchantMigrationRecord.canonical.op("->>")(
+            "customer_source_id"
+        )
+        result = await self.session.execute(
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending
+            )
+            .with_only_columns(MerchantMigrationRecord.id, customer_source_id)
+        )
+        to_copy: dict[str, None] = {}
+        has_card: set[str] = set()
+        for record_id, source_id in result.all():
+            if source_id is None:
+                continue
+            if record_id in covered:
+                has_card.add(source_id)
+            else:
+                to_copy[source_id] = None
+        fully_covered = has_card - to_copy.keys()
+
+        async for source_id in self.stream_imported_customer_source_ids(migration_id):
+            if source_id in fully_covered:
+                continue
+            to_copy.pop(source_id, None)
+            yield source_id
+        for source_id in to_copy:
+            yield source_id
+
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]
     ) -> RecordCounts:

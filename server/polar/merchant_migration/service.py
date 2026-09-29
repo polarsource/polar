@@ -859,12 +859,12 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
     ) -> AsyncGenerator[str]:
-        """Authorize the migration, then return a stream of imported customer
-        source IDs for the Stripe Copy CSV. Auth runs before the generator is
+        """Authorize the migration, then return a stream of the customer source
+        IDs Stripe Copy still has to move. Auth runs before the generator is
         returned so 403/404 cannot land mid-stream."""
         await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
-        return repository.stream_imported_customer_source_ids(migration_id)
+        return repository.stream_customer_source_ids_to_copy(migration_id)
 
     async def start_pan_transfer(
         self,

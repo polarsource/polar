@@ -33608,8 +33608,18 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       */
+      minimum_units: number | null
+      /**
+       * Maximum Units
+       * @description The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.
+       */
+      readonly maximum_units: number | null
     }
     /**
      * ProductPriceSeatBasedCreate
@@ -33628,8 +33638,16 @@ export interface components {
       price_currency: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
+      /**
+       * Tiers
+       * @description Tiered pricing based on the purchased seat quantity.
+       */
+      tiers: components['schemas']['TiersInput']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
+       */
+      minimum_units?: number | null
     }
     /**
      * ProductPriceSeatTier

@@ -48,14 +48,8 @@ const CheckoutSeatSelector = ({
   const seatPrice = getSeatPrice(checkout)
   const isSeatBased = seatPrice !== null
 
-  // Get seat limits from the tiers
-  // The minimum comes from the first tier's min_seats, maximum from the last tier's max_seats
-  const seatTiers = seatPrice?.seat_tiers ?? null
-  const tiers = seatTiers?.tiers ?? []
-  const sortedTiers = [...tiers].sort((a, b) => a.min_seats - b.min_seats)
-  const tierMinimumSeats = sortedTiers[0]?.min_seats ?? 1
-  const tierMaximumSeats =
-    sortedTiers[sortedTiers.length - 1]?.max_seats ?? null
+  const tierMinimumSeats = seatPrice?.minimum_units ?? 1
+  const tierMaximumSeats = seatPrice?.maximum_units ?? null
   const minimumSeats = checkout.min_seats ?? tierMinimumSeats
   const maximumSeats = checkout.max_seats ?? tierMaximumSeats
   const hasMaximumLimit = maximumSeats !== null

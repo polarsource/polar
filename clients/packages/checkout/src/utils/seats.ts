@@ -1,5 +1,6 @@
 import type { schemas } from '@polar-sh/client'
 import { getSeatPrice } from '../guards'
+import { sortTiers } from './units'
 
 export interface SeatRow {
   seats: number
@@ -16,11 +17,16 @@ export function getSeatRows(
   const seats = checkout.seats
   if (!seats) return null
 
-  const tiers = [...price.seat_tiers.tiers].sort(
-    (a, b) => a.min_seats - b.min_seats,
-  )
+  const tiers = sortTiers(price.tiers.tiers).map((tier, index, sorted) => ({
+    min_seats:
+      index === 0
+        ? (price.minimum_units ?? 1)
+        : (sorted[index - 1].bound ?? 0) + 1,
+    max_seats: tier.bound ?? null,
+    price_per_seat: Number(tier.unit_amount),
+  }))
 
-  if (price.seat_tiers.seat_tier_type === 'graduated') {
+  if (price.tiers.type === 'graduated') {
     const rows: SeatRow[] = []
     let allocated = 0
     for (const tier of tiers) {

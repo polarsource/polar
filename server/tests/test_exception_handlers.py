@@ -1,4 +1,5 @@
 import json
+import traceback
 from typing import Any
 
 import pytest
@@ -92,3 +93,28 @@ class TestRequestValidationExceptionHandler:
         payload = _payload(response.body)
         assert payload["error"] == "PolarRequestValidationError"
         assert isinstance(payload["detail"][0]["input"], str)
+
+    async def test_polar_request_validation_error_message_excludes_input(
+        self,
+    ) -> None:
+        exc = PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "email"),
+                    "msg": "A customer with this email address already exists.",
+                    "type": "value_error",
+                    "input": "customer@example.com",
+                }
+            ]
+        )
+
+        assert (
+            str(exc) == "body.email: A customer with this email address already exists."
+        )
+        assert "customer@example.com" not in "".join(traceback.format_exception(exc))
+
+        response = await request_validation_exception_handler(_dummy_request(), exc)
+
+        assert response.status_code == 422
+        payload = _payload(response.body)
+        assert payload["detail"][0]["input"] == "customer@example.com"

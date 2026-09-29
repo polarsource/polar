@@ -17,28 +17,107 @@ import { BunFileSystem } from '@effect/platform-bun'
 import { Console, Effect, Layer } from 'effect'
 import { downloadAndUpdate, update } from '@/commands/update'
 import { getReleaseArchiveName } from '@/services/update'
+import { type Method, Updater, UpdaterError } from '@/services/updater'
 import { captureConsole, runCli } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { VERSION } from '@/version'
 
 describe('update command', () => {
-  test('reports when the CLI is already up to date', async () => {
-    const http = fakeHttp({
-      'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1':
-        Response.json([
-          {
-            tag_name: `polar-cli@${VERSION.slice(1)}`,
-            draft: false,
-            prerelease: false,
-            assets: [],
-          },
-        ]),
+  const upgrades: [string, string][] = []
+  const fakeUpdater = (
+    method: Method | undefined,
+    latest = 'v9.9.9',
+    failure?: UpdaterError,
+  ) =>
+    Updater.of({
+      detect: () => Effect.succeed(method),
+      latest: () => Effect.succeed(latest),
+      upgrade: (manager, version) => {
+        upgrades.push([manager, version])
+        return failure ? Effect.fail(failure) : Effect.void
+      },
     })
-    const cli = runCli(update, [])
-    await Effect.runPromise(cli.effect.pipe(Effect.provide(http.layer)))
+  const releases =
+    'https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=1'
+  const runUpdate = (
+    args: string[],
+    updater: ReturnType<typeof fakeUpdater>,
+    http = fakeHttp(),
+  ) => {
+    const cli = runCli(update, args)
+    const promise = Effect.runPromise(
+      cli.effect.pipe(
+        Effect.provide(http.layer),
+        Effect.provideService(Updater, updater),
+      ),
+    )
+    return { cli, promise, http }
+  }
+
+  beforeEach(() => {
+    upgrades.length = 0
+  })
+
+  test('reports when the standalone binary is already up to date', async () => {
+    const http = fakeHttp({
+      [releases]: Response.json([
+        {
+          tag_name: `polar-cli@${VERSION.slice(1)}`,
+          draft: false,
+          prerelease: false,
+          assets: [],
+        },
+      ]),
+    })
+    const { cli, promise } = runUpdate([], fakeUpdater('binary'), http)
+    await promise
 
     expect(cli.output()).toContain('Checking for updates...')
     expect(cli.output()).toContain(`Already up to date ${VERSION}`)
+    expect(http.urls()).toEqual([releases])
+  })
+
+  test('updates an npm installation through the package manager', async () => {
+    const { cli, promise, http } = runUpdate([], fakeUpdater('npm'))
+    await promise
+
+    expect(upgrades).toEqual([['npm', 'v9.9.9']])
+    expect(cli.output()).toContain('Updating with npm...')
+    expect(cli.output()).toContain(`Updated ${VERSION} → v9.9.9`)
+    expect(http.urls()).toEqual([])
+  })
+
+  test('reports when the npm package is already up to date', async () => {
+    const { cli, promise } = runUpdate([], fakeUpdater('pnpm', VERSION))
+    await promise
+
+    expect(upgrades).toEqual([])
+    expect(cli.output()).toContain(`Already up to date ${VERSION}`)
+  })
+
+  test('honours --method instead of detecting the installation', async () => {
+    const { promise } = runUpdate(['--method', 'bun'], fakeUpdater('npm'))
+    await promise
+
+    expect(upgrades).toEqual([['bun', 'v9.9.9']])
+  })
+
+  test('asks for --method when the installation cannot be detected', async () => {
+    const { promise } = runUpdate([], fakeUpdater(undefined))
+
+    await expect(promise).rejects.toThrow(
+      'Could not detect how the CLI was installed. Pass --method',
+    )
+    expect(upgrades).toEqual([])
+  })
+
+  test('surfaces package manager failures', async () => {
+    const failure = new UpdaterError({
+      message: 'npm install --global @polar-sh/cli@9.9.9 exited with code 1',
+    })
+    const { promise } = runUpdate([], fakeUpdater('yarn', 'v9.9.9', failure))
+
+    await expect(promise).rejects.toThrow('exited with code 1')
   })
 })
 

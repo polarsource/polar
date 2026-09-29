@@ -84,6 +84,10 @@ jobs:
             archive: polar-linux-x64.tar.gz
             os: ubuntu-latest
             sign: false
+          - target: bun-linux-arm64
+            archive: polar-linux-arm64.tar.gz
+            os: ubuntu-24.04-arm
+            sign: false
           - target: bun-windows-x64
             archive: polar-windows-x64.zip
             os: windows-latest
@@ -136,7 +140,7 @@ jobs:
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
       - name: Build binary
-        run: bun build ./src/cli.ts --compile --target=${{ matrix.target }} --outfile polar
+        run: bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=${{ matrix.target }} --outfile polar
 
       - name: Sign macOS binary
         if: matrix.sign
@@ -160,6 +164,21 @@ jobs:
           printf '%s' "$APP_STORE_CONNECT_API_KEY_P8" > "$key_path"
           chmod 600 "$key_path"
           echo "APP_STORE_CONNECT_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Smoke test binary
+        if: runner.os != 'Windows'
+        env:
+          POLAR_CLI_TELEMETRY_OPTOUT: '1'
+        run: ./polar --version
+
+      - name: Package npm platform package
+        run: bun scripts/npm-package.ts --target=${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: npm-${{ matrix.target }}
+          path: clients/packages/cli/dist/npm
+          if-no-files-found: error
 
       - name: Package Windows binary
         if: runner.os == 'Windows'
@@ -213,7 +232,7 @@ jobs:
 
       - name: Generate checksums
         working-directory: release-assets
-        run: sha256sum polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz polar-windows-x64.zip > checksums.txt
+        run: sha256sum polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-arm64.tar.gz polar-linux-x64.tar.gz polar-windows-x64.zip > checksums.txt
 
       - name: Create draft release
         id: draft
@@ -263,7 +282,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: gh release upload "$RELEASE_TAG" polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-x64.tar.gz polar-windows-x64.zip checksums.txt --clobber
+        run: gh release upload "$RELEASE_TAG" polar-darwin-arm64.zip polar-darwin-x64.zip polar-linux-arm64.tar.gz polar-linux-x64.tar.gz polar-windows-x64.zip checksums.txt --clobber
 
       - name: Publish complete release
         if: needs.prepare.outputs.publish == 'true'
@@ -279,3 +298,33 @@ jobs:
               prerelease: false,
               make_latest: 'false',
             })
+
+  npm:
+    needs: [prepare, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: clients/packages/cli
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          registry-url: https://registry.npmjs.org
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: npm-*
+          path: clients/packages/cli/dist/npm
+          merge-multiple: true
+
+      - name: Publish to npm
+        run: bun scripts/npm-publish.ts ${{ needs.prepare.outputs.publish == 'true' && '' || '--dry-run' }}

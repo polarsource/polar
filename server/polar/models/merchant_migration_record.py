@@ -103,6 +103,15 @@ class MerchantMigrationRecord(RecordModel):
     )
     # Why the cutover skipped or failed this subscription.
     cutover_error: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    # The review row computed for this record, so review reads skip reclassifying
+    # the whole ledger. Null until computed, and whenever its inputs change.
+    classification: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB(none_as_null=True),
+        nullable=True,
+        default=None,
+        deferred=True,
+        deferred_raiseload=True,
+    )
 
     @declared_attr
     def merchant_migration(cls) -> Mapped["MerchantMigration"]:

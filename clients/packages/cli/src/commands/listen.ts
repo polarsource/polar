@@ -18,6 +18,7 @@ import {
   HttpClientResponse,
 } from 'effect/unstable/http'
 import { apiUrl, authenticatedClient } from '@/services/api'
+import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { org } from '@/commands/flags'
 import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
@@ -27,6 +28,7 @@ import {
   ListenWebhookEvent,
 } from '@/schemas/Events'
 import * as ui from '@/utils/ui'
+import { redactUrl } from '@/utils/url'
 
 export class ListenError extends Data.TaggedError('ListenError')<{
   message: string
@@ -41,7 +43,13 @@ const printError = (line: string) =>
     process.stderr.write(`${line}\n`)
   })
 
-const refusedCodes = new Set(['ConnectionRefused', 'ECONNREFUSED'])
+const refused = 'connection refused, is your server running?'
+
+const failureHints = new Map([
+  ['ConnectionRefused', refused],
+  ['ECONNREFUSED', refused],
+  ['ENOTFOUND', 'host not found, check the forward URL'],
+])
 
 const describeForwardFailure = (error: unknown) => {
   const cause =
@@ -49,12 +57,12 @@ const describeForwardFailure = (error: unknown) => {
   const code =
     typeof cause === 'object' && cause !== null && 'code' in cause
       ? String(cause.code)
-      : undefined
+      : ''
   const message = cause instanceof Error ? cause.message : String(cause)
-  if ((code && refusedCodes.has(code)) || /ECONNREFUSED/i.test(message)) {
-    return 'connection refused, is your server running?'
-  }
-  return message
+  return (
+    failureHints.get(code) ??
+    (/ECONNREFUSED/i.test(message) ? refused : message)
+  )
 }
 
 const eventLine = (eventType: string, outcome: string, startedAt: number) =>
@@ -102,6 +110,8 @@ export const startListening = ({
 }: StartListeningOptions) =>
   Effect.gen(function* () {
     const client = yield* authenticatedClient(environment)
+    const deliveries = yield* Deliveries
+    const shownUrl = redactUrl(forwardUrl)
     let bannerShown = false
     let retryDelay = Duration.millis(3000)
     let lastEventId: string | undefined
@@ -154,7 +164,7 @@ export const startListening = ({
                 if (bannerShown) return
                 bannerShown = true
                 yield* Console.log(
-                  banner(organizationName, ack.value.secret, forwardUrl),
+                  banner(organizationName, ack.value.secret, shownUrl),
                 )
                 return
               }
@@ -183,6 +193,16 @@ export const startListening = ({
                 ? (payload.value.type ?? 'event')
                 : 'event'
               const startedAt = performance.now()
+              const record = (
+                outcome: Pick<Delivery, 'status' | 'statusText' | 'failure'>,
+              ) =>
+                webhook.value.headers['x-polar-triggered'] === 'true'
+                  ? deliveries.record(webhook.value.payload.webhook_event_id, {
+                      forwardUrl: shownUrl,
+                      durationMs: performance.now() - startedAt,
+                      ...outcome,
+                    })
+                  : Effect.void
               yield* Effect.tryPromise((signal) =>
                 forward(forwardUrl, {
                   method: 'POST',
@@ -204,17 +224,24 @@ export const startListening = ({
                         ),
                       ),
                     ),
-                  ),
-                ),
-                Effect.catch((error) =>
-                  printError(
-                    eventLine(
-                      eventType,
-                      ui.red(`failed  ${describeForwardFailure(error)}`),
-                      startedAt,
+                    Effect.andThen(
+                      record({
+                        status: result.status,
+                        statusText: result.statusText,
+                      }),
                     ),
                   ),
                 ),
+                Effect.catch((error) => {
+                  const failure = describeForwardFailure(error)
+                  return printError(
+                    eventLine(
+                      eventType,
+                      ui.red(`failed  ${failure}`),
+                      startedAt,
+                    ),
+                  ).pipe(Effect.andThen(record({ failure })))
+                }),
               )
             }),
           ),
@@ -284,24 +311,33 @@ export const forwardTarget = (input: string): URL | undefined => {
   }
 }
 
-export const connectionRefused = (url: URL) =>
-  Effect.callback<boolean>((resume) => {
+export type TargetStatus = 'answering' | 'refused' | 'unknownHost' | 'unknown'
+
+const statusOfError = (code: string | undefined): TargetStatus =>
+  code === 'ECONNREFUSED'
+    ? 'refused'
+    : code === 'ENOTFOUND'
+      ? 'unknownHost'
+      : 'unknown'
+
+export const probeTarget = (url: URL) =>
+  Effect.callback<TargetStatus>((resume) => {
     let settled = false
     const socket = connect({
       host: url.hostname.replace(/^\[|\]$/g, ''),
       port: Number(url.port) || (url.protocol === 'https:' ? 443 : 80),
     })
-    const settle = (refused: boolean) => {
+    const settle = (status: TargetStatus) => {
       socket.destroy()
       if (settled) return
       settled = true
-      resume(Effect.succeed(refused))
+      resume(Effect.succeed(status))
     }
     socket.setTimeout(1000)
-    socket.once('connect', () => settle(false))
-    socket.once('timeout', () => settle(false))
+    socket.once('connect', () => settle('answering'))
+    socket.once('timeout', () => settle('unknown'))
     socket.once('error', (error: NodeJS.ErrnoException) =>
-      settle(error.code === 'ECONNREFUSED'),
+      settle(statusOfError(error.code)),
     )
     return Effect.sync(() => socket.destroy())
   })
@@ -335,6 +371,13 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
         message: `"${url}" is not a port or an http(s) URL. Try polar listen 3000 or polar listen http://localhost:3000/api/webhooks.`,
       })
     }
+    const status = yield* probeTarget(target)
+    if (status === 'unknownHost') {
+      return yield* new ListenError({
+        code: 0,
+        message: `Can't find a host named "${target.hostname}". To forward to a server on this machine, pass its port, e.g. polar listen 3000.`,
+      })
+    }
     const organizations = yield* Organizations
     const organization = yield* organizations.resolve(
       Option.getOrUndefined(org),
@@ -344,7 +387,7 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
       environment,
       `/cli/listen/${organization.id}`,
     )
-    if (yield* connectionRefused(target)) {
+    if (status === 'refused') {
       yield* Console.log(ui.blank)
       yield* Console.log(ui.warning(`Nothing is running on ${target.host} yet`))
       yield* Console.log(

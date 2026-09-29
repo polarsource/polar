@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
-import { Console, Effect, Fiber, Redacted, Stdio } from 'effect'
+import { Console, Effect, Fiber, Option, Redacted, Stdio } from 'effect'
 import { FetchHttpClient } from 'effect/unstable/http'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
+import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import {
-  connectionRefused,
   forwardTarget,
+  probeTarget,
   listen,
   startListening,
   withTerminalTitle,
@@ -19,6 +20,22 @@ import {
   fakeOrganizations,
   overrideCredential,
 } from '@/utils/test-utils/services'
+
+const fakeDeliveries = (results: Record<string, Delivery> = {}) => {
+  const state = {
+    results,
+    recorded: [] as Array<{ eventId: string; delivery: Delivery }>,
+  }
+  const deliveries = Deliveries.of({
+    record: (eventId, delivery) =>
+      Effect.sync(() => {
+        state.recorded.push({ eventId, delivery })
+      }),
+    await: (eventId) =>
+      Effect.sync(() => Option.fromNullishOr(state.results[eventId])),
+  })
+  return { deliveries, state }
+}
 
 describe('startListening', () => {
   const { auth } = fakeAuth({ credential: overrideCredential('test-token') })
@@ -45,13 +62,19 @@ describe('startListening', () => {
   }
   const forward = vi.fn<Fetch>(async () => new Response(null, { status: 200 }))
   let output: string[]
-  const run = (fetch: Fetch = streamFetch, credentials = auth) => {
+  let deliveries: ReturnType<typeof fakeDeliveries>
+  const run = (
+    fetch: Fetch = streamFetch,
+    credentials = auth,
+    forwardUrl = 'http://localhost:3000/webhook',
+  ) => {
     const captured = captureConsole()
     output = captured.lines
+    deliveries = fakeDeliveries()
     const fiber = Effect.runFork(
       startListening({
         listenUrl: 'https://example.test/listen',
-        forwardUrl: 'http://localhost:3000/webhook',
+        forwardUrl,
         organizationName: 'Acme',
         environment: 'sandbox',
         forward,
@@ -62,6 +85,7 @@ describe('startListening', () => {
           fetch as typeof globalThis.fetch,
         ),
         Effect.provideService(Auth, credentials),
+        Effect.provideService(Deliveries, deliveries.deliveries),
         Effect.provideService(Console.Console, captured.console),
       ),
     )
@@ -138,6 +162,76 @@ describe('startListening', () => {
       'http://localhost:3000/webhook',
       expect.objectContaining({ method: 'POST', body: rawPayload, headers }),
     )
+  })
+
+  const emitWebhook = (headers: Record<string, string>) =>
+    emit({
+      id: 'evt_1',
+      key: 'webhook',
+      payload: {
+        webhook_event_id: 'whid_1',
+        payload: '{ "type": "order.paid" }',
+      },
+      headers,
+    })
+
+  test('records the outcome of a triggered event for polar trigger', async () => {
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded).toEqual([
+      {
+        eventId: 'whid_1',
+        delivery: expect.objectContaining({
+          forwardUrl: 'http://localhost:3000/webhook',
+          status: 200,
+        }),
+      },
+    ])
+  })
+
+  test('keeps secrets in the forward URL out of the banner and the record', async () => {
+    const forwardUrl = 'http://user:s3cret@localhost:3000/webhook?token=t0ken'
+    const shown = 'http://***@localhost:3000/webhook?token=***'
+    run(streamFetch, auth, forwardUrl)
+    await tick()
+    emit({ key: 'connected', ts: '2026-01-01T00:00:00Z', secret: 'whsec' })
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+
+    expect(output.join('\n')).toContain(shown)
+    expect(output.join('\n')).not.toMatch(/s3cret|t0ken/)
+    expect(deliveries.state.recorded[0]?.delivery.forwardUrl).toBe(shown)
+    expect(forward).toHaveBeenCalledWith(forwardUrl, expect.anything())
+  })
+
+  test('does not record real events', async () => {
+    run()
+    await tick()
+    emitWebhook({})
+    await tick()
+    expect(forward).toHaveBeenCalled()
+    expect(deliveries.state.recorded).toEqual([])
+  })
+
+  test('explains and records a host that cannot be found', async () => {
+    const log = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    forward.mockRejectedValueOnce(
+      Object.assign(new Error('getaddrinfo ENOTFOUND qweqe'), {
+        code: 'ENOTFOUND',
+      }),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('host not found, check the forward URL'),
+    )
+    expect(deliveries.state.recorded[0]?.delivery).toMatchObject({
+      failure: 'host not found, check the forward URL',
+    })
   })
 
   test('reconnects immediately, resumes event IDs and prints the banner once', async () => {
@@ -370,29 +464,37 @@ describe('forwardTarget', () => {
   )
 })
 
-describe('connectionRefused', () => {
-  test('is false when a server is listening', async () => {
+describe('probeTarget', () => {
+  test('sees a server that is listening', async () => {
     const server = Bun.serve({ port: 0, fetch: () => new Response('ok') })
     try {
       expect(
         await Effect.runPromise(
-          connectionRefused(new URL(`http://localhost:${server.port}/`)),
+          probeTarget(new URL(`http://localhost:${server.port}/`)),
         ),
-      ).toBe(false)
+      ).toBe('answering')
     } finally {
       server.stop(true)
     }
   })
 
-  test('is true when nothing is listening', async () => {
+  test('sees a port nothing is listening on', async () => {
     const server = Bun.serve({ port: 0, fetch: () => new Response('ok') })
     const { port } = server
     server.stop(true)
     expect(
       await Effect.runPromise(
-        connectionRefused(new URL(`http://localhost:${port}/`)),
+        probeTarget(new URL(`http://localhost:${port}/`)),
       ),
-    ).toBe(true)
+    ).toBe('refused')
+  })
+
+  test('sees a host that does not exist', async () => {
+    expect(
+      await Effect.runPromise(
+        probeTarget(new URL('http://polar-cli-test.invalid/')),
+      ),
+    ).toBe('unknownHost')
   })
 })
 
@@ -444,10 +546,17 @@ describe('listen command', () => {
       cli.effect.pipe(
         Effect.provideService(Auth, fakeAuth().auth),
         Effect.provideService(Organizations, fakeOrganizations().organizations),
+        Effect.provideService(Deliveries, fakeDeliveries().deliveries),
       ),
     )
     return { promise, output: cli.output }
   }
+
+  test('stops at a host that does not exist', async () => {
+    await expect(run(['qweqe.invalid']).promise).rejects.toThrow(
+      'Can\'t find a host named "qweqe.invalid". To forward to a server on this machine, pass its port, e.g. polar listen 3000.',
+    )
+  })
 
   test('shows examples in its help', async () => {
     const { promise, output } = run(['--help'])

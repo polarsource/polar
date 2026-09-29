@@ -252,7 +252,7 @@ async function generateOAT(
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to generate OAT: ${await response.text()}`)
+    throw new Error(`Failed to generate OAT: HTTP ${response.status}`)
   }
 
   const data: schemas['TokenResponse'] = await response.json()

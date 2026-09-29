@@ -6,6 +6,7 @@ export type StripePermission = {
   group: 'Core' | 'Billing' | 'Connect'
   resource: string
   access: 'Read' | 'Write'
+  hint?: string
 }
 
 // Row names and groups as Stripe's restricted-key form shows them (resource
@@ -18,9 +19,19 @@ export const REQUIRED_PERMISSIONS: StripePermission[] = [
   { group: 'Billing', resource: 'Prices', access: 'Read' },
   { group: 'Billing', resource: 'Coupons', access: 'Read' },
   { group: 'Billing', resource: 'Promotion Codes', access: 'Read' },
-  { group: 'Billing', resource: 'Subscriptions', access: 'Write' },
+  {
+    group: 'Billing',
+    resource: 'Subscriptions',
+    access: 'Write',
+    hint: 'Also covers subscription schedules',
+  },
   { group: 'Billing', resource: 'Invoices', access: 'Read' },
-  { group: 'Connect', resource: 'Accounts', access: 'Read' },
+  {
+    group: 'Connect',
+    resource: 'Accounts',
+    access: 'Read',
+    hint: 'Listed under Connect, even if you don’t use Connect',
+  },
 ]
 
 // Includes the labels older API versions returned, so a skewed deploy still

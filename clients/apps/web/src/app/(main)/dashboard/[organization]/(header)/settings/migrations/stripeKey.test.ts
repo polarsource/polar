@@ -36,22 +36,26 @@ describe('stripeCreateKeyUrl', () => {
 
 describe('REQUIRED_PERMISSIONS', () => {
   it('requires Connect → Accounts Read', () => {
-    expect(REQUIRED_PERMISSIONS).toContainEqual({
-      group: 'Connect',
-      resource: 'Accounts',
-      access: 'Read',
-    })
+    expect(REQUIRED_PERMISSIONS).toContainEqual(
+      expect.objectContaining({
+        group: 'Connect',
+        resource: 'Accounts',
+        access: 'Read',
+      }),
+    )
   })
 
   it('lists only rows that exist in Stripe’s key form', () => {
     const resources = REQUIRED_PERMISSIONS.map((p) => p.resource)
     expect(resources).not.toContain('Subscription schedules')
     expect(resources).not.toContain('All accounts')
-    expect(REQUIRED_PERMISSIONS).toContainEqual({
-      group: 'Billing',
-      resource: 'Subscriptions',
-      access: 'Write',
-    })
+    expect(REQUIRED_PERMISSIONS).toContainEqual(
+      expect.objectContaining({
+        group: 'Billing',
+        resource: 'Subscriptions',
+        access: 'Write',
+      }),
+    )
   })
 })
 

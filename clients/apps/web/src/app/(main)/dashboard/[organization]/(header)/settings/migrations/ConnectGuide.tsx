@@ -11,16 +11,9 @@ import {
 
 const NO_MISSING: string[] = []
 
-const PERMISSION_GROUPS: StripePermission['group'][] = [
-  'Core',
-  'Billing',
-  'Connect',
+const PERMISSION_GROUPS = [
+  ...new Set(REQUIRED_PERMISSIONS.map((permission) => permission.group)),
 ]
-
-const ROW_HINTS: Record<string, string> = {
-  Subscriptions: 'Also covers subscription schedules',
-  Accounts: 'Listed under Connect, even if you don’t use Connect',
-}
 
 function AccessBadge({
   access,
@@ -56,10 +49,10 @@ function AccessBadge({
 function PermissionRow({
   resource,
   access,
+  hint,
   missing,
 }: StripePermission & { missing: boolean }) {
   const Icon = missing ? CircleAlert : Check
-  const hint = ROW_HINTS[resource]
   return (
     <Box as="li" display="flex" alignItems="center" justifyContent="between">
       <Box alignItems="center" columnGap="s">

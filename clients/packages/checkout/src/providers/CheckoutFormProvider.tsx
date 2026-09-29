@@ -51,15 +51,6 @@ const shownToBuyer = (error: object) => {
 export const isShownToBuyer = (error: unknown) =>
   errorsShownToBuyer.has(error as object)
 
-// Stripe.js throws these when the Payment Element is not mounted or not usable, e.g. it failed to load
-const UNUSABLE_PAYMENT_ELEMENT_ERROR =
-  /could not find a mounted element|could not retrieve data from the specified element/i
-
-const isUnusablePaymentElementError = (error: unknown) =>
-  error instanceof Error &&
-  error.name === 'IntegrationError' &&
-  UNUSABLE_PAYMENT_ELEMENT_ERROR.test(error.message)
-
 export interface CheckoutFormContextProps {
   checkout: schemas['CheckoutPublic']
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>
@@ -319,11 +310,6 @@ export const CheckoutFormProvider = ({
         error = confirmationTokenResponse.error
       } catch (error) {
         setLoading(false)
-        if (isUnusablePaymentElementError(error)) {
-          const message = t('checkout.loading.paymentFormNotLoaded')
-          setError('root', { message })
-          throw shownToBuyer(new Error(message))
-        }
         throw error
       }
 

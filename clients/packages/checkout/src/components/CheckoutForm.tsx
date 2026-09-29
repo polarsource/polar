@@ -62,6 +62,8 @@ const KRW_PAYMENT_METHOD_ORDER = [
 
 type ContactField = 'customer_email' | 'customer_name'
 
+type PaymentElementStatus = 'loading' | 'ready' | 'failed'
+
 interface BaseCheckoutFormProps {
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>
   checkout: schemas['CheckoutPublic']
@@ -77,6 +79,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   locale?: AcceptedLocale
   isWalletPayment?: boolean
+  paymentElementStatus?: PaymentElementStatus
   beforeSubmit?: React.ReactNode
   embed?: boolean
 }
@@ -93,6 +96,7 @@ const BaseCheckoutForm = ({
   children,
   locale: localeProp,
   isWalletPayment,
+  paymentElementStatus = 'ready',
   beforeSubmit,
   embed,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -734,11 +738,22 @@ const BaseCheckoutForm = ({
                 size="lg"
                 wrapperClassNames="text-base"
                 className="w-full"
-                disabled={disabled || isUpdatePending}
+                disabled={
+                  disabled ||
+                  isUpdatePending ||
+                  (checkout.is_payment_form_required &&
+                    paymentElementStatus !== 'ready')
+                }
                 loading={loading}
               >
                 {checkoutLabel}
               </Button>
+              {checkout.is_payment_form_required &&
+                paymentElementStatus === 'failed' && (
+                  <p className="text-destructive-foreground text-sm">
+                    {t('checkout.loading.paymentFormNotLoaded')}
+                  </p>
+                )}
               {loading && loadingLabel && (
                 <p className="dark:text-polar-500 text-sm text-gray-500">
                   {loadingLabel}
@@ -829,6 +844,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     ? WALLET_PAYMENT_METHODS.includes(selectedPaymentMethod)
     : false
 
+  const [paymentElementStatus, setPaymentElementStatus] =
+    useState<PaymentElementStatus>('loading')
+
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
       setSelectedPaymentMethod(event.value.type)
@@ -900,6 +918,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             checkout={checkout}
             confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
+            paymentElementStatus={paymentElementStatus}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement
@@ -932,6 +951,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                   },
                 }}
                 onChange={onPaymentElementChange}
+                onReady={() => setPaymentElementStatus('ready')}
+                onLoadError={() => setPaymentElementStatus('failed')}
               />
             )}
           </BaseCheckoutForm>

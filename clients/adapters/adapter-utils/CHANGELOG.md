@@ -1,5 +1,11 @@
 # @polar-sh/adapter-utils
 
+## 1.0.0
+
+### Major Changes
+
+- 193578b: Migrate webhook and entitlement types to the new Polar SDK (`@polar-sh/sdk/2026-10`).
+
 ## 0.4.7
 
 ### Patch Changes

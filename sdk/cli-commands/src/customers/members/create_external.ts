@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../../runtime'
-import { data, mergeInput } from '../../inputs'
+import { data, mergeInput, nullableStringFlag } from '../../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['customers']['members']['createExternal']>[1]
@@ -21,11 +21,11 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('The email address of the member.'),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      external_id: Flag.String('external-id').pipe(
+      external_id: nullableStringFlag('external-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'The ID of the member in your system. This must be unique within the customer. ',

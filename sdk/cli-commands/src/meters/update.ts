@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput, jsonFlag } from '../inputs'
+import {
+  confirm,
+  data,
+  mergeInput,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['meters']['update']>[1]>
 
@@ -22,7 +28,7 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription(
           "The name of the meter. Will be shown on customer's invoices and usage.",
@@ -32,7 +38,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('The unit of the meter.'),
       ),
-      custom_label: Flag.String('custom-label').pipe(
+      custom_label: nullableStringFlag('custom-label').pipe(
         Flag.optional,
         Flag.withDescription(
           "The label for the custom unit. Required when unit is 'custom'.",

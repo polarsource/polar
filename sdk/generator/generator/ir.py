@@ -316,6 +316,7 @@ class Method(BaseModel):
     deprecated: bool | None = None
     pagination: Pagination | None = None
     cli_preview: CLIPreview | None = None
+    cli_confirm: bool | None = None
     security: list[dict[str, list[str]]] | None = None
     pending_response: str | None = None
 
@@ -1331,6 +1332,9 @@ def _generate_ir_version(
                     deprecated=True if operation.deprecated else None,
                     pagination=pagination,
                     cli_preview=cli_preview,
+                    cli_confirm=(operation.__pydantic_extra__ or {}).get(
+                        "x-polar-cli-confirm"
+                    ),
                     security=security,
                     pending_response=(
                         accepted_response.description

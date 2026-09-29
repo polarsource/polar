@@ -152,6 +152,7 @@ async def update(
 @router.post(
     "/{id}/rotate",
     summary="Rotate License Key",
+    openapi_extra={"x-polar-cli-confirm": True},
     response_model=RotatedLicenseKey,
     tags=[APITag.mcp, APITag.cli],
     responses={

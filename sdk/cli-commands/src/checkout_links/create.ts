@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['checkoutLinks']['create']>[0]>
 
@@ -39,7 +39,7 @@ export const command = Command.make(
           'Payment processor to use. Currently only Stripe is supported.',
         ),
       ),
-      label: Flag.String('label').pipe(
+      label: nullableStringFlag('label').pipe(
         Flag.optional,
         Flag.withDescription('Optional label to distinguish links internally'),
       ),
@@ -55,7 +55,7 @@ export const command = Command.make(
           'Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.',
         ),
       ),
-      discount_id: Flag.String('discount-id').pipe(
+      discount_id: nullableStringFlag('discount-id').pipe(
         Flag.optional,
         Flag.withDescription(
           "ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.",
@@ -73,13 +73,13 @@ export const command = Command.make(
           "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.",
         ),
       ),
-      success_url: Flag.String('success-url').pipe(
+      success_url: nullableStringFlag('success-url').pipe(
         Flag.optional,
         Flag.withDescription(
           'URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.',
         ),
       ),
-      return_url: Flag.String('return-url').pipe(
+      return_url: nullableStringFlag('return-url').pipe(
         Flag.optional,
         Flag.withDescription(
           'When set, a back button will be shown in the checkout to return to this URL.',

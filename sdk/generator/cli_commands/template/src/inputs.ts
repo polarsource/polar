@@ -1,6 +1,9 @@
 import { Option, Schema } from 'effect'
 import { Flag } from 'effect/unstable/cli'
 
+export const nullableStringFlag = (name: string) =>
+  Flag.String(name).pipe(Flag.map((value) => value === 'null' ? null : value))
+
 export const jsonFlag = (name: string) =>
   Flag.String(name).pipe(
     Flag.mapTryCatch(

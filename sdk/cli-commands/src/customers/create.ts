@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['create']>[0]>
 
@@ -18,13 +18,13 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      external_id: Flag.String('external-id').pipe(
+      external_id: nullableStringFlag('external-id').pipe(
         Flag.optional,
         Flag.withDescription(
           "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
         ),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
@@ -32,15 +32,15 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('billing_address'),
       ),
-      tax_id: Flag.String('tax-id').pipe(
+      tax_id: nullableStringFlag('tax-id').pipe(
         Flag.optional,
         Flag.withDescription('tax_id'),
       ),
-      locale: Flag.String('locale').pipe(
+      locale: nullableStringFlag('locale').pipe(
         Flag.optional,
         Flag.withDescription('locale'),
       ),
-      organization_id: Flag.String('organization-id').pipe(
+      organization_id: nullableStringFlag('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(
@@ -57,7 +57,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('type'),
       ),
-      email: Flag.String('email').pipe(
+      email: jsonFlag('email').pipe(
         Flag.optional,
         Flag.withDescription(
           'The email address of the team customer. Optional for team customers \u2014 if omitted, an owner with an email must be provided.',

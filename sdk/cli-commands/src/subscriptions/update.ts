@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput, jsonFlag } from '../inputs'
+import {
+  confirm,
+  data,
+  mergeInput,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['subscriptions']['update']>[1]>
 
@@ -22,7 +28,7 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      product_id: Flag.String('product-id').pipe(
+      product_id: nullableStringFlag('product-id').pipe(
         Flag.optional,
         Flag.withDescription('Update subscription to another product.'),
       ),
@@ -37,13 +43,13 @@ export const command = Command.make(
           'Determine how to handle the proration billing. If not provided, will use the default organization setting.',
         ),
       ),
-      discount_id: Flag.String('discount-id').pipe(
+      discount_id: nullableStringFlag('discount-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.',
         ),
       ),
-      trial_end: jsonFlag('trial-end').pipe(
+      trial_end: nullableStringFlag('trial-end').pipe(
         Flag.optional,
         Flag.withDescription(
           'Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.',
@@ -85,7 +91,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('Customer reason for cancellation.'),
       ),
-      customer_cancellation_comment: Flag.String(
+      customer_cancellation_comment: nullableStringFlag(
         'customer-cancellation-comment',
       ).pipe(
         Flag.optional,
@@ -111,7 +117,7 @@ export const command = Command.make(
           'Pause an active subscription at the end of the current period.',
         ),
       ),
-      resumes_at: Flag.String('resumes-at').pipe(
+      resumes_at: nullableStringFlag('resumes-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Date at which the paused subscription should automatically resume.',

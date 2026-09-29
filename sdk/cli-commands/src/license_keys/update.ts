@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput } from '../inputs'
+import { confirm, data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['licenseKeys']['update']>[1]>
 
@@ -32,7 +32,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('limit_usage'),
       ),
-      expires_at: Flag.String('expires-at').pipe(
+      expires_at: nullableStringFlag('expires-at').pipe(
         Flag.optional,
         Flag.withDescription('expires_at'),
       ),

@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['discounts']['create']>[0]>
 
@@ -24,19 +24,19 @@ export const command = Command.make(
           'Name of the discount. Will be displayed to the customer when the discount is applied.',
         ),
       ),
-      code: Flag.String('code').pipe(
+      code: nullableStringFlag('code').pipe(
         Flag.optional,
         Flag.withDescription(
           'Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.',
         ),
       ),
-      starts_at: Flag.String('starts-at').pipe(
+      starts_at: nullableStringFlag('starts-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional timestamp after which the discount is redeemable.',
         ),
       ),
-      ends_at: Flag.String('ends-at').pipe(
+      ends_at: nullableStringFlag('ends-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional timestamp after which the discount is no longer redeemable.',
@@ -59,7 +59,7 @@ export const command = Command.make(
       products: Flag.String('products')
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('products')),
-      organization_id: Flag.String('organization-id').pipe(
+      organization_id: nullableStringFlag('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

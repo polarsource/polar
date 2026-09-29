@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['orders']['list']>[0]>
 
@@ -64,11 +64,11 @@ export const command = Command.make(
       ])
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by order status.')),
-      created_after: Flag.String('created-after').pipe(
+      created_after: nullableStringFlag('created-after').pipe(
         Flag.optional,
         Flag.withDescription('Only include orders created after this date'),
       ),
-      created_before: Flag.String('created-before').pipe(
+      created_before: nullableStringFlag('created-before').pipe(
         Flag.optional,
         Flag.withDescription('Only include orders created before this date'),
       ),

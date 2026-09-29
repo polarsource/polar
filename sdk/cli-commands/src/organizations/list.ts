@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['organizations']['list']>[0]>
 
@@ -12,7 +12,7 @@ export const command = Command.make(
   {
     data,
     input: {
-      slug: Flag.String('slug').pipe(
+      slug: nullableStringFlag('slug').pipe(
         Flag.optional,
         Flag.withDescription('Filter by slug.'),
       ),

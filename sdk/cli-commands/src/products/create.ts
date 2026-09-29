@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['products']['create']>[0]>
 
@@ -22,7 +22,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('The name of the product.'),
       ),
-      description: Flag.String('description').pipe(
+      description: nullableStringFlag('description').pipe(
         Flag.optional,
         Flag.withDescription('The description of the product.'),
       ),
@@ -49,7 +49,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('List of custom fields to attach.'),
       ),
-      organization_id: Flag.String('organization-id').pipe(
+      organization_id: nullableStringFlag('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

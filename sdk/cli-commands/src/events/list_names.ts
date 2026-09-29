@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['events']['listNames']>[0]>
 
@@ -31,7 +31,7 @@ export const command = Command.make(
       source: Flag.Literals('source', ['system', 'user'])
         .pipe(Flag.atLeast(1))
         .pipe(Flag.optional, Flag.withDescription('Filter by event source.')),
-      query: Flag.String('query').pipe(
+      query: nullableStringFlag('query').pipe(
         Flag.optional,
         Flag.withDescription('Query to filter event names.'),
       ),

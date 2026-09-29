@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['checkouts']['list']>[0]>
 
@@ -43,7 +43,7 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by checkout session status.'),
         ),
-      query: Flag.String('query').pipe(
+      query: nullableStringFlag('query').pipe(
         Flag.optional,
         Flag.withDescription('Filter by customer email.'),
       ),

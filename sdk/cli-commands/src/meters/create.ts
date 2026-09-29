@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['meters']['create']>[0]>
 
@@ -28,7 +28,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('unit'),
       ),
-      custom_label: Flag.String('custom-label').pipe(
+      custom_label: nullableStringFlag('custom-label').pipe(
         Flag.optional,
         Flag.withDescription(
           "The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.",
@@ -50,7 +50,7 @@ export const command = Command.make(
           'The aggregation to apply on the filtered events to calculate the meter.',
         ),
       ),
-      organization_id: Flag.String('organization-id').pipe(
+      organization_id: nullableStringFlag('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

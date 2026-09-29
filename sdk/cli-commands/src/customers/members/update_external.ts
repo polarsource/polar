@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../../runtime'
-import { data, mergeInput } from '../../inputs'
+import { data, mergeInput, nullableStringFlag } from '../../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['customers']['members']['updateExternal']>[2]
@@ -18,11 +18,11 @@ export const command = Command.make(
     },
     data,
     input: {
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      email: Flag.String('email').pipe(
+      email: nullableStringFlag('email').pipe(
         Flag.optional,
         Flag.withDescription('email'),
       ),

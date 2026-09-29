@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<
   Parameters<Polar['webhooks']['listWebhookDeliveries']>[0]
@@ -20,11 +20,11 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by webhook endpoint ID.'),
         ),
-      start_timestamp: Flag.String('start-timestamp').pipe(
+      start_timestamp: nullableStringFlag('start-timestamp').pipe(
         Flag.optional,
         Flag.withDescription('Filter deliveries after this timestamp.'),
       ),
-      end_timestamp: Flag.String('end-timestamp').pipe(
+      end_timestamp: nullableStringFlag('end-timestamp').pipe(
         Flag.optional,
         Flag.withDescription('Filter deliveries before this timestamp.'),
       ),
@@ -32,7 +32,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('Filter by delivery success status.'),
       ),
-      query: Flag.String('query').pipe(
+      query: nullableStringFlag('query').pipe(
         Flag.optional,
         Flag.withDescription('Query to filter webhook deliveries.'),
       ),

@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['eventTypes']['list']>[0]>
 
@@ -28,7 +28,7 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by external customer ID.'),
         ),
-      query: Flag.String('query').pipe(
+      query: nullableStringFlag('query').pipe(
         Flag.optional,
         Flag.withDescription('Query to filter event types by name or label.'),
       ),
@@ -38,7 +38,7 @@ export const command = Command.make(
           'When true, only return event types with root events (parent_id IS NULL).',
         ),
       ),
-      parent_id: Flag.String('parent-id').pipe(
+      parent_id: nullableStringFlag('parent-id').pipe(
         Flag.optional,
         Flag.withDescription('Filter by specific parent event ID.'),
       ),

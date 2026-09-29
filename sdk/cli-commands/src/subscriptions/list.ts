@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['subscriptions']['list']>[0]>
 
@@ -77,25 +77,25 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Filter by customer cancellation reason.'),
         ),
-      canceled_at_after: Flag.String('canceled-at-after').pipe(
+      canceled_at_after: nullableStringFlag('canceled-at-after').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by cancellation date (after or equal to).',
         ),
       ),
-      canceled_at_before: Flag.String('canceled-at-before').pipe(
+      canceled_at_before: nullableStringFlag('canceled-at-before').pipe(
         Flag.optional,
         Flag.withDescription(
           'Filter by cancellation date (before or equal to).',
         ),
       ),
-      started_after: Flag.String('started-after').pipe(
+      started_after: nullableStringFlag('started-after').pipe(
         Flag.optional,
         Flag.withDescription(
           'Only include subscriptions started after this date.',
         ),
       ),
-      started_before: Flag.String('started-before').pipe(
+      started_before: nullableStringFlag('started-before').pipe(
         Flag.optional,
         Flag.withDescription(
           'Only include subscriptions started before this date.',

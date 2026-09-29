@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['benefits']['update']>[1]>
 
@@ -21,7 +21,7 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      description: Flag.String('description').pipe(
+      description: nullableStringFlag('description').pipe(
         Flag.optional,
         Flag.withDescription(
           'The description of the benefit. Will be displayed on products having this benefit.',

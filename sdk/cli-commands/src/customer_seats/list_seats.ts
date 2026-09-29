@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['customerSeats']['listSeats']>[0]>
 
@@ -12,11 +12,11 @@ export const command = Command.make(
   {
     data,
     input: {
-      subscription_id: Flag.String('subscription-id').pipe(
+      subscription_id: nullableStringFlag('subscription-id').pipe(
         Flag.optional,
         Flag.withDescription('subscription_id'),
       ),
-      order_id: Flag.String('order-id').pipe(
+      order_id: nullableStringFlag('order-id').pipe(
         Flag.optional,
         Flag.withDescription('order_id'),
       ),

@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput } from '../inputs'
+import { confirm, data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['webhooks']['updateWebhookEndpoint']>[1]
@@ -18,8 +18,11 @@ export const command = Command.make(
     },
     data,
     input: {
-      url: Flag.String('url').pipe(Flag.optional, Flag.withDescription('url')),
-      name: Flag.String('name').pipe(
+      url: nullableStringFlag('url').pipe(
+        Flag.optional,
+        Flag.withDescription('url'),
+      ),
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription(
           'An optional name for the webhook endpoint to help organize and identify it.',

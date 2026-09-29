@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput, jsonFlag } from '../inputs'
+import {
+  confirm,
+  data,
+  mergeInput,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['products']['update']>[1]>
 
@@ -37,11 +43,11 @@ export const command = Command.make(
           'The number of interval units for the trial period.',
         ),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      description: Flag.String('description').pipe(
+      description: nullableStringFlag('description').pipe(
         Flag.optional,
         Flag.withDescription('The description of the product.'),
       ),

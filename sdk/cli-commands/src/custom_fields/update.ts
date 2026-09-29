@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customFields']['update']>[1]>
 
@@ -21,11 +21,11 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      slug: Flag.String('slug').pipe(
+      slug: nullableStringFlag('slug').pipe(
         Flag.optional,
         Flag.withDescription('slug'),
       ),

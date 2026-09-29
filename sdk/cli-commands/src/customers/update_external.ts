@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['updateExternal']>[1]>
 
@@ -21,13 +21,13 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      email: Flag.String('email').pipe(
+      email: nullableStringFlag('email').pipe(
         Flag.optional,
         Flag.withDescription(
           'The email address of the customer. This must be unique within the organization.',
         ),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
@@ -35,11 +35,11 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('billing_address'),
       ),
-      tax_id: Flag.String('tax-id').pipe(
+      tax_id: nullableStringFlag('tax-id').pipe(
         Flag.optional,
         Flag.withDescription('tax_id'),
       ),
-      locale: Flag.String('locale').pipe(
+      locale: nullableStringFlag('locale').pipe(
         Flag.optional,
         Flag.withDescription('locale'),
       ),

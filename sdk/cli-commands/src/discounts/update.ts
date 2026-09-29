@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['discounts']['update']>[1]>
 
@@ -21,23 +21,23 @@ export const command = Command.make(
           'Key-value object allowing you to store additional information.',
         ),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription('name'),
       ),
-      code: Flag.String('code').pipe(
+      code: nullableStringFlag('code').pipe(
         Flag.optional,
         Flag.withDescription(
           'Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.',
         ),
       ),
-      starts_at: Flag.String('starts-at').pipe(
+      starts_at: nullableStringFlag('starts-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional timestamp after which the discount is redeemable.',
         ),
       ),
-      ends_at: Flag.String('ends-at').pipe(
+      ends_at: nullableStringFlag('ends-at').pipe(
         Flag.optional,
         Flag.withDescription(
           'Optional timestamp after which the discount is no longer redeemable.',

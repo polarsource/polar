@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['eventTypes']['update']>[1]>
 
@@ -19,7 +19,9 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('The label for the event type.'),
       ),
-      label_property_selector: Flag.String('label-property-selector').pipe(
+      label_property_selector: nullableStringFlag(
+        'label-property-selector',
+      ).pipe(
         Flag.optional,
         Flag.withDescription(
           "Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').",

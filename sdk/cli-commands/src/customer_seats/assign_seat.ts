@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customerSeats']['assignSeat']>[0]>
 
@@ -12,37 +12,37 @@ export const command = Command.make(
   {
     data,
     input: {
-      subscription_id: Flag.String('subscription-id').pipe(
+      subscription_id: nullableStringFlag('subscription-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'Subscription ID. Required if neither order_id nor checkout_id is provided.',
         ),
       ),
-      order_id: Flag.String('order-id').pipe(
+      order_id: nullableStringFlag('order-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'Order ID for one-time purchases. Required if subscription_id is not provided.',
         ),
       ),
-      email: Flag.String('email').pipe(
+      email: nullableStringFlag('email').pipe(
         Flag.optional,
         Flag.withDescription('Email of the customer to assign the seat to'),
       ),
-      external_customer_id: Flag.String('external-customer-id').pipe(
+      external_customer_id: nullableStringFlag('external-customer-id').pipe(
         Flag.optional,
         Flag.withDescription('External customer ID for the seat assignment'),
       ),
-      customer_id: Flag.String('customer-id').pipe(
+      customer_id: nullableStringFlag('customer-id').pipe(
         Flag.optional,
         Flag.withDescription('Customer ID for the seat assignment'),
       ),
-      external_member_id: Flag.String('external-member-id').pipe(
+      external_member_id: nullableStringFlag('external-member-id').pipe(
         Flag.optional,
         Flag.withDescription(
           'External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member).',
         ),
       ),
-      member_id: Flag.String('member-id').pipe(
+      member_id: nullableStringFlag('member-id').pipe(
         Flag.optional,
         Flag.withDescription('Member ID for the seat assignment.'),
       ),

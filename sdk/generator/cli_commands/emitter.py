@@ -177,12 +177,11 @@ class CLICommandsEmitter(EmitterBase):
             for field in fields
         ]
 
-        conditions = (
-            [] if method.http_method == "DELETE" else confirmation_fields(fields, api)
-        )
-        needs_confirmation = method.http_method == "DELETE" or bool(conditions)
+        always_confirm = method.http_method == "DELETE" or method.cli_confirm is True
+        conditions = [] if always_confirm else confirmation_fields(fields, api)
+        needs_confirmation = always_confirm or bool(conditions)
 
-        if method.http_method == "DELETE":
+        if always_confirm:
             confirmation_expression = "true"
         else:
             confirmation_expression = (
@@ -203,6 +202,11 @@ class CLICommandsEmitter(EmitterBase):
 
         if any("jsonFlag(" in field["expression"] for field in generated_fields):
             helpers.append("jsonFlag")
+
+        if any(
+            "nullableStringFlag(" in field["expression"] for field in generated_fields
+        ):
+            helpers.append("nullableStringFlag")
 
         has_organization = any(field.name == "organization_id" for field in fields)
         arguments = [f"config.path.{p.name}" for p in method.path_params]
@@ -286,7 +290,10 @@ class CLICommandsEmitter(EmitterBase):
         quoted = json.dumps(name)
 
         if isinstance(type_ref, NullableType):
-            return self._flag_expression(type_ref.inner, name, api)
+            expression = self._flag_expression(type_ref.inner, name, api)
+            if expression == f"Flag.String({quoted})":
+                return f"nullableStringFlag({quoted})"
+            return expression
 
         if isinstance(type_ref, PrimitiveType):
             constructor = {
@@ -325,6 +332,20 @@ class CLICommandsEmitter(EmitterBase):
             ):
                 values = [v.value for v in variants if isinstance(v, LiteralType)]
                 return f"Flag.Literals({quoted}, {json.dumps(values)})"
+
+            if any(
+                isinstance(v, PrimitiveType) and v.type == "string" for v in variants
+            ) and all(
+                (isinstance(v, PrimitiveType) and v.type == "string")
+                or (isinstance(v, LiteralType) and isinstance(v.value, str))
+                for v in variants
+            ):
+                constructor = (
+                    "nullableStringFlag"
+                    if len(variants) != len(type_ref.variants)
+                    else "Flag.String"
+                )
+                return f"{constructor}({quoted})"
 
             expressions = {self._flag_expression(v, name, api) for v in variants}
             if len(expressions) == 1:

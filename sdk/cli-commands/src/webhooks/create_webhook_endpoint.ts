@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['webhooks']['createWebhookEndpoint']>[0]
@@ -18,7 +18,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('The URL where the webhook events will be sent.'),
       ),
-      name: Flag.String('name').pipe(
+      name: nullableStringFlag('name').pipe(
         Flag.optional,
         Flag.withDescription(
           'An optional name for the webhook endpoint to help organize and identify it.',
@@ -83,7 +83,7 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('The events that will trigger the webhook.'),
         ),
-      organization_id: Flag.String('organization-id').pipe(
+      organization_id: nullableStringFlag('organization-id').pipe(
         Flag.withAlias('org'),
         Flag.optional,
         Flag.withDescription(

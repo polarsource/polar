@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['orders']['update']>[1]>
 
@@ -15,7 +15,7 @@ export const command = Command.make(
     },
     data,
     input: {
-      billing_name: Flag.String('billing-name').pipe(
+      billing_name: nullableStringFlag('billing-name').pipe(
         Flag.optional,
         Flag.withDescription(
           'The name of the customer that should appear on the invoice.',

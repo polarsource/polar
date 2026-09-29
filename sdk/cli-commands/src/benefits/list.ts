@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, jsonFlag } from '../inputs'
+import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['benefits']['list']>[0]>
 
@@ -40,7 +40,7 @@ export const command = Command.make(
           Flag.optional,
           Flag.withDescription('Exclude benefits with these IDs.'),
         ),
-      query: Flag.String('query').pipe(
+      query: nullableStringFlag('query').pipe(
         Flag.optional,
         Flag.withDescription('Filter by description.'),
       ),

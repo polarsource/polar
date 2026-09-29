@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { confirm, data, mergeInput, jsonFlag } from '../inputs'
+import {
+  confirm,
+  data,
+  mergeInput,
+  jsonFlag,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['refunds']['create']>[0]>
 
@@ -35,7 +41,7 @@ export const command = Command.make(
         Flag.optional,
         Flag.withDescription('Amount to refund in cents. Minimum is 1.'),
       ),
-      comment: Flag.String('comment').pipe(
+      comment: nullableStringFlag('comment').pipe(
         Flag.optional,
         Flag.withDescription('An internal comment about the refund.'),
       ),

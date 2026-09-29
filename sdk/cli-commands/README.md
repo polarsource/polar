@@ -74,6 +74,10 @@ matching top-level JSON keys with a shallow merge. Complex fields also accept JS
 flags, e.g. `--billing-address='{"country":"US"}'`. Omitted flags are not merged,
 so `false`, empty strings, and explicit JSON `null` are preserved.
 
+Nullable string flags accept `null` to clear a value, e.g. `--discount-id=null`.
+Use `--data` to send the literal string `"null"`. `--trial-end=now` and unquoted
+ISO timestamps are accepted directly.
+
 ## Conditional destructive confirmation
 
 Annotate a top-level input property with `x-polar-cli-confirm` to require
@@ -101,6 +105,9 @@ and emits `requiresConfirmation` from the merged request input.
 Any matching annotated field triggers confirmation; DELETE always requires it.
 Nested properties and structured comparison values are not supported.
 
+Operations can require confirmation unconditionally with
+`openapi_extra={"x-polar-cli-confirm": True}`, as license-key rotation does.
+
 ```bash
 polar products update <id> --is-archived=true
 polar products update <id> -d '{"is_archived":true}'
@@ -127,6 +134,7 @@ Protected inputs include:
 - Subscriptions: `--revoke=true`, `--cancel-at-period-end=true`, or `--pause-at-period-end=true`.
 - Webhook endpoints: `--enabled=false`.
 - License keys: `--status=revoked` or `--status=disabled`.
+- License-key rotation always requires confirmation or `--confirm`.
 - Refund creation: `--revoke-benefits=true`. Other refunds are not gated by this rule.
 
 ## Prototype boundaries
@@ -137,7 +145,7 @@ Protected inputs include:
   fields, union combinations, and nested values are validated by the server.
 - Flat and repeatable flags plus JSON; dotted/bracket flag aliases are deferred.
 - Uses the current CLI API wrapper, including its existing generic error messages.
-- DELETE and matching annotated inputs require interactive confirmation or `--confirm`.
+- DELETE, annotated operations, and matching annotated inputs require interactive confirmation or `--confirm`.
 - No dry-run, response-header output, automatic pagination, or custom help renderer.
 - Generation is explicit (`pnpm generate`), not yet enforced in every release path.
   CI path filters and generated-package cache invalidation still need hardening.

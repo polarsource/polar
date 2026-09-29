@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
+import { confirm } from '../inputs'
 
 export const command = Command.make(
   'rotate',
   {
+    confirm,
     path: {
       id: Argument.String('id'),
     },
@@ -16,8 +18,8 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'license_keys:rotate',
         method: 'POST',
-        requiresConfirmation: false,
-        confirm: false,
+        requiresConfirmation: true,
+        confirm: config.confirm,
         invoke: (client) => client.licenseKeys.rotate(config.path.id),
       })
     }),

@@ -28,17 +28,22 @@ from typescript.naming import exported_operation_name, operation_name, service_n
 
 
 class CLICommandsEmitter(EmitterBase):
-    def __init__(self, ir: APIIR) -> None:
-        super().__init__(ir, "0.0.0", pathlib.Path(__file__).parent / "template")
+    def __init__(self, ir: APIIR, version: str) -> None:
+        super().__init__(ir, version, pathlib.Path(__file__).parent / "template")
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
-        if len(self.ir.versions) != 1 or self.ir.versions[0].version != "2026-10":
-            raise ValueError("The CLI prototype requires the 2026-10 OpenAPI spec.")
+        if len(self.ir.versions) != 1:
+            raise ValueError(
+                "CLI commands are generated from exactly one OpenAPI spec."
+            )
 
         api = self.ir.versions[0]
         services = sorted(api.services, key=lambda service: service.name)
         if not services:
-            raise ValueError("No CLI services to emit.")
+            raise ValueError(
+                "No public CLI-tagged operations found. Regenerate OpenAPI from the "
+                "backend with APITag.cli annotations before generating commands."
+            )
 
         previews = self._preview_operations(services, api)
 
@@ -53,15 +58,16 @@ class CLICommandsEmitter(EmitterBase):
             ".gitignore",
             "package.json",
             "tsconfig.json",
-            "src/runtime.ts",
             "src/inputs.ts",
         ):
             self.copy_file(self.templates_dir / name, root / name)
 
+        self.render_file("src/runtime.ts", src / "runtime.ts", {"api": api})
+
         for service in services:
             self._emit_service(service, api, src, [], previews)
 
-        self.render_file("src/index.ts.jinja", src / "index.ts", {"services": services})
+        self.render_file("src/index.ts", src / "index.ts", {"services": services})
 
     def get_version_string(self, api: APIVersion) -> str:
         return api.version
@@ -101,7 +107,7 @@ class CLICommandsEmitter(EmitterBase):
             context = self._command_context(method, api, path)
 
             self.render_file(
-                "src/command.ts.jinja",
+                "src/command.ts",
                 directory / f"{method.name}.ts",
                 {
                     **context,
@@ -116,7 +122,7 @@ class CLICommandsEmitter(EmitterBase):
             self._emit_service(child, api, directory, path, previews)
 
         self.render_file(
-            "src/service.ts.jinja",
+            "src/service.ts",
             directory / "index.ts",
             {"service": service, "methods": methods, "children": children},
         )

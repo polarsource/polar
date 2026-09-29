@@ -5,7 +5,7 @@ import openapi_pydantic as op
 import pytest
 
 from cli_commands.emitter import CLICommandsEmitter
-from cli_commands.ir import generate_cli_ir
+from cli_commands.ir import is_private_cli_operation
 from generator.ir import CLIConfirmation, generate_ir
 
 
@@ -130,7 +130,9 @@ def test_cli_tags_select_operations_without_changing_sdk_selection(
             },
         }
     )
-    CLICommandsEmitter(generate_cli_ir(spec)).emit(tmp_path)
+    CLICommandsEmitter(
+        generate_ir(spec, is_private_operation=is_private_cli_operation), "0.0.0"
+    ).emit(tmp_path)
     assert (tmp_path / "src/widgets/list.ts").exists()
     assert (tmp_path / "src/widgets/create.ts").exists() == included
     sdk_methods = {m.name for m in generate_ir(spec).versions[0].services[0].methods}
@@ -140,7 +142,13 @@ def test_cli_tags_select_operations_without_changing_sdk_selection(
 def test_regeneration_is_deterministic_and_removes_stale_commands(
     cli_spec: dict, tmp_path: pathlib.Path
 ) -> None:
-    emitter = CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec)))
+    emitter = CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    )
     emitter.emit(tmp_path)
     original = {
         p.relative_to(tmp_path): p.read_bytes()
@@ -159,9 +167,13 @@ def test_regeneration_is_deterministic_and_removes_stale_commands(
 
 
 def test_confirmation_uses_merged_input(cli_spec: dict, tmp_path: pathlib.Path) -> None:
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     source = (tmp_path / "src/widgets/update.ts").read_text()
     assert "Schema.optionalKey(Schema.NullOr(Schema.Boolean))" in source
     assert 'requiresConfirmation: confirmationInput["is_archived"] === true' in source
@@ -182,9 +194,13 @@ def test_confirmation_value_must_match_field_schema(
         "x-polar-cli-confirm"
     ] = {"equals": value}
     with pytest.raises(ValueError, match="does not match its schema"):
-        CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-            tmp_path
-        )
+        CLICommandsEmitter(
+            generate_ir(
+                op.OpenAPI.model_validate(cli_spec),
+                is_private_operation=is_private_cli_operation,
+            ),
+            "0.0.0",
+        ).emit(tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -204,7 +220,10 @@ def test_malformed_confirmation_annotations_fail(
         "x-polar-cli-confirm"
     ] = annotation
     with pytest.raises(ValueError, match="equals"):
-        generate_cli_ir(op.OpenAPI.model_validate(cli_spec))
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        )
 
 
 def test_confirmation_rules_round_trip() -> None:
@@ -220,9 +239,13 @@ def test_confirmation_rules_round_trip() -> None:
 def test_delete_preview_uses_matching_get_and_field_order(
     cli_spec: dict, tmp_path: pathlib.Path
 ) -> None:
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     source = (tmp_path / "src/widgets/delete.ts").read_text()
     assert "invoke: (client) => client.widgets.get(config.path.id)," in source
     assert 'key: "id", label: "ID"' in source
@@ -234,9 +257,13 @@ def test_preview_get_must_be_cli_eligible(
     cli_spec: dict, tmp_path: pathlib.Path, tags: list[str]
 ) -> None:
     cli_spec["paths"]["/widgets/{id}"]["get"]["tags"] = tags
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     assert "preview:" not in (tmp_path / "src/widgets/delete.ts").read_text()
 
 
@@ -248,9 +275,13 @@ def test_invalid_preview_fields_fail_before_writing(
         "fields": [{"key": key, "label": key} for key in keys],
     }
     with pytest.raises(ValueError, match="preview field"):
-        CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-            tmp_path
-        )
+        CLICommandsEmitter(
+            generate_ir(
+                op.OpenAPI.model_validate(cli_spec),
+                is_private_operation=is_private_cli_operation,
+            ),
+            "0.0.0",
+        ).emit(tmp_path)
     assert not list(tmp_path.iterdir())
 
 
@@ -258,9 +289,13 @@ def test_unannotated_preview_does_not_guess_fields(
     cli_spec: dict, tmp_path: pathlib.Path
 ) -> None:
     del cli_spec["paths"]["/widgets/{id}"]["get"]["x-polar-cli-preview"]
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     source = (tmp_path / "src/widgets/delete.ts").read_text()
     assert "client.widgets.get(config.path.id)" in source
     assert 'key: "id"' not in source
@@ -277,9 +312,13 @@ def test_preview_get_cannot_require_extra_input(
             "schema": {"type": "string"},
         }
     ]
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     assert "preview:" not in (tmp_path / "src/widgets/delete.ts").read_text()
 
 
@@ -298,9 +337,13 @@ def test_body_fields_generate_typed_flags(
     cli_spec: dict, tmp_path: pathlib.Path, schema: dict, expected: str
 ) -> None:
     cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"] = {"value": schema}
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     source = (tmp_path / "src/widgets/update.ts").read_text()
     assert expected in source
     assert "client.widgets.update(config.path.id, body)" in source
@@ -317,7 +360,13 @@ def test_confirmation_one_of_checks_enum_values(
             "x-polar-cli-confirm": {"one_of": values},
         },
     }
-    emitter = CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec)))
+    emitter = CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    )
     if "invalid" in values:
         with pytest.raises(ValueError, match="does not match its schema"):
             emitter.emit(tmp_path)
@@ -347,9 +396,13 @@ def test_organization_inputs_are_passed_through_for_resolution(
         cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"][
             "organization_id"
         ] = {"type": "string"}
-    CLICommandsEmitter(generate_cli_ir(op.OpenAPI.model_validate(cli_spec))).emit(
-        tmp_path
-    )
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
     command, input_name = ("get", "query") if method == "get" else ("update", "body")
     source = (tmp_path / f"src/widgets/{command}.ts").read_text()
     assert (
@@ -368,5 +421,7 @@ def test_untagged_spec_fails_before_writing(tmp_path: pathlib.Path) -> None:
         {"openapi": "3.1.0", "info": {"title": "Old snapshot", "version": "2026-10"}}
     )
     with pytest.raises(ValueError, match="Regenerate OpenAPI"):
-        CLICommandsEmitter(generate_cli_ir(spec)).emit(tmp_path)
+        CLICommandsEmitter(
+            generate_ir(spec, is_private_operation=is_private_cli_operation), "0.0.0"
+        ).emit(tmp_path)
     assert not list(tmp_path.iterdir())

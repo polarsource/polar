@@ -160,7 +160,7 @@ Protected inputs include:
 - No dry-run, response-header output, automatic pagination, or custom help renderer.
 - Generation is explicit (`pnpm generate`), not yet enforced in every release path.
   CI path filters and generated-package cache invalidation still need hardening.
-- Uses SDK `1.0.0`. The generator only accepts the matching `2026-10` spec.
+- Uses SDK `1.0.0`. `pnpm generate` and `just generate-cli` pin the matching `2026-10` spec.
 
 ## Checks and builds
 

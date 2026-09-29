@@ -81,7 +81,7 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
 
       // Skip discriminator values for ProductPriceCreate union, but ONLY in the specific context
       // After adding Discriminator("amount_type"), Pydantic includes the discriminator value in the path
-      // e.g., ["prices", 0, "seat_based", "seat_tiers", "tiers"]
+      // e.g., ["prices", 0, "seat_based", "minimum_units"]
       // We only want to filter out "seat_based" if it appears after "prices" and a number
       const priceDiscriminatorValues = [
         'fixed',

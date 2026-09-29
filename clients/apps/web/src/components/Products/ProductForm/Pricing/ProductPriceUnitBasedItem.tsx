@@ -31,11 +31,12 @@ type TieringModel = 'fixed' | 'graduated' | 'volume'
 export interface ProductPriceUnitBasedItemProps {
   index: number
   currency: string
+  nouns?: { unitLabel: string; unitLabelPlural: string }
 }
 
 export const ProductPriceUnitBasedItem: React.FC<
   ProductPriceUnitBasedItemProps
-> = ({ index, currency }) => {
+> = ({ index, currency, nouns }) => {
   const { control, setValue, watch, getValues } =
     useFormContext<ProductFormType>()
 
@@ -43,7 +44,7 @@ export const ProductPriceUnitBasedItem: React.FC<
   const minimumUnits = watch(`prices.${index}.minimum_units`)
   const unitLabel = watch(`prices.${index}.unit_label`)
   const { unitLabel: singularNoun, unitLabelPlural: pluralNoun } =
-    getUnitLabels({ unit_label: unitLabel ?? null })
+    nouns ?? getUnitLabels({ unit_label: unitLabel ?? null })
 
   const deriveTieringModel = (): TieringModel => {
     if (currentTierType === 'graduated') {
@@ -82,7 +83,7 @@ export const ProductPriceUnitBasedItem: React.FC<
 
   return (
     <Box flexDirection="column" rowGap="xl">
-      <UnitLabelFields index={index} />
+      {!nouns && <UnitLabelFields index={index} />}
 
       <FormItem>
         <FormLabel>Tiering model</FormLabel>

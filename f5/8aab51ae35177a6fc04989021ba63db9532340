@@ -1,0 +1,62 @@
+clients/packages/cli/src/commands/update.ts
+  s_ad8ff7da1a0178::t_142fe7d35974cd 4-5,12,330-333,335-339,341-357,359-370,372-381,383-385
+clients/packages/cli/scripts/npm-manifest.ts
+  s_ad8ff7da1a0178::t_f34028aa5fd988 1-75,78-80,82-118
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 76-77
+  s_ad8ff7da1a0178::t_93c616b097fc02 81
+clients/packages/cli/scripts/npm-package.ts
+  s_ad8ff7da1a0178::t_fab4eb5c745c73 1-36
+clients/packages/cli/scripts/npm-postinstall.mjs
+  s_ad8ff7da1a0178::t_1011e9b41ef539 39,89,92-99
+  s_ad8ff7da1a0178::t_a84b993f7062c4 4
+  s_ad8ff7da1a0178::t_fff3c21e1e681c 1-3,5-38,40-88,90-91,100-111
+clients/packages/cli/src/cli.ts
+  s_ad8ff7da1a0178::t_142fe7d35974cd 20,48-50,60
+clients/packages/cli/scripts/npm-publish.ts
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 47-49
+  s_ad8ff7da1a0178::t_a4fda4a7258e00 1-46,50-86
+clients/packages/cli/src/commands/update.test.ts
+  s_ad8ff7da1a0178::t_79d095feb1abf1 36,198-233,235-242,244-245,249-292
+clients/packages/cli/README.md
+  s_ad8ff7da1a0178::t_b14039db388764 139-151
+  s_ad8ff7da1a0178::t_036aa80861240c 193
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 101,106,115-138,152-156
+.github/workflows/release_cli.yml
+  s_ad8ff7da1a0178::t_099ab034ce0fee 87-90,143,168-182,235,285,301-330
+docs/integrate/webhooks/endpoints.mdx
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 79-84
+clients/packages/cli/src/services/updater.test.ts
+  s_ad8ff7da1a0178::t_43da4ce06dcd91 1-4,6-10,12-20,23-28,34-65,67-144,151-152,159-195,199-238,242-250,254-264,268-275,279-289
+  s_ad8ff7da1a0178::t_166aea21bc55b8 5,11,21,29-33
+  s_ad8ff7da1a0178::t_79d095feb1abf1 22,66,145-150,153-158,196-198,239-241,251-253,265-267,276-278
+clients/packages/cli/src/services/updater.ts
+  s_ad8ff7da1a0178::t_dd150e6f695d8f 69-73,76-78,83-163,171-212,214-219,222-252
+  s_ad8ff7da1a0178::t_2a9c3a199822c2 1-68,74-75,79-82,213,220-221
+  s_ad8ff7da1a0178::t_142fe7d35974cd 164-170
+clients/packages/cli/src/utils/errors.ts
+  s_ad8ff7da1a0178::t_142fe7d35974cd 6,13,46,70-71
+clients/packages/cli/package.json
+  s_ad8ff7da1a0178::t_ab131e0fcf8263 20-27
+clients/packages/cli/scripts/npm-manifest.test.ts
+  s_ad8ff7da1a0178::t_6da1cca652f171 1-53,55-77,81-88
+  s_ad8ff7da1a0178::t_93c616b097fc02 54
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 78-80
+docs/integrate/webhooks/locally.mdx
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 15-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f58aab51ae35177a6fc04989021ba63db9532340",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

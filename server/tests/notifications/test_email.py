@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from polar.notifications.notification import (
     MaintainerFileFlaggedMaliciousNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerNewTrialNotificationPayload,
     NotificationPayloadBase,
 )
 
@@ -99,6 +101,21 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
 
 
 @pytest.mark.asyncio
+async def test_MaintainerNewTrialNotification() -> None:
+    n = MaintainerNewTrialNotificationPayload(
+        subscriber_name="John Doe",
+        subscriber_email="john.doe@example.com",
+        product_name="Pro",
+        organization_name="Test Org",
+        organization_slug="test-org",
+        subscription_id="7e4b1c3a-0f5d-4d2e-9b8a-1c2d3e4f5a6b",
+        trial_end=datetime(2026, 10, 12, tzinfo=UTC),
+    )
+
+    await check_diff(n)
+
+
+@pytest.mark.asyncio
 async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
     n = MaintainerFileFlaggedMaliciousNotificationPayload(
         file_name="whitepaper.pdf",
@@ -132,6 +149,15 @@ async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
             tier_organization_slug="{{ 123456 * 9 }}",
             tier_price_recurring_interval="month",
             subscription_id="{{ 123456 * 9 }}",
+        ),
+        MaintainerNewTrialNotificationPayload(
+            subscriber_name="{{ 123456 * 9 }}",
+            subscriber_email=None,
+            product_name="{{ 123456 * 9 }}",
+            organization_name="{{ 123456 * 9 }}",
+            organization_slug="{{ 123456 * 9 }}",
+            subscription_id="{{ 123456 * 9 }}",
+            trial_end=None,
         ),
         MaintainerAccountCreditsGrantedNotificationPayload(
             organization_name="{{ 123456 * 9 }}",

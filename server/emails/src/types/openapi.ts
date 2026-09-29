@@ -1253,6 +1253,23 @@ export interface components {
       /** Order Url */
       readonly order_url: string | null
     }
+    /** MaintainerNewTrialNotificationPayload */
+    MaintainerNewTrialNotificationPayload: {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Subscriber Email */
+      subscriber_email: string | null
+      /** Product Name */
+      product_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug: string | null
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Trial End */
+      trial_end: string | null
+    }
     /** MaintainerSubscriptionRenewalNotificationPayload */
     MaintainerSubscriptionRenewalNotificationPayload: {
       /** Product Name */
@@ -1338,6 +1355,16 @@ export interface components {
        */
       template: 'notification_new_subscription'
       props: components['schemas']['MaintainerNewPaidSubscriptionNotificationPayload']
+    }
+    /** NotificationNewTrialEmail */
+    NotificationNewTrialEmail: {
+      /**
+       * Template
+       * @default notification_new_trial
+       * @constant
+       */
+      template: 'notification_new_trial'
+      props: components['schemas']['MaintainerNewTrialNotificationPayload']
     }
     /** NotificationSubscriptionRenewalEmail */
     NotificationSubscriptionRenewalEmail: {

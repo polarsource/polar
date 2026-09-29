@@ -24789,6 +24789,43 @@ export interface components {
       /** Order Url */
       readonly order_url: string | null
     }
+    /** MaintainerNewTrialNotification */
+    MaintainerNewTrialNotification: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MaintainerNewTrialNotification'
+      payload: components['schemas']['MaintainerNewTrialNotificationPayload']
+    }
+    /** MaintainerNewTrialNotificationPayload */
+    MaintainerNewTrialNotificationPayload: {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Subscriber Email */
+      subscriber_email: string | null
+      /** Product Name */
+      product_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug: string | null
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Trial End */
+      trial_end: string | null
+    }
     /** MaintainerSubscriptionRenewalNotification */
     MaintainerSubscriptionRenewalNotification: {
       /**
@@ -26503,6 +26540,7 @@ export interface components {
       /** Notifications */
       notifications: (
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
+        | components['schemas']['MaintainerNewTrialNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerSubscriptionRenewalNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
@@ -29720,10 +29758,14 @@ export interface components {
       new_order: boolean
       /** New Subscription */
       new_subscription: boolean
+      /** New Trial */
+      new_trial?: boolean
       /** Chargeback Prevention */
       chargeback_prevention: boolean
       /** Subscription Renewal */
       subscription_renewal: boolean
+      /** Exclude Free Products */
+      exclude_free_products?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {
@@ -70593,6 +70635,9 @@ export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
+export const maintainerNewTrialNotificationTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MaintainerNewTrialNotification']['type']
+> = ['MaintainerNewTrialNotification']
 export const maintainerSubscriptionRenewalNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerSubscriptionRenewalNotification']['type']
 > = ['MaintainerSubscriptionRenewalNotification']

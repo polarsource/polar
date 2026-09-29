@@ -459,7 +459,10 @@ class UserOrganizationService:
         if user_org is None:
             raise UserNotMemberOfOrganization(user_id, organization_id)
 
-        user_org.notification_settings = notification_settings
+        user_org.notification_settings = {
+            **user_org.notification_settings,
+            **notification_settings,
+        }
         return user_org
 
 

@@ -2460,9 +2460,19 @@ class OrderService:
         organization = order.organization
         customer = order.customer
 
+        if (
+            order.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+        ):
+            await subscription_service.send_new_subscription_notification(
+                session, subscription, product=product, organization=organization
+            )
+            return
+
         await notifications_service.send_to_org_members(
             session,
             org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
             notif=PartialNotification(
                 type=NotificationType.maintainer_subscription_renewal,
                 payload=MaintainerSubscriptionRenewalNotificationPayload(

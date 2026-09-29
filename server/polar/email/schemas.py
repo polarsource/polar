@@ -19,6 +19,7 @@ from polar.notifications.notification import (
     MaintainerFileFlaggedMaliciousNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerNewTrialNotificationPayload,
     MaintainerSubscriptionRenewalNotificationPayload,
 )
 from polar.order.schemas import OrderBase, OrderItemSchema
@@ -60,6 +61,7 @@ class EmailTemplate(StrEnum):
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
+    notification_new_trial = "notification_new_trial"
     notification_subscription_renewal = "notification_subscription_renewal"
     notification_credits_granted = "notification_credits_granted"
     notification_file_flagged_malicious = "notification_file_flagged_malicious"
@@ -455,6 +457,13 @@ class NotificationNewSubscriptionEmail(BaseModel):
     props: MaintainerNewPaidSubscriptionNotificationPayload
 
 
+class NotificationNewTrialEmail(BaseModel):
+    template: Literal[EmailTemplate.notification_new_trial] = (
+        EmailTemplate.notification_new_trial
+    )
+    props: MaintainerNewTrialNotificationPayload
+
+
 class NotificationSubscriptionRenewalEmail(BaseModel):
     template: Literal[EmailTemplate.notification_subscription_renewal] = (
         EmailTemplate.notification_subscription_renewal
@@ -608,6 +617,7 @@ Email = Annotated[
     | WebhookEndpointDisabledEmail
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
+    | NotificationNewTrialEmail
     | NotificationSubscriptionRenewalEmail
     | NotificationCreditsGrantedEmail
     | NotificationFileFlaggedMaliciousEmail

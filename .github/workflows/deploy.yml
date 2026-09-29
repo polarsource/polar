@@ -203,6 +203,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: useblacksmith/setup-docker-builder@v2.2.0
+        with:
+          cache-key: polar/server-production
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4.6.0
@@ -256,6 +258,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: useblacksmith/setup-docker-builder@v2.2.0
+        with:
+          cache-key: polar/server-lambda
 
       - name: Sync AUP to server
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"

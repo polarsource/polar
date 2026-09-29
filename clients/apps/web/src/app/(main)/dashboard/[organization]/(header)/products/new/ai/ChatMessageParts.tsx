@@ -82,7 +82,10 @@ export const ChatMessagePartRenderer = ({
 
   if (part.type === 'text') {
     return (
-      <div className="prose prose-sm" key={`${messageId}-${index}`}>
+      <div
+        className="prose prose-sm dark:prose-invert"
+        key={`${messageId}-${index}`}
+      >
         <MemoizedMarkdown content={part.text as string} />
       </div>
     )

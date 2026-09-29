@@ -74,6 +74,7 @@ from .order_item import OrderItem
 from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
+from .organization_domain import OrganizationDomain
 from .organization_review import OrganizationReview
 from .organization_review_feedback import OrganizationReviewFeedback
 from .organization_risk_signal import OrganizationRiskSignal
@@ -208,6 +209,7 @@ __all__ = [
     "Organization",
     "OrganizationAccessToken",
     "OrganizationAgentReview",
+    "OrganizationDomain",
     "OrganizationReview",
     "OrganizationReviewFeedback",
     "OrganizationRiskSignal",

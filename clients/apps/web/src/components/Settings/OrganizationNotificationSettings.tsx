@@ -59,7 +59,7 @@ const OrganizationNotificationSettings: React.FC<
       <SettingsGroupItem
         layout="inline"
         title="New Subscriptions"
-        description="Receive a notification when a paid subscription starts, including when a trial converts"
+        description="Receive a notification when a paid subscription starts"
       >
         <Switch
           checked={settings.new_subscription}

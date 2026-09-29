@@ -100,7 +100,7 @@ export default function NotificationsPage() {
         </SettingsItem>
         <SettingsItem
           title="New Subscriptions"
-          description="Send a notification when a paid subscription starts, including when a trial converts"
+          description="Send a notification when a paid subscription starts"
           variant="static"
         >
           <Switch
@@ -136,7 +136,7 @@ export default function NotificationsPage() {
         </SettingsItem>
         <SettingsItem
           title="Exclude Free Products"
-          description="Skip subscription, trial and renewal notifications for free products. Paid products discounted to zero are still notified."
+          description="Skip subscription, trial and renewal notifications for free products."
           variant="static"
         >
           <Switch

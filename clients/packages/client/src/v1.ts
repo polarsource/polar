@@ -1475,6 +1475,26 @@ export interface paths {
     patch: operations['sso:update_sso_connection']
     trace?: never
   }
+  '/v1/organizations/{id}/sso-domains/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List SSO Domains
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['sso:list_sso_domains']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -24478,6 +24498,12 @@ export interface components {
       items: components['schemas']['OrganizationSSOConnection'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationSSODomain] */
+    ListResource_OrganizationSSODomain_: {
+      /** Items */
+      items: components['schemas']['OrganizationSSODomain'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Organization] */
     ListResource_Organization_: {
       /** Items */
@@ -30206,6 +30232,39 @@ export interface components {
        * @description Whether the connection can be used to sign in.
        */
       enabled?: boolean | null
+    }
+    /** OrganizationSSODomain */
+    OrganizationSSODomain: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Domain
+       * @description Email domain routed to the organization's SSO.
+       */
+      domain: string
+      /**
+       * Verified At
+       * Format: date-time
+       * @description When Polar verified the domain.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      verified_at: string
     }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
@@ -43972,6 +44031,60 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['LastSSOConnectionRequired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:list_sso_domains': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationSSODomain_']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

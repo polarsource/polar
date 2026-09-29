@@ -86,8 +86,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: body.organization_id,
-        invoke: (client, organizationId) =>
-          client.customers.create({ organization_id: organizationId, ...body }),
+        invoke: (client) => client.customers.create(body),
       })
     }),
 ).pipe(Command.withDescription('Create a customer.'))

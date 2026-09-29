@@ -35,7 +35,7 @@ export const command = Command.make(
         confirm: false,
         requiresAuthentication: false,
         environment: config.environment,
-        invoke: (_client, _organizationId, core) =>
+        invoke: (_client, core) =>
           executeRequest(
             core,
             core.buildRequest(

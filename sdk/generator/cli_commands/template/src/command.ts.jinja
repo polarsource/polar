@@ -99,7 +99,7 @@ export const command = Command.make(
       },
 {% endif %}
 {% if not method.requires_authentication or method.pending_response %}
-      invoke: (_client, {% if has_organization %}organizationId{% else %}_organizationId{% endif %}, core) => executeRequest(
+      invoke: (_client, core) => executeRequest(
         core,
         core.buildRequest(
           {{ method.http_method | quote }},
@@ -123,7 +123,7 @@ export const command = Command.make(
         },
       ),
 {% else %}
-      invoke: (client{% if has_organization %}, organizationId{% endif %}) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
+      invoke: (client) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
 {% endif %}
     })
   }),

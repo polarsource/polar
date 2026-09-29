@@ -63,10 +63,16 @@ The token must have a single accessible organization.
 
 Also available: `get`, `get_state`, `get_state_external`, `update_external`,
 `delete_external`, `list_payment_methods`, and `list_payment_methods_external`.
-Organization inputs default to the selected organization's ID. `--org` aliases
-that API input; explicit flags and `--data` values are preserved, but never change
-which environment or credentials are used. Commands without an organization input
-use the selected environment and the resource ID you supply.
+Authenticated requests send the organization's ID in the `Polar-Organization`
+header, so the API only returns and changes that organization's data and defaults
+organization inputs to it. The CLI does not fill in organization inputs: `--org`
+aliases the `organization_id` input, and explicit flags and `--data` values,
+including `null`, are sent as given. An `--org` value selects that organization,
+with its environment and credentials, for the request without changing the saved
+selection. Repeated `--org` values must share an environment; they are sent as
+filters and the header is omitted, since it scopes a request to one organization.
+Commands without an organization input use the selected environment and the
+resource ID you supply.
 
 `--data` / `-d` accepts a single JSON object. It supplies query parameters on
 query-bearing commands and body fields on create/update. Explicit flags replace

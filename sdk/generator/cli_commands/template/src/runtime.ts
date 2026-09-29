@@ -27,7 +27,7 @@ export interface ApiOperation<A> {
   environment?: Environment
   organizationId?: string | ReadonlyArray<string> | null | undefined
   preview?: ApiPreview
-  invoke: (client: Polar, organizationId: string | null, core: PolarCore) => Promise<A>
+  invoke: (client: Polar, core: PolarCore) => Promise<A>
 }
 
 export const executeRequest = async (

@@ -331,7 +331,7 @@ def test_confirmation_one_of_checks_enum_values(
 
 
 @pytest.mark.parametrize("method", ["get", "patch"])
-def test_organization_inputs_default_to_the_resolved_organization(
+def test_organization_inputs_are_passed_through_for_resolution(
     cli_spec: dict, tmp_path: pathlib.Path, method: str
 ) -> None:
     if method == "get":
@@ -352,8 +352,15 @@ def test_organization_inputs_default_to_the_resolved_organization(
     )
     command, input_name = ("get", "query") if method == "get" else ("update", "body")
     source = (tmp_path / f"src/widgets/{command}.ts").read_text()
-    assert "invoke: (client, organizationId)" in source
-    assert f"{{ organization_id: organizationId, ...{input_name} }}" in source
+    assert (
+        'organization_id: Flag.String("organization-id").pipe(\n'
+        "      Flag.withAlias('org'),"
+    ) in source
+    assert f"organizationId: {input_name}.organization_id," in source
+    assert (
+        f"invoke: (client) => client.widgets.{command}(config.path.id, {input_name}),"
+        in source
+    )
 
 
 def test_untagged_spec_fails_before_writing(tmp_path: pathlib.Path) -> None:

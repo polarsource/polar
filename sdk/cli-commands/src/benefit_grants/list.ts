@@ -77,11 +77,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
-        invoke: (client, organizationId) =>
-          client.benefitGrants.list({
-            organization_id: organizationId,
-            ...query,
-          }),
+        invoke: (client) => client.benefitGrants.list(query),
       })
     }),
 ).pipe(

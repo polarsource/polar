@@ -92,8 +92,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
-        invoke: (client, organizationId) =>
-          client.checkouts.list({ organization_id: organizationId, ...query }),
+        invoke: (client) => client.checkouts.list(query),
       })
     }),
 ).pipe(Command.withDescription('List checkout sessions.'))

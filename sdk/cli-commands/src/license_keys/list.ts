@@ -54,11 +54,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
-        invoke: (client, organizationId) =>
-          client.licenseKeys.list({
-            organization_id: organizationId,
-            ...query,
-          }),
+        invoke: (client) => client.licenseKeys.list(query),
       })
     }),
 ).pipe(

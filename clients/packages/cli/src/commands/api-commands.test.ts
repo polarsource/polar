@@ -127,13 +127,24 @@ describe('CLI-tagged API commands', () => {
         '--properties={}',
       ]).promise
       expect(await requests[0]!.json()).toEqual({
-        ...(operation === 'create' ? { organization_id: 'org-1' } : {}),
         type: 'custom',
         description: 'A custom benefit',
         properties: {},
       })
+      expect(requests[0]!.headers.get('Polar-Organization')).toBe('org-1')
     },
   )
+
+  test('unauthenticated commands send neither credentials nor an organization', async () => {
+    await run(['customer_seats', 'get_claim_info', 'invitation-1']).promise
+    expect(requests).toHaveLength(1)
+    expect(new URL(requests[0]!.url).pathname).toBe(
+      '/v1/customer-seats/claim/invitation-1',
+    )
+    expect(requests[0]!.headers.get('Authorization')).toBeNull()
+    expect(requests[0]!.headers.get('Polar-Organization')).toBeNull()
+    expect(auth.state.resolutions).toHaveLength(0)
+  })
 
   test.each([200, 403, 500])(
     'DELETE previews the record, with fallback for GET status %i',

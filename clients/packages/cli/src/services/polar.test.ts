@@ -135,3 +135,62 @@ test('preserves refresh failures without retrying the API request', async () => 
   )
   expect(request).toHaveBeenCalledTimes(1)
 })
+
+test.each([
+  { organizationId: 'org-1', header: 'org-1' },
+  { organizationId: undefined, header: null },
+])(
+  'sends Polar-Organization only for a scoped request ($organizationId)',
+  async ({ organizationId, header }) => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(Response.json({ id: 'org-1' }))
+    vi.stubGlobal('fetch', fetch)
+    const polar = await polarWith(() => Effect.succeed(overrideCredential()))
+    await Effect.runPromise(
+      polar.use((client) => client.organizations.get('org-1'), 'sandbox', {
+        organizationId,
+      }),
+    )
+    expect(
+      new Headers(fetch.mock.calls[0]![1]?.headers).get('Polar-Organization'),
+    ).toBe(header)
+  },
+)
+
+const notAccessible = {
+  error: 'RequestedOrganizationNotAccessible',
+  detail: 'The requested organization is not accessible.',
+}
+
+test('explains an inaccessible organization in a parsed error body', async () => {
+  const polar = await polarWith(() => Effect.succeed(overrideCredential()))
+  const request = vi
+    .fn<(client: PolarSDK) => Promise<string>>()
+    .mockRejectedValue({ statusCode: 403, error: notAccessible })
+
+  await expect(
+    Effect.runPromise(
+      polar.use(request, 'sandbox', { organizationId: 'org-2' }),
+    ),
+  ).rejects.toMatchObject({
+    message:
+      'Organization org-2 is not accessible with this credential. Check --org or run polar auth org.',
+    statusCode: 403,
+  })
+})
+
+test('explains an inaccessible organization in a raw API response', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(Response.json(notAccessible, { status: 403 })),
+  )
+  const polar = await polarWith(() => Effect.succeed(overrideCredential()))
+  await expect(
+    Effect.runPromise(
+      polar.use((client) => client.products.list(), 'sandbox', {
+        organizationId: 'org-2',
+      }),
+    ),
+  ).rejects.toThrow('Organization org-2 is not accessible')
+})

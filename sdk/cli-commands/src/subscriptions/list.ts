@@ -172,11 +172,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
-        invoke: (client, organizationId) =>
-          client.subscriptions.list({
-            organization_id: organizationId,
-            ...query,
-          }),
+        invoke: (client) => client.subscriptions.list(query),
       })
     }),
 ).pipe(Command.withDescription('List subscriptions.'))

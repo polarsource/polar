@@ -251,7 +251,10 @@ export const fakeOAuth = (
 }
 
 interface PolarState {
-  requests: PolarEnvironment[]
+  requests: Array<{
+    environment: PolarEnvironment
+    organizationId: string | undefined
+  }>
 }
 
 export const fakePolar = (client: unknown) => {
@@ -259,10 +262,13 @@ export const fakePolar = (client: unknown) => {
   const sdk = client as PolarSDK
   const polar = Polar.of({
     getClient: () => Effect.succeed(sdk),
-    use: (fn, environment = 'sandbox') =>
+    use: (fn, environment = 'sandbox', options) =>
       Effect.tryPromise({
         try: () => {
-          state.requests.push(environment)
+          state.requests.push({
+            environment,
+            organizationId: options?.organizationId,
+          })
           return fn(
             sdk,
             createPolarCore({ accessToken: 'test-token', environment }),

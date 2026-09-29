@@ -61,6 +61,8 @@ export const layer = Layer.effect(
               })
             }
           }
+          const organizationId =
+            organizationIds.length > 1 ? undefined : organization?.id
           const environmentContext = ` in ${environment}`
 
           if (operation.requiresConfirmation && !operation.confirm) {
@@ -89,7 +91,7 @@ export const layer = Layer.effect(
                   ? `${formatRecordPreview(fields, columns)}\n\n`
                   : ''
               const previewRequest = polar
-                .use(invoke, environment, { timeout: 1 })
+                .use(invoke, environment, { timeout: 1, organizationId })
                 .pipe(Effect.timeout('1 second'), Effect.result)
               const preview = yield* Effect.acquireUseRelease(
                 terminal.display(loadingPreview).pipe(Effect.orDie),
@@ -142,12 +144,10 @@ export const layer = Layer.effect(
           }
 
           const result = yield* polar
-            .use(
-              (client, core) =>
-                operation.invoke(client, organization?.id ?? null, core),
-              environment,
-              { authenticated: operation.requiresAuthentication !== false },
-            )
+            .use(operation.invoke, environment, {
+              authenticated: operation.requiresAuthentication !== false,
+              organizationId,
+            })
             .pipe(
               Effect.mapError(
                 (error) => new ApiCommandError({ message: error.message }),

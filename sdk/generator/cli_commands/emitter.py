@@ -228,12 +228,7 @@ class CLICommandsEmitter(EmitterBase):
         has_organization = any(field.name == "organization_id" for field in fields)
         arguments = [f"config.path.{p.name}" for p in method.path_params]
         if input_type:
-            input_name = input_type.lower()
-            arguments.append(
-                f"{{ organization_id: organizationId, ...{input_name} }}"
-                if has_organization
-                else input_name
-            )
+            arguments.append(input_type.lower())
 
         return {
             "api": api,

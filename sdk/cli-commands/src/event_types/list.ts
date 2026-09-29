@@ -96,8 +96,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
-        invoke: (client, organizationId) =>
-          client.eventTypes.list({ organization_id: organizationId, ...query }),
+        invoke: (client) => client.eventTypes.list(query),
       })
     }),
 ).pipe(Command.withDescription('List event types with aggregated statistics.'))

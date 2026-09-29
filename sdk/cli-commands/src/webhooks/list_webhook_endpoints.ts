@@ -45,11 +45,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
-        invoke: (client, organizationId) =>
-          client.webhooks.listWebhookEndpoints({
-            organization_id: organizationId,
-            ...query,
-          }),
+        invoke: (client) => client.webhooks.listWebhookEndpoints(query),
       })
     }),
 ).pipe(Command.withDescription('List webhook endpoints.'))

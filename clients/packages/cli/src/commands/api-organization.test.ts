@@ -80,6 +80,8 @@ afterEach(() => {
   vi.resetAllMocks()
 })
 
+const scope = (request: Request) => request.headers.get('Polar-Organization')
+
 const run = (args: string[], interactive = false) => {
   const cli = runCli(root, args, { interactive })
   const dependencies = Layer.mergeAll(
@@ -100,20 +102,18 @@ const run = (args: string[], interactive = false) => {
 }
 
 test.each([production, sandbox])(
-  'uses the selected $environment organization for queries, bodies, and resource IDs',
+  'scopes queries, bodies, and resource IDs to the selected $environment organization',
   async (organization) => {
     config.state.activeOrganization = organization
     await run(['products', 'list']).promise
     expect(
       new URL(requests.at(-1)!.url).searchParams.getAll('organization_id'),
-    ).toEqual([organization.id])
+    ).toEqual([])
     await run(['products', 'create', '--name=Pro']).promise
-    expect(await requests.at(-1)!.json()).toEqual({
-      organization_id: organization.id,
-      name: 'Pro',
-    })
+    expect(await requests.at(-1)!.json()).toEqual({ name: 'Pro' })
     await run(['products', 'update', 'product-1', '--name=Renamed']).promise
     expect(await requests.at(-1)!.json()).toEqual({ name: 'Renamed' })
+    expect(requests.map(scope)).toEqual(requests.map(() => organization.id))
     expect(
       requests.every(
         (request) =>
@@ -150,12 +150,13 @@ test.each([
     expect(new URL(requests[0]!.url).pathname).toBe(
       '/v1/organizations/org-sandbox',
     )
+    expect(requests.map(scope)).toEqual([sandbox.id, sandbox.id])
     expect(config.state.activeOrganization).toEqual(selection)
     expect(config.state.writes).toBe(0)
   },
 )
 
-test('repeated organization flags retain every filter within one environment', async () => {
+test('repeated organization flags filter by every organization without scoping to one', async () => {
   organizations.push({ ...production, id: 'org-other' })
   await run(['products', 'list', '--org=org-production', '--org=org-other'])
     .promise
@@ -165,9 +166,10 @@ test('repeated organization flags retain every filter within one environment', a
     production.id,
     'org-other',
   ])
+  expect(scope(requests.at(-1)!)).toBeNull()
 })
 
-test('preserves explicit null instead of injecting the selected organization', async () => {
+test('preserves explicit null and scopes the request to the selected organization', async () => {
   await run([
     'customers',
     'create',
@@ -179,6 +181,7 @@ test('preserves explicit null instead of injecting the selected organization', a
     email: 'test@example.com',
   })
   expect(new URL(requests.at(-1)!.url).hostname).toBe('api.polar.sh')
+  expect(scope(requests.at(-1)!)).toBe(production.id)
 })
 
 test('previews and mutations share the selected organization environment', async () => {
@@ -199,6 +202,11 @@ test('previews and mutations share the selected organization environment', async
       (request) => new URL(request.url).hostname === 'api.polar.sh',
     ),
   ).toBe(true)
+  expect(requests.map(scope)).toEqual([
+    production.id,
+    production.id,
+    production.id,
+  ])
   expect(cli.output()).toContain('Production')
   expect(cli.output()).toContain('production')
 })
@@ -230,7 +238,8 @@ test('token override resolves its own organization and environment, ignoring sel
   await run(['products', 'list']).promise
   const url = new URL(requests.at(-1)!.url)
   expect(url.hostname).toBe('sandbox-api.polar.sh')
-  expect(url.searchParams.getAll('organization_id')).toEqual([sandbox.id])
+  expect(url.searchParams.getAll('organization_id')).toEqual([])
+  expect(requests.map(scope)).toEqual([null, sandbox.id])
   expect(requests.at(-1)!.headers.get('authorization')).toBe('Bearer ci-token')
   expect(config.state.activeOrganization).toEqual(production)
 })

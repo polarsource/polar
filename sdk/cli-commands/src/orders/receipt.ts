@@ -18,7 +18,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
-        invoke: (_client, _organizationId, core) =>
+        invoke: (_client, core) =>
           executeRequest(
             core,
             core.buildRequest(

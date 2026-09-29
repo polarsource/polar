@@ -4,12 +4,37 @@ import {
   type Polar as PolarSDK,
   type PolarCore,
 } from '@polar-sh/sdk/2026-10'
-import { Context, Effect, Layer, Redacted } from 'effect'
-import { AuthError, loginCommand, type PolarEnvironment } from '@/schemas/Auth'
+import { Context, Effect, Layer, Option, Redacted, Schema } from 'effect'
+import {
+  AuthError,
+  loginCommand,
+  orgCommand,
+  type PolarEnvironment,
+} from '@/schemas/Auth'
 import { apiOrigin } from '@/services/api'
 import { Auth } from '@/services/auth'
 
 export class Polar extends Context.Service<Polar, PolarImpl>()('Polar') {}
+
+interface UseOptions {
+  timeout?: number
+  authenticated?: boolean
+  organizationId?: string | undefined
+}
+
+const OrganizationNotAccessible = Schema.Struct({
+  error: Schema.Literal('RequestedOrganizationNotAccessible'),
+})
+
+const isOrganizationNotAccessible = (body: unknown) =>
+  Option.isSome(
+    Schema.decodeUnknownOption(
+      Schema.Union([
+        OrganizationNotAccessible,
+        Schema.fromJsonString(OrganizationNotAccessible),
+      ]),
+    )(body),
+  )
 
 interface PolarImpl {
   getClient: (
@@ -18,7 +43,7 @@ interface PolarImpl {
   use: <A>(
     fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
     environment?: PolarEnvironment,
-    options?: { timeout?: number; authenticated?: boolean },
+    options?: UseOptions,
   ) => Effect.Effect<A, AuthError>
 }
 
@@ -39,7 +64,7 @@ export const make = Effect.gen(function* () {
   const use = <A>(
     fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
     environment: PolarEnvironment = 'sandbox',
-    options?: { timeout?: number; authenticated?: boolean },
+    options?: UseOptions,
   ) =>
     Effect.gen(function* () {
       const { authenticated = true, ...requestOptions } = options ?? {}
@@ -69,6 +94,11 @@ export const make = Effect.gen(function* () {
               typeof error.statusCode === 'number'
                 ? error.statusCode
                 : undefined,
+            organizationNotAccessible:
+              typeof error === 'object' &&
+              error !== null &&
+              'error' in error &&
+              isOrganizationNotAccessible(error.error),
           }),
         })
 
@@ -96,8 +126,9 @@ export const make = Effect.gen(function* () {
             case 403:
               return new AuthError({
                 statusCode: error.statusCode,
-                message:
-                  'Access denied. Check the token permissions (organizations:read is required to list organizations).',
+                message: error.organizationNotAccessible
+                  ? `Organization ${requestOptions.organizationId} is not accessible with this credential. Check --org or run ${orgCommand}.`
+                  : 'Access denied. Check the token permissions (organizations:read is required to list organizations).',
               })
             case 404:
               return new AuthError({

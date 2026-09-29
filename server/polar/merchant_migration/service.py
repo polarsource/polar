@@ -1424,7 +1424,7 @@ class MerchantMigrationService:
         )
         if left:
             note += (
-                f" {left} stayed on your source; open the subscriptions list to "
+                f" {left} didn't move; open the subscriptions list to "
                 "see why, and switch them again once they're sorted."
             )
         return note

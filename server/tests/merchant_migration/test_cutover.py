@@ -8,6 +8,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import OperationalError
 
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
@@ -952,6 +953,58 @@ class TestRun:
         assert reloaded.payment_method_id is not None
         assert reloaded.tax_behavior == TaxBehavior.exclusive
         assert reloaded.tax_exempted is False
+
+    async def test_writes_everything_before_stopping_the_source(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        pending_record: MerchantMigrationRecord,
+        imported_customer: Customer,
+        product: Product,
+    ) -> None:
+        """A write failing after the stop would leave a customer nobody bills."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=imported_customer,
+            status=SubscriptionStatus.paused,
+            tax_behavior=TaxBehavior.inclusive,
+            user_metadata={"provider": "stripe", "provider_subscription_id": "sub_1"},
+        )
+        pending_record.target_id = subscription.id
+        pending_record.status = MerchantMigrationRecordStatus.imported
+        pending_record.canonical = serialize(
+            canonical_subscription(tax_behavior=TaxBehavior.exclusive)
+        )
+        await save_fixture(pending_record)
+        adapter = _source()
+        stop = adapter.stop_source_subscription
+        unwritten_at_stop: list[object] = []
+
+        async def stop_and_check(
+            source_id: str, *, reference: str, cancel_at_period_end: bool = False
+        ) -> None:
+            unwritten_at_stop.extend([*session.new, *session.dirty])
+            await stop(
+                source_id,
+                reference=reference,
+                cancel_at_period_end=cancel_at_period_end,
+            )
+
+        mocker.patch.object(
+            adapter, "stop_source_subscription", side_effect=stop_and_check
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(
+            pending_record
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+        assert unwritten_at_stop == []
 
     async def test_charges_a_card_that_landed_after_the_card_check(
         self,
@@ -2001,6 +2054,163 @@ class TestFailures:
         assert outcome.status == MerchantMigrationCutoverStatus.failed
         assert "can't tell which is which" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
+
+    async def test_activation_failing_after_the_stop_keeps_a_retryable_paused_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        """Rolling back to pending would hide a customer nobody is billing."""
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        activate_imported = subscription_service.activate_imported
+
+        async def activate_then_fail(*args: Any, **kwargs: Any) -> Subscription:
+            await activate_imported(*args, **kwargs)
+            raise RuntimeError("boom")
+
+        activation = mocker.patch.object(
+            subscription_service, "activate_imported", side_effect=activate_then_fail
+        )
+        adapter = _source()
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "nobody is billing the customer" in (outcome.message or "")
+        assert adapter.stopped == ["sub_1"]
+        assert pending_record.status == MerchantMigrationRecordStatus.imported
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.paused
+
+        activation.side_effect = activate_imported
+        retry = _source(stopped_for_migration=True)
+
+        outcome = await cutover(retry)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert retry.stopped == []
+        retried = await _created(session, pending_record)
+        assert retried.status == SubscriptionStatus.active
+
+    async def test_a_stop_that_timed_out_after_cancelling_still_moves(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=stripe_lib.APIConnectionError("Read timed out"),
+        )
+        mocker.patch.object(
+            adapter,
+            "get_subscription",
+            side_effect=[
+                canonical_subscription(),
+                canonical_subscription(),
+                canonical_subscription(stopped_for_migration=True),
+            ],
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.active
+
+    async def test_a_stop_nobody_can_confirm_keeps_a_retryable_paused_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=stripe_lib.APIConnectionError("Read timed out"),
+        )
+        mocker.patch.object(
+            adapter,
+            "get_subscription",
+            side_effect=[
+                canonical_subscription(),
+                canonical_subscription(),
+                stripe_lib.APIConnectionError("Stripe is down"),
+            ],
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "may already be cancelled" in (outcome.message or "")
+        assert pending_record.status == MerchantMigrationRecordStatus.imported
+        subscription = await _created(session, pending_record)
+        assert subscription.status == SubscriptionStatus.paused
+
+    async def test_a_stop_that_timed_out_before_cancelling_changes_nothing(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=stripe_lib.APIConnectionError("Read timed out"),
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert pending_record.status == MerchantMigrationRecordStatus.pending
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_an_unexpected_error_fails_the_record_not_the_run(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter, "stop_source_subscription", side_effect=RuntimeError("boom")
+        )
+
+        outcome = await cutover(adapter)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "Something went wrong" in (outcome.message or "")
+        assert pending_record.status == MerchantMigrationRecordStatus.pending
+        _assert_left_alone(adapter, pending_record)
+
+    async def test_a_database_error_fails_the_run_so_it_retries(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        adapter = _source()
+        mocker.patch.object(
+            adapter,
+            "stop_source_subscription",
+            side_effect=OperationalError("SELECT 1", {}, Exception("lock timeout")),
+        )
+
+        with pytest.raises(OperationalError):
+            await cutover(adapter)
 
     async def test_polar_subscription_no_longer_exists(
         self,

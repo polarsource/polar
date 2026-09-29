@@ -1901,6 +1901,17 @@ class TestImportCatalog:
         assert subscription is not None
         assert subscription.merchant_migration_id == later.id
         assert subscription.status == MerchantMigrationRecordStatus.pending
+        # The customer and product stay on the earlier migration, so this one
+        # reports nothing imported while its subscription is ready to switch.
+        after = {
+            entity.entity: entity
+            for entity in (
+                await service.summarize_records(session, auth_subject, later.id)
+            ).entities
+        }
+        assert after[PrecheckEntity.customers].imported == 0
+        assert after[PrecheckEntity.products].imported == 0
+        assert after[PrecheckEntity.subscriptions].ready == 1
 
     @pytest.mark.auth
     async def test_import_does_not_notify_for_each_product(

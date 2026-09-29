@@ -1,8 +1,10 @@
 ---
 title: "Integrating Webhooks Locally"
 sidebarTitle: "Local Development"
-description: "Setup Webhook delivery to your local machine"
+description: "Forward webhook events to your local server and send test events with the Polar CLI"
 ---
+
+The Polar CLI forwards your organization's webhook events to a server on your machine, so you can build and test webhook handlers without a public URL or a webhook endpoint.
 
 ### Install Polar CLI
 
@@ -14,41 +16,69 @@ curl -fsSL https://polar.sh/install.sh | bash
 
 ### Login to your account
 
-This will allow you to authenticate with Polar.
-
 ```bash
-polar login
+polar auth login --sandbox
 ```
+
+Use `--production` for a production organization. A browser opens to authorize the CLI, then you choose the organization to work with. Switch organizations later with `polar auth org`.
+
+<Tip>
+  No browser available, e.g. in CI or on a remote machine? Instead of logging in, set `POLAR_ACCESS_TOKEN` to an [organization access token](/integrate/oat) with the `webhooks:read`, `webhooks:write` and `organizations:read` scopes, and `POLAR_ENVIRONMENT` to `sandbox` or `production`.
+</Tip>
 
 ### Listen for Webhooks
 
 ```bash
-polar listen http://localhost:3000/
+polar listen 3000/webhook
 ```
 
-You will be prompted to select which Organization you want to listen for.
+Pass a port, a port and path, or a full URL such as `http://localhost:3000/webhook`.
 
 ```bash
-✔ Select Organization …  My Organization
+  ● Connected  My Organization
+  Forwarding  http://localhost:3000/webhook
+  Secret      6t3c8ce2247c493a3ade20uea4484d64  use this to verify signatures locally
 
-  Connected  My Organization
-  Secret     6t3c8ce2247c493a3ade20uea4484d64
-  Forwarding http://localhost:3000
-
-  Waiting for events...
+  Waiting for events... press Ctrl+C to stop
 ```
+
+Every webhook event of the organization is forwarded while `listen` runs, including the ones caused by activity in the sandbox, such as a test checkout.
 
 ### Set the secret
 
-Make sure that you copy the secret & set it in your environment variables.
+Events forwarded by the CLI are signed with a secret for local development. Set it in your environment variables so our [webhook utilities](/integrate/webhooks/delivery) accept them. Print it with:
 
-If you don't set the correct secret, you'll see 403 errors if you use our Webhook utilities in your app.
+```bash
+polar listen --print-secret
+```
 
 ```bash
 # .env
 POLAR_WEBHOOK_SECRET=6t3c8ce2247c493a3ade20uea4484d64
 ```
 
-### All set!
+If you don't set the correct secret, you'll see 403 errors if you use our Webhook utilities in your app. Deployed environments use the secret of their webhook endpoint instead.
 
-You're now fully setup. Webhooks will be tunneled via the CLI listen connection, and relayed to the specified target URL.
+### Send test events
+
+With `listen` running, send a sample event from another terminal:
+
+```bash
+polar trigger order.paid
+```
+
+The CLI shows where the event was forwarded and how your server responded. When your server doesn't accept the event, it prints the response body and exits with an error.
+
+<Note>
+  Polar doesn't follow redirects when delivering webhooks, and neither does the CLI. A redirect usually means authentication middleware is intercepting your webhook route.
+</Note>
+
+```bash
+polar trigger                    # pick an event from a list
+polar trigger --list             # every event you can send
+polar trigger order.paid --override data.customer.email=jane@example.com
+polar trigger order.paid --seed 7  # the same IDs every time
+polar trigger order.paid --json  # print the payload instead of sending it
+```
+
+`polar trigger --list`, `polar auth whoami` and `polar auth list` also accept `--json` for machine-readable output.

@@ -68,32 +68,16 @@ formatting. Making it a breeze to setup in-chat notifications for your team.
 <Tip>
   **Developing locally?**
 
-  Install Polar CLI to use the listening command. This will allow you to test your webhook handlers without deploying them to a live server.
-
-  Install the Polar CLI
+  The Polar CLI forwards webhook events to your local server, so you can test your webhook handlers without deploying them or creating an endpoint.
 
   ```bash Terminal
   curl -fsSL https://polar.sh/install.sh | bash
+  polar auth login --sandbox
+  polar listen 3000/webhook
   ```
 
-  Once you have installed the Polar CLI, you can easily start a tunnel:
-
-  ```bash Terminal
-  polar listen http://localhost:3000/
-  ```
-
-  This will relay webhooks automatically to the speicified URL.
-
-  ```bash
-  ✔ Select Organization …  My Organization
-
-    Connected  My Organization
-    Secret     6t3c8ce2247c493a3ade20uea4484d64
-    Forwarding http://localhost:3000
-
-    Waiting for events...
-  ```
-  </Tip>
+  See [Local Development](/integrate/webhooks/locally) to set the webhook secret and send test events.
+</Tip>
 
 [Now, it's time to integrate our endpoint to receive events
 &rarr;](/integrate/webhooks/delivery)

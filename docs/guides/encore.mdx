@@ -119,7 +119,7 @@ Encore runs your app locally with full infrastructure support. To receive webhoo
 polar listen http://localhost:4000/webhooks/polar
 ```
 
-Make sure to copy the webhook secret and set it using:
+Print the webhook secret with `polar listen --print-secret` and set it using:
 
 ```bash Terminal
 encore secret set --type local POLAR_WEBHOOK_SECRET

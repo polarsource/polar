@@ -23,8 +23,10 @@ from polar.models import (
     CustomerSession,
     MemberSession,
     OAuth2Token,
+    Organization,
     OrganizationAccessToken,
     PersonalAccessToken,
+    User,
     UserSession,
 )
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
@@ -60,9 +62,6 @@ from .models import (
     Anonymous,
     AuthSubject,
     Subject,
-    is_anonymous,
-    is_organization,
-    is_user,
 )
 from .scope import Scope
 from .service import auth as auth_service
@@ -133,92 +132,97 @@ async def get_member_session(session: AsyncSession, value: str) -> MemberSession
 async def get_auth_subject(
     request: Request, session: AsyncSession
 ) -> AuthSubject[Subject]:
-    auth_subject = await get_credential_auth_subject(request, session)
-    await apply_requested_organization(request, session, auth_subject)
-    return auth_subject
-
-
-async def get_credential_auth_subject(
-    request: Request, session: AsyncSession
-) -> AuthSubject[Subject]:
+    subject: User | Organization
+    credential: (
+        UserSession | OAuth2Token | PersonalAccessToken | OrganizationAccessToken
+    )
+    organization_ids: frozenset[UUID] | None = None
     token = get_bearer_token(request)
-    if token is not None:
-        if is_registration_token_prefix(token):
-            return AuthSubject(Anonymous(), set(), None)
+    if token is not None and is_registration_token_prefix(token):
+        return AuthSubject(Anonymous(), set(), None)
 
-        # Try MemberSession first (polar_mst_ prefix)
-        if token.startswith(MEMBER_SESSION_TOKEN_PREFIX):
-            member_session = await get_member_session(session, token)
-            if member_session:
-                return AuthSubject(
-                    member_session.member,
-                    {Scope.customer_portal_write},
-                    member_session,
-                )
+    if token is not None and token.startswith(MEMBER_SESSION_TOKEN_PREFIX):
+        member_session = await get_member_session(session, token)
+        if member_session is None:
             raise InvalidTokenError()
+        return AuthSubject(
+            member_session.member,
+            {Scope.customer_portal_write},
+            member_session,
+        )
 
-        if token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX):
-            customer_session = await get_customer_session(session, token)
-            if customer_session:
-                customer = customer_session.customer
-                return AuthSubject(
-                    customer,
-                    {Scope.customer_portal_write},
-                    customer_session,
-                )
+    if token is not None and token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX):
+        customer_session = await get_customer_session(session, token)
+        if customer_session is None:
             raise InvalidTokenError()
+        return AuthSubject(
+            customer_session.customer,
+            {Scope.customer_portal_write},
+            customer_session,
+        )
 
-        if token.startswith(ORGANIZATION_ACCESS_TOKEN_PREFIX):
-            organization_access_token = await get_organization_access_token(
-                session, token
-            )
-            if organization_access_token:
-                return AuthSubject(
-                    organization_access_token.organization,
-                    organization_access_token.scopes,
-                    organization_access_token,
-                )
+    if token is not None and token.startswith(ORGANIZATION_ACCESS_TOKEN_PREFIX):
+        organization_access_token = await get_organization_access_token(session, token)
+        if organization_access_token is None:
             raise InvalidTokenError()
+        subject = organization_access_token.organization
+        scopes = organization_access_token.scopes
+        credential = organization_access_token
 
-        if is_access_token_prefix(token):
-            oauth2_token = await get_oauth2_token(session, token)
-            if oauth2_token:
-                return AuthSubject(
-                    oauth2_token.sub,
-                    oauth2_token.scopes,
-                    oauth2_token,
-                    oauth2_token.organization_ids,
-                )
+    elif token is not None and is_access_token_prefix(token):
+        oauth2_token = await get_oauth2_token(session, token)
+        if oauth2_token is None:
             raise InvalidTokenError()
+        subject = oauth2_token.sub
+        scopes = oauth2_token.scopes
+        credential = oauth2_token
+        organization_ids = oauth2_token.organization_ids
 
-        if token.startswith(PERSONAL_ACCESS_TOKEN_PREFIX):
-            personal_access_token = await get_personal_access_token(session, token)
-            if personal_access_token:
-                return AuthSubject(
-                    personal_access_token.user,
-                    personal_access_token.scopes,
-                    personal_access_token,
-                )
+    elif token is not None and token.startswith(PERSONAL_ACCESS_TOKEN_PREFIX):
+        personal_access_token = await get_personal_access_token(session, token)
+        if personal_access_token is None:
             raise InvalidTokenError()
-
+        subject = personal_access_token.user
+        scopes = personal_access_token.scopes
+        credential = personal_access_token
+    elif token is not None:
         raise InvalidTokenError()
-
-    user_session = await get_user_session(request, session)
-    if user_session is not None:
+    else:
+        user_session = await get_user_session(request, session)
+        if user_session is None:
+            return AuthSubject(Anonymous(), set(), None)
+        subject = user_session.user
+        scopes = set(user_session.scopes)
+        credential = user_session
         organization_ids = (
             frozenset(
                 scope.organization_id for scope in user_session.organization_scopes
             )
             or None
         )
-        return AuthSubject(
-            user_session.user,
-            set(user_session.scopes),
-            user_session,
-            organization_ids,
-        )
 
-    return AuthSubject(Anonymous(), set(), None)
+    organization_id = get_requested_organization_id(request)
+    if (
+        organization_id is not None
+        and isinstance(subject, Organization)
+        and organization_id != subject.id
+    ):
+        raise RequestedOrganizationNotAccessible()
+
+    if organization_id is not None and isinstance(subject, User):
+        credential_auth_subject = AuthSubject(
+            subject, scopes, credential, organization_ids
+        )
+        if (
+            await get_accessible_organization(
+                session, credential_auth_subject, organization_id
+            )
+            is None
+        ):
+            raise RequestedOrganizationNotAccessible()
+        organization_ids = frozenset({organization_id})
+
+    return AuthSubject(subject, scopes, credential, organization_ids)
 
 
 def get_requested_organization_id(request: Request) -> UUID | None:
@@ -231,38 +235,6 @@ def get_requested_organization_id(request: Request) -> UUID | None:
         raise InvalidRequestedOrganization(
             f"The {ORGANIZATION_HEADER} header must be an organization ID."
         ) from e
-
-
-async def apply_requested_organization(
-    request: Request, session: AsyncSession, auth_subject: AuthSubject[Subject]
-) -> None:
-    if is_anonymous(auth_subject):
-        return
-
-    organization_id = get_requested_organization_id(request)
-    if organization_id is None:
-        return
-
-    if is_organization(auth_subject):
-        if organization_id != auth_subject.subject.id:
-            raise RequestedOrganizationNotAccessible()
-        return
-
-    if not is_user(auth_subject) or not isinstance(
-        auth_subject.session, (OAuth2Token, PersonalAccessToken)
-    ):
-        raise InvalidRequestedOrganization(
-            f"The {ORGANIZATION_HEADER} header is only supported with access tokens."
-        )
-
-    # Checked against the credential's own down-scope and SSO enforcement, so
-    # the narrowed set below can't reach anything the credential couldn't.
-    if (
-        await get_accessible_organization(session, auth_subject, organization_id)
-        is None
-    ):
-        raise RequestedOrganizationNotAccessible()
-    auth_subject.organization_ids = frozenset({organization_id})
 
 
 class AuthSubjectMiddleware:

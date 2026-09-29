@@ -359,13 +359,11 @@ async def update(
     if organization_update.sso_enforced:
         # Only allow enforcing SSO from a dashboard session already authenticated
         # through this organization's SSO — proof it works — and only while an
-        # enabled connection exists, so an admin can't lock everyone out. Only a
-        # user session's down-scope comes from an SSO login; a token's can come
-        # from the consent screen or the Polar-Organization header.
-        if (
-            not isinstance(authz.auth_subject.session, UserSession)
-            or authz.auth_subject.organization_ids is None
-            or authz.organization.id not in authz.auth_subject.organization_ids
+        # enabled connection exists, so an admin can't lock everyone out.
+        # Check the persisted scope: the request's scope can come from a header.
+        if not isinstance(authz.auth_subject.session, UserSession) or not any(
+            scope.organization_id == authz.organization.id
+            for scope in authz.auth_subject.session.organization_scopes
         ):
             raise NotPermitted(
                 "You must be signed in through SSO for this organization to enforce it."

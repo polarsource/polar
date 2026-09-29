@@ -378,24 +378,99 @@ class TestGetAuthSubjectRequestedOrganization:
                 session,
             )
 
-    async def test_user_session_cookie_rejected(
+    async def test_user_session_narrows_to_requested_organization(
         self,
         session: AsyncSession,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        token, user_session = await auth_service._create_user_session(
+            session, user, user_agent="test", scopes=[]
+        )
+
+        auth_subject = await get_auth_subject(
+            _request_with_session_cookie(token, requested_organization=organization.id),
+            session,
+        )
+
+        assert auth_subject.organization_ids == frozenset({organization.id})
+        assert user_session.organization_scopes == []
+
+    async def test_unrestricted_user_session_sso_enforced_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await save_fixture(organization)
         token, _ = await auth_service._create_user_session(
             session, user, user_agent="test", scopes=[]
         )
 
-        with pytest.raises(InvalidRequestedOrganization):
+        with pytest.raises(RequestedOrganizationNotAccessible):
             await get_auth_subject(
                 _request_with_session_cookie(
                     token, requested_organization=organization.id
                 ),
                 session,
             )
+
+    async def test_user_session_organization_outside_down_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        token, _ = await auth_service._create_user_session(
+            session,
+            user,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
+
+        with pytest.raises(RequestedOrganizationNotAccessible):
+            await get_auth_subject(
+                _request_with_session_cookie(
+                    token, requested_organization=organization_second.id
+                ),
+                session,
+            )
+
+    async def test_sso_session_can_select_its_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        token, _ = await auth_service._create_user_session(
+            session,
+            user,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
+
+        auth_subject = await get_auth_subject(
+            _request_with_session_cookie(token, requested_organization=organization.id),
+            session,
+        )
+
+        assert auth_subject.organization_ids == frozenset({organization.id})
 
     async def test_malformed_organization_id(
         self,

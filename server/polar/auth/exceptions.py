@@ -35,8 +35,7 @@ class SessionNotFreshError(PolarAuthError):
 
 class InvalidRequestedOrganization(PolarAuthError):
     """
-    Exception raised when the ``Polar-Organization`` header is malformed or sent
-    with a credential that doesn't support it.
+    Exception raised when the ``Polar-Organization`` header is malformed.
     """
 
     def __init__(self, message: str) -> None:

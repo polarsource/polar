@@ -7,6 +7,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import OAuth2Token, OrganizationSSOConnection, Product, User
@@ -1622,15 +1623,28 @@ class TestUpdateSSOEnforced:
         return connection
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("header_scoped", [False, True])
     async def test_enable_from_global_session_forbidden(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
+        header_scoped: bool,
     ) -> None:
         # A non-SSO session must not be able to turn on enforcement.
         await self._create_connection(save_fixture, organization)
+        _, auth_subject.session = await auth_service._create_user_session(
+            session,
+            auth_subject.subject,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset(),
+        )
+        if header_scoped:
+            auth_subject.organization_ids = frozenset({organization.id})
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",
@@ -1664,12 +1678,20 @@ class TestUpdateSSOEnforced:
     async def test_enable_without_connection_forbidden(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         # Scoped session but no enabled connection would lock the org out.
         auth_subject.organization_ids = frozenset({organization.id})
+        _, auth_subject.session = await auth_service._create_user_session(
+            session,
+            auth_subject.subject,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",
@@ -1683,12 +1705,20 @@ class TestUpdateSSOEnforced:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         await self._create_connection(save_fixture, organization)
         auth_subject.organization_ids = frozenset({organization.id})
+        _, auth_subject.session = await auth_service._create_user_session(
+            session,
+            auth_subject.subject,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",

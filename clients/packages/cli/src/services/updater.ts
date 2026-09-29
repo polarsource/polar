@@ -3,7 +3,7 @@ import { Context, Data, Effect, FileSystem, Layer, Schema } from 'effect'
 import { HttpClient, HttpClientResponse } from 'effect/unstable/http'
 
 export const PACKAGE_NAME = '@polar-sh/cli'
-export const REGISTRY_URL = `https://registry.npmjs.org/${PACKAGE_NAME.replace('/', '%2F')}/latest`
+export const REGISTRY_URL = `https://registry.npmjs.org/${PACKAGE_NAME.replaceAll('/', '%2F')}/latest`
 
 export const methods = ['binary', 'npm', 'pnpm', 'bun', 'yarn'] as const
 export type Method = (typeof methods)[number]

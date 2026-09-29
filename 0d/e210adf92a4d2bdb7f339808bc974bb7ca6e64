@@ -1,0 +1,37 @@
+sdk/generator/cli_commands/ir.py
+  s_c0a2c247c2e537::t_e9fe5a3c830c60 4-6
+sdk/generator/cli_commands/template/package.json
+  s_c0a2c247c2e537::t_e9fe5a3c830c60 11
+sdk/cli-commands/package.json
+  s_c0a2c247c2e537::t_fd4ec7c0e7633c 13
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_c0a2c247c2e537::t_e9fe5a3c830c60 1,5
+sdk/generator/cli.py
+  s_c0a2c247c2e537::t_c4e176c897213c 53,114,118-126
+sdk/generator/cli_commands/emitter.py
+  s_c0a2c247c2e537::t_1f6a39fb23ca54 31-32,35,43-46,65-66,70,110,125
+  s_c0a2c247c2e537::t_01d96a586ea7c8 36-38
+sdk/cli-commands/README.md
+  s_c0a2c247c2e537::t_8237662e163071 163
+sdk/generator/justfile
+  s_c0a2c247c2e537::t_e9fe5a3c830c60 26
+sdk/generator/tests/test_cli_commands.py
+  s_c0a2c247c2e537::t_76e4e67b48a828 149-150,367-368
+  s_c0a2c247c2e537::t_01d96a586ea7c8 8,133-135,145-148,151,170-176,197-203,223-226,242-248,260-266,278-284,292-298,315-321,340-346,363-366,369,399-405,424-426
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0de210adf92a4d2bdb7f339808bc974bb7ca6e64",
+  "prompts": {},
+  "sessions": {
+    "s_c0a2c247c2e537": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db949023-236a-4dff-9904-9eb6b5c6dc19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

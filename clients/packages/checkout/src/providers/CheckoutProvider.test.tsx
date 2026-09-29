@@ -71,15 +71,23 @@ describe('CheckoutProvider', () => {
   })
 
   describe('baseUrl resolution', () => {
+    const versionHeaders = { 'Polar-Version': '2027-01' }
+
     it('uses production by default', () => {
       renderProvider({ initialCheckout: createCheckout() })
-      expect(mockCreateClient).toHaveBeenCalledWith('https://api.polar.sh')
+      expect(mockCreateClient).toHaveBeenCalledWith(
+        'https://api.polar.sh',
+        undefined,
+        versionHeaders,
+      )
     })
 
     it('uses sandbox when server=sandbox', () => {
       renderProvider({ server: 'sandbox', initialCheckout: createCheckout() })
       expect(mockCreateClient).toHaveBeenCalledWith(
         'https://sandbox-api.polar.sh',
+        undefined,
+        versionHeaders,
       )
     })
 
@@ -88,7 +96,11 @@ describe('CheckoutProvider', () => {
         server: 'production',
         initialCheckout: createCheckout(),
       })
-      expect(mockCreateClient).toHaveBeenCalledWith('https://api.polar.sh')
+      expect(mockCreateClient).toHaveBeenCalledWith(
+        'https://api.polar.sh',
+        undefined,
+        versionHeaders,
+      )
     })
 
     it('uses serverURL when provided (stripping trailing /v1)', () => {
@@ -98,6 +110,8 @@ describe('CheckoutProvider', () => {
       })
       expect(mockCreateClient).toHaveBeenCalledWith(
         'https://custom.example.com',
+        undefined,
+        versionHeaders,
       )
     })
 
@@ -108,6 +122,8 @@ describe('CheckoutProvider', () => {
       })
       expect(mockCreateClient).toHaveBeenCalledWith(
         'https://custom.example.com',
+        undefined,
+        versionHeaders,
       )
     })
   })

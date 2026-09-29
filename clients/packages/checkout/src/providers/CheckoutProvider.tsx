@@ -237,7 +237,7 @@ export const CheckoutProvider = ({
       }
     })()
 
-    return createClient(baseUrl)
+    return createClient(baseUrl, undefined, { 'Polar-Version': '2027-01' })
   }, [server, serverURL])
 
   const [checkout, setCheckout] = useState<schemas['CheckoutPublic'] | null>(

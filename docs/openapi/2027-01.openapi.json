@@ -58637,6 +58637,54 @@
               }
             ],
             "title": "Expires At"
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The ID of the subscription granting the license key."
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeySubscription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The subscription granting the license key, if any."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the one-time order granting the license key."
+          },
+          "order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyOrder"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The one-time order granting the license key, if any."
           }
         },
         "type": "object",
@@ -58647,6 +58695,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -58656,7 +58706,11 @@
           "limit_usage",
           "validations",
           "last_validated_at",
-          "expires_at"
+          "expires_at",
+          "subscription_id",
+          "subscription",
+          "order_id",
+          "order"
         ],
         "title": "GrantedLicenseKey"
       },
@@ -59950,6 +60004,47 @@
         ],
         "title": "LicenseKeyMember"
       },
+      "LicenseKeyOrder": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus",
+            "examples": [
+              "paid"
+            ]
+          },
+          "paid": {
+            "type": "boolean",
+            "title": "Paid",
+            "description": "Whether the order has been paid for.",
+            "examples": [
+              true
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "status",
+          "paid"
+        ],
+        "title": "LicenseKeyOrder"
+      },
       "LicenseKeyRead": {
         "properties": {
           "id": {
@@ -60106,6 +60201,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -60127,6 +60224,72 @@
           "disabled"
         ],
         "title": "LicenseKeyStatus"
+      },
+      "LicenseKeySubscription": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus",
+            "description": "The status of the subscription.",
+            "examples": [
+              "active"
+            ]
+          },
+          "current_period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Current Period Start",
+            "description": "The start timestamp of the current billing period.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "current_period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Current Period End",
+            "description": "The end timestamp of the current billing period.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "cancel_at_period_end": {
+            "type": "boolean",
+            "title": "Cancel At Period End",
+            "description": "Whether the subscription will be canceled at the end of the current period."
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "The timestamp when the subscription will end."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "current_period_start",
+          "current_period_end",
+          "cancel_at_period_end",
+          "ends_at"
+        ],
+        "title": "LicenseKeySubscription"
       },
       "LicenseKeyUpdate": {
         "properties": {
@@ -60494,6 +60657,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -69851,6 +70016,10 @@
             "type": "boolean",
             "title": "New Subscription"
           },
+          "new_trial": {
+            "type": "boolean",
+            "title": "New Trial"
+          },
           "chargeback_prevention": {
             "type": "boolean",
             "title": "Chargeback Prevention"
@@ -69858,6 +70027,10 @@
           "subscription_renewal": {
             "type": "boolean",
             "title": "Subscription Renewal"
+          },
+          "exclude_free_products": {
+            "type": "boolean",
+            "title": "Exclude Free Products"
           }
         },
         "type": "object",
@@ -73179,9 +73352,34 @@
             "title": "Product Id",
             "description": "The ID of the product owning the price."
           },
-          "seat_tiers": {
-            "$ref": "#/components/schemas/ProductPriceSeatTiers-Output",
-            "description": "Tiered pricing based on seat quantity"
+          "tiers": {
+            "$ref": "#/components/schemas/Tiers",
+            "description": "Tiered pricing based on the purchased seat quantity."
+          },
+          "minimum_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Units",
+            "description": "The minimum purchasable seat quantity (inclusive)."
+          },
+          "maximum_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum Units",
+            "description": "The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -73195,7 +73393,9 @@
           "tax_behavior",
           "is_archived",
           "product_id",
-          "seat_tiers"
+          "tiers",
+          "minimum_units",
+          "maximum_units"
         ],
         "title": "ProductPriceSeatBased",
         "description": "A seat-based price for a product."
@@ -73223,28 +73423,11 @@
             ],
             "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
-          "seat_tiers": {
-            "$ref": "#/components/schemas/ProductPriceSeatTiers-Input",
-            "description": "Tiered pricing based on seat quantity"
-          }
-        },
-        "type": "object",
-        "required": [
-          "amount_type",
-          "seat_tiers"
-        ],
-        "title": "ProductPriceSeatBasedCreate",
-        "description": "Schema to create a seat-based price with volume-based tiers."
-      },
-      "ProductPriceSeatTier": {
-        "properties": {
-          "min_seats": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Min Seats",
-            "description": "Minimum number of seats (inclusive)"
+          "tiers": {
+            "$ref": "#/components/schemas/TiersInput",
+            "description": "Tiered pricing based on the purchased seat quantity."
           },
-          "max_seats": {
+          "minimum_units": {
             "anyOf": [
               {
                 "type": "integer",
@@ -73254,93 +73437,17 @@
                 "type": "null"
               }
             ],
-            "title": "Max Seats",
-            "description": "Maximum number of seats (inclusive). None for unlimited."
-          },
-          "price_per_seat": {
-            "type": "integer",
-            "maximum": 9.223372036854776e+18,
-            "minimum": 0.0,
-            "title": "Price Per Seat",
-            "description": "Price per seat in cents for this tier"
+            "title": "Minimum Units",
+            "description": "The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set."
           }
         },
         "type": "object",
         "required": [
-          "min_seats",
-          "price_per_seat"
-        ],
-        "title": "ProductPriceSeatTier",
-        "description": "A pricing tier for seat-based pricing."
-      },
-      "ProductPriceSeatTiers-Input": {
-        "properties": {
-          "seat_tier_type": {
-            "$ref": "#/components/schemas/SeatTierType",
-            "description": "How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
-            "default": "volume"
-          },
-          "tiers": {
-            "items": {
-              "$ref": "#/components/schemas/ProductPriceSeatTier"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Tiers",
-            "description": "List of pricing tiers"
-          }
-        },
-        "type": "object",
-        "required": [
+          "amount_type",
           "tiers"
         ],
-        "title": "ProductPriceSeatTiers",
-        "description": "List of pricing tiers for seat-based pricing.\n\nThe minimum and maximum seat limits are derived from the tiers:\n- minimum_seats = first tier's min_seats\n- maximum_seats = last tier's max_seats (None for unlimited)"
-      },
-      "ProductPriceSeatTiers-Output": {
-        "properties": {
-          "seat_tier_type": {
-            "$ref": "#/components/schemas/SeatTierType",
-            "description": "How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
-            "default": "volume"
-          },
-          "tiers": {
-            "items": {
-              "$ref": "#/components/schemas/ProductPriceSeatTier"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Tiers",
-            "description": "List of pricing tiers"
-          },
-          "minimum_seats": {
-            "type": "integer",
-            "title": "Minimum Seats",
-            "description": "Minimum number of seats required for purchase, derived from first tier.",
-            "readOnly": true
-          },
-          "maximum_seats": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Maximum Seats",
-            "description": "Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.",
-            "readOnly": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "tiers",
-          "minimum_seats",
-          "maximum_seats"
-        ],
-        "title": "ProductPriceSeatTiers",
-        "description": "List of pricing tiers for seat-based pricing.\n\nThe minimum and maximum seat limits are derived from the tiers:\n- minimum_seats = first tier's min_seats\n- maximum_seats = last tier's max_seats (None for unlimited)"
+        "title": "ProductPriceSeatBasedCreate",
+        "description": "Schema to create a seat-based price with volume-based tiers."
       },
       "ProductPriceSource": {
         "type": "string",
@@ -74474,6 +74581,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -75018,14 +75127,6 @@
           "revoked"
         ],
         "title": "SeatStatus"
-      },
-      "SeatTierType": {
-        "type": "string",
-        "enum": [
-          "volume",
-          "graduated"
-        ],
-        "title": "SeatTierType"
       },
       "SeatsList": {
         "properties": {
@@ -80676,6 +80777,54 @@
             ],
             "title": "Expires At"
           },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The ID of the subscription granting the license key."
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeySubscription"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The subscription granting the license key, if any."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the one-time order granting the license key."
+          },
+          "order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LicenseKeyOrder"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The one-time order granting the license key, if any."
+          },
           "activation": {
             "anyOf": [
               {
@@ -80695,6 +80844,8 @@
           "organization_id",
           "customer_id",
           "customer",
+          "member_id",
+          "member",
           "benefit_id",
           "key",
           "display_key",
@@ -80704,7 +80855,11 @@
           "limit_usage",
           "validations",
           "last_validated_at",
-          "expires_at"
+          "expires_at",
+          "subscription_id",
+          "subscription",
+          "order_id",
+          "order"
         ],
         "title": "ValidatedLicenseKey"
       },

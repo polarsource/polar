@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.integrations.slack.client import SlackClientError
 from polar.merchant_migration.pan_transfer import PanTransferMethod
 from polar.merchant_migration.slack import SlackAlertInProgress
@@ -27,8 +27,8 @@ def chat_post_message(mocker: MockerFixture, session: AsyncSession) -> AsyncMock
         "polar.merchant_migration.tasks.AsyncSessionMaker",
         side_effect=lambda: contextlib.nullcontext(session),
     )
+    mocker.patch.object(settings, "ENV", Environment.production)
     mocker.patch.object(settings, "SLACK_BOT_TOKEN", "xoxb-test")
-    mocker.patch.object(settings, "MERCHANT_MIGRATION_SLACK_CHANNEL", "C0B76J9KR8F")
     return mocker.patch(
         "polar.merchant_migration.slack.slack_client.chat_post_message",
         new_callable=AsyncMock,
@@ -89,6 +89,20 @@ class TestNotifyCreated:
         await merchant_migration_notify_created(migration.id)
 
         chat_post_message.assert_awaited_once()
+
+    async def test_skips_outside_production_and_sandbox(
+        self,
+        mocker: MockerFixture,
+        chat_post_message: AsyncMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.development)
+        migration = await build_connected_migration(save_fixture, organization)
+
+        await merchant_migration_notify_created(migration.id)
+
+        chat_post_message.assert_not_awaited()
 
 
 @pytest.mark.asyncio

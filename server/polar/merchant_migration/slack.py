@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import structlog
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.exceptions import PolarTaskError
 from polar.integrations.slack.client import client as slack_client
 from polar.integrations.slack.payload import (
@@ -77,6 +77,11 @@ def _migration_payload(
 
 
 async def _post_once(redis: Redis, key: str, payload: SlackPayload) -> None:
+    # The channel defaults to Polar's Ops channel, so a bot token in a local
+    # .env or a test run must not post into it.
+    if not settings.is_environment({Environment.production, Environment.sandbox}):
+        log.info("merchant_migration.slack.skipped_environment", key=key)
+        return
     bot_token = settings.SLACK_BOT_TOKEN
     channel = settings.MERCHANT_MIGRATION_SLACK_CHANNEL
     if not bot_token or not channel:

@@ -1,11 +1,14 @@
 from datetime import timedelta
-from typing import Any
 
 import structlog
 
 from polar.config import settings
 from polar.integrations.slack.client import client as slack_client
-from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
+from polar.integrations.slack.payload import (
+    SlackPayload,
+    SlackText,
+    get_branded_slack_payload,
+)
 from polar.logging import Logger
 from polar.models import MerchantMigration
 from polar.redis import Redis
@@ -22,7 +25,7 @@ def _migration_payload(
     title: str, migration: MerchantMigration, *, step: PanTransferStep | None = None
 ) -> SlackPayload:
     organization = migration.organization
-    fields: list[dict[str, Any]] = [
+    fields: list[SlackText] = [
         # plain_text: the name is merchant-controlled and mrkdwn can't escape it.
         {
             "type": "plain_text",

@@ -850,10 +850,11 @@ describe('CheckoutFormProvider', () => {
         }),
       }) as unknown as Stripe
 
-    it('shows an error to the buyer when the Payment Element is not mounted', async () => {
-      const integrationError = new Error(
-        'Could not find a mounted element to create the Confirmation Token from, please ensure you have a Payment Element or Express Checkout Element mounted (or both).',
-      )
+    it.each([
+      'Could not find a mounted element to create the Confirmation Token from, please ensure you have a Payment Element or Express Checkout Element mounted (or both).',
+      'We could not retrieve data from the specified Element. Please make sure the Element you are attempting to use has a payment method selection.',
+    ])('shows an error to the buyer when Stripe throws "%s"', async (msg) => {
+      const integrationError = new Error(msg)
       integrationError.name = 'IntegrationError'
       const confirm = vi.fn<CheckoutContextProps['confirm']>()
       const getCtx = renderWithCheckout({
@@ -880,8 +881,12 @@ describe('CheckoutFormProvider', () => {
       )
     })
 
-    it('rethrows unexpected errors without showing them to the buyer', async () => {
-      const unexpected = new Error('Network down')
+    it.each([
+      ['a generic error', 'Error', 'Network down'],
+      ['an unrelated IntegrationError', 'IntegrationError', 'Invalid value'],
+    ])('rethrows %s without showing it to the buyer', async (_, name, msg) => {
+      const unexpected = new Error(msg)
+      unexpected.name = name
       const getCtx = renderWithCheckout({
         checkout: paidCheckout,
         update: vi.fn(),

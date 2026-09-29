@@ -163,6 +163,30 @@ class TestAdvance:
         _assert_skipped_uncovered(steps)
 
 
+class TestSkipTo:
+    @pytest.mark.parametrize("method", list(PanTransferMethod))
+    def test_settles_everything_before_the_switch(
+        self, method: PanTransferMethod
+    ) -> None:
+        steps = pan_transfer.skip_to(
+            method, pan_transfer.build(method), STEP_CUTOVER, note="Already moved."
+        )
+
+        current = pan_transfer.current(steps)
+        assert current is not None
+        assert current.key == STEP_CUTOVER
+        before = steps[: steps.index(current)]
+        assert all(step.status == PanStepStatus.completed for step in before)
+        assert all(step.completed_by == PanStepActor.system for step in before)
+        assert before[-1].note == "Already moved."
+
+    def test_rejects_an_unknown_step(self) -> None:
+        with pytest.raises(PanStepNotFound):
+            pan_transfer.skip_to(
+                PanTransferMethod.pan_copy, _copy_steps(), "nope", note="x"
+            )
+
+
 def _stuck_on_uncovered() -> list[PanTransferStep]:
     steps = _advance_to(_copy_steps(), STEP_CUTOVER)
     cutover = next(step for step in steps if step.key == STEP_CUTOVER)

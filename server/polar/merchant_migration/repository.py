@@ -736,6 +736,15 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {row[0] for row in result.all()}
 
+    async def switchable_subscription_ids(self, migration_id: UUID) -> set[UUID]:
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .with_only_columns(MerchantMigrationRecord.id)
+            .order_by(None)
+        )
+        result = await self.session.execute(statement)
+        return {row[0] for row in result.all()}
+
     async def reset_cutover(
         self,
         migration_id: UUID,

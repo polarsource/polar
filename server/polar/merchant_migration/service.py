@@ -119,6 +119,7 @@ _IMPORT_TASK = "merchant_migration.import_catalog"
 # None is a pre-check started before operations recorded their kind.
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
+_CARDS_ALREADY_ON_POLAR = "Every card was already on Polar, so nothing had to move."
 
 
 def _import_failure_log_fields(error: BaseException) -> dict[str, object]:
@@ -888,16 +889,40 @@ class MerchantMigrationService:
             raise PanTransferUnavailable()
 
         steps = pan_transfer.build(migration.pan_transfer_method)
+        step = MerchantMigrationStep.copy_cards
+        if await self._cards_already_on_polar(session, migration):
+            steps = pan_transfer.skip_to(
+                migration.pan_transfer_method,
+                steps,
+                STEP_CUTOVER,
+                note=_CARDS_ALREADY_ON_POLAR,
+            )
+            step = MerchantMigrationStep.activate_subscriptions
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(
             migration,
-            update_dict={
-                "step": MerchantMigrationStep.copy_cards,
-                "pan_transfer_steps": steps,
-            },
+            update_dict={"step": step, "pan_transfer_steps": steps},
         )
         self._enqueue_waiting_for_ops(migration, steps)
         return self._checklist(migration, steps)
+
+    async def _cards_already_on_polar(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> bool:
+        """Whether every subscription to switch already has its card on Polar,
+        typically moved by an earlier migration of the same account. The switch
+        moves a subscription without a card, so one missing card keeps the
+        checklist."""
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        switchable = await record_repository.switchable_subscription_ids(migration.id)
+        if not switchable:
+            return False
+        covered = await record_repository.payment_method_coverage(
+            migration.id,
+            exact=migration.pan_transfer_method
+            == pan_transfer.PanTransferMethod.pan_copy,
+        )
+        return switchable <= covered
 
     async def complete_pan_step(
         self,

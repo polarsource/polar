@@ -49,6 +49,8 @@ from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
     STEP_VERIFY_CARDS,
+    PanStepActor,
+    PanStepStatus,
 )
 from polar.merchant_migration.repository import (
     MerchantMigrationRecordRepository,
@@ -4180,6 +4182,122 @@ class TestStartCutover:
         enqueue.assert_called_once_with(
             "merchant_migration.cutover", merchant_migration_id=migration.id
         )
+
+
+@pytest.mark.asyncio
+class TestStartPanTransfer:
+    async def _prepared(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        *,
+        cards_on_polar: set[str],
+    ) -> MerchantMigration:
+        mocker.patch.object(
+            settings, "MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID", "acct_polar"
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.step = MerchantMigrationStep.create_catalog
+        await save_fixture(migration)
+        customer_repository = CustomerRepository.from_session(session)
+        for source_id in ("sub_1", "sub_2"):
+            await _imported_subscription(
+                save_fixture,
+                migration,
+                organization,
+                product,
+                source_id=source_id,
+                email=f"{source_id}@example.com",
+                payment_method=CanonicalPaymentMethod(
+                    source_id=f"pm_{source_id}",
+                    type=CanonicalPaymentMethodType.card,
+                ),
+            )
+            if source_id in cards_on_polar:
+                customer = await customer_repository.get_by_email_and_organization(
+                    f"{source_id}@example.com", organization.id
+                )
+                assert customer is not None
+                await create_payment_method(
+                    save_fixture, customer, processor_id=f"pm_{source_id}"
+                )
+        return migration
+
+    @pytest.mark.auth
+    async def test_goes_straight_to_the_switch_when_every_card_is_on_polar(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await self._prepared(
+            mocker,
+            session,
+            save_fixture,
+            organization,
+            product,
+            cards_on_polar={"sub_1", "sub_2"},
+        )
+
+        checklist = await service.start_pan_transfer(
+            session, auth_subject, migration.id
+        )
+        await session.flush()
+
+        assert checklist.current_step_key == STEP_CUTOVER
+        await session.refresh(migration)
+        assert migration.step == MerchantMigrationStep.activate_subscriptions
+        before_cutover = [
+            step
+            for step in migration.pan_transfer_steps
+            if step.key != STEP_CUTOVER and step.key != STEP_MOVE_SUBSCRIPTIONS
+        ]
+        assert before_cutover
+        assert all(
+            step.status == PanStepStatus.completed
+            and step.completed_by == PanStepActor.system
+            for step in before_cutover
+        )
+        # No one is asked to authorize a transfer that isn't happening.
+        enqueue.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_keeps_the_checklist_while_a_card_is_missing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await self._prepared(
+            mocker,
+            session,
+            save_fixture,
+            organization,
+            product,
+            cards_on_polar={"sub_1"},
+        )
+
+        checklist = await service.start_pan_transfer(
+            session, auth_subject, migration.id
+        )
+        await session.flush()
+
+        assert checklist.current_step_key == "start_copy"
+        await session.refresh(migration)
+        assert migration.step == MerchantMigrationStep.copy_cards
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,3 @@
-"""Internal Slack alerts telling Polar Ops about merchant migrations."""
-
 import html
 from datetime import timedelta
 from typing import Any

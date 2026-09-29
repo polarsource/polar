@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock
 
 import pytest
@@ -20,16 +19,11 @@ from tests.fixtures.database import SaveFixture
 from ._helpers import build_connected_migration, pan_steps_until
 
 
-@contextlib.asynccontextmanager
-async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
-    yield session
-
-
 @pytest.fixture
 def chat_post_message(mocker: MockerFixture, session: AsyncSession) -> AsyncMock:
     mocker.patch(
         "polar.merchant_migration.tasks.AsyncSessionMaker",
-        side_effect=lambda: _session_maker(session),
+        side_effect=lambda: contextlib.nullcontext(session),
     )
     mocker.patch.object(settings, "SLACK_BOT_TOKEN", "xoxb-test")
     mocker.patch.object(settings, "MERCHANT_MIGRATION_SLACK_CHANNEL", "C0B76J9KR8F")

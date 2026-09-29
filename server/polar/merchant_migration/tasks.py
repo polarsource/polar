@@ -87,7 +87,6 @@ async def merchant_migration_notify_waiting_for_ops(
     merchant_migration_id: Annotated[UUID, LoggableField],
     step_key: Annotated[str, LoggableField],
 ) -> None:
-    """Tell Ops a checklist step needs them, unless it has moved on already."""
     async with AsyncSessionMaker() as session:
         repository = MerchantMigrationRepository.from_session(session)
         migration = await repository.get_ops_by_id(merchant_migration_id)

@@ -372,7 +372,6 @@ def current(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
 
 
 def current_ops_step(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
-    """The current step when it's waiting on a manual Polar Ops action."""
     step = current(steps)
     if step is not None and step.owner == PanStepOwner.polar_ops:
         return step

@@ -4270,8 +4270,10 @@ class TestStartPanTransfer:
         enqueue.assert_not_called()
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("stalled", [False, True])
     async def test_keeps_the_checklist_while_an_import_runs(
         self,
+        stalled: bool,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -4292,7 +4294,8 @@ class TestStartPanTransfer:
         migration.operation = MerchantMigrationOperation(
             status=MerchantMigrationOperationStatus.running,
             kind=MerchantMigrationOperationKind.import_catalog,
-            last_progress_at=utc_now(),
+            last_progress_at=utc_now()
+            - (STALL_THRESHOLD * 2 if stalled else timedelta()),
         )
         await save_fixture(migration)
 

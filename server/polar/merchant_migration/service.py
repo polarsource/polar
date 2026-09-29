@@ -915,7 +915,9 @@ class MerchantMigrationService:
         the checklist, and so does an import still adding subscriptions."""
         if migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy:
             return False
-        if self._operation_blocks_new_work(migration):
+        # Stalled counts too: once the skip leaves `create_catalog`, the
+        # import can't be retried.
+        if migration.operation is not None and migration.operation.is_active:
             return False
         return await MerchantMigrationRecordRepository.from_session(
             session

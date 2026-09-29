@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { useSession } from './SessionProvider'
 
-export const NEXT_API_VERSION = '2027-01'
+export const API_VERSION = '2026-10'
 
 // `version` is the human-readable marketing version, but it relies on a
 // developer manually bumping it. `runtimeVersion` (the fingerprint) and
@@ -21,7 +21,7 @@ const CLIENT_VERSION_HEADERS = {
   'X-Polar-Client-Version': `mobile/${Constants.expoConfig?.version ?? 'unknown'}`,
   'X-Polar-Client-Runtime': Updates.runtimeVersion ?? 'unknown',
   'X-Polar-Client-Update': Updates.updateId ?? 'embedded',
-  'Polar-Version': NEXT_API_VERSION,
+  'Polar-Version': API_VERSION,
 }
 
 const PolarClientContext = createContext<{

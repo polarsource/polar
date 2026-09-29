@@ -30,8 +30,11 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const [selection, setSelection] = useState<SelectionState>(initialSelection)
 
   const { data: migration } = useMerchantMigration(migrationId)
-  const refreshing = isActiveMigrationOperation(migration?.operation)
-  const pollMs = refreshing ? 2000 : false
+  const operation = migration?.operation
+  const active = isActiveMigrationOperation(operation)
+  const importingOperation = active && operation?.kind === 'import'
+  const refreshing = active && operation?.kind !== 'import'
+  const pollMs = active ? 2000 : false
 
   const records = useMigrationRecords(
     migrationId,
@@ -67,18 +70,34 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   } = useRecordSummary(migrationId, pollMs)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
-  const wasRefreshing = useRef(false)
+  const wasActive = useRef(false)
+  const pendingSelection = useRef<SelectionState | null>(null)
 
   useEffect(() => {
-    if (refreshing) {
-      wasRefreshing.current = true
+    if (active) {
+      wasActive.current = true
       return
     }
-    if (wasRefreshing.current) {
-      wasRefreshing.current = false
+    if (wasActive.current) {
+      wasActive.current = false
       invalidateMigrationRecords(migrationId)
     }
-  }, [refreshing, migrationId])
+  }, [active, migrationId])
+
+  useEffect(() => {
+    if (operation?.kind !== 'import' || pendingSelection.current == null) {
+      return
+    }
+    if (operation.status === 'done') {
+      const submitted = pendingSelection.current
+      pendingSelection.current = null
+      setSelection((current) => selectionAfterSubmit(submitted, current))
+      return
+    }
+    if (operation.status === 'failed' || operation.stalled) {
+      pendingSelection.current = null
+    }
+  }, [operation])
 
   const onFilterChange = (next: ReviewFilter) => {
     setFilter(next)
@@ -99,13 +118,26 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     [],
   )
   const stalled =
-    !rerunPrecheck.isPending && migration?.operation?.stalled === true
+    !rerunPrecheck.isPending &&
+    operation?.kind !== 'import' &&
+    operation?.stalled === true
   const refreshError = rerunPrecheck.isError
     ? rerunPrecheck.error?.message ||
       "We couldn't start the refresh from Stripe. Please try again."
-    : migration?.operation?.status === 'failed'
-      ? migration.operation.error ||
-        "We couldn't refresh from Stripe. Please try again."
+    : operation?.kind !== 'import' && operation?.status === 'failed'
+      ? operation.error || "We couldn't refresh from Stripe. Please try again."
+      : undefined
+  const importFailed =
+    operation?.kind === 'import' &&
+    (operation.status === 'failed' || operation.stalled)
+  const importError = importCatalog.isError
+    ? importCatalog.error?.message ||
+      "We couldn't prepare these subscriptions. Please try again."
+    : importFailed
+      ? operation?.status === 'failed'
+        ? operation.error ||
+          "We couldn't prepare these subscriptions. Please try again."
+        : 'Preparing stalled with no progress. Please try again.'
       : undefined
 
   if (records.isLoading || countsLoading) {
@@ -145,18 +177,15 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onToggleAll={onToggleAll}
       onImport={() => {
         const submitted = selection
+        rerunPrecheck.reset()
         importCatalog.mutate(selectionPayload(submitted), {
-          onSuccess: () =>
-            setSelection((current) => selectionAfterSubmit(submitted, current)),
+          onSuccess: () => {
+            pendingSelection.current = submitted
+          },
         })
       }}
-      importing={importCatalog.isPending}
-      importError={
-        importCatalog.isError
-          ? importCatalog.error?.message ||
-            'Something went wrong. Please try again.'
-          : undefined
-      }
+      importing={importCatalog.isPending || importingOperation}
+      importError={importError}
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={refreshing || stalled || rerunPrecheck.isPending}
       stalled={stalled}

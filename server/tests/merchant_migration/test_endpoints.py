@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from uuid import UUID
 
 import pytest
 import stripe as stripe_lib
@@ -42,6 +43,7 @@ from polar.models.merchant_migration import (
 from polar.models.merchant_migration_operation import (
     STALL_THRESHOLD,
     MerchantMigrationOperation,
+    MerchantMigrationOperationSelection,
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
@@ -567,19 +569,23 @@ class TestImport:
         )
 
         await start_and_execute_precheck(migration)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
         assert response.status_code == 200
         json_body = response.json()
-        assert json_body["step"] == "create_catalog"
-        results = {result["entity"]: result for result in json_body["results"]}
-        assert results["products"]["imported"] == 1
-        assert results["customers"]["imported"] == 1
+        assert json_body["step"] == "pre_check"
+        assert json_body["operation"]["status"] == "pending"
+        assert json_body["operation"]["kind"] == "import"
+        enqueue.assert_called_once_with(
+            "merchant_migration.import_catalog", merchant_migration_id=migration.id
+        )
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_imports_selected_subscription_dependencies(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -613,9 +619,14 @@ class TestImport:
             json={"record_ids": [subscription_record_id]},
         )
         assert response.status_code == 200
-        results = {r["entity"]: r for r in response.json()["results"]}
-        assert results["customers"]["imported"] == 1
-        assert results["products"]["imported"] == 1
+        queued = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert queued is not None
+        assert queued.operation is not None
+        assert queued.operation.selection == MerchantMigrationOperationSelection(
+            record_ids=[UUID(subscription_record_id)]
+        )
 
 
 def _configure_destination(mocker: MockerFixture) -> None:

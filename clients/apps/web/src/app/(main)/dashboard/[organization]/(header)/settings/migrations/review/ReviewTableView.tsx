@@ -192,7 +192,7 @@ export function ReviewTableView({
                 size="sm"
                 variant="secondary"
                 onClick={onRerunPrecheck}
-                disabled={refreshing}
+                disabled={refreshing || importing}
               >
                 {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>

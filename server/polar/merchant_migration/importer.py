@@ -291,6 +291,11 @@ class CatalogImporter:
         pass open.
         """
         ctx = await self._load_context()
+        # An empty selection only moves the migration on. Discounts and products
+        # are imported regardless of which subscriptions are picked, so they'd
+        # otherwise still land.
+        if self.record_ids is not None and not self.record_ids:
+            return self._report(ctx)
         budget = IMPORT_BATCH_SIZE
         catalog_products = self._records_of(
             ctx.catalog, MerchantMigrationRecordType.product

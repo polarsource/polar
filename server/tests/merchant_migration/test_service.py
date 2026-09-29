@@ -1933,6 +1933,33 @@ class TestImportCatalog:
         after_created.assert_not_called()
 
     @pytest.mark.auth
+    async def test_empty_selection_imports_nothing_and_advances(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=_catalog_with_discounted_subscription(),
+        )
+
+        report = await _import_catalog(
+            session, auth_subject, migration.id, record_ids=[]
+        )
+
+        assert report.step == MerchantMigrationStep.create_catalog
+        assert await _imported_discounts(session, organization) == []
+        assert await _products(session, organization) == []
+
+    @pytest.mark.auth
     async def test_imports_discounts_without_notify(
         self,
         mocker: MockerFixture,

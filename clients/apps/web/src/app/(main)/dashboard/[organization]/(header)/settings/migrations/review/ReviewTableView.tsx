@@ -205,7 +205,11 @@ export function ReviewTableView({
               </Button>
             )}
             {primaryAction === 'continue' ? (
-              <Button size="sm" onClick={onContinue} disabled={importing}>
+              <Button
+                size="sm"
+                onClick={onContinue}
+                disabled={importing || refreshing}
+              >
                 {importing ? 'Continuing…' : 'Continue'}
               </Button>
             ) : canPrepare ? (

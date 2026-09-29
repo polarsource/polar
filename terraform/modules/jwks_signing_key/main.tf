@@ -52,11 +52,6 @@ resource "aws_kms_key" "signing" {
 }
 
 # The first generation predates for_each; can go once every environment has applied.
-moved {
-  from = aws_kms_key.signing
-  to   = aws_kms_key.signing["2026-09"]
-}
-
 resource "aws_kms_alias" "signing" {
   name          = "alias/polar-${var.environment}-jwks"
   target_key_id = aws_kms_key.signing[var.current_generation].key_id

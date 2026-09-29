@@ -29,8 +29,3 @@ resource "aws_organizations_delegated_administrator" "identity_center" {
   account_id        = aws_organizations_account.identity.id
   service_principal = "sso.amazonaws.com"
 }
-
-import {
-  to = aws_organizations_account.identity
-  id = "986542260309"
-}

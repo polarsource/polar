@@ -846,8 +846,3 @@ resource "tfe_variable" "redis_private_link_host_sandbox" {
     ignore_changes = [value]
   }
 }
-
-import {
-  to = tfe_variable.redis_private_link_host_sandbox
-  id = "polar-sh/sandbox/var-Cxg5oRhNbMmtkPsH"
-}

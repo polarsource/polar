@@ -1287,6 +1287,25 @@ class TestGetSubscription:
         assert subscription.cancel_at == datetime.fromtimestamp(1_705_000_000, UTC)
         assert subscription.cancel_at_period_end is False
 
+    async def test_reads_an_end_date_on_the_period_end_as_period_end(
+        self, mocker: MockerFixture
+    ) -> None:
+        stripe_subscription = _stripe_subscription(
+            canceled_at=1_701_000_000, cancellation_feedback="too_expensive"
+        )
+        stripe_subscription["cancel_at"] = 1_702_000_000
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=stripe_subscription
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.cancel_at_period_end is True
+        assert subscription.canceled_at == datetime.fromtimestamp(1_701_000_000, UTC)
+        assert subscription.cancellation_reason == "too_expensive"
+
     @pytest.mark.parametrize(
         ("schedule", "expected"),
         [

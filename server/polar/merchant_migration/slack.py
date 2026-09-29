@@ -1,4 +1,3 @@
-import html
 from datetime import timedelta
 from typing import Any
 
@@ -23,11 +22,12 @@ def _migration_payload(
     title: str, migration: MerchantMigration, *, step: PanTransferStep | None = None
 ) -> SlackPayload:
     organization = migration.organization
-    organization_label = (
-        f"{html.escape(organization.name, quote=False)} (`{organization.slug}`)"
-    )
     fields: list[dict[str, Any]] = [
-        {"type": "mrkdwn", "text": f"*Organization*\n{organization_label}"},
+        # plain_text: the name is merchant-controlled and mrkdwn can't escape it.
+        {
+            "type": "plain_text",
+            "text": f"Organization\n{organization.name} ({organization.slug})",
+        },
         {"type": "mrkdwn", "text": f"*Source*\n{migration.source_platform.label}"},
         {"type": "mrkdwn", "text": f"*Migration*\n`{migration.id}`"},
         {"type": "mrkdwn", "text": f"*Environment*\n`{settings.ENV.value}`"},

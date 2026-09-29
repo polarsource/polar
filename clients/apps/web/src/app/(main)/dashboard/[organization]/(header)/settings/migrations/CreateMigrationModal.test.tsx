@@ -2,9 +2,23 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { FormEvent, InputHTMLAttributes, ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mutateAsync } = vi.hoisted(() => ({
+const { mutateAsync, environment } = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
+  environment: { name: 'development' },
 }))
+
+vi.mock('@/utils/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/config')>()
+  return {
+    ...actual,
+    CONFIG: {
+      ...actual.CONFIG,
+      get ENVIRONMENT() {
+        return environment.name
+      },
+    },
+  }
+})
 
 vi.mock('@/hooks/queries/merchantMigrations', () => ({
   useCreateMerchantMigration: () => ({
@@ -71,9 +85,10 @@ import { CreateMigrationModal } from './CreateMigrationModal'
 describe('CreateMigrationModal', () => {
   beforeEach(() => {
     mutateAsync.mockReset()
+    environment.name = 'development'
   })
 
-  it('requires All accounts Read and a test-mode key in this environment', () => {
+  it('requires Connect → Accounts Read and a test-mode key in this environment', () => {
     render(
       <CreateMigrationModal
         organizationId="org_1"
@@ -82,9 +97,9 @@ describe('CreateMigrationModal', () => {
       />,
     )
 
-    expect(screen.getByText('All accounts')).toBeTruthy()
+    expect(screen.getByText('Accounts')).toBeTruthy()
     expect(
-      screen.getByText(/under Connect in Stripe/, { exact: false }),
+      screen.getByText(/Listed under Connect/, { exact: false }),
     ).toBeTruthy()
     expect(
       screen.getByRole('link', { name: /Create a restricted key in Stripe/ }),
@@ -93,6 +108,28 @@ describe('CreateMigrationModal', () => {
       'https://dashboard.stripe.com/test/apikeys/create',
     )
     expect(screen.getByPlaceholderText('rk_test_...')).toBeTruthy()
+    expect(
+      screen.getByText(/This environment needs a test-mode key/),
+    ).toBeTruthy()
+  })
+
+  it('asks for a live-mode key in production', () => {
+    environment.name = 'production'
+    render(
+      <CreateMigrationModal
+        organizationId="org_1"
+        onCreated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByText(/This environment needs a live-mode key/),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: /Create a restricted key in Stripe/ }),
+    ).toHaveAttribute('href', 'https://dashboard.stripe.com/apikeys/create')
+    expect(screen.getByPlaceholderText('rk_live_...')).toBeTruthy()
   })
 
   it('blocks a live key before calling the API', () => {
@@ -115,11 +152,11 @@ describe('CreateMigrationModal', () => {
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
-  it('highlights All accounts when the API reports it missing', async () => {
+  it('highlights Accounts when the API reports it missing', async () => {
     mutateAsync.mockResolvedValue({
       error: {
         error: 'MissingStripeScopes',
-        detail: 'The Stripe API key is missing access to: All accounts.',
+        detail: 'The Stripe API key is missing access to: Accounts.',
       },
     })
 

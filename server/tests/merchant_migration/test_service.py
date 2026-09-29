@@ -339,7 +339,7 @@ class TestCreate:
         with pytest.raises(MissingStripeScopes) as exc_info:
             await service.create(session, auth_subject, _create_schema(organization))
 
-        assert exc_info.value.missing == ["All accounts"]
+        assert exc_info.value.missing == ["Accounts"]
         await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
@@ -356,14 +356,14 @@ class TestCreate:
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
-                missing_scopes=["Payment methods", "Subscriptions (write)"]
+                missing_scopes=["Payment Methods", "Subscriptions (write)"]
             ),
         )
 
         with pytest.raises(MissingStripeScopes) as exc_info:
             await service.create(session, auth_subject, _create_schema(organization))
 
-        assert exc_info.value.missing == ["Payment methods", "Subscriptions (write)"]
+        assert exc_info.value.missing == ["Payment Methods", "Subscriptions (write)"]
         await assert_no_migrations(session, organization)
 
     @pytest.mark.auth

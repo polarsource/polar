@@ -77,7 +77,7 @@ class TestVerifyScopes:
     @pytest.mark.parametrize(
         ("resource", "label"),
         [
-            ("subscription_schedules", "Subscription schedules"),
+            ("subscription_schedules", "Subscriptions"),
             ("invoices", "Invoices"),
         ],
     )
@@ -110,7 +110,19 @@ class TestVerifyScopes:
             side_effect=stripe_lib.PermissionError("missing account scope")
         )
 
-        assert await adapter.verify_scopes() == ["All accounts"]
+        assert await adapter.verify_scopes() == ["Accounts"]
+
+    async def test_missing_subscriptions_read_reported_once(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _all_scopes_present(mocker, client)
+        for resource in ("subscriptions", "subscription_schedules"):
+            getattr(client.v1, resource).list_async = mocker.AsyncMock(
+                side_effect=stripe_lib.PermissionError(f"missing {resource} scope")
+            )
+
+        assert await adapter.verify_scopes() == ["Subscriptions"]
 
     async def test_account_probe_caches_for_get_account_id(
         self, mocker: MockerFixture

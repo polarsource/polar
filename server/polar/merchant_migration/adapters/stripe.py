@@ -196,8 +196,12 @@ class StripeAdapter:
         couldn't fully check. The probes cover exactly what ``extract()`` and the
         cutover read, including every object they expand (a restricted key needs
         read access to each one), plus the ``subscription_write`` needed to stop
-        billing at cutover and All accounts Read so we can store the Stripe
-        account id and check country / Connect blockers.
+        billing at cutover and Accounts Read so we can store the Stripe account
+        id and check country / Connect blockers.
+
+        Labels are the row names in Stripe's restricted-key form. Stripe has no
+        separate row for subscription schedules: the Subscriptions row grants
+        them, so the schedule probe reports as Subscriptions.
         """
         v1 = self._client.v1
         probes: list[tuple[str, Callable[[], Awaitable[Any]]]] = [
@@ -206,20 +210,20 @@ class StripeAdapter:
             ("Prices", lambda: v1.prices.list_async(params={"limit": 1})),
             ("Subscriptions", lambda: v1.subscriptions.list_async(params={"limit": 1})),
             (
-                "Subscription schedules",
+                "Subscriptions",
                 lambda: v1.subscription_schedules.list_async(params={"limit": 1}),
             ),
             ("Invoices", lambda: v1.invoices.list_async(params={"limit": 1})),
             (
-                "Payment methods",
+                "Payment Methods",
                 lambda: v1.payment_methods.list_async(
                     params={"limit": 1, "type": "card"}
                 ),
             ),
-            ("All accounts", self._probe_account_read),
+            ("Accounts", self._probe_account_read),
             ("Coupons", lambda: v1.coupons.list_async(params={"limit": 1})),
             (
-                "Promotion codes",
+                "Promotion Codes",
                 lambda: v1.promotion_codes.list_async(params={"limit": 1}),
             ),
             ("Subscriptions (write)", self._probe_subscription_write),
@@ -227,7 +231,7 @@ class StripeAdapter:
         results = await asyncio.gather(
             *(self._probe_scope(label, probe) for label, probe in probes)
         )
-        return [label for label in results if label is not None]
+        return list(dict.fromkeys(label for label in results if label is not None))
 
     async def _probe_scope(
         self, label: str, probe: Callable[[], Awaitable[Any]]
@@ -260,7 +264,7 @@ class StripeAdapter:
 
     async def _current_account(self) -> stripe_lib.Account | None:
         # Create probes this via verify_scopes. Extract still best-effort for
-        # keys stored before All accounts Read was required. Only a successful
+        # keys stored before Accounts Read was required. Only a successful
         # read is cached — a rate-limited read must not stick and cost the id
         # we would otherwise have stored.
         if self._account is None:
@@ -439,7 +443,7 @@ class StripeAdapter:
         if cursor.starting_after is not None:
             params["starting_after"] = cursor.starting_after
         promotion_codes = await self._request(
-            "Promotion codes",
+            "Promotion Codes",
             self._client.v1.promotion_codes.list_async(params=params),
         )
         records = [

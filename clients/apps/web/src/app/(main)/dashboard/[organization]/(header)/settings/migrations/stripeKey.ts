@@ -3,36 +3,54 @@ import { CONFIG } from '@/utils/config'
 export type StripeKeyMode = 'live' | 'test'
 
 export type StripePermission = {
+  group: 'Core' | 'Billing' | 'Connect'
   resource: string
   access: 'Read' | 'Write'
+  hint?: string
 }
 
-// Stripe's restricted-key form. Keep in sync with StripeAdapter.verify_scopes.
+// Row names and groups as Stripe's restricted-key form shows them (resource
+// names stay in English in every Dashboard language). Keep in sync with
+// StripeAdapter.verify_scopes.
 export const REQUIRED_PERMISSIONS: StripePermission[] = [
-  { resource: 'Customers', access: 'Read' },
-  { resource: 'Products', access: 'Read' },
-  { resource: 'Prices', access: 'Read' },
-  { resource: 'Coupons', access: 'Read' },
-  { resource: 'Promotion codes', access: 'Read' },
-  { resource: 'Subscriptions', access: 'Write' },
-  { resource: 'Subscription schedules', access: 'Read' },
-  { resource: 'Invoices', access: 'Read' },
-  { resource: 'Payment methods', access: 'Read' },
-  { resource: 'All accounts', access: 'Read' },
+  { group: 'Core', resource: 'Customers', access: 'Read' },
+  { group: 'Core', resource: 'Products', access: 'Read' },
+  { group: 'Core', resource: 'Payment Methods', access: 'Read' },
+  { group: 'Billing', resource: 'Prices', access: 'Read' },
+  { group: 'Billing', resource: 'Coupons', access: 'Read' },
+  { group: 'Billing', resource: 'Promotion Codes', access: 'Read' },
+  {
+    group: 'Billing',
+    resource: 'Subscriptions',
+    access: 'Write',
+    hint: 'Also covers subscription schedules',
+  },
+  { group: 'Billing', resource: 'Invoices', access: 'Read' },
+  {
+    group: 'Connect',
+    resource: 'Accounts',
+    access: 'Read',
+    hint: 'Listed under Connect, even if you don’t use Connect',
+  },
 ]
 
+// Includes the labels older API versions returned, so a skewed deploy still
+// highlights the right row.
 const SCOPE_TO_RESOURCE: Record<string, string> = {
   Customers: 'Customers',
   Products: 'Products',
   Prices: 'Prices',
   Coupons: 'Coupons',
-  'Promotion codes': 'Promotion codes',
+  'Promotion Codes': 'Promotion Codes',
+  'Promotion codes': 'Promotion Codes',
   Subscriptions: 'Subscriptions',
   'Subscriptions (write)': 'Subscriptions',
-  'Subscription schedules': 'Subscription schedules',
+  'Subscription schedules': 'Subscriptions',
   Invoices: 'Invoices',
-  'Payment methods': 'Payment methods',
-  'All accounts': 'All accounts',
+  'Payment Methods': 'Payment Methods',
+  'Payment methods': 'Payment Methods',
+  Accounts: 'Accounts',
+  'All accounts': 'Accounts',
 }
 
 const MISSING_ACCESS_PREFIX = 'The Stripe API key is missing access to: '

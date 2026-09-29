@@ -41,8 +41,9 @@ from ..canonical import (
 from ..errors import MerchantMigrationError
 from .base import ExtractionPage
 
-# Period data moved onto the subscription item in this version; read it per item.
-STRIPE_API_VERSION = "2026-01-28.clover"
+# Period data lives on the subscription item; read it per item. Subscriptions
+# return `managed_payments` from 2026-04-22.dahlia on.
+STRIPE_API_VERSION = "2026-08-26.dahlia"
 PAGE_SIZE = 100
 
 _T = TypeVar("_T")
@@ -742,7 +743,12 @@ class StripeAdapter:
             has_tax_rates=self._has_tax_rates(subscription, first_item),
             tax_rate_behavior=self._tax_rate_behavior(subscription, first_item),
             customer_balance=self._customer_balance(subscription),
+            managed_payments=self._managed_payments(subscription),
         )
+
+    def _managed_payments(self, subscription: stripe_lib.Subscription) -> bool:
+        settings = subscription.get("managed_payments")
+        return bool(settings and settings.get("enabled"))
 
     def _quantity(self, item: Any) -> int:
         # Metered items carry no quantity; 0 is a real quantity that bills nothing.

@@ -1192,6 +1192,20 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_paused_collection"
 
+    def test_managed_payments_drops_subscription(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            replace(build_subscription(source_id="sub_1"), managed_payments=True),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_managed_payments"
+
     @pytest.mark.parametrize(
         ("fields", "reason_code"),
         [

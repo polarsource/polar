@@ -95,6 +95,7 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_managed_payments",
     "subscription_scheduled_end",
     "subscription_scheduled_change",
     "subscription_customer_balance",
@@ -710,6 +711,16 @@ class PrecheckEngine:
                 message=(
                     "Subscription has paused collection; it won't be imported and "
                     "stays on the current provider."
+                ),
+                source_id=source_id,
+            )
+        if subscription.managed_payments:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_managed_payments",
+                message=(
+                    "Sold through Stripe Managed Payments, where Link is the seller "
+                    "and holds the card authorization. It stays on Stripe for now."
                 ),
                 source_id=source_id,
             )

@@ -492,6 +492,8 @@ At migration cutover, expect:
   match the Polar subscription to its source
 - `subscription.updated` when the imported subscription activates
 - `customer.state_changed` asynchronously after activation
+- `customer.updated` when Polar sets a copied card as the customer's default
+  payment method, or fills in billing details on a customer the import reused
 - Relevant `benefit_grant.*` events
 - `order.paid` when the first Polar renewal succeeds
 

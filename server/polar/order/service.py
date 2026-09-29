@@ -1930,11 +1930,15 @@ class OrderService:
                     error = e.error
                     if error is not None and error.message:
                         message = error.message.lower()
-                        if (
-                            "requires a mandate" in message
-                            or "must provide a mandate" in message
-                            or "detached from a customer" in message
-                            or "does not belong to the customer" in message
+                        if any(
+                            phrase in message
+                            for phrase in (
+                                "requires a mandate",
+                                "must provide a mandate",
+                                "detached from a customer",
+                                "does not belong to the customer",
+                                "the payment failed",
+                            )
                         ):
                             log.info(
                                 "Invalid or expired payment method",

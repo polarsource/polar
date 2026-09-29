@@ -5397,6 +5397,7 @@ class TestTriggerPayment:
             "You must provide a mandate for off-session card payments made with cards issued in India.",
             "The payment method has been detached from a customer",
             "The payment method does not belong to the customer",
+            "The payment failed.",
         ],
     )
     async def test_invalid_payment_method_error_triggers_deletion(

@@ -56,6 +56,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: useblacksmith/setup-docker-builder@v2.2.0
+        with:
+          cache-key: polar/infra-${{ matrix.image }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v4.6.0

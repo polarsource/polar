@@ -1,0 +1,19 @@
+terraform/modules/s3_buckets/main.tf
+  s_93766fee345e24::t_8101d2a653c186 390
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "798cfbdefcf604db5a7129b382f16b292614ce33",
+  "prompts": {},
+  "sessions": {
+    "s_93766fee345e24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9299a384-c31f-400a-92a6-35fa73515457",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

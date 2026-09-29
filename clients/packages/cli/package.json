@@ -35,7 +35,7 @@
     "@effect/platform-bun": "4.0.0-rc.117",
     "@napi-rs/keyring": "2.1.0",
     "@polar-sh/cli-commands": "file:../../../sdk/cli-commands",
-    "@polar-sh/sdk": "1.0.0-alpha.22",
+    "@polar-sh/sdk": "1.0.0",
     "effect": "4.0.0-rc.117",
     "open": "^10.2.0",
     "picocolors": "^1.1.1"

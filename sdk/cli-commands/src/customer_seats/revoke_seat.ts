@@ -1,4 +1,4 @@
-// Generated from customer-seats:revoke_seat (2026-04). Do not edit.
+// Generated from customer-seats:revoke_seat (2026-10). Do not edit.
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'

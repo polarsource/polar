@@ -1,4 +1,4 @@
-import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
+import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { Effect, Redacted } from 'effect'
 import {
   AuthError,

@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { Effect, Redacted } from 'effect'
-import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
+import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { Auth, type Credential } from '@/services/auth'
 import { make } from '@/services/polar'

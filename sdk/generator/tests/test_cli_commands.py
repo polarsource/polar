@@ -13,7 +13,7 @@ from generator.ir import CLIConfirmation, generate_ir
 def cli_spec() -> dict:
     spec: dict = {
         "openapi": "3.1.0",
-        "info": {"title": "Widgets", "version": "2026-04"},
+        "info": {"title": "Widgets", "version": "2026-10"},
         "paths": {
             "/widgets/{id}": {
                 "parameters": [
@@ -112,7 +112,7 @@ def test_cli_tags_select_operations_without_changing_sdk_selection(
     spec = op.OpenAPI.model_validate(
         {
             "openapi": "3.1.0",
-            "info": {"title": "Tag selection", "version": "2026-04"},
+            "info": {"title": "Tag selection", "version": "2026-10"},
             "paths": {
                 "/widgets/": {
                     "get": {
@@ -357,7 +357,7 @@ def test_organization_inputs_default_to_the_resolved_organization(
 
 def test_untagged_spec_fails_before_writing(tmp_path: pathlib.Path) -> None:
     spec = op.OpenAPI.model_validate(
-        {"openapi": "3.1.0", "info": {"title": "Old snapshot", "version": "2026-04"}}
+        {"openapi": "3.1.0", "info": {"title": "Old snapshot", "version": "2026-10"}}
     )
     with pytest.raises(ValueError, match="Regenerate OpenAPI"):
         CLICommandsEmitter(generate_cli_ir(spec)).emit(tmp_path)

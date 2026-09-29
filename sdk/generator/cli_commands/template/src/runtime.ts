@@ -1,8 +1,8 @@
-import type { Polar } from '@polar-sh/sdk/2026-04'
+import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Context, Data, type Effect, type Stdio } from 'effect'
 import type { Prompt } from 'effect/unstable/cli'
 
-export type { Environment } from '@polar-sh/sdk/2026-04'
+export type { Environment } from '@polar-sh/sdk/2026-10'
 
 export class ApiCommandError extends Data.TaggedError('ApiCommandError')<{
   message: string

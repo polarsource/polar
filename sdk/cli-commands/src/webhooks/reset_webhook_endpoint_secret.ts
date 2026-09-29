@@ -1,4 +1,4 @@
-// Generated from webhooks:reset_webhook_endpoint_secret (2026-04). Do not edit.
+// Generated from webhooks:reset_webhook_endpoint_secret (2026-10). Do not edit.
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'

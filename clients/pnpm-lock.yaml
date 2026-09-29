@@ -1052,10 +1052,10 @@ importers:
         version: 2.1.0
       '@polar-sh/cli-commands':
         specifier: file:../../../sdk/cli-commands
-        version: file:../sdk/cli-commands(@polar-sh/sdk@1.0.0-alpha.22)(effect@4.0.0-rc.117)
+        version: file:../sdk/cli-commands(@polar-sh/sdk@1.0.0)(effect@4.0.0-rc.117)
       '@polar-sh/sdk':
-        specifier: 1.0.0-alpha.22
-        version: 1.0.0-alpha.22
+        specifier: 1.0.0
+        version: 1.0.0
       effect:
         specifier: 4.0.0-rc.117
         version: 4.0.0-rc.117
@@ -4506,7 +4506,7 @@ packages:
   '@polar-sh/cli-commands@file:../sdk/cli-commands':
     resolution: {directory: ../sdk/cli-commands, type: directory}
     peerDependencies:
-      '@polar-sh/sdk': 1.0.0-alpha.22
+      '@polar-sh/sdk': 1.0.0
       effect: 4.0.0-rc.117
 
   '@polar-sh/sdk@0.46.7':
@@ -4514,10 +4514,6 @@ packages:
 
   '@polar-sh/sdk@1.0.0':
     resolution: {integrity: sha512-AuaBAEvkUEIA+fqII3SsEYXEfph6+nYrLbz2168P4Rq+678szwFvvBK6chGFyZNxISO8aVx+sGIBI6HUMRKlPw==}
-    engines: {node: '>=22'}
-
-  '@polar-sh/sdk@1.0.0-alpha.22':
-    resolution: {integrity: sha512-CW/Ls5RZjVSahSvICAKt7eP5kYiAeB26jXdOHLLUxwYbImawizBW8RUG/1zeVwIbAdLY5H+c1oOhl4aL051FGw==}
     engines: {node: '>=22'}
 
   '@polka/url@1.0.0-next.29':
@@ -18167,9 +18163,9 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/cli-commands@file:../sdk/cli-commands(@polar-sh/sdk@1.0.0-alpha.22)(effect@4.0.0-rc.117)':
+  '@polar-sh/cli-commands@file:../sdk/cli-commands(@polar-sh/sdk@1.0.0)(effect@4.0.0-rc.117)':
     dependencies:
-      '@polar-sh/sdk': 1.0.0-alpha.22
+      '@polar-sh/sdk': 1.0.0
       effect: 4.0.0-rc.117
 
   '@polar-sh/sdk@0.46.7':
@@ -18178,8 +18174,6 @@ snapshots:
       zod: 4.6.5
 
   '@polar-sh/sdk@1.0.0': {}
-
-  '@polar-sh/sdk@1.0.0-alpha.22': {}
 
   '@polka/url@1.0.0-next.29': {}
 

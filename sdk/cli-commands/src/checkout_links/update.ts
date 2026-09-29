@@ -1,5 +1,5 @@
-// Generated from checkout-links:update (2026-04). Do not edit.
-import type { Polar } from '@polar-sh/sdk/2026-04'
+// Generated from checkout-links:update (2026-10). Do not edit.
+import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'

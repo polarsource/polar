@@ -32,8 +32,8 @@ class CLICommandsEmitter(EmitterBase):
         super().__init__(ir, "0.0.0", pathlib.Path(__file__).parent / "template")
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
-        if len(self.ir.versions) != 1 or self.ir.versions[0].version != "2026-04":
-            raise ValueError("The CLI prototype requires the 2026-04 OpenAPI spec.")
+        if len(self.ir.versions) != 1 or self.ir.versions[0].version != "2026-10":
+            raise ValueError("The CLI prototype requires the 2026-10 OpenAPI spec.")
 
         api = self.ir.versions[0]
         services = sorted(api.services, key=lambda service: service.name)

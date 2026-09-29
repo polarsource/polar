@@ -1,5 +1,5 @@
-// Generated from subscriptions:update (2026-04). Do not edit.
-import type { Polar } from '@polar-sh/sdk/2026-04'
+// Generated from subscriptions:update (2026-10). Do not edit.
+import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
@@ -46,7 +46,7 @@ export const command = Command.make(
       trial_end: jsonFlag('trial-end').pipe(
         Flag.optional,
         Flag.withDescription(
-          'Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.',
+          'Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.',
         ),
       ),
       seats: Flag.Int('seats').pipe(

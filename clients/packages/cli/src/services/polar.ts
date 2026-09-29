@@ -1,4 +1,4 @@
-import { createPolar, type Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
+import { createPolar, type Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { Context, Effect, Layer, Redacted } from 'effect'
 import { AuthError, loginCommand, type PolarEnvironment } from '@/schemas/Auth'
 import { apiOrigin } from '@/services/api'

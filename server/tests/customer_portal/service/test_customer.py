@@ -124,6 +124,61 @@ class TestAddPaymentMethod:
         assert customer.default_payment_method_id is None
         enqueue_job_mock.assert_not_called()
 
+    async def test_generated_sepa_default(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        original = build_stripe_payment_method(type="ideal")
+        generated = build_stripe_payment_method(type="sepa_debit")
+        generated.id = "pm_generated"
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_test",
+                "status": "succeeded",
+                "payment_method": original,
+                "latest_attempt": {
+                    "id": "setatt_test",
+                    "object": "setup_attempt",
+                    "payment_method_details": {
+                        "type": "ideal",
+                        "ideal": {"generated_sepa_debit": generated.id},
+                    },
+                },
+            },
+            None,
+        )
+        stripe_service_mock.create_setup_intent.return_value = intent
+        stripe_service_mock.confirm_setup_intent.return_value = intent
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.get_setup_intent",
+            return_value=intent,
+        )
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.get_payment_method",
+            return_value=generated,
+        )
+
+        response = await customer_service.add_payment_method(
+            session,
+            customer,
+            CustomerPaymentMethodCreate(
+                confirmation_token_id="CONFIRMATION_TOKEN_ID",
+                set_default=True,
+                return_url="https://example.com/return",
+            ),
+        )
+
+        stripe_service_mock.update_customer.assert_awaited_once_with(
+            customer.stripe_customer_id,
+            invoice_settings={"default_payment_method": generated.id},
+        )
+        assert response.status == "succeeded"
+        assert response.payment_method.type == "sepa_debit"
+        assert customer.default_payment_method_id == response.payment_method.id
+
 
 @pytest.mark.asyncio
 class TestDeletePaymentMethod:

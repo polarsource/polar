@@ -88,7 +88,7 @@ async def notify_created(redis: Redis, migration: MerchantMigration) -> None:
     await _post_once(
         redis,
         f"merchant_migration:slack:created:{migration.id}",
-        _migration_payload(":package: New merchant migration", migration),
+        _migration_payload(":truck: New merchant migration", migration),
     )
 
 

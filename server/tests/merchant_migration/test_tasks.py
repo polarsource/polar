@@ -57,9 +57,7 @@ class TestNotifyCreated:
         assert chat_post_message.await_count == 2
         kwargs = chat_post_message.await_args_list[-1].kwargs
         assert kwargs["channel"] == "C0B76J9KR8F"
-        assert (
-            kwargs["text"] == f":package: New merchant migration: {organization.slug}"
-        )
+        assert kwargs["text"] == f":truck: New merchant migration: {organization.slug}"
         body = str(kwargs["blocks"])
         assert str(migration.id) in body
         assert f"/merchant-migrations/{migration.id}" in body

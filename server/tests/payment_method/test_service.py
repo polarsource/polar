@@ -10,6 +10,7 @@ from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import Checkout, Customer, Order, Organization, PaymentMethod, Product
+from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.service import (
@@ -28,6 +29,10 @@ from tests.fixtures.random_objects import (
     create_subscription,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
+from tests.merchant_migration._helpers import (
+    build_connected_migration,
+    stage_subscription_record,
+)
 
 
 @pytest.mark.asyncio
@@ -618,6 +623,61 @@ class TestSendExpiringReminderEmail:
             enqueue_email_template_mock.call_args.kwargs["subject"]
             == "Your card ending in 4242 expires soon"
         )
+
+    async def test_no_billing_migration_notice(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        enqueue_email_template_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_expiring_card(save_fixture, customer)
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+
+        await payment_method_service.send_expiration_reminder_email(
+            session, payment_method
+        )
+
+        email = enqueue_email_template_mock.call_args.args[0]
+        assert email.props.previous_billing_provider is None
+
+    async def test_billing_migration_notice_for_moved_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        enqueue_email_template_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_expiring_card(save_fixture, customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        migration = await build_connected_migration(save_fixture, organization)
+        await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            subscription,
+            cutover_status=MerchantMigrationCutoverStatus.moved,
+        )
+
+        await payment_method_service.send_expiration_reminder_email(
+            session, payment_method
+        )
+
+        email = enqueue_email_template_mock.call_args.args[0]
+        assert email.props.previous_billing_provider == "Stripe"
 
     async def test_passes_deduplication_key(
         self,

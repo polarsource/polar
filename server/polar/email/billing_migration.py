@@ -6,6 +6,7 @@ from polar.postgres import AsyncSession
 
 PRE_BILLING_NOTICE_TEMPLATES: frozenset[EmailTemplate] = frozenset(
     {
+        EmailTemplate.payment_method_expiration_reminder,
         EmailTemplate.subscription_renewal_reminder,
         EmailTemplate.subscription_trial_conversion_reminder,
     }

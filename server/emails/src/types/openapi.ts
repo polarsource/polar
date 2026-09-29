@@ -2398,6 +2398,11 @@ export interface components {
       expiration_date: string
       /** Url */
       url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
     }
     /**
      * PaymentProcessor

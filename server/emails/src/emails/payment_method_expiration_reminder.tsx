@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -15,6 +16,7 @@ export function PaymentMethodExpirationReminder({
   product_names,
   expiration_date,
   url,
+  previous_billing_provider,
 }: schemas['PaymentMethodExpirationReminderProps']) {
   const { brand, last4 } = payment_method.method_metadata
   const brandLabel = brand.charAt(0).toUpperCase() + brand.slice(1)
@@ -47,6 +49,12 @@ export function PaymentMethodExpirationReminder({
         </Text>
         ).
       </Intro>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Text>
         To avoid an interruption, add an up-to-date payment method from your
         customer portal.
@@ -71,6 +79,7 @@ PaymentMethodExpirationReminder.PreviewProps = {
   },
   product_names: ['Premium'],
   expiration_date: 'April 2026',
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal/settings',
 }
 

@@ -272,6 +272,7 @@ class PaymentMethodExpirationReminderProps(EmailProps):
     product_names: list[str]
     expiration_date: str
     url: str
+    previous_billing_provider: str | None = None
 
 
 class PaymentMethodExpirationReminderEmail(BaseModel):

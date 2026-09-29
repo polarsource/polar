@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import date
 from urllib.parse import urlencode
 
@@ -10,8 +11,9 @@ from sqlalchemy.orm import joinedload
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.deduplication import payment_method_expiration_reminder_key
-from polar.email.schemas import EmailAdapter
+from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import enqueue_email_template
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
@@ -226,6 +228,9 @@ class PaymentMethodService:
             return
 
         recipients = await customer_service.get_email_recipients(session, customer)
+        previous_billing_provider = await self._previous_billing_provider(
+            session, subscriptions
+        )
         subject = f"Your card ending in {card.method_metadata.last4} expires soon"
         deduplication_key = payment_method_expiration_reminder_key(
             payment_method.id,
@@ -257,6 +262,7 @@ class PaymentMethodService:
                         "product_names": product_names,
                         "expiration_date": expiration_date,
                         "url": portal_url,
+                        "previous_billing_provider": previous_billing_provider,
                     },
                 }
             )
@@ -268,6 +274,17 @@ class PaymentMethodService:
                 subject=subject,
                 deduplication_key=deduplication_key,
             )
+
+    async def _previous_billing_provider(
+        self, session: AsyncSession, subscriptions: Sequence[Subscription]
+    ) -> str | None:
+        for subscription in subscriptions:
+            provider = await previous_billing_provider_for_notice(
+                session, subscription, EmailTemplate.payment_method_expiration_reminder
+            )
+            if provider is not None:
+                return provider
+        return None
 
     async def _get_alternative_payment_method(
         self,

@@ -124,6 +124,7 @@ ACTION_REQUIRED_CODES = {
     "customer_tax_exempt",
     "subscription_tax_behavior_unspecified",
     "subscription_customer_balance",
+    "subscription_scheduled_change",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another source product uses this name. Both import and share it in Polar."
@@ -729,9 +730,10 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="subscription_scheduled_change",
                 message=(
-                    "A subscription schedule on the source changes or ends it "
-                    "later. Polar can't carry that schedule over, so it stays on "
-                    "the source."
+                    "This subscription has a Stripe subscription schedule, which "
+                    "can change its price, quantity, or end date later. Polar "
+                    "can't run it. Release the schedule on Stripe (the "
+                    "subscription stays as it is), then run the pre-check again."
                 ),
                 source_id=source_id,
             )

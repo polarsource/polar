@@ -266,6 +266,8 @@ def _stripe_subscription(
     trial_end: int | None = None,
     billing_cycle_anchor: int | None = 1_700_000_000,
     cancellation_comment: str | None = None,
+    cancellation_feedback: str | None = None,
+    canceled_at: int | None = None,
     currency: str = "usd",
     items: list[dict[str, Any]] | None = None,
     payment_method: dict[str, Any] | None = None,
@@ -288,6 +290,7 @@ def _stripe_subscription(
             "collection_method": "charge_automatically",
             "cancel_at_period_end": cancel_at_period_end,
             "cancel_at": None,
+            "canceled_at": canceled_at,
             "pause_collection": None,
             "trial_end": trial_end,
             "billing_cycle_anchor": billing_cycle_anchor,
@@ -295,7 +298,9 @@ def _stripe_subscription(
             "default_tax_rates": default_tax_rates or [],
             "discounts": [],
             "cancellation_details": (
-                {"comment": cancellation_comment} if cancellation_comment else None
+                {"comment": cancellation_comment, "feedback": cancellation_feedback}
+                if cancellation_comment or cancellation_feedback
+                else None
             ),
             "items": {
                 "data": items
@@ -1341,6 +1346,45 @@ class TestGetSubscription:
         assert subscription.latest_invoice_unpaid is expected
         kwargs = client.v1.subscriptions.retrieve_async.await_args.kwargs
         assert "latest_invoice" in kwargs["params"]["expand"]
+
+    async def test_reads_when_and_why_a_pending_end_was_asked_for(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                cancel_at_period_end=True,
+                canceled_at=1_700_500_000,
+                cancellation_feedback="too_expensive",
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.canceled_at == datetime.fromtimestamp(1_700_500_000, tz=UTC)
+        assert subscription.cancellation_reason == "too_expensive"
+
+    async def test_ignores_the_date_of_our_own_stop(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                status="canceled",
+                canceled_at=1_700_500_000,
+                cancellation_comment=(
+                    "Migrated to Polar (migration m_1; cancel at period end)"
+                ),
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.cancel_at_period_end is True
+        assert subscription.canceled_at is None
+        assert subscription.cancellation_reason is None
 
     async def test_reads_the_price_it_is_billed_in(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

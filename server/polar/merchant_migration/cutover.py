@@ -31,17 +31,12 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
 )
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.subscription.service import (
-    SubscriptionUpdateContext,
-)
-from polar.subscription.service import (
-    subscription as subscription_service,
-)
+from polar.subscription.service import subscription as subscription_service
 
 from . import pan_transfer
 from .adapters import SourceAdapter
@@ -185,6 +180,36 @@ def _ends_at_period_end(
     )
 
 
+@dataclass(frozen=True)
+class _ScheduledEnd:
+    canceled_at: datetime
+    reason: CustomerCancellationReason | None
+
+
+def _scheduled_end(
+    source: CanonicalSubscription, staged: CanonicalSubscription
+) -> _ScheduledEnd | None:
+    """The end the customer asked for on the source, and when and why. The stop
+    overwrites that date and reason there, so a retry reads the import's.
+
+    Both come from one snapshot: a request re-made without feedback must not
+    inherit the reason of one the customer took back."""
+    if not _ends_at_period_end(source, staged):
+        return None
+    pending = (
+        source
+        if source.cancel_at_period_end and not source.stopped_for_migration
+        else staged
+    )
+    reason = pending.cancellation_reason
+    return _ScheduledEnd(
+        canceled_at=pending.canceled_at or utc_now(),
+        reason=CustomerCancellationReason(reason)
+        if reason is not None and reason in CustomerCancellationReason
+        else None,
+    )
+
+
 class SubscriptionCutover:
     """Cuts one imported subscription over, or explains why it didn't."""
 
@@ -267,10 +292,14 @@ class SubscriptionCutover:
         # Behind the gate above because resolving writes: it upserts the copied
         # methods and may set the customer's default.
         payment_method = await self._resolve_payment_method(record, customer, source)
-        if already_stopped and subscription.is_period_lapsed(
-            self._period_end(source, subscription)
-        ):
-            return _fail(_LAPSED)
+        if already_stopped:
+            if subscription.is_period_lapsed(self._period_end(source, subscription)):
+                return _fail(_LAPSED)
+        else:
+            reread = await self._reread_source(record, subscription.currency)
+            if isinstance(reread, CutoverOutcome):
+                return reread
+            source = reread
 
         # Locked only now: the portal takes this same row lock, and everything
         # above spends seconds in Stripe. Bailing here is still free.
@@ -290,13 +319,13 @@ class SubscriptionCutover:
         subscription.tax_behavior = staged.import_tax_behavior()
         subscription.tax_exempted = False
         # Read before the source stop: an immediate cancel clears the flag.
-        ends_at_period_end = _ends_at_period_end(source, staged)
+        scheduled_end = _scheduled_end(source, staged)
 
         if not already_stopped:
             await self.adapter.stop_source_subscription(
                 record.source_id,
                 reference=str(self.migration.id),
-                cancel_at_period_end=ends_at_period_end,
+                cancel_at_period_end=scheduled_end is not None,
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
@@ -311,9 +340,11 @@ class SubscriptionCutover:
                 payment_method=payment_method,
                 provider=self.migration.source_platform,
                 provider_subscription_id=record.source_id,
+                canceled_at=scheduled_end.canceled_at if scheduled_end else None,
+                customer_cancellation_reason=scheduled_end.reason
+                if scheduled_end
+                else None,
             )
-            if ends_at_period_end:
-                await self._schedule_period_end_cancellation(subscription)
         except Exception:
             # The source is stopped and this rolls back, ledger row included, so
             # the log is the only trace of a customer nobody is billing.
@@ -393,6 +424,11 @@ class SubscriptionCutover:
             return _skip(imported.skip)
 
         payment_method = await self._resolve_payment_method(record, customer, source)
+        if not already_stopped:
+            reread = await self._reread_source(record, staged.currency)
+            if isinstance(reread, CutoverOutcome):
+                return reread
+            source = reread
 
         try:
             canonical_product = deserialize(
@@ -441,12 +477,12 @@ class SubscriptionCutover:
         )
 
         # Read before the source stop: an immediate cancel clears the flag.
-        ends_at_period_end = _ends_at_period_end(source, staged)
+        scheduled_end = _scheduled_end(source, staged)
         if not already_stopped:
             await self.adapter.stop_source_subscription(
                 record.source_id,
                 reference=str(self.migration.id),
-                cancel_at_period_end=ends_at_period_end,
+                cancel_at_period_end=scheduled_end is not None,
             )
 
         current_period_start, current_period_end = self._period(source, subscription)
@@ -461,9 +497,11 @@ class SubscriptionCutover:
                 payment_method=payment_method,
                 provider=self.migration.source_platform,
                 provider_subscription_id=record.source_id,
+                canceled_at=scheduled_end.canceled_at if scheduled_end else None,
+                customer_cancellation_reason=scheduled_end.reason
+                if scheduled_end
+                else None,
             )
-            if ends_at_period_end:
-                await self._schedule_period_end_cancellation(subscription)
         except Exception:
             log.exception(
                 "merchant_migration.cutover.stopped_but_unfinished",
@@ -503,17 +541,19 @@ class SubscriptionCutover:
             )
         return _moved()
 
-    async def _schedule_period_end_cancellation(
-        self, subscription: Subscription
-    ) -> None:
-        """Keep the source's scheduled end. The subscription stays active until then."""
-        async with SubscriptionUpdateContext(
-            self.session,
-            subscription,
-            subscription_service,
-            notify_customer=False,
-        ) as ctx:
-            await subscription_service.cancel(self.session, ctx, subscription)
+    async def _reread_source(
+        self, record: MerchantMigrationRecord, currency: str | None
+    ) -> CanonicalSubscription | CutoverOutcome:
+        """The source again, right before the stop. Resolving the card took
+        seconds there, long enough for the customer to cancel, or to take back
+        a cancellation at period end."""
+        source = await self.adapter.get_subscription(record.source_id)
+        if source is None:
+            return _skip(_GONE)
+        reason = await self._source_reason(source, record, currency)
+        if reason is not None:
+            return _skip(reason)
+        return source
 
     async def _load_subscription(self, subscription_id: UUID) -> Subscription | None:
         return await self.subscription_repository.get_by_id(

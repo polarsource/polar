@@ -951,6 +951,8 @@ class SubscriptionService:
         payment_method: PaymentMethod | None,
         provider: str,
         provider_subscription_id: str,
+        canceled_at: datetime | None = None,
+        customer_cancellation_reason: CustomerCancellationReason | None = None,
     ) -> Subscription:
         """Hand billing of an imported subscription over to Polar (the cutover).
 
@@ -960,6 +962,10 @@ class SubscriptionService:
 
         With no ``payment_method``, the first renewal falls back to the
         customer's default, and goes to dunning when there is none.
+
+        ``canceled_at`` keeps an end the customer already asked for on the old
+        provider. Activation doesn't announce it as a new cancellation; the period
+        end revokes it like any other.
         """
         assert subscription.status == SubscriptionStatus.paused
         repository = SubscriptionRepository.from_session(session)
@@ -980,6 +986,11 @@ class SubscriptionService:
         # The scheduler converts a trial at `current_period_end`, so while
         # trialing the two have to agree or the customer is billed late.
         subscription.current_period_end = trial_end or current_period_end
+        if canceled_at is not None:
+            subscription.canceled_at = canceled_at
+            subscription.cancel_at_period_end = True
+            subscription.ends_at = subscription.current_period_end
+            subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
             None if trial_end else current_period_start

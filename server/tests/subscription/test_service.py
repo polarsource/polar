@@ -4182,6 +4182,51 @@ class TestActivateImported:
 
         assert updated.anchor_day == 31
 
+    @pytest.mark.parametrize("trialing", [False, True])
+    async def test_keeps_an_end_already_asked_for_without_announcing_it(
+        self,
+        trialing: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        reset_hooks(subscription_hooks)
+        period_end = utc_now() + timedelta(days=20)
+        trial_end = utc_now() + timedelta(days=5) if trialing else None
+        canceled_at = utc_now() - timedelta(days=3)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=utc_now() - timedelta(days=10),
+            current_period_end=period_end,
+            trial_end=trial_end,
+            payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
+            canceled_at=canceled_at,
+            customer_cancellation_reason=CustomerCancellationReason.too_expensive,
+        )
+
+        assert updated.canceled_at == canceled_at
+        assert updated.cancel_at_period_end is True
+        assert updated.ends_at == (trial_end or period_end)
+        assert (
+            updated.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+        assert_hooks_called_once(subscription_hooks, {"migrated", "updated"})
+
     async def test_notifies_merchants_the_subscription_was_migrated(
         self,
         session: AsyncSession,

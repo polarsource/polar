@@ -169,6 +169,9 @@ class CanonicalSubscription:
     # A source schedule is attached. It can change or end it later, which Polar
     # can't carry.
     has_scheduled_changes: bool = False
+    # When and why the customer asked for that end, while it's still pending.
+    canceled_at: datetime | None = None
+    cancellation_reason: str | None = None
     # When the source trial ends, so the cutover can keep the subscription
     # trialing on Polar until then instead of billing it early.
     trial_end: datetime | None = None
@@ -557,6 +560,8 @@ def deserialize(
                 ),
                 cancel_at=_parse_datetime(data.get("cancel_at")),
                 has_scheduled_changes=data.get("has_scheduled_changes", False),
+                canceled_at=_parse_datetime(data.get("canceled_at")),
+                cancellation_reason=data.get("cancellation_reason"),
                 trial_end=_parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 latest_invoice_unpaid=data.get("latest_invoice_unpaid", False),

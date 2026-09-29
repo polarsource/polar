@@ -1,3 +1,4 @@
+import html
 from datetime import timedelta
 
 import structlog
@@ -35,10 +36,14 @@ def _migration_payload(
 ) -> SlackPayload:
     organization = migration.organization
     fields: list[SlackText] = [
-        # plain_text: the name is merchant-controlled and mrkdwn can't escape it.
+        # The name is merchant-controlled: escaping &, < and > stops it from
+        # injecting mentions or links into the mrkdwn.
         {
-            "type": "plain_text",
-            "text": f"Organization\n{organization.name} ({organization.slug})",
+            "type": "mrkdwn",
+            "text": (
+                f"*Organization*\n{html.escape(organization.name, quote=False)}"
+                f" ({organization.slug})"
+            ),
         },
         {"type": "mrkdwn", "text": f"*Source*\n{migration.source_platform.label}"},
         {"type": "mrkdwn", "text": f"*Migration*\n`{migration.id}`"},

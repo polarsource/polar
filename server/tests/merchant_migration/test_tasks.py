@@ -47,7 +47,7 @@ class TestNotifyCreated:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.name = "Acme `*<!channel>*`"
+        organization.name = "Acme & Co <!channel>"
         await save_fixture(organization)
         migration = await build_connected_migration(save_fixture, organization)
         chat_post_message.side_effect = [failure, {"ok": True}]
@@ -62,8 +62,8 @@ class TestNotifyCreated:
         assert kwargs["channel"] == "C0B76J9KR8F"
         assert kwargs["text"] == f":truck: New merchant migration: {organization.slug}"
         assert kwargs["blocks"][1]["fields"][0] == {
-            "type": "plain_text",
-            "text": f"Organization\nAcme `*<!channel>*` ({organization.slug})",
+            "type": "mrkdwn",
+            "text": f"*Organization*\nAcme &amp; Co &lt;!channel&gt; ({organization.slug})",
         }
         body = str(kwargs["blocks"])
         assert str(migration.id) in body

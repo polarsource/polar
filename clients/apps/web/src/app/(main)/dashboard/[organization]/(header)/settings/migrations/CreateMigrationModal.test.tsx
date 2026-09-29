@@ -73,7 +73,7 @@ describe('CreateMigrationModal', () => {
     mutateAsync.mockReset()
   })
 
-  it('requires All accounts Read and a test-mode key in this environment', () => {
+  it('requires Connect → Accounts Read and a test-mode key in this environment', () => {
     render(
       <CreateMigrationModal
         organizationId="org_1"
@@ -82,9 +82,9 @@ describe('CreateMigrationModal', () => {
       />,
     )
 
-    expect(screen.getByText('All accounts')).toBeTruthy()
+    expect(screen.getByText('Accounts')).toBeTruthy()
     expect(
-      screen.getByText(/under Connect in Stripe/, { exact: false }),
+      screen.getByText(/in the\s+Connect group/, { exact: false }),
     ).toBeTruthy()
     expect(
       screen.getByRole('link', { name: /Create a restricted key in Stripe/ }),
@@ -115,11 +115,11 @@ describe('CreateMigrationModal', () => {
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
-  it('highlights All accounts when the API reports it missing', async () => {
+  it('highlights Accounts when the API reports it missing', async () => {
     mutateAsync.mockResolvedValue({
       error: {
         error: 'MissingStripeScopes',
-        detail: 'The Stripe API key is missing access to: All accounts.',
+        detail: 'The Stripe API key is missing access to: Accounts.',
       },
     })
 

@@ -35,21 +35,22 @@ describe('stripeCreateKeyUrl', () => {
 })
 
 describe('REQUIRED_PERMISSIONS', () => {
-  it('requires All accounts Read', () => {
+  it('requires Connect → Accounts Read', () => {
     expect(REQUIRED_PERMISSIONS).toContainEqual({
-      resource: 'All accounts',
+      group: 'Connect',
+      resource: 'Accounts',
       access: 'Read',
     })
   })
 
-  it('requires Read on the objects the subscription reads expand', () => {
+  it('lists only rows that exist in Stripe’s key form', () => {
+    const resources = REQUIRED_PERMISSIONS.map((p) => p.resource)
+    expect(resources).not.toContain('Subscription schedules')
+    expect(resources).not.toContain('All accounts')
     expect(REQUIRED_PERMISSIONS).toContainEqual({
-      resource: 'Subscription schedules',
-      access: 'Read',
-    })
-    expect(REQUIRED_PERMISSIONS).toContainEqual({
-      resource: 'Invoices',
-      access: 'Read',
+      group: 'Billing',
+      resource: 'Subscriptions',
+      access: 'Write',
     })
   })
 })
@@ -89,23 +90,26 @@ describe('parseMissingStripeScopes', () => {
     expect(
       parseMissingStripeScopes({
         error: 'MissingStripeScopes',
-        detail: 'The Stripe API key is missing access to: All accounts.',
+        detail: 'The Stripe API key is missing access to: Accounts.',
       }),
-    ).toEqual(['All accounts'])
+    ).toEqual(['Accounts'])
     expect(
       parseMissingStripeScopes({
         error: 'MissingStripeScopes',
         detail:
-          'The Stripe API key is missing access to: Customers, Subscriptions (write), All accounts.',
+          'The Stripe API key is missing access to: Customers, Subscriptions (write), Payment Methods, Accounts.',
       }),
-    ).toEqual(['Customers', 'Subscriptions', 'All accounts'])
+    ).toEqual(['Customers', 'Subscriptions', 'Payment Methods', 'Accounts'])
+  })
+
+  it('maps labels from older API versions onto the current rows', () => {
     expect(
       parseMissingStripeScopes({
         error: 'MissingStripeScopes',
         detail:
-          'The Stripe API key is missing access to: Subscription schedules, Invoices.',
+          'The Stripe API key is missing access to: Subscription schedules, Promotion codes, All accounts.',
       }),
-    ).toEqual(['Subscription schedules', 'Invoices'])
+    ).toEqual(['Subscriptions', 'Promotion Codes', 'Accounts'])
   })
 
   it('ignores other API errors', () => {

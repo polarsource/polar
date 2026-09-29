@@ -12,6 +12,7 @@ import {
 const NO_MISSING: string[] = []
 
 function PermissionRow({
+  group,
   resource,
   access,
   missing,
@@ -22,6 +23,9 @@ function PermissionRow({
       <Box alignItems="center" columnGap="s">
         <Text as="span" color={missing ? 'danger' : 'default'}>
           <Icon size={14} strokeWidth={2.5} aria-hidden="true" />
+        </Text>
+        <Text variant="caption" color={missing ? 'danger' : 'muted'}>
+          {group} &rarr;
         </Text>
         <Text variant="caption" color={missing ? 'danger' : 'default'}>
           {resource}
@@ -89,22 +93,24 @@ export function ConnectGuide({
           ))}
         </Box>
         <Text variant="caption" color="muted">
-          Set everything else to None &mdash; &ldquo;Write&rdquo; includes read.
+          Use the Permissions column and set everything else to None &mdash;
+          &ldquo;Write&rdquo; includes read. The search box in Stripe&rsquo;s
+          key form finds each row by name.
         </Text>
         <Text variant="caption" color="muted">
           Subscriptions needs Write so that at cutover Polar can cancel each
           subscription on Stripe and recreate it on Polar &mdash; moving the
-          billing cycle across without charging the customer twice.
+          billing cycle across without charging the customer twice. It also
+          covers subscription schedules, which have no row of their own.
         </Text>
         <Text variant="caption" color="muted">
-          Subscription schedules and Invoices Read let Polar spot subscriptions
-          with a scheduled change or an unpaid invoice, and leave them on
-          Stripe.
+          Subscriptions and Invoices let Polar spot subscriptions with a
+          scheduled change or an unpaid invoice, and leave them on Stripe.
         </Text>
         <Text variant="caption" color="muted">
-          All accounts Read lets Polar identify the Stripe account and reject
-          Connect platforms before the migration is saved. It is under Connect
-          in Stripe&rsquo;s key form.
+          Accounts Read lets Polar identify the Stripe account and reject
+          Connect platforms before the migration is saved. It sits in the
+          Connect group even if you don&rsquo;t use Connect.
         </Text>
       </Box>
 

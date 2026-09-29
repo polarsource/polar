@@ -850,15 +850,11 @@ describe('CheckoutFormProvider', () => {
         }),
       }) as unknown as Stripe
 
-    const integrationError = () => {
-      const error = new Error(
+    it('shows an error to the buyer when the Payment Element is not mounted', async () => {
+      const integrationError = new Error(
         'Could not find a mounted element to create the Confirmation Token from, please ensure you have a Payment Element or Express Checkout Element mounted (or both).',
       )
-      error.name = 'IntegrationError'
-      return error
-    }
-
-    it('shows an error to the buyer when the Payment Element is not mounted', async () => {
+      integrationError.name = 'IntegrationError'
       const confirm = vi.fn<CheckoutContextProps['confirm']>()
       const getCtx = renderWithCheckout({
         checkout: paidCheckout,
@@ -870,7 +866,7 @@ describe('CheckoutFormProvider', () => {
         const error = await getCtx()
           .confirm(
             { customer_email: 'a@b.com' },
-            makeStripe(integrationError()),
+            makeStripe(integrationError),
             elements,
           )
           .catch((e: unknown) => e)

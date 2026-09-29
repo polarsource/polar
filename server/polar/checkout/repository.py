@@ -34,6 +34,16 @@ from polar.models.checkout import CheckoutStatus
 from .sorting import CheckoutSortProperty
 
 
+def expired_pending_anonymization(
+    older_than: datetime,
+) -> tuple[ColumnExpressionArgument[bool], ...]:
+    return (
+        Checkout.anonymized_at.is_(None),
+        Checkout.status == CheckoutStatus.expired,
+        Checkout.created_at < older_than,
+    )
+
+
 class CheckoutRepository(
     RepositorySortingMixin[Checkout, CheckoutSortProperty],
     RepositorySoftDeletionIDMixin[Checkout, UUID],
@@ -93,18 +103,9 @@ class CheckoutRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
-    def _expired_pending_anonymization(
-        self, older_than: datetime
-    ) -> tuple[ColumnExpressionArgument[bool], ...]:
-        return (
-            Checkout.anonymized_at.is_(None),
-            Checkout.status == CheckoutStatus.expired,
-            Checkout.created_at < older_than,
-        )
-
     async def count_expired_pending_anonymization(self, older_than: datetime) -> int:
         statement = select(func.count(Checkout.id)).where(
-            *self._expired_pending_anonymization(older_than)
+            *expired_pending_anonymization(older_than)
         )
         result = await self.session.execute(statement)
         return result.scalar_one()
@@ -119,7 +120,7 @@ class CheckoutRepository(
         # Postgres has no `UPDATE ... LIMIT`, so the batch is bounded by a subquery.
         batch_statement = (
             select(Checkout.id)
-            .where(*self._expired_pending_anonymization(older_than))
+            .where(*expired_pending_anonymization(older_than))
             .limit(batch_size)
         )
         statement = (

@@ -1884,7 +1884,7 @@ class TestImportCatalog:
         assert subscriptions.selectable == 0
         assert subscriptions.ready == 1
 
-        report = await _import_catalog(session, auth_subject, later.id)
+        report = await _import_catalog(session, auth_subject, later.id, record_ids=[])
 
         assert report.step == MerchantMigrationStep.create_catalog
         results = {result.entity: result for result in report.results}

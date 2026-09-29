@@ -882,6 +882,10 @@ class MerchantMigrationService:
             raise PanTransferAlreadyStarted()
         if migration.step != MerchantMigrationStep.create_catalog:
             raise PanTransferNotReady()
+        # Stalled counts too: once this leaves `create_catalog` the import can't
+        # be retried, and whatever it hadn't prepared would never be switched.
+        if migration.operation is not None and migration.operation.is_active:
+            raise MigrationOperationInProgress()
         # The first step tells the merchant which Stripe account to send the cards
         # to. Without it configured we'd mark that step done while showing them
         # nothing, and they'd address the transfer to no one.
@@ -912,12 +916,8 @@ class MerchantMigrationService:
         """Whether every subscription to switch already has the card it charges on
         Polar, typically moved by an earlier migration of the same account. The
         switch moves a subscription without a card, so one missing card keeps
-        the checklist, and so does an import still adding subscriptions."""
+        the checklist."""
         if migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy:
-            return False
-        # Stalled counts too: once the skip leaves `create_catalog`, the
-        # import can't be retried.
-        if migration.operation is not None and migration.operation.is_active:
             return False
         return await MerchantMigrationRecordRepository.from_session(
             session

@@ -17,28 +17,25 @@ export function importedTotal(counts: ImportedCounts): number {
 // True only on a settled read. `isFetching` matters as much as `isLoading`:
 // the refetch the import itself triggers serves the pre-import zeros until it
 // lands, which would read as "nothing imported" just as the import succeeded.
-// Subscriptions an earlier migration prepared count as landed: their customers
-// and products were imported there, so this migration's own counts stay zero.
-export function nothingImported(outcome: SettledImport): boolean {
+function settledWithNothingImportedHere(outcome: SettledImport): boolean {
   return (
     !outcome.isLoading &&
     !outcome.isFetching &&
     !outcome.isError &&
-    importedTotal(outcome.imported) === 0 &&
-    outcome.readyToSwitch === 0
+    importedTotal(outcome.imported) === 0
   )
+}
+
+// Subscriptions an earlier migration prepared count as landed: their customers
+// and products were imported there, so this migration's own counts stay zero.
+export function nothingImported(outcome: SettledImport): boolean {
+  return settledWithNothingImportedHere(outcome) && outcome.readyToSwitch === 0
 }
 
 // The subscriptions were prepared by an earlier migration of the account, so
 // their cards may be on Polar already and the card move can be skipped.
 export function preparedEarlier(outcome: SettledImport): boolean {
-  return (
-    !outcome.isLoading &&
-    !outcome.isFetching &&
-    !outcome.isError &&
-    importedTotal(outcome.imported) === 0 &&
-    outcome.readyToSwitch > 0
-  )
+  return settledWithNothingImportedHere(outcome) && outcome.readyToSwitch > 0
 }
 
 // "1 subscription, 3 products, 2 discounts and 13 customers", dropping what

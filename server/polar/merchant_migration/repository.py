@@ -21,6 +21,7 @@ from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
 from polar.enums import TaxBehavior
 from polar.kit.db.locking import pg_advisory_xact_lock
+from polar.kit.pagination import count_subquery
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -696,11 +697,8 @@ class MerchantMigrationRecordRepository(
         self, migration_id: UUID, *, exact: bool = False
     ) -> bool:
         """False when there is nothing to switch."""
-        switchable = (
+        switchable = count_subquery(
             self._switchable_subscriptions_statement(migration_id)
-            .with_only_columns(MerchantMigrationRecord.id)
-            .order_by(None)
-            .subquery()
         )
         covered = self._payment_method_coverage_statement(
             migration_id, exact=exact

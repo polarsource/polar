@@ -4271,7 +4271,7 @@ class TestStartPanTransfer:
 
     @pytest.mark.auth
     @pytest.mark.parametrize("stalled", [False, True])
-    async def test_keeps_the_checklist_while_an_import_runs(
+    async def test_refuses_while_an_import_runs(
         self,
         stalled: bool,
         mocker: MockerFixture,
@@ -4299,11 +4299,8 @@ class TestStartPanTransfer:
         )
         await save_fixture(migration)
 
-        checklist = await service.start_pan_transfer(
-            session, auth_subject, migration.id
-        )
-
-        assert checklist.current_step_key == "start_copy"
+        with pytest.raises(MigrationOperationInProgress):
+            await service.start_pan_transfer(session, auth_subject, migration.id)
 
     @pytest.mark.auth
     async def test_keeps_the_checklist_while_a_card_is_missing(

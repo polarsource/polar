@@ -7,11 +7,6 @@ import {
 export type DataTablePaginationState = PaginationState
 export type DataTableSortingState = SortingState
 export type DataTableOnChangeFn<T> = OnChangeFn<T>
-export type DataTableSearchParams = {
-  page?: string
-  limit?: string
-  sorting?: string[] | string
-}
 
 export const sortingStateToQueryParam = <S extends string>(
   state: DataTableSortingState,
@@ -28,42 +23,6 @@ export const sortingQueryParamToState = (
     }
     return { id, desc: false }
   })
-}
-
-export const parseSearchParams = (
-  searchParams: DataTableSearchParams,
-  defaultSorting: DataTableSortingState = [],
-  defaultPageSize: number = 20,
-): { pagination: DataTablePaginationState; sorting: DataTableSortingState } => {
-  const pageIndex = searchParams.page
-    ? Number.parseInt(searchParams.page) - 1
-    : 0
-  const pageSize = searchParams.limit
-    ? Number.parseInt(searchParams.limit)
-    : defaultPageSize
-  const sorting = searchParams.sorting
-    ? sortingQueryParamToState(
-        Array.isArray(searchParams.sorting)
-          ? searchParams.sorting
-          : [searchParams.sorting],
-      )
-    : defaultSorting
-
-  return { pagination: { pageIndex, pageSize }, sorting }
-}
-
-export const serializeSearchParams = (
-  pagination: DataTablePaginationState,
-  sorting: DataTableSortingState,
-): URLSearchParams => {
-  const searchParams = new URLSearchParams({
-    page: (pagination.pageIndex + 1).toString(),
-    limit: pagination.pageSize.toString(),
-  })
-  for (const criteria of sortingStateToQueryParam(sorting)) {
-    searchParams.append('sorting', criteria)
-  }
-  return searchParams
 }
 
 export const getAPIParams = <S extends string>(

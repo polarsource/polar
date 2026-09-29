@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
@@ -8,7 +9,7 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
-from polar.models import OrganizationSSOConnection, Product, User
+from polar.models import OAuth2Token, OrganizationSSOConnection, Product, User
 from polar.models.account import Account
 from polar.models.organization import (
     Organization,
@@ -1630,6 +1631,27 @@ class TestUpdateSSOEnforced:
     ) -> None:
         # A non-SSO session must not be able to turn on enforcement.
         await self._create_connection(save_fixture, organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_enable_from_scoped_token_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A token's down-scope doesn't prove an SSO login.
+        await self._create_connection(save_fixture, organization)
+        auth_subject.session = MagicMock(spec=OAuth2Token)
+        auth_subject.organization_ids = frozenset({organization.id})
 
         response = await client.patch(
             f"/v1/organizations/{organization.id}",

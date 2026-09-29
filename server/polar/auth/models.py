@@ -50,10 +50,6 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
     # restricts access to those organizations, always intersected with the
     # subject's current membership.
     organization_ids: frozenset[UUID] | None
-    # Organization selected for this request with the ``Polar-Organization``
-    # header. It only narrows access and, unlike ``organization_ids``, says
-    # nothing about how the credential was issued (e.g. through SSO).
-    requested_organization_id: UUID | None
 
     def __init__(
         self,
@@ -61,23 +57,11 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
         scopes: set[Scope],
         session: Session | None,
         organization_ids: frozenset[UUID] | None = None,
-        requested_organization_id: UUID | None = None,
     ) -> None:
         self.subject = subject
         self.scopes = scopes
         self.session = session
         self.organization_ids = organization_ids
-        self.requested_organization_id = requested_organization_id
-
-    def is_organization_in_scope(self, organization_id: UUID) -> bool:
-        """Whether the credential down-scope and the requested organization both
-        allow ``organization_id``. Membership is not checked."""
-        if (
-            self.organization_ids is not None
-            and organization_id not in self.organization_ids
-        ):
-            return False
-        return self.requested_organization_id in (None, organization_id)
 
     @cached_property
     def rate_limit_key(self) -> tuple[str, RateLimitGroup]:

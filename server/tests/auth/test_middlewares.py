@@ -211,8 +211,7 @@ class TestGetAuthSubjectRequestedOrganization:
             session,
         )
 
-        assert auth_subject.requested_organization_id == organization.id
-        assert auth_subject.organization_ids is None
+        assert auth_subject.organization_ids == frozenset({organization.id})
 
     async def test_user_token_non_member_organization(
         self,
@@ -252,6 +251,36 @@ class TestGetAuthSubjectRequestedOrganization:
                 ),
                 session,
             )
+
+    async def test_user_token_narrows_down_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.user]}test"
+        token = await _create_oauth2_token(save_fixture, access_token, user=user)
+        for scoped_organization in (organization, organization_second):
+            await save_fixture(
+                OAuth2TokenOrganization(
+                    oauth2_token_id=token.id, organization_id=scoped_organization.id
+                )
+            )
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(
+                access_token, requested_organization=organization_second.id
+            ),
+            session,
+        )
+
+        assert auth_subject.organization_ids == frozenset({organization_second.id})
 
     async def test_user_token_organization_outside_down_scope(
         self,
@@ -307,7 +336,7 @@ class TestGetAuthSubjectRequestedOrganization:
             session,
         )
 
-        assert auth_subject.requested_organization_id == organization.id
+        assert auth_subject.organization_ids == frozenset({organization.id})
 
     async def test_organization_token_own_organization(
         self,
@@ -390,7 +419,7 @@ class TestGetAuthSubjectRequestedOrganization:
             _request_without_credentials(organization.id), session
         )
 
-        assert auth_subject.requested_organization_id is None
+        assert auth_subject.organization_ids is None
 
 
 @pytest.mark.asyncio

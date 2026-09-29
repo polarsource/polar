@@ -133,7 +133,10 @@ async def update_authenticated_notification_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> UserOrganizationNotificationSettings:
     """Update the authenticated user's notification settings for an organization."""
-    if not auth_subject.is_organization_in_scope(organization_id):
+    if (
+        auth_subject.organization_ids is not None
+        and organization_id not in auth_subject.organization_ids
+    ):
         raise ResourceNotFound()
     try:
         user_org = await user_organization_service.update_notification_settings(
@@ -164,7 +167,10 @@ async def get_authenticated_notification_settings(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> UserOrganizationNotificationSettings:
     """Get the authenticated user's notification settings for an organization."""
-    if not auth_subject.is_organization_in_scope(organization_id):
+    if (
+        auth_subject.organization_ids is not None
+        and organization_id not in auth_subject.organization_ids
+    ):
         raise ResourceNotFound()
 
     user_org = await user_organization_service.get_by_user_and_org(

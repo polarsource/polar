@@ -255,12 +255,14 @@ async def apply_requested_organization(
             f"The {ORGANIZATION_HEADER} header is only supported with access tokens."
         )
 
+    # Checked against the credential's own down-scope and SSO enforcement, so
+    # the narrowed set below can't reach anything the credential couldn't.
     if (
         await get_accessible_organization(session, auth_subject, organization_id)
         is None
     ):
         raise RequestedOrganizationNotAccessible()
-    auth_subject.requested_organization_id = organization_id
+    auth_subject.organization_ids = frozenset({organization_id})
 
 
 class AuthSubjectMiddleware:

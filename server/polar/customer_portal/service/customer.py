@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -398,31 +398,30 @@ class CustomerService:
                 client_secret=setup_intent.client_secret,
             )
 
+        if set_default and setup_intent.payment_method is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "invalid",
+                        "loc": ("body", "setup_intent_id"),
+                        "msg": "Invalid setup_intent_id.",
+                        "input": str(setup_intent.id),
+                    }
+                ]
+            )
+        stripe_payment_method = await payment_method_service.resolve_from_stripe_intent(
+            setup_intent
+        )
         if set_default:
-            if setup_intent.payment_method is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "invalid",
-                            "loc": ("body", "setup_intent_id"),
-                            "msg": "Invalid setup_intent_id.",
-                            "input": str(setup_intent.id),
-                        }
-                    ]
-                )
             await stripe_service.update_customer(
                 customer.stripe_customer_id,
-                invoice_settings={
-                    "default_payment_method": get_expandable_id(
-                        setup_intent.payment_method
-                    )
-                },
+                invoice_settings={"default_payment_method": stripe_payment_method.id},
             )
 
         payment_method = await payment_method_service.upsert_from_stripe(
             session,
             customer,
-            cast(stripe_lib.PaymentMethod, setup_intent.payment_method),
+            stripe_payment_method,
             flush=True,
         )
         if set_default:

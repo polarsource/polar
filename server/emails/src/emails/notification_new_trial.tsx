@@ -25,6 +25,7 @@ export function NotificationNewTrial({
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        timeZone: 'UTC',
       })
     : null
 
@@ -49,6 +50,8 @@ NotificationNewTrial.PreviewProps = {
   subscriber_email: 'john.doe@acme.com',
   product_name: 'Pro',
   organization_name: 'Acme Inc.',
+  organization_slug: 'acme-inc',
+  subscription_id: null,
   trial_end: '2026-10-12T00:00:00Z',
 }
 

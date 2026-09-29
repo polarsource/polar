@@ -98,12 +98,12 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
 
 class MaintainerNewTrialNotificationPayload(NotificationPayloadBase):
     subscriber_name: str
-    subscriber_email: str | None = None
+    subscriber_email: str | None
     product_name: str
     organization_name: str
-    organization_slug: str | None = None
-    subscription_id: str | None = None
-    trial_end: datetime | None = None
+    organization_slug: str | None
+    subscription_id: str | None
+    trial_end: datetime | None
 
     def subject(self) -> str:
         return f"{self.subscriber_name} started a {self.product_name} trial"

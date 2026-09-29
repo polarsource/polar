@@ -44,8 +44,12 @@ def _new_trial_notif() -> PartialNotification:
         type=NotificationType.maintainer_new_trial,
         payload=MaintainerNewTrialNotificationPayload(
             subscriber_name="Subscriber",
+            subscriber_email=None,
             product_name="Product",
             organization_name="Test",
+            organization_slug=None,
+            subscription_id=None,
+            trial_end=None,
         ),
     )
 

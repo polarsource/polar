@@ -39,7 +39,12 @@ def backfill_statement() -> Update:
     )
     return (
         update(UserOrganization)
-        .values(notification_settings=defaults.op("||")(settings))
+        .values(
+            notification_settings=defaults.op("||")(settings),
+            # Self-assign to suppress the onupdate: a backfill must not make
+            # every membership look freshly modified by its user.
+            modified_at=UserOrganization.modified_at,
+        )
         .where(
             tuple_(UserOrganization.user_id, UserOrganization.organization_id).in_(
                 select(UserOrganization.user_id, UserOrganization.organization_id)

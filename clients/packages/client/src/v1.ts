@@ -24814,17 +24814,17 @@ export interface components {
       /** Subscriber Name */
       subscriber_name: string
       /** Subscriber Email */
-      subscriber_email?: string | null
+      subscriber_email: string | null
       /** Product Name */
       product_name: string
       /** Organization Name */
       organization_name: string
       /** Organization Slug */
-      organization_slug?: string | null
+      organization_slug: string | null
       /** Subscription Id */
-      subscription_id?: string | null
+      subscription_id: string | null
       /** Trial End */
-      trial_end?: string | null
+      trial_end: string | null
     }
     /** MaintainerSubscriptionRenewalNotification */
     MaintainerSubscriptionRenewalNotification: {

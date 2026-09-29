@@ -1257,29 +1257,17 @@ export interface components {
     MaintainerNewTrialNotificationPayload: {
       /** Subscriber Name */
       subscriber_name: string
-      /**
-       * Subscriber Email
-       * @default null
-       */
+      /** Subscriber Email */
       subscriber_email: string | null
       /** Product Name */
       product_name: string
       /** Organization Name */
       organization_name: string
-      /**
-       * Organization Slug
-       * @default null
-       */
+      /** Organization Slug */
       organization_slug: string | null
-      /**
-       * Subscription Id
-       * @default null
-       */
+      /** Subscription Id */
       subscription_id: string | null
-      /**
-       * Trial End
-       * @default null
-       */
+      /** Trial End */
       trial_end: string | null
     }
     /** MaintainerSubscriptionRenewalNotificationPayload */

@@ -47,6 +47,11 @@ async def test_backfills_missing_keys_and_keeps_existing_values(
     for user_organization in (subscriptions_off, subscriptions_on, already_set):
         await save_fixture(user_organization)
 
+    modified_at = {
+        uo.user_id: uo.modified_at
+        for uo in (subscriptions_off, subscriptions_on, already_set)
+    }
+
     updated = await run_batched_update(
         backfill_statement(), batch_size=1, sleep_seconds=0, session=session
     )
@@ -66,3 +71,5 @@ async def test_backfills_missing_keys_and_keeps_existing_values(
     assert subscriptions_on.notification_settings["exclude_free_products"] is False
     assert already_set.notification_settings["new_trial"] is False
     assert already_set.notification_settings["exclude_free_products"] is True
+    for user_organization in (subscriptions_off, subscriptions_on, already_set):
+        assert user_organization.modified_at == modified_at[user_organization.user_id]

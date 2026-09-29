@@ -30,7 +30,7 @@ export const getCostsSearchParams = (
     params.set('interval', interval)
   }
   if (customerIds.length > 0) {
-    customerIds.forEach((id) => params.append('customerIds', id))
+    params.set('customerIds', customerIds.join(','))
   }
   return params.toString()
 }

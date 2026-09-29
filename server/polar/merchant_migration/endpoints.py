@@ -279,7 +279,7 @@ async def export_customer_ids(
 )
 async def pan_transfer(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
+    auth_subject: MerchantMigrationRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> PanTransferChecklist:
     return await merchant_migration_service.get_pan_transfer(session, auth_subject, id)
@@ -436,7 +436,7 @@ async def start_cutover(
 )
 async def records_summary(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
+    auth_subject: MerchantMigrationRead,
     # The primary, not the replica: the receipt reads these counts back the
     # moment the import commits, so replica lag would report it as having
     # landed nothing.
@@ -466,7 +466,7 @@ async def records_summary(
 )
 async def records(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
+    auth_subject: MerchantMigrationRead,
     pagination: PaginationParamsQuery,
     entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,

@@ -1,4 +1,8 @@
-import { SwitchCutoverStatus } from './switchRows'
+import { renewalDate } from '../recordFormat'
+import { SwitchCutoverStatus, SwitchRow } from './switchRows'
+
+const LEGACY_PERIOD_END_SKIP_PREFIX =
+  "It's set to cancel at the end of the period on the source"
 
 export type SwitchFilter = 'all' | SwitchCutoverStatus
 
@@ -37,4 +41,20 @@ export function switchRecordsParams(
     page,
     limit: pageSize,
   }
+}
+
+export function periodEndMoveNotice(row: SwitchRow): string | null {
+  if (row.cutover_status === 'moved') {
+    return null
+  }
+  const legacySkip =
+    row.cutover_error?.startsWith(LEGACY_PERIOD_END_SKIP_PREFIX) ?? false
+  if (row.cutover_error != null && !legacySkip) {
+    return null
+  }
+  if (!row.cancels_at_period_end && !legacySkip) {
+    return null
+  }
+  const when = renewalDate(row) ?? 'that date'
+  return `It's set to cancel at the end of the period on Stripe. You can move it to Polar, and it will still end on ${when}.`
 }

@@ -835,4 +835,77 @@ describe('CheckoutFormProvider', () => {
       expect(handleNextAction).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('confirm (confirmation token)', () => {
+    const paidCheckout = { is_payment_form_required: true }
+
+    const elements = {
+      submit: vi.fn(async () => ({})),
+    } as unknown as StripeElements
+
+    const makeStripe = (error: Error): Stripe =>
+      ({
+        createConfirmationToken: vi.fn(async () => {
+          throw error
+        }),
+      }) as unknown as Stripe
+
+    const integrationError = () => {
+      const error = new Error(
+        'Could not find a mounted element to create the Confirmation Token from, please ensure you have a Payment Element or Express Checkout Element mounted (or both).',
+      )
+      error.name = 'IntegrationError'
+      return error
+    }
+
+    it('shows an error to the buyer when the Payment Element is not mounted', async () => {
+      const confirm = vi.fn<CheckoutContextProps['confirm']>()
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm,
+      })
+
+      await act(async () => {
+        const error = await getCtx()
+          .confirm(
+            { customer_email: 'a@b.com' },
+            makeStripe(integrationError()),
+            elements,
+          )
+          .catch((e: unknown) => e)
+        expect(isShownToBuyer(error)).toBe(true)
+      })
+
+      expect(confirm).not.toHaveBeenCalled()
+      expect(getCtx().loading).toBe(false)
+      expect(getCtx().form.formState.errors.root?.message).toBe(
+        'The payment form failed to load. Please refresh the page and try again.',
+      )
+    })
+
+    it('rethrows unexpected errors without showing them to the buyer', async () => {
+      const unexpected = new Error('Network down')
+      const getCtx = renderWithCheckout({
+        checkout: paidCheckout,
+        update: vi.fn(),
+        confirm: vi.fn(),
+      })
+
+      await act(async () => {
+        const error = await getCtx()
+          .confirm(
+            { customer_email: 'a@b.com' },
+            makeStripe(unexpected),
+            elements,
+          )
+          .catch((e: unknown) => e)
+        expect(error).toBe(unexpected)
+        expect(isShownToBuyer(error)).toBe(false)
+      })
+
+      expect(getCtx().loading).toBe(false)
+      expect(getCtx().form.formState.errors.root).toBeUndefined()
+    })
+  })
 })

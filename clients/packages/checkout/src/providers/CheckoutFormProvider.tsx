@@ -310,6 +310,12 @@ export const CheckoutFormProvider = ({
         error = confirmationTokenResponse.error
       } catch (error) {
         setLoading(false)
+        // Stripe throws an IntegrationError when the Payment Element never mounted, e.g. it failed to load
+        if (error instanceof Error && error.name === 'IntegrationError') {
+          const message = t('checkout.loading.paymentFormNotLoaded')
+          setError('root', { message })
+          throw shownToBuyer(new Error(message))
+        }
         throw error
       }
 

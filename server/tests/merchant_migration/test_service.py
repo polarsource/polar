@@ -4038,10 +4038,15 @@ class TestRunCutover:
 
         await session.refresh(picked)
         await session.refresh(untouched)
+        await session.refresh(migration)
         assert runner.run.await_count == 1
         assert picked.cutover_status == MerchantMigrationCutoverStatus.moved
         # Outside the selection: never looked at.
         assert untouched.cutover_status is None
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+        # Still to switch, so the migration isn't finished.
+        assert migration.step != MerchantMigrationStep.cleanup
 
     async def test_skips_when_renewals_disabled(
         self,

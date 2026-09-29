@@ -1313,10 +1313,11 @@ class MerchantMigrationService:
         completed_steps = self._complete_polar_app_step(
             migration, STEP_MOVE_SUBSCRIPTIONS
         )
-        update_dict: dict[str, object] = {
-            "operation": self._done_operation(migration),
-            "step": MerchantMigrationStep.cleanup,
-        }
+        update_dict: dict[str, object] = {"operation": self._done_operation(migration)}
+        # A switch of a subset must not finish the migration: it would read as
+        # done while prepared subscriptions still bill on the source.
+        if not await record_repository.has_pending_cutover_candidates(migration.id):
+            update_dict["step"] = MerchantMigrationStep.cleanup
         if completed_steps is not None:
             # `annotate` refuses a completed step, so the receipt note goes on
             # the step object directly before the completion is persisted.

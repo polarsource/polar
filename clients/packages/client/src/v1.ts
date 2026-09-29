@@ -29843,6 +29843,17 @@ export interface components {
        */
       role: 'admin' | 'finance' | 'member'
     }
+    /** OrganizationNotOnboarded */
+    OrganizationNotOnboarded: {
+      /**
+       * Error
+       * @example OrganizationNotOnboarded
+       * @constant
+       */
+      error: 'OrganizationNotOnboarded'
+      /** Detail */
+      detail: string
+    }
     /** OrganizationNotReadyForPayments */
     OrganizationNotReadyForPayments: {
       /**
@@ -56731,7 +56742,7 @@ export interface operations {
             | components['schemas']['UnsupportedMigrationSource']
         }
       }
-      /** @description Not allowed to manage this organization, or migrations aren't enabled for it. */
+      /** @description Not allowed to manage this organization, migrations aren't enabled for it, or it hasn't finished onboarding. */
       403: {
         headers: {
           [name: string]: unknown
@@ -56740,6 +56751,7 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['MerchantMigrationNotEnabled']
+            | components['schemas']['OrganizationNotOnboarded']
         }
       }
       /** @description The Stripe account is already used by another migration. */

@@ -53,6 +53,7 @@ from .service import (
     MerchantMigrationRecordNotFound,
     MigrationOperationInProgress,
     MissingStripeScopes,
+    OrganizationNotOnboarded,
     RecordNotSubscription,
     RecordTaxLocked,
     SourceAccountAlreadyMigrated,
@@ -110,9 +111,11 @@ async def list(
             | UnsupportedMigrationSource.schema(),
         },
         403: {
-            "description": "Not allowed to manage this organization, or "
-            "migrations aren't enabled for it.",
-            "model": NotPermitted.schema() | MerchantMigrationNotEnabled.schema(),
+            "description": "Not allowed to manage this organization, "
+            "migrations aren't enabled for it, or it hasn't finished onboarding.",
+            "model": NotPermitted.schema()
+            | MerchantMigrationNotEnabled.schema()
+            | OrganizationNotOnboarded.schema(),
         },
         409: {
             "description": "The Stripe account is already used by another migration.",

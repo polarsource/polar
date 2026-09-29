@@ -5255,6 +5255,7 @@ class TestTriggerPayment:
         with pytest.raises(PaymentAlreadyInProgress):
             await order_service.trigger_payment(session, order, payment_method)
 
+    @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
     async def test_acquires_lock_successfully(
         self,
         stripe_service_mock: MagicMock,
@@ -5262,10 +5263,13 @@ class TestTriggerPayment:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        method_type: str,
     ) -> None:
         """Test that trigger_payment acquires lock and processes payment normally."""
         # Given
-        payment_method = await create_payment_method(save_fixture, customer=customer)
+        payment_method = await create_payment_method(
+            save_fixture, customer=customer, type=method_type
+        )
         order = await create_order(
             save_fixture,
             product=product,
@@ -5279,6 +5283,13 @@ class TestTriggerPayment:
 
         # Then
         stripe_service_mock.create_payment_intent.assert_called_once()
+
+        params = stripe_service_mock.create_payment_intent.call_args.kwargs
+        assert params["off_session"] is True
+        assert params.get("payment_method_types") == (
+            ["sepa_debit"] if method_type == "sepa_debit" else None
+        )
+        assert "automatic_payment_methods" not in params
 
         await session.refresh(order)
         assert order.payment_lock_acquired_at is not None
@@ -5671,6 +5682,56 @@ class TestAcquirePaymentLock:
 
 @pytest.mark.asyncio
 class TestProcessRetryPayment:
+    @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
+    async def test_saved_payment_method_types(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        method_type: str,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture, customer=customer, type=method_type
+        )
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+            currency="eur",
+        )
+        stripe_service_mock.create_payment_intent.return_value = (
+            build_stripe_payment_intent(status="succeeded")
+        )
+
+        result = await order_service.process_retry_payment(
+            session,
+            order,
+            None,
+            PaymentProcessor.stripe,
+            payment_method_id=payment_method.id,
+        )
+
+        assert result.status == "succeeded"
+        params = stripe_service_mock.create_payment_intent.call_args.kwargs
+        assert params["payment_method"] == payment_method.processor_id
+        if method_type == "sepa_debit":
+            assert params["payment_method_types"] == ["sepa_debit"]
+            assert "automatic_payment_methods" not in params
+        else:
+            assert "payment_method_types" not in params
+            assert params["automatic_payment_methods"] == {
+                "enabled": True,
+                "allow_redirects": "never",
+            }
+
     async def test_process_retry_payment_success(
         self,
         stripe_service_mock: MagicMock,

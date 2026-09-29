@@ -1895,6 +1895,10 @@ class OrderService:
                         f"order_finalize:{order.id}:{payment_method.processor_id}"
                     )
 
+                payment_intent_params: dict[str, Any] = {}
+                if payment_method.type == "sepa_debit":
+                    payment_intent_params["payment_method_types"] = ["sepa_debit"]
+
                 try:
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
@@ -1908,6 +1912,7 @@ class OrderService:
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
                         idempotency_key=idempotency_key,
+                        **payment_intent_params,
                     )
                 except stripe_lib.CardError as e:
                     # Card errors (declines, expired cards, etc.) should not be retried
@@ -2081,19 +2086,24 @@ class OrderService:
             async with self.acquire_payment_lock(session, order):
                 if saved_payment_method is not None:
                     # Using saved payment method
+                    payment_intent_params: dict[str, Any] = {
+                        "automatic_payment_methods": {
+                            "enabled": True,
+                            "allow_redirects": "never",
+                        }
+                    }
+                    if saved_payment_method.type == "sepa_debit":
+                        payment_intent_params = {"payment_method_types": ["sepa_debit"]}
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
                         currency=order.currency,
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
                         confirm=True,
-                        automatic_payment_methods={
-                            "enabled": True,
-                            "allow_redirects": "never",
-                        },
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
+                        **payment_intent_params,
                     )
                 else:
                     # Using confirmation token (new payment method)

@@ -3029,3 +3029,127 @@ class TestBackfillTransfersGrantsOfSeveralSeatHolders:
             assert member is not None
             member_emails.add(member.email)
         assert member_emails == set(holder_emails)
+
+
+@pytest.mark.asyncio
+class TestBackfillAfterPrepare:
+    """Prepare fills member_id without moving customer_id, so the backfill cannot
+    use a missing member as its marker for work left to do."""
+
+    async def test_prepared_seat_still_moves_to_the_billing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": False},
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="prepared-billing@test.com",
+            stripe_customer_id="stripe_prepared_billing",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=2
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="prepared-holder@test.com",
+            stripe_customer_id="stripe_prepared_holder",
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+        seat_id = seat.id
+
+        session.expunge_all()
+        await prepare_members(organization.id)
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        migrated = await session.get(CustomerSeat, seat_id)
+        assert migrated is not None
+        assert migrated.customer_id == billing_customer.id
+        assert migrated.member_id is not None
+
+    async def test_prepared_grant_still_moves_to_the_billing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": False},
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="prepared-grant-billing@test.com",
+            stripe_customer_id="stripe_prepared_grant_billing",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=2
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.custom
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="prepared-grant-holder@test.com",
+            stripe_customer_id="stripe_prepared_grant_holder",
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=holder,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        grant_id = grant.id
+
+        session.expunge_all()
+        await prepare_members(organization.id)
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        migrated = await session.get(BenefitGrant, grant_id)
+        assert migrated is not None
+        assert migrated.customer_id == billing_customer.id
+        assert migrated.member_id is not None

@@ -8,12 +8,14 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.integrations.slack.client import SlackClientError
 from polar.merchant_migration.pan_transfer import PanTransferMethod
+from polar.merchant_migration.slack import SlackAlertInProgress
 from polar.merchant_migration.tasks import (
     merchant_migration_notify_created,
     merchant_migration_notify_waiting_for_ops,
 )
 from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 
 from ._helpers import build_connected_migration, pan_steps_until
@@ -67,6 +69,26 @@ class TestNotifyCreated:
         assert str(migration.id) in body
         assert f"/merchant-migrations/{migration.id}" in body
         assert "rk_test_123" not in body
+
+    async def test_retries_while_another_post_is_in_flight(
+        self,
+        chat_post_message: AsyncMock,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        in_progress_key = f"merchant_migration:slack:created:{migration.id}:in_progress"
+        await redis.set(in_progress_key, "1")
+
+        with pytest.raises(SlackAlertInProgress):
+            await merchant_migration_notify_created(migration.id)
+        chat_post_message.assert_not_awaited()
+
+        await redis.delete(in_progress_key)
+        await merchant_migration_notify_created(migration.id)
+
+        chat_post_message.assert_awaited_once()
 
 
 @pytest.mark.asyncio

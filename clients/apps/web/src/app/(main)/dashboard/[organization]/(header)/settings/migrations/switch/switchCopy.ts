@@ -24,7 +24,7 @@ export const SWITCH_INTRO =
   'Polar starts billing the subscriptions you pick, and stops them on Stripe first. It reads Stripe again for each one, so anything that renews too soon or has no card stays put with a reason.'
 
 export const SWITCH_UNDONE_WARNING =
-  'Polar stops these subscriptions on Stripe and starts billing them. This cannot be undone.'
+  "Polar stops these subscriptions on Stripe and starts billing them. This cannot be undone. Before switching, turn off Stripe's cancellation emails and automations, and make sure your customer.subscription.deleted handling ignores these cancellations."
 
 // Always scoped to prepared subscriptions (customer + product already in
 // Polar). The cutover report uses the same set; listing every staged row

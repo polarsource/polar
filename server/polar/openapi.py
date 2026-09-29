@@ -7,7 +7,7 @@ from fastapi.routing import RouteContext
 from starlette.routing import BaseRoute
 
 from polar.kit.metadata import add_metadata_query_schema
-from polar.kit.versioning import api_version_context
+from polar.kit.versioning import api_version_context, prune_version_omitted_schemas
 from polar.oauth2.schemas import add_oauth2_form_schemas
 
 if TYPE_CHECKING:
@@ -103,6 +103,7 @@ def get_openapi(
         )
     openapi_schema = add_metadata_query_schema(openapi_schema)
     openapi_schema = add_oauth2_form_schemas(openapi_schema)
+    openapi_schema = prune_version_omitted_schemas(openapi_schema, version)
 
     return openapi_schema
 

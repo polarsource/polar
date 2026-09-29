@@ -60053,40 +60053,6 @@
         ],
         "title": "LicenseKeyDeactivate"
       },
-      "LicenseKeyMember": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "email": {
-            "type": "string",
-            "title": "Email",
-            "description": "The email address of the seat member."
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "The external ID of the seat member, if set."
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "email",
-          "external_id"
-        ],
-        "title": "LicenseKeyMember"
-      },
       "LicenseKeyRead": {
         "properties": {
           "id": {

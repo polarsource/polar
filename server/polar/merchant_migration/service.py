@@ -457,8 +457,9 @@ class MerchantMigrationService:
         create_schema: MerchantMigrationCreate,
     ) -> MerchantMigration:
         """Validate the source API key's permissions, then create the migration
-        with the key stored. If the key is invalid or missing any required scope,
-        nothing is persisted — the merchant fixes the key and retries."""
+        with the key stored and its pre-check queued. If the key is invalid or
+        missing any required scope, nothing is persisted or queued — the merchant
+        fixes the key and retries."""
         await assert_organization_permission(
             session,
             auth_subject,
@@ -520,7 +521,7 @@ class MerchantMigrationService:
         enqueue_job(
             "merchant_migration.notify_created", merchant_migration_id=migration.id
         )
-        return migration
+        return await self._queue_precheck(session, migration)
 
     async def start_precheck(
         self,
@@ -534,6 +535,11 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        return await self._queue_precheck(session, migration)
+
+    async def _queue_precheck(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> MerchantMigration:
         if self._operation_blocks_new_work(migration):
             raise MigrationOperationInProgress()
         # Fail before enqueueing if the key is gone or the source isn't Stripe.

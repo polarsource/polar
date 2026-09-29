@@ -157,9 +157,11 @@ regular cancellation, so prepare them before you switch:
 - **Tools connected to Stripe.** Churn, analytics, and retention tools report
   the cancellation as churn and can start win-back emails.
 
-Polar does not email customers when their subscription switches. If you want
-them to hear about the move from you first, send your own notice before
-switching.
+Polar does not send a dedicated email about the switch. It only adds a short
+notice to the first billing email a customer receives from Polar, such as their
+subscription renewal, saying that billing has moved from Stripe to Polar. If
+you want them to hear about the move from you first, send your own notice
+before switching.
 
 Turn Stripe's cancellation emails back on and resume any paused cancellation
 automations after the switch if subscriptions remain on Stripe.

@@ -12,6 +12,7 @@ from polar.auth.exception_handlers import (
     auth_redirection_error_exception_handler,
 )
 from polar.auth.middlewares import AuthSubjectMiddleware
+from polar.auth.models import ORGANIZATION_HEADER
 from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
 from polar.checkout_link.app import app as checkout_link_redirect_app
@@ -100,7 +101,7 @@ def configure_cors(app: FastAPI) -> None:
         allow_origins=["*"],
         allow_credentials=False,  # No cookies allowed
         allow_methods=["*"],
-        allow_headers=["Authorization", VERSION_HEADER],
+        allow_headers=["Authorization", VERSION_HEADER, ORGANIZATION_HEADER],
         expose_headers=[VERSION_HEADER],
     )
     configs.append(api_config)

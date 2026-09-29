@@ -18,6 +18,8 @@ from polar.models import (
 
 from .scope import Scope
 
+ORGANIZATION_HEADER = "Polar-Organization"
+
 
 class Anonymous: ...
 

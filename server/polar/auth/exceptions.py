@@ -33,6 +33,29 @@ class SessionNotFreshError(PolarAuthError):
         super().__init__(message, 403)
 
 
+class InvalidRequestedOrganization(PolarAuthError):
+    """
+    Exception raised when the ``Polar-Organization`` header is malformed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 400)
+
+
+class RequestedOrganizationNotAccessible(PolarAuthError):
+    """
+    Exception raised when the ``Polar-Organization`` header names an organization
+    the credential can't access.
+    """
+
+    def __init__(self) -> None:
+        message = (
+            "The organization in the Polar-Organization header "
+            "is not accessible with this credential."
+        )
+        super().__init__(message, 403)
+
+
 class GetEmailError(PolarAuthError):
     """
     Exception raised when there's an error getting the email from an OAuth2 provider.

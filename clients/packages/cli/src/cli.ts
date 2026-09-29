@@ -10,6 +10,7 @@ import { removeRetiredBinary, update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
+import * as Deliveries from '@/services/deliveries'
 import * as Config from '@/services/config'
 import * as Organizations from '@/services/organizations'
 import * as OAuth from '@/services/oauth'
@@ -48,6 +49,7 @@ const telemetryLayer = Telemetry.layer.pipe(
 )
 const services = Layer.mergeAll(
   authLayer,
+  Deliveries.layer,
   polarLayer,
   organizationsLayer,
   triggerLayer,

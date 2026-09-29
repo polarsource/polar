@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { Effect } from 'effect'
+import { Effect, Option } from 'effect'
 import { trigger as triggerCommand } from '@/commands/trigger'
 import type { ActiveOrganization } from '@/schemas/Auth'
+import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import {
   NoActiveListener,
@@ -17,6 +18,22 @@ import {
   stripAnsi,
 } from '@/utils/test-utils/cli'
 import { fakeOrganizations, fakeTrigger } from '@/utils/test-utils/services'
+
+const fakeDeliveries = (results: Record<string, Delivery> = {}) => {
+  const state = {
+    results,
+    recorded: [] as Array<{ eventId: string; delivery: Delivery }>,
+  }
+  const deliveries = Deliveries.of({
+    record: (eventId, delivery) =>
+      Effect.sync(() => {
+        state.recorded.push({ eventId, delivery })
+      }),
+    await: (eventId) =>
+      Effect.sync(() => Option.fromNullishOr(state.results[eventId])),
+  })
+  return { deliveries, state }
+}
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -37,6 +54,7 @@ const catalog = [
 
 let organizations: ReturnType<typeof fakeOrganizations>
 let trigger: ReturnType<typeof fakeTrigger>
+let deliveries: ReturnType<typeof fakeDeliveries>
 
 const run = (args: string[], options?: RunCliOptions) => {
   const cli = runCli(triggerCommand, args, options)
@@ -44,6 +62,7 @@ const run = (args: string[], options?: RunCliOptions) => {
     cli.effect.pipe(
       Effect.provideService(Organizations, organizations.organizations),
       Effect.provideService(Trigger, trigger.trigger),
+      Effect.provideService(Deliveries, deliveries.deliveries),
     ),
   )
   return { promise, output: cli.output }
@@ -55,6 +74,7 @@ beforeEach(() => {
     selected: { id: acme.id, environment: acme.environment },
   })
   trigger = fakeTrigger({ events: catalog })
+  deliveries = fakeDeliveries()
 })
 
 describe('trigger', () => {
@@ -70,6 +90,44 @@ describe('trigger', () => {
     ])
     expect(output()).toContain('Sent order.created to Acme (sandbox)')
     expect(output()).toContain('evt-1')
+  })
+
+  test('shows where the event went and what your server answered', async () => {
+    deliveries.state.results['evt-1'] = {
+      forwardUrl: 'http://localhost:3000/webhooks',
+      status: 200,
+      statusText: 'OK',
+      durationMs: 6,
+    }
+    const { promise, output } = run(['order.created'])
+    await promise
+
+    expect(output()).toContain('Forwarded to  http://localhost:3000/webhooks')
+    expect(output()).toContain('Response      200 OK  6ms')
+  })
+
+  test('shows why forwarding failed', async () => {
+    deliveries.state.results['evt-1'] = {
+      forwardUrl: 'http://localhost:3000/webhooks',
+      failure: 'connection refused, is your server running?',
+      durationMs: 1,
+    }
+    const { promise, output } = run(['order.created'])
+    await promise
+
+    expect(output()).toContain(
+      'Response      failed  connection refused, is your server running?',
+    )
+  })
+
+  test('points at the listen terminal when no outcome was reported', async () => {
+    const { promise, output } = run(['order.created'])
+    await promise
+
+    expect(output()).toContain(
+      'Forwarded by  your polar listen terminal, which shows the response',
+    )
+    expect(output()).not.toContain('Delivered to')
   })
 
   test('passes overrides, seed and --org through', async () => {

@@ -3,6 +3,7 @@ import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { org } from '@/commands/flags'
 import { formatCatalog } from '@/commands/trigger/catalog'
 import { describeRejection, parseOverrides } from '@/commands/trigger/overrides'
+import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { Trigger, TriggerError, type TriggerEvent } from '@/services/trigger'
 import * as ui from '@/utils/ui'
@@ -50,6 +51,27 @@ const pickEvent = (events: ReadonlyArray<TriggerEvent>) =>
       title: item.type,
       description: item.description,
     })),
+  })
+
+const deliveryRows = (
+  delivery: Option.Option<Delivery>,
+): Array<readonly [string, string]> =>
+  Option.match(delivery, {
+    onNone: () => [
+      [
+        'Forwarded by',
+        `your ${ui.command('polar listen')} terminal, which shows the response`,
+      ],
+    ],
+    onSome: ({ forwardUrl, status, statusText, failure, durationMs }) => [
+      ['Forwarded to', forwardUrl],
+      [
+        'Response',
+        failure
+          ? ui.red(`failed  ${failure}`)
+          : `${ui.statusCode(status ?? 0, statusText ?? '')}  ${ui.duration(durationMs)}`,
+      ],
+    ],
   })
 
 const listHint = `Run ${ui.command('polar trigger --list')} to see every event`
@@ -118,6 +140,7 @@ export const trigger = Command.make(
       if (json) {
         return yield* Console.log(JSON.stringify(result.payload, null, 2))
       }
+      const delivery = yield* (yield* Deliveries).await(result.webhookEventId)
       yield* Console.log(
         [
           ui.blank,
@@ -126,7 +149,7 @@ export const trigger = Command.make(
           ),
           ui.keyValue([
             ['Event ID', ui.dim(result.webhookEventId)],
-            ['Delivered to', `your ${ui.command('polar listen')} terminal`],
+            ...deliveryRows(delivery),
           ]),
           ui.blank,
         ].join('\n'),

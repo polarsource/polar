@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { useSession } from './SessionProvider'
 
-const NEXT_API_VERSION = '2027-01'
+export const NEXT_API_VERSION = '2027-01'
 
 // `version` is the human-readable marketing version, but it relies on a
 // developer manually bumping it. `runtimeVersion` (the fingerprint) and

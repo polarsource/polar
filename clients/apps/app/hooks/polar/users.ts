@@ -1,3 +1,4 @@
+import { NEXT_API_VERSION } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { schemas } from '@polar-sh/client'
 import { useMutation, UseMutationResult } from '@tanstack/react-query'
@@ -18,6 +19,7 @@ export const useDeleteUser = (): UseMutationResult<
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session}`,
+            'Polar-Version': NEXT_API_VERSION,
           },
         },
       )

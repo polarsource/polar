@@ -206,8 +206,9 @@ variable "environment_groups" {
       POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY      = optional(string)
     })
     slo_report = object({
-      POLAR_SLACK_BOT_TOKEN = string
-      POLAR_SLACK_CHANNEL   = string
+      POLAR_SLACK_BOT_TOKEN                  = string
+      POLAR_SLACK_CHANNEL                    = string
+      POLAR_MERCHANT_MIGRATION_SLACK_CHANNEL = optional(string)
     })
     tinybird = object({
       POLAR_TINYBIRD_API_URL             = string

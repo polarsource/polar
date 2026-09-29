@@ -291,6 +291,12 @@ variable "slo_report_slack_channel" {
   sensitive   = false
 }
 
+variable "merchant_migration_slack_channel" {
+  description = "Slack channel ID for merchant migration Ops alerts"
+  type        = string
+  default     = ""
+}
+
 # ChargebackStop Webhook Secret
 variable "backend_chargebackstop_webhook_secret_production" {
   description = "ChargebackStop Webhook Secret for production"

@@ -180,8 +180,9 @@ variable "prometheus_config" {
 
 variable "slo_report_config" {
   type = object({
-    slack_bot_token = string
-    slack_channel   = string
+    slack_bot_token                  = string
+    slack_channel                    = string
+    merchant_migration_slack_channel = optional(string)
   })
   default   = null
   sensitive = true

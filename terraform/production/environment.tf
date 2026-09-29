@@ -146,8 +146,9 @@ locals {
   }
 
   slo_report_config = {
-    slack_bot_token = var.slo_report_slack_bot_token
-    slack_channel   = var.slo_report_slack_channel
+    slack_bot_token                  = var.slo_report_slack_bot_token
+    slack_channel                    = var.slo_report_slack_channel
+    merchant_migration_slack_channel = var.merchant_migration_slack_channel
   }
 
   polar_self_config = {

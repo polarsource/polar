@@ -873,6 +873,14 @@ resource "tfe_variable" "slo_report_slack_channel_production" {
   }
 }
 
+resource "tfe_variable" "merchant_migration_slack_channel_production" {
+  key             = "merchant_migration_slack_channel"
+  category        = "terraform"
+  description     = "Slack channel ID for merchant migration Ops alerts for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "merchant_migration_destination_stripe_account_id_production" {
   key             = "merchant_migration_destination_stripe_account_id"
   category        = "terraform"

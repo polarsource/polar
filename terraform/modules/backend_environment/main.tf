@@ -176,9 +176,14 @@ locals {
     } : {},
   ) : {}
 
-  slo_report_environment_variables = var.slo_report_config != null ? {
-    POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
-  } : {}
+  slo_report_environment_variables = var.slo_report_config != null ? merge(
+    {
+      POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
+    },
+    var.slo_report_config.merchant_migration_slack_channel != null && var.slo_report_config.merchant_migration_slack_channel != "" ? {
+      POLAR_MERCHANT_MIGRATION_SLACK_CHANNEL = var.slo_report_config.merchant_migration_slack_channel
+    } : {},
+  ) : {}
 
   slo_report_secrets = var.slo_report_config != null ? {
     POLAR_SLACK_BOT_TOKEN = var.slo_report_config.slack_bot_token

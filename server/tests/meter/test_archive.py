@@ -79,8 +79,9 @@ class TestMeterArchive:
         # Try to archive meter that's attached to an active product
         with pytest.raises(PolarRequestValidationError) as exc:
             await meter_service.archive(session, meter)
-        assert "Cannot archive meter that is still attached to active products" in str(
-            exc.value
+        assert (
+            "Cannot archive meter that is still attached to active products"
+            in exc.value.errors()[0]["msg"]
         )
 
     async def test_archive_with_active_tiered_product_price(
@@ -110,8 +111,9 @@ class TestMeterArchive:
 
         with pytest.raises(PolarRequestValidationError) as exc:
             await meter_service.archive(session, meter)
-        assert "Cannot archive meter that is still attached to active products" in str(
-            exc.value
+        assert (
+            "Cannot archive meter that is still attached to active products"
+            in exc.value.errors()[0]["msg"]
         )
 
     async def test_archive_with_archived_product_price(
@@ -155,7 +157,7 @@ class TestMeterArchive:
             await meter_service.archive(session, meter)
         assert (
             "Cannot archive meter that is still referenced by active benefits"
-            in str(exc.value)
+            in exc.value.errors()[0]["msg"]
         )
 
     async def test_unarchive_success(

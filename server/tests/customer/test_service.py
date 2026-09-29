@@ -733,7 +733,7 @@ class TestUpdate:
                 CustomerUpdate(type=CustomerType.individual),
             )
 
-        assert "downgraded" in str(exc_info.value).lower()
+        assert "downgraded" in exc_info.value.errors()[0]["msg"].lower()
 
     async def test_cannot_downgrade_type_team_to_null(
         self,
@@ -758,7 +758,7 @@ class TestUpdate:
                 CustomerUpdate(type=None),
             )
 
-        assert "downgraded" in str(exc_info.value).lower()
+        assert "downgraded" in exc_info.value.errors()[0]["msg"].lower()
 
     async def test_same_type_update_allowed(
         self,

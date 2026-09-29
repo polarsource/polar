@@ -837,12 +837,19 @@ class CatalogImporter:
             customer.email, self.organization.id
         )
         if existing is not None:
-            # Reusing a customer bound to another Stripe id would attach the
-            # PAN-copied card to the wrong record.
-            if (
+            # The PAN-copied card lands under the source `cus_…` id, and renewals
+            # charge it through the customer's Stripe id, so the customer has to
+            # move onto the source id. Only while nothing depends on its own.
+            rebind = (
                 stripe_customer_id is not None
-                and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
+            )
+            if (
+                rebind
+                and existing.stripe_customer_id is not None
+                and await self.customer_repository.is_stripe_customer_in_use(
+                    existing.id
+                )
             ):
                 return ImportedCustomer(
                     skip=Reason(
@@ -850,10 +857,8 @@ class CatalogImporter:
                         CUSTOMER_STRIPE_ID_CONFLICT_REASON,
                     )
                 )
-            # Reconcile the source id so the PAN-copied card lands on the same
-            # customer, but never overwrite one that's already set.
             updates: dict[str, object] = {}
-            if stripe_customer_id and existing.stripe_customer_id is None:
+            if rebind:
                 updates["stripe_customer_id"] = stripe_customer_id
             address = self._billing_address(customer, country_fallback)
             if address is not None:

@@ -9,13 +9,27 @@ from sqlalchemy import inspect
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.event.system import SystemEvent
-from polar.models import Customer, Organization
+from polar.models import (
+    Customer,
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+    Organization,
+    Product,
+)
 from polar.models.customer import CustomerType, _avatar_url_for_email
 from polar.models.member import MemberRole
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_member
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_member,
+    create_payment_method,
+    create_subscription,
+)
+from tests.merchant_migration._helpers import build_connected_migration
 
 
 @pytest.fixture
@@ -541,3 +555,96 @@ class TestSearchByQuery:
 
         assert customer_ids == [match.id]
         assert external_ids == ["org_123_user"]
+
+
+@pytest.mark.asyncio
+class TestGetBoundStripeIdentitiesByOrganization:
+    async def test_only_keeps_stripe_ids_in_use(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+    ) -> None:
+        in_use = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="In-Use@example.com",
+            stripe_customer_id="cus_in_use",
+        )
+        await create_payment_method(save_fixture, in_use)
+        unused = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="unused@example.com",
+            stripe_customer_id="cus_unused",
+        )
+
+        result = await repository.get_bound_stripe_identities_by_organization(
+            organization.id
+        )
+
+        assert result == {
+            "in-use@example.com": (in_use.id, "cus_in_use"),
+            "unused@example.com": (unused.id, None),
+        }
+
+
+@pytest.mark.asyncio
+class TestIsStripeCustomerInUse:
+    async def test_unused(
+        self, repository: CustomerRepository, customer: Customer
+    ) -> None:
+        assert await repository.is_stripe_customer_in_use(customer.id) is False
+
+    async def test_saved_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        await create_payment_method(save_fixture, customer)
+
+        assert await repository.is_stripe_customer_in_use(customer.id) is True
+
+    @pytest.mark.parametrize(
+        ("status", "in_use"),
+        [
+            (SubscriptionStatus.active, True),
+            (SubscriptionStatus.canceled, False),
+        ],
+    )
+    async def test_subscription(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        customer: Customer,
+        product: Product,
+        status: SubscriptionStatus,
+        in_use: bool,
+    ) -> None:
+        await create_subscription(
+            save_fixture, product=product, customer=customer, status=status
+        )
+
+        assert await repository.is_stripe_customer_in_use(customer.id) is in_use
+
+    async def test_imported_by_merchant_migration(
+        self,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=MerchantMigrationRecordStatus.imported,
+                source_id="cus_source",
+                target_id=customer.id,
+            )
+        )
+
+        assert await repository.is_stripe_customer_in_use(customer.id) is True

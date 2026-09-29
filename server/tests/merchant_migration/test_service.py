@@ -2334,8 +2334,8 @@ class TestImportCatalog:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # An existing Polar customer sharing the email but carrying a different
-        # Stripe id must not be reused, or the card would land on the wrong record.
+        # An existing Polar customer whose own Stripe id still holds a saved card
+        # can't be moved onto the source id, or that card would stop charging.
         polar_customer = await customer_service.create_for_organization(
             session,
             organization,
@@ -2344,6 +2344,7 @@ class TestImportCatalog:
             billing_address=None,
             stripe_customer_id="cus_existing",
         )
+        await create_payment_method(save_fixture, polar_customer)
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
@@ -2374,6 +2375,50 @@ class TestImportCatalog:
         assert items[0].reason_code == "customer_stripe_id_conflict"
         assert items[0].conflicting_customer_id == polar_customer.id
         assert items[0].reason_level == PrecheckReasonLevel.action_required
+
+    @pytest.mark.auth
+    async def test_customer_moved_to_source_stripe_id_when_unused(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        polar_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="alice@example.com",
+            stripe_customer_id="cus_existing",
+        )
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+        assert items[0].status == PrecheckRecordStatus.importable
+
+        report = await _import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.customers].imported == 1
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        customer_record = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.customer,
+            source_id="cus_1",
+        )
+        assert customer_record is not None
+        assert customer_record.target_id == polar_customer.id
+        assert polar_customer.stripe_customer_id == "cus_1"
 
     @pytest.mark.auth
     async def test_rerunning_precheck_does_not_regress_step(

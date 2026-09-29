@@ -1,6 +1,7 @@
 import secrets
 import typing
 from collections.abc import Awaitable
+from urllib.parse import urlencode
 
 from fastapi import Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
@@ -18,7 +19,10 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
 from polar.kit.http import ReturnTo
+from polar.organization.repository import OrganizationRepository
+from polar.postgres import AsyncSession
 from polar.routing import APIRouter
+from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 
 from ..authentication_session import (
@@ -30,6 +34,20 @@ from ..authentication_session import (
 from ..exceptions import GetEmailError, PolarAuthRedirectionError
 from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 from .factor import OAuth2FactorMixin
+
+
+async def _get_sso_redirect(
+    session: AsyncSession, email: str, return_to: str | None
+) -> RedirectResponse | None:
+    _, domain = email.rsplit("@", 1)
+    organization_repository = OrganizationRepository.from_session(session)
+    organization = await organization_repository.get_sso_enforced_by_domain(domain)
+    if organization is None:
+        return None
+    path = f"/auth/sso/{organization.slug}"
+    if return_to is not None:
+        path = f"{path}?{urlencode({'return_to': return_to})}"
+    return RedirectResponse(settings.generate_frontend_url(path), status_code=303)
 
 
 def get_oauth_login_router(
@@ -144,9 +162,18 @@ def get_oauth_login_router(
             if authentication_session is None:
                 raise PolarAuthRedirectionError("No active authentication session")
 
+        session = authentication_session_service.session
+        return_to = (authentication_session.context or {}).get("return_to")
+
         # Existing or linked user
         if enrollment is not None:
             identity_id = enrollment.identity_id
+            user = await UserRepository.from_session(session).get_by_id(identity_id)
+            if user is not None and (
+                sso_redirect := await _get_sso_redirect(session, user.email, return_to)
+            ):
+                set_state_cookie(request, sso_redirect, "", 0)
+                return sso_redirect
         # New user
         else:
             assert oauth_account is not None
@@ -158,9 +185,11 @@ def get_oauth_login_router(
             except GetEmailError as e:
                 raise PolarAuthRedirectionError(e.message) from e
 
-            user, _ = await user_service.get_by_email_or_create(
-                authentication_session_service.session, email
-            )
+            if sso_redirect := await _get_sso_redirect(session, email, return_to):
+                set_state_cookie(request, sso_redirect, "", 0)
+                return sso_redirect
+
+            user, _ = await user_service.get_by_email_or_create(session, email)
             try:
                 enrollment = await factor.enroll(user.id, oauth_account)
             except OAuth2GetProfileException as e:

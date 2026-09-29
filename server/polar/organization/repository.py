@@ -19,6 +19,8 @@ from polar.models import (
     Customer,
     Order,
     Organization,
+    OrganizationDomain,
+    OrganizationSSOConnection,
     PayoutAccount,
     Subscription,
     User,
@@ -151,6 +153,30 @@ class OrganizationRepository(
     ) -> Organization | None:
         statement = self.get_base_statement(include_deleted=include_deleted).where(
             Organization.slug == slug
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_sso_enforced_by_domain(self, domain: str) -> Organization | None:
+        statement = (
+            self.get_base_statement()
+            .join(
+                OrganizationDomain,
+                OrganizationDomain.organization_id == Organization.id,
+            )
+            .where(
+                OrganizationDomain.domain == domain,
+                OrganizationDomain.verified_at.is_not(None),
+                OrganizationDomain.deleted_at.is_(None),
+                Organization.sso_enforced.is_(True),
+                Organization.feature_settings["sso_enabled"].as_boolean(),
+                select(OrganizationSSOConnection.id)
+                .where(
+                    OrganizationSSOConnection.organization_id == Organization.id,
+                    OrganizationSSOConnection.enabled.is_(True),
+                    OrganizationSSOConnection.deleted_at.is_(None),
+                )
+                .exists(),
+            )
         )
         return await self.get_one_or_none(statement)
 

@@ -494,7 +494,6 @@ class InvoiceGenerator(FPDF):
         self.set_font(self.font_name, size=self.base_font_size)
         self.set_text_color(*self.primary_text_color)
 
-        self.alias_nb_pages()
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
@@ -582,24 +581,28 @@ class InvoiceGenerator(FPDF):
             self.ln(10)
 
     def footer(self) -> None:
+        # Footers are drawn by _render_footers, once the page count is known:
+        # fpdf2's {nb} alias is laid out at its own width, which breaks right
+        # alignment of "Page X of Y" with proportional figures.
+        pass
+
+    def _render_footers(self) -> None:
+        pages = self.page
+        self.in_footer = True
+        for page in range(1, pages + 1):
+            self.page = page
+            self.current_font_is_set_on_page = False
+            self._render_page_footer(page, pages)
+        self.in_footer = False
+        self.current_font_is_set_on_page = False
+
+    def _render_page_footer(self, page: int, pages: int) -> None:
         self.set_y(-self.b_margin)
         self.set_font(style="", size=self.footer_font_size)
         self.set_text_color(*self.muted_text_color)
         self.cell(self.epw / 2, 10, f"{self.data.number}", align=Align.L)
-        self._render_page_number()
+        self.cell(self.epw / 2, 10, f"Page {page} of {pages}", align=Align.R)
         self.set_text_color(*self.primary_text_color)
-
-    def _render_page_number(self) -> None:
-        # fpdf2 lays out the {nb} alias at its own width, not the page count's,
-        # so right-align against a single digit instead.
-        text = f"Page {self.page_no()} of "
-        self.set_x(
-            self.w
-            - self.r_margin
-            - 2 * self.c_margin
-            - self.get_string_width(f"{text}0")
-        )
-        self.cell(h=10, text=f"{text}{{nb}}")
 
     @contextmanager
     def inset_table(
@@ -629,6 +632,10 @@ class InvoiceGenerator(FPDF):
     def generate(self) -> None:
         self.set_metadata()
         self.add_page()
+        self._render_body()
+        self._render_footers()
+
+    def _render_body(self) -> None:
         self._render_title()
         self._render_heading_items()
         self._render_addresses()

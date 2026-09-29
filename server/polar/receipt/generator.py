@@ -176,7 +176,7 @@ class ReceiptGenerator(InvoiceGenerator):
 
     data: Receipt
 
-    def footer(self) -> None:
+    def _render_page_footer(self, page: int, pages: int) -> None:
         self.set_y(-self.b_margin)
         self.set_font(style="", size=self.footer_font_size)
         self.set_text_color(*self.muted_text_color)
@@ -187,11 +187,11 @@ class ReceiptGenerator(InvoiceGenerator):
             f"Generated {format_date(self.data.rendered_at)}",
             align=Align.C,
         )
-        self._render_page_number()
+        self.cell(self.epw / 3, 10, f"Page {page} of {pages}", align=Align.R)
         self.set_text_color(*self.primary_text_color)
 
-    def generate(self) -> None:
-        super().generate()
+    def _render_body(self) -> None:
+        super()._render_body()
         if self.data.payments or self._has_applied_balance:
             self._render_payment_history_section()
         if self.data.refunds:

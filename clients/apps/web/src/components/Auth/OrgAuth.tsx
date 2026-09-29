@@ -1,5 +1,7 @@
 'use client'
 
+import { usePostHog } from '@/hooks/posthog'
+import { getSSOAuthorizeLoginURL } from '@/utils/auth'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { SpinnerNoMargin, Text } from '@polar-sh/orbit'
@@ -38,6 +40,7 @@ const OrDivider = () => (
 
 const OrgAuth = ({ slug, returnTo }: { slug: string; returnTo?: string }) => {
   const router = useRouter()
+  const posthog = usePostHog()
   const [session, setSession] = useState<AuthenticationSession | null>(null)
   const [status, setStatus] = useState<
     'loading' | 'completing' | 'ready' | 'error'
@@ -60,12 +63,22 @@ const OrgAuth = ({ slug, returnTo }: { slug: string; returnTo?: string }) => {
         setStatus('error')
         return
       }
+
+      const [onlyFactor, ...otherFactors] = started.available_factors
+      if (onlyFactor?.type === 'sso' && otherFactors.length === 0) {
+        posthog.capture('global:user:login:submit', { method: 'sso' })
+        window.location.href = getSSOAuthorizeLoginURL(
+          slug,
+          onlyFactor.connection_id,
+        )
+        return
+      }
       setSession(started)
       setStatus('ready')
     }
 
     init()
-  }, [slug, returnTo, router])
+  }, [slug, returnTo, router, posthog])
 
   if (status === 'error') {
     return (

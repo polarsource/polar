@@ -68,7 +68,7 @@ async function callLLM(
 
   const { text } = await generateText({
     model: openai('gpt-5.4-mini'),
-    system: systemPromptPart,
+    instructions: systemPromptPart,
     prompt: userPromptPart,
   })
 

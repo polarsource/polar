@@ -3,31 +3,26 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
+import { aiTracing, flushAITelemetry } from '@/utils/aiTelemetry'
 import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createGoogle } from '@ai-sdk/google'
 import { experimental_createMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { withTracing } from '@posthog/ai'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   generateObject,
+  isStepCount,
   smoothStream,
-  stepCountIs,
   streamText,
+  toUIMessageStream,
   tool,
   UIMessage,
 } from 'ai'
 import { cookies } from 'next/headers'
-import { PostHog } from 'posthog-node'
 import { z } from 'zod'
 
-const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
-  ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
-      host: 'https://us.i.posthog.com',
-    })
-  : null
-
-const google = createGoogleGenerativeAI({
+const google = createGoogle({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
   headers: {
     Authorization: `Bearer ${process.env.PYDANTIC_AI_GATEWAY_API_KEY}`,
@@ -359,32 +354,15 @@ export async function POST(req: Request) {
     )
     .join('\n---\n')
 
-  const geminiLite = phClient
-    ? withTracing(google('gemini-3.1-flash-lite'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      })
-    : google('gemini-3.1-flash-lite')
-
-  const gemini = phClient
-    ? withTracing(google('gemini-3-flash-preview'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      })
-    : google('gemini-3-flash-preview')
-
-  const sonnet = phClient
-    ? withTracing(anthropic('claude-sonnet-5'), phClient, {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      })
-    : anthropic('claude-sonnet-5')
+  const tracing = aiTracing({
+    userId: user.id,
+    conversationId,
+    organizationId,
+  })
 
   const router = await generateObject({
-    model: geminiLite,
+    model: google('gemini-3.1-flash-lite'),
+    ...tracing,
     output: 'object',
     schema: z.object({
       isRelevant: z
@@ -408,7 +386,7 @@ export async function POST(req: Request) {
           'Whether there is enough information to act on the user request or if we need further clarification',
         ),
     }),
-    system: getRouterSystemPrompt(),
+    instructions: getRouterSystemPrompt(),
     prompt: userMessage,
   })
 
@@ -470,7 +448,10 @@ based on the conversation history whether you're done.
     getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
-    model: shouldSetupTools ? sonnet : gemini,
+    model: shouldSetupTools
+      ? anthropic('claude-sonnet-5')
+      : google('gemini-3-flash-preview'),
+    ...tracing,
     tools: {
       redirectToManualSetup,
       ...(!requiresManualSetup ? { markAsDone } : {}),
@@ -479,33 +460,29 @@ based on the conversation history whether you're done.
     toolChoice: requiresManualSetup
       ? { type: 'tool', toolName: 'redirectToManualSetup' }
       : 'auto',
-    messages: [
-      {
-        role: 'system',
-        content: conversationalSystemPrompt,
-        providerOptions: shouldSetupTools
-          ? {
-              anthropic: {
-                cacheControl: { type: 'ephemeral' },
-              },
-            }
-          : {},
-      },
-      ...(await convertToModelMessages(messages)),
-    ],
-    stopWhen: stepCountIs(15),
+    instructions: {
+      role: 'system',
+      content: conversationalSystemPrompt,
+      providerOptions: shouldSetupTools
+        ? {
+            anthropic: {
+              cacheControl: { type: 'ephemeral' },
+            },
+          }
+        : {},
+    },
+    messages: await convertToModelMessages(messages),
+    stopWhen: isStepCount(15),
     experimental_transform: smoothStream(),
     onChunk: () => {
       if (!streamStarted) {
         streamStarted = true
       }
     },
-    onFinish: () => {
-      if (phClient) {
-        phClient.flush()
-      }
-    },
+    onEnd: () => flushAITelemetry(),
   })
 
-  return result.toUIMessageStreamResponse()
+  return createUIMessageStreamResponse({
+    stream: toUIMessageStream({ stream: result.stream }),
+  })
 }

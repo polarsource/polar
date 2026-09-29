@@ -4270,6 +4270,39 @@ class TestStartPanTransfer:
         enqueue.assert_not_called()
 
     @pytest.mark.auth
+    async def test_keeps_the_checklist_while_an_import_runs(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await self._prepared(
+            mocker,
+            session,
+            save_fixture,
+            organization,
+            product,
+            cards_on_polar={"sub_1", "sub_2"},
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            kind=MerchantMigrationOperationKind.import_catalog,
+            last_progress_at=utc_now(),
+        )
+        await save_fixture(migration)
+
+        checklist = await service.start_pan_transfer(
+            session, auth_subject, migration.id
+        )
+
+        assert checklist.current_step_key == "start_copy"
+
+    @pytest.mark.auth
     async def test_keeps_the_checklist_while_a_card_is_missing(
         self,
         mocker: MockerFixture,

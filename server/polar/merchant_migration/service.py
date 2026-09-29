@@ -909,20 +909,17 @@ class MerchantMigrationService:
     async def _cards_already_on_polar(
         self, session: AsyncSession, migration: MerchantMigration
     ) -> bool:
-        """Whether every subscription to switch already has its card on Polar,
-        typically moved by an earlier migration of the same account. The switch
-        moves a subscription without a card, so one missing card keeps the
-        checklist."""
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        switchable = await record_repository.switchable_subscription_ids(migration.id)
-        if not switchable:
+        """Whether every subscription to switch already has the card it charges on
+        Polar, typically moved by an earlier migration of the same account. The
+        switch moves a subscription without a card, so one missing card keeps
+        the checklist, and so does an import still adding subscriptions."""
+        if migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy:
             return False
-        covered = await record_repository.payment_method_coverage(
-            migration.id,
-            exact=migration.pan_transfer_method
-            == pan_transfer.PanTransferMethod.pan_copy,
-        )
-        return switchable <= covered
+        if self._operation_blocks_new_work(migration):
+            return False
+        return await MerchantMigrationRecordRepository.from_session(
+            session
+        ).every_switchable_subscription_has_a_card(migration.id, exact=True)
 
     async def complete_pan_step(
         self,

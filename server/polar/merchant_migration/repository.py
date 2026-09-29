@@ -8,6 +8,7 @@ from sqlalchemy import (
     Select,
     and_,
     delete,
+    distinct,
     exists,
     func,
     or_,
@@ -686,6 +687,35 @@ class MerchantMigrationRecordRepository(
         self, migration_id: UUID, *, exact: bool = False
     ) -> set[UUID]:
         """Switchable subscription record ids whose Polar customer has a card."""
+        result = await self.session.execute(
+            self._payment_method_coverage_statement(migration_id, exact=exact)
+        )
+        return {row[0] for row in result.all()}
+
+    async def every_switchable_subscription_has_a_card(
+        self, migration_id: UUID, *, exact: bool = False
+    ) -> bool:
+        """False when there is nothing to switch."""
+        switchable = (
+            self._switchable_subscriptions_statement(migration_id)
+            .with_only_columns(MerchantMigrationRecord.id)
+            .order_by(None)
+            .subquery()
+        )
+        covered = self._payment_method_coverage_statement(
+            migration_id, exact=exact
+        ).subquery()
+        switchable_count = await self.session.scalar(
+            select(func.count()).select_from(switchable)
+        )
+        covered_count = await self.session.scalar(
+            select(func.count(distinct(covered.c.id))).select_from(covered)
+        )
+        return bool(switchable_count) and covered_count == switchable_count
+
+    def _payment_method_coverage_statement(
+        self, migration_id: UUID, *, exact: bool
+    ) -> Select[tuple[UUID]]:
         CustomerRecord = aliased(MerchantMigrationRecord)
         payment_method_filters = [
             PaymentMethod.customer_id == Customer.id,
@@ -733,17 +763,7 @@ class MerchantMigrationRecordRepository(
             .with_only_columns(MerchantMigrationRecord.id)
             .order_by(None)
         )
-        result = await self.session.execute(statement)
-        return {row[0] for row in result.all()}
-
-    async def switchable_subscription_ids(self, migration_id: UUID) -> set[UUID]:
-        statement = (
-            self._switchable_subscriptions_statement(migration_id)
-            .with_only_columns(MerchantMigrationRecord.id)
-            .order_by(None)
-        )
-        result = await self.session.execute(statement)
-        return {row[0] for row in result.all()}
+        return statement
 
     async def reset_cutover(
         self,

@@ -67,21 +67,18 @@ const customerState = await polar.customers.getStateExternal("customer_external_
 ## Organizations
 
 OAuth access tokens and personal access tokens can reach every organization the user belongs to.
-Use `scoped` to get a client that acts on a single organization. It sends the `Polar-Organization`
-header, so the API only returns and changes that organization's data:
+Pass `organizationId` to get a client that acts on a single organization. It sends the
+`Polar-Organization` header, so the API only returns and changes that organization's data:
 
 ```typescript
-const polar = createPolar({
+const acme = createPolar({
     accessToken: "polar_at_u_xxx",
+    organizationId: "acme_organization_id",
 });
-
-const acme = polar.scoped({ organizationId: "acme_organization_id" });
 const customers = await acme.customers.list();
 ```
 
-`scoped` returns a new client and leaves the original unchanged. To scope a client from the start,
-pass `organizationId` to `createPolar`. Organization access tokens already act on their own
-organization and don't need either.
+Organization access tokens already act on their own organization and don't need it.
 
 ## Individual API Functions
 

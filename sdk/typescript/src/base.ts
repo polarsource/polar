@@ -104,11 +104,6 @@ export interface ClientOptions {
   organizationId?: string | undefined;
 }
 
-export interface ClientScope {
-  /** Organization to act on, sent in the `Polar-Organization` header. */
-  organizationId: string;
-}
-
 export interface RequestOptions {
   /** Request timeout override, in seconds. */
   timeout?: number;
@@ -143,10 +138,6 @@ export class ClientBase {
       timeout: 5.0,
       ...options,
     };
-  }
-
-  public scoped(scope: ClientScope): ClientBase {
-    return new ClientBase({ ...this.options, ...scope });
   }
 
   public buildRequest(

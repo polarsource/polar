@@ -12,7 +12,7 @@ Use the generated, versioned Polar SDK without inventing methods or parameters.
 1. Identify the installed `@polar-sh/sdk` version and preserve the API version already selected by the application.
 2. Inspect generated service signatures, model interfaces, response types, and endpoint-specific errors before writing calls.
 3. Use `createPolar` for the full service client. Use `createPolarCore` with individual service functions when bundle size or tree-shaking matters.
-4. Identify whether the access token is scoped to an organization. When the selected token does not imply one, act through `polar.scoped({ organizationId })` or pass `organization_id`, and confirm the required endpoint scopes.
+4. Identify whether the access token is scoped to an organization. When the selected token does not imply one, create the client with `createPolar({ ..., organizationId })` or pass `organization_id`, and confirm the required endpoint scopes.
 5. Keep client, webhook, and environment configuration in trusted server-side code.
 
 ## Migrate from the old SDK

@@ -223,19 +223,4 @@ describe("organization", () => {
 
     expect(organizationHeader(client)).toBe("org_1");
   });
-
-  test("scoped returns a client for the organization", () => {
-    const scoped = client.scoped({ organizationId: "org_1" });
-
-    expect(organizationHeader(scoped)).toBe("org_1");
-    expect(organizationHeader(client)).toBeNull();
-  });
-
-  test("scoped replaces the organization of a scoped client", () => {
-    const scoped = client
-      .scoped({ organizationId: "org_1" })
-      .scoped({ organizationId: "org_2" });
-
-    expect(organizationHeader(scoped)).toBe("org_2");
-  });
 });

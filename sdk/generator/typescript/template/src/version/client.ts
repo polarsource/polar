@@ -1,4 +1,4 @@
-import { ClientBase, ClientOptions, ClientScope, resolveBaseUrl } from "../base";
+import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
 {% for service in api.services %}
 import { create{{ service.name }}Service } from "./services/{{ service.name | snake }}";
 {% endfor %}
@@ -32,7 +32,9 @@ export function createPolarCore(options: PolarOptions) {
 
 export type PolarCore = ReturnType<typeof createPolarCore>;
 
-function createServices(client: PolarCore) {
+export function createPolar(options: PolarOptions) {
+  const client = createPolarCore(options);
+
   return {
     {% for service in api.services %}
     {{ service.name | service_name }}: create{{ service.name }}Service(client),{% if not loop.last %}
@@ -41,17 +43,4 @@ function createServices(client: PolarCore) {
   };
 }
 
-export type Polar = ReturnType<typeof createServices> & {
-  scoped(scope: ClientScope): Polar;
-};
-
-function createPolarFromCore(client: PolarCore): Polar {
-  return {
-    ...createServices(client),
-    scoped: (scope) => createPolarFromCore(client.scoped(scope)),
-  };
-}
-
-export function createPolar(options: PolarOptions): Polar {
-  return createPolarFromCore(createPolarCore(options));
-}
+export type Polar = ReturnType<typeof createPolar>;

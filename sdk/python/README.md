@@ -124,19 +124,15 @@ Pass an `httpx.Timeout` instance to configure connect, read, write, and pool tim
 ## Organizations
 
 OAuth access tokens and personal access tokens can reach every organization the user belongs to.
-Use `scoped` to get a client that acts on a single organization. It sends the `Polar-Organization`
-header, so the API only returns and changes that organization's data:
+Pass `organization_id` to get a client that acts on a single organization. It sends the
+`Polar-Organization` header, so the API only returns and changes that organization's data:
 
 ```python
-polar = Polar("polar_at_u_xxx")
-
-acme = polar.scoped(organization_id="acme_organization_id")
+acme = Polar("polar_at_u_xxx", organization_id="acme_organization_id")
 customers = acme.customers.list()
 ```
 
-`scoped` returns a new client with its own connections and leaves the original unchanged. To
-scope a client from the start, pass `organization_id` when creating it. Organization access
-tokens already act on their own organization and don't need either.
+Organization access tokens already act on their own organization and don't need it.
 
 ## Deserializing Data
 

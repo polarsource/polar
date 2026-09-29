@@ -3,12 +3,9 @@
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useTaxJurisdictions, useTaxSummary } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDismissed } from '@/hooks/useDismissed'
-import {
-  DataTableSortingState,
-  sortingQueryParamToState,
-  sortingStateToQueryParam,
-} from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
@@ -23,7 +20,7 @@ import {
   Button,
 } from '@polar-sh/orbit'
 import { endOfDay, endOfMonth, endOfToday, startOfMonth } from 'date-fns'
-import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
+import { parseAsString, useQueryStates } from 'nuqs'
 import { useMemo } from 'react'
 
 const getDefaultStartDate = () => toISODate(startOfMonth(endOfToday()))
@@ -123,19 +120,19 @@ export default function TaxesPage({
 }: {
   organization: schemas['Organization']
 }) {
-  const [startDateISOString, setStartDateISOString] = useQueryState(
-    'startDate',
-    parseAsString.withDefault(getDefaultStartDate()),
-  )
-  const [endDateISOString, setEndDateISOString] = useQueryState(
-    'endDate',
-    parseAsString.withDefault(getDefaultEndDate()),
-  )
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'tax_amount', desc: true }],
+      defaultPageSize: 50,
+    })
 
-  const [sortingParam, setSortingParam] = useQueryState(
-    'sorting',
-    parseAsArrayOf(parseAsString).withDefault(['-tax_amount']),
-  )
+  const [
+    { startDate: startDateISOString, endDate: endDateISOString },
+    setDateRangeParams,
+  ] = useQueryStates({
+    startDate: parseAsString.withDefault(getDefaultStartDate()),
+    endDate: parseAsString.withDefault(getDefaultEndDate()),
+  })
 
   const dateRange = useMemo(
     () => ({
@@ -145,26 +142,14 @@ export default function TaxesPage({
     [startDateISOString, endDateISOString],
   )
 
-  const sorting = useMemo(
-    () => sortingQueryParamToState(sortingParam),
-    [sortingParam],
-  )
-
-  const onSortingChange = (
-    updater:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const next = typeof updater === 'function' ? updater(sorting) : updater
-    setSortingParam(sortingStateToQueryParam(next))
-  }
-
   const { data, isLoading } = useTaxJurisdictions({
     organization_id: organization.id,
     start_date: startDateISOString,
     end_date: endDateISOString,
-    sorting: sortingParam as schemas['TaxJurisdictionSortProperty'][],
-    limit: 100,
+    ...getAPIParams<schemas['TaxJurisdictionSortProperty']>(
+      pagination,
+      sorting,
+    ),
   })
 
   const { data: summary } = useTaxSummary({
@@ -174,6 +159,8 @@ export default function TaxesPage({
   })
 
   const jurisdictions = useMemo(() => data?.items ?? [], [data])
+  const rowCount = data?.pagination.total_count ?? 0
+  const pageCount = data?.pagination.max_page ?? 1
 
   const { isDismissed: isMoRDismissed, dismiss: dismissMoR } = useDismissed(
     `mor_banner:${organization.id}`,
@@ -254,8 +241,11 @@ export default function TaxesPage({
               <DateRangePicker
                 date={dateRange}
                 onDateChange={(range) => {
-                  setStartDateISOString(toISODate(range.from))
-                  setEndDateISOString(toISODate(range.to))
+                  setDateRangeParams({
+                    startDate: toISODate(range.from),
+                    endDate: toISODate(range.to),
+                  })
+                  resetPage()
                 }}
               />
             </Box>
@@ -263,9 +253,13 @@ export default function TaxesPage({
           <DataTable
             columns={columns}
             data={jurisdictions}
+            rowCount={rowCount}
+            pageCount={pageCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
             isLoading={isLoading}
             sorting={sorting}
-            onSortingChange={onSortingChange}
+            onSortingChange={setSorting}
           />
         </Box>
       </Box>

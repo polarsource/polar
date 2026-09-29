@@ -9,14 +9,10 @@ import {
 } from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useProducts } from '@/hooks/queries/products'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  serializeSearchParams,
-  sortingStateToQueryParam,
-} from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import Search from '@mui/icons-material/Search'
@@ -34,77 +30,59 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { useQueryState } from 'nuqs'
+import { useSearchParams } from 'next/navigation'
+import { parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
+
+const showValues = ['all', 'active', 'archived'] as const
+type ShowValue = (typeof showValues)[number]
+
+const filterParsers = {
+  query: parseAsString,
+  show: parseAsStringLiteral(showValues).withDefault('active'),
+}
 
 export default function ClientPage({
   organization: org,
-  pagination,
-  sorting,
-  query: _query,
 }: {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  query: string | undefined
 }) {
-  const [query, setQuery] = useState(_query)
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'name', desc: false }],
+    })
 
-  const [show, setShow] = useQueryState('show', {
-    defaultValue: 'active',
-  })
+  const [{ query, show }, setFilters] = useQueryStates(filterParsers)
 
-  const router = useRouter()
-  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const onPageChange = useCallback(
-    (page: number) => {
-      const searchParams = serializeSearchParams(pagination, sorting)
-      searchParams.set('page', page.toString())
-      if (query) {
-        searchParams.set('query', query)
-      } else {
-        searchParams.delete('query')
-      }
-      router.replace(`${pathname}?${searchParams}`)
-    },
-    [pagination, router, sorting, pathname, query],
+    (page: number) =>
+      setPagination((prev) => ({ ...prev, pageIndex: page - 1 })),
+    [setPagination],
   )
 
   const onLimitChange = useCallback(
-    (limit: string) => {
-      const searchParams = serializeSearchParams(
-        { ...pagination, pageSize: parseInt(limit), pageIndex: 0 },
-        sorting,
-      )
-      if (query) {
-        searchParams.set('query', query)
-      } else {
-        searchParams.delete('query')
-      }
-      router.replace(`${pathname}?${searchParams}`)
-    },
-    [pagination, router, sorting, pathname, query],
+    (limit: string) =>
+      setPagination({ pageIndex: 0, pageSize: parseInt(limit) }),
+    [setPagination],
   )
 
   const onSortingChange = useCallback(
     (value: string) => {
       const desc = value.startsWith('-')
       const id = desc ? value.slice(1) : value
-      const newSorting: DataTableSortingState = [{ id, desc }]
-      const searchParams = serializeSearchParams(
-        { ...pagination, pageIndex: 0 },
-        newSorting,
-      )
-      if (query) {
-        searchParams.set('query', query)
-      } else {
-        searchParams.delete('query')
-      }
-      router.replace(`${pathname}?${searchParams}`)
+      setSorting([{ id, desc }])
     },
-    [pagination, router, pathname, query],
+    [setSorting],
+  )
+
+  const onShowChange = useCallback(
+    (value: string) => {
+      setFilters({ show: value as ShowValue })
+      resetPage()
+    },
+    [setFilters, resetPage],
   )
 
   const currentSortingValue =
@@ -112,29 +90,14 @@ export default function ClientPage({
       ? `${sorting[0].desc ? '-' : ''}${sorting[0].id}`
       : 'name'
 
-  const debouncedQueryChange = useDebouncedCallback((query: string) => {
-    const searchParams = serializeSearchParams(pagination, sorting)
-    if (query) {
-      searchParams.set('query', query)
-    } else {
-      searchParams.delete('query')
-    }
-    router.replace(`${pathname}?${searchParams}`)
+  const onQueryChange = useDebouncedCallback((value: string) => {
+    setFilters({ query: value || null })
+    resetPage()
   }, 500)
 
-  const onQueryChange = useCallback(
-    (query: string) => {
-      setQuery(query)
-      debouncedQueryChange(query)
-    },
-    [debouncedQueryChange],
-  )
-
   const products = useProducts(org.id, {
-    query,
-    page: pagination.pageIndex + 1,
-    limit: pagination.pageSize,
-    sorting: sortingStateToQueryParam(sorting),
+    ...getAPIParams(pagination, sorting),
+    query: query ?? undefined,
     is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
 
@@ -205,10 +168,10 @@ export default function ClientPage({
                 className="w-full md:max-w-64"
                 preSlot={<Search fontSize="small" />}
                 placeholder="Search Products"
-                value={query}
+                defaultValue={query ?? ''}
                 onChange={(e) => onQueryChange(e.target.value)}
               />
-              <Select value={show} onValueChange={setShow}>
+              <Select value={show} onValueChange={onShowChange}>
                 <SelectTrigger className="w-full md:max-w-fit">
                   <SelectValue placeholder="Show archived products" />
                 </SelectTrigger>
@@ -274,7 +237,7 @@ export default function ClientPage({
             currentPage={pagination.pageIndex + 1}
             pageSize={pagination.pageSize}
             totalCount={products.data?.pagination.total_count || 0}
-            currentURL={serializeSearchParams(pagination, sorting)}
+            currentURL={searchParams}
             onPageChange={onPageChange}
           >
             <List size="small">

@@ -166,10 +166,27 @@ class CLICommandsEmitter(EmitterBase):
             input_type = None
             fields = []
 
+        discriminator = None
+        if isinstance(method.body, UnionRef):
+            union = next(u for u in api.input_unions if u.name == method.body.name)
+            if union.discriminator and all(
+                any(
+                    field.name == union.discriminator.property_name and field.required
+                    for field in self._body_fields(variant, api)
+                )
+                for variant in union.variants
+            ):
+                discriminator = union.discriminator.property_name
+
         generated_fields = [
             {
                 "name": field.name,
-                "description": (field.description or field.name).split("\n")[0],
+                "description": (field.description or field.name).split("\n")[0]
+                + (
+                    " (required via flag or --data)"
+                    if field.name == discriminator
+                    else ""
+                ),
                 "expression": self._flag_expression(
                     field.type, field.name.replace("_", "-"), api
                 ),
@@ -226,6 +243,7 @@ class CLICommandsEmitter(EmitterBase):
             "sdk_type": "Polar" + "".join(f"[{json.dumps(p)}]" for p in service_path),
             "runtime_path": "../" * len(service_path),
             "input_type": input_type,
+            "discriminator": discriminator,
             "has_organization": has_organization,
             "input_index": len(method.path_params),
             "fields": generated_fields,

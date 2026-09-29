@@ -2,7 +2,7 @@
 import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
-import { ApiRuntime } from '../runtime'
+import { ApiRuntime, ApiCommandError } from '../runtime'
 import { data, mergeInput, jsonFlag, nullableStringFlag } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customFields']['create']>[0]>
@@ -24,7 +24,10 @@ export const command = Command.make(
         'date',
         'checkbox',
         'select',
-      ]).pipe(Flag.optional, Flag.withDescription('type')),
+      ]).pipe(
+        Flag.optional,
+        Flag.withDescription('type (required via flag or --data)'),
+      ),
       slug: Flag.String('slug').pipe(
         Flag.optional,
         Flag.withDescription(
@@ -59,6 +62,12 @@ export const command = Command.make(
         organization_id: config.input.organization_id,
         properties: config.input.properties,
       })
+      if (body['type'] == null) {
+        return yield* new ApiCommandError({
+          message:
+            '--type is required; supply it as a flag or include type in --data.',
+        })
+      }
       yield* api.execute({
         operationId: 'custom-fields:create',
         method: 'POST',

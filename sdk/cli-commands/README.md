@@ -78,6 +78,10 @@ Nullable string flags accept `null` to clear a value, e.g. `--discount-id=null`.
 Use `--data` to send the literal string `"null"`. `--trial-end=now` and unquoted
 ISO timestamps are accepted directly.
 
+Required union discriminators must be supplied as a flag or through `--data`.
+For example, `custom_fields update <id> --name="New name" --type=text` requires
+the field's existing type, even when only its name changes.
+
 ## Conditional destructive confirmation
 
 Annotate a top-level input property with `x-polar-cli-confirm` to require
@@ -142,7 +146,8 @@ Protected inputs include:
 - CLI-tagged, non-private operations; no composite workflows.
 - Validates flag primitives/enums and JSON syntax, not complete API schemas.
   `mergeInput` contains the intentional type assertion at that boundary. Required
-  fields, union combinations, and nested values are validated by the server.
+  fields other than union discriminators, union combinations, and nested values
+  are validated by the server.
 - Flat and repeatable flags plus JSON; dotted/bracket flag aliases are deferred.
 - Uses the current CLI API wrapper, including its existing generic error messages.
 - DELETE, annotated operations, and matching annotated inputs require interactive confirmation or `--confirm`.

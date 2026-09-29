@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeyActivationCreateProperties,
     BenefitLicenseKeysCreateProperties,
@@ -26,11 +27,11 @@ from polar.models import (
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.version import NEXT_API_VERSION
+from polar.version import NEXT_API_VERSION, V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
-from tests.fixtures.random_objects import create_member
+from tests.fixtures.random_objects import create_member, create_order
 
 
 @pytest.mark.asyncio
@@ -997,6 +998,95 @@ class TestValidateLicenseKey:
         assert response.status_code == 200
         assert "member" not in response.json()
 
+    async def test_returns_subscription(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        grant_repository = BenefitGrantRepository.from_session(session)
+        grant = await grant_repository.get_by_property_and_organization(
+            organization.id, "license_key_id", granted["license_key_id"]
+        )
+        assert grant is not None
+
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        response = await client.post(
+            "/v1/customer-portal/license-keys/validate",
+            json={"key": lk.key, "organization_id": str(lk.organization_id)},
+            headers={"Polar-Version": str(V2027_01)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["subscription_id"] == str(grant.subscription_id)
+        assert data["subscription"]["id"] == str(grant.subscription_id)
+        assert data["subscription"]["current_period_end"] is not None
+        assert data["order_id"] is None
+        assert data["order"] is None
+
+    async def test_returns_order(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        grant_repository = BenefitGrantRepository.from_session(session)
+        grant = await grant_repository.get_by_property_and_organization(
+            organization.id, "license_key_id", granted["license_key_id"]
+        )
+        assert grant is not None
+        order = await create_order(save_fixture, customer=customer, product=product)
+        grant.subscription_id = None
+        grant.order_id = order.id
+        await save_fixture(grant)
+
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        response = await client.post(
+            "/v1/customer-portal/license-keys/validate",
+            json={"key": lk.key, "organization_id": str(lk.organization_id)},
+            headers={"Polar-Version": str(V2027_01)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["subscription_id"] is None
+        assert data["subscription"] is None
+        assert data["order_id"] == str(order.id)
+        assert data["order"]["id"] == str(order.id)
+
 
 @pytest.mark.asyncio
 class TestActivateLicenseKey:
@@ -1022,6 +1112,47 @@ class TestActivateLicenseKey:
         )
 
         assert response.status_code == 404
+
+    async def test_returns_subscription(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                activations=BenefitLicenseKeyActivationCreateProperties(
+                    limit=1, enable_customer_admin=False
+                ),
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        response = await client.post(
+            "/v1/customer-portal/license-keys/activate",
+            json={
+                "key": lk.key,
+                "organization_id": str(lk.organization_id),
+                "label": "test",
+            },
+            headers={"Polar-Version": str(V2027_01)},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["license_key"]["subscription"] is not None
 
 
 @pytest.mark.asyncio

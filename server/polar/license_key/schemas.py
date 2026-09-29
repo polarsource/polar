@@ -23,7 +23,11 @@ from polar.kit.schemas import IDSchema, Int32, Schema, TimestampedSchema
 from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.versioning import Version
 from polar.models.license_key import LicenseKeyStatus
-from polar.version import V2026_10
+from polar.models.order import OrderStatus
+from polar.models.subscription import SubscriptionStatus
+from polar.order.schemas import OrderBase
+from polar.subscription.schemas import SubscriptionBase
+from polar.version import V2026_10, V2027_01
 
 ###############################################################################
 # RESPONSES
@@ -214,8 +218,48 @@ class LicenseKeyWithActivations(LicenseKeyRead):
     activations: list[LicenseKeyActivationBase]
 
 
+class LicenseKeySubscription(IDSchema):
+    status: Annotated[SubscriptionStatus, SubscriptionBase.model_fields["status"]]
+    current_period_start: Annotated[
+        datetime, SubscriptionBase.model_fields["current_period_start"]
+    ]
+    current_period_end: Annotated[
+        datetime, SubscriptionBase.model_fields["current_period_end"]
+    ]
+    cancel_at_period_end: Annotated[
+        bool, SubscriptionBase.model_fields["cancel_at_period_end"]
+    ]
+    ends_at: Annotated[datetime | None, SubscriptionBase.model_fields["ends_at"]]
+
+
+class LicenseKeyOrder(IDSchema):
+    created_at: Annotated[datetime, OrderBase.model_fields["created_at"]]
+    status: Annotated[OrderStatus, OrderBase.model_fields["status"]]
+    paid: Annotated[bool, OrderBase.model_fields["paid"]]
+
+
 class GrantedLicenseKey(LicenseKeyRead):
     status: Literal[LicenseKeyStatus.granted]
+    subscription_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(description="The ID of the subscription granting the license key."),
+    ]
+    subscription: Annotated[
+        LicenseKeySubscription | None,
+        Version(starting_from=V2027_01),
+        Field(description="The subscription granting the license key, if any."),
+    ]
+    order_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(description="The ID of the one-time order granting the license key."),
+    ]
+    order: Annotated[
+        LicenseKeyOrder | None,
+        Version(starting_from=V2027_01),
+        Field(description="The one-time order granting the license key, if any."),
+    ]
 
 
 class RotatedLicenseKey(LicenseKeyRead):

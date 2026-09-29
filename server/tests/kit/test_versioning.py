@@ -13,6 +13,7 @@ from polar.kit.versioning import (
     Version,
     add_versioned_routers,
     api_version_context,
+    prune_version_omitted_schemas,
     routes_for_version,
     version,
 )
@@ -38,6 +39,14 @@ class VersionedProduct(BaseModel):
 
 class VersionedSubscription(BaseModel):
     product: VersionedProduct
+
+
+class NextOnlyDiscount(BaseModel):
+    code: str
+
+
+class VersionedOrder(BaseModel):
+    discount: Annotated[NextOnlyDiscount | None, Version(starting_from=NEXT_VERSION)]
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -105,6 +114,23 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
         next_product["properties"]["next_field"]["description"]
         == "Only available in the next API version."
     )
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(CURRENT_VERSION, False), (NEXT_VERSION, True)]
+)
+def test_prune_version_omitted_schemas(api_version: APIVersion, included: bool) -> None:
+    app = FastAPI()
+
+    @app.get("/order")
+    def get_order() -> VersionedOrder:
+        return VersionedOrder(discount=None)
+
+    with api_version_context(api_version):
+        schema = get_openapi(title="Test", version="1", routes=app.routes)
+    schema = prune_version_omitted_schemas(schema, api_version)
+
+    assert ("NextOnlyDiscount" in schema["components"]["schemas"]) is included
 
 
 def test_versioned_routes() -> None:

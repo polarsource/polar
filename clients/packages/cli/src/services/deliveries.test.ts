@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Effect, Option } from 'effect'
@@ -33,6 +33,33 @@ describe('deliveries', () => {
     )
     expect(await readdir(directory)).toEqual([])
   })
+
+  test('keeps the response body of a rejected delivery', async () => {
+    const deliveries = make(directory, '1 second')
+    const rejected: Delivery = {
+      ...delivery,
+      status: 500,
+      statusText: 'Internal Server Error',
+      body: 'boom',
+    }
+    await Effect.runPromise(deliveries.record(eventId, rejected))
+
+    expect(await Effect.runPromise(deliveries.await(eventId))).toEqual(
+      Option.some(rejected),
+    )
+  })
+
+  test.skipIf(process.platform === 'win32')(
+    'keeps recorded deliveries readable by the current user only',
+    async () => {
+      const nested = join(directory, 'deliveries')
+      await Effect.runPromise(make(nested).record(eventId, delivery))
+
+      const mode = async (path: string) => (await stat(path)).mode & 0o777
+      expect(await mode(nested)).toBe(0o700)
+      expect(await mode(join(nested, `${eventId}.json`))).toBe(0o600)
+    },
+  )
 
   test('waits for a delivery that is recorded a moment later', async () => {
     const deliveries = make(directory, '1 second')

@@ -17,6 +17,7 @@ export const Delivery = Schema.Struct({
   status: Schema.optional(Schema.Number),
   statusText: Schema.optional(Schema.String),
   failure: Schema.optional(Schema.String),
+  body: Schema.optional(Schema.String),
 })
 export type Delivery = typeof Delivery.Type
 
@@ -42,8 +43,10 @@ export const make = (
       eventIdPattern.test(eventId)
         ? Effect.tryPromise(async () => {
             const file = fileOf(eventId)
-            await mkdir(directory, { recursive: true })
-            await writeFile(`${file}.tmp`, JSON.stringify(delivery))
+            await mkdir(directory, { recursive: true, mode: 0o700 })
+            await writeFile(`${file}.tmp`, JSON.stringify(delivery), {
+              mode: 0o600,
+            })
             await rename(`${file}.tmp`, file)
           }).pipe(Effect.ignore)
         : Effect.void,

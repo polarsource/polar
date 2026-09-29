@@ -108,6 +108,7 @@ describe('startListening', () => {
     requests.length = 0
     forward.mockClear()
     vi.restoreAllMocks()
+    vi.useRealTimers()
   })
 
   test.each([401, 500])('preserves terminal HTTP status %i', async (status) => {
@@ -139,6 +140,17 @@ describe('startListening', () => {
     expect(requests[0]!.get('Polar-Organization')).toBe('org-1')
     await Effect.runPromise(Fiber.interrupt(fiber))
     expect(connections[0]!.signal?.aborted).toBe(true)
+  })
+
+  test('does not follow redirects, like real webhook delivery', async () => {
+    run()
+    await tick()
+    emitWebhook({})
+    await tick()
+    expect(forward).toHaveBeenCalledWith(
+      'http://localhost:3000/webhook',
+      expect.objectContaining({ redirect: 'manual' }),
+    )
   })
 
   test('forwards the exact signed payload and headers', async () => {
@@ -191,6 +203,92 @@ describe('startListening', () => {
         }),
       },
     ])
+  })
+
+  test('records the response body when your server rejects a triggered event', async () => {
+    forward.mockResolvedValueOnce(
+      new Response('Missing customer', {
+        status: 422,
+        statusText: 'Unprocessable Entity',
+      }),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded[0]?.delivery).toEqual(
+      expect.objectContaining({ status: 422, body: 'Missing customer' }),
+    )
+  })
+
+  test('records what arrived when a rejected response body stalls, then moves on', async () => {
+    forward.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('partial'))
+          },
+        }),
+        { status: 500 },
+      ),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    expect(deliveries.state.recorded.map(({ delivery }) => delivery)).toEqual([
+      expect.objectContaining({ status: 500, body: 'partial' }),
+      expect.objectContaining({ status: 200 }),
+    ])
+  })
+
+  test('gives up on a server that does not respond, like real webhook delivery', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    let hung: AbortSignal | null | undefined
+    forward.mockImplementationOnce(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          hung = init?.signal
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason),
+          )
+        }),
+    )
+    run()
+    await vi.advanceTimersByTimeAsync(20)
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(deliveries.state.recorded.map(({ delivery }) => delivery)).toEqual([
+      expect.objectContaining({ failure: 'no response after 10 seconds' }),
+      expect.objectContaining({ status: 200 }),
+    ])
+    expect(hung?.aborted).toBe(true)
+  })
+
+  test('stops reading a rejected response body at the limit', async () => {
+    const cancel = vi.fn()
+    forward.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          pull(controller) {
+            controller.enqueue(new TextEncoder().encode('x'.repeat(500)))
+          },
+          cancel,
+        }),
+        { status: 500 },
+      ),
+    )
+    run()
+    await tick()
+    emitWebhook({ 'x-polar-triggered': 'true' })
+    await tick()
+    expect(deliveries.state.recorded[0]?.delivery.body).toBe(
+      `${'x'.repeat(2000)}…`,
+    )
+    expect(cancel).toHaveBeenCalled()
   })
 
   test('keeps secrets in the forward URL out of the banner and the record', async () => {
@@ -542,12 +640,22 @@ describe('withTerminalTitle', () => {
 })
 
 describe('listen command', () => {
+  const acme = {
+    id: '1a2b3c4d-0000-4000-8000-000000000001',
+    name: 'Acme',
+    slug: 'acme',
+    environment: 'sandbox',
+  } as const
   const run = (args: string[]) => {
     const cli = runCli(listen, args)
+    const organizations = fakeOrganizations({
+      items: [acme],
+      selected: { id: acme.id, environment: acme.environment },
+    })
     const promise = Effect.runPromise(
       cli.effect.pipe(
         Effect.provideService(Auth, fakeAuth().auth),
-        Effect.provideService(Organizations, fakeOrganizations().organizations),
+        Effect.provideService(Organizations, organizations.organizations),
         Effect.provideService(Deliveries, fakeDeliveries().deliveries),
       ),
     )
@@ -564,6 +672,18 @@ describe('listen command', () => {
     const { promise, output } = run(['--help'])
     await promise
     expect(stripAnsi(output())).toContain('polar listen 3000')
+  })
+
+  test('prints the signing secret of the active organization', async () => {
+    const { promise, output } = run(['--print-secret'])
+    await promise
+    expect(output()).toBe('1a2b3c4d000040008000000000000001')
+  })
+
+  test('asks for a forward target', async () => {
+    await expect(run([]).promise).rejects.toThrow(
+      'Pass a port or URL to forward events to, e.g. polar listen 3000.',
+    )
   })
 
   test('rejects a target that is not a port or http URL', async () => {

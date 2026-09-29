@@ -232,6 +232,53 @@ describe('auth whoami', () => {
   })
 })
 
+describe('auth whoami --json', () => {
+  test('prints the sessions and the active organization', async () => {
+    organizations.state.selected = { id: 'org-2', environment: 'production' }
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      source: 'session',
+      environments: ['sandbox', 'production'],
+      organization: beta,
+    })
+  })
+
+  test('prints no organization when none is active', async () => {
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output()).organization).toBeNull()
+  })
+
+  test('prints no sessions when logged out', async () => {
+    auth.state.sessions = []
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      source: 'session',
+      environments: [],
+      organization: null,
+    })
+  })
+
+  test('prints the only organization of a token override', async () => {
+    auth.state.credential = overrideCredential()
+    auth.state.environment = 'sandbox'
+    organizations.state.items = [acme]
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      source: 'POLAR_ACCESS_TOKEN',
+      environments: ['sandbox'],
+      organization: acme,
+    })
+  })
+})
+
 describe('auth list', () => {
   test('groups organizations by environment and marks the active one', async () => {
     organizations.state.selected = { id: 'org-1', environment: 'sandbox' }
@@ -277,6 +324,27 @@ describe('auth list', () => {
     await promise
 
     expect(output()).toContain('Not logged in')
+  })
+})
+
+describe('auth list --json', () => {
+  test('prints every organization and marks the active one', async () => {
+    organizations.state.selected = { id: 'org-1', environment: 'sandbox' }
+    const { promise, output } = run(['list', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual([
+      { ...acme, active: true },
+      { ...beta, active: false },
+    ])
+  })
+
+  test('prints an empty list when logged out', async () => {
+    auth.state.sessions = []
+    const { promise, output } = run(['list', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual([])
   })
 })
 

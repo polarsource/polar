@@ -106,17 +106,38 @@ describe('trigger', () => {
     expect(output()).toContain('Response      200 OK  6ms')
   })
 
-  test('shows why forwarding failed', async () => {
+  test('fails and shows why forwarding failed', async () => {
     deliveries.state.results['evt-1'] = {
       forwardUrl: 'http://localhost:3000/webhooks',
       failure: 'connection refused, is your server running?',
       durationMs: 1,
     }
     const { promise, output } = run(['order.created'])
-    await promise
 
+    await expect(promise).rejects.toThrow(
+      'Your server did not accept order.created',
+    )
     expect(output()).toContain(
       'Response      failed  connection refused, is your server running?',
+    )
+  })
+
+  test('fails and shows the response body when your server rejects the event', async () => {
+    deliveries.state.results['evt-1'] = {
+      forwardUrl: 'http://localhost:3000/webhooks',
+      status: 500,
+      statusText: 'Internal Server Error',
+      body: 'TypeError: order.customer is undefined\n    at handler',
+      durationMs: 6,
+    }
+    const { promise, output } = run(['order.created'])
+
+    await expect(promise).rejects.toThrow(
+      'Your server did not accept order.created',
+    )
+    expect(output()).toContain('Response      500 Internal Server Error  6ms')
+    expect(output()).toContain(
+      '  TypeError: order.customer is undefined\n      at handler',
     )
   })
 
@@ -182,6 +203,13 @@ describe('trigger', () => {
     expect(output()).toContain('checkout.created')
     expect(output()).toContain('Sent when an order is paid.')
     expect(trigger.state.sent).toHaveLength(0)
+  })
+
+  test('lists the catalog as JSON', async () => {
+    const { promise, output } = run(['--list', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual(catalog)
   })
 
   test('requires an event name when not interactive', async () => {

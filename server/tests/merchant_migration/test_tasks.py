@@ -27,7 +27,9 @@ def chat_post_message(mocker: MockerFixture, session: AsyncSession) -> AsyncMock
         "polar.merchant_migration.tasks.AsyncSessionMaker",
         side_effect=lambda: contextlib.nullcontext(session),
     )
-    mocker.patch.object(settings, "ENV", Environment.production)
+    mocker.patch(
+        "polar.merchant_migration.slack.ALERT_ENVIRONMENTS", frozenset({settings.ENV})
+    )
     mocker.patch.object(settings, "SLACK_BOT_TOKEN", "xoxb-test")
     return mocker.patch(
         "polar.merchant_migration.slack.slack_client.chat_post_message",
@@ -47,7 +49,7 @@ class TestNotifyCreated:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.name = "Acme `*<!channel>*`"
+        organization.name = "Acme & Co <!channel>"
         await save_fixture(organization)
         migration = await build_connected_migration(save_fixture, organization)
         chat_post_message.side_effect = [failure, {"ok": True}]
@@ -62,8 +64,8 @@ class TestNotifyCreated:
         assert kwargs["channel"] == "C0B76J9KR8F"
         assert kwargs["text"] == f":truck: New merchant migration: {organization.slug}"
         assert kwargs["blocks"][1]["fields"][0] == {
-            "type": "plain_text",
-            "text": f"Organization\nAcme `*<!channel>*` ({organization.slug})",
+            "type": "mrkdwn",
+            "text": f"*Organization*\nAcme &amp; Co &lt;!channel&gt; ({organization.slug})",
         }
         body = str(kwargs["blocks"])
         assert str(migration.id) in body
@@ -90,7 +92,7 @@ class TestNotifyCreated:
 
         chat_post_message.assert_awaited_once()
 
-    async def test_skips_outside_production_and_sandbox(
+    async def test_skips_outside_the_alert_environments(
         self,
         mocker: MockerFixture,
         chat_post_message: AsyncMock,

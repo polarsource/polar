@@ -1,3 +1,4 @@
+import html
 from datetime import timedelta
 
 import structlog
@@ -23,6 +24,7 @@ SENT_KEY_TTL = timedelta(days=30)
 # Held while a post is in flight. Longer than the default task time limit, and
 # short so a worker killed mid-post only delays its retry instead of losing it.
 IN_PROGRESS_KEY_TTL = timedelta(minutes=2)
+ALERT_ENVIRONMENTS = frozenset({Environment.production, Environment.sandbox})
 
 
 class SlackAlertInProgress(PolarTaskError):
@@ -35,10 +37,14 @@ def _migration_payload(
 ) -> SlackPayload:
     organization = migration.organization
     fields: list[SlackText] = [
-        # plain_text: the name is merchant-controlled and mrkdwn can't escape it.
+        # The name is merchant-controlled: escaping &, < and > stops it from
+        # injecting mentions or links into the mrkdwn.
         {
-            "type": "plain_text",
-            "text": f"Organization\n{organization.name} ({organization.slug})",
+            "type": "mrkdwn",
+            "text": (
+                f"*Organization*\n{html.escape(organization.name, quote=False)}"
+                f" ({organization.slug})"
+            ),
         },
         {"type": "mrkdwn", "text": f"*Source*\n{migration.source_platform.label}"},
         {"type": "mrkdwn", "text": f"*Migration*\n`{migration.id}`"},
@@ -79,7 +85,7 @@ def _migration_payload(
 async def _post_once(redis: Redis, key: str, payload: SlackPayload) -> None:
     # The channel defaults to Polar's Ops channel, so a bot token in a local
     # .env or a test run must not post into it.
-    if not settings.is_environment({Environment.production, Environment.sandbox}):
+    if settings.ENV not in ALERT_ENVIRONMENTS:
         log.info("merchant_migration.slack.skipped_environment", key=key)
         return
     bot_token = settings.SLACK_BOT_TOKEN

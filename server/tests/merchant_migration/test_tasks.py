@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock
@@ -40,16 +41,20 @@ def chat_post_message(mocker: MockerFixture, session: AsyncSession) -> AsyncMock
 
 @pytest.mark.asyncio
 class TestNotifyCreated:
+    @pytest.mark.parametrize(
+        "failure", [SlackClientError("down"), asyncio.CancelledError()]
+    )
     async def test_posts_once_and_retries_after_a_failure(
         self,
+        failure: BaseException,
         chat_post_message: AsyncMock,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-        chat_post_message.side_effect = [SlackClientError("down"), {"ok": True}]
+        chat_post_message.side_effect = [failure, {"ok": True}]
 
-        with pytest.raises(SlackClientError):
+        with pytest.raises(type(failure)):
             await merchant_migration_notify_created(migration.id)
         await merchant_migration_notify_created(migration.id)
         await merchant_migration_notify_created(migration.id)

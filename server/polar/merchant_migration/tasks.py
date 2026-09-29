@@ -1,12 +1,17 @@
 from typing import Annotated
 from uuid import UUID
 
+import structlog
+
+from polar.logging import Logger
 from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 from . import pan_transfer, slack
 from .repository import MerchantMigrationRepository
 from .service import merchant_migration as merchant_migration_service
+
+log: Logger = structlog.get_logger()
 
 
 @actor(
@@ -66,6 +71,10 @@ async def merchant_migration_notify_created(
         repository = MerchantMigrationRepository.from_session(session)
         migration = await repository.get_ops_by_id(merchant_migration_id)
         if migration is None:
+            log.warning(
+                "merchant_migration.missing",
+                merchant_migration_id=merchant_migration_id,
+            )
             return
         await slack.notify_created(RedisMiddleware.get(), migration)
 
@@ -83,6 +92,10 @@ async def merchant_migration_notify_waiting_for_ops(
         repository = MerchantMigrationRepository.from_session(session)
         migration = await repository.get_ops_by_id(merchant_migration_id)
         if migration is None:
+            log.warning(
+                "merchant_migration.missing",
+                merchant_migration_id=merchant_migration_id,
+            )
             return
         step = pan_transfer.current_ops_step(migration.pan_transfer_steps)
         if step is None or step.key != step_key:

@@ -79,7 +79,9 @@ async def _post_once(redis: Redis, key: str, payload: SlackPayload) -> None:
         await slack_client.chat_post_message(
             bot_token=bot_token, channel=channel, **payload
         )
-    except Exception:
+    except BaseException:
+        # Also on cancellation (task timeout, worker shutdown): a key left behind
+        # would silence the retry for the whole TTL.
         await redis.delete(key)
         raise
 

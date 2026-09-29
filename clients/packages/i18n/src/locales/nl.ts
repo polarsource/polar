@@ -248,6 +248,8 @@ export default {
       confirmationTokenFailed:
         'Bevestigingstoken aanmaken mislukt, probeer het later opnieuw.',
       paymentNotCompleted: 'De betaling is niet voltooid. Probeer het opnieuw.',
+      paymentFormNotLoaded:
+        'Het betaalformulier kon niet worden geladen. Vernieuw de pagina en probeer het opnieuw.',
     },
     cta: {
       startTrial: 'Proefperiode starten',

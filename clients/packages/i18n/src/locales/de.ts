@@ -252,6 +252,8 @@ export default {
         'Bestätigungstoken konnte nicht erstellt werden, bitte versuchen Sie es später erneut.',
       paymentNotCompleted:
         'Die Zahlung wurde nicht abgeschlossen. Bitte versuchen Sie es erneut.',
+      paymentFormNotLoaded:
+        'Das Zahlungsformular konnte nicht geladen werden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.',
     },
     cta: {
       startTrial: 'Testphase starten',

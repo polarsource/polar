@@ -1,5 +1,7 @@
 import re
 import textwrap
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Self
@@ -11,8 +13,16 @@ from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
 from bidi.algorithm import get_display
 from fpdf import FPDF
-from fpdf.enums import Align, TableBordersLayout, TextEmphasis, XPos, YPos
+from fpdf.enums import (
+    Align,
+    CellBordersLayout,
+    TableBordersLayout,
+    TextEmphasis,
+    XPos,
+    YPos,
+)
 from fpdf.fonts import FontFace
+from fpdf.table import Table
 from pydantic import BaseModel
 
 from polar.config import Environment, settings
@@ -68,6 +78,7 @@ class InvoiceTotalsItem(BaseModel):
     label: str
     amount: int
     currency: str
+    emphasized: bool = False
 
 
 class Invoice(BaseModel):
@@ -192,6 +203,7 @@ class Invoice(BaseModel):
                 label="Total",
                 amount=total,
                 currency=self.currency,
+                emphasized=True,
             )
         )
 
@@ -208,6 +220,7 @@ class Invoice(BaseModel):
                     label="To be paid",
                     amount=total + self.applied_balance_amount,
                     currency=self.currency,
+                    emphasized=True,
                 )
             )
 
@@ -259,8 +272,11 @@ class InvoiceGenerator(FPDF):
     logo: ClassVar[Path] = Path(__file__).parent / "invoice-logo.svg"
     """Path to the logo image for the invoice."""
 
-    font_name: ClassVar[str] = "inter"
+    font_name: ClassVar[str] = "ppneuemontreal"
     """Default font family name."""
+
+    latin_font_name: ClassVar[str] = "notosans"
+    """Font family name for Latin, Greek and Cyrillic glyphs missing from the default font."""
 
     hebrew_font_name: ClassVar[str] = "notosanshebrew"
     """Font family name for Hebrew fallback glyphs."""
@@ -276,8 +292,12 @@ class InvoiceGenerator(FPDF):
 
     font_files: ClassVar[dict[str, tuple[Path, Path]]] = {
         font_name: (
-            Path(__file__).parent / "fonts/Inter-Regular.ttf",
-            Path(__file__).parent / "fonts/Inter-Bold.ttf",
+            Path(__file__).parent / "fonts/PPNeueMontreal-Regular.ttf",
+            Path(__file__).parent / "fonts/PPNeueMontreal-Medium.ttf",
+        ),
+        latin_font_name: (
+            Path(__file__).parent / "fonts/NotoSans-Regular.ttf",
+            Path(__file__).parent / "fonts/NotoSans-Medium.ttf",
         ),
         hebrew_font_name: (
             Path(__file__).parent / "fonts/NotoSansHebrew-Regular.ttf",
@@ -322,17 +342,48 @@ class InvoiceGenerator(FPDF):
     cjk_default_script: ClassVar[str] = "sc"
     """Default CJK script family when the customer's country is not mapped."""
 
+    cjk_code_point_ranges: ClassVar[tuple[tuple[int, int], ...]] = (
+        (0x1100, 0x11FF),  # Hangul Jamo
+        (0x2E80, 0x2FFF),  # CJK radicals, Kangxi radicals, description characters
+        (0x3000, 0x9FFF),  # CJK punctuation, kana, Bopomofo, Hangul Jamo, ideographs
+        (0xA960, 0xA97F),  # Hangul Jamo Extended-A
+        (0xAC00, 0xD7FF),  # Hangul syllables, Hangul Jamo Extended-B
+        (0xF900, 0xFAFF),  # CJK compatibility ideographs
+        (0xFE10, 0xFE1F),  # Vertical forms
+        (0xFE30, 0xFE4F),  # CJK compatibility forms
+        (0xFF00, 0xFFEF),  # Halfwidth and fullwidth forms
+        (0x20000, 0x3FFFF),  # CJK ideographs extensions and compatibility supplement
+    )
+    """Code points the CJK fallback fonts are loaded for.
+
+    Anything else missing from the bundled fonts, like symbols and emoji, renders
+    blank rather than loading CJK fonts (tens of MB each) to search for a glyph."""
+
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
 
     footer_font_size: ClassVar[int] = 8
     """Font size for the footer in points."""
 
+    title_font_size: ClassVar[int] = 20
+    """Font size for the document title in points."""
+
     table_header_font_size: ClassVar[int] = 8
     """Font size for table headers in points."""
 
-    table_borders_color: ClassVar[tuple[int, int, int]] = (220, 220, 220)
+    primary_text_color: ClassVar[tuple[int, int, int]] = (17, 17, 17)
+    """Color for primary text in RGB format."""
+
+    muted_text_color: ClassVar[tuple[int, int, int]] = (115, 115, 115)
+    """Color for labels and secondary text in RGB format."""
+
+    table_borders_color: ClassVar[tuple[int, int, int]] = (229, 229, 229)
     """Color for table borders in RGB format."""
+
+    table_headings_style: ClassVar[FontFace] = FontFace(
+        size_pt=table_header_font_size, color=muted_text_color
+    )
+    """Style for table header rows."""
 
     line_height_percentage: ClassVar[float] = 1.5
     """Line height as a percentage of the font size."""
@@ -356,6 +407,13 @@ class InvoiceGenerator(FPDF):
             p.exists()
             for s in cls.cjk_scripts
             for p in cls.font_files[cls.cjk_font_name_for_script(s)]
+        )
+
+    @classmethod
+    def is_cjk(cls, char: str) -> bool:
+        code_point = ord(char)
+        return any(
+            start <= code_point <= end for start, end in cls.cjk_code_point_ranges
         )
 
     @classmethod
@@ -390,7 +448,12 @@ class InvoiceGenerator(FPDF):
         super().__init__()
 
         self.loaded_font_families: set[str] = set()
-        for family in (self.font_name, self.hebrew_font_name, self.arabic_font_name):
+        for family in (
+            self.font_name,
+            self.latin_font_name,
+            self.hebrew_font_name,
+            self.arabic_font_name,
+        ):
             regular, bold = self.font_files[family]
             if not (regular.exists() and bold.exists()):
                 continue
@@ -398,7 +461,7 @@ class InvoiceGenerator(FPDF):
             self.add_font(family, fname=bold, style="B")
             self.loaded_font_families.add(family)
 
-        # fpdf markdown preloads styles "I"/"BI"; no italic Inter ships, so alias upright
+        # fpdf markdown preloads styles "I"/"BI"; no italic ships, so alias upright
         regular, bold = self.font_files[self.font_name]
         self.add_font(self.font_name, fname=regular, style="I")
         self.add_font(self.font_name, fname=bold, style="BI")
@@ -411,7 +474,11 @@ class InvoiceGenerator(FPDF):
 
         self.fallback_font_families = [
             family
-            for family in (self.hebrew_font_name, self.arabic_font_name)
+            for family in (
+                self.latin_font_name,
+                self.hebrew_font_name,
+                self.arabic_font_name,
+            )
             if family in self.loaded_font_families
         ]
         self.remaining_cjk_font_families = iter(
@@ -425,8 +492,8 @@ class InvoiceGenerator(FPDF):
         )
         self.set_fallback_fonts(self.fallback_font_families, exact_match=False)
         self.set_font(self.font_name, size=self.base_font_size)
+        self.set_text_color(*self.primary_text_color)
 
-        self.alias_nb_pages()
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
@@ -434,6 +501,9 @@ class InvoiceGenerator(FPDF):
     def get_fallback_font(self, char: str, style: str = "") -> str | None:
         if font := super().get_fallback_font(char, style):
             return font
+
+        if not self.is_cjk(char):
+            return None
 
         for family in self.remaining_cjk_font_families:
             regular, bold = self.font_files[family]
@@ -511,17 +581,61 @@ class InvoiceGenerator(FPDF):
             self.ln(10)
 
     def footer(self) -> None:
-        # Position footer at 15mm from bottom
+        # Footers are drawn by _render_footers, once the page count is known:
+        # fpdf2's {nb} alias is laid out at its own width, which breaks right
+        # alignment of "Page X of Y" with proportional figures.
+        pass
+
+    def _render_footers(self) -> None:
+        pages = self.page
+        self.in_footer = True
+        for page in range(1, pages + 1):
+            self.page = page
+            self.current_font_is_set_on_page = False
+            self._render_page_footer(page, pages)
+        self.in_footer = False
+        self.current_font_is_set_on_page = False
+
+    def _render_page_footer(self, page: int, pages: int) -> None:
         self.set_y(-self.b_margin)
-        self.set_font(size=self.footer_font_size)
-        # Invoice number on the left
+        self.set_font(style="", size=self.footer_font_size)
+        self.set_text_color(*self.muted_text_color)
         self.cell(self.epw / 2, 10, f"{self.data.number}", align=Align.L)
-        # Page number on the right
-        self.cell(self.epw / 2, 10, f"Page {self.page_no()} of {{nb}}", align=Align.R)
+        self.cell(self.epw / 2, 10, f"Page {page} of {pages}", align=Align.R)
+        self.set_text_color(*self.primary_text_color)
+
+    @contextmanager
+    def inset_table(
+        self, width: float | None = None, align: Align = Align.L, **kwargs: Any
+    ) -> Iterator[Table]:
+        """Table whose rules and text line up with body text, which fpdf2 draws
+        one cell margin inside the page margins."""
+        c_margin = self.c_margin
+        width = width or self.epw - 2 * c_margin
+        if align == Align.R:
+            self.set_x(self.w - self.r_margin - c_margin - width)
+        else:
+            self.set_x(self.l_margin + c_margin)
+        self.c_margin = 0
+        try:
+            with self.table(width=width, align=Align.L, **kwargs) as table:
+                yield table
+        finally:
+            self.c_margin = c_margin
+
+    def _render_label(self, text: str, **kwargs: Any) -> None:
+        self.set_font(style="")
+        self.set_text_color(*self.muted_text_color)
+        self.cell(h=self.cell_height(), text=self._shape_text(text), **kwargs)
+        self.set_text_color(*self.primary_text_color)
 
     def generate(self) -> None:
         self.set_metadata()
         self.add_page()
+        self._render_body()
+        self._render_footers()
+
+    def _render_body(self) -> None:
         self._render_title()
         self._render_heading_items()
         self._render_addresses()
@@ -531,27 +645,26 @@ class InvoiceGenerator(FPDF):
         self._render_notes()
 
     def _render_title(self) -> None:
-        self.set_font(style="B", size=18)
+        self.set_font(style="B", size=self.title_font_size)
         self.cell(
             text=self._shape_text(self.heading_title),
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
-        self.image(str(self.logo), x=Align.R, y=10, w=15)
+        logo_width = 12
+        self.image(
+            str(self.logo),
+            x=self.w - self.r_margin - self.c_margin - logo_width,
+            y=self.t_margin,
+            w=logo_width,
+        )
         self.set_y(self.get_y() + self.elements_y_margin)
 
     def _render_heading_items(self) -> None:
         label_width = 30
         self.set_font(size=self.base_font_size)
         for heading_item in self.data.heading_items:
-            self.set_font(style="B")
-            self.cell(
-                label_width,
-                self.cell_height(),
-                text=self._shape_text(heading_item.label),
-                align=Align.L,
-            )
-            self.set_font(style="")
+            self._render_label(heading_item.label, w=label_width, align=Align.L)
             self.cell(
                 h=self.cell_height(),
                 text=self._shape_text(heading_item.display_value),
@@ -571,7 +684,7 @@ class InvoiceGenerator(FPDF):
         self.set_y(max(seller_end_y, customer_end_y) + self.elements_y_margin)
 
     def _render_seller_block(self) -> float:
-        self.set_font(style="")
+        self._render_label("From", new_x=XPos.LEFT, new_y=YPos.NEXT)
         seller_name = f"**{escape_markdown(self.data.seller_name)}**"
         if self.data.organization_name is not None:
             seller_name = (
@@ -604,10 +717,7 @@ class InvoiceGenerator(FPDF):
         return self.get_y()
 
     def _render_customer_block(self) -> float:
-        self.set_font(style="B")
-        self.cell(
-            h=self.cell_height(), text="Bill to", new_x=XPos.LEFT, new_y=YPos.NEXT
-        )
+        self._render_label("Bill to", new_x=XPos.LEFT, new_y=YPos.NEXT)
         self.set_font(style="B")
         self.multi_cell(
             80,
@@ -636,11 +746,11 @@ class InvoiceGenerator(FPDF):
         return self.get_y()
 
     def _render_items_table(self) -> None:
-        self.set_draw_color(*self.table_borders_color)  # Light grey color for borders
-        with self.table(
+        self.set_draw_color(*self.table_borders_color)
+        with self.inset_table(
             col_widths=(90, 30, 30, 30),
             text_align=(Align.L, Align.R, Align.R, Align.R),
-            headings_style=FontFace(size_pt=self.table_header_font_size),
+            headings_style=self.table_headings_style,
             line_height=self.items_table_row_height,
             borders_layout=TableBordersLayout.HORIZONTAL_LINES,
         ) as table:
@@ -662,44 +772,54 @@ class InvoiceGenerator(FPDF):
                 row.cell(format_currency(item.amount, self.data.currency))
 
     def _render_totals_table(self) -> None:
-        self.set_y(self.get_y() + self.elements_y_margin)
-        with self.table(
-            col_widths=(150, 30),
-            text_align=(Align.R, Align.R),
+        self.set_y(self.get_y() + self.elements_y_margin / 2)
+        self.set_draw_color(*self.table_borders_color)
+        label_style = FontFace(color=self.muted_text_color)
+        emphasized_style = FontFace(emphasis="BOLD", color=self.primary_text_color)
+        with self.inset_table(
+            width=(self.epw - 2 * self.c_margin) / 2,
+            align=Align.R,
+            col_widths=(2, 1),
+            text_align=(Align.L, Align.R),
             first_row_as_headings=False,
             line_height=self.totals_table_row_height,
             borders_layout=TableBordersLayout.NONE,
         ) as totals_table:
             for total_item in self.data.totals_items:
-                self.set_font(style="B")
-                row = totals_table.row()
-                row.cell(self._shape_text(total_item.label))
-                self.set_font(style="")
-                row.cell(format_currency(total_item.amount, total_item.currency))
+                border = (
+                    CellBordersLayout.TOP
+                    if total_item.emphasized
+                    else CellBordersLayout.NONE
+                )
+                row = totals_table.row(
+                    min_height=self.totals_table_row_height
+                    + (2 if total_item.emphasized else 0)
+                )
+                row.cell(
+                    self._shape_text(total_item.label),
+                    style=emphasized_style if total_item.emphasized else label_style,
+                    border=border,
+                )
+                row.cell(
+                    format_currency(total_item.amount, total_item.currency),
+                    style=emphasized_style if total_item.emphasized else None,
+                    border=border,
+                )
 
     def _render_statement_descriptor(self) -> None:
         if self.data.statement_descriptor is None:
             return
         prefix = "This payment will appear on your statement as "
         descriptor = self._shape_text(self.data.statement_descriptor)
+        self.set_xy(self.l_margin, self.get_y() + self.elements_y_margin)
         self.set_font(style="")
-        prefix_width = self.get_string_width(prefix)
-        self.set_font(style="B")
-        descriptor_width = self.get_string_width(descriptor)
-        self.set_font(style="")
-        period_width = self.get_string_width(".")
-        line_width = prefix_width + descriptor_width + period_width
-        self.set_xy(
-            self.l_margin + (self.epw - line_width) / 2,
-            self.get_y() + self.elements_y_margin,
-        )
-        self.set_text_color(123, 123, 123)
+        self.set_text_color(*self.muted_text_color)
         self.write(h=self.cell_height(), text=prefix)
-        self.set_font(style="B")
+        self.set_text_color(*self.primary_text_color)
         self.write(h=self.cell_height(), text=descriptor)
-        self.set_font(style="")
+        self.set_text_color(*self.muted_text_color)
         self.write(h=self.cell_height(), text=".")
-        self.set_text_color(0, 0, 0)
+        self.set_text_color(*self.primary_text_color)
         self.ln(self.cell_height())
 
     def _render_notes(self) -> None:

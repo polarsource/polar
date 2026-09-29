@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fpdf.unicode_script import UNICODE_RANGE_TO_SCRIPT, UnicodeScript
 
 from polar.invoice.generator import (
     Invoice,
@@ -441,7 +442,7 @@ def test_generator_renders_amounts_in_primary_font_after_cjk(
     """fpdf2's set_font short-circuits when family/style/size match, but
     current_font can drift to a fallback after a CJK fragment renders. The
     set_font override on InvoiceGenerator force-resolves current_font so
-    subsequent ASCII cells (quantity, unit price, amount) render with Inter
+    subsequent ASCII cells (quantity, unit price, amount) render with the primary font
     and not the CJK font that was used for the description.
     """
     generator = InvoiceGenerator(
@@ -536,8 +537,45 @@ def test_escape_markdown(text: str, expected: str) -> None:
 
 
 class TestFontLoading:
-    def test_latin_invoice_does_not_load_cjk_fonts(
-        self, invoice: Invoice, monkeypatch: pytest.MonkeyPatch
+    def test_cjk_code_point_ranges_cover_cjk_scripts(self) -> None:
+        cjk_scripts = {
+            UnicodeScript.HAN,
+            UnicodeScript.HIRAGANA,
+            UnicodeScript.KATAKANA,
+            UnicodeScript.HANGUL,
+            UnicodeScript.BOPOMOFO,
+        }
+        # Historic kana and marks the Noto CJK fonts have no glyphs for, and the
+        # Enclosed Ideographic Supplement, which is emoji.
+        excluded_ranges = (
+            (0x02EA, 0x02EB),
+            (0x16FE2, 0x16FF1),
+            (0x1AFF0, 0x1B16F),
+            (0x1F200, 0x1F2FF),
+        )
+
+        uncovered = [
+            f"U+{code_point:04X}"
+            for start, end, script in UNICODE_RANGE_TO_SCRIPT
+            if script in cjk_scripts
+            for code_point in range(start, end + 1)
+            if not InvoiceGenerator.is_cjk(chr(code_point))
+            and not any(low <= code_point <= high for low, high in excluded_ranges)
+        ]
+
+        assert uncovered == []
+
+    @pytest.mark.parametrize(
+        "description",
+        [
+            pytest.param("SaaS Subscription", id="latin"),
+            pytest.param("★ Pro plan ✓", id="symbols"),
+            pytest.param("Starter ⇒ Growth ↳", id="arrows"),
+            pytest.param("Pro plan 🚀", id="emoji"),
+        ],
+    )
+    def test_non_cjk_invoice_does_not_load_cjk_fonts(
+        self, description: str, invoice: Invoice, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         font_files = InvoiceGenerator.font_files.copy()
         for script in InvoiceGenerator.cjk_scripts:
@@ -545,6 +583,7 @@ class TestFontLoading:
                 InvoiceGenerator.font_name
             ]
         monkeypatch.setattr(InvoiceGenerator, "font_files", font_files)
+        invoice.items[0].description = description
 
         generator = InvoiceGenerator(invoice)
         generator.generate()

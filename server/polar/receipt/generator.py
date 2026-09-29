@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Self
 
 from fpdf.enums import Align, TableBordersLayout, XPos, YPos
-from fpdf.fonts import FontFace
 from pydantic import BaseModel, Field
 
 from polar.config import settings
@@ -177,9 +176,10 @@ class ReceiptGenerator(InvoiceGenerator):
 
     data: Receipt
 
-    def footer(self) -> None:
+    def _render_page_footer(self, page: int, pages: int) -> None:
         self.set_y(-self.b_margin)
-        self.set_font(size=self.footer_font_size)
+        self.set_font(style="", size=self.footer_font_size)
+        self.set_text_color(*self.muted_text_color)
         self.cell(self.epw / 3, 10, f"{self.data.number}", align=Align.L)
         self.cell(
             self.epw / 3,
@@ -187,10 +187,11 @@ class ReceiptGenerator(InvoiceGenerator):
             f"Generated {format_date(self.data.rendered_at)}",
             align=Align.C,
         )
-        self.cell(self.epw / 3, 10, f"Page {self.page_no()} of {{nb}}", align=Align.R)
+        self.cell(self.epw / 3, 10, f"Page {page} of {pages}", align=Align.R)
+        self.set_text_color(*self.primary_text_color)
 
-    def generate(self) -> None:
-        super().generate()
+    def _render_body(self) -> None:
+        super()._render_body()
         if self.data.payments or self._has_applied_balance:
             self._render_payment_history_section()
         if self.data.refunds:
@@ -214,10 +215,10 @@ class ReceiptGenerator(InvoiceGenerator):
 
     def _render_payment_history_section(self) -> None:
         self._render_section_title("Payment history")
-        with self.table(
+        with self.inset_table(
             col_widths=(60, 40, 40),
             text_align=(Align.L, Align.L, Align.R),
-            headings_style=FontFace(size_pt=self.table_header_font_size),
+            headings_style=self.table_headings_style,
             line_height=self.items_table_row_height,
             borders_layout=TableBordersLayout.HORIZONTAL_LINES,
         ) as table:
@@ -244,10 +245,10 @@ class ReceiptGenerator(InvoiceGenerator):
 
     def _render_refunds_section(self) -> None:
         self._render_section_title("Refunds")
-        with self.table(
+        with self.inset_table(
             col_widths=(150, 30),
             text_align=(Align.L, Align.R),
-            headings_style=FontFace(size_pt=self.table_header_font_size),
+            headings_style=self.table_headings_style,
             line_height=self.items_table_row_height,
             borders_layout=TableBordersLayout.HORIZONTAL_LINES,
         ) as table:

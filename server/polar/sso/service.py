@@ -4,10 +4,13 @@ from uuid import UUID
 
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
-from polar.models import Organization, OrganizationSSOConnection
+from polar.models import Organization, OrganizationDomain, OrganizationSSOConnection
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .repository import OrganizationSSOConnectionRepository
+from .repository import (
+    OrganizationDomainRepository,
+    OrganizationSSOConnectionRepository,
+)
 from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
@@ -46,6 +49,21 @@ class OrganizationSSOConnectionService:
         statement = repository.get_statement_by_organization(organization.id).order_by(
             OrganizationSSOConnection.created_at.desc()
         )
+        return await paginate(session, statement, pagination=pagination)
+
+    async def list_domains(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[OrganizationDomain], int]:
+        if not organization.is_sso_enabled:
+            raise SSONotEnabled(organization)
+        repository = OrganizationDomainRepository.from_session(session)
+        statement = repository.get_verified_statement_by_organization(
+            organization.id
+        ).order_by(OrganizationDomain.domain)
         return await paginate(session, statement, pagination=pagination)
 
     async def get(

@@ -879,6 +879,10 @@ resource "tfe_variable" "merchant_migration_slack_channel_production" {
   description     = "Slack channel ID for merchant migration Ops alerts for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "merchant_migration_destination_stripe_account_id_production" {

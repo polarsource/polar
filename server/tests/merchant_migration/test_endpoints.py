@@ -220,6 +220,7 @@ class TestCreate:
     ) -> None:
         await _enable_feature(save_fixture, organization)
         _mock_stripe_adapter(mocker)
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(
             "/v1/merchant-migrations/", json=_body(organization)
@@ -231,6 +232,15 @@ class TestCreate:
         assert body["source_connected"] is True
         assert body["source"]["stripe_user_id"] == "acct_test"
         assert "source_credentials" not in body
+        assert body["operation"] == {
+            "status": "pending",
+            "kind": "precheck",
+            "stalled": False,
+            "error": None,
+        }
+        enqueue.assert_any_call(
+            "merchant_migration.precheck", merchant_migration_id=UUID(body["id"])
+        )
 
         repository = MerchantMigrationRepository.from_session(session)
         stored = await repository.get_by_id(body["id"])

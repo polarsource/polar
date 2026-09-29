@@ -235,10 +235,15 @@ class TestCreate:
             session, auth_subject, _create_schema(organization)
         )
 
-        enqueue.assert_called_once_with(
-            "merchant_migration.notify_created", merchant_migration_id=migration.id
-        )
-        stripe_adapter.assert_called_once_with("rk_test_123")
+        assert enqueue.call_args_list == [
+            mocker.call(
+                "merchant_migration.notify_created", merchant_migration_id=migration.id
+            ),
+            mocker.call(
+                "merchant_migration.precheck", merchant_migration_id=migration.id
+            ),
+        ]
+        stripe_adapter.assert_called_with("rk_test_123")
         assert migration.step == MerchantMigrationStep.source_setup
         assert migration.source_connected is True
         credentials = migration.source_credentials
@@ -246,6 +251,114 @@ class TestCreate:
         assert credentials["livemode"] is False
         assert credentials["api_key_encrypted"].startswith("v1.")
         assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+
+    @pytest.mark.auth
+    async def test_starts_the_precheck(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog()),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.pending
+        assert migration.operation.kind == MerchantMigrationOperationKind.precheck
+        with pytest.raises(MigrationOperationInProgress):
+            await service.start_precheck(session, auth_subject, migration.id)
+
+        await service.execute_precheck(session, migration.id)
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.step == MerchantMigrationStep.pre_check
+        assert updated.operation is not None
+        assert updated.operation.status == MerchantMigrationOperationStatus.done
+
+    @pytest.mark.auth
+    async def test_lost_precheck_job_can_be_started_again_once_stalled(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+        assert migration.operation is not None
+        migration.operation = migration.operation.model_copy(
+            update={
+                "last_progress_at": utc_now() - STALL_THRESHOLD - timedelta(minutes=1)
+            }
+        )
+        await save_fixture(migration)
+        enqueue.reset_mock()
+
+        restarted = await service.start_precheck(session, auth_subject, migration.id)
+
+        assert restarted.operation is not None
+        assert restarted.operation.status == MerchantMigrationOperationStatus.pending
+        assert restarted.operation.stalled is False
+        enqueue.assert_called_once_with(
+            "merchant_migration.precheck", merchant_migration_id=migration.id
+        )
+
+    @pytest.mark.auth
+    async def test_repeated_create_queues_one_precheck_per_migration(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        first = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+        second = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        assert first.id != second.id
+        precheck_calls = [
+            call
+            for call in enqueue.call_args_list
+            if call.args == ("merchant_migration.precheck",)
+        ]
+        assert precheck_calls == [
+            mocker.call("merchant_migration.precheck", merchant_migration_id=first.id),
+            mocker.call("merchant_migration.precheck", merchant_migration_id=second.id),
+        ]
 
     @pytest.mark.auth
     async def test_rejects_stripe_account_used_by_another_migration(
@@ -359,12 +472,14 @@ class TestCreate:
                 missing_scopes=["Payment Methods", "Subscriptions (write)"]
             ),
         )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         with pytest.raises(MissingStripeScopes) as exc_info:
             await service.create(session, auth_subject, _create_schema(organization))
 
         assert exc_info.value.missing == ["Payment Methods", "Subscriptions (write)"]
         await assert_no_migrations(session, organization)
+        enqueue.assert_not_called()
 
     @pytest.mark.auth
     async def test_source_with_connected_accounts_raises_and_persists_nothing(
@@ -409,9 +524,13 @@ class TestCreate:
                 verify_error=stripe_lib.AuthenticationError("bad key")
             ),
         )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         with pytest.raises(InvalidSourceCredentials):
             await service.create(session, auth_subject, _create_schema(organization))
+
+        await assert_no_migrations(session, organization)
+        enqueue.assert_not_called()
 
     @pytest.mark.auth
     async def test_transient_stripe_error_fails_closed(

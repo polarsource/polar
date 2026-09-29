@@ -49,15 +49,6 @@ FROM caddy:2.11.4-builder AS build-backoffice-proxy
 RUN xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
 RUN setcap -r /usr/bin/caddy
 
-# Assemble the shared application files independently of either Python runtime.
-FROM scratch AS application
-
-COPY . /app/server/
-COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
-COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
-COPY --from=download-ipinfo /data /data
-COPY --from=download-cjk-fonts /fonts/ /app/server/polar/invoice/fonts/
-
 # Render backend image, also used by the private backoffice.
 FROM --platform=$BUILDPLATFORM python:3.14.6-slim AS production
 
@@ -86,8 +77,13 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   && uv tool install tinybird --python 3.13 \
   && apt-get autoremove -y build-essential
 
-COPY --from=application /app /app
-COPY --from=application /data /data
+# Copy build artifacts in their own layers before the source, so they keep their
+# digests and are not re-uploaded when only the source changes.
+COPY --from=download-ipinfo /data /data
+COPY --from=download-cjk-fonts /fonts/ /app/server/polar/invoice/fonts/
+COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
+COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
+COPY . /app/server/
 
 ARG RELEASE_VERSION
 ENV RELEASE_VERSION=${RELEASE_VERSION} \
@@ -119,23 +115,16 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   && uv sync --no-group dev --frozen \
   && dnf clean all
 
-COPY --from=application /app /app
-COPY --from=application /data /data
-
 # Lambda worker image, with dependencies but without the build toolchain.
 FROM public.ecr.aws/lambda/python:3.14 AS lambda
 
-ARG RELEASE_VERSION
-ENV RELEASE_VERSION=${RELEASE_VERSION} \
-  LAMBDA_TASK_ROOT=/app/server \
-  PATH="/app/server/.venv/bin:$PATH" \
-  PYTHONPATH="/app/server:/app/server/.venv/lib/python3.14/site-packages" \
-  POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg \
-  POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data \
-  POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
+COPY --from=lambda-build /app/server/.venv /app/server/.venv
+COPY --from=download-ipinfo /data /data
+COPY --from=download-cjk-fonts /fonts/ /app/server/polar/invoice/fonts/
+COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
+COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
+COPY . /app/server/
 
-COPY --from=lambda-build /app /app
-COPY --from=lambda-build /data /data
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /var/runtime/
 
 WORKDIR /app/server
@@ -149,6 +138,15 @@ RUN mkdir -p /var/run /var/cache /var/lib /var/task \
 
 COPY docker/export_lambda_secrets.py /var/runtime/export-secrets.py
 COPY --chmod=755 docker/run_lambda_worker.sh /var/runtime/polar-bootstrap
+
+ARG RELEASE_VERSION
+ENV RELEASE_VERSION=${RELEASE_VERSION} \
+  LAMBDA_TASK_ROOT=/app/server \
+  PATH="/app/server/.venv/bin:$PATH" \
+  PYTHONPATH="/app/server:/app/server/.venv/lib/python3.14/site-packages" \
+  POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg \
+  POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data \
+  POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
 
 ENTRYPOINT ["/var/runtime/polar-bootstrap"]
 CMD ["polar.worker.aws_lambda.handler"]

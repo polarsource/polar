@@ -1,3 +1,4 @@
+import { API_VERSION } from '@polar-sh/client'
 import { API_URL, ORG_TOKEN } from './constants'
 
 export type ApiInit = { method?: string; token?: string; body?: unknown }
@@ -6,7 +7,7 @@ export const api = async <T>(path: string, init: ApiInit = {}): Promise<T> => {
   const response = await fetch(`${API_URL}${path}`, {
     method: init.method ?? 'GET',
     headers: {
-      'Polar-Version': '2027-01',
+      'Polar-Version': API_VERSION,
       ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
       ...(init.body !== undefined
         ? { 'Content-Type': 'application/json' }

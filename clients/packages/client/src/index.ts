@@ -9,6 +9,8 @@ import type {
 } from 'openapi-typescript-helpers'
 import type { components, paths } from './v1'
 
+export const API_VERSION = '2027-01'
+
 export const createClient = (
   baseUrl: string,
   token?: string,

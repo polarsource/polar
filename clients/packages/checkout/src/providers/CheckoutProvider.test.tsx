@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
+import { API_VERSION } from '@polar-sh/client'
 import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCheckout } from '../test-utils/makeCheckout'
@@ -71,7 +72,7 @@ describe('CheckoutProvider', () => {
   })
 
   describe('baseUrl resolution', () => {
-    const versionHeaders = { 'Polar-Version': '2027-01' }
+    const versionHeaders = { 'Polar-Version': API_VERSION }
 
     it('uses production by default', () => {
       renderProvider({ initialCheckout: createCheckout() })

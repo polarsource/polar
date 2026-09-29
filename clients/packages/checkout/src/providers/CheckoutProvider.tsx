@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  API_VERSION,
   ClientResponseError,
   createClient,
   unwrap,
@@ -237,7 +238,7 @@ export const CheckoutProvider = ({
       }
     })()
 
-    return createClient(baseUrl, undefined, { 'Polar-Version': '2027-01' })
+    return createClient(baseUrl, undefined, { 'Polar-Version': API_VERSION })
   }, [server, serverURL])
 
   const [checkout, setCheckout] = useState<schemas['CheckoutPublic'] | null>(

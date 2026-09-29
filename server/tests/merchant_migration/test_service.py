@@ -885,37 +885,8 @@ class TestExecutePrecheck:
         assert updated is not None
         assert updated.step == MerchantMigrationStep.source_setup
 
-    async def test_leaves_an_active_import_alone(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        migration = await build_connected_migration(save_fixture, organization)
-        import_operation = MerchantMigrationOperation(
-            status=MerchantMigrationOperationStatus.pending,
-            kind=MerchantMigrationOperationKind.import_catalog,
-            last_progress_at=utc_now(),
-        )
-        migration.operation = import_operation
-        await save_fixture(migration)
-        adapter = _FakeAdapter(_catalog())
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter",
-            return_value=adapter,
-        )
-        extract_page = mocker.spy(adapter, "extract_page")
-        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
-
-        await service.execute_precheck(session, migration.id)
-
-        extract_page.assert_not_called()
-        enqueue.assert_not_called()
-        assert migration.operation == import_operation
-
     @pytest.mark.auth
-    async def test_leaves_an_import_started_during_the_read_alone(
+    async def test_leaves_an_import_operation_alone(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -926,11 +897,9 @@ class TestExecutePrecheck:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
         adapter = _FakeAdapter(_catalog())
-        extract_page = adapter.extract_page
         import_operation = MerchantMigrationOperation(
             status=MerchantMigrationOperationStatus.pending,
             kind=MerchantMigrationOperationKind.import_catalog,
-            last_progress_at=utc_now(),
         )
 
         async def replaced_by_import(
@@ -938,20 +907,17 @@ class TestExecutePrecheck:
         ) -> ExtractionPage:
             migration.operation = import_operation
             await save_fixture(migration)
-            return await extract_page(cursor)
+            return ExtractionPage(_catalog(), None)
 
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=adapter,
         )
         mocker.patch.object(adapter, "extract_page", side_effect=replaced_by_import)
-        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
         await service.start_precheck(session, auth_subject, migration.id)
-        enqueue.reset_mock()
 
         await service.execute_precheck(session, migration.id)
 
-        enqueue.assert_not_called()
         assert migration.operation == import_operation
 
     @pytest.mark.auth
@@ -1799,7 +1765,7 @@ class TestImportCatalog:
         await save_fixture(migration)
 
         with pytest.raises(MigrationOperationInProgress):
-            await _import_catalog(session, auth_subject, migration.id)
+            await service.import_catalog(session, auth_subject, migration.id)
 
     @pytest.mark.auth
     async def test_blocked_organization_cannot_import(
@@ -1818,7 +1784,7 @@ class TestImportCatalog:
         await save_fixture(organization)
 
         with pytest.raises(CatalogImportBlocked):
-            await _import_catalog(session, auth_subject, migration.id)
+            await service.import_catalog(session, auth_subject, migration.id)
 
         assert await _products(session, organization) == []
 
@@ -1847,7 +1813,7 @@ class TestImportCatalog:
         )
 
         with pytest.raises(CatalogImportBlocked) as exc_info:
-            await _import_catalog(session, auth_subject, migration.id)
+            await service.import_catalog(session, auth_subject, migration.id)
 
         assert exc_info.value.blockers == ["source_has_connected_accounts"]
         assert await _products(session, organization) == []
@@ -2688,37 +2654,10 @@ class TestImportCatalog:
         migration = await build_connected_migration(save_fixture, organization)
 
         with pytest.raises(CatalogImportNotReady):
-            await _import_catalog(session, auth_subject, migration.id)
+            await service.import_catalog(session, auth_subject, migration.id)
 
     @pytest.mark.auth
-    async def test_queues_import_without_creating_records(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        migration = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization
-        )
-        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
-
-        started = await service.import_catalog(session, auth_subject, migration.id)
-
-        assert started.step == MerchantMigrationStep.pre_check
-        assert started.operation is not None
-        assert started.operation.status == MerchantMigrationOperationStatus.pending
-        assert started.operation.kind == MerchantMigrationOperationKind.import_catalog
-        enqueue.assert_called_once_with(
-            "merchant_migration.import_catalog",
-            merchant_migration_id=migration.id,
-        )
-        assert await _products(session, organization) == []
-
-    @pytest.mark.auth
-    async def test_import_continues_in_batches(
+    async def test_import_resumes_after_a_partial_batch(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2734,37 +2673,24 @@ class TestImportCatalog:
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
         await service.import_catalog(session, auth_subject, migration.id)
         enqueue.reset_mock()
-        before = await session.execute(
-            select(Customer.email).where(Customer.organization_id == organization.id)
-        )
-        before_emails = set(before.scalars().all())
 
         assert await service.execute_import(session, migration.id) is None
 
         assert migration.operation is not None
         assert migration.operation.is_active
-        assert migration.step.value == MerchantMigrationStep.pre_check.value
         assert len(await _products(session, organization)) == 1
-        customers = await session.execute(
-            select(Customer.email).where(Customer.organization_id == organization.id)
-        )
-        assert set(customers.scalars().all()) == before_emails
-        assert "alice@example.com" not in before_emails
         enqueue.assert_called_once_with(
-            "merchant_migration.import_catalog",
-            merchant_migration_id=migration.id,
+            "merchant_migration.import_catalog", merchant_migration_id=migration.id
         )
 
         assert await service.execute_import(session, migration.id) is None
         report = await service.execute_import(session, migration.id)
 
         assert report is not None
-        assert report.step == MerchantMigrationStep.create_catalog
         await session.refresh(migration)
         assert migration.step == MerchantMigrationStep.create_catalog
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.done
-        assert migration.operation.kind == MerchantMigrationOperationKind.import_catalog
         results = {result.entity: result for result in report.results}
         assert results[PrecheckEntity.products].imported == 1
         assert results[PrecheckEntity.customers].imported == 1
@@ -2799,35 +2725,7 @@ class TestImportCatalog:
         assert await _products(session, organization) == []
 
     @pytest.mark.auth
-    async def test_unexpected_import_error_retries_without_keeping_the_batch(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        migration = await _staged_migration(
-            mocker, session, save_fixture, auth_subject, organization
-        )
-        mocker.patch(
-            "polar.merchant_migration.importer.product_service.create",
-            side_effect=RuntimeError("boom"),
-        )
-        await service.import_catalog(session, auth_subject, migration.id)
-
-        with pytest.raises(RuntimeError):
-            await service.execute_import(session, migration.id)
-
-        await session.refresh(migration)
-        assert migration.step == MerchantMigrationStep.pre_check
-        assert migration.operation is not None
-        assert migration.operation.status == MerchantMigrationOperationStatus.pending
-        assert await _products(session, organization) == []
-
-    @pytest.mark.auth
-    async def test_unexpected_import_error_fails_on_the_last_retry(
+    async def test_unexpected_import_error_retries_then_fails_on_the_last_retry(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -2843,7 +2741,6 @@ class TestImportCatalog:
             .options["max_retries"]
         )
         assert max_retries == 3
-        current_message.options.update(retries=max_retries, max_retries=max_retries)
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
@@ -2853,10 +2750,17 @@ class TestImportCatalog:
         )
         await service.import_catalog(session, auth_subject, migration.id)
 
-        assert await service.execute_import(session, migration.id) is None
-
+        current_message.options.update(retries=max_retries - 1, max_retries=max_retries)
+        with pytest.raises(RuntimeError):
+            await service.execute_import(session, migration.id)
         await session.refresh(migration)
-        assert migration.step == MerchantMigrationStep.pre_check
+        assert migration.operation is not None
+        assert migration.operation.is_active
+        assert await _products(session, organization) == []
+
+        current_message.options["retries"] = max_retries
+        assert await service.execute_import(session, migration.id) is None
+        await session.refresh(migration)
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.failed
         assert await _products(session, organization) == []

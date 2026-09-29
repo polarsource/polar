@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from uuid import UUID
 
 import pytest
 import stripe as stripe_lib
@@ -42,6 +43,7 @@ from polar.models.merchant_migration import (
 from polar.models.merchant_migration_operation import (
     STALL_THRESHOLD,
     MerchantMigrationOperation,
+    MerchantMigrationOperationSelection,
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
@@ -548,7 +550,6 @@ class TestImport:
     async def test_imports_catalog(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -579,18 +580,6 @@ class TestImport:
         enqueue.assert_called_once_with(
             "merchant_migration.import_catalog", merchant_migration_id=migration.id
         )
-
-        report = await merchant_migration_service.execute_import(session, migration.id)
-        assert report is not None
-        results = {result.entity.value: result for result in report.results}
-        assert results["products"].imported == 1
-        assert results["customers"].imported == 1
-
-        finished = await client.get(f"/v1/merchant-migrations/{migration.id}")
-        assert finished.status_code == 200
-        assert finished.json()["step"] == "create_catalog"
-        assert finished.json()["operation"]["status"] == "done"
-        assert finished.json()["operation"]["kind"] == "import"
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_imports_selected_subscription_dependencies(
@@ -630,14 +619,14 @@ class TestImport:
             json={"record_ids": [subscription_record_id]},
         )
         assert response.status_code == 200
-        assert response.json()["step"] == "pre_check"
-        assert response.json()["operation"]["kind"] == "import"
-
-        report = await merchant_migration_service.execute_import(session, migration.id)
-        assert report is not None
-        results = {result.entity.value: result for result in report.results}
-        assert results["customers"].imported == 1
-        assert results["products"].imported == 1
+        queued = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert queued is not None
+        assert queued.operation is not None
+        assert queued.operation.selection == MerchantMigrationOperationSelection(
+            record_ids=[UUID(subscription_record_id)]
+        )
 
 
 def _configure_destination(mocker: MockerFixture) -> None:

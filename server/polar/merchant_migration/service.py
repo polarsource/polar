@@ -516,7 +516,11 @@ class MerchantMigrationService:
             exclude_organization_id=create_schema.organization_id,
         ):
             raise SourceAccountAlreadyMigrated()
-        return await repository.create(migration, flush=True)
+        migration = await repository.create(migration, flush=True)
+        enqueue_job(
+            "merchant_migration.notify_created", merchant_migration_id=migration.id
+        )
+        return migration
 
     async def start_precheck(
         self,
@@ -886,6 +890,7 @@ class MerchantMigrationService:
                 "pan_transfer_steps": steps,
             },
         )
+        self._enqueue_waiting_for_ops(migration, steps)
         return self._checklist(migration, steps)
 
     async def complete_pan_step(
@@ -963,6 +968,18 @@ class MerchantMigrationService:
         task = _STEP_TASKS.get(current.key) if current else None
         if task is not None:
             enqueue_job(task, merchant_migration_id=migration.id)
+        self._enqueue_waiting_for_ops(migration, steps)
+
+    def _enqueue_waiting_for_ops(
+        self, migration: MerchantMigration, steps: Sequence[PanTransferStep]
+    ) -> None:
+        step = pan_transfer.current_ops_step(steps)
+        if step is not None:
+            enqueue_job(
+                "merchant_migration.notify_waiting_for_ops",
+                merchant_migration_id=migration.id,
+                step_key=step.key,
+            )
 
     async def annotate_pan_step(
         self,

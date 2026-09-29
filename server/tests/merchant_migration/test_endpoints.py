@@ -776,6 +776,7 @@ class TestCompletePanTransferStep:
             save_fixture, organization, step=MerchantMigrationStep.create_catalog
         )
         await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
@@ -783,6 +784,11 @@ class TestCompletePanTransferStep:
         )
         assert response.status_code == 200
         assert response.json()["current_step_key"] == "authorize_copy"
+        enqueue.assert_called_once_with(
+            "merchant_migration.notify_waiting_for_ops",
+            merchant_migration_id=migration.id,
+            step_key="authorize_copy",
+        )
 
         reread = await client.get(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer"

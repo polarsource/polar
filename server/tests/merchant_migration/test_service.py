@@ -229,11 +229,15 @@ class TestCreate:
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(),
         )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         migration = await service.create(
             session, auth_subject, _create_schema(organization)
         )
 
+        enqueue.assert_called_once_with(
+            "merchant_migration.notify_created", merchant_migration_id=migration.id
+        )
         stripe_adapter.assert_called_once_with("rk_test_123")
         assert migration.step == MerchantMigrationStep.source_setup
         assert migration.source_connected is True

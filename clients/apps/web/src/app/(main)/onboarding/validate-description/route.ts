@@ -152,7 +152,7 @@ Ask a clarifying question when the description is ambiguous on one of these poin
   the risk factor is with medical advice. Health API's, glucose readers, biomarkers are fine. The risk starts when there are actionable recommendations or advice generated
   by the application.
 - **Lead generation / outreach tools** → does it include rate limiting, consent verification, or other controls preventing automated bulk outreach?
-- **AI content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale? NSFW content guards should be asked about and clarified.
+- **AI text content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale? This applies to text-only tools (copy, translation, rewriting). AI image or video generation is never a clarification — it is an automatic DENY.
 - **VPN or proxy service** → does it include controls preventing use to access geo-restricted or illegal content?
 - **E-book or PDF guide** → is the content human-authored or AI-generated?
 - **Directory or listing platform** → is it a curated resource, or a marketplace where third parties list and sell their own products?
@@ -166,6 +166,7 @@ Ask a clarifying question when the description is ambiguous on one of these poin
 ## Automatic DENY (no clarification resolves these)
 
 - Adult or pornographic content
+- AI image or video generation — any product that generates images or video, or starts that generation for the user (prompt builders, model pickers, batch generations, spend ceilings). This applies regardless of NSFW safeguards, whether a third party runs the model, or whether the customer brings their own API key. Text-only AI tools are not covered by this rule.
 - Firearms, weapons, or explosives
 - Watermark removal tools
 - Third-party content downloaders

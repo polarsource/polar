@@ -77,6 +77,11 @@ def _migration_payload(
 
 
 async def _post_once(redis: Redis, key: str, payload: SlackPayload) -> None:
+    # The channel defaults to Polar's Ops channel, so a bot token set anywhere
+    # else (sandbox, a local .env) must not post into it.
+    if not settings.is_production():
+        log.info("merchant_migration.slack.skipped_non_production", key=key)
+        return
     bot_token = settings.SLACK_BOT_TOKEN
     channel = settings.MERCHANT_MIGRATION_SLACK_CHANNEL
     if not bot_token or not channel:

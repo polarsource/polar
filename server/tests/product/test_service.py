@@ -2525,13 +2525,14 @@ class TestUpdateBenefits:
             UserOrganization(user=user, organization=organization_second)
         )
 
-        with pytest.raises(PolarRequestValidationError, match="same organization"):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await product_service.update_benefits(
                 session,
                 product,
                 [benefit_other_organization.id],
                 auth_subject,
             )
+        assert "same organization" in exc_info.value.errors()[0]["msg"]
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

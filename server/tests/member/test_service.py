@@ -907,7 +907,9 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, owner, role=MemberRole.member)
 
-        assert "must have exactly one owner" in str(exc_info.value).lower()
+        assert (
+            "must have exactly one owner" in exc_info.value.errors()[0]["msg"].lower()
+        )
 
     @pytest.mark.auth
     async def test_update_cannot_promote_to_owner_when_owner_exists(
@@ -946,7 +948,10 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, member, role=MemberRole.owner)
 
-        assert "only the owner can transfer ownership" in str(exc_info.value).lower()
+        assert (
+            "only the owner can transfer ownership"
+            in exc_info.value.errors()[0]["msg"].lower()
+        )
 
     @pytest.mark.auth
     async def test_update_ownership_transfer_customer_portal(
@@ -1267,7 +1272,7 @@ class TestUpdateEmail:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, member, email="TAKEN@example.com")
 
-        assert "already exists" in str(exc_info.value).lower()
+        assert "already exists" in exc_info.value.errors()[0]["msg"].lower()
 
     @pytest.mark.auth
     async def test_update_email_owner_individual_customer_blocked(
@@ -1297,7 +1302,7 @@ class TestUpdateEmail:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, owner, email="new@example.com")
 
-        assert "individual customer" in str(exc_info.value).lower()
+        assert "individual customer" in exc_info.value.errors()[0]["msg"].lower()
 
     @pytest.mark.auth
     async def test_update_email_owner_team_customer_allowed(
@@ -1587,7 +1592,7 @@ class TestDelete:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.delete(session, owner)
 
-        assert "only owner" in str(exc_info.value).lower()
+        assert "only owner" in exc_info.value.errors()[0]["msg"].lower()
 
 
 @pytest.mark.asyncio

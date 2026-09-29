@@ -144,6 +144,8 @@ class ValidationError(TypedDict):
 class PolarRequestValidationError(PolarError):
     def __init__(self, errors: Sequence[ValidationError]) -> None:
         self._errors = errors
+        types = ", ".join(error["type"] for error in errors)
+        super().__init__(f"{len(errors)} validation error(s): {types}", status_code=422)
 
     def errors(self) -> list[ErrorDetails]:
         pydantic_errors: list[InitErrorDetails] = []

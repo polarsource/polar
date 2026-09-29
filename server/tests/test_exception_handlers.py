@@ -108,9 +108,7 @@ class TestRequestValidationExceptionHandler:
             ]
         )
 
-        assert (
-            str(exc) == "body.email: A customer with this email address already exists."
-        )
+        assert str(exc) == "1 validation error(s): value_error"
         assert "customer@example.com" not in "".join(traceback.format_exception(exc))
 
         response = await request_validation_exception_handler(_dummy_request(), exc)

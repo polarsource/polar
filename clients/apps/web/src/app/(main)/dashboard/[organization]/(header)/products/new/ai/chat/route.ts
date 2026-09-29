@@ -5,6 +5,7 @@ import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
 import { aiTracing, flushAITelemetry } from '@/utils/aiTelemetry'
 import { createAnthropic } from '@ai-sdk/anthropic'
+import type { schemas } from '@polar-sh/client'
 import { createGoogle } from '@ai-sdk/google'
 import { experimental_createMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
@@ -234,32 +235,27 @@ async function generateOAT(
     throw new Error('No user session cookie found')
   }
 
+  // Not `client.POST`: Next.js re-streams `Request` bodies without a
+  // Content-Length, which the API rejects with 411.
   const client = await getServerSideAPI()
-  const { data, error } = await client.POST('/v1/oauth2/token', {
-    body: {
+  const response = await fetch(`${client.baseUrl}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
       grant_type: 'web',
       client_id: process.env.MCP_OAUTH2_CLIENT_ID!,
       client_secret: process.env.MCP_OAUTH2_CLIENT_SECRET!,
       session_token: userSessionToken.value,
       sub_type: 'organization',
       sub: organizationId,
-      scope: null,
-    },
-    bodySerializer(body) {
-      const fd = new FormData()
-      for (const [key, value] of Object.entries(body)) {
-        if (value) {
-          fd.append(key, value)
-        }
-      }
-      return fd
-    },
+    }),
   })
 
-  if (error) {
-    throw new Error('Failed to generate OAT')
+  if (!response.ok) {
+    throw new Error(`Failed to generate OAT: ${await response.text()}`)
   }
 
+  const data: schemas['TokenResponse'] = await response.json()
   const accessToken = data.access_token
 
   if (!accessToken) {

@@ -2,7 +2,6 @@ from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Feedback, User
-from polar.models.feedback import FeedbackType
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -55,10 +54,7 @@ class FeedbackService:
             flush=True,
         )
 
-        # Questions automatically open a Plain support thread, impersonating the
-        # customer with their message and attaching the conversation transcript.
-        if feedback.type == FeedbackType.question:
-            enqueue_job("feedback.reply_in_plain", feedback_id=feedback.id)
+        enqueue_job("feedback.reply_in_plain", feedback_id=feedback.id)
 
         return feedback
 

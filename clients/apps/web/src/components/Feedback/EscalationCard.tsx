@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth } from '@/hooks/auth'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
@@ -34,6 +35,7 @@ export const EscalationCard = ({
 }: EscalationCardProps) => {
   const [type, setType] = useState<schemas['FeedbackType']>(initialType)
   const [note, setNote] = useState('')
+  const { currentUser } = useAuth()
 
   return (
     <Box
@@ -50,6 +52,13 @@ export const EscalationCard = ({
         <p className="dark:text-polar-500 text-sm text-gray-500">
           The full transcript is included automatically. Add anything else
           you&apos;d like to share below.
+          {currentUser?.email && (
+            <>
+              {' '}
+              Our reply will be sent by email to{' '}
+              <span className="font-medium">{currentUser.email}</span>.
+            </>
+          )}
         </p>
       </Box>
       <TextArea

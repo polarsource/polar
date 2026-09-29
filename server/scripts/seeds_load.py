@@ -1904,6 +1904,7 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                         "client_id": sso_connection_data["client_id"],
                         "client_secret": sso_connection_data["client_secret"],
                         "auth_method": "client_secret",
+                        "authorization_parameters": {},
                     },
                     enabled=True,
                 )

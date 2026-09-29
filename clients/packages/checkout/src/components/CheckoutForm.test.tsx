@@ -708,9 +708,13 @@ describe('CheckoutForm', () => {
 
     it('shows an error when the Payment Element fails to load', async () => {
       const submit = renderStripeForm()
-      await act(async () => fireEvent.click(screen.getByText('mock load error')))
+      await act(async () =>
+        fireEvent.click(screen.getByText('mock load error')),
+      )
       expect(submit).toBeDisabled()
-      expect(screen.getByText(/payment form failed to load/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/payment form failed to load/),
+      ).toBeInTheDocument()
     })
 
     it('does not render the PaymentElement when is_payment_form_required is false', () => {

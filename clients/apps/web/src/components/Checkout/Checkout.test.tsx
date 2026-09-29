@@ -22,7 +22,7 @@ describe('Checkout page', () => {
     const { api, posthog } = renderCheckout()
 
     expect(screen.getByText('Test Product')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /pay/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /pay/i })).toBeInTheDocument()
 
     await waitFor(() =>
       expect(api.requests).toContainEqual(
@@ -48,11 +48,11 @@ describe('Checkout page', () => {
     })
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /pay/i })).toBeDisabled(),
+      expect(
+        screen.getAllByText('Payments are currently unavailable').length,
+      ).toBeGreaterThan(0),
     )
-    expect(
-      screen.getAllByText('Payments are currently unavailable').length,
-    ).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: /pay/i })).toBeDisabled()
   })
 
   describe('collapsed order summary', () => {

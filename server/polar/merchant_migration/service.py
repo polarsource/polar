@@ -6,6 +6,7 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
+from pydantic import ValidationError
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -87,6 +88,7 @@ from .precheck import (
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
+    ReviewColumns,
 )
 from .schemas import (
     MerchantMigrationCreate,
@@ -335,8 +337,85 @@ def _staged_payment_method(
     return staged.payment_method if staged is not None else None
 
 
+class _ReviewRow(NamedTuple):
+    """What review filters and counts read from a classified record."""
+
+    entity: PrecheckEntity
+    status: PrecheckRecordStatus
+    import_status: MerchantMigrationRecordStatus | None
+    reason_level: PrecheckReasonLevel | None
+    cutover_status: MerchantMigrationCutoverStatus | None
+    dependencies_imported: bool | None
+
+    @classmethod
+    def of(cls, item: MerchantMigrationRecordItem) -> "_ReviewRow":
+        return cls(
+            item.entity,
+            item.status,
+            item.import_status,
+            item.reason_level,
+            item.cutover_status,
+            item.dependencies_imported,
+        )
+
+
+class _ReviewFilters(NamedTuple):
+    status: PrecheckRecordStatus | None
+    reason_level: PrecheckReasonLevel | None
+    import_status: MerchantMigrationRecordStatus | None
+    exclude_import_status: MerchantMigrationRecordStatus | None
+    cutover_status: MerchantMigrationCutoverStatus | None
+    dependencies_imported: bool | None
+
+    def match(self, row: _ReviewRow) -> bool:
+        return (
+            (self.status is None or row.status == self.status)
+            and (self.reason_level is None or row.reason_level == self.reason_level)
+            and (self.import_status is None or row.import_status == self.import_status)
+            and (
+                self.exclude_import_status is None
+                or row.import_status != self.exclude_import_status
+            )
+            and (
+                self.cutover_status is None or row.cutover_status == self.cutover_status
+            )
+            and (
+                self.dependencies_imported is None
+                or row.dependencies_imported is self.dependencies_imported
+            )
+        )
+
+
+def _stored_review_row(
+    entity: PrecheckEntity, columns: ReviewColumns
+) -> _ReviewRow | None:
+    """The review row for a stored classification, with the ledger status read
+    live. None when the record hasn't been classified."""
+    if columns.classification_status is None:
+        return None
+    dependencies_imported: bool | None = None
+    if entity == PrecheckEntity.subscriptions:
+        # A pending row keeps what classification saw about its dependencies;
+        # an imported row always has them.
+        dependencies_imported = (
+            columns.status == MerchantMigrationRecordStatus.imported
+            and columns.target_id is not None
+        ) or (
+            columns.status == MerchantMigrationRecordStatus.pending
+            and bool(columns.dependencies_imported)
+        )
+    return _ReviewRow(
+        entity,
+        PrecheckRecordStatus(columns.classification_status),
+        columns.status,
+        PrecheckReasonLevel(columns.reason_level) if columns.reason_level else None,
+        columns.cutover_status,
+        dependencies_imported,
+    )
+
+
 def _summarize_entities(
-    items: Sequence[MerchantMigrationRecordItem], entities: Sequence[PrecheckEntity]
+    items: Sequence[_ReviewRow], entities: Sequence[PrecheckEntity]
 ) -> list[MerchantMigrationRecordSummaryEntity]:
     """Tally every entity in one pass over the classified rows."""
     tallies = {
@@ -623,6 +702,7 @@ class MerchantMigrationService:
             migration,
             update_dict=update_dict,
         )
+        await self._reclassify_records(session, migration)
 
     async def run_precheck(
         self,
@@ -705,6 +785,7 @@ class MerchantMigrationService:
         await repository.update(
             migration, update_dict={"step": MerchantMigrationStep.create_catalog}
         )
+        await self._reclassify_records(session, migration)
         report.step = MerchantMigrationStep.create_catalog
         return report
 
@@ -887,6 +968,7 @@ class MerchantMigrationService:
         await self._rewrite_staged_payment_methods(
             session, migration.id, payment_methods
         )
+        await self._reclassify_records(session, migration)
 
     async def _link_mapped_payment_methods(
         self,
@@ -1473,6 +1555,7 @@ class MerchantMigrationService:
                     }
                 },
             )
+            await self._reclassify_records(session, migration)
             return update
         subscription = deserialize(record.type, record.canonical)
         assert isinstance(subscription, CanonicalSubscription)
@@ -1511,6 +1594,7 @@ class MerchantMigrationService:
                 await customer_repository.update(
                     polar_customer, update_dict={"billing_address": billing_address}
                 )
+        await self._reclassify_records(session, migration)
         return update
 
     async def list_records(
@@ -1536,33 +1620,93 @@ class MerchantMigrationService:
         filters include or exclude a ledger outcome; ``cutover_status`` narrows to
         what the switch did with a subscription; ``dependencies_imported``
         separates subscriptions ready to switch from those still needing
-        preparation. Reads what ``run_precheck`` persisted."""
+        preparation. Reads the stored classification when every record has one,
+        and classifies the ledger otherwise."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         entities = [entity] if entity is not None else list(_REVIEW_ENTITIES)
-        items = await self._classify_staged(session, migration, entities)
-        await self._attach_cutover_coverage(session, migration, items)
-
-        if status is not None:
-            items = [item for item in items if item.status == status]
-        if reason_level is not None:
-            items = [item for item in items if item.reason_level == reason_level]
-        if import_status is not None:
-            items = [item for item in items if item.import_status == import_status]
-        if exclude_import_status is not None:
-            items = [
-                item for item in items if item.import_status != exclude_import_status
-            ]
-        if cutover_status is not None:
-            items = [item for item in items if item.cutover_status == cutover_status]
-        if dependencies_imported is not None:
-            items = [
-                item
-                for item in items
-                if item.dependencies_imported is dependencies_imported
-            ]
-
+        filters = _ReviewFilters(
+            status,
+            reason_level,
+            import_status,
+            exclude_import_status,
+            cutover_status,
+            dependencies_imported,
+        )
         start = (pagination.page - 1) * pagination.limit
-        return items[start : start + pagination.limit], len(items)
+        stored = await self._stored_review_rows(session, migration, entities)
+        items: Sequence[MerchantMigrationRecordItem] | None = None
+        if stored is not None:
+            matching = [
+                (record_id, row) for record_id, row in stored if filters.match(row)
+            ]
+            items = await self._stored_items(
+                session, matching[start : start + pagination.limit]
+            )
+            total = len(matching)
+        if items is None:
+            classified = await self._classify_staged(session, migration, entities)
+            matching_items = [
+                item for item in classified if filters.match(_ReviewRow.of(item))
+            ]
+            items = matching_items[start : start + pagination.limit]
+            total = len(matching_items)
+        await self._attach_cutover_coverage(session, migration, items)
+        return items, total
+
+    async def _stored_review_rows(
+        self,
+        session: AsyncReadSession,
+        migration: MerchantMigration,
+        entities: Sequence[PrecheckEntity],
+    ) -> Sequence[tuple[UUID, _ReviewRow]] | None:
+        """Review rows from the stored classification, in classification order.
+        None when an entity has no ledger record of its own, or any record
+        hasn't been classified since its inputs last changed."""
+        if any(entity not in _ENTITY_RECORD_TYPE for entity in entities):
+            return None
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        columns = await record_repository.list_review_columns(
+            migration.id, [_ENTITY_RECORD_TYPE[entity] for entity in entities]
+        )
+        entity_of = {record_type: e for e, record_type in _ENTITY_RECORD_TYPE.items()}
+        rows: list[tuple[UUID, _ReviewRow]] = []
+        for column in columns:
+            row = _stored_review_row(entity_of[column.type], column)
+            if row is None:
+                return None
+            rows.append((column.record_id, row))
+        rows.sort(key=lambda stored: entities.index(stored[1].entity))
+        return rows
+
+    async def _stored_items(
+        self,
+        session: AsyncReadSession,
+        page: Sequence[tuple[UUID, _ReviewRow]],
+    ) -> Sequence[MerchantMigrationRecordItem] | None:
+        """Items for a page of stored rows. None when a classification was
+        cleared since the rows were read, or no longer fits the item schema."""
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        classifications = await record_repository.get_classifications(
+            [record_id for record_id, _ in page]
+        )
+        items: list[MerchantMigrationRecordItem] = []
+        for record_id, row in page:
+            stored = classifications.get(record_id)
+            if stored is None:
+                return None
+            classification, cutover_error = stored
+            try:
+                item = MerchantMigrationRecordItem.model_validate(classification)
+            except ValidationError:
+                return None
+            item.record_id = record_id
+            item.import_status = row.import_status
+            item.dependencies_imported = row.dependencies_imported
+            if row.entity == PrecheckEntity.subscriptions:
+                item.cutover_status = row.cutover_status
+                item.cutover_error = cutover_error
+            items.append(item)
+        return items
 
     async def _attach_cutover_coverage(
         self,
@@ -1705,16 +1849,60 @@ class MerchantMigrationService:
         """Every count the review UI needs, from a single classification pass."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
         entities = list(_ENTITY_RECORD_TYPE)
-        items = await self._classify_staged(session, migration, entities)
+        stored = await self._stored_review_rows(session, migration, entities)
+        if stored is not None:
+            rows = [row for _, row in stored]
+        else:
+            items = await self._classify_staged(session, migration, entities)
+            rows = [_ReviewRow.of(item) for item in items]
 
         return MerchantMigrationRecordSummary(
-            entities=_summarize_entities(items, entities),
+            entities=_summarize_entities(rows, entities),
             action_required=sum(
                 1
-                for item in items
-                if item.reason_level == PrecheckReasonLevel.action_required
+                for row in rows
+                if row.reason_level == PrecheckReasonLevel.action_required
             ),
         )
+
+    async def classify_records(self, session: AsyncSession, migration_id: UUID) -> None:
+        """Store every record's review row, so review reads skip classifying
+        the whole ledger."""
+        migration = await self._load(session, migration_id)
+        if migration is None:
+            return
+        # Serializes runs, so the last one to take the lock reads the ledger
+        # after the last change that cleared the stored rows.
+        await MerchantMigrationRepository.from_session(session).refresh_for_update(
+            migration
+        )
+        items = await self._classify_staged(
+            session, migration, list(_ENTITY_RECORD_TYPE)
+        )
+        await MerchantMigrationRecordRepository.from_session(
+            session
+        ).set_classifications(
+            {
+                item.record_id: item.model_dump(mode="json")
+                for item in items
+                if item.record_id is not None
+            }
+        )
+
+    async def _reclassify_records(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> None:
+        """Drop the organization's stored review rows, so reads classify live
+        until the task stores fresh ones. Every migration's review reads the
+        catalog the organization's other migrations imported."""
+        cleared = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).clear_classifications(migration.organization_id)
+        for migration_id in cleared | {migration.id}:
+            enqueue_job(
+                "merchant_migration.classify_records",
+                merchant_migration_id=migration_id,
+            )
 
     def _attach_record_ids(
         self,

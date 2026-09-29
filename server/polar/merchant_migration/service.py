@@ -813,6 +813,7 @@ class MerchantMigrationService:
             return None
 
         if report is None:
+            await self._bump_operation(session, migration)
             enqueue_job(_IMPORT_TASK, merchant_migration_id=migration.id)
             return None
 

@@ -5,6 +5,7 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import dramatiq
+import freezegun
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
@@ -42,6 +43,7 @@ from polar.merchant_migration.cards import (
 )
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.errors import MerchantMigrationError
+from polar.merchant_migration.importer import CatalogImporter
 from polar.merchant_migration.pan_transfer import (
     STEP_CUTOVER,
     STEP_MOVE_SUBSCRIPTIONS,
@@ -2673,11 +2675,30 @@ class TestImportCatalog:
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
         await service.import_catalog(session, auth_subject, migration.id)
         enqueue.reset_mock()
+        import_next_batch = CatalogImporter.import_next_batch
 
-        assert await service.execute_import(session, migration.id) is None
+        with freezegun.freeze_time(utc_now()) as frozen_time:
+
+            async def slow_batch(
+                importer: CatalogImporter,
+            ) -> MerchantMigrationImportReport | None:
+                report = await import_next_batch(importer)
+                frozen_time.tick(timedelta(minutes=9))
+                return report
+
+            slow = mocker.patch.object(
+                CatalogImporter,
+                "import_next_batch",
+                autospec=True,
+                side_effect=slow_batch,
+            )
+            assert await service.execute_import(session, migration.id) is None
+            batch_finished_at = utc_now()
+        mocker.stop(slow)
 
         assert migration.operation is not None
         assert migration.operation.is_active
+        assert migration.operation.last_progress_at == batch_finished_at
         assert len(await _products(session, organization)) == 1
         enqueue.assert_called_once_with(
             "merchant_migration.import_catalog", merchant_migration_id=migration.id

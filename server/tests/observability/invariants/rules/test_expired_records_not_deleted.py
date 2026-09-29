@@ -18,11 +18,13 @@ from polar.models import (
     OAuth2State,
     OAuth2Token,
     Organization,
+    Product,
     User,
     UserSession,
     WebhookDelivery,
     WebhookEvent,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.email_log import EmailLogStatus
 from polar.models.external_event import ExternalEventSource
 from polar.models.webhook_endpoint import WebhookEventType
@@ -34,7 +36,11 @@ from polar.observability.invariants.rules.expired_records_not_deleted import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_email_log, create_webhook_endpoint
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_email_log,
+    create_webhook_endpoint,
+)
 
 OVERDUE = (
     ExpiredRecordsNotDeletedInvariant.CLEANUP_INTERVAL
@@ -97,6 +103,7 @@ async def create_deletable_records(
     customer: Customer,
     member: Member,
     organization: Organization,
+    product: Product,
     *,
     deletable_for: timedelta,
 ) -> None:
@@ -223,6 +230,14 @@ async def create_deletable_records(
         response="response body",
         created_at=deletable_at - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
     )
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product],
+        status=CheckoutStatus.expired,
+        created_at=deletable_at - settings.EXPIRED_CHECKOUT_RETENTION_PERIOD,
+    )
+    checkout.customer_email = "john@example.com"
+    await save_fixture(checkout)
 
 
 @pytest.mark.asyncio
@@ -238,6 +253,7 @@ class TestCheck:
         customer: Customer,
         member: Member,
         organization: Organization,
+        product: Product,
         deletable_for: timedelta,
     ) -> None:
         await create_deletable_records(
@@ -246,6 +262,7 @@ class TestCheck:
             customer,
             member,
             organization,
+            product,
             deletable_for=deletable_for,
         )
 
@@ -260,9 +277,16 @@ class TestCheck:
         customer: Customer,
         member: Member,
         organization: Organization,
+        product: Product,
     ) -> None:
         await create_deletable_records(
-            save_fixture, user, customer, member, organization, deletable_for=OVERDUE
+            save_fixture,
+            user,
+            customer,
+            member,
+            organization,
+            product,
+            deletable_for=OVERDUE,
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)

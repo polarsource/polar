@@ -287,7 +287,7 @@ class TestSendToOrgMembers:
         notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
         assert notified == {trial_on.id, legacy_subscription_on.id}
 
-    async def test_subscription_cancellation_setting_falls_back_to_new_subscription(
+    async def test_subscription_cancellation_setting_defaults_to_false(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -300,8 +300,7 @@ class TestSendToOrgMembers:
 
         cancellation_on = await create_user(save_fixture)
         cancellation_off = await create_user(save_fixture)
-        legacy_subscription_on = await create_user(save_fixture)
-        legacy_subscription_off = await create_user(save_fixture)
+        legacy = await create_user(save_fixture)
         for user, settings in (
             (
                 cancellation_on,
@@ -311,8 +310,7 @@ class TestSendToOrgMembers:
                 cancellation_off,
                 {"new_subscription": True, "subscription_cancellation": False},
             ),
-            (legacy_subscription_on, {"new_subscription": True}),
-            (legacy_subscription_off, {"new_subscription": False}),
+            (legacy, {"new_subscription": True}),
         ):
             await save_fixture(
                 UserOrganization(
@@ -327,4 +325,4 @@ class TestSendToOrgMembers:
         )
 
         notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
-        assert notified == {cancellation_on.id, legacy_subscription_on.id}
+        assert notified == {cancellation_on.id}

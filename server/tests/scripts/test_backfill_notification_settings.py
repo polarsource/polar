@@ -70,7 +70,7 @@ async def test_backfills_missing_keys_and_keeps_existing_values(
         "exclude_free_products": False,
     }
     assert subscriptions_on.notification_settings["new_trial"] is True
-    assert subscriptions_on.notification_settings["subscription_cancellation"] is True
+    assert subscriptions_on.notification_settings["subscription_cancellation"] is False
     assert subscriptions_on.notification_settings["exclude_free_products"] is False
     assert already_set.notification_settings["new_trial"] is False
     assert already_set.notification_settings["subscription_cancellation"] is False

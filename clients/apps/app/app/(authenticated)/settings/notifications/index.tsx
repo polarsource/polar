@@ -140,11 +140,7 @@ export default function NotificationsPage() {
           variant="static"
         >
           <Switch
-            value={
-              notificationSettings?.subscription_cancellation ??
-              notificationSettings?.new_subscription ??
-              false
-            }
+            value={notificationSettings?.subscription_cancellation ?? false}
             onValueChange={createNotificationSettingHandler(
               'subscription_cancellation',
             )}

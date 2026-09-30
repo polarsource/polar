@@ -39,7 +39,7 @@ _default_notification_settings: OrganizationNotificationSettings = {
     "new_trial": True,
     "chargeback_prevention": True,
     "subscription_renewal": False,
-    "subscription_cancellation": True,
+    "subscription_cancellation": False,
     "exclude_free_products": False,
 }
 

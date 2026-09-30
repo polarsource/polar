@@ -101,9 +101,7 @@ class NotificationsService:
 
             if (
                 notif.type == NotificationType.maintainer_subscription_cancellation
-                and not settings.get(
-                    "subscription_cancellation", settings["new_subscription"]
-                )
+                and not settings.get("subscription_cancellation", False)
             ):
                 continue
 

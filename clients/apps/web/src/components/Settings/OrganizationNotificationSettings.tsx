@@ -104,9 +104,7 @@ const OrganizationNotificationSettings: React.FC<
         description="Receive a notification when a customer cancels a subscription"
       >
         <Switch
-          checked={
-            settings.subscription_cancellation ?? settings.new_subscription
-          }
+          checked={settings.subscription_cancellation ?? false}
           onCheckedChange={(checked) =>
             update((previous) => ({
               ...previous,

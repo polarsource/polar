@@ -3,7 +3,7 @@ Backfill `exclude_free_products`, `new_trial` and `subscription_cancellation` in
 every member's notification settings.
 
 Rows written before these settings existed lack the keys. `exclude_free_products`
-defaults to false, while `new_trial` and `subscription_cancellation` take the
+and `subscription_cancellation` default to false, while `new_trial` takes the
 member's `new_subscription` value. Keys already present are left untouched. Once
 this has run, these keys can become required on `OrganizationNotificationSettings`.
 
@@ -31,14 +31,13 @@ configure_script_logging()
 
 def backfill_statement() -> Update:
     settings = UserOrganization.notification_settings
-    new_subscription = func.coalesce(settings["new_subscription"], literal(True, JSONB))
     defaults = func.jsonb_build_object(
         "exclude_free_products",
         False,
         "new_trial",
-        new_subscription,
+        func.coalesce(settings["new_subscription"], literal(True, JSONB)),
         "subscription_cancellation",
-        new_subscription,
+        False,
     )
     return (
         update(UserOrganization)

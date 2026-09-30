@@ -5,17 +5,17 @@ from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AfterValidator
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
-from polar.kit.pagination import PaginationParams
 from polar.models import Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
 
-from .service import subscription as subscription_service
+from .repository import SubscriptionRepository
 
 
 class SubscriptionExportColumn(StrEnum):
@@ -175,18 +175,32 @@ async def generate_csv(
         tuple(SUBSCRIPTION_EXPORT_HEADERS[column] for column in export_columns)
     )
 
-    (results, _) = await subscription_service.list(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-        status=status,
-        cancel_at_period_end=cancel_at_period_end,
-        started_after=started_after,
-        started_before=started_before,
-        pagination=PaginationParams(limit=1000000, page=1),
+    repository = SubscriptionRepository.from_session(session)
+    statement = (
+        repository.get_readable_statement(auth_subject)
+        .where(Subscription.started_at.is_not(None))
+        .options(
+            joinedload(Subscription.customer),
+            joinedload(Subscription.product),
+            joinedload(Subscription.discount),
+        )
     )
+    if organization_id is not None:
+        statement = statement.where(Subscription.organization_id.in_(organization_id))
+    if product_id is not None:
+        statement = statement.where(Subscription.product_id.in_(product_id))
+    if status is not None:
+        statement = statement.where(Subscription.status.in_(status))
+    if cancel_at_period_end is not None:
+        statement = statement.where(
+            Subscription.cancel_at_period_end.is_(cancel_at_period_end)
+        )
+    if started_after is not None:
+        statement = statement.where(Subscription.started_at > started_after)
+    if started_before is not None:
+        statement = statement.where(Subscription.started_at < started_before)
+    statement = statement.order_by(Subscription.started_at.desc())
 
-    for subscription in results:
+    async for subscription in repository.stream(statement):
         row = _row(subscription, timezone)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))

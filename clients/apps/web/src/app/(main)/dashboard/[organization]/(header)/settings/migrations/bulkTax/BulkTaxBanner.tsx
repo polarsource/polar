@@ -7,13 +7,16 @@ import {
   applyLabel,
   BULK_TAX_SCOPE,
   EXCLUSIVE_WARNING,
+  subscriptionsLabel,
   TAX_DESCRIPTIONS,
 } from './bulkTaxCopy'
 import { BulkTaxProgress } from './BulkTaxProgress'
 import { TaxBehavior } from './bulkTaxRecords'
 import { useBulkTaxUpdate } from './useBulkTaxUpdate'
+import { useTaxBreakdown } from './useTaxBreakdown'
 
 export function BulkTaxBanner({ migrationId }: { migrationId: string }) {
+  const undecided = useTaxBreakdown(migrationId).data?.undecided ?? 0
   const controller = useBulkTaxUpdate(migrationId)
   const [confirming, setConfirming] = useState<TaxBehavior | null>(null)
   const [dismissed, setDismissed] = useState(false)
@@ -69,9 +72,17 @@ export function BulkTaxBanner({ migrationId }: { migrationId: string }) {
 
   return (
     <Alert
-      variant="info"
-      title="Subscriptions switch with tax included in the price"
-      description="Each subscription defaults to inclusive: the customer keeps paying the listed price and Polar takes tax out of it. Charging tax on top instead? Change them all at once."
+      variant={undecided > 0 ? 'warning' : 'info'}
+      title={
+        undecided > 0
+          ? `${subscriptionsLabel(undecided)} need a tax decision`
+          : 'Subscriptions switch with tax included in the price'
+      }
+      description={
+        undecided > 0
+          ? "Stripe doesn't say whether their price includes tax, so they're marked Needs info and would switch as inclusive. Decide for every subscription at once."
+          : 'Each subscription defaults to inclusive: the customer keeps paying the listed price and Polar takes tax out of it. Charging tax on top instead? Change them all at once.'
+      }
       actions={[
         {
           text: applyLabel('exclusive'),

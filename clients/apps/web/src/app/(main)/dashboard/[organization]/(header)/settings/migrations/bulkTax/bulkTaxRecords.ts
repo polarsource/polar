@@ -18,17 +18,31 @@ export const isTaxEditable = (row: TaxRow): boolean =>
   row.status !== 'skipped' &&
   row.import_status !== 'skipped'
 
+// Stripe left the tax unspecified, so the row reads as inclusive but stays
+// "Needs info" until the merchant saves a choice, even the same one.
+export const needsTaxDecision = (row: TaxRow): boolean =>
+  row.reason_code === 'subscription_tax_behavior_unspecified'
+
+export const needsTaxUpdate = (row: TaxRow, target: TaxBehavior): boolean =>
+  effectiveTax(row) !== target || needsTaxDecision(row)
+
 export interface TaxBreakdown {
   inclusive: number
   exclusive: number
   locked: number
+  undecided: number
 }
 
 export function taxBreakdown(rows: TaxRow[]): TaxBreakdown {
-  const breakdown: TaxBreakdown = { inclusive: 0, exclusive: 0, locked: 0 }
+  const breakdown: TaxBreakdown = {
+    inclusive: 0,
+    exclusive: 0,
+    locked: 0,
+    undecided: 0,
+  }
   for (const row of rows) {
     if (isTaxEditable(row)) {
-      breakdown[effectiveTax(row)] += 1
+      breakdown[needsTaxDecision(row) ? 'undecided' : effectiveTax(row)] += 1
     } else if (row.cutover_status === 'moved') {
       breakdown.locked += 1
     }

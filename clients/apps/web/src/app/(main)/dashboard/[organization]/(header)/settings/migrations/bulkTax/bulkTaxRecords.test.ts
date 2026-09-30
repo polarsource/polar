@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   effectiveTax,
   isTaxEditable,
+  needsTaxUpdate,
   runWithConcurrency,
   taxBreakdown,
   type TaxRow,
@@ -44,16 +45,39 @@ describe('isTaxEditable', () => {
   })
 })
 
+const undecided = { reason_code: 'subscription_tax_behavior_unspecified' }
+
+describe('needsTaxUpdate', () => {
+  it('skips rows already on the target', () => {
+    expect(
+      needsTaxUpdate(row({ tax_behavior: 'inclusive' }), 'inclusive'),
+    ).toBe(false)
+    expect(
+      needsTaxUpdate(row({ tax_behavior: 'inclusive' }), 'exclusive'),
+    ).toBe(true)
+  })
+
+  it('saves an undecided row even when it already reads as the target', () => {
+    expect(
+      needsTaxUpdate(
+        row({ tax_behavior: 'inclusive', ...undecided }),
+        'inclusive',
+      ),
+    ).toBe(true)
+  })
+})
+
 describe('taxBreakdown', () => {
   it('counts editable rows by tax and switched rows as locked', () => {
     expect(
       taxBreakdown([
         row({}),
+        row({ tax_behavior: 'inclusive', ...undecided }),
         row({ tax_behavior: 'exclusive' }),
         row({ tax_behavior: 'exclusive', cutover_status: 'moved' }),
         row({ status: 'skipped' }),
       ]),
-    ).toEqual({ inclusive: 1, exclusive: 1, locked: 1 })
+    ).toEqual({ inclusive: 1, exclusive: 1, locked: 1, undecided: 1 })
   })
 })
 

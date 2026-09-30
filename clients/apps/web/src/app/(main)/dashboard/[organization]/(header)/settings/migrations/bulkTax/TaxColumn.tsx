@@ -22,6 +22,7 @@ import { BulkTaxProgress } from './BulkTaxProgress'
 import {
   effectiveTax,
   isTaxEditable,
+  needsTaxDecision,
   TaxBehavior,
   TaxRow,
 } from './bulkTaxRecords'
@@ -32,9 +33,16 @@ export function TaxCell({ row }: { row: TaxRow }) {
     return <Text color="muted">—</Text>
   }
   return (
-    <Text color={isTaxEditable(row) ? 'default' : 'muted'}>
-      {TAX_LABELS[effectiveTax(row)]}
-    </Text>
+    <Box alignItems="baseline" columnGap="xs">
+      <Text color={isTaxEditable(row) ? 'default' : 'muted'}>
+        {TAX_LABELS[effectiveTax(row)]}
+      </Text>
+      {needsTaxDecision(row) ? (
+        <Text variant="caption" color="warning">
+          unset
+        </Text>
+      ) : null}
+    </Box>
   )
 }
 
@@ -68,14 +76,19 @@ function TaxHeaderMenu({ migrationId }: { migrationId: string }) {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
             onClick={(event) => event.stopPropagation()}
           >
-            <Box as="span" alignItems="center" columnGap="xs">
+            <Box
+              as="span"
+              display="inline-flex"
+              alignItems="center"
+              columnGap="xs"
+            >
               Tax
               <ChevronDown size={14} />
             </Box>

@@ -2,28 +2,13 @@
 
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { BulkTaxChoice } from './BulkTaxChoice'
 import { applyLabel, formatCount, subscriptionsLabel } from './bulkTaxCopy'
 import { BulkTaxProgress, BulkTaxProgressBar } from './BulkTaxProgress'
-import {
-  fetchAllSubscriptionRecords,
-  TaxBehavior,
-  taxBreakdown,
-} from './bulkTaxRecords'
+import { TaxBehavior } from './bulkTaxRecords'
 import { useBulkTaxUpdate } from './useBulkTaxUpdate'
-
-// Under the records key so any record invalidation refreshes the breakdown.
-const useTaxBreakdown = (migrationId: string) =>
-  useQuery({
-    queryKey: [
-      'merchantMigrationRecords',
-      { id: migrationId, taxBreakdown: true },
-    ],
-    queryFn: async () =>
-      taxBreakdown(await fetchAllSubscriptionRecords(migrationId)),
-  })
+import { useTaxBreakdown } from './useTaxBreakdown'
 
 export function BulkTaxSummaryCard({ migrationId }: { migrationId: string }) {
   const breakdown = useTaxBreakdown(migrationId)
@@ -32,11 +17,12 @@ export function BulkTaxSummaryCard({ migrationId }: { migrationId: string }) {
   const [editing, setEditing] = useState(false)
   const { phase } = controller.state
   const counts = breakdown.data
-  const editable = counts ? counts.inclusive + counts.exclusive : 0
+  const editable = counts
+    ? counts.inclusive + counts.exclusive + counts.undecided
+    : 0
   const toChange = counts
-    ? target === 'exclusive'
-      ? counts.inclusive
-      : counts.exclusive
+    ? counts.undecided +
+      (target === 'exclusive' ? counts.inclusive : counts.exclusive)
     : 0
 
   return (
@@ -77,6 +63,7 @@ export function BulkTaxSummaryCard({ migrationId }: { migrationId: string }) {
           <Box columnGap="xl" rowGap="s" flexWrap="wrap">
             <Stat label="Inclusive" value={counts.inclusive} />
             <Stat label="Exclusive" value={counts.exclusive} />
+            <Stat label="Unset on Stripe" value={counts.undecided} warning />
             <Stat label="Switched, locked" value={counts.locked} muted />
           </Box>
           <BulkTaxProgressBar done={counts.exclusive} total={editable} />
@@ -123,10 +110,12 @@ function Stat({
   label,
   value,
   muted = false,
+  warning = false,
 }: {
   label: string
   value: number
   muted?: boolean
+  warning?: boolean
 }) {
   return (
     <Box flexDirection="column">
@@ -136,7 +125,7 @@ function Stat({
       <Text
         variant="heading-xs"
         tabularNums
-        color={muted ? 'muted' : 'default'}
+        color={warning && value > 0 ? 'warning' : muted ? 'muted' : 'default'}
       >
         {formatCount(value)}
       </Text>

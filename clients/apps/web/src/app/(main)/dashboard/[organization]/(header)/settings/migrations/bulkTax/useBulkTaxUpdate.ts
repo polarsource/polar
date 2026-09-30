@@ -1,9 +1,9 @@
 import { invalidateMigrationRecords } from '@/hooks/queries/merchantMigrations'
 import { useCallback, useRef, useState } from 'react'
 import {
-  effectiveTax,
   fetchAllSubscriptionRecords,
   isTaxEditable,
+  needsTaxUpdate,
   patchRecordTax,
   runWithConcurrency,
   TaxBehavior,
@@ -44,6 +44,8 @@ export type RowFilter = (row: TaxRow) => boolean
 export function useBulkTaxUpdate(migrationId: string) {
   const [state, setState] = useState<BulkTaxState>(IDLE)
   const running = useRef(false)
+  // A failed load retries with the same scope, not every subscription.
+  const lastInclude = useRef<RowFilter>(() => true)
 
   const apply = useCallback(
     async (
@@ -82,12 +84,13 @@ export function useBulkTaxUpdate(migrationId: string) {
     async (target: TaxBehavior, include: RowFilter = () => true) => {
       if (running.current) return
       running.current = true
+      lastInclude.current = include
       setState({ ...IDLE, phase: 'collecting', target })
       try {
         const candidates = (await fetchAllSubscriptionRecords(migrationId))
           .filter(isTaxEditable)
           .filter(include)
-        const pending = candidates.filter((row) => effectiveTax(row) !== target)
+        const pending = candidates.filter((row) => needsTaxUpdate(row, target))
         await apply(target, pending, {
           total: pending.length,
           updated: 0,
@@ -101,7 +104,7 @@ export function useBulkTaxUpdate(migrationId: string) {
           error:
             error instanceof Error && error.message
               ? error.message
-              : "We couldn't load your subscriptions.",
+              : 'Something went wrong. Please try again.',
         })
       } finally {
         running.current = false
@@ -111,7 +114,14 @@ export function useBulkTaxUpdate(migrationId: string) {
   )
 
   const retry = useCallback(async () => {
-    if (running.current || !state.target || state.failures.length === 0) {
+    if (running.current || !state.target) {
+      return
+    }
+    if (state.error) {
+      await start(state.target, lastInclude.current)
+      return
+    }
+    if (state.failures.length === 0) {
       return
     }
     running.current = true
@@ -124,7 +134,7 @@ export function useBulkTaxUpdate(migrationId: string) {
     } finally {
       running.current = false
     }
-  }, [apply, state])
+  }, [apply, start, state])
 
   const reset = useCallback(() => {
     if (!running.current) setState(IDLE)

@@ -45,7 +45,7 @@ export function BulkTaxProgress({
   controller: BulkTaxController
   onDismiss?: () => void
 }) {
-  const { state, retry, start } = controller
+  const { state, retry } = controller
   const target = state.target
   if (state.phase === 'idle' || target === null) {
     return null
@@ -81,7 +81,7 @@ export function BulkTaxProgress({
         variant="danger"
         title="We couldn't load your subscriptions"
         description={state.error}
-        actions={[{ text: 'Try again', onClick: () => start(target) }]}
+        actions={[{ text: 'Try again', onClick: retry }]}
         onDismiss={onDismiss}
       />
     )

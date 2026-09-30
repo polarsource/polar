@@ -4,6 +4,7 @@ import GppMaybeOutlined from '@mui/icons-material/GppMaybeOutlined'
 import HourglassEmptyOutlined from '@mui/icons-material/HourglassEmptyOutlined'
 import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
 import PersonAddAltOutlined from '@mui/icons-material/PersonAddAltOutlined'
+import PersonRemoveOutlined from '@mui/icons-material/PersonRemoveOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -144,6 +145,33 @@ export const NotificationRow = ({
           }
           avatar={p.subscriber_name}
           title={`${p.subscriber_name} started a trial`}
+          subtitle={`${p.product_name}${ends}`}
+          href={
+            p.organization_slug && p.subscription_id
+              ? `/dashboard/${p.organization_slug}/sales/subscriptions/${p.subscription_id}`
+              : null
+          }
+        />
+      )
+    }
+    case 'MaintainerSubscriptionCancellationNotification': {
+      const p = n.payload
+      const ends =
+        p.cancel_at_period_end && p.ends_at
+          ? `, ends ${new Date(p.ends_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+          : ''
+      return (
+        <Row
+          date={n.created_at}
+          unread={unread}
+          icon={
+            <PersonRemoveOutlined
+              className="text-red-500"
+              sx={{ fontSize: 16 }}
+            />
+          }
+          avatar={p.subscriber_name}
+          title={`${p.subscriber_name} canceled`}
           subtitle={`${p.product_name}${ends}`}
           href={
             p.organization_slug && p.subscription_id

@@ -103,6 +103,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewTrialNotificationPayload,
+    MaintainerSubscriptionCancellationNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -3616,6 +3617,9 @@ class SubscriptionService:
         if became_past_due:
             await self._on_subscription_past_due(session, subscription)
 
+        if became_canceled:
+            await self._send_cancellation_notification(session, subscription)
+
         if became_canceled or (became_revoked and previous_is_canceled):
             await self._on_subscription_canceled(
                 session,
@@ -3942,6 +3946,35 @@ class SubscriptionService:
                     organization_slug=organization.slug,
                     subscription_id=str(subscription.id),
                     trial_end=subscription.trial_end,
+                ),
+            ),
+        )
+
+    async def _send_cancellation_notification(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(subscription.product_id)
+        assert product is not None
+        organization = subscription.organization
+
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            is_free_product=all(price.is_free for price in subscription.prices),
+            notif=PartialNotification(
+                type=NotificationType.maintainer_subscription_cancellation,
+                payload=MaintainerSubscriptionCancellationNotificationPayload(
+                    subscriber_name=subscription.customer.display_name,
+                    subscriber_email=subscription.customer.email,
+                    product_name=product.name,
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                    subscription_id=str(subscription.id),
+                    cancellation_reason=subscription.customer_cancellation_reason,
+                    cancellation_comment=subscription.customer_cancellation_comment,
+                    cancel_at_period_end=subscription.cancel_at_period_end,
+                    ends_at=subscription.ends_at,
                 ),
             ),
         )

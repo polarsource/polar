@@ -10,6 +10,7 @@ from polar.config import settings
 from polar.kit.currency import format_currency
 from polar.kit.schemas import Schema
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.subscription import CustomerCancellationReason
 
 if TYPE_CHECKING:
     from polar.email.schemas import Email
@@ -18,6 +19,9 @@ if TYPE_CHECKING:
 class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_trial = "MaintainerNewTrialNotification"
+    maintainer_subscription_cancellation = (
+        "MaintainerSubscriptionCancellationNotification"
+    )
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_subscription_renewal = "MaintainerSubscriptionRenewalNotification"
     maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
@@ -116,6 +120,43 @@ class MaintainerNewTrialNotificationPayload(NotificationPayloadBase):
 class MaintainerNewTrialNotification(NotificationBase):
     type: Literal[NotificationType.maintainer_new_trial]
     payload: MaintainerNewTrialNotificationPayload
+
+
+class MaintainerSubscriptionCancellationNotificationPayload(NotificationPayloadBase):
+    subscriber_name: str
+    subscriber_email: str | None
+    product_name: str
+    organization_name: str
+    organization_slug: str | None
+    subscription_id: str | None
+    cancellation_reason: CustomerCancellationReason | None
+    cancellation_comment: str | None
+    cancel_at_period_end: bool
+    ends_at: datetime | None
+
+    @computed_field
+    def formatted_cancellation_reason(self) -> str | None:
+        if self.cancellation_reason is None:
+            return None
+        return self.cancellation_reason.replace("_", " ").capitalize()
+
+    @computed_field
+    def subscription_url(self) -> str | None:
+        if not self.organization_slug or not self.subscription_id:
+            return None
+        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/subscriptions/{self.subscription_id}"
+
+    def subject(self) -> str:
+        return f"{self.subscriber_name} canceled their {self.product_name} subscription"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_subscription_cancellation"
+
+
+class MaintainerSubscriptionCancellationNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_subscription_cancellation]
+    payload: MaintainerSubscriptionCancellationNotificationPayload
 
 
 class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
@@ -263,6 +304,7 @@ class MaintainerFileFlaggedMaliciousNotification(NotificationBase):
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewTrialNotificationPayload
+    | MaintainerSubscriptionCancellationNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerSubscriptionRenewalNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
@@ -272,6 +314,7 @@ NotificationPayload = (
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
     | MaintainerNewTrialNotification
+    | MaintainerSubscriptionCancellationNotification
     | MaintainerNewProductSaleNotification
     | MaintainerSubscriptionRenewalNotification
     | MaintainerAccountCreditsGrantedNotification

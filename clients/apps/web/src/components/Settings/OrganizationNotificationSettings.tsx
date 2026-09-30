@@ -100,8 +100,26 @@ const OrganizationNotificationSettings: React.FC<
 
       <SettingsGroupItem
         layout="inline"
+        title="Subscription Cancellations"
+        description="Receive a notification when a customer cancels a subscription"
+      >
+        <Switch
+          checked={
+            settings.subscription_cancellation ?? settings.new_subscription
+          }
+          onCheckedChange={(checked) =>
+            update((previous) => ({
+              ...previous,
+              subscription_cancellation: checked,
+            }))
+          }
+        />
+      </SettingsGroupItem>
+
+      <SettingsGroupItem
+        layout="inline"
         title="Exclude Free Products"
-        description="Skip subscription, trial and renewal notifications for free products."
+        description="Skip subscription, trial, renewal and cancellation notifications for free products."
       >
         <Switch
           checked={settings.exclude_free_products ?? false}

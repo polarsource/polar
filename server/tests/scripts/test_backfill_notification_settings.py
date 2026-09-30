@@ -41,6 +41,7 @@ async def test_backfills_missing_keys_and_keeps_existing_values(
             "new_trial": False,
             "chargeback_prevention": True,
             "subscription_renewal": False,
+            "subscription_cancellation": False,
             "exclude_free_products": True,
         },
     )
@@ -65,11 +66,14 @@ async def test_backfills_missing_keys_and_keeps_existing_values(
         "new_trial": False,
         "chargeback_prevention": True,
         "subscription_renewal": True,
+        "subscription_cancellation": False,
         "exclude_free_products": False,
     }
     assert subscriptions_on.notification_settings["new_trial"] is True
+    assert subscriptions_on.notification_settings["subscription_cancellation"] is True
     assert subscriptions_on.notification_settings["exclude_free_products"] is False
     assert already_set.notification_settings["new_trial"] is False
+    assert already_set.notification_settings["subscription_cancellation"] is False
     assert already_set.notification_settings["exclude_free_products"] is True
     for user_organization in (subscriptions_off, subscriptions_on, already_set):
         assert user_organization.modified_at == modified_at[user_organization.user_id]

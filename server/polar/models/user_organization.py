@@ -27,6 +27,9 @@ class OrganizationNotificationSettings(TypedDict):
     new_trial: Annotated[NotRequired[bool], Version(starting_from=V2027_01)]
     chargeback_prevention: bool
     subscription_renewal: bool
+    subscription_cancellation: Annotated[
+        NotRequired[bool], Version(starting_from=V2027_01)
+    ]
     exclude_free_products: Annotated[NotRequired[bool], Version(starting_from=V2027_01)]
 
 
@@ -36,6 +39,7 @@ _default_notification_settings: OrganizationNotificationSettings = {
     "new_trial": True,
     "chargeback_prevention": True,
     "subscription_renewal": False,
+    "subscription_cancellation": True,
     "exclude_free_products": False,
 }
 

@@ -6,6 +6,7 @@ import {
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
   MaintainerNewTrialNotificationPayload,
+  MaintainerSubscriptionCancellationNotificationPayload,
   MaintainerSubscriptionRenewalNotificationPayload,
 } from '@/hooks/polar/notifications'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -21,6 +22,7 @@ export interface NotificationProps {
   payload:
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewTrialNotificationPayload
+    | MaintainerSubscriptionCancellationNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
     | MaintainerSubscriptionRenewalNotificationPayload
@@ -49,6 +51,14 @@ export const Notification = ({
         return (
           <MaterialIcons
             name="hourglass-empty"
+            size={20}
+            color={theme.colors.text}
+          />
+        )
+      case 'MaintainerSubscriptionCancellationNotification':
+        return (
+          <MaterialIcons
+            name="person-remove"
             size={20}
             color={theme.colors.text}
           />
@@ -88,6 +98,8 @@ export const Notification = ({
         return 'New Subscription'
       case 'MaintainerNewTrialNotification':
         return 'New Trial'
+      case 'MaintainerSubscriptionCancellationNotification':
+        return 'Subscription Canceled'
       case 'MaintainerNewProductSaleNotification':
         return 'New Product Sale'
       case 'MaintainerSubscriptionRenewalNotification':
@@ -113,6 +125,12 @@ export const Notification = ({
           product_name: trialProductName,
         } = payload as MaintainerNewTrialNotificationPayload
         return `${trialSubscriberName} started a ${trialProductName} trial`
+      case 'MaintainerSubscriptionCancellationNotification':
+        const {
+          subscriber_name: cancellationSubscriberName,
+          product_name: cancellationProductName,
+        } = payload as MaintainerSubscriptionCancellationNotificationPayload
+        return `${cancellationSubscriberName} canceled their ${cancellationProductName} subscription`
       case 'MaintainerNewProductSaleNotification':
         const {
           customer_name,

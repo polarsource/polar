@@ -12,6 +12,7 @@ from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.meter.unit import MeterUnit
+from polar.openapi import cli_confirm_equals
 from polar.organization.schemas import OrganizationID
 
 NAME_DESCRIPTION = (
@@ -89,6 +90,7 @@ class MeterUpdate(Schema, MetadataInputMixin):
     aggregation: Aggregation | None = Field(None, description=_aggregation_description)
     is_archived: bool | None = Field(
         None,
+        json_schema_extra=cli_confirm_equals(True),
         description=(
             "Whether the meter is archived. "
             "Archived meters are no longer used for billing."

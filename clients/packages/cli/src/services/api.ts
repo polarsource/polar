@@ -50,6 +50,9 @@ export const apiOrigin = (environment: PolarEnvironment) =>
 export const apiUrl = (environment: PolarEnvironment, path: string) =>
   Effect.map(apiOrigin(environment), (origin) => `${origin}/v1${path}`)
 
+export const withOrganization = (organizationId: string) =>
+  HttpClientRequest.setHeader('Polar-Organization', organizationId)
+
 export interface ApiFailure {
   message: string
   hint?: string

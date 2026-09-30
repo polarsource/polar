@@ -81,6 +81,7 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceUnit as ProductPriceUnitModel,
 )
+from polar.openapi import cli_confirm_equals
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.tiers import (
@@ -740,6 +741,7 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     )
     is_archived: bool | None = Field(
         default=None,
+        json_schema_extra=cli_confirm_equals(True),
         description=(
             "Whether the product is archived. "
             "If `true`, the product won't be available for purchase anymore. "

@@ -29,7 +29,7 @@ const service = () =>
 
 const listEvents = () =>
   Effect.runPromise(
-    service().pipe(Effect.flatMap((trigger) => trigger.listEvents('sandbox'))),
+    service().pipe(Effect.flatMap((trigger) => trigger.listEvents(acme))),
   )
 
 const send = (
@@ -86,6 +86,7 @@ describe('listEvents', () => {
 
     expect(await listEvents()).toEqual(catalog)
     expect(api.requests[0]!.headers.get('Authorization')).toBe('Bearer token')
+    expect(api.requests[0]!.headers.get('Polar-Organization')).toBe('org-1')
   })
 
   test.each([
@@ -128,6 +129,7 @@ describe('send', () => {
       overrides: { 'data.amount': '5' },
       deliver: true,
     })
+    expect(api.requests[0]!.headers.get('Polar-Organization')).toBe('org-1')
   })
 
   test('reports a missing listener', async () => {
@@ -148,7 +150,9 @@ describe('send', () => {
       _tag: 'UnknownEvent',
       suggestion: 'order.created',
     })
-    expect(api.requests).toHaveLength(2)
+    expect(
+      api.requests.map((request) => request.headers.get('Polar-Organization')),
+    ).toEqual(['org-1', 'org-1'])
   })
 
   test('reports rejected payloads with their detail', async () => {

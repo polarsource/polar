@@ -17,6 +17,7 @@ subparsers = parser.add_subparsers(dest="command")
 parser_openapi = subparsers.add_parser(
     "openapi", help="Regenerate all OpenAPI specs from the server"
 )
+
 # Generate subcommand
 parser_generate = subparsers.add_parser(
     "generate", help="Generate SDK from OpenAPI spec"
@@ -49,7 +50,7 @@ parser_docs_openapi.add_argument(
 parser_generate.add_argument(
     "--language",
     type=str,
-    choices=["python", "typescript"],
+    choices=["python", "typescript", "cli"],
     default="python",
     help="Language to emit the SDK in (default: python).",
 )
@@ -99,8 +100,6 @@ elif args.command == "generate":
             op.OpenAPI.model_validate_json(spec_path.read_text(encoding="utf-8"))
         )
 
-    ir = generate_ir(*specs)
-
     output_path = pathlib.Path(args.output)
     if output_path.exists() and not output_path.is_dir():
         print(f"Error: Output path {output_path} is not a directory.", file=sys.stderr)
@@ -112,11 +111,19 @@ elif args.command == "generate":
     language = args.language
     match language:
         case "python":
-            emitter = PythonEmitter(ir, args.version)
+            emitter = PythonEmitter(generate_ir(*specs), args.version)
         case "typescript":
             from typescript.emitter import TypeScriptEmitter
 
-            emitter = TypeScriptEmitter(ir, args.version)
+            emitter = TypeScriptEmitter(generate_ir(*specs), args.version)
+        case "cli":
+            from cli_commands.emitter import CLICommandsEmitter
+            from cli_commands.ir import is_private_cli_operation
+
+            emitter = CLICommandsEmitter(
+                generate_ir(*specs, is_private_operation=is_private_cli_operation),
+                args.version,
+            )
         case _:
             print(f"Error: Unsupported language {language}.", file=sys.stderr)
             sys.exit(1)

@@ -72,6 +72,29 @@ class APITag(StrEnum):
         ]
 
 
+def cli_preview(*fields: tuple[str, str]) -> dict[str, Any]:
+    return {
+        "x-polar-cli-preview": {
+            "fields": [{"key": key, "label": label} for key, label in fields]
+        }
+    }
+
+
+type CLIConfirmValue = str | bool | int | float | None
+
+
+def cli_confirm() -> dict[str, Any]:
+    return {"x-polar-cli-confirm": True}
+
+
+def cli_confirm_equals(value: CLIConfirmValue) -> dict[str, Any]:
+    return {"x-polar-cli-confirm": {"equals": value}}
+
+
+def cli_confirm_one_of(*values: CLIConfirmValue) -> dict[str, Any]:
+    return {"x-polar-cli-confirm": {"one_of": list(values)}}
+
+
 def get_openapi(
     version: "APIVersion",
     route_contexts: Sequence[RouteContext],

@@ -6,12 +6,13 @@ from typing import Annotated, Any
 import structlog
 from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_
 from tagflow import classes, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
 from polar.email.react import render_from_json
 from polar.email.repository import EmailLogRepository
+from polar.email.schemas import EmailTemplate
 from polar.kit.pagination import PaginationParamsQuery
 from polar.logging import Logger
 from polar.models.email_log import EmailLog, EmailLogStatus
@@ -90,14 +91,7 @@ async def list_email_logs(
         statement, limit=pagination.limit, page=pagination.page
     )
 
-    templates_stmt = (
-        select(EmailLog.email_template)
-        .where(EmailLog.email_template.is_not(None))
-        .distinct()
-        .order_by(EmailLog.email_template)
-    )
-    template_rows = (await session.execute(templates_stmt)).scalars().all()
-    template_options = [(t, t) for t in template_rows if t is not None]
+    template_options = [(t.value, t.value) for t in sorted(EmailTemplate)]
 
     status_options = [(s.value, s.value) for s in EmailLogStatus]
 

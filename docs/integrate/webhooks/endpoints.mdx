@@ -76,10 +76,13 @@ formatting. Making it a breeze to setup in-chat notifications for your team.
   curl -fsSL https://polar.sh/install.sh | bash
   ```
 
-  or with npm:
+  or with your package manager (pnpm and bun need the flag that allows the
+  install script which unpacks the binary):
 
   ```bash Terminal
   npm install -g @polar-sh/cli
+  pnpm add -g --allow-build=@polar-sh/cli @polar-sh/cli
+  bun install -g --trust @polar-sh/cli
   ```
 
   Once you have installed the Polar CLI, you can easily start a tunnel:

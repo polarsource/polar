@@ -12,10 +12,13 @@ macOS, Linux, WSL:
 curl -fsSL https://polar.sh/install.sh | bash
 ```
 
-Or with npm, on any platform:
+Or with your package manager, on any platform. pnpm and bun block install
+scripts by default, and the flags below allow the one that unpacks the binary:
 
 ```bash
 npm install -g @polar-sh/cli
+pnpm add -g --allow-build=@polar-sh/cli @polar-sh/cli
+bun install -g --trust @polar-sh/cli
 ```
 
 ### Login to your account

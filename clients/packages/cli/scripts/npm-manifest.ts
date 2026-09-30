@@ -110,9 +110,16 @@ polar listen http://localhost:3000/
 \`\`\`
 
 This package installs the prebuilt \`polar\` binary for your platform from one of the
-\`${PLATFORM_PACKAGE_PREFIX}*\` packages in a postinstall step. If installation scripts are
-disabled in your package manager, allow them for \`${MAIN_PACKAGE}\` or install with
-\`curl -fsSL https://polar.sh/install.sh | bash\` instead.
+\`${PLATFORM_PACKAGE_PREFIX}*\` packages in a postinstall step. pnpm and bun block
+install scripts by default, so allow this one:
+
+\`\`\`bash
+pnpm add -g --allow-build=${MAIN_PACKAGE} ${MAIN_PACKAGE}
+bun install -g --trust ${MAIN_PACKAGE}
+\`\`\`
+
+If installation scripts stay disabled, the \`polar\` command prints an error instead of
+running. Install with \`curl -fsSL https://polar.sh/install.sh | bash\` in that case.
 
 Version ${version}. Source and documentation: https://github.com/polarsource/polar/tree/main/clients/packages/cli
 `

@@ -1,5 +1,8 @@
+from collections.abc import Callable
+from typing import Any
+
 import pytest
-from sqlalchemy import select
+from sqlalchemy import Select, select
 
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
@@ -11,8 +14,26 @@ from tests.fixtures.random_objects import create_user
 
 @pytest.mark.asyncio
 class TestPaginateHasMore:
+    @pytest.mark.parametrize(
+        "build_statement",
+        [
+            pytest.param(
+                lambda: select(User).outerjoin(User.oauth_accounts),
+                id="one_to_many_join",
+            ),
+            pytest.param(
+                lambda: select(User)
+                .select_from(OAuthAccount)
+                .join(User, OAuthAccount.user_id == User.id),
+                id="model_on_the_joined_side",
+            ),
+        ],
+    )
     async def test_join_matching_several_rows_per_entity(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        build_statement: Callable[[], Select[Any]],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
     ) -> None:
         users = [await create_user(save_fixture) for _ in range(2)]
         for user in users:
@@ -29,8 +50,7 @@ class TestPaginateHasMore:
 
         repository = UserRepository.from_session(session)
         statement = (
-            select(User)
-            .outerjoin(User.oauth_accounts)
+            build_statement()
             .where(User.id.in_([user.id for user in users]))
             .order_by(User.id)
         )

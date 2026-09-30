@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Any, Literal, Protocol, Self, overload
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, class_mapper
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy.sql.expression import ColumnExpressionArgument
@@ -35,14 +35,17 @@ class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
 type Options = Sequence[ExecutableOption]
 
 
-def _may_duplicate_rows(from_clause: FromClause) -> bool:
-    if not isinstance(from_clause, Join):
-        return False
-    return (
-        _may_duplicate_rows(from_clause.left)
-        or _may_duplicate_rows(from_clause.right)
-        or not _is_joined_on_primary_key(from_clause)
-    )
+def _may_duplicate_rows(statement: Select[Any], table: FromClause) -> bool:
+    froms = statement.get_final_froms()
+    return len(froms) != 1 or not _keeps_rows_unique(froms[0], table)
+
+
+def _keeps_rows_unique(from_clause: FromClause, table: FromClause) -> bool:
+    if isinstance(from_clause, Join):
+        return _keeps_rows_unique(
+            from_clause.left, table
+        ) and _is_joined_on_primary_key(from_clause)
+    return from_clause is table
 
 
 def _is_joined_on_primary_key(join: Join) -> bool:
@@ -174,11 +177,9 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         rather than with `contains_eager` over such a join.
         """
         offset = (page - 1) * limit
-        if any(
-            _may_duplicate_rows(from_clause)
-            for from_clause in statement.with_only_columns(
-                self.model.id
-            ).get_final_froms()
+        if _may_duplicate_rows(
+            statement.with_only_columns(self.model.id),
+            class_mapper(self.model).local_table,
         ):
             statement = statement.distinct()
         paginated_statement = statement.limit(limit + 1).offset(offset)

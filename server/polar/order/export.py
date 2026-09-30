@@ -5,17 +5,17 @@ from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AfterValidator
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
-from polar.kit.pagination import PaginationParams
 from polar.models import Order
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
 
-from .service import order as order_service
+from .repository import OrderRepository
 
 
 class OrderExportColumn(StrEnum):
@@ -136,17 +136,24 @@ async def generate_csv(
         tuple(ORDER_EXPORT_HEADERS[column] for column in export_columns)
     )
 
-    (results, _) = await order_service.list(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-        status=status,
-        created_after=created_after,
-        created_before=created_before,
-        pagination=PaginationParams(limit=1000000, page=1),
+    repository = OrderRepository.from_session(session)
+    statement = repository.get_readable_statement(auth_subject).options(
+        joinedload(Order.customer),
+        joinedload(Order.product),
+        selectinload(Order.items),
     )
+    if organization_id is not None:
+        statement = statement.where(Order.organization_id.in_(organization_id))
+    if product_id is not None:
+        statement = statement.where(Order.product_id.in_(product_id))
+    if status is not None:
+        statement = statement.where(Order.status.in_(status))
+    if created_after is not None:
+        statement = statement.where(Order.created_at > created_after)
+    if created_before is not None:
+        statement = statement.where(Order.created_at < created_before)
+    statement = statement.order_by(Order.created_at.desc())
 
-    for order in results:
+    async for order in repository.stream(statement):
         row = _row(order, timezone)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))

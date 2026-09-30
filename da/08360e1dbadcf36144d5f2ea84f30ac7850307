@@ -1,0 +1,86 @@
+server/tests/merchant_migration/test_precheck.py
+  s_90649cb5d2308d::t_7021dd0589d38a 1778,1783-1812,1816-1818,1820-1822,1825-1826
+  s_90649cb5d2308d::t_5ab9b2a72fa1c4 1813-1815,1819,1823-1824,1827-1842
+  s_90649cb5d2308d::t_9e627af712d078 1764
+  s_90649cb5d2308d::t_ba2e81bcaa9b05 27
+  s_90649cb5d2308d::t_4379c8127f950b 92,101
+  s_90649cb5d2308d::t_81a079cdd576f0 1843
+server/tests/merchant_migration/test_canonical.py
+  s_90649cb5d2308d::t_b00a75727d51f7 143
+  s_90649cb5d2308d::t_4a37eeefdbb3db 156
+  s_90649cb5d2308d::t_5f7cf67069a30f 166
+  s_90649cb5d2308d::t_0813ae2f5351d3 66
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_90649cb5d2308d::t_3fb13a7ad16543 655,668-672,674-677
+server/polar/merchant_migration/repository.py
+  s_90649cb5d2308d::t_367d7148a24bf3 906-908,910-911,916,922,961-967,969,972-979
+  s_90649cb5d2308d::t_10f315856f336a 835-860
+  s_90649cb5d2308d::t_f4c70c7117b06c 913,980
+  s_90649cb5d2308d::t_bbc0bc5bcde1d6 909,912,914-915,917-921,923-960,968,970-971
+server/tests/merchant_migration/test_repository.py
+  s_90649cb5d2308d::t_ec200fc30f2c64 438-439,456-459
+  s_90649cb5d2308d::t_dc11a8eacc070f 442-446,451-452,463,470,472-473,478,482-488,490-497,499-500,502-503,506-509,512,514-516
+  s_90649cb5d2308d::t_e3c3f6b946b245 43-102
+  s_90649cb5d2308d::t_d55fdb18a50ab9 421-426,429,467,489,498,501,504-505,517
+  s_90649cb5d2308d::t_924a793e3338a0 420,427-428,430-437,440-441,447-450,453-455,460-462,464-466,468-469,471,474-477,479-481,510-511,513
+server/polar/merchant_migration/precheck.py
+  s_90649cb5d2308d::t_2767036b66c284 1073-1084
+  s_90649cb5d2308d::t_2e2deb12edd805 1101-1103
+  s_90649cb5d2308d::t_90633189a8763a 1513-1518
+  s_90649cb5d2308d::t_85b0a81892e06b 120
+  s_90649cb5d2308d::t_83505c47b776ee 1521-1528,1531-1533,1535-1536,1539-1540,1548,1551,1555-1568
+  s_90649cb5d2308d::t_c28f0a88c1e708 1123
+  s_0ac1876792975c::t_5e3bbf5118e49b 1519-1520,1569-1570
+server/tests/merchant_migration/test_cutover.py
+  s_90649cb5d2308d::t_91b2e02a122f5a 498-527
+  s_90649cb5d2308d::t_f8fc48b8535dd8 461-497
+server/polar/merchant_migration/canonical.py
+  s_90649cb5d2308d::t_312eb0b1dabcb0 88-89
+  s_90649cb5d2308d::t_500f6b0e27dee1 97
+  s_90649cb5d2308d::t_e5e562531ad449 497
+server/tests/merchant_migration/test_service.py
+  s_90649cb5d2308d::t_9cfc03a42de584 3043-3128
+  s_49562f8133e9bf::t_99ab16d3972ac3 3041-3042
+server/polar/merchant_migration/importer.py
+  s_90649cb5d2308d::t_57cb75eedea373 199-201
+  s_90649cb5d2308d::t_9fb4c67ff16ca6 754-755
+  s_90649cb5d2308d::t_3938290eebbc5d 69
+  s_90649cb5d2308d::t_bdc6418f5f99c0 107-108
+  s_90649cb5d2308d::t_a7ad958b8673d5 194,198,202
+  s_90649cb5d2308d::t_de3f01cfc65a31 804
+server/polar/merchant_migration/adapters/stripe.py
+  s_90649cb5d2308d::t_e340738d11dd8c 367,373,383
+  s_90649cb5d2308d::t_cb82efc80ff024 650,659
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "da08360e1dbadcf36144d5f2ea84f30ac7850307",
+  "prompts": {},
+  "sessions": {
+    "s_0ac1876792975c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c7e9-ffd7-7db1-b42e-fdbf64bbd4d4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_49562f8133e9bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f7b2060f-9b00-4e09-80cd-7cd9a7570907",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_90649cb5d2308d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4065690e-ae4d-4bac-8d3e-5cc00bbdb47b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

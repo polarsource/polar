@@ -100,7 +100,7 @@ jobs:
           bun-version-file: clients/packages/cli/package.json
 
       - name: "🧪 Test: CLI"
-        run: pnpm --filter polar-cli test
+        run: pnpm --filter @polar-sh/cli test
 
       - name: 🛠️ Build
         run: pnpm build

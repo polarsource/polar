@@ -2,8 +2,6 @@
 '@polar-sh/cli': major
 ---
 
-A big one. The CLI moved into the Polar monorepo and grew up quite a bit.
-
 **API resources.** You can now manage your Polar data straight from the terminal: `polar customers`, `products`, `orders`, `subscriptions`, `checkouts`, `discounts`, `benefits`, `meters`, `webhooks` and more. They're generated from the API, so they stay in sync with it. Commands run against your selected organization (or pass `--org`), and destructive ones ask before doing anything.
 
 **`polar trigger`.** Send fake webhook events to your app without creating anything real. `polar trigger --list` shows what's available, `--override` tweaks fields in the payload, `--seed` makes payloads reproducible, and `--json` prints the result as JSON. If `polar listen` is running, trigger shows your server's response and fails when your server doesn't accept the event.

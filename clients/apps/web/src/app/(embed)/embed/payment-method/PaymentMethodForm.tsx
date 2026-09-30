@@ -260,6 +260,12 @@ export const PaymentMethodForm = ({
       options={{
         locale: stripeElementLocale,
         mode: 'setup',
+        excludedPaymentMethodTypes: [
+          'bancontact',
+          'ideal',
+          'sepa_debit',
+          'sofort',
+        ],
         paymentMethodCreation: 'manual',
         setupFutureUsage: 'off_session',
         currency: setupCurrency,

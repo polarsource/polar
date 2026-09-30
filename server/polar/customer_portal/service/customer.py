@@ -312,7 +312,7 @@ class CustomerService:
                 return_url=return_url,
                 expand=["payment_method"],
             )
-        except stripe_lib.CardError as e:
+        except (stripe_lib.CardError, stripe_lib.InvalidRequestError) as e:
             raise PaymentMethodSetupFailed(e.user_message) from e
 
         return await self._save_payment_method(

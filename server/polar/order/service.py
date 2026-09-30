@@ -1320,6 +1320,15 @@ class OrderService:
             order = await self.handle_payment(session, order, payment)
 
         if order.paid:
+            # Draft orders reject seat-based and recurring products, so benefits
+            # are granted as soon as the order is paid, like a one-time checkout.
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=order.customer_id,
+                product_id=order.product_id,
+                order_id=order.id,
+            )
             enqueue_job("order.admin_notification", order.id)
 
         return order

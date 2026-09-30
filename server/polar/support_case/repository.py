@@ -169,28 +169,24 @@ class SupportCaseMessageRepository(
 
     @staticmethod
     def awaiting_platform_expression() -> ColumnElement[bool]:
-        """True when the latest externally-visible message wasn't sent by our
-        side — i.e. a participant spoke last and the platform owes a reply.
-        Defined by exclusion (not ``platform``/``system``) so it stays correct
-        for any participant kind. Internal notes and lifecycle events (empty
-        audience) are ignored, so they don't clear it.
+        """True when the latest externally-visible message wasn't sent by
+        platform staff — i.e. a participant spoke last and the platform owes a
+        reply. Defined by exclusion (not ``platform``) so it stays correct for
+        any participant kind. Internal notes, lifecycle events (empty audience)
+        and automated ``system`` messages are ignored, so they don't clear it.
         """
         latest_author = (
             select(SupportCaseMessage.author_kind)
             .where(
                 SupportCaseMessage.case_id == SupportCase.id,
                 func.cardinality(SupportCaseMessage.audience) > 0,
+                SupportCaseMessage.author_kind != SupportCaseMessageAuthorKind.system,
             )
             .order_by(SupportCaseMessage.created_at.desc())
             .limit(1)
             .scalar_subquery()
         )
-        return latest_author.notin_(
-            [
-                SupportCaseMessageAuthorKind.platform,
-                SupportCaseMessageAuthorKind.system,
-            ]
-        )
+        return latest_author != SupportCaseMessageAuthorKind.platform
 
 
 class SupportCaseParticipantRepository(

@@ -21,11 +21,15 @@ import * as Telemetry from '@/services/telemetry'
 import * as Trigger from '@/services/trigger'
 import { removeRetiredBinary } from '@/services/update'
 import { availableUpdate, checkForUpdate } from '@/services/update-check'
+import * as Updater from '@/services/updater'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 const mainCommand = Command.make('polar', {}, () => home).pipe(
-  Command.withSubcommands([auth, listen, trigger, update, ...commands]),
+  Command.withSubcommands([
+    { group: 'CLI COMMANDS', commands: [auth, listen, trigger, update] },
+    { group: 'API RESOURCES', commands },
+  ]),
 )
 
 const cli = Command.run(mainCommand, {
@@ -44,6 +48,9 @@ const organizationsLayer = Organizations.layer.pipe(
 const triggerLayer = Trigger.layer.pipe(
   Layer.provide(Layer.mergeAll(authLayer, FetchHttpClient.layer)),
 )
+const updaterLayer = Updater.layer.pipe(
+  Layer.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)),
+)
 const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
@@ -56,6 +63,7 @@ const services = Layer.mergeAll(
   polarLayer,
   organizationsLayer,
   triggerLayer,
+  updaterLayer,
   telemetryLayer,
   BunServices.layer,
   FetchHttpClient.layer,

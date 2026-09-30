@@ -3,12 +3,14 @@ import type { TriggerError } from '@/services/trigger'
 import type { UpdateError } from '@/services/update'
 import type { AuthError } from '@/schemas/Auth'
 import type { GitHubReleaseError } from '@/services/github-releases'
+import type { UpdaterError } from '@/services/updater'
 
 export type CommandError =
   | AuthError
   | ListenError
   | TriggerError
   | UpdateError
+  | UpdaterError
   | GitHubReleaseError
 
 export interface ErrorDescription {
@@ -41,6 +43,7 @@ const isCommandError = (error: unknown): error is CommandError =>
     'ListenError',
     'TriggerError',
     'UpdateError',
+    'UpdaterError',
     'GitHubReleaseError',
   ].includes(String(error._tag))
 
@@ -64,6 +67,8 @@ export const describeError = (error: unknown): ErrorDescription => {
     }
     case 'UpdateError':
       return { title: error.message, hint: releasesHint }
+    case 'UpdaterError':
+      return { title: error.message, hint: error.hint ?? releasesHint }
     case 'GitHubReleaseError':
       return {
         title: `Could not check for updates: ${error.message}`,

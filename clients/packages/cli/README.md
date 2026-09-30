@@ -27,7 +27,7 @@ from source or from `bin/cli.js` sends nothing. Opt out with
 ## Development
 
 From `clients/`, install dependencies with `pnpm install`, then use
-`pnpm --filter polar-cli test`, `typecheck`, `format`, or `lint`.
+`pnpm --filter @polar-sh/cli test`, `typecheck`, `format`, or `lint`.
 Bun `1.4.2` is the runtime, test runner, and binary compiler; pnpm manages dependencies.
 
 Run the CLI from source with `bun src/cli.ts <command>` in this directory, or
@@ -116,18 +116,19 @@ emitted Effect command.
 
 ## Releases
 
-Add a changeset from `clients/` with `pnpm exec changeset` and select `polar-cli`.
+Add a changeset from `clients/` with `pnpm exec changeset` and select `@polar-sh/cli`.
 Changesets updates `package.json` and `CHANGELOG.md` in the existing release PR.
 The CLI is private to npm, but Changesets still versions it. The binary embeds
 its version from `package.json`; do not edit `src/version.ts` for releases.
 
 Merging a CLI version bump into `main` starts
 [Release CLI](../../../.github/workflows/release_cli.yml). It tests the CLI,
-compiles the four supported targets, signs and notarizes the macOS binaries,
+compiles the five supported targets, signs and notarizes the macOS binaries,
 and uploads these assets to a draft release in `polarsource/polar`:
 
 - `polar-darwin-arm64.zip`
 - `polar-darwin-x64.zip`
+- `polar-linux-arm64.tar.gz`
 - `polar-linux-x64.tar.gz`
 - `polar-windows-x64.zip`
 - `checksums.txt`
@@ -136,7 +137,52 @@ Only after every upload succeeds does the workflow publish the release, tagged
 `polar-cli@<version>`. Release notes come from the CLI's changelog. CLI releases
 do not become the monorepo's generic GitHub "latest" release: the updater lists
 releases, follows pagination, filters stable `polar-cli@` tags, and compares
-semantic versions. Publishing is independent of the npm release workflow.
+semantic versions. Publishing is independent of the changesets-driven npm
+release workflow for the other packages.
+
+### npm
+
+The same binaries (signed and notarized on macOS, unsigned elsewhere) are also
+published to npm as `@polar-sh/cli`, installed with `npm install -g
+@polar-sh/cli`, `pnpm add -g --allow-build=@polar-sh/cli @polar-sh/cli` or
+`bun install -g --trust @polar-sh/cli` (pnpm and bun block install scripts
+unless told otherwise). The layout follows opencode's: one
+`@polar-sh/cli-<platform>-<arch>` package per target that ships only
+`bin/polar`, restricted with `os`/`cpu` so package managers download a single
+one, and a main `@polar-sh/cli` package that lists them as
+`optionalDependencies`. Its `bin` points at `bin/polar.exe`, a placeholder that
+`postinstall.mjs` replaces with a hard link (or copy) of the platform binary, so
+after install the `polar` command runs the Bun executable directly with no Node
+launcher in between. If installation scripts are disabled, the placeholder
+prints an error explaining that and points at `install.sh`.
+
+`scripts/npm-package.ts` turns a compiled `polar` binary into a platform package
+under `dist/npm/`, run by each build matrix job after signing and uploaded as an
+`npm-<target>` artifact. `scripts/npm-publish.ts` collects those directories,
+generates the main package from `scripts/npm-manifest.ts` and
+`scripts/npm-postinstall.mjs`, and publishes platform packages before the main
+one. It checks `npm view` first, so rerunning a workflow only publishes what is
+missing. The `npm` job runs it with `--dry-run` for verification builds.
+
+`polar update` follows opencode's updater. `src/services/updater.ts` resolves the
+running executable through its symlink and reads the `package.json` two levels
+up: if it names `@polar-sh/cli` and one of its `bin` entries is the executable,
+the CLI was installed from npm. It then asks `npm`, `pnpm`, `bun` and `yarn`
+concurrently which one lists the package globally and reruns that package
+manager (`npm install --global @polar-sh/cli@<version>`, `pnpm add --global
+--allow-build=@polar-sh/cli ...`, `bun install --global --trust ...`, `yarn
+global add ...`) against the latest version on the npm registry, so postinstall
+runs again and the binary is swapped consistently. Anything else is treated as
+the standalone binary and updated from GitHub Releases as before. `--method`
+overrides detection. On Windows a second hard link to the running executable is
+kept alive during the upgrade so the package manager can replace it.
+
+The job authenticates with npm trusted publishing (`id-token: write`), like the
+other packages. npm only lets you configure a trusted publisher on an existing
+package, so `@polar-sh/cli` and each platform package were bootstrapped with an
+empty `0.0.1` release published by hand, then `release_cli.yml` was added as
+their trusted publisher on npmjs.com. Deprecate the `0.0.1` versions once the
+first real release is out so `npm install` never resolves to them.
 
 The workflow skips metadata-only changes and already-published versions. It does
 not publish the imported `1.3.9` version just because the CLI moved repositories.
@@ -173,7 +219,7 @@ After the first monorepo release is published:
 
 1. Disable the old repository's tag-triggered release workflow so it cannot build
    the old source over the bridge release.
-2. Download the four assets from `polar-cli@<version>` in `polarsource/polar`.
+2. Download the five assets from `polar-cli@<version>` in `polarsource/polar`.
 3. Upload those **same signed assets and checksums** to a draft `v<version>`
    release in `polarsource/cli`. Record the monorepo release URL in its notes;
    the monorepo commit SHA is not a commit in the old repository.

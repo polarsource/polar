@@ -1,5 +1,5 @@
 {
-  "name": "polar-cli",
+  "name": "@polar-sh/cli",
   "private": true,
   "version": "1.3.9",
   "description": "",
@@ -18,11 +18,14 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --type-aware --deny-warnings .",
-    "build:binary": "bun build ./src/cli.ts --compile --outfile polar",
-    "build:binary:darwin-arm64": "bun build ./src/cli.ts --compile --target=bun-darwin-arm64 --outfile polar",
-    "build:binary:darwin-x64": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile polar",
-    "build:binary:linux-x64": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile polar",
-    "build:binary:windows-x64": "bun build ./src/cli.ts --compile --target=bun-windows-x64 --outfile polar"
+    "build:binary": "bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --outfile polar",
+    "build:binary:darwin-arm64": "bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=bun-darwin-arm64 --outfile polar",
+    "build:binary:darwin-x64": "bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=bun-darwin-x64 --outfile polar",
+    "build:binary:linux-x64": "bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=bun-linux-x64 --outfile polar",
+    "build:binary:linux-arm64": "bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=bun-linux-arm64 --outfile polar",
+    "build:binary:windows-x64": "bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --target=bun-windows-x64 --outfile polar",
+    "npm:package": "bun scripts/npm-package.ts",
+    "npm:publish": "bun scripts/npm-publish.ts"
   },
   "files": [
     "bin",

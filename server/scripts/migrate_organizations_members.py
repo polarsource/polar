@@ -6,6 +6,7 @@ Usage:
         uv run python -m scripts.migrate_organizations_members prepare
         uv run python -m scripts.migrate_organizations_members prepare --slug my-org --no-dry-run
         uv run python -m scripts.migrate_organizations_members prepare --limit 10 --no-dry-run
+        uv run python -m scripts.migrate_organizations_members prepare --include-blocked --no-dry-run
 
     Find one-off order grants incorrectly deleted by the backfill:
         uv run python -m scripts.migrate_organizations_members restore-oneoff-grants
@@ -19,6 +20,7 @@ Usage:
         uv run python -m scripts.migrate_organizations_members audit
         uv run python -m scripts.migrate_organizations_members audit --bucket active-integration
         uv run python -m scripts.migrate_organizations_members audit --gaps-only
+        uv run python -m scripts.migrate_organizations_members audit --include-blocked
 """
 
 import asyncio
@@ -33,7 +35,7 @@ from typing import Any, cast
 import dramatiq
 import structlog
 import typer
-from sqlalchemy import Select, and_, distinct, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, distinct, func, or_, select
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import aliased, joinedload
 from sqlalchemy.sql.expression import CTE
@@ -96,6 +98,24 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
+def _legacy_filters(*, include_blocked: bool) -> list[ColumnElement[bool]]:
+    """Organizations still on the legacy model.
+
+    Blocked ones are opt-in. Deleted ones are always left out, nothing reads
+    their data again.
+    """
+    filters: list[ColumnElement[bool]] = [Organization.deleted_at.is_(None)]
+    if not include_blocked:
+        filters.append(Organization.status != OrganizationStatus.BLOCKED)
+    filters.append(
+        or_(
+            Organization.feature_settings["member_model_enabled"].is_(None),
+            ~Organization.feature_settings["member_model_enabled"].as_boolean(),
+        )
+    )
+    return filters
+
+
 @cli.command()
 @typer_async
 async def prepare(
@@ -105,6 +125,9 @@ async def prepare(
     slug: str | None = typer.Option(None, help="Prepare a single organization by slug"),
     limit: int | None = typer.Option(
         None, help="Maximum number of organizations to prepare"
+    ),
+    include_blocked: bool = typer.Option(
+        False, help="Also prepare blocked organizations"
     ),
 ) -> None:
     """Prepare orgs for the member model migration (Phase 0B).
@@ -120,14 +143,7 @@ async def prepare(
     async with sessionmaker() as session:
         statement = (
             select(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.status != OrganizationStatus.BLOCKED,
-                or_(
-                    Organization.feature_settings["member_model_enabled"].is_(None),
-                    ~Organization.feature_settings["member_model_enabled"].as_boolean(),
-                ),
-            )
+            .where(*_legacy_filters(include_blocked=include_blocked))
             .order_by(Organization.slug.asc())
         )
 
@@ -815,18 +831,12 @@ async def _load_audits(
     *,
     slug: str | None,
     chunk_size: int,
+    include_blocked: bool = False,
 ) -> list[tuple[uuid.UUID, OrganizationAudit]]:
     """Every organization still on the legacy model, with its bucket and gaps."""
     statement = (
         select(Organization.id, Organization.slug)
-        .where(
-            Organization.deleted_at.is_(None),
-            Organization.status != OrganizationStatus.BLOCKED,
-            or_(
-                Organization.feature_settings["member_model_enabled"].is_(None),
-                ~Organization.feature_settings["member_model_enabled"].as_boolean(),
-            ),
-        )
+        .where(*_legacy_filters(include_blocked=include_blocked))
         .order_by(Organization.slug.asc())
     )
     if slug is not None:
@@ -885,6 +895,9 @@ async def audit(
     command_timeout: float = typer.Option(
         120.0, help="Seconds a single query may run before the server kills it"
     ),
+    include_blocked: bool = typer.Option(
+        False, help="Also report blocked organizations"
+    ),
 ) -> None:
     """Report the organizations left on the legacy model and their Phase 1 state.
 
@@ -900,7 +913,12 @@ async def audit(
     sessionmaker = create_async_sessionmaker(engine)
 
     async with sessionmaker() as session:
-        audits = await _load_audits(session, slug=slug, chunk_size=chunk_size)
+        audits = await _load_audits(
+            session,
+            slug=slug,
+            chunk_size=chunk_size,
+            include_blocked=include_blocked,
+        )
 
     if not audits:
         typer.echo("No organizations left on the legacy model.")

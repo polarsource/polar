@@ -8,6 +8,7 @@ from sqlalchemy import (
     Select,
     and_,
     delete,
+    distinct,
     exists,
     func,
     or_,
@@ -20,6 +21,7 @@ from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
 from polar.enums import TaxBehavior
 from polar.kit.db.locking import pg_advisory_xact_lock
+from polar.kit.pagination import count_subquery
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -233,6 +235,48 @@ class MerchantMigrationRecordRepository(
                 yield source_id
         finally:
             await results.close()
+
+    async def stream_customer_source_ids_to_copy(
+        self, migration_id: UUID
+    ) -> AsyncGenerator[str]:
+        """Stripe customers whose cards Stripe Copy still has to move.
+
+        The customers this migration imported, plus the ones behind pending
+        subscriptions it took over from an earlier migration of the account,
+        less those whose every pending switchable subscription here already has
+        its card on Polar. Copying those again would only duplicate the card.
+        """
+        covered = await self.payment_method_coverage(migration_id, exact=True)
+        customer_source_id = MerchantMigrationRecord.canonical.op("->>")(
+            "customer_source_id"
+        )
+        results = await self.session.stream(
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending
+            )
+            .with_only_columns(MerchantMigrationRecord.id, customer_source_id),
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
+        to_copy: dict[str, None] = {}
+        has_card: set[str] = set()
+        try:
+            async for record_id, source_id in results:
+                if record_id in covered:
+                    has_card.add(source_id)
+                else:
+                    to_copy[source_id] = None
+        finally:
+            await results.close()
+        fully_covered = has_card - to_copy.keys()
+
+        async for source_id in self.stream_imported_customer_source_ids(migration_id):
+            if source_id in fully_covered:
+                continue
+            to_copy.pop(source_id, None)
+            yield source_id
+        for source_id in to_copy:
+            yield source_id
 
     async def count_by_type_and_status(
         self, migration_ids: Sequence[UUID]
@@ -686,6 +730,32 @@ class MerchantMigrationRecordRepository(
         self, migration_id: UUID, *, exact: bool = False
     ) -> set[UUID]:
         """Switchable subscription record ids whose Polar customer has a card."""
+        result = await self.session.execute(
+            self._payment_method_coverage_statement(migration_id, exact=exact)
+        )
+        return {row[0] for row in result.all()}
+
+    async def every_switchable_subscription_has_a_card(
+        self, migration_id: UUID, *, exact: bool = False
+    ) -> bool:
+        """False when there is nothing to switch."""
+        switchable = count_subquery(
+            self._switchable_subscriptions_statement(migration_id)
+        )
+        covered = self._payment_method_coverage_statement(
+            migration_id, exact=exact
+        ).subquery()
+        switchable_count = await self.session.scalar(
+            select(func.count()).select_from(switchable)
+        )
+        covered_count = await self.session.scalar(
+            select(func.count(distinct(covered.c.id))).select_from(covered)
+        )
+        return bool(switchable_count) and covered_count == switchable_count
+
+    def _payment_method_coverage_statement(
+        self, migration_id: UUID, *, exact: bool
+    ) -> Select[tuple[UUID]]:
         CustomerRecord = aliased(MerchantMigrationRecord)
         payment_method_filters = [
             PaymentMethod.customer_id == Customer.id,
@@ -733,8 +803,7 @@ class MerchantMigrationRecordRepository(
             .with_only_columns(MerchantMigrationRecord.id)
             .order_by(None)
         )
-        result = await self.session.execute(statement)
-        return {row[0] for row in result.all()}
+        return statement
 
     async def reset_cutover(
         self,

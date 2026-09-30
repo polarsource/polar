@@ -366,6 +366,31 @@ def build(method: PanTransferMethod) -> list[PanTransferStep]:
     return advance(method, steps)
 
 
+def skip_to(
+    method: PanTransferMethod,
+    steps: list[PanTransferStep],
+    key: str,
+    *,
+    note: str,
+) -> list[PanTransferStep]:
+    """Settle every step before `key` as done by Polar and make `key` current.
+
+    For cards that are already on Polar: there is nothing to move, so no one
+    should be asked to start, authorize or wait on a transfer.
+    """
+    _get(steps, key)
+    for step in steps:
+        if step.key == key:
+            break
+        if step.status == PanStepStatus.completed:
+            continue
+        if step.started_at is None:
+            step.started_at = utc_now()
+        step.note = note
+        _settle(step, PanStepActor.system)
+    return advance(method, steps)
+
+
 def current(steps: Sequence[PanTransferStep]) -> PanTransferStep | None:
     """The one step that can be acted on, or None once the checklist is done."""
     for step in steps:

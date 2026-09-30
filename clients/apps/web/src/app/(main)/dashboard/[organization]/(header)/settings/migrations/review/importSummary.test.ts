@@ -5,6 +5,7 @@ import {
   importedTotal,
   nothingImported,
   plural,
+  preparedEarlier,
 } from './importSummary'
 
 function counts(overrides: Partial<ImportedCounts> = {}): ImportedCounts {
@@ -91,6 +92,34 @@ describe('nothingImported', () => {
     ).toBe(false)
     expect(
       nothingImported({ imported: counts(), ...settled, isError: true }),
+    ).toBe(false)
+  })
+})
+
+describe('preparedEarlier', () => {
+  const settled = {
+    readyToSwitch: 28,
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+  }
+
+  it('is true when subscriptions are ready but nothing was imported here', () => {
+    expect(preparedEarlier({ imported: counts(), ...settled })).toBe(true)
+  })
+
+  it('is false once this migration imported something', () => {
+    expect(
+      preparedEarlier({ imported: counts({ customers: 2 }), ...settled }),
+    ).toBe(false)
+  })
+
+  it('is false with nothing ready or while a read is unsettled', () => {
+    expect(
+      preparedEarlier({ imported: counts(), ...settled, readyToSwitch: 0 }),
+    ).toBe(false)
+    expect(
+      preparedEarlier({ imported: counts(), ...settled, isFetching: true }),
     ).toBe(false)
   })
 })

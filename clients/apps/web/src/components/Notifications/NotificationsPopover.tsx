@@ -1,391 +1,108 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
-import { useOutsideClick } from '@/utils/useOutsideClick'
-import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
-import GppMaybeOutlined from '@mui/icons-material/GppMaybeOutlined'
-import HourglassEmptyOutlined from '@mui/icons-material/HourglassEmptyOutlined'
-import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
-import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
-import { Button } from '@polar-sh/orbit'
-import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import Link from 'next/link'
-import { useMemo, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import Icon from '../Icons/Icon'
-
-type NotificationSchema = schemas['NotificationsList']['notifications'][number]
+import { useState } from 'react'
+import { NotificationRow } from './NotificationRow'
 
 export const NotificationsPopover = () => {
-  const [show, setShow] = useState(false)
-
-  const notifs = useNotifications()
+  const { data } = useNotifications()
   const markRead = useNotificationsMarkRead()
+  const [open, setOpen] = useState(false)
 
-  const markLatest = () => {
-    if (!notifs || !notifs.data || notifs.data.notifications.length === 0) {
-      return
-    }
-    const first = notifs.data.notifications[0]
-    markRead.mutate({ notification_id: first.id })
-  }
+  const notifications = data?.notifications ?? []
+  const lastReadIndex = notifications.findIndex(
+    (n) => n.id === data?.last_read_notification_id,
+  )
+  const unreadCount =
+    lastReadIndex === -1 ? notifications.length : lastReadIndex
+  const hasUnread = unreadCount > 0
 
-  // Using onMouseDown to use the same event as "useOutsideClick"
-  // That way useOutsideClick can cancel the event before clickBell triggers
-  const clickBell = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-
-    if (!show && notifs.data) {
-      setShow(true)
-      markLatest()
-    }
-
-    if (show) {
-      setShow(false)
+  // Mark as read on close, so what was new stays marked while it's open.
+  const onOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (!next && hasUnread) {
+      markRead.mutate({ notification_id: notifications[0].id })
     }
   }
-
-  const [inNestedModal, setIsInNestedModal] = useState(false)
-
-  const ref = useRef(null)
-
-  useOutsideClick([ref], () => {
-    if (inNestedModal) {
-      return
-    }
-    setShow(false)
-  })
-
-  const showBadge = useMemo(() => {
-    const haveNotifications =
-      notifs.data && notifs.data.notifications.length > 0
-    const noReadNotifications =
-      haveNotifications && !notifs.data.last_read_notification_id
-    const lastNotificationIsUnread =
-      haveNotifications &&
-      notifs.data.last_read_notification_id !== notifs.data.notifications[0].id
-
-    return !!(
-      haveNotifications &&
-      (noReadNotifications || lastNotificationIsUnread)
-    )
-  }, [notifs.data])
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <Button
         className="relative size-8! cursor-pointer p-0"
         variant="ghost"
-        onMouseDown={clickBell}
         asChild
       >
-        <PopoverTrigger className="flex size-full cursor-pointer items-center justify-center">
+        <PopoverTrigger
+          aria-label="Notifications"
+          className="flex size-full cursor-pointer items-center justify-center"
+        >
           <BoltOutlined fontSize="small" aria-hidden="true" />
-          {showBadge && (
-            <div className="dark:border-polar-700 bg-blue absolute top-1.5 right-1.5 h-1 w-1 rounded-full" />
+          {hasUnread && !open && (
+            <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-blue-500" />
           )}
         </PopoverTrigger>
       </Button>
-      <PopoverContent sideOffset={12} align="start">
-        <List
-          notifications={notifs.data?.notifications ?? []}
-          setIsInNestedModal={setIsInNestedModal}
-        />
+      <PopoverContent
+        sideOffset={8}
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="w-[400px] overflow-hidden rounded-2xl p-0"
+      >
+        <Box flexDirection="column" maxHeight={560}>
+          <Box
+            alignItems="center"
+            justifyContent="between"
+            paddingHorizontal="l"
+            paddingTop="l"
+            paddingBottom="xs"
+          >
+            <Text variant="title" as="h2">
+              Notification Inbox
+            </Text>
+            {notifications.length > 0 && (
+              <Box alignItems="center" columnGap="s">
+                <span
+                  className={`size-1.5 rounded-full ${hasUnread ? 'bg-blue-500' : 'dark:bg-polar-600 bg-gray-300'}`}
+                />
+                <Text variant="caption" color="muted" tabularNums>
+                  {unreadCount >= 100 ? '99+' : unreadCount} new
+                </Text>
+              </Box>
+            )}
+          </Box>
+          <Box
+            flexDirection="column"
+            minHeight={0}
+            overflowY="auto"
+            paddingHorizontal="s"
+            paddingVertical="s"
+          >
+            {notifications.length === 0 ? (
+              <Box justifyContent="center" paddingVertical="3xl">
+                <Text color="muted">You don&apos;t have any notifications</Text>
+              </Box>
+            ) : (
+              <Box as="ul" flexDirection="column">
+                {notifications.map((notification, index) => (
+                  <NotificationRow
+                    key={notification.id}
+                    notification={notification}
+                    unread={index < unreadCount}
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+        </Box>
       </PopoverContent>
     </Popover>
   )
 }
 
 export default Popover
-
-const List = ({
-  notifications,
-  setIsInNestedModal,
-}: {
-  notifications: NotificationSchema[]
-  setIsInNestedModal: (_: boolean) => void
-}) => {
-  return (
-    <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll">
-      {notifications.length === 0 && (
-        <div className="dark:text-polar-400 flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60">
-          You don&apos;t have any notifications
-        </div>
-      )}
-      {notifications.map((n) => {
-        return (
-          <Notification
-            n={n}
-            key={n.id}
-            setIsInNestedModal={setIsInNestedModal}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-const Item = ({
-  children,
-  n,
-  iconClasses,
-}: {
-  iconClasses: string
-  n: NotificationSchema
-  children: { icon: React.ReactElement; text: React.ReactElement }
-}) => {
-  return (
-    <div className="flex space-x-2.5 text-sm transition-colors duration-100">
-      <Icon classes={twMerge('mt-1 p-1', iconClasses)} icon={children.icon} />
-      <div>
-        <div>{children.text}</div>
-        <div className="dark:text-polar-300 text-gray-500">
-          <PolarTimeAgo date={new Date(n.created_at)} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const MaintainerNewPaidSubscription = ({
-  n,
-}: {
-  n: schemas['MaintainerNewPaidSubscriptionNotification']
-}) => {
-  const { payload } = n
-  const href =
-    payload.tier_organization_slug && payload.subscription_id
-      ? `/dashboard/${payload.tier_organization_slug}/sales/subscriptions/${payload.subscription_id}`
-      : payload.tier_organization_slug
-        ? `/dashboard/${payload.tier_organization_slug}/sales/subscriptions`
-        : null
-  return (
-    <Item n={n} iconClasses="bg-green-200 text-green-500">
-      {{
-        text: (
-          <>
-            {payload.subscriber_name} is now subscribing to{' '}
-            {href ? (
-              <InternalLink href={href}>
-                <span>{payload.tier_name}</span>
-              </InternalLink>
-            ) : (
-              <span className="font-bold">{payload.tier_name}</span>
-            )}{' '}
-            {payload.tier_price_amount !== null && (
-              <>
-                (
-                {payload.formatted_price_with_interval ??
-                  `${formatCurrency('compact')(payload.tier_price_amount, payload.currency || 'usd')}/${payload.tier_price_recurring_interval}`}
-                )
-              </>
-            )}
-          </>
-        ),
-        icon: <ShoppingBagOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const MaintainerNewTrial = ({
-  n,
-}: {
-  n: schemas['MaintainerNewTrialNotification']
-}) => {
-  const { payload } = n
-  const href =
-    payload.organization_slug && payload.subscription_id
-      ? `/dashboard/${payload.organization_slug}/sales/subscriptions/${payload.subscription_id}`
-      : null
-  return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-500">
-      {{
-        text: (
-          <>
-            {payload.subscriber_name} started a{' '}
-            {href ? (
-              <InternalLink href={href}>
-                <span>{payload.product_name}</span>
-              </InternalLink>
-            ) : (
-              <span className="font-bold">{payload.product_name}</span>
-            )}{' '}
-            trial
-          </>
-        ),
-        icon: <HourglassEmptyOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const MaintainerNewProductSale = ({
-  n,
-}: {
-  n: schemas['MaintainerNewProductSaleNotification']
-}) => {
-  const { payload } = n
-  const href =
-    payload.organization_slug && payload.order_id
-      ? `/dashboard/${payload.organization_slug}/sales/${payload.order_id}`
-      : payload.organization_slug
-        ? `/dashboard/${payload.organization_slug}/sales`
-        : null
-  return (
-    <Item n={n} iconClasses="bg-green-200 text-green-500">
-      {{
-        text: (
-          <>
-            {payload.customer_name} just purchased{' '}
-            {href ? (
-              <InternalLink href={href}>
-                <span>{payload.product_name}</span>
-              </InternalLink>
-            ) : (
-              <span className="font-bold">{payload.product_name}</span>
-            )}{' '}
-            (
-            {formatCurrency('compact')(
-              payload.product_price_amount,
-              payload.currency || 'usd',
-            )}
-            )
-          </>
-        ),
-        icon: <ShoppingBagOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const MaintainerSubscriptionRenewal = ({
-  n,
-}: {
-  n: schemas['MaintainerSubscriptionRenewalNotification']
-}) => {
-  const { payload } = n
-  const href =
-    payload.organization_slug && payload.subscription_id
-      ? `/dashboard/${payload.organization_slug}/sales/subscriptions/${payload.subscription_id}`
-      : payload.organization_slug
-        ? `/dashboard/${payload.organization_slug}/sales/subscriptions`
-        : null
-  return (
-    <Item n={n} iconClasses="bg-green-200 text-green-500">
-      {{
-        text: (
-          <>
-            {payload.customer_name} renewed{' '}
-            {href ? (
-              <InternalLink href={href}>
-                <span>{payload.product_name}</span>
-              </InternalLink>
-            ) : (
-              <span className="font-bold">{payload.product_name}</span>
-            )}{' '}
-            (
-            {formatCurrency('compact')(
-              payload.product_price_amount,
-              payload.currency || 'usd',
-            )}
-            )
-          </>
-        ),
-        icon: <AutorenewOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const MaintainerAccountCreditsGranted = ({
-  n,
-}: {
-  n: schemas['MaintainerAccountCreditsGrantedNotification']
-}) => {
-  const { payload } = n
-  return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-500">
-      {{
-        text: (
-          <>
-            {payload.organization_name} has received{' '}
-            <span className="font-bold">
-              {formatCurrency('compact')(
-                payload.amount,
-                payload.currency || 'usd',
-              )}
-            </span>{' '}
-            in fee credits!
-          </>
-        ),
-        icon: <BoltOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const MaintainerFileFlaggedMalicious = ({
-  n,
-}: {
-  n: schemas['MaintainerFileFlaggedMaliciousNotification']
-}) => {
-  const { payload } = n
-  return (
-    <Item n={n} iconClasses="bg-red-200 text-red-500">
-      {{
-        text: (
-          <>
-            <span className="font-bold">{payload.file_name}</span> was flagged
-            as malicious by our automated malware scanning
-          </>
-        ),
-        icon: <GppMaybeOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const Notification = ({
-  n,
-}: {
-  n: NotificationSchema
-  setIsInNestedModal: (_: boolean) => void
-}) => {
-  switch (n.type) {
-    case 'MaintainerNewPaidSubscriptionNotification':
-      return <MaintainerNewPaidSubscription n={n} />
-
-    case 'MaintainerNewTrialNotification':
-      return <MaintainerNewTrial n={n} />
-
-    case 'MaintainerNewProductSaleNotification':
-      return <MaintainerNewProductSale n={n} />
-
-    case 'MaintainerSubscriptionRenewalNotification':
-      return <MaintainerSubscriptionRenewal n={n} />
-
-    case 'MaintainerAccountCreditsGrantedNotification':
-      return <MaintainerAccountCreditsGranted n={n} />
-
-    case 'MaintainerFileFlaggedMaliciousNotification':
-      return <MaintainerFileFlaggedMalicious n={n} />
-  }
-}
-
-const InternalLink = (props: {
-  href: string
-  children: React.ReactElement
-}) => {
-  return (
-    <Link className="font-bold hover:underline" href={props.href}>
-      {props.children}
-    </Link>
-  )
-}

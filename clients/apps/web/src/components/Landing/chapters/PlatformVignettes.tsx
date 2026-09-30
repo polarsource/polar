@@ -6,12 +6,19 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Check, LoaderCircle } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { Shimmer } from '../Shimmer'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState, useSyncExternalStore } from 'react'
+
+const subscribeNoop = () => () => {}
 
 const useSteps = (durations: number[], restingStep: number) => {
   const { ref, inView } = useInView()
   const [step, setStep] = useState(0)
   const reducedMotion = useReducedMotion()
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  )
 
   useEffect(() => {
     if (!inView || reducedMotion) return
@@ -22,7 +29,7 @@ const useSteps = (durations: number[], restingStep: number) => {
     return () => clearTimeout(timer)
   }, [inView, reducedMotion, step, durations])
 
-  return { ref, step: reducedMotion ? restingStep : step }
+  return { ref, step: mounted && reducedMotion ? restingStep : step }
 }
 
 const Card = ({

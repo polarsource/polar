@@ -303,10 +303,12 @@ async def pan_transfer(
         },
         409: {
             "description": "The catalog isn't imported yet, the transfer already "
-            "started, or card transfers aren't configured.",
+            "started, card transfers aren't configured, or another operation "
+            "is still running.",
             "model": PanTransferNotReady.schema()
             | PanTransferAlreadyStarted.schema()
-            | PanTransferUnavailable.schema(),
+            | PanTransferUnavailable.schema()
+            | MigrationOperationInProgress.schema(),
         },
     },
 )

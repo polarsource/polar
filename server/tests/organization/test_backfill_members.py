@@ -33,6 +33,7 @@ from tests.fixtures.random_objects import (
     create_benefit_grant,
     create_customer,
     create_customer_seat,
+    create_member,
     create_order,
     create_organization,
     create_product,
@@ -3201,3 +3202,125 @@ class TestBackfillAfterPrepare:
         migrated = await session.get(CustomerSeat, seat_id)
         assert migrated is not None
         assert migrated.customer_id == billing_customer.id
+
+
+@pytest.mark.asyncio
+class TestBackfillCarriesHolderExternalId:
+    """The seat holder's external_id has to follow them onto their member.
+
+    Step D clears it off the holder customer, so without this the merchant's own
+    user id disappears from the API.
+    """
+
+    async def test_moves_holder_external_id_to_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="ext-billing@test.com",
+            stripe_customer_id="stripe_ext_billing",
+        )
+        seat_holder_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="ext-holder@test.com",
+            external_id="merchant-user-42",
+            stripe_customer_id="stripe_ext_holder",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=2
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=seat_holder_customer,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        migrated = await session.get(CustomerSeat, seat.id)
+        assert migrated is not None
+        assert migrated.member_id is not None
+        member = await session.get(Member, migrated.member_id)
+        assert member is not None
+        assert member.external_id == "merchant-user-42"
+
+    async def test_leaves_external_id_when_another_member_holds_it(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """The billing customer may already have a member on that id — taking it
+        would breach members_customer_id_external_id_active_key.
+        """
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={"member_model_enabled": True},
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="taken-billing@test.com",
+            stripe_customer_id="stripe_taken_billing",
+        )
+        squatter = await create_member(
+            save_fixture,
+            customer=billing_customer,
+            organization=organization,
+            email="someone-else@test.com",
+        )
+        squatter.external_id = "merchant-user-42"
+        await save_fixture(squatter)
+        seat_holder_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="taken-holder@test.com",
+            external_id="merchant-user-42",
+            stripe_customer_id="stripe_taken_holder",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=2
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=seat_holder_customer,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        migrated = await session.get(CustomerSeat, seat.id)
+        assert migrated is not None
+        assert migrated.member_id is not None
+        member = await session.get(Member, migrated.member_id)
+        assert member is not None
+        assert member.external_id is None

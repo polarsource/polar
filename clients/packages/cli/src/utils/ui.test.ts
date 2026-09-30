@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest'
 import { stripAnsi } from '@/utils/test-utils/cli'
 import * as ui from '@/utils/ui'
 
+const ESC = String.fromCharCode(27)
+
 describe('ui', () => {
   test('prefixes status lines with their glyphs', () => {
     expect(stripAnsi(ui.success('Done'))).toBe('  ✔ Done')
@@ -10,14 +12,20 @@ describe('ui', () => {
     expect(stripAnsi(ui.command('polar update'))).toBe('polar update')
   })
 
+  test('announces an available update with the command to install it', () => {
+    const notice = stripAnsi(ui.updateNotice('v1.0.0', 'v2.0.0'))
+    expect(notice).toContain('Update available v1.0.0 → v2.0.0')
+    expect(notice).toContain('Run polar update to install it')
+  })
+
   test('strips control characters from terminal titles', () => {
     expect(ui.pushTitle('Acme\x07\x1b]0;evil\n')).toBe(
-      '\x1b[22;0t\x1b]0;Acme]0;evil\x07',
+      `${ESC}[22;0t${ESC}]0;Acme]0;evil\x07`,
     )
   })
 
   test('keeps line breaks but drops control characters from response bodies', () => {
-    expect(ui.printable('\x1b[31mnope\x1b[0m\r\n\tline')).toBe(
+    expect(ui.printable(`${ESC}[31mnope${ESC}[0m\r\n\tline`)).toBe(
       '[31mnope[0m\n\tline',
     )
   })
@@ -26,7 +34,7 @@ describe('ui', () => {
     expect(ui.printable('ok\u202Edeliaf\u2028\u2029\u200Bdone ✔ 🎉')).toBe(
       'okdeliafdone ✔ 🎉',
     )
-    expect(ui.pushTitle('Acme\u202E')).toBe('\x1b[22;0t\x1b]0;Acme\x07')
+    expect(ui.pushTitle('Acme\u202E')).toBe(`${ESC}[22;0t${ESC}]0;Acme\x07`)
   })
 
   test('renders failures with an optional hint', () => {

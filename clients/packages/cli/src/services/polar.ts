@@ -36,6 +36,25 @@ const isOrganizationNotAccessible = (body: unknown) =>
     )(body),
   )
 
+const ErrorDetail = Schema.Struct({ detail: Schema.String })
+
+const detailOf = (body: unknown) =>
+  Option.getOrUndefined(
+    Schema.decodeUnknownOption(
+      Schema.Union([ErrorDetail, Schema.fromJsonString(ErrorDetail)]),
+    )(body),
+  )?.detail
+
+const describeFailure = (statusCode: number | undefined, detail?: string) => {
+  if (statusCode === undefined) {
+    return 'Polar API request failed. Check your connection and try again.'
+  }
+  if (detail) return detail
+  return statusCode >= 500
+    ? `The Polar API returned an error (${statusCode}). It may be having issues, try again shortly.`
+    : `The Polar API rejected the request (${statusCode}).`
+}
+
 interface PolarImpl {
   getClient: (
     environment?: PolarEnvironment,
@@ -86,20 +105,23 @@ export const make = Effect.gen(function* () {
               createPolarCore(clientOptions),
             )
           },
-          catch: (error) => ({
-            statusCode:
-              typeof error === 'object' &&
-              error !== null &&
-              'statusCode' in error &&
-              typeof error.statusCode === 'number'
-                ? error.statusCode
-                : undefined,
-            organizationNotAccessible:
-              typeof error === 'object' &&
-              error !== null &&
-              'error' in error &&
-              isOrganizationNotAccessible(error.error),
-          }),
+          catch: (error) => {
+            const body =
+              typeof error === 'object' && error !== null && 'error' in error
+                ? error.error
+                : undefined
+            return {
+              statusCode:
+                typeof error === 'object' &&
+                error !== null &&
+                'statusCode' in error &&
+                typeof error.statusCode === 'number'
+                  ? error.statusCode
+                  : undefined,
+              organizationNotAccessible: isOrganizationNotAccessible(body),
+              detail: detailOf(body),
+            }
+          },
         })
 
       return yield* request(credential?.accessToken).pipe(
@@ -133,14 +155,12 @@ export const make = Effect.gen(function* () {
             case 404:
               return new AuthError({
                 statusCode: error.statusCode,
-                message:
-                  'Organization is missing or inaccessible. Check --org or run polar auth org with the selected environment.',
+                message: `${error.detail ?? 'Not found'} in ${environment}. Check the ID, and --org or ${orgCommand} if it belongs to another organization.`,
               })
             default:
               return new AuthError({
                 statusCode: error.statusCode,
-                message:
-                  'Polar API request failed. Check your connection and try again.',
+                message: describeFailure(error.statusCode, error.detail),
               })
           }
         }),

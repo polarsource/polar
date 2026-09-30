@@ -7,9 +7,9 @@ import { listen } from '@/commands/listen'
 import { trigger } from '@/commands/trigger'
 import { auth } from '@/commands/auth'
 import { home } from '@/commands/home'
-import { removeRetiredBinary, update } from '@/commands/update'
+import { update } from '@/commands/update'
 import { describeError } from '@/utils/errors'
-import * as ApiRuntime from '@/services/api-runtime'
+import * as ApiRuntime from '@/commands/api-runtime'
 import * as Auth from '@/services/auth'
 import * as Credentials from '@/services/credentials'
 import * as Deliveries from '@/services/deliveries'
@@ -19,10 +19,8 @@ import * as OAuth from '@/services/oauth'
 import * as Polar from '@/services/polar'
 import * as Telemetry from '@/services/telemetry'
 import * as Trigger from '@/services/trigger'
-import {
-  checkForUpdateInBackground,
-  showUpdateNotice,
-} from '@/services/update-check'
+import { removeRetiredBinary } from '@/services/update'
+import { availableUpdate, checkForUpdate } from '@/services/update-check'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
@@ -108,8 +106,11 @@ if (process.argv[2] === Telemetry.SENDER_COMMAND) {
   )
 } else {
   removeRetiredBinary()
-  showUpdateNotice()
-  checkForUpdateInBackground()
+  const latestVersion = availableUpdate()
+  if (latestVersion) {
+    process.stderr.write(ui.updateNotice(VERSION, latestVersion))
+  }
+  Effect.runFork(checkForUpdate().pipe(Effect.provide(FetchHttpClient.layer)))
   instrumented.pipe(
     Effect.provide(services),
     BunRuntime.runMain({ disableErrorReporting: true }),

@@ -2,13 +2,11 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { Effect, type Layer } from 'effect'
-import { FetchHttpClient, type HttpClient } from 'effect/unstable/http'
-import * as ui from '@/utils/ui'
+import { Effect } from 'effect'
 import { VERSION } from '@/version'
 import { getLatestRelease, isNewerVersion } from '@/services/github-releases'
 
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
+const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 interface UpdateCheckState {
   lastChecked: string
@@ -17,78 +15,46 @@ interface UpdateCheckState {
 
 export interface UpdateCheckOptions {
   home?: string
-  http?: Layer.Layer<HttpClient.HttpClient>
 }
 
 const stateFile = (home: string) => join(home, '.polar', 'update-check.json')
 
-export function showUpdateNotice({
-  home = homedir(),
-}: UpdateCheckOptions = {}): void {
+const readState = (file: string): UpdateCheckState | undefined => {
   try {
-    const file = stateFile(home)
-    if (!existsSync(file)) return
-
-    const raw = readFileSync(file, 'utf-8')
-    const state: UpdateCheckState = JSON.parse(raw)
-
-    if (!state.latestVersion || !isNewerVersion(state.latestVersion, VERSION))
-      return
-
-    process.stderr.write(
-      [
-        ui.blank,
-        ui.warning(
-          `Update available ${ui.dim(VERSION)} ${ui.dim('→')} ${ui.bold(ui.cyan(state.latestVersion))}`,
-        ),
-        ui.step(`Run ${ui.command('polar update')} to install it`),
-        ui.blank,
-        ui.blank,
-      ].join('\n'),
-    )
+    return existsSync(file)
+      ? JSON.parse(readFileSync(file, 'utf-8'))
+      : undefined
   } catch {
-    // Silently ignore any errors
+    return undefined
   }
 }
 
-export function checkForUpdateInBackground({
-  home = homedir(),
-  http = FetchHttpClient.layer,
-}: UpdateCheckOptions = {}): void {
-  try {
-    const file = stateFile(home)
-    let shouldCheck = true
+const checkedRecently = (state: UpdateCheckState | undefined) =>
+  state !== undefined &&
+  Date.now() - new Date(state.lastChecked).getTime() < CHECK_INTERVAL_MS
 
-    if (existsSync(file)) {
-      try {
-        const raw = readFileSync(file, 'utf-8')
-        const state: UpdateCheckState = JSON.parse(raw)
-        const lastChecked = new Date(state.lastChecked).getTime()
-        if (Date.now() - lastChecked < CHECK_INTERVAL_MS) {
-          shouldCheck = false
-        }
-      } catch {
-        // Corrupt file — re-check
-      }
+export const availableUpdate = ({ home = homedir() }: UpdateCheckOptions = {}):
+  | string
+  | undefined => {
+  try {
+    const latest = readState(stateFile(home))?.latestVersion
+    return latest && isNewerVersion(latest, VERSION) ? latest : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export const checkForUpdate = ({ home = homedir() }: UpdateCheckOptions = {}) =>
+  Effect.gen(function* () {
+    const file = stateFile(home)
+    if (checkedRecently(readState(file))) return
+    const release = yield* getLatestRelease
+    const state: UpdateCheckState = {
+      lastChecked: new Date().toISOString(),
+      latestVersion: release.version,
     }
-
-    if (!shouldCheck) return
-
-    Effect.runPromise(getLatestRelease.pipe(Effect.provide(http)))
-      .then((release) => {
-        mkdirSync(dirname(file), { recursive: true })
-
-        const state: UpdateCheckState = {
-          lastChecked: new Date().toISOString(),
-          latestVersion: release.version,
-        }
-
-        return writeFile(file, JSON.stringify(state, null, 2))
-      })
-      .catch(() => {
-        // Silently ignore all errors
-      })
-  } catch {
-    // Silently ignore any errors
-  }
-}
+    yield* Effect.tryPromise(() => {
+      mkdirSync(dirname(file), { recursive: true })
+      return writeFile(file, JSON.stringify(state, null, 2))
+    })
+  }).pipe(Effect.ignore)

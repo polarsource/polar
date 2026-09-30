@@ -84,7 +84,7 @@ test.each([true, false])(
       const result = await Effect.runPromise(
         Effect.gen(function* () {
           const oauth = yield* OAuth
-          return yield* oauth.login('sandbox')
+          return yield* oauth.login('sandbox', () => Effect.void)
         }).pipe(
           Effect.provide(layer.pipe(Layer.provide(api.layer))),
           Effect.provideService(Console.Console, captureConsole().console),

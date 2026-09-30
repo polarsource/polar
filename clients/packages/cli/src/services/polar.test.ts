@@ -80,7 +80,7 @@ test.each([
     credential: keyringCredential(),
     status: 404,
     attempts: 1,
-    message: 'Organization is missing or inaccessible',
+    message: 'Not found in sandbox. Check the ID',
   },
   {
     credential: keyringCredential(),
@@ -157,6 +157,50 @@ test.each([
     ).toBe(header)
   },
 )
+
+test.each([
+  {
+    name: 'a parsed error body',
+    rejection: {
+      statusCode: 409,
+      error: { error: 'ProductNotDeletable', detail: 'Archive it instead.' },
+    },
+    message: 'Archive it instead.',
+  },
+  {
+    name: 'a raw error body',
+    rejection: {
+      statusCode: 409,
+      error: '{"error":"ProductNotDeletable","detail":"Archive it instead."}',
+    },
+    message: 'Archive it instead.',
+  },
+  {
+    name: 'a body without detail',
+    rejection: { statusCode: 422, error: 'Unprocessable Entity' },
+    message: 'The Polar API rejected the request (422).',
+  },
+  {
+    name: 'a server error',
+    rejection: { statusCode: 503 },
+    message:
+      'The Polar API returned an error (503). It may be having issues, try again shortly.',
+  },
+  {
+    name: 'a network failure',
+    rejection: new TypeError('fetch failed'),
+    message: 'Polar API request failed. Check your connection and try again.',
+  },
+])('surfaces the API message for $name', async ({ rejection, message }) => {
+  const polar = await polarWith(() => Effect.succeed(overrideCredential()))
+  const request = vi
+    .fn<(client: PolarSDK) => Promise<string>>()
+    .mockRejectedValue(rejection)
+
+  await expect(Effect.runPromise(polar.use(request))).rejects.toMatchObject({
+    message,
+  })
+})
 
 const notAccessible = {
   error: 'RequestedOrganizationNotAccessible',

@@ -45,6 +45,20 @@ const notLoggedIn = Effect.gen(function* () {
 
 const environmentFlags = { sandbox, production }
 
+const announceAuthorization =
+  (environment: PolarEnvironment) => (authorization: URL) =>
+    Console.log(
+      [
+        ui.blank,
+        ui.step(`Opening your browser to sign in to Polar ${environment}...`),
+        ui.step('If it does not open, visit:'),
+        `    ${ui.cyan(authorization.toString())}`,
+        ui.blank,
+        ui.step('Waiting for you to authorize the CLI...'),
+        ui.blank,
+      ].join('\n'),
+    )
+
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio
   return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
@@ -141,7 +155,11 @@ const login = Command.make(
     Effect.gen(function* () {
       const environment = yield* chooseEnvironment(flags, 'log in to')
       const auth = yield* Auth
-      const replaced = yield* auth.login(environment, newSession)
+      const replaced = yield* auth.login(
+        environment,
+        newSession,
+        announceAuthorization(environment),
+      )
       if (!replaced) {
         const other: PolarEnvironment =
           environment === 'production' ? 'sandbox' : 'production'

@@ -122,7 +122,16 @@ export const layer = Layer.effect(
               message: `No active organization. Run ${orgCommand} or supply --org <id>.`,
             })
           }
-          return yield* get(selection.id, selection.environment)
+          return yield* get(selection.id, selection.environment).pipe(
+            Effect.mapError((error) =>
+              error.statusCode === 404
+                ? new AuthError({
+                    statusCode: 404,
+                    message: `The selected organization is missing or inaccessible in ${selection.environment}. Run ${orgCommand} to pick another one.`,
+                  })
+                : error,
+            ),
+          )
         }),
     })
   }),

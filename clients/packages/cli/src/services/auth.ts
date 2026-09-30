@@ -8,7 +8,7 @@ import {
 } from '@/schemas/Auth'
 import { Credentials } from '@/services/credentials'
 import { CLIConfig } from '@/services/config'
-import { OAuth } from '@/services/oauth'
+import { type AnnounceAuthorization, OAuth } from '@/services/oauth'
 
 export interface Credential {
   accessToken: Redacted.Redacted<string>
@@ -26,6 +26,7 @@ export class Auth extends Context.Service<
     login: (
       environment: PolarEnvironment,
       newSession: boolean,
+      announce: AnnounceAuthorization,
     ) => Effect.Effect<boolean, AuthError>
     logout: (
       targets: ReadonlyArray<PolarEnvironment>,
@@ -134,14 +135,14 @@ export const make = (
         }
         return available
       }),
-      login: (environment, newSession) =>
+      login: (environment, newSession, announce) =>
         Effect.gen(function* () {
           yield* requireSavedMode
           if (!newSession && (yield* store.read(environment))) {
             yield* resolve(environment)
             return false
           }
-          const session = yield* oauth.login(environment)
+          const session = yield* oauth.login(environment, announce)
           yield* locks[environment].withPermit(
             Effect.gen(function* () {
               yield* store.write(environment, session)

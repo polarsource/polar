@@ -1,5 +1,19 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["node_modules/**", "dist/**", "bin/**"],
-  "extends": ["../oxlint-config/oxlint-base.json"]
+  "extends": ["../oxlint-config/oxlint-base.json"],
+  "plugins": ["typescript", "import", "unicorn"],
+  "jsPlugins": ["./lint/polar.js"],
+  "rules": {
+    "import/no-cycle": "error",
+    "unicorn/no-process-exit": "error",
+    "polar-cli/command-boundaries": "error",
+    "polar-cli/command-descriptions": "error",
+    "polar-cli/no-ansi-escapes": "error",
+    "polar-cli/no-effect-run-outside-entrypoint": "error",
+    "polar-cli/no-hardcoded-hosts": "error",
+    "polar-cli/no-process-env": "error",
+    "polar-cli/service-boundaries": "error",
+    "polar-cli/test-colocation": "error"
+  }
 }

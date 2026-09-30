@@ -1,99 +1,25 @@
 import { connect } from 'node:net'
-import {
-  Cause,
-  Console,
-  Data,
-  Duration,
-  Effect,
-  Exit,
-  Option,
-  Schema,
-  Stdio,
-  Stream,
-} from 'effect'
+import { Console, Effect, Option, Stdio } from 'effect'
 import { Argument, Command, Flag } from 'effect/unstable/cli'
-import { Sse } from 'effect/unstable/encoding'
-import {
-  FetchHttpClient,
-  HttpClientRequest,
-  HttpClientResponse,
-} from 'effect/unstable/http'
-import { apiUrl, authenticatedClient, withOrganization } from '@/services/api'
-import { Deliveries, type Delivery } from '@/services/deliveries'
-import { Organizations } from '@/services/organizations'
 import { org } from '@/commands/flags'
-import { loginCommand, type PolarEnvironment } from '@/schemas/Auth'
 import {
-  ListenAck,
-  ListenReconnect,
-  ListenWebhookEvent,
-} from '@/schemas/Events'
+  type ListenEvent,
+  ListenError,
+  startListening,
+} from '@/services/listen'
+import { Organizations } from '@/services/organizations'
 import * as ui from '@/utils/ui'
 import { redactUrl } from '@/utils/url'
 
-export class ListenError extends Data.TaggedError('ListenError')<{
-  message: string
-  code: number
-  cause?: unknown
-}> {}
-
 const EVENT_TYPE_WIDTH = 28
-const RESPONSE_BODY_LIMIT = 2000
-const RESPONSE_BODY_TIMEOUT = '1 second'
-const FORWARD_TIMEOUT = '10 seconds'
-
-const readBody = (response: Response) =>
-  Effect.gen(function* () {
-    let text = ''
-    yield* Effect.tryPromise(async (signal) => {
-      const reader = response.body?.getReader()
-      if (!reader) return
-      signal.addEventListener('abort', () => void reader.cancel(), {
-        once: true,
-      })
-      const decoder = new TextDecoder()
-      while (text.length <= RESPONSE_BODY_LIMIT) {
-        const { done, value } = await reader.read()
-        if (done) return
-        text += decoder.decode(value, { stream: true })
-      }
-      await reader.cancel()
-    }).pipe(Effect.timeoutOption(RESPONSE_BODY_TIMEOUT), Effect.ignore)
-    return text.length > RESPONSE_BODY_LIMIT
-      ? `${text.slice(0, RESPONSE_BODY_LIMIT)}…`
-      : text
-  })
 
 const printError = (line: string) =>
   Effect.sync(() => {
     process.stderr.write(`${line}\n`)
   })
 
-const refused = 'connection refused, is your server running?'
-
-const failureHints = new Map([
-  ['ConnectionRefused', refused],
-  ['ECONNREFUSED', refused],
-  ['ENOTFOUND', 'host not found, check the forward URL'],
-])
-
-const describeForwardFailure = (error: unknown) => {
-  if (Cause.isTimeoutError(error)) return `no response after ${FORWARD_TIMEOUT}`
-  const cause =
-    error instanceof Error && error.cause instanceof Error ? error.cause : error
-  const code =
-    typeof cause === 'object' && cause !== null && 'code' in cause
-      ? String(cause.code)
-      : ''
-  const message = cause instanceof Error ? cause.message : String(cause)
-  return (
-    failureHints.get(code) ??
-    (/ECONNREFUSED/i.test(message) ? refused : message)
-  )
-}
-
-const eventLine = (eventType: string, outcome: string, startedAt: number) =>
-  `  ${ui.timestamp()}  ${ui.cyan(eventType.padEnd(EVENT_TYPE_WIDTH))}  ${outcome}  ${ui.duration(performance.now() - startedAt)}`
+const eventLine = (eventType: string, outcome: string, durationMs: number) =>
+  `  ${ui.timestamp()}  ${ui.cyan(eventType.padEnd(EVENT_TYPE_WIDTH))}  ${outcome}  ${ui.duration(durationMs)}`
 
 const decodeFailure = (key: string | undefined) =>
   ui.failure(
@@ -117,222 +43,33 @@ const banner = (organizationName: string, secret: string, forwardUrl: string) =>
     ui.blank,
   ].join('\n')
 
-export interface StartListeningOptions {
-  listenUrl: string
-  forwardUrl: string
-  organizationId: string
-  organizationName: string
-  environment: PolarEnvironment
-  forward?: (
-    input: Parameters<typeof fetch>[0],
-    init?: RequestInit,
-  ) => Promise<Response>
-}
-
-export const startListening = ({
-  listenUrl,
-  forwardUrl,
-  organizationId,
-  organizationName,
-  environment,
-  forward = fetch,
-}: StartListeningOptions) =>
-  Effect.gen(function* () {
-    const client = yield* authenticatedClient(environment)
-    const deliveries = yield* Deliveries
-    const shownUrl = redactUrl(forwardUrl)
-    let bannerShown = false
-    let retryDelay = Duration.millis(3000)
-    let lastEventId: string | undefined
-    const connection = Effect.scoped(
-      Effect.gen(function* () {
-        let request = HttpClientRequest.get(listenUrl).pipe(
-          HttpClientRequest.setHeader('Accept', 'text/event-stream'),
-          withOrganization(organizationId),
-        )
-        if (lastEventId)
-          request = HttpClientRequest.setHeader(
-            request,
-            'Last-Event-ID',
-            lastEventId,
-          )
-        const response = yield* client.execute(request)
-        if (response.status !== 200) {
-          return yield* new ListenError({
-            code: response.status,
-            message: `Event stream error (${response.status})`,
-          })
-        }
-        if (
-          !response.headers['content-type']
-            ?.toLowerCase()
-            .startsWith('text/event-stream')
-        ) {
-          return yield* new ListenError({
-            code: 200,
-            message: 'Expected a text/event-stream response.',
-          })
-        }
-        let reconnect = false
-        yield* HttpClientResponse.stream(Effect.succeed(response)).pipe(
-          Stream.decodeText(),
-          Stream.pipeThroughChannel(Sse.decode()),
-          Stream.mapEffect((event) =>
-            Effect.gen(function* () {
-              if (event.id !== undefined) lastEventId = event.id
-              if (event.event !== 'message') return
-              const decoded = Schema.decodeUnknownExit(
-                Schema.fromJsonString(Schema.Unknown),
-              )(event.data)
-              if (Exit.isFailure(decoded)) {
-                yield* printError(decodeFailure(undefined))
-                return
-              }
-              const json = decoded.value
-              const ack = Schema.decodeUnknownExit(ListenAck)(json)
-              if (Exit.isSuccess(ack)) {
-                if (bannerShown) return
-                bannerShown = true
-                yield* Console.log(
-                  banner(organizationName, ack.value.secret, shownUrl),
-                )
-                return
-              }
-              if (
-                Exit.isSuccess(Schema.decodeUnknownExit(ListenReconnect)(json))
-              ) {
-                reconnect = true
-                return
-              }
-              const webhook = Schema.decodeUnknownExit(ListenWebhookEvent)(json)
-              if (Exit.isFailure(webhook)) {
-                const key =
-                  typeof json === 'object' && json !== null && 'key' in json
-                    ? String(json.key)
-                    : undefined
-                yield* printError(decodeFailure(key))
-                return
-              }
-              const rawPayload = webhook.value.payload.payload
-              const payload = Schema.decodeUnknownExit(
-                Schema.fromJsonString(
-                  Schema.Struct({ type: Schema.optional(Schema.String) }),
-                ),
-              )(rawPayload)
-              const eventType = Exit.isSuccess(payload)
-                ? (payload.value.type ?? 'event')
-                : 'event'
-              const startedAt = performance.now()
-              const triggered =
-                webhook.value.headers['x-polar-triggered'] === 'true'
-              const record = (
-                outcome: Pick<
-                  Delivery,
-                  'status' | 'statusText' | 'failure' | 'body'
-                >,
-              ) =>
-                triggered
-                  ? deliveries.record(webhook.value.payload.webhook_event_id, {
-                      forwardUrl: shownUrl,
-                      durationMs: performance.now() - startedAt,
-                      ...outcome,
-                    })
-                  : Effect.void
-              yield* Effect.tryPromise((signal) =>
-                forward(forwardUrl, {
-                  method: 'POST',
-                  headers: webhook.value.headers,
-                  body: rawPayload,
-                  redirect: 'manual',
-                  signal,
-                }),
-              ).pipe(
-                Effect.timeout(FORWARD_TIMEOUT),
-                Effect.flatMap((result) =>
-                  (triggered && !result.ok
-                    ? readBody(result)
-                    : Effect.tryPromise(async () => {
-                        await result.body?.cancel()
-                        return ''
-                      })
-                  ).pipe(
-                    Effect.tap(() =>
-                      Console.log(
-                        eventLine(
-                          eventType,
-                          ui.statusCode(result.status, result.statusText),
-                          startedAt,
-                        ),
-                      ),
-                    ),
-                    Effect.flatMap((body) =>
-                      record({
-                        status: result.status,
-                        statusText: result.statusText,
-                        ...(body ? { body } : {}),
-                      }),
-                    ),
-                  ),
-                ),
-                Effect.catch((error) => {
-                  const failure = describeForwardFailure(error)
-                  return printError(
-                    eventLine(
-                      eventType,
-                      ui.red(`failed  ${failure}`),
-                      startedAt,
-                    ),
-                  ).pipe(Effect.andThen(record({ failure })))
-                }),
-              )
-            }),
+export const renderEvent = (organizationName: string, forwardUrl: string) => {
+  const shownUrl = redactUrl(forwardUrl)
+  return (event: ListenEvent) => {
+    switch (event._tag) {
+      case 'Connected':
+        return Console.log(banner(organizationName, event.secret, shownUrl))
+      case 'Undecodable':
+        return printError(decodeFailure(event.key))
+      case 'Forwarded':
+        return Console.log(
+          eventLine(
+            event.eventType,
+            ui.statusCode(event.status, event.statusText),
+            event.durationMs,
           ),
-          Stream.takeUntil(() => reconnect),
-          Stream.runDrain,
         )
-        return reconnect
-      }),
-    )
-    return yield* connection.pipe(
-      Effect.catchTag('Retry', (retry) => {
-        retryDelay = retry.duration
-        if (retry.lastEventId !== undefined) lastEventId = retry.lastEventId
-        return Effect.succeed(false)
-      }),
-      Effect.catchTag('HttpClientError', (error) =>
-        error.reason._tag === 'TransportError' ||
-        error.reason._tag === 'DecodeError'
-          ? Effect.succeed(false)
-          : Effect.fail(
-              new ListenError({
-                code: 0,
-                message: error.message,
-                cause: error,
-              }),
-            ),
-      ),
-      Effect.flatMap((reconnect) =>
-        reconnect ? Effect.void : Effect.sleep(retryDelay),
-      ),
-      Effect.forever,
-    )
-  }).pipe(
-    Effect.catchTag('AuthError', (error) =>
-      Effect.fail(
-        new ListenError({
-          code: 0,
-          message:
-            'Unable to authenticate the stream. Check your connection, keyring, and token; try polar auth whoami for details.',
-          cause: error,
-        }),
-      ),
-    ),
-    Effect.catchTag('SseError', (error) =>
-      Effect.fail(
-        new ListenError({ code: 0, message: error.message, cause: error }),
-      ),
-    ),
-  )
+      case 'ForwardFailed':
+        return printError(
+          eventLine(
+            event.eventType,
+            ui.red(`failed  ${event.reason}`),
+            event.durationMs,
+          ),
+        )
+    }
+  }
+}
 
 export const forwardTarget = (input: string): URL | undefined => {
   const value = input.trim()
@@ -435,11 +172,6 @@ const listenCommand = (url: string, org: string | undefined) =>
       })
     }
     const organization = yield* (yield* Organizations).resolve(org)
-    const { environment } = organization
-    const listenUrl = yield* apiUrl(
-      environment,
-      `/cli/listen/${organization.id}`,
-    )
     if (status === 'refused') {
       yield* Console.log(ui.blank)
       yield* Console.log(ui.warning(`Nothing is running on ${target.host} yet`))
@@ -450,22 +182,10 @@ const listenCommand = (url: string, org: string | undefined) =>
     return yield* withTerminalTitle(
       `polar listen · ${organization.name}`,
       startListening({
-        listenUrl,
+        organization,
         forwardUrl: target.href,
-        organizationId: organization.id,
-        organizationName: organization.name,
-        environment,
-      }).pipe(
-        Effect.provide(FetchHttpClient.layer),
-        Effect.mapError((error) =>
-          error.code === 401
-            ? new ListenError({
-                code: 401,
-                message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
-              })
-            : error,
-        ),
-      ),
+        onEvent: renderEvent(organization.name, target.href),
+      }),
     )
   })
 

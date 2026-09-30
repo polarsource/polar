@@ -110,6 +110,17 @@ describe('auth login', () => {
     await expect(promise).rejects.toThrow('not both')
   })
 
+  test('shows the sign-in link while waiting for the browser', async () => {
+    const { promise, output } = run(['login', '--sandbox'])
+    await promise
+
+    expect(output()).toContain(
+      'Opening your browser to sign in to Polar sandbox...',
+    )
+    expect(output()).toContain('https://sandbox.example/authorize')
+    expect(output()).toContain('Waiting for you to authorize the CLI...')
+  })
+
   test('points at the dashboards when there are no organizations', async () => {
     organizations.state.items = []
     const { promise, output } = run(['login', '--sandbox'])

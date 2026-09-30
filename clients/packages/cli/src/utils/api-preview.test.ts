@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
-import { formatRecordPreview } from './api-preview'
-import { stripAnsi } from './test-utils/cli'
+import { formatRecordPreview } from '@/utils/api-preview'
+import { stripAnsi } from '@/utils/test-utils/cli'
+
+const ESC = String.fromCharCode(27)
 
 const fields = [
   { key: 'name', label: 'Name' },
@@ -63,7 +65,7 @@ test('values and labels fit terminal columns without wrapping', () => {
 test('record values cannot inject terminal controls or additional lines', () => {
   const preview = stripAnsi(
     formatRecordPreview(fields, 80, {
-      name: '\x1b[31mAlice\x1b[0m\nSmith',
+      name: `${ESC}[31mAlice${ESC}[0m\nSmith`,
       description: 'x'.repeat(200),
     }),
   )

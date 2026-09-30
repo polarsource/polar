@@ -438,21 +438,34 @@ async def _carry_external_ids_to_owner_members(
             Customer.external_id.is_not(None),
             Member.external_id.is_(None),
         )
+        .order_by(Member.id)
+        .limit(_BACKFILL_BATCH_SIZE)
     )
-    rows = (await session.execute(statement)).all()
 
+    # Keyset by member id: the loop writes the column the statement filters on, and a
+    # member whose id is taken keeps it NULL, so paging by offset would never end.
     count = 0
-    for customer, member in rows:
-        # A savepoint per member: another member of the same customer may take that
-        # id first, and the constraint must not take the whole backfill down.
-        try:
-            async with session.begin_nested():
-                member.external_id = customer.external_id
-                await session.flush()
-        except IntegrityError:
-            await session.refresh(member)
-            continue
-        count += 1
+    last_id: uuid.UUID | None = None
+    while True:
+        batch_statement = statement
+        if last_id is not None:
+            batch_statement = batch_statement.where(Member.id > last_id)
+        rows = (await session.execute(batch_statement)).all()
+        if not rows:
+            break
+
+        for customer, member in rows:
+            last_id = member.id
+            # A savepoint per member: another member of the same customer may take
+            # that id first, and the constraint must not take the backfill down.
+            try:
+                async with session.begin_nested():
+                    member.external_id = customer.external_id
+                    await session.flush()
+            except IntegrityError:
+                await session.refresh(member)
+                continue
+            count += 1
 
     await session.flush()
     return count

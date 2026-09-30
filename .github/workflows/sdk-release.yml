@@ -111,6 +111,61 @@ jobs:
         working-directory: sdk/typescript
         run: npm publish --tag latest
 
+  update-sdk-dependents:
+    needs: [detect-release, publish-typescript]
+    if: needs.detect-release.outputs.version != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: clients
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Update adapter and CLI SDK dependencies and add patch changeset
+        env:
+          RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+        run: node scripts/update-sdk-dependencies.mjs "$RELEASE_VERSION"
+
+      - name: Update lockfile
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+
+      - name: Create SDK dependency update pull request
+        uses: peter-evans/create-pull-request@v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sdk/dependents-${{ needs.detect-release.outputs.version }}
+          base: main
+          draft: true
+          commit-message: "chore: update adapters and CLI to SDK ${{ needs.detect-release.outputs.version }}"
+          title: "chore: update adapters and CLI to SDK ${{ needs.detect-release.outputs.version }}"
+          body: |
+            Update all adapters and the CLI to `@polar-sh/sdk@${{ needs.detect-release.outputs.version }}` after its successful npm release.
+
+            Includes updated SDK dependencies and peer dependencies, the pnpm lockfile, and a patch changeset for every adapter and `polar-cli`.
+          add-paths: |
+            clients/adapters/*/package.json
+            clients/packages/cli/package.json
+            clients/pnpm-lock.yaml
+            clients/.changeset/sdk-${{ needs.detect-release.outputs.version }}.md
+
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
     if: needs.detect-release.outputs.version != ''

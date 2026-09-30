@@ -6,6 +6,7 @@ import { Meter } from './chapters/Meter'
 import { Platform } from './chapters/Platform'
 import { Primitives } from './chapters/Primitives'
 import { StartupProgram } from './chapters/StartupProgram'
+import { UsageBilling } from './chapters/UsageBilling'
 import { ClosingCta } from './ClosingCta'
 import { Hero } from './Hero/Hero'
 import { Pricing } from './Pricing'
@@ -16,6 +17,7 @@ export default function Page() {
     <div className="flex w-full flex-col">
       <Hero />
       <Primitives />
+      <UsageBilling />
       <Platform />
       <Meter />
       <MerchantOfRecord />

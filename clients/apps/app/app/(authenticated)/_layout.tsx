@@ -1,5 +1,4 @@
 import { ErrorFallback } from '@/components/Errors/Fallback'
-import { HeaderBackButton } from '@/components/Shared/HeaderBackButton'
 import { useTheme } from '@/design-system/useTheme'
 import { useAppOpenTracking } from '@/hooks/useAppOpenTracking'
 import DeepLinkProvider from '@/providers/DeepLinkProvider'
@@ -60,8 +59,6 @@ const RootLayout = () => {
           },
           contentStyle: { backgroundColor: theme.colors.background },
           headerShadowVisible: false,
-          headerLeft: ({ canGoBack }) =>
-            canGoBack ? <HeaderBackButton /> : null,
         }}
       />
     </>

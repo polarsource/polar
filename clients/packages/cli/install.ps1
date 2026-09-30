@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 $Repo = "polarsource/polar"
-$TagPrefix = "polar-cli@"
+$TagPrefix = "@polar-sh/cli@"
 $BinaryName = "polar.exe"
 $Archive = "polar-windows-x64.zip"
 $InstallDir = Join-Path $HOME ".polar\bin"

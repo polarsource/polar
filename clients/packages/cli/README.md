@@ -134,11 +134,11 @@ and uploads these assets to a draft release in `polarsource/polar`:
 - `checksums.txt`
 
 Only after every upload succeeds does the workflow publish the release, tagged
-`polar-cli@<version>`. Release notes come from the CLI's changelog. CLI releases
-do not become the monorepo's generic GitHub "latest" release: the updater lists
-releases, follows pagination, filters stable `polar-cli@` tags, and compares
-semantic versions. Publishing is independent of the changesets-driven npm
-release workflow for the other packages.
+`@polar-sh/cli@<version>`. Release notes come from the CLI's changelog. CLI releases
+do not become the monorepo's generic GitHub "latest" release: the updater and
+`install.sh` (served at `polar.sh/install.sh`) list releases, follow pagination,
+filter stable `@polar-sh/cli@` tags, and compare semantic versions. Publishing is
+independent of the changesets-driven npm release workflow for the other packages.
 
 ### npm
 
@@ -205,7 +205,7 @@ release workflows read Bun `1.4.2` from `engines.bun` in the CLI's `package.json
 ### Verification and retries
 
 Manually run **Release CLI** with `publish` unchecked to build and upload a
-verification draft. Its `polar-cli-verify-...` tag is ignored by the updater.
+verification draft. Its `@polar-sh/cli-verify-...` tag is ignored by the updater.
 
 To retry a failed stable release, rerun the original workflow run. If no draft
 exists yet, you can also dispatch the workflow on `main` with `publish` checked.
@@ -214,12 +214,13 @@ releases are never overwritten; corrections require a new changeset/version.
 
 ### One-time bridge release
 
-Existing installations and the legacy `install.sh` use `polarsource/cli`.
+Existing installations and the legacy `install.sh` in `polarsource/cli` use that
+repository.
 After the first monorepo release is published:
 
 1. Disable the old repository's tag-triggered release workflow so it cannot build
    the old source over the bridge release.
-2. Download the five assets from `polar-cli@<version>` in `polarsource/polar`.
+2. Download the five assets from `@polar-sh/cli@<version>` in `polarsource/polar`.
 3. Upload those **same signed assets and checksums** to a draft `v<version>`
    release in `polarsource/cli`. Record the monorepo release URL in its notes;
    the monorepo commit SHA is not a commit in the old repository.
@@ -231,5 +232,6 @@ from the old repository. Existing clients install the bridge via `polar update`,
 then discover future releases from the monorepo. Keep the bridge release available
 indefinitely for users who update later.
 
-The legacy installer is deliberately retained as a bridge bootstrap: it installs
-the bridge version, after which `polar update` installs the newest monorepo version.
+The legacy installer is deliberately retained as a bridge bootstrap for anyone who
+still fetches it from `polarsource/cli` directly: it installs the bridge version,
+after which `polar update` installs the newest monorepo version.

@@ -21,7 +21,7 @@ export const layer = Layer.sync(Credentials, () => {
       try: async () => {
         // Load lazily so a missing native keyring doesn't break commands that don't need it.
         const { AsyncEntry } = await import('@napi-rs/keyring')
-        return new AsyncEntry('polar-cli', environment)
+        return new AsyncEntry('@polar-sh/cli', environment)
       },
       catch: () => unavailable(),
     })

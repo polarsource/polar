@@ -64,7 +64,9 @@ describe('Credentials', () => {
     expect(Redacted.value(stored!.accessToken)).toBe('access')
     expect(Redacted.value(stored!.refreshToken!)).toBe('refresh')
     expect(stored?.scopes).toEqual(['organizations:read'])
-    expect(keyring.passwords.get('polar-cli:sandbox')).not.toContain('Redacted')
+    expect(keyring.passwords.get('@polar-sh/cli:sandbox')).not.toContain(
+      'Redacted',
+    )
     await expect(
       run((credentials) => credentials.read('production')),
     ).resolves.toBeUndefined()
@@ -72,7 +74,7 @@ describe('Credentials', () => {
 
   test('reads sessions saved by versions that stored scopes', async () => {
     keyring.passwords.set(
-      'polar-cli:sandbox',
+      '@polar-sh/cli:sandbox',
       JSON.stringify({
         version: 1,
         accessToken: 'access',
@@ -94,7 +96,7 @@ describe('Credentials', () => {
       credentials.write('sandbox', { ...session, scopes: [] }),
     )
 
-    const saved = JSON.parse(keyring.passwords.get('polar-cli:sandbox')!)
+    const saved = JSON.parse(keyring.passwords.get('@polar-sh/cli:sandbox')!)
     expect(saved).toHaveProperty('scopes', [])
   })
 
@@ -108,7 +110,7 @@ describe('Credentials', () => {
       }),
     )
 
-    const saved = keyring.passwords.get('polar-cli:sandbox')!
+    const saved = keyring.passwords.get('@polar-sh/cli:sandbox')!
     expect(saved.length * 2).toBeLessThan(2560)
   })
 
@@ -124,7 +126,7 @@ describe('Credentials', () => {
   })
 
   test('rejects corrupt saved sessions', async () => {
-    keyring.passwords.set('polar-cli:sandbox', '{"version":2}')
+    keyring.passwords.set('@polar-sh/cli:sandbox', '{"version":2}')
 
     await expect(
       run((credentials) => credentials.read('sandbox')),

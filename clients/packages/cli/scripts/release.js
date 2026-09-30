@@ -34,8 +34,8 @@ export default async ({
     if (!previousVersion || previousVersion === version) return
   }
   const tag = publish
-    ? `polar-cli@${version}`
-    : `polar-cli-verify-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
+    ? `@polar-sh/cli@${version}`
+    : `@polar-sh/cli-verify-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
   try {
     const { data } = await github.rest.repos.getReleaseByTag({
       ...context.repo,

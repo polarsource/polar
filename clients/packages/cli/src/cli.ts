@@ -9,6 +9,7 @@ import { auth } from '@/commands/auth'
 import { home } from '@/commands/home'
 import { update } from '@/commands/update'
 import { stdoutConsole } from '@/utils/console'
+import { joinDashValues } from '@/utils/args'
 import { describeError } from '@/utils/errors'
 import * as ApiRuntime from '@/commands/api-runtime'
 import * as Auth from '@/services/auth'
@@ -33,7 +34,7 @@ const mainCommand = Command.make('polar', {}, () => home).pipe(
   ]),
 )
 
-const cli = Command.run(mainCommand, {
+const cli = Command.runWith(mainCommand, {
   version: VERSION.replace(/^v/, ''),
 })
 
@@ -93,10 +94,10 @@ const reportError = (cause: Cause.Cause<unknown>) => {
 }
 
 const instrumented = Effect.gen(function* () {
-  const args = yield* (yield* Stdio.Stdio).args
+  const args = joinDashValues(yield* (yield* Stdio.Stdio).args)
   const telemetry = yield* Telemetry.Telemetry
   const startedAt = performance.now()
-  return yield* cli.pipe(
+  return yield* cli(args).pipe(
     Effect.tapCause(reportError),
     Effect.onExit((exit) =>
       telemetry.record({

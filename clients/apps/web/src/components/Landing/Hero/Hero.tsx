@@ -1,5 +1,6 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { LogoGrid } from '../LogoGrid'
 import { MissionRulers } from './MissionRulers'
 
 export const Hero = () => {
@@ -30,6 +31,7 @@ export const Hero = () => {
         </Grid>
         <MissionRulers />
       </Box>
+      <LogoGrid />
     </Box>
   )
 }

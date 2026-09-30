@@ -25,7 +25,10 @@ import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
 const mainCommand = Command.make('polar', {}, () => home).pipe(
-  Command.withSubcommands([auth, listen, trigger, update, ...commands]),
+  Command.withSubcommands([
+    { group: 'CLI COMMANDS', commands: [auth, listen, trigger, update] },
+    { group: 'API RESOURCES', commands },
+  ]),
 )
 
 const cli = Command.run(mainCommand, {

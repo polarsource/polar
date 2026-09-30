@@ -27,8 +27,8 @@ from polar.models.support_case import (
 from polar.support_case.repository import SupportCaseMessageRepository
 
 # (case, organization, is_open, assignee_email, awaiting_platform, unread,
-#  dispute_status, evidence_due_by, evidence_past_due) — the dispute fields are
-#  None for non-dispute cases.
+#  dispute_status, evidence_due_by, evidence_past_due, needs_action) — the
+#  dispute fields are None for non-dispute cases.
 Row = tuple[
     SupportCase,
     Organization,
@@ -39,6 +39,7 @@ Row = tuple[
     DisputeStatus | None,
     datetime | None,
     bool | None,
+    bool,
 ]
 
 # Human-readable label per case type, shared by every case list.
@@ -112,6 +113,14 @@ def cases_statement(
             Dispute.status.label("dispute_status"),
             Dispute.evidence_due_by.label("evidence_due_by"),
             Dispute.past_due.label("evidence_past_due"),
+            and_(
+                is_open,
+                awaiting_platform,
+                or_(
+                    SupportCase.type == SupportCaseType.review_appeal,
+                    Dispute.status == DisputeStatus.needs_response,
+                ),
+            ).label("needs_action"),
         )
         .join(Organization, Organization.id == SupportCase.organization_id)
         .outerjoin(Dispute, DisputeSupportCase.dispute_id == Dispute.id)

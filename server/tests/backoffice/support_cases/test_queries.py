@@ -85,6 +85,47 @@ class TestCasesStatement:
 
         assert [row[0].id for row in rows] == [dispute.id]
 
+    async def test_needs_action(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        appeal = await create_appeal_case(save_fixture, organization)
+        countered = await create_dispute_case(
+            save_fixture, organization, customer, product, payment_processor_id="a"
+        )
+        submitted = await create_dispute_case(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            dispute_status=DisputeStatus.under_review,
+            payment_processor_id="b",
+        )
+        silent = await create_dispute_case(
+            save_fixture, organization, customer, product, payment_processor_id="c"
+        )
+        for case in (appeal, countered, submitted):
+            await save_fixture(
+                SupportCaseMessage(
+                    case=case,
+                    type=SupportCaseMessageType.chat,
+                    author_kind=SupportCaseMessageAuthorKind.merchant,
+                    audience=[SupportCaseAudience.merchant],
+                )
+            )
+
+        rows = await _rows(session, organization_id=organization.id)
+
+        needs_action = {row[0].id: row[9] for row in rows}
+        assert needs_action[appeal.id]
+        assert needs_action[countered.id]
+        assert not needs_action[submitted.id]
+        assert not needs_action[silent.id]
+
     async def test_closed_case_excluded_by_open_status(
         self,
         session: AsyncSession,
@@ -252,7 +293,7 @@ class TestCasesStatementEvidenceDueSort:
         )
 
         assert [row[0].id for row in rows] == [lost.id, upcoming.id]
-        _case, _org, *_rest, evidence_due_by, evidence_past_due = rows[0]
+        _case, _org, *_rest, evidence_due_by, evidence_past_due, _needs_action = rows[0]
         assert evidence_due_by is not None
         assert evidence_past_due is True
 

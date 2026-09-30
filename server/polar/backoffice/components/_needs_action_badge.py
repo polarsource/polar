@@ -9,7 +9,7 @@ _NEEDS_ACTION_LABELS: dict[SupportCaseType, str] = {
 
 
 def needs_action_badge(case_type: SupportCaseType, *, size: str = "badge-sm") -> None:
-    with tag.div(classes=f"badge badge-accent {size}"):
+    with tag.div(classes=f"badge badge-neutral {size}"):
         text(_NEEDS_ACTION_LABELS[case_type])
 
 

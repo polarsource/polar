@@ -19,7 +19,6 @@ for (const packagePath of packagePaths) {
   const packageJson = JSON.parse(await readFile(packagePath, 'utf8'))
   if (packageJson.private && packageJson.name !== 'polar-cli') continue
 
-  packages.push(packageJson.name)
   let packageUpdated = false
   for (const section of [
     'dependencies',
@@ -40,6 +39,7 @@ for (const packagePath of packagePaths) {
 
   if (packageUpdated) {
     await writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`)
+    packages.push(packageJson.name)
     updated = true
   }
 }

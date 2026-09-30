@@ -16,6 +16,19 @@ describe('ui', () => {
     )
   })
 
+  test('keeps line breaks but drops control characters from response bodies', () => {
+    expect(ui.printable('\x1b[31mnope\x1b[0m\r\n\tline')).toBe(
+      '[31mnope[0m\n\tline',
+    )
+  })
+
+  test('drops unicode format and separator characters that can spoof output', () => {
+    expect(ui.printable('ok\u202Edeliaf\u2028\u2029\u200Bdone ✔ 🎉')).toBe(
+      'okdeliafdone ✔ 🎉',
+    )
+    expect(ui.pushTitle('Acme\u202E')).toBe('\x1b[22;0t\x1b]0;Acme\x07')
+  })
+
   test('renders failures with an optional hint', () => {
     expect(stripAnsi(ui.failure('Broken'))).toBe('  ✖ Broken')
     expect(stripAnsi(ui.failure('Broken', 'Try again'))).toBe(

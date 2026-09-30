@@ -12,7 +12,7 @@ import {
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import * as ui from '@/utils/ui'
-import { production, sandbox } from '@/commands/flags'
+import { json, production, sandbox } from '@/commands/flags'
 
 const isSelected = (
   organization: ActiveOrganization,
@@ -186,8 +186,33 @@ const login = Command.make(
   ]),
 )
 
-const whoami = Command.make('whoami', {}, () =>
+const printJson = (value: unknown) =>
+  Console.log(JSON.stringify(value, null, 2))
+
+const whoamiJson = Effect.gen(function* () {
+  const auth = yield* Auth
+  const organizations = yield* Organizations
+  const environments = yield* auth.environments
+  if (yield* auth.override) {
+    const items = yield* organizations.listAll
+    return yield* printJson({
+      source: 'POLAR_ACCESS_TOKEN',
+      environments,
+      organization: items.length === 1 ? items[0] : null,
+    })
+  }
+  const selection =
+    environments.length > 0 ? yield* organizations.selected : undefined
+  return yield* printJson({
+    source: 'session',
+    environments,
+    organization: selection ? yield* organizations.resolve() : null,
+  })
+})
+
+const whoami = Command.make('whoami', { json }, ({ json }) =>
   Effect.gen(function* () {
+    if (json) return yield* whoamiJson
     const auth = yield* Auth
     const organizations = yield* Organizations
     const environments = yield* auth.environments
@@ -228,8 +253,25 @@ const whoami = Command.make('whoami', {}, () =>
   }),
 ).pipe(Command.withDescription('Show the active organization'))
 
-const list = Command.make('list', {}, () =>
+const listJson = Effect.gen(function* () {
+  const auth = yield* Auth
+  const organizations = yield* Organizations
+  const selection = yield* organizations.selected
+  const items: Array<ActiveOrganization & { active: boolean }> = []
+  for (const environment of yield* auth.environments) {
+    for (const organization of yield* organizations.list(environment)) {
+      items.push({
+        ...organization,
+        active: isSelected(organization, selection),
+      })
+    }
+  }
+  return yield* printJson(items)
+})
+
+const list = Command.make('list', { json }, ({ json }) =>
   Effect.gen(function* () {
+    if (json) return yield* listJson
     const auth = yield* Auth
     const organizations = yield* Organizations
     const environments = yield* auth.environments

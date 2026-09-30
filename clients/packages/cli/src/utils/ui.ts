@@ -45,7 +45,7 @@ export const clearLines = (rows: number) =>
 export const statusCode = (status: number, statusText: string) => {
   const text = `${status} ${statusText}`.trim()
   if (status >= 500) return pc.red(text)
-  if (status >= 400) return pc.yellow(text)
+  if (status >= 300) return pc.yellow(text)
   return pc.green(text)
 }
 
@@ -55,10 +55,16 @@ export const timestamp = (date: Date = new Date()) =>
 export const duration = (milliseconds: number) =>
   pc.dim(`${Math.round(milliseconds)}ms`)
 
-const isPrintable = (character: string) => {
-  const code = character.codePointAt(0) ?? 0
-  return code >= 0x20 && (code < 0x7f || code > 0x9f)
-}
+const isPrintable = (character: string) =>
+  !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u.test(character)
+
+export const printable = (text: string) =>
+  [...text]
+    .filter(
+      (character) =>
+        character === '\n' || character === '\t' || isPrintable(character),
+    )
+    .join('')
 
 export const pushTitle = (title: string) =>
   `\x1b[22;0t\x1b]0;${[...title].filter(isPrintable).join('')}\x07`

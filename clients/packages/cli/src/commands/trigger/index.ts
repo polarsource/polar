@@ -29,7 +29,9 @@ const seed = Flag.Int('seed').pipe(
 
 const json = Flag.Boolean('json').pipe(
   Flag.withDefault(false),
-  Flag.withDescription('Print the payload as JSON instead of sending it'),
+  Flag.withDescription(
+    'Print the payload as JSON instead of sending it, or the event list with --list',
+  ),
 )
 
 const list = Flag.Boolean('list').pipe(
@@ -74,6 +76,24 @@ const deliveryRows = (
     ],
   })
 
+const accepted = ({ status, failure }: Delivery) =>
+  failure === undefined && status !== undefined && status >= 200 && status < 300
+
+const responseBody = (delivery: Option.Option<Delivery>) =>
+  Option.match(delivery, {
+    onNone: () => [],
+    onSome: ({ body }) =>
+      body
+        ? [
+            ui.blank,
+            ...ui
+              .printable(body)
+              .split('\n')
+              .map((line) => `  ${line}`),
+          ]
+        : [],
+  })
+
 const listHint = `Run ${ui.command('polar trigger --list')} to see every event`
 
 export const trigger = Command.make(
@@ -98,7 +118,9 @@ export const trigger = Command.make(
 
       if (list) {
         const events = yield* trigger.listEvents(organization)
-        return yield* Console.log(formatCatalog(events))
+        return yield* Console.log(
+          json ? JSON.stringify(events, null, 2) : formatCatalog(events),
+        )
       }
 
       const eventType = Option.isSome(event)
@@ -151,13 +173,19 @@ export const trigger = Command.make(
             ['Event ID', ui.dim(result.webhookEventId)],
             ...deliveryRows(delivery),
           ]),
+          ...responseBody(delivery),
           ui.blank,
         ].join('\n'),
       )
+      if (Option.isSome(delivery) && !accepted(delivery.value)) {
+        return yield* new TriggerError({
+          message: `Your server did not accept ${result.event}`,
+        })
+      }
     }),
 ).pipe(
   Command.withDescription(
-    'Send a sample webhook event to your local server through polar listen. Run with --list to see every event.',
+    'Send a sample webhook event to your local server through polar listen. Exits with an error when your server does not accept it. Run with --list to see every event.',
   ),
   Command.withExamples([
     { command: 'polar trigger', description: 'Pick an event from a list' },

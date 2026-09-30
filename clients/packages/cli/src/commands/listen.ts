@@ -1,5 +1,6 @@
 import { connect } from 'node:net'
 import {
+  Cause,
   Console,
   Data,
   Duration,
@@ -10,7 +11,7 @@ import {
   Stdio,
   Stream,
 } from 'effect'
-import { Argument, Command } from 'effect/unstable/cli'
+import { Argument, Command, Flag } from 'effect/unstable/cli'
 import { Sse } from 'effect/unstable/encoding'
 import {
   FetchHttpClient,
@@ -37,6 +38,31 @@ export class ListenError extends Data.TaggedError('ListenError')<{
 }> {}
 
 const EVENT_TYPE_WIDTH = 28
+const RESPONSE_BODY_LIMIT = 2000
+const RESPONSE_BODY_TIMEOUT = '1 second'
+const FORWARD_TIMEOUT = '10 seconds'
+
+const readBody = (response: Response) =>
+  Effect.gen(function* () {
+    let text = ''
+    yield* Effect.tryPromise(async (signal) => {
+      const reader = response.body?.getReader()
+      if (!reader) return
+      signal.addEventListener('abort', () => void reader.cancel(), {
+        once: true,
+      })
+      const decoder = new TextDecoder()
+      while (text.length <= RESPONSE_BODY_LIMIT) {
+        const { done, value } = await reader.read()
+        if (done) return
+        text += decoder.decode(value, { stream: true })
+      }
+      await reader.cancel()
+    }).pipe(Effect.timeoutOption(RESPONSE_BODY_TIMEOUT), Effect.ignore)
+    return text.length > RESPONSE_BODY_LIMIT
+      ? `${text.slice(0, RESPONSE_BODY_LIMIT)}…`
+      : text
+  })
 
 const printError = (line: string) =>
   Effect.sync(() => {
@@ -52,6 +78,7 @@ const failureHints = new Map([
 ])
 
 const describeForwardFailure = (error: unknown) => {
+  if (Cause.isTimeoutError(error)) return `no response after ${FORWARD_TIMEOUT}`
   const cause =
     error instanceof Error && error.cause instanceof Error ? error.cause : error
   const code =
@@ -196,10 +223,15 @@ export const startListening = ({
                 ? (payload.value.type ?? 'event')
                 : 'event'
               const startedAt = performance.now()
-              const record = (
-                outcome: Pick<Delivery, 'status' | 'statusText' | 'failure'>,
-              ) =>
+              const triggered =
                 webhook.value.headers['x-polar-triggered'] === 'true'
+              const record = (
+                outcome: Pick<
+                  Delivery,
+                  'status' | 'statusText' | 'failure' | 'body'
+                >,
+              ) =>
+                triggered
                   ? deliveries.record(webhook.value.payload.webhook_event_id, {
                       forwardUrl: shownUrl,
                       durationMs: performance.now() - startedAt,
@@ -211,14 +243,20 @@ export const startListening = ({
                   method: 'POST',
                   headers: webhook.value.headers,
                   body: rawPayload,
+                  redirect: 'manual',
                   signal,
                 }),
               ).pipe(
+                Effect.timeout(FORWARD_TIMEOUT),
                 Effect.flatMap((result) =>
-                  Effect.tryPromise(
-                    () => result.body?.cancel() ?? Promise.resolve(),
+                  (triggered && !result.ok
+                    ? readBody(result)
+                    : Effect.tryPromise(async () => {
+                        await result.body?.cancel()
+                        return ''
+                      })
                   ).pipe(
-                    Effect.andThen(
+                    Effect.tap(() =>
                       Console.log(
                         eventLine(
                           eventType,
@@ -227,10 +265,11 @@ export const startListening = ({
                         ),
                       ),
                     ),
-                    Effect.andThen(
+                    Effect.flatMap((body) =>
                       record({
                         status: result.status,
                         statusText: result.statusText,
+                        ...(body ? { body } : {}),
                       }),
                     ),
                   ),
@@ -363,9 +402,23 @@ const url = Argument.String('url').pipe(
   Argument.withDescription(
     'Where to forward webhook events: a port like 3000, or a URL like http://localhost:3000/api/webhooks',
   ),
+  Argument.optional,
 )
 
-export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
+const printSecret = Flag.Boolean('print-secret').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
+    'Print the secret that signs forwarded events, then exit',
+  ),
+)
+
+const printOrganizationSecret = (id: string | undefined) =>
+  Effect.gen(function* () {
+    const organization = yield* (yield* Organizations).resolve(id)
+    yield* Console.log(organization.id.replaceAll('-', ''))
+  })
+
+const listenCommand = (url: string, org: string | undefined) =>
   Effect.gen(function* () {
     const target = forwardTarget(url)
     if (!target) {
@@ -381,10 +434,7 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
         message: `Can't find a host named "${target.hostname}". To forward to a server on this machine, pass its port, e.g. polar listen 3000.`,
       })
     }
-    const organizations = yield* Organizations
-    const organization = yield* organizations.resolve(
-      Option.getOrUndefined(org),
-    )
+    const organization = yield* (yield* Organizations).resolve(org)
     const { environment } = organization
     const listenUrl = yield* apiUrl(
       environment,
@@ -417,7 +467,24 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
         ),
       ),
     )
-  }),
+  })
+
+export const listen = Command.make(
+  'listen',
+  { url, org, printSecret },
+  ({ url, org, printSecret }) =>
+    Effect.gen(function* () {
+      const organizationId = Option.getOrUndefined(org)
+      if (printSecret) return yield* printOrganizationSecret(organizationId)
+      if (Option.isNone(url)) {
+        return yield* new ListenError({
+          code: 0,
+          message:
+            'Pass a port or URL to forward events to, e.g. polar listen 3000.',
+        })
+      }
+      return yield* listenCommand(url.value, organizationId)
+    }),
 ).pipe(
   Command.withDescription(
     'Forward webhook events for an organization to a local URL',
@@ -434,6 +501,11 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
     {
       command: 'polar listen http://localhost:3000/api/webhooks --org <id>',
       description: 'Forward events for a specific organization',
+    },
+    {
+      command: 'polar listen --print-secret',
+      description:
+        'Print the signing secret, e.g. for POLAR_WEBHOOK_SECRET in .env',
     },
   ]),
 )

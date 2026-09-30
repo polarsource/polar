@@ -11,6 +11,7 @@ import {
   Runtime,
 } from 'effect'
 import { HttpClient, HttpClientRequest } from 'effect/unstable/http'
+import { UsedEnvironments } from '@/services/api'
 import { VERSION } from '@/version'
 
 export const OPT_OUT_VARIABLE = 'POLAR_CLI_TELEMETRY_OPTOUT'
@@ -97,13 +98,16 @@ export const commandPath = (
   return path
 }
 
-export const flagNames = (args: ReadonlyArray<string>) => [
-  ...new Set(
-    args
-      .filter((arg) => arg.startsWith('-') && arg !== '-' && arg !== '--')
-      .map((arg) => arg.replace(/^-+/, '').split('=')[0]!),
-  ),
-]
+export const flagNames = (args: ReadonlyArray<string>) => {
+  const end = args.indexOf('--')
+  return [
+    ...new Set(
+      (end === -1 ? args : args.slice(0, end))
+        .map((arg) => /^(?:--([a-z][\w-]*)|-([a-z]))(?:=|$)/i.exec(arg))
+        .flatMap((match) => match?.[1] ?? match?.[2] ?? []),
+    ),
+  ]
+}
 
 export interface Failure {
   error: string
@@ -144,9 +148,18 @@ const field = (value: unknown, key: string): unknown =>
     ? (value as Record<string, unknown>)[key]
     : undefined
 
+const usageName = (error: unknown) => {
+  const name = field(error, 'option') ?? field(error, 'argument')
+  return typeof name === 'string' && /^-{0,2}[a-z][\w-]{0,39}$/i.test(name)
+    ? name
+    : undefined
+}
+
 export const describeFailure = (error: unknown): Failure => {
   const tag = field(error, '_tag')
-  const reason = field(error, 'reason')
+  const errors = field(error, 'errors')
+  const reason =
+    field(error, 'reason') ?? (Array.isArray(errors) ? errors[0] : undefined)
   const reasonTag = field(reason, '_tag')
   const name =
     tag !== undefined
@@ -154,9 +167,12 @@ export const describeFailure = (error: unknown): Failure => {
       : error instanceof Error
         ? error.name
         : 'Unknown'
-  const message = field(error, 'message')
+  const message =
+    tag === 'ShowHelp' ? usageName(reason) : field(error, 'message')
   const code =
-    field(error, 'code') ?? field(field(reason, 'response'), 'status')
+    field(error, 'code') ??
+    field(error, 'statusCode') ??
+    field(field(reason, 'response'), 'status')
   return {
     error: name,
     ...(typeof message === 'string' && message
@@ -228,6 +244,7 @@ export const layer = Layer.effect(
     const sender = yield* Sender
     const env = yield* Environment
     const build = yield* Build
+    const used = yield* UsedEnvironments
     const projectKey = env[PROJECT_KEY_VARIABLE] || PROJECT_KEY
     const active =
       !isOptedOut(env) &&
@@ -251,6 +268,7 @@ export const layer = Layer.effect(
               error: result.error ?? null,
               error_message: result.errorMessage ?? null,
               error_code: result.errorCode ?? null,
+              environment: [...used].sort().join(',') || null,
               duration_ms: Math.round(result.durationMs),
               cli_version: VERSION.replace(/^v/, ''),
               os: process.platform,

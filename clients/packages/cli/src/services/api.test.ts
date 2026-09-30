@@ -5,7 +5,9 @@ import {
   apiUrl,
   describeApiFailure,
   Environment,
+  UsedEnvironments,
 } from '@/services/api'
+import type { PolarEnvironment } from '@/schemas/Auth'
 
 const withEnv = <A>(
   effect: Effect.Effect<A>,
@@ -13,6 +15,17 @@ const withEnv = <A>(
 ) => Effect.runSync(effect.pipe(Effect.provideService(Environment, env)))
 
 describe('apiUrl', () => {
+  test('notes which environment a command talks to', () => {
+    const used = new Set<PolarEnvironment>()
+    withEnv(
+      apiUrl('sandbox', '/cli/events').pipe(
+        Effect.provideService(UsedEnvironments, used),
+      ),
+      {},
+    )
+    expect([...used]).toEqual(['sandbox'])
+  })
+
   test('uses the environment origin by default', () => {
     expect(withEnv(apiUrl('sandbox', '/cli/events'), {})).toBe(
       'https://sandbox-api.polar.sh/v1/cli/events',

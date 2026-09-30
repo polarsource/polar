@@ -8,6 +8,11 @@ export const Environment = Context.Reference<Env>('polar/Api/Environment', {
   defaultValue: () => process.env,
 })
 
+export const UsedEnvironments = Context.Reference<Set<PolarEnvironment>>(
+  'polar/Api/UsedEnvironments',
+  { defaultValue: () => new Set() },
+)
+
 const API_ORIGINS = {
   production: 'https://api.polar.sh',
   sandbox: 'https://sandbox-api.polar.sh',
@@ -39,11 +44,14 @@ const parseOverride = (value: string) => {
 }
 
 export const apiOrigin = (environment: PolarEnvironment) =>
-  Effect.flatMap(Environment, (env) => {
+  Effect.gen(function* () {
+    const used = yield* UsedEnvironments
+    used.add(environment)
+    const env = yield* Environment
     const override = env['POLAR_API_URL']?.trim()
-    if (!override) return Effect.succeed(API_ORIGINS[environment])
+    if (!override) return API_ORIGINS[environment]
     const parsed = parseOverride(override)
-    return parsed instanceof Error ? Effect.die(parsed) : Effect.succeed(parsed)
+    return parsed instanceof Error ? yield* Effect.die(parsed) : parsed
   })
 
 export const apiUrl = (environment: PolarEnvironment, path: string) =>

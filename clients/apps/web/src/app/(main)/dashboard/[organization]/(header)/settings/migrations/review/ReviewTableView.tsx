@@ -4,6 +4,11 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import {
+  ReviewBulkTaxSlot,
+  reviewTaxColumns,
+  useBulkTaxVariant,
+} from '../bulkTax/ReviewBulkTaxSlot'
 import { CATALOG_READ_STALLED } from '../catalogReadCopy'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewRecordModal } from './ReviewRecordModal'
@@ -105,10 +110,11 @@ export function ReviewTableView({
     counts.subscriptions.ready,
   )
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
+  const bulkTaxVariant = useBulkTaxVariant()
 
   const columns = useMemo(
-    () =>
-      buildReviewColumns({
+    () => [
+      ...buildReviewColumns({
         isSelected: (id) => isRowSelected(selection, id),
         // The opt-out default reads as "all" even when no row can be picked,
         // which would show as ticked-but-disabled.
@@ -119,7 +125,16 @@ export function ReviewTableView({
         onToggle,
         onToggleAll,
       }),
-    [selectableTotal, selection, onToggle, onToggleAll],
+      ...reviewTaxColumns(bulkTaxVariant, migrationId),
+    ],
+    [
+      selectableTotal,
+      selection,
+      onToggle,
+      onToggleAll,
+      bulkTaxVariant,
+      migrationId,
+    ],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -171,6 +186,11 @@ export function ReviewTableView({
           description={importError}
         />
       )}
+      <ReviewBulkTaxSlot
+        variant={bulkTaxVariant}
+        placement="above-table"
+        migrationId={migrationId}
+      />
 
       <Box flexDirection="column" rowGap="m">
         <Box
@@ -194,6 +214,12 @@ export function ReviewTableView({
             />
           </Box>
           <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
+            <ReviewBulkTaxSlot
+              variant={bulkTaxVariant}
+              placement="toolbar"
+              migrationId={migrationId}
+              disabled={importing}
+            />
             {onRerunPrecheck && (
               <Button
                 size="sm"

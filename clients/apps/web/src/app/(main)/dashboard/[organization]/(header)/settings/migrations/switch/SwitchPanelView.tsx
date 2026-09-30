@@ -6,6 +6,9 @@ import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import { BulkTaxSelectionBar } from '../bulkTax/BulkTaxSelectionBar'
+import { useBulkTaxVariant } from '../bulkTax/bulkTaxVariant'
+import { buildTaxColumn } from '../bulkTax/TaxColumn'
 import { headerCheckState, isRowSelected, SelectionState } from '../selection'
 import { SwitchRecordModal } from './SwitchRecordModal'
 import { SwitchStatusTabs } from './SwitchStatusTabs'
@@ -73,16 +76,29 @@ export function SwitchPanelView({
       ? `Switch ${numberFormat.format(switchCount)} subscriptions`
       : 'Switch subscriptions'
 
+  const bulkTaxVariant = useBulkTaxVariant()
+
   const columns = useMemo(
-    () =>
-      buildSwitchColumns({
+    () => [
+      ...buildSwitchColumns({
         isSelected: (id) => isRowSelected(selection, id),
         headerState: canSelectAll ? headerCheckState(selection) : 'unchecked',
         canSelectAll,
         onToggle,
         onToggleAll,
       }),
-    [canSelectAll, selection, onToggle, onToggleAll],
+      ...(bulkTaxVariant === 4
+        ? [buildTaxColumn<SwitchRow>(migrationId, false)]
+        : []),
+    ],
+    [
+      canSelectAll,
+      selection,
+      onToggle,
+      onToggleAll,
+      bulkTaxVariant,
+      migrationId,
+    ],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -160,6 +176,13 @@ export function SwitchPanelView({
             isLoading={false}
             getRowId={(row) => row.record_id ?? row.source_id}
             onRowClick={(row) => setOpenRow(row.original)}
+          />
+        )}
+        {bulkTaxVariant === 4 && !running && (
+          <BulkTaxSelectionBar
+            migrationId={migrationId}
+            selection={selection}
+            selectedCount={switchCount}
           />
         )}
       </Box>

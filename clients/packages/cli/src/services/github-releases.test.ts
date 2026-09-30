@@ -9,14 +9,14 @@ const page = (number: number) =>
   `https://api.github.com/repos/polarsource/polar/releases?per_page=100&page=${number}`
 
 const release = {
-  tag_name: 'polar-cli@1.4.0',
+  tag_name: '@polar-sh/cli@1.4.0',
   draft: false,
   prerelease: false,
   assets: [
     {
       name: 'polar-darwin-arm64.zip',
       browser_download_url:
-        'https://github.com/polarsource/polar/releases/download/polar-cli@1.4.0/polar-darwin-arm64.zip',
+        'https://github.com/polarsource/polar/releases/download/@polar-sh/cli@1.4.0/polar-darwin-arm64.zip',
     },
   ],
 }
@@ -34,10 +34,10 @@ describe('getLatestRelease', () => {
   test('ignores other packages, drafts, prereleases, and non-version tags', async () => {
     http.routes[page(1)] = Response.json([
       { ...release, tag_name: '@polar-sh/sdk@99.0.0' },
-      { ...release, tag_name: 'polar-cli@2.0.0', draft: true },
-      { ...release, tag_name: 'polar-cli@3.0.0', prerelease: true },
-      { ...release, tag_name: 'polar-cli@4.0.0-beta.1' },
-      { ...release, tag_name: 'polar-cli@verification' },
+      { ...release, tag_name: '@polar-sh/cli@2.0.0', draft: true },
+      { ...release, tag_name: '@polar-sh/cli@3.0.0', prerelease: true },
+      { ...release, tag_name: '@polar-sh/cli@4.0.0-beta.1' },
+      { ...release, tag_name: '@polar-sh/cli@verification' },
       release,
     ])
 
@@ -50,8 +50,8 @@ describe('getLatestRelease', () => {
       { headers: { link: `<${page(2)}>; rel="next"` } },
     )
     http.routes[page(2)] = Response.json([
-      { ...release, tag_name: 'polar-cli@1.9.0' },
-      { ...release, tag_name: 'polar-cli@1.10.0' },
+      { ...release, tag_name: '@polar-sh/cli@1.9.0' },
+      { ...release, tag_name: '@polar-sh/cli@1.10.0' },
       release,
     ])
 

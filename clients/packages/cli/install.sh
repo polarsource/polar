@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO="polarsource/cli"
+REPO="polarsource/polar"
+TAG_PREFIX="@polar-sh/cli@"
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="polar"
 
@@ -34,20 +35,64 @@ detect_platform() {
     *)             error "Unsupported architecture: $arch" ;;
   esac
 
-  if [ "$os" = "linux" ] && [ "$arch" = "arm64" ]; then
-    error "Linux arm64 is not yet supported"
-  fi
-
   echo "${os}-${arch}"
 }
 
-get_latest_version() {
-  local version
-  version=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+# Prints each object of a JSON array on its own line, so a release's
+# tag_name stays on the same line as its draft and prerelease flags.
+split_json_array_objects() {
+  awk '
+    {
+      start = 1
+      n = length($0)
+      for (i = 1; i <= n; i++) {
+        c = substr($0, i, 1)
+        if (in_string) {
+          if (escaped) escaped = 0
+          else if (c == "\\") escaped = 1
+          else if (c == "\"") in_string = 0
+        } else if (c == "\"") {
+          in_string = 1
+        } else if (c == "{" || c == "[") {
+          if (++depth == 2) start = i
+        } else if (c == "}" || c == "]") {
+          if (--depth == 1) {
+            print record substr($0, start, i - start + 1)
+            record = ""
+          }
+        }
+      }
+      if (depth >= 2) record = record substr($0, start) " "
+    }
+  '
+}
+
+select_latest_cli_version() {
+  awk '/"draft":[ \t]*false/ && /"prerelease":[ \t]*false/' \
+    | sed -nE "s|.*\"tag_name\":[[:space:]]*\"${TAG_PREFIX}([0-9]+\.[0-9]+\.[0-9]+)\".*|\1|p" \
+    | sort -t. -k1,1n -k2,2n -k3,3n \
+    | tail -n 1
+}
+
+get_latest_tag() {
+  local page=1 releases count all_releases="" version
+
+  while :; do
+    releases="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=100&page=${page}" | split_json_array_objects)" \
+      || error "Failed to fetch releases from ${REPO}"
+    all_releases+="${releases}"$'\n'
+    count="$(printf '%s' "$releases" | awk 'END { print NR }')"
+    if [ "$count" -lt 100 ]; then
+      break
+    fi
+    page=$((page + 1))
+  done
+
+  version="$(printf '%s' "$all_releases" | select_latest_cli_version)"
   if [ -z "$version" ]; then
-    error "Failed to determine latest version"
+    error "No Polar CLI release found in ${REPO}"
   fi
-  echo "$version"
+  echo "${TAG_PREFIX}${version}"
 }
 
 get_archive_name() {
@@ -60,20 +105,21 @@ get_archive_name() {
 }
 
 main() {
-  local platform version url
+  local platform tag version url
 
   info "Detecting platform..."
   platform="$(detect_platform)"
   info "Platform: ${platform}"
 
   info "Fetching latest version..."
-  version="$(get_latest_version)"
+  tag="$(get_latest_tag)"
+  version="${tag#"$TAG_PREFIX"}"
   info "Version: ${version}"
 
   local archive
   archive="$(get_archive_name "$platform")"
-  local url="https://github.com/${REPO}/releases/download/${version}/${archive}"
-  local checksums_url="https://github.com/${REPO}/releases/download/${version}/checksums.txt"
+  local url="https://github.com/${REPO}/releases/download/${tag}/${archive}"
+  local checksums_url="https://github.com/${REPO}/releases/download/${tag}/checksums.txt"
 
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' EXIT

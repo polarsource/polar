@@ -317,7 +317,7 @@ describe('install', () => {
   const release = (
     assets: string[] = [archiveName, 'checksums.txt'],
   ): CLIRelease => ({
-    tag_name: 'polar-cli@9.9.9',
+    tag_name: '@polar-sh/cli@9.9.9',
     draft: false,
     prerelease: false,
     version: 'v9.9.9',

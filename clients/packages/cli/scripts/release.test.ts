@@ -38,7 +38,7 @@ describe('CLI release planning', () => {
 
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(true)
-    expect(outputs.get('tag')).toBe('polar-cli@1.4.0')
+    expect(outputs.get('tag')).toBe('@polar-sh/cli@1.4.0')
     expect(getContent).toHaveBeenCalledWith({
       ...context.repo,
       path: 'clients/packages/cli/package.json',
@@ -114,7 +114,7 @@ describe('CLI release planning', () => {
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(false)
     expect(outputs.get('tag')).toBe(
-      `polar-cli-verify-123-${process.env['GITHUB_RUN_ATTEMPT']}`,
+      `@polar-sh/cli-verify-123-${process.env['GITHUB_RUN_ATTEMPT']}`,
     )
     expect(getContent).not.toHaveBeenCalled()
   })
@@ -133,7 +133,7 @@ describe('CLI release planning', () => {
 
     expect(outputs.get('enabled')).toBe(true)
     expect(outputs.get('publish')).toBe(true)
-    expect(outputs.get('tag')).toBe('polar-cli@1.4.0')
+    expect(outputs.get('tag')).toBe('@polar-sh/cli@1.4.0')
     expect(getContent).not.toHaveBeenCalled()
   })
 

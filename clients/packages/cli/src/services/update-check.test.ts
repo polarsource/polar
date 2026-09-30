@@ -27,7 +27,7 @@ const writeState = async (state: unknown) => {
 const release = (version: string) => () =>
   Response.json([
     {
-      tag_name: `polar-cli@${version}`,
+      tag_name: `@polar-sh/cli@${version}`,
       draft: false,
       prerelease: false,
       assets: [],

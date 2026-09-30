@@ -9,7 +9,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from sqlalchemy.sql.operators import and_, eq
-from sqlalchemy.sql.selectable import FromClause, Join
+from sqlalchemy.sql.selectable import Alias, FromClause, Join, TableClause
 
 from polar.config import settings
 from polar.kit.crypto import get_current_secret_id
@@ -49,6 +49,9 @@ def _keeps_rows_unique(from_clause: FromClause, table: FromClause) -> bool:
 
 
 def _is_joined_on_primary_key(join: Join) -> bool:
+    right = join.right.element if isinstance(join.right, Alias) else join.right
+    if not isinstance(right, TableClause):
+        return False
     primary_key = set(join.right.primary_key)
     if join.onclause is None or not primary_key:
         return False

@@ -2,6 +2,7 @@ import { promptSessionRefresh } from '@/components/SessionRefresh/store'
 import { toast } from '@/components/Toast/use-toast'
 import { isSessionNotFreshError } from '@/utils/api/errors'
 import {
+  API_VERSION,
   createClient as baseCreateClient,
   Client,
   Middleware,
@@ -31,13 +32,11 @@ const sessionFreshnessMiddleware: Middleware = {
   },
 }
 
-const NEXT_API_VERSION = '2027-01'
-
 const CLIENT_VERSION_HEADERS = {
   'X-Polar-Client-Version': `web/${
     process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'dev'
   }`,
-  'Polar-Version': NEXT_API_VERSION,
+  'Polar-Version': API_VERSION,
 }
 
 export const createClientSideAPI = (token?: string): Client => {

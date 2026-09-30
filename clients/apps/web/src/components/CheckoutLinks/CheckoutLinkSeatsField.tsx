@@ -30,16 +30,14 @@ const computeSeatConfiguration = (
   let max: number | null = null
   for (const product of selectedProducts) {
     const seatPrice = product.prices.find(
-      (price) => price.amount_type === 'seat_based',
+      (price): price is schemas['ProductPriceSeatBased'] =>
+        price.amount_type === 'seat_based',
     )
-    if (!seatPrice || !('seat_tiers' in seatPrice) || !seatPrice.seat_tiers) {
+    if (!seatPrice) {
       return { configurable: false, min: 1, max: null }
     }
-    const tiers = [...(seatPrice.seat_tiers.tiers ?? [])].sort(
-      (a, b) => a.min_seats - b.min_seats,
-    )
-    const tierMin = tiers[0]?.min_seats ?? 1
-    const tierMax = tiers[tiers.length - 1]?.max_seats ?? null
+    const tierMin = seatPrice.minimum_units ?? 1
+    const tierMax = seatPrice.maximum_units
     min = Math.max(min, tierMin)
     if (tierMax !== null) {
       max = max === null ? tierMax : Math.min(max, tierMax)

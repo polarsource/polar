@@ -117,10 +117,9 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
-    ProductPriceSeatTier,
-    ProductPriceSeatTiers,
 )
 from polar.product.service import product as product_service
+from polar.product.tiers import TiersInput, TierType
 from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
@@ -2043,14 +2042,13 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                     amount_type=ProductPriceAmountType.seat_based,
                     price_currency=PresentmentCurrency.usd,
                     tax_behavior=TaxBehaviorOption.exclusive,
-                    seat_tiers=ProductPriceSeatTiers(
-                        tiers=[
-                            ProductPriceSeatTier(
-                                min_seats=1,
-                                max_seats=None,  # Unlimited
-                                price_per_seat=price_per_seat,
-                            )
-                        ]
+                    tiers=TiersInput.model_validate(
+                        {
+                            "type": TierType.volume,
+                            "tiers": [
+                                {"bound": None, "unit_amount": str(price_per_seat)}
+                            ],
+                        }
                     ),
                 )
             else:

@@ -207,9 +207,9 @@ export const ProductPricingSection = ({
           return {
             ...base,
             amount_type: 'seat_based',
-            seat_tiers: {
-              seat_tier_type: 'volume',
-              tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
+            tiers: {
+              type: 'volume',
+              tiers: [{ bound: null, unit_amount: 0 }],
             },
           }
         } else if (newAmountType === 'unit_based') {
@@ -281,25 +281,10 @@ export const ProductPricingSection = ({
           }
         } else if (price.amount_type === 'free') {
           newPrice = { ...baseCurrency, amount_type: 'free' }
-        } else if (price.amount_type === 'seat_based') {
-          const sourceTiers =
-            'seat_tiers' in price && price.seat_tiers?.tiers
-              ? price.seat_tiers.tiers
-              : []
-          const seatTiers = sourceTiers.map((t) => ({
-            min_seats: t.min_seats,
-            max_seats: t.max_seats ?? null,
-            price_per_seat: 0,
-          }))
-          if (seatTiers.length === 0) {
-            seatTiers.push({ min_seats: 1, max_seats: null, price_per_seat: 0 })
-          }
-          newPrice = {
-            ...baseCurrency,
-            amount_type: 'seat_based',
-            seat_tiers: { seat_tier_type: 'volume', tiers: seatTiers },
-          }
-        } else if (price.amount_type === 'unit_based') {
+        } else if (
+          price.amount_type === 'seat_based' ||
+          price.amount_type === 'unit_based'
+        ) {
           const sourceTiers =
             'tiers' in price && price.tiers?.tiers ? price.tiers.tiers : []
           const unitTiers = sourceTiers.map((t) => ({
@@ -309,9 +294,8 @@ export const ProductPricingSection = ({
           if (unitTiers.length === 0) {
             unitTiers.push({ bound: null, unit_amount: 0 })
           }
-          newPrice = {
+          const tiered = {
             ...baseCurrency,
-            amount_type: 'unit_based',
             minimum_units:
               'minimum_units' in price ? (price.minimum_units ?? null) : null,
             tiers: {
@@ -321,8 +305,15 @@ export const ProductPricingSection = ({
                   : 'volume',
               tiers: unitTiers,
             },
-            unit_label: 'unit_label' in price ? price.unit_label : null,
           }
+          newPrice =
+            price.amount_type === 'seat_based'
+              ? { ...tiered, amount_type: 'seat_based' }
+              : {
+                  ...tiered,
+                  amount_type: 'unit_based',
+                  unit_label: 'unit_label' in price ? price.unit_label : null,
+                }
         } else if (price.amount_type === 'metered_unit') {
           const meterId = 'meter_id' in price ? price.meter_id : ''
           newPrice = {
@@ -400,9 +391,9 @@ export const ProductPricingSection = ({
       (currency) => ({
         price_currency: currency as schemas['PresentmentCurrency'],
         amount_type: 'seat_based',
-        seat_tiers: {
-          seat_tier_type: 'volume',
-          tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
+        tiers: {
+          type: 'volume',
+          tiers: [{ bound: null, unit_amount: 0 }],
         },
       }),
     )

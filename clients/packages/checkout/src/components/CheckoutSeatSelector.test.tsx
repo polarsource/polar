@@ -17,12 +17,12 @@ const seatDefaults: Partial<ProductCheckoutPublic> = {
   min_seats: null,
   max_seats: null,
   product_price: createSeatBasedPrice({
-    seat_tiers: {
-      seat_tier_type: 'volume',
-      tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1049 }],
-      minimum_seats: 1,
-      maximum_seats: null,
+    tiers: {
+      type: 'volume',
+      tiers: [{ bound: null, unit_amount: '1049' }],
     },
+    minimum_units: 1,
+    maximum_units: null,
   }),
 }
 
@@ -207,12 +207,12 @@ describe('CheckoutSeatSelector', () => {
         min_seats: 3,
         max_seats: null,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'volume',
-            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
-            minimum_seats: 1,
-            maximum_seats: null,
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '1000' }],
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -233,12 +233,12 @@ describe('CheckoutSeatSelector', () => {
         min_seats: null,
         max_seats: 10,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'volume',
-            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
-            minimum_seats: 1,
-            maximum_seats: null,
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '1000' }],
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -259,12 +259,12 @@ describe('CheckoutSeatSelector', () => {
         min_seats: 3,
         max_seats: 10,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'volume',
-            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
-            minimum_seats: 1,
-            maximum_seats: null,
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '1000' }],
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 
@@ -290,15 +290,15 @@ describe('CheckoutSeatSelector', () => {
       min_seats: null,
       max_seats: null,
       product_price: createSeatBasedPrice({
-        seat_tiers: {
-          seat_tier_type: 'graduated',
+        tiers: {
+          type: 'graduated',
           tiers: [
-            { min_seats: 1, max_seats: 10, price_per_seat: 1000 },
-            { min_seats: 11, max_seats: null, price_per_seat: 800 },
+            { bound: 10, unit_amount: '1000' },
+            { bound: null, unit_amount: '800' },
           ],
-          minimum_seats: 1,
-          maximum_seats: null,
         },
+        minimum_units: 1,
+        maximum_units: null,
       }),
     }
 
@@ -524,12 +524,12 @@ describe('CheckoutSeatSelector', () => {
         min_seats: null,
         max_seats: 5,
         product_price: createSeatBasedPrice({
-          seat_tiers: {
-            seat_tier_type: 'volume',
-            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
-            minimum_seats: 1,
-            maximum_seats: null,
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '1000' }],
           },
+          minimum_units: 1,
+          maximum_units: null,
         }),
       })
 

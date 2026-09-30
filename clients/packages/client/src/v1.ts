@@ -33619,8 +33619,18 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['Tiers']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       */
+      minimum_units: number | null
+      /**
+       * Maximum Units
+       * @description The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.
+       */
+      readonly maximum_units: number | null
     }
     /**
      * ProductPriceSeatBasedCreate
@@ -33639,79 +33649,13 @@ export interface components {
       price_currency: components['schemas']['PresentmentCurrency']
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-      /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
-    }
-    /**
-     * ProductPriceSeatTier
-     * @description A pricing tier for seat-based pricing.
-     */
-    ProductPriceSeatTier: {
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput']
       /**
-       * Min Seats
-       * @description Minimum number of seats (inclusive)
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
        */
-      min_seats: number
-      /**
-       * Max Seats
-       * @description Maximum number of seats (inclusive). None for unlimited.
-       */
-      max_seats?: number | null
-      /**
-       * Price Per Seat
-       * @description Price per seat in cents for this tier
-       */
-      price_per_seat: number
-    }
-    /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
-     *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
-     */
-    'ProductPriceSeatTiers-Input': {
-      /**
-       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
-       * @default volume
-       */
-      seat_tier_type: components['schemas']['SeatTierType']
-      /**
-       * Tiers
-       * @description List of pricing tiers
-       */
-      tiers: components['schemas']['ProductPriceSeatTier'][]
-    }
-    /**
-     * ProductPriceSeatTiers
-     * @description List of pricing tiers for seat-based pricing.
-     *
-     *     The minimum and maximum seat limits are derived from the tiers:
-     *     - minimum_seats = first tier's min_seats
-     *     - maximum_seats = last tier's max_seats (None for unlimited)
-     */
-    'ProductPriceSeatTiers-Output': {
-      /**
-       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
-       * @default volume
-       */
-      seat_tier_type: components['schemas']['SeatTierType']
-      /**
-       * Tiers
-       * @description List of pricing tiers
-       */
-      tiers: components['schemas']['ProductPriceSeatTier'][]
-      /**
-       * Minimum Seats
-       * @description Minimum number of seats required for purchase, derived from first tier.
-       */
-      readonly minimum_seats: number
-      /**
-       * Maximum Seats
-       * @description Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
-       */
-      readonly maximum_seats: number | null
+      minimum_units?: number | null
     }
     /**
      * ProductPriceSource
@@ -34748,11 +34692,6 @@ export interface components {
      * @enum {string}
      */
     SeatStatus: 'pending' | 'claimed' | 'revoked'
-    /**
-     * SeatTierType
-     * @enum {string}
-     */
-    SeatTierType: 'volume' | 'graduated'
     /** SeatsList */
     SeatsList: {
       /**
@@ -72873,9 +72812,6 @@ export const searchResultSubscriptionTypeValues: ReadonlyArray<
 export const seatStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
-export const seatTierTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SeatTierType']
-> = ['volume', 'graduated']
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [

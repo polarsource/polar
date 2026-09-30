@@ -73352,9 +73352,34 @@
             "title": "Product Id",
             "description": "The ID of the product owning the price."
           },
-          "seat_tiers": {
-            "$ref": "#/components/schemas/ProductPriceSeatTiers-Output",
-            "description": "Tiered pricing based on seat quantity"
+          "tiers": {
+            "$ref": "#/components/schemas/Tiers",
+            "description": "Tiered pricing based on the purchased seat quantity."
+          },
+          "minimum_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Units",
+            "description": "The minimum purchasable seat quantity (inclusive)."
+          },
+          "maximum_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum Units",
+            "description": "The maximum purchasable seat quantity, from the last tier's bound. `null` for unlimited.",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -73368,7 +73393,9 @@
           "tax_behavior",
           "is_archived",
           "product_id",
-          "seat_tiers"
+          "tiers",
+          "minimum_units",
+          "maximum_units"
         ],
         "title": "ProductPriceSeatBased",
         "description": "A seat-based price for a product."
@@ -73396,28 +73423,11 @@
             ],
             "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
-          "seat_tiers": {
-            "$ref": "#/components/schemas/ProductPriceSeatTiers-Input",
-            "description": "Tiered pricing based on seat quantity"
-          }
-        },
-        "type": "object",
-        "required": [
-          "amount_type",
-          "seat_tiers"
-        ],
-        "title": "ProductPriceSeatBasedCreate",
-        "description": "Schema to create a seat-based price with volume-based tiers."
-      },
-      "ProductPriceSeatTier": {
-        "properties": {
-          "min_seats": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Min Seats",
-            "description": "Minimum number of seats (inclusive)"
+          "tiers": {
+            "$ref": "#/components/schemas/TiersInput",
+            "description": "Tiered pricing based on the purchased seat quantity."
           },
-          "max_seats": {
+          "minimum_units": {
             "anyOf": [
               {
                 "type": "integer",
@@ -73427,93 +73437,17 @@
                 "type": "null"
               }
             ],
-            "title": "Max Seats",
-            "description": "Maximum number of seats (inclusive). None for unlimited."
-          },
-          "price_per_seat": {
-            "type": "integer",
-            "maximum": 9.223372036854776e+18,
-            "minimum": 0.0,
-            "title": "Price Per Seat",
-            "description": "Price per seat in cents for this tier"
+            "title": "Minimum Units",
+            "description": "The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set."
           }
         },
         "type": "object",
         "required": [
-          "min_seats",
-          "price_per_seat"
-        ],
-        "title": "ProductPriceSeatTier",
-        "description": "A pricing tier for seat-based pricing."
-      },
-      "ProductPriceSeatTiers-Input": {
-        "properties": {
-          "seat_tier_type": {
-            "$ref": "#/components/schemas/SeatTierType",
-            "description": "How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
-            "default": "volume"
-          },
-          "tiers": {
-            "items": {
-              "$ref": "#/components/schemas/ProductPriceSeatTier"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Tiers",
-            "description": "List of pricing tiers"
-          }
-        },
-        "type": "object",
-        "required": [
+          "amount_type",
           "tiers"
         ],
-        "title": "ProductPriceSeatTiers",
-        "description": "List of pricing tiers for seat-based pricing.\n\nThe minimum and maximum seat limits are derived from the tiers:\n- minimum_seats = first tier's min_seats\n- maximum_seats = last tier's max_seats (None for unlimited)"
-      },
-      "ProductPriceSeatTiers-Output": {
-        "properties": {
-          "seat_tier_type": {
-            "$ref": "#/components/schemas/SeatTierType",
-            "description": "How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
-            "default": "volume"
-          },
-          "tiers": {
-            "items": {
-              "$ref": "#/components/schemas/ProductPriceSeatTier"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Tiers",
-            "description": "List of pricing tiers"
-          },
-          "minimum_seats": {
-            "type": "integer",
-            "title": "Minimum Seats",
-            "description": "Minimum number of seats required for purchase, derived from first tier.",
-            "readOnly": true
-          },
-          "maximum_seats": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Maximum Seats",
-            "description": "Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.",
-            "readOnly": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "tiers",
-          "minimum_seats",
-          "maximum_seats"
-        ],
-        "title": "ProductPriceSeatTiers",
-        "description": "List of pricing tiers for seat-based pricing.\n\nThe minimum and maximum seat limits are derived from the tiers:\n- minimum_seats = first tier's min_seats\n- maximum_seats = last tier's max_seats (None for unlimited)"
+        "title": "ProductPriceSeatBasedCreate",
+        "description": "Schema to create a seat-based price with volume-based tiers."
       },
       "ProductPriceSource": {
         "type": "string",
@@ -75193,14 +75127,6 @@
           "revoked"
         ],
         "title": "SeatStatus"
-      },
-      "SeatTierType": {
-        "type": "string",
-        "enum": [
-          "volume",
-          "graduated"
-        ],
-        "title": "SeatTierType"
       },
       "SeatsList": {
         "properties": {

@@ -117,13 +117,9 @@ export const CheckoutProductSwitcherItemPrice = ({
       )
     }
 
-    const minimumAmount =
-      (price.seat_tiers?.tiers?.[0]?.price_per_seat ?? 0) *
-      (price.seat_tiers?.minimum_seats ?? 1)
-
     return (
       <FromPrice
-        amount={minimumAmount}
+        amount={getMinimumUnitAmount(price)}
         currency={price.price_currency}
         interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}
@@ -154,10 +150,7 @@ const FixedSeatPrice = ({
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
-  const sortedTiers = (seatPrice.seat_tiers?.tiers ?? []).toSorted(
-    (a, b) => a.min_seats - b.min_seats,
-  )
-  const basePricePerSeat = sortedTiers[0]?.price_per_seat ?? 0
+  const basePricePerSeat = getBasePricePerUnit(seatPrice)
   return (
     <span className="flex flex-wrap items-baseline justify-end gap-x-1">
       <AmountLabel

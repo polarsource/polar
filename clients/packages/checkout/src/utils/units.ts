@@ -46,7 +46,12 @@ export function getUnitLabels(
 
 type UnitTier = schemas['Tier']
 
-function sortTiers(tiers: UnitTier[]): UnitTier[] {
+export type TieredPrice = Pick<
+  schemas['ProductPriceUnitBased'],
+  'tiers' | 'minimum_units'
+>
+
+export function sortTiers(tiers: UnitTier[]): UnitTier[] {
   return tiers.toSorted((a, b) => {
     if (a.bound == null) return 1
     if (b.bound == null) return -1
@@ -87,9 +92,7 @@ export function getUnitTierRows(
   ]
 }
 
-export function getBasePricePerUnit(
-  price: schemas['ProductPriceUnitBased'],
-): number {
+export function getBasePricePerUnit(price: TieredPrice): number {
   const minimumUnits = price.minimum_units ?? 1
   const tiers = sortTiers(price.tiers.tiers)
 
@@ -100,9 +103,7 @@ export function getBasePricePerUnit(
   return getUnitTierRows(minimumUnits, price.tiers)[0]?.pricePerUnit ?? 0
 }
 
-export function getMinimumUnitAmount(
-  price: schemas['ProductPriceUnitBased'],
-): number {
+export function getMinimumUnitAmount(price: TieredPrice): number {
   const minimumUnits = price.minimum_units ?? 1
   return getUnitTierRows(minimumUnits, price.tiers).reduce(
     (total, row) => total + row.units * row.pricePerUnit,

@@ -35,6 +35,7 @@ from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import AsyncSession
 from polar.tax.calculation import TaxCalculationService
 from polar.tax.calculation.base import TaxabilityReason
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -570,6 +571,38 @@ class TestCreateCheckout:
             assert len(json["prices"][str(p.id)]) == 1
             ad_hoc_price = json["prices"][str(p.id)][0]
             assert ad_hoc_price["id"] != str(p.prices[0].id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_valid_ad_hoc_seat_based_price_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        tiers = {"type": "volume", "tiers": [{"bound": None, "unit_amount": "1200"}]}
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "prices": {
+                    str(product.id): [
+                        {
+                            "amount_type": "seat_based",
+                            "price_currency": "usd",
+                            "tiers": tiers,
+                        }
+                    ],
+                },
+            },
+        )
+
+        assert response.status_code == 201
+        ad_hoc_price = response.json()["prices"][str(product.id)][0]
+        assert ad_hoc_price["amount_type"] == "seat_based"
+        assert ad_hoc_price["tiers"] == tiers
 
 
 @pytest.mark.asyncio

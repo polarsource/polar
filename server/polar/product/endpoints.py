@@ -9,6 +9,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.kit.versioning import version
 from polar.models import Product
 from polar.models.product import ProductVisibility
 from polar.openapi import APITag, cli_preview
@@ -20,10 +21,16 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
-from . import auth
+from . import auth, legacy_schemas
 from .schemas import Product as ProductSchema
-from .schemas import ProductBenefitsUpdate, ProductCreate, ProductID, ProductUpdate
+from .schemas import (
+    ProductBenefitsUpdate,
+    ProductCreate,
+    ProductID,
+    ProductUpdate,
+)
 from .service import ProductNotDeletable
 from .service import product as product_service
 from .sorting import ProductSortProperty
@@ -137,6 +144,24 @@ async def get(
     responses={201: {"description": "Product created."}},
 )
 async def create(
+    product_create: legacy_schemas.ProductCreate,
+    auth_subject: auth.CreatorProductsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Product:
+    """Create a product."""
+    return await product_service.create(session, product_create, auth_subject)
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=ProductSchema,
+    status_code=201,
+    summary="Create Product",
+    responses={201: {"description": "Product created."}},
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
     product_create: ProductCreate,
     auth_subject: auth.CreatorProductsWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -159,6 +184,36 @@ async def create(
     },
 )
 async def update(
+    id: ProductID,
+    product_update: legacy_schemas.ProductUpdate,
+    auth_subject: auth.CreatorProductsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Product:
+    """Update a product."""
+    product = await product_service.get(session, auth_subject, id)
+
+    if product is None:
+        raise ResourceNotFound()
+
+    return await product_service.update(session, product, product_update, auth_subject)
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    response_model=ProductSchema,
+    summary="Update Product",
+    responses={
+        200: {"description": "Product updated."},
+        403: {
+            "description": "You don't have the permission to update this product.",
+            "model": NotPermitted.schema(),
+        },
+        404: ProductNotFound,
+    },
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
     id: ProductID,
     product_update: ProductUpdate,
     auth_subject: auth.CreatorProductsWrite,

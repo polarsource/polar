@@ -456,10 +456,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )
     _seat_tiers: Mapped[SeatTiersData | None] = mapped_column(
-        "seat_tiers",
-        postgresql.JSONB,
-        nullable=True,
-        default=None,
+        "seat_tiers", postgresql.JSONB, nullable=True, deferred=True
     )
 
     @property

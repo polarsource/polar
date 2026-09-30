@@ -214,6 +214,25 @@ class TestPrecheckEngine:
         assert "unsupported_pricing_scheme" in warnings
         assert "duplicate_customer_email" in warnings
 
+    async def test_a_product_extracted_in_parts_is_judged_once(self) -> None:
+        report = await run(
+            [
+                build_product(prices=[build_price(source_id="price_new")]),
+                build_product(
+                    prices=[
+                        build_price(source_id="price_old", amount=800, active=False)
+                    ]
+                ),
+            ]
+        )
+
+        products = next(
+            summary
+            for summary in report.entities
+            if summary.entity == PrecheckEntity.products
+        )
+        assert (products.total, products.importable) == (1, 1)
+
     async def test_organization_not_renewal_enabled_blocks(self) -> None:
         report = await run(
             [build_product()],

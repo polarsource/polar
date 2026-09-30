@@ -3040,10 +3040,10 @@ class TestImportCatalog:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        ("live_amount", "expected_prices", "product_archived"),
+        ("live_amount", "expected_prices", "product_archived", "product_note"),
         [
-            (1200, {(1200, False), (1000, True)}, False),
-            (None, {(1000, False)}, True),
+            (1200, {(1200, False), (1000, True)}, False, None),
+            (None, {(1000, False)}, True, "product_not_sold_in_default_currency"),
         ],
     )
     async def test_inactive_prices_import_onto_their_product(
@@ -3057,6 +3057,7 @@ class TestImportCatalog:
         live_amount: int | None,
         expected_prices: set[tuple[int, bool]],
         product_archived: bool,
+        product_note: str | None,
     ) -> None:
         prices = [
             CanonicalPrice(
@@ -3096,9 +3097,18 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization, records=records
         )
+        [product_item], _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
 
         await _import_catalog(session, auth_subject, migration.id)
 
+        assert product_item.reason_code == product_note
         [product] = (
             (
                 await session.execute(

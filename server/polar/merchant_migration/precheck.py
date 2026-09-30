@@ -10,7 +10,7 @@ something, `info` when there is nothing to fix.
 
 from collections import Counter
 from collections.abc import AsyncIterable, Container, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -304,7 +304,7 @@ class PrecheckEngine:
         source_account: CanonicalAccount,
         existing_product_names: set[str] | None = None,
     ) -> PrecheckReport:
-        record_list = [record async for record in records]
+        record_list = _merge_product_parts([record async for record in records])
         default_currency = organization.default_presentment_currency
 
         issues: list[PrecheckIssue] = list(self._check_organization(organization))
@@ -844,6 +844,29 @@ class PrecheckEngine:
 
 
 precheck_engine = PrecheckEngine()
+
+
+def _merge_product_parts(records: Sequence[CanonicalRecord]) -> list[CanonicalRecord]:
+    """An adapter yields a product in parts, one per page or price phase, and
+    staging merges them into one row. The report does the same, so it judges
+    the whole product once."""
+    merged: list[CanonicalRecord] = []
+    positions: dict[str, int] = {}
+    for record in records:
+        if isinstance(record, CanonicalProduct) and record.source_id in positions:
+            index = positions[record.source_id]
+            current = merged[index]
+            assert isinstance(current, CanonicalProduct)
+            prices = {canonical_price_key(price): price for price in current.prices}
+            prices.update(
+                {canonical_price_key(price): price for price in record.prices}
+            )
+            merged[index] = replace(record, prices=list(prices.values()))
+            continue
+        if isinstance(record, CanonicalProduct):
+            positions[record.source_id] = len(merged)
+        merged.append(record)
+    return merged
 
 
 def _interval_label(product: CanonicalProduct) -> str:

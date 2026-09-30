@@ -52,30 +52,28 @@ function resolveBinary() {
 
 // Package managers skip optional dependencies when the lockfile was generated on
 // another platform; fetch the exact platform package into a temporary prefix instead.
-// On Windows npm is a .cmd wrapper, which only runs through cmd.exe.
-function npm(args) {
-  if (process.platform !== 'win32') return ['npm', args, {}]
-  const quoted = args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg))
-  return ['npm.cmd', quoted, { shell: true }]
-}
-
+// npm is a .cmd wrapper on Windows, so it has to go through the shell there. The
+// arguments stay static and the prefix is passed as cwd, so nothing needs quoting.
 function installPackage() {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'polar-cli-install-'))
   try {
-    const [command, args, options] = npm([
-      'install',
-      '--ignore-scripts',
-      '--no-save',
-      '--loglevel=error',
-      '--prefix',
-      temp,
-      `${name}@${dependencies[name]}`,
-    ])
-    const result = childProcess.spawnSync(command, args, {
-      ...options,
-      stdio: 'inherit',
-      windowsHide: true,
-    })
+    fs.writeFileSync(path.join(temp, 'package.json'), '{}')
+    const result = childProcess.spawnSync(
+      'npm',
+      [
+        'install',
+        '--ignore-scripts',
+        '--no-save',
+        '--loglevel=error',
+        `${name}@${dependencies[name]}`,
+      ],
+      {
+        cwd: temp,
+        shell: process.platform === 'win32',
+        stdio: 'inherit',
+        windowsHide: true,
+      },
+    )
     if (result.status !== 0) return false
     copyBinary(path.join(temp, 'node_modules', name, 'bin', sourceBinary))
     return true

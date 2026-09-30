@@ -177,9 +177,10 @@ kept alive during the upgrade so the package manager can replace it.
 
 The job authenticates with npm trusted publishing (`id-token: write`), like the
 other packages. npm only lets you configure a trusted publisher on an existing
-package, so publish the very first version of `@polar-sh/cli` and each platform
-package manually with an npm token, then add the `release_cli.yml` workflow as
-their trusted publisher on npmjs.com.
+package, so `@polar-sh/cli` and each platform package were bootstrapped with an
+empty `0.0.1` release published by hand, then `release_cli.yml` was added as
+their trusted publisher on npmjs.com. Deprecate the `0.0.1` versions once the
+first real release is out so `npm install` never resolves to them.
 
 The workflow skips metadata-only changes and already-published versions. It does
 not publish the imported `1.3.9` version just because the CLI moved repositories.

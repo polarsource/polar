@@ -123,6 +123,19 @@ customer_state = polar.customers.get_state_external(
 
 Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
 
+## Organizations
+
+OAuth access tokens and personal access tokens can reach every organization the user belongs to.
+Pass `organization_id` to get a client that acts on a single organization. It sends the
+`Polar-Organization` header, so the API only returns and changes that organization's data:
+
+```python
+acme = Polar("polar_at_u_xxx", organization_id="acme_organization_id")
+customers = acme.customers.list()
+```
+
+Organization access tokens already act on their own organization and don't need it.
+
 ## Deserializing Data
 
 Use `deserialize` to convert arbitrary data into a generated SDK model or union type:

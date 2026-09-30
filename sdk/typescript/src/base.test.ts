@@ -185,3 +185,25 @@ describe("buildRequest", () => {
     expect(url).toBe("https://api.polar.sh/v1/items/test?valid_param=value");
   });
 });
+
+describe("organization", () => {
+  const organizationHeader = (client: ClientBase) => {
+    const [, requestInit] = client.buildRequest("GET", "/v1/items/");
+    return (requestInit.headers as Headers).get("Polar-Organization");
+  };
+
+  test("omits the header by default", () => {
+    expect(organizationHeader(client)).toBeNull();
+  });
+
+  test("sends the configured organization", () => {
+    const client = new ClientBase({
+      baseUrl: "https://api.polar.sh",
+      version: "2026-04",
+      accessToken: "polar_at_u_xxx",
+      organizationId: "org_1",
+    });
+
+    expect(organizationHeader(client)).toBe("org_1");
+  });
+});

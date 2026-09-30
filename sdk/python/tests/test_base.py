@@ -14,6 +14,7 @@ from polar.base import (
     _register_extra_items_typed_dict,
     resolve_base_url,
 )
+from polar.v2026_04 import Polar, PolarAsync
 
 SERVERS = {
     "production": "https://api.polar.sh",
@@ -301,3 +302,35 @@ class TestBuildRequest:
             str(request.url)
             == "https://api.polar.sh/v1/items/?metadata%5Bkept%5D=value"
         )
+
+
+class TestOrganization:
+    def test_omitted_by_default(self, client: SyncClientBase | AsyncClientBase) -> None:
+        request = client.build_request(method="GET", url="/v1/items/")
+
+        assert "Polar-Organization" not in request.headers
+
+    @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
+    def test_configured_organization(
+        self, client_class: type[SyncClientBase | AsyncClientBase]
+    ) -> None:
+        client = client_class(
+            base_url="https://api.polar.sh",
+            version="2026-04",
+            access_token="polar_at_u_xxx",
+            organization_id="org_1",
+        )
+
+        request = client.build_request(method="GET", url="/v1/items/")
+
+        assert request.headers["Polar-Organization"] == "org_1"
+
+    @pytest.mark.parametrize("polar_class", [Polar, PolarAsync])
+    def test_polar_organization(
+        self, polar_class: type[Polar | PolarAsync]
+    ) -> None:
+        polar = polar_class("polar_at_u_xxx", organization_id="org_1")
+
+        request = polar._client.build_request(method="GET", url="/v1/items/")
+
+        assert request.headers["Polar-Organization"] == "org_1"

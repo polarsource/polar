@@ -8,6 +8,7 @@ import {
   importedTotal,
   nothingImported,
   plural,
+  preparedEarlier,
 } from './review/importSummary'
 import type { useRecordSummary } from './review/recordSummary'
 
@@ -23,6 +24,10 @@ const UNCOUNTED = 'Your catalog is now in Polar.'
 const CARDS_AT_STRIPE =
   "Your customers' cards are still at Stripe. Moving them lets Polar charge " +
   'them. This is a checklist. You can leave and come back.'
+const MAYBE_ON_POLAR =
+  'These subscriptions were prepared in an earlier migration. If their ' +
+  "cards are already on Polar, you'll go straight to the switch. Otherwise " +
+  "you'll get a checklist to move them."
 const NOTHING_TO_MOVE =
   'There is nothing to move yet. Prepare your subscriptions first, then come ' +
   "back to move your customers' saved cards."
@@ -51,10 +56,12 @@ export function ImportedHandoff({
 }: Props) {
   const start = useStartPanTransfer(migrationId)
   const remaining = plural(outcome.selectableTotal, 'subscription')
-  const nothingLanded = nothingImported({
+  const landed = {
     ...outcome,
     readyToSwitch: outcome.counts.subscriptions.ready,
-  })
+  }
+  const nothingLanded = nothingImported(landed)
+  const earlier = preparedEarlier(landed)
 
   return (
     <Box
@@ -85,10 +92,14 @@ export function ImportedHandoff({
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="heading-xs" as="h3">
-          Next: move saved cards
+          {earlier ? 'Next: check saved cards' : 'Next: move saved cards'}
         </Text>
         <Text variant="caption" color="muted">
-          {nothingLanded ? NOTHING_TO_MOVE : CARDS_AT_STRIPE}
+          {nothingLanded
+            ? NOTHING_TO_MOVE
+            : earlier
+              ? MAYBE_ON_POLAR
+              : CARDS_AT_STRIPE}
         </Text>
       </Box>
 
@@ -102,7 +113,11 @@ export function ImportedHandoff({
         size="sm"
         actions={[
           {
-            text: start.isPending ? 'Starting…' : 'Start moving cards',
+            text: start.isPending
+              ? 'Starting…'
+              : earlier
+                ? 'Continue'
+                : 'Start moving cards',
             // Not disabled on success: that would strand the merchant if the
             // refetch which unmounts this card never arrives, and a second
             // click is merely a recoverable "already started".

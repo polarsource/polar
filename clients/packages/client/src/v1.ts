@@ -57063,7 +57063,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The catalog isn't imported yet, the transfer already started, or card transfers aren't configured. */
+      /** @description The catalog isn't imported yet, the transfer already started, card transfers aren't configured, or another operation is still running. */
       409: {
         headers: {
           [name: string]: unknown
@@ -57073,6 +57073,7 @@ export interface operations {
             | components['schemas']['PanTransferNotReady']
             | components['schemas']['PanTransferAlreadyStarted']
             | components['schemas']['PanTransferUnavailable']
+            | components['schemas']['MigrationOperationInProgress']
         }
       }
       /** @description Validation Error */

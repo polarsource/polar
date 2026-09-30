@@ -860,8 +860,11 @@ class MerchantMigrationService:
         migration_id: UUID,
     ) -> AsyncGenerator[str]:
         """Authorize the migration, then return a stream of the customer source
-        IDs Stripe Copy still has to move. Auth runs before the generator is
-        returned so 403/404 cannot land mid-stream."""
+        IDs Stripe Copy still has to move, not only the imported ones despite
+        the name: customers behind subscriptions taken over from an earlier
+        migration are included, and customers whose cards are already on Polar
+        are left out. Auth runs before the generator is returned so 403/404
+        cannot land mid-stream."""
         await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
         return repository.stream_customer_source_ids_to_copy(migration_id)

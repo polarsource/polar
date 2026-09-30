@@ -7667,6 +7667,127 @@ class TestFinalizeOrder:
             == 1
         )
 
+    async def test_grants_benefits_once_settled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        payment_intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_finalize_success",
+                "status": "succeeded",
+                "latest_charge": {"object": "charge", "id": "ch_finalize_success"},
+            },
+            None,
+        )
+        stripe_service_mock.create_payment_intent.return_value = payment_intent
+
+        payment = await create_payment(
+            save_fixture,
+            off_session_organization,
+            processor_id="ch_finalize_success",
+        )
+        mocker.patch(
+            "polar.order.service.payment_service.upsert_from_stripe_charge",
+            new=AsyncMock(return_value=payment),
+        )
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
+
+    async def test_grants_benefits_for_free_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        customer: Customer,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[(None, "usd")],
+        )
+        order = await order_service.create_draft_order(
+            session,
+            off_session_organization,
+            OrderCreate(customer_id=customer.id, product_id=product.id),
+        )
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
+
+    async def test_failed_charge_does_not_grant_benefits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
+            message="Your card was declined.",
+            param="card",
+            code="card_declined",
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        assert all(
+            c.args[0] != "benefit.enqueue_benefits_grants"
+            for c in enqueue_job_mock.call_args_list
+        )
+
     async def test_off_session_charge_notifies_merchant_once_settled(
         self,
         session: AsyncSession,

@@ -4,6 +4,7 @@ from datetime import timedelta
 import httpx
 import pytest
 import pytest_asyncio
+from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
@@ -577,6 +578,53 @@ class TestCompleteStep:
             step for step in migration.pan_transfer_steps if step.key == "cutover"
         )
         assert cutover.status == PanStepStatus.blocked
+
+    async def test_stripe_copy_accepts_customers_without_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture,
+            organization,
+            step=MerchantMigrationStep.copy_cards,
+            steps=_advance_to("stripe_copy"),
+        )
+        get_payment_method = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method"
+        )
+
+        response = await backoffice_client.post(
+            f"/merchant-migrations/{migration.id}/steps/stripe_copy/complete",
+            files={
+                "payment_method_mapping": (
+                    "mapping.csv",
+                    (
+                        b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                        b"cus_1,,cus_1,\n"
+                        b"cus_2,,cus_2,\n"
+                        b"cus_3,pm_old,cus_3,\n"
+                    ),
+                    "text/csv",
+                )
+            },
+            headers={"HX-Request": "true"},
+        )
+
+        assert response.status_code == 200
+        assert "HX-Redirect" not in response.headers
+        assert "Stripe mapping imported" in response.text
+        assert "Customers with no payment method" in response.text
+        assert "pm_old has no copied payment method" in response.text
+        get_payment_method.assert_not_called()
+        await _reload(session, migration)
+        step = next(
+            step for step in migration.pan_transfer_steps if step.key == "stripe_copy"
+        )
+        assert step.status == PanStepStatus.completed
 
     async def test_unknown_step_is_not_found(
         self,

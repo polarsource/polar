@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from fastapi import Request
 from tagflow import tag, text
 
+from polar.merchant_migration.cards import PaymentMethodMappingImportSummary
 from polar.merchant_migration.pan_transfer import (
     PanStepStatus,
     PanTransferStep,
@@ -13,7 +14,7 @@ from polar.merchant_migration.pan_transfer import (
 from polar.models import MerchantMigration, MerchantMigrationRecord
 
 from .. import formatters
-from ..components import button
+from ..components import alert, button, metric_card, modal
 from .mrr import Money, MrrBreakdown
 from .status import (
     OWNER_LABELS,
@@ -48,6 +49,46 @@ _STEP_ICONS: dict[PanStepStatus, tuple[str, str]] = {
     PanStepStatus.pending: ("icon-circle-dot", "text-base-content/60"),
     PanStepStatus.blocked: ("icon-circle", "text-base-content/30"),
 }
+
+
+def mapping_import_summary(
+    summary: PaymentMethodMappingImportSummary, *, detail_url: str
+) -> None:
+    """Shown in place of the redirect: an `HX-Redirect` drops request toasts."""
+    with modal("Stripe mapping imported", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.div(classes="grid grid-cols-1 sm:grid-cols-3 gap-4"):
+                with metric_card("Cards linked", summary.linked, compact=True):
+                    pass
+                with metric_card(
+                    "Customers with no payment method",
+                    summary.customers_without_payment_method,
+                    compact=True,
+                ):
+                    pass
+                with metric_card(
+                    "Rows skipped",
+                    len(summary.skipped),
+                    variant="warning" if summary.skipped else "default",
+                    compact=True,
+                ):
+                    pass
+            if summary.customers_without_payment_method:
+                with alert(soft=True):
+                    text(
+                        "Customers with no payment method had no card to copy. "
+                        "Their subscriptions still switch, flagged as having no "
+                        "payment method."
+                    )
+            if summary.skipped:
+                with alert("warning", soft=True):
+                    with tag.ul(classes="list-disc pl-4"):
+                        for reason in summary.skipped:
+                            with tag.li():
+                                text(reason)
+            with tag.div(classes="modal-action"):
+                with tag.a(href=detail_url, classes="btn btn-primary"):
+                    text("Done")
 
 
 def attention_badge(attention: Attention) -> None:

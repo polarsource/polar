@@ -1,0 +1,23 @@
+clients/packages/cli/src/commands/update.test.ts
+  s_ad8ff7da1a0178::t_678d096cfe80f2 33-34
+clients/packages/cli/src/services/updater.ts
+  s_ad8ff7da1a0178::t_678d096cfe80f2 227-228,242-247
+clients/packages/cli/src/commands/update.ts
+  s_ad8ff7da1a0178::t_678d096cfe80f2 58,83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5870e378aaabd347f450770215782cb94a26dff9",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

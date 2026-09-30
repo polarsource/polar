@@ -45,6 +45,10 @@ class RepositoryProtocol[M](Protocol):
         self, statement: Select[tuple[M]], *, limit: int, page: int
     ) -> tuple[list[M], int]: ...
 
+    async def paginate_has_more(
+        self, statement: Select[tuple[M]], *, limit: int, page: int
+    ) -> tuple[list[M], bool]: ...
+
     def get_base_statement(self) -> Select[tuple[M]]: ...
 
     async def create(self, object: M, *, flush: bool = False) -> M: ...
@@ -117,6 +121,22 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         results = await self.session.execute(paginated_statement)
         items = list(results.unique().scalars().all())
         return items, count
+
+    async def paginate_has_more(
+        self, statement: Select[tuple[M]], *, limit: int, page: int
+    ) -> tuple[list[M], bool]:
+        """
+        Paginate without counting the total number of rows.
+
+        Fetches one extra row to know whether a next page exists. Use it on
+        large tables, where the `COUNT(*)` of `paginate` scans every matching
+        row and costs far more than fetching the page itself.
+        """
+        offset = (page - 1) * limit
+        paginated_statement = statement.limit(limit + 1).offset(offset)
+        results = await self.session.execute(paginated_statement)
+        items = list(results.unique().scalars().all())
+        return items[:limit], len(items) > limit
 
     def get_base_statement(self) -> Select[tuple[M]]:
         return select(self.model)

@@ -63,7 +63,7 @@ async def list(
         statement = statement.where(ExternalEvent.is_handled == handled)
 
     statement = repository.apply_sorting(statement, sorting)
-    items, count = await repository.paginate(
+    items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )
 
@@ -138,7 +138,9 @@ async def list(
                 datatable.DatatableAttrColumn("task_name", "Task Name", clipboard=True),
             ).render(request, items, sorting=sorting):
                 pass
-            with datatable.pagination(request, pagination, count):
+            with datatable.pagination_has_more(
+                request, pagination, len(items), has_more
+            ):
                 pass
 
 

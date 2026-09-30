@@ -86,7 +86,7 @@ async def list_email_logs(
         statement = statement.where(EmailLog.email_template == email_template)
 
     statement = statement.order_by(EmailLog.created_at.desc())
-    items, count = await repository.paginate(
+    items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )
 
@@ -144,7 +144,9 @@ async def list_email_logs(
                 datatable.DatatableDateTimeColumn("created_at", "Created At"),
             ).render(request, items):
                 pass
-            with datatable.pagination(request, pagination, count):
+            with datatable.pagination_has_more(
+                request, pagination, len(items), has_more
+            ):
                 pass
 
 

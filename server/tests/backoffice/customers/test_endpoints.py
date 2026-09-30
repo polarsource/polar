@@ -10,12 +10,17 @@ from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
-from polar.models import Customer, User, WalletTransaction
+from polar.models import Customer, Organization, User, WalletTransaction
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order, create_payment, create_refund
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_order,
+    create_payment,
+    create_refund,
+)
 
 
 @pytest_asyncio.fixture
@@ -36,6 +41,46 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_db_session, None)
         backoffice_app.dependency_overrides.pop(get_db_read_session, None)
         backoffice_app.dependency_overrides.pop(get_admin, None)
+
+
+@pytest.mark.asyncio
+class TestList:
+    async def test_paginates_without_total_count(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        created_at = datetime.now(UTC) - timedelta(days=1)
+        for index in range(3):
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"customer-{index}@example.com",
+                created_at=created_at + timedelta(minutes=index),
+            )
+
+        first_page = await backoffice_client.get(
+            "/customers/", params={"limit": 2, "page": 1}
+        )
+
+        assert first_page.status_code == 200
+        first_page_text = re.sub(r"<[^>]+>", "", first_page.text)
+        assert "Showing 1 to 2" in first_page_text
+        assert "entries" not in first_page_text
+        assert "customer-2@example.com" in first_page.text
+        assert "customer-0@example.com" not in first_page.text
+        assert "page=2" in first_page.text
+
+        second_page = await backoffice_client.get(
+            "/customers/", params={"limit": 2, "page": 2}
+        )
+
+        assert second_page.status_code == 200
+        second_page_text = re.sub(r"<[^>]+>", "", second_page.text)
+        assert "Showing 3 to 3" in second_page_text
+        assert "customer-0@example.com" in second_page.text
+        assert "page=3" not in second_page.text
 
 
 @pytest.mark.asyncio

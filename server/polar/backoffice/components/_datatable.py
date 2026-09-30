@@ -728,29 +728,81 @@ def pagination(
     start = (pagination.page - 1) * pagination.limit + 1
     end = min(pagination.page * pagination.limit, count)
 
-    next_url: URL | None = None
-    if end < count:
-        next_url = request.url.replace_query_params(
-            **{**request.query_params, "page": pagination.page + 1}
-        )
-    previous_url: URL | None = None
-    if start > 1:
-        previous_url = request.url.replace_query_params(
-            **{**request.query_params, "page": pagination.page - 1}
-        )
+    with _pagination_controls(
+        request, pagination, has_next=end < count, hx_target=hx_target
+    ):
+        text("Showing ")
+        with tag.span(classes="font-bold"):
+            text(str(start))
+        text(" to ")
+        with tag.span(classes="font-bold"):
+            text(str(end))
+        text(" of ")
+        with tag.span(classes="font-bold"):
+            text(str(count))
+        text(" entries")
+    yield
 
-    with tag.div(classes="flex justify-between"):
-        with tag.div(classes="text-sm"):
+
+@contextlib.contextmanager
+def pagination_has_more(
+    request: Request,
+    pagination: PaginationParams,
+    items_count: int,
+    has_more: bool,
+    *,
+    hx_target: str | None = None,
+) -> Generator[None]:
+    """Render pagination controls without a total count.
+
+    Pairs with `RepositoryBase.paginate_has_more`, for lists where counting
+    every matching row is too expensive.
+
+    Args:
+        request: The FastAPI request object for URL generation.
+        pagination: Pagination parameters containing current page and limit.
+        items_count: Number of items displayed on the current page.
+        has_more: Whether a next page exists.
+        hx_target: Optional HTMX target for loading pagination links.
+    """
+    start = (pagination.page - 1) * pagination.limit + 1
+    end = start + items_count - 1
+
+    with _pagination_controls(
+        request, pagination, has_next=has_more, hx_target=hx_target
+    ):
+        if items_count > 0:
             text("Showing ")
             with tag.span(classes="font-bold"):
                 text(str(start))
             text(" to ")
             with tag.span(classes="font-bold"):
                 text(str(end))
-            text(" of ")
-            with tag.span(classes="font-bold"):
-                text(str(count))
-            text(" entries")
+    yield
+
+
+@contextlib.contextmanager
+def _pagination_controls(
+    request: Request,
+    pagination: PaginationParams,
+    *,
+    has_next: bool,
+    hx_target: str | None,
+) -> Generator[None]:
+    next_url: URL | None = None
+    if has_next:
+        next_url = request.url.replace_query_params(
+            **{**request.query_params, "page": pagination.page + 1}
+        )
+    previous_url: URL | None = None
+    if pagination.page > 1:
+        previous_url = request.url.replace_query_params(
+            **{**request.query_params, "page": pagination.page - 1}
+        )
+
+    with tag.div(classes="flex justify-between"):
+        with tag.div(classes="text-sm"):
+            yield
         with tag.div(classes="join grid grid-cols-2"):
             with tag.a(
                 classes="join-item btn",
@@ -772,7 +824,6 @@ def pagination(
                     attr("hx-get", str(next_url))
                     attr("hx-target", hx_target)
                 text("Next")
-    yield
 
 
 __all__ = [
@@ -782,4 +833,5 @@ __all__ = [
     "DatatableColumn",
     "DatatableDateTimeColumn",
     "pagination",
+    "pagination_has_more",
 ]

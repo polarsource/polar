@@ -1061,6 +1061,31 @@ class TestCutover:
         assert body["running"] is False
         assert body["total"] == 0
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_read_only_session_sees_stalled_switch_stopped(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "cutover"
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+        )
+        await save_fixture(migration)
+
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/cutover")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["running"] is False
+        assert body["completed"] is True
+
 
 @pytest.mark.asyncio
 class TestExportCustomerIds:

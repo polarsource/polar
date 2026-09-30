@@ -55,7 +55,7 @@ const updateBinary = Effect.gen(function* () {
 const updateWithPackageManager = (method: PackageManager) =>
   Effect.gen(function* () {
     const updater = yield* Updater
-    const latestVersion = yield* updater.latest()
+    const latestVersion = yield* updater.latest
     if (!isNewerVersion(latestVersion, VERSION)) return yield* upToDate
 
     yield* Console.log(ui.step(`Updating with ${method}...`))
@@ -80,8 +80,7 @@ export const update = Command.make(
       yield* Console.log(ui.step('Checking for updates...'))
 
       const updater = yield* Updater
-      const detected =
-        Option.getOrUndefined(method) ?? (yield* updater.detect())
+      const detected = Option.getOrUndefined(method) ?? (yield* updater.detect)
       if (!detected) {
         return yield* new UpdateError({
           message: `Could not detect how the CLI was installed. Pass --method with one of ${methods.join(', ')}.`,

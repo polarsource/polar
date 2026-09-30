@@ -224,8 +224,8 @@ export const upgradeWithPackageManager = (
 export class Updater extends Context.Service<
   Updater,
   {
-    detect: () => Effect.Effect<Method | undefined>
-    latest: () => Effect.Effect<string, UpdaterError>
+    detect: Effect.Effect<Method | undefined>
+    latest: Effect.Effect<string, UpdaterError>
     upgrade: (
       method: PackageManager,
       version: string,
@@ -239,12 +239,12 @@ export const layer = Layer.effect(
     const fs = yield* FileSystem.FileSystem
     const http = yield* HttpClient.HttpClient
     return Updater.of({
-      detect: () =>
-        detectMethod().pipe(Effect.provideService(FileSystem.FileSystem, fs)),
-      latest: () =>
-        latestPackageVersion.pipe(
-          Effect.provideService(HttpClient.HttpClient, http),
-        ),
+      detect: detectMethod().pipe(
+        Effect.provideService(FileSystem.FileSystem, fs),
+      ),
+      latest: latestPackageVersion.pipe(
+        Effect.provideService(HttpClient.HttpClient, http),
+      ),
       upgrade: (method, version) =>
         upgradeWithPackageManager(method, version).pipe(
           Effect.provideService(FileSystem.FileSystem, fs),

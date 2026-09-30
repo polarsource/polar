@@ -30,8 +30,8 @@ describe('update command', () => {
     failure?: UpdaterError,
   ) =>
     Updater.of({
-      detect: () => Effect.succeed(method),
-      latest: () => Effect.succeed(latest),
+      detect: Effect.succeed(method),
+      latest: Effect.succeed(latest),
       upgrade: (manager, version) => {
         upgrades.push([manager, version])
         return failure ? Effect.fail(failure) : Effect.void

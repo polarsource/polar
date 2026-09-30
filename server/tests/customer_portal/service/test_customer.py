@@ -36,6 +36,30 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.mark.asyncio
 class TestAddPaymentMethod:
+    async def test_setup_intent_creation_error_propagates(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        error = stripe_lib.InvalidRequestError("No such customer", "customer")
+        stripe_service_mock.create_setup_intent.side_effect = error
+
+        with pytest.raises(stripe_lib.InvalidRequestError) as exc_info:
+            await customer_service.add_payment_method(
+                session,
+                customer,
+                CustomerPaymentMethodCreate(
+                    confirmation_token_id="CONFIRMATION_TOKEN_ID",
+                    set_default=True,
+                    return_url="https://example.com/return",
+                ),
+            )
+
+        assert exc_info.value is error
+        stripe_service_mock.confirm_setup_intent.assert_not_called()
+        stripe_service_mock.update_customer.assert_not_called()
+
     async def test_unsupported_payment_method(
         self,
         session: AsyncSession,

@@ -69,7 +69,8 @@ jobs:
               mergedAt: pr.mergedAt,
               login: pr.author?.login ?? null,
             });
-            const emergency = prs.filter(isEmergency).map(summarize);
+            // An /emergency merge that still got an approval (engineer or Cubic) was reviewed, so it's not listed.
+            const emergency = prs.filter((pr) => isEmergency(pr) && !hasApproval(pr)).map(summarize);
             const unapproved = prs.filter((pr) => !isEmergency(pr) && !hasApproval(pr)).map(summarize);
 
             core.info(

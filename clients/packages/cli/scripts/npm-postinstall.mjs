@@ -56,10 +56,11 @@ function resolveBinary() {
 // arguments stay static and the prefix is passed as cwd, so nothing needs quoting.
 function installPackage() {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'polar-cli-install-'))
-  // A global install passes npm_config_global=true down to lifecycle scripts, which
-  // would send the child install to the global prefix instead of the temp one.
+  // A global install passes its flag down to lifecycle scripts as npm_config_global
+  // or npm_config_location, which would send the child install to the global prefix.
   const env = { ...process.env }
   delete env.npm_config_global
+  delete env.npm_config_location
   try {
     fs.writeFileSync(path.join(temp, 'package.json'), '{}')
     const result = childProcess.spawnSync(

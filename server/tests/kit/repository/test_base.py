@@ -22,9 +22,11 @@ class TestPaginateHasMore:
                 id="one_to_many_join",
             ),
             pytest.param(
-                lambda: select(User)
-                .select_from(OAuthAccount)
-                .join(User, OAuthAccount.user_id == User.id),
+                lambda: (
+                    select(User)
+                    .select_from(OAuthAccount)
+                    .join(User, OAuthAccount.user_id == User.id)
+                ),
                 id="model_on_the_joined_side",
             ),
         ],

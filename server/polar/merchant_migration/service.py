@@ -1840,7 +1840,7 @@ class MerchantMigrationService:
             return {}
         return await CustomerRepository.from_session(
             session
-        ).get_stripe_identities_by_organization(migration.organization_id)
+        ).get_bound_stripe_identities_by_organization(migration.organization_id)
 
     async def summarize_records(
         self,

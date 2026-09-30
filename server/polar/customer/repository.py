@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
     Uuid,
     and_,
+    case,
     cast,
     column,
     func,
@@ -32,7 +33,14 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Customer, Subscription
+from polar.models import (
+    Customer,
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+    PaymentMethod,
+    Subscription,
+)
 from polar.models.customer import EXTERNAL_ID_METADATA_KEY
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -200,12 +208,24 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_stripe_identities_by_organization(
+    async def get_bound_stripe_identities_by_organization(
         self, organization_id: UUID
     ) -> dict[str, tuple[UUID, str | None]]:
+        """Per lower-cased email, the customer and the Stripe id it can't move
+        off, or None when it has none or nothing still depends on it."""
         statement = (
             self.get_base_statement()
-            .with_only_columns(Customer.id, Customer.email, Customer.stripe_customer_id)
+            .with_only_columns(
+                Customer.id,
+                Customer.email,
+                case(
+                    (
+                        self.get_stripe_customer_in_use_clause(),
+                        Customer.stripe_customer_id,
+                    ),
+                    else_=None,
+                ),
+            )
             .where(Customer.organization_id == organization_id)
         )
         result = await self.session.execute(statement)
@@ -214,6 +234,41 @@ class CustomerRepository(
             for customer_id, email, stripe_customer_id in result.all()
             if email
         }
+
+    async def is_stripe_customer_in_use(self, customer_id: UUID) -> bool:
+        statement = select(self.get_stripe_customer_in_use_clause()).where(
+            Customer.id == customer_id
+        )
+        result = await self.session.execute(statement)
+        return bool(result.scalar_one())
+
+    def get_stripe_customer_in_use_clause(self) -> ColumnElement[bool]:
+        """Counts a merchant migration's import too: it may still link copied
+        cards to the customer's Stripe id."""
+        payment_method_exists = (
+            select(PaymentMethod.id)
+            .where(
+                PaymentMethod.customer_id == Customer.id,
+                PaymentMethod.deleted_at.is_(None),
+            )
+            .exists()
+        )
+        migration_import_exists = (
+            select(MerchantMigrationRecord.id)
+            .where(
+                MerchantMigrationRecord.target_id == Customer.id,
+                MerchantMigrationRecord.type == MerchantMigrationRecordType.customer,
+                MerchantMigrationRecord.status
+                == MerchantMigrationRecordStatus.imported,
+                MerchantMigrationRecord.deleted_at.is_(None),
+            )
+            .exists()
+        )
+        return or_(
+            payment_method_exists,
+            self.get_active_clause(True),
+            migration_import_exists,
+        )
 
     async def get_ids_by_email(self, email: str) -> Sequence[UUID]:
         statement = (

@@ -181,6 +181,6 @@ To lint the emitted source itself, from `clients/` run
 Generator checks live in `sdk/generator/`: `just lint`, `just test`, and
 `just generate-cli`. Generated source is committed so ordinary CLI builds do not
 need Python. After running the generator directly, refresh the local dependency
-with `pnpm install --filter polar-cli --ignore-scripts --frozen-lockfile` in `clients/`.
+with `pnpm install --filter @polar-sh/cli --ignore-scripts --frozen-lockfile` in `clients/`.
 Bun embeds the command package in the standalone binary; the JS
 build explicitly bundles it rather than leaving an unpublished package import.

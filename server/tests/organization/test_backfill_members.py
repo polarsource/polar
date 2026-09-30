@@ -3324,3 +3324,76 @@ class TestBackfillCarriesHolderExternalId:
         member = await session.get(Member, migrated.member_id)
         assert member is not None
         assert member.external_id is None
+
+
+@pytest.mark.asyncio
+class TestBackfillCarriesOwnerExternalId:
+    """An owner member that predates the customer's external_id keeps none, so
+    external_member_id resolves nothing once the customer becomes a team.
+    """
+
+    async def test_copies_customer_external_id_onto_existing_owner(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(save_fixture, account)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="buyer@test.com",
+            external_id="buyer-7",
+            stripe_customer_id="stripe_owner_ext",
+        )
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="buyer@test.com",
+        )
+
+        session.expunge_all()
+        await prepare_members(organization.id)
+
+        refreshed = await session.get(Member, owner.id)
+        assert refreshed is not None
+        assert refreshed.external_id == "buyer-7"
+
+    async def test_leaves_owner_when_another_member_holds_the_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        organization = await create_organization(save_fixture, account)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="taken-buyer@test.com",
+            external_id="buyer-7",
+            stripe_customer_id="stripe_owner_taken",
+        )
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="taken-buyer@test.com",
+        )
+        squatter = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="squatter@test.com",
+        )
+        squatter.external_id = "buyer-7"
+        await save_fixture(squatter)
+
+        session.expunge_all()
+        await prepare_members(organization.id)
+
+        refreshed = await session.get(Member, owner.id)
+        assert refreshed is not None
+        assert refreshed.external_id is None

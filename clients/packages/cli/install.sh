@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="polarsource/polar"
-TAG_PREFIX="polar-cli@"
+TAG_PREFIX="@polar-sh/cli@"
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="polar"
 
@@ -69,7 +69,7 @@ split_json_array_objects() {
 
 select_latest_cli_version() {
   awk '/"draft":[ \t]*false/ && /"prerelease":[ \t]*false/' \
-    | sed -nE "s/.*\"tag_name\":[[:space:]]*\"${TAG_PREFIX}([0-9]+\.[0-9]+\.[0-9]+)\".*/\1/p" \
+    | sed -nE "s|.*\"tag_name\":[[:space:]]*\"${TAG_PREFIX}([0-9]+\.[0-9]+\.[0-9]+)\".*|\1|p" \
     | sort -t. -k1,1n -k2,2n -k3,3n \
     | tail -n 1
 }

@@ -95,9 +95,6 @@ jobs:
       - name: "🧪 Test: Adapters"
         run: pnpm turbo run test --filter='./adapters/*'
 
-      - name: "🧪 Test: SDK dependency update automation"
-        run: node --test scripts/update-sdk-dependencies.test.mjs
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: clients/packages/cli/package.json

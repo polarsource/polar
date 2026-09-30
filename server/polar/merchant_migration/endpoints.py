@@ -374,7 +374,7 @@ async def complete_pan_transfer_step(
 )
 async def get_cutover(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
+    auth_subject: MerchantMigrationRead,
     # The primary: the client polls this as the switch runs, and replica lag
     # would report subscriptions as still pending after they've moved.
     session: AsyncSession = Depends(get_db_session),

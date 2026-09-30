@@ -4732,6 +4732,43 @@ class TestRunCutover:
 
         assert runner.run.await_count == 0
 
+    async def test_fails_a_stalled_switch_without_resuming(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        runner = _fake_cutover(mocker)
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_MOVE_SUBSCRIPTIONS
+        )
+        migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now() - STALL_THRESHOLD - timedelta(minutes=1),
+        )
+        await save_fixture(migration)
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="1@example.com",
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        await session.flush()
+        await session.refresh(migration)
+        assert runner.run.await_count == 0
+        enqueue.assert_not_called()
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.failed
+
 
 @pytest.mark.asyncio
 class TestGetCutoverReport:
@@ -4823,7 +4860,7 @@ class TestGetCutoverReport:
         assert report.pending == 2
 
     @pytest.mark.auth
-    async def test_marks_a_stalled_switch_failed(
+    async def test_reports_a_stalled_switch_stopped_without_writing(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -4847,7 +4884,7 @@ class TestGetCutoverReport:
         assert report.running is False
         assert report.completed is True
         assert migration.operation is not None
-        assert migration.operation.status == MerchantMigrationOperationStatus.failed
+        assert migration.operation.status == MerchantMigrationOperationStatus.running
 
 
 @pytest.mark.asyncio

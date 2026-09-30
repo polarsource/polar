@@ -120,6 +120,7 @@ _IMPORT_TASK = "merchant_migration.import_catalog"
 # None is a pre-check started before operations recorded their kind.
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
+_STALLED_CUTOVER_ERROR = "Switch stalled with no progress; start it again to resume."
 
 
 def _import_failure_log_fields(error: BaseException) -> dict[str, object]:
@@ -1192,12 +1193,11 @@ class MerchantMigrationService:
 
     async def get_cutover_report(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
     ) -> MerchantMigrationCutoverReport:
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        await self._fail_stalled_cutover(session, migration)
         return await self._cutover_report(session, migration)
 
     async def start_cutover(
@@ -1269,6 +1269,11 @@ class MerchantMigrationService:
             return
         operation = migration.operation
         if operation is not None and not operation.is_active:
+            return
+        if operation is not None and operation.is_stalled():
+            # The report already shows a stalled run as stopped, so a late job
+            # must not resume switching behind it.
+            await self._fail_operation(session, migration, _STALLED_CUTOVER_ERROR)
             return
         if not self._cutover_started(migration):
             log.warning(
@@ -1367,18 +1372,6 @@ class MerchantMigrationService:
             operation is not None and operation.is_active and not operation.is_stalled()
         )
 
-    async def _fail_stalled_cutover(
-        self, session: AsyncSession, migration: MerchantMigration
-    ) -> None:
-        operation = migration.operation
-        if operation is None or not operation.is_stalled():
-            return
-        await self._fail_operation(
-            session,
-            migration,
-            "Switch stalled with no progress; start it again to resume.",
-        )
-
     def _complete_polar_app_step(
         self,
         migration: MerchantMigration,
@@ -1472,6 +1465,8 @@ class MerchantMigrationService:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         counts = await record_repository.count_cutover_statuses(migration.id)
         operation = migration.operation
+        if operation is not None and operation.is_stalled():
+            operation = self._failed_operation(migration, _STALLED_CUTOVER_ERROR)
         return MerchantMigrationCutoverReport(
             started=self._cutover_started(migration),
             running=operation.is_active if operation is not None else False,

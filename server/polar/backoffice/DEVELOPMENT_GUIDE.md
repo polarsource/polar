@@ -101,7 +101,6 @@ async def list(
     if query:
         statement = statement.where(MyEntity.name.icontains(query, autoescape=True))
 
-    # Fetches one extra row instead of running COUNT(*) over the whole table
     items, has_more = await repository.paginate_has_more(
         statement, limit=pagination.limit, page=pagination.page
     )

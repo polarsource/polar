@@ -750,8 +750,6 @@ def pagination_has_more(
     pagination: PaginationParams,
     items_count: int,
     has_more: bool,
-    *,
-    hx_target: str | None = None,
 ) -> Generator[None]:
     """Render pagination controls without a total count.
 
@@ -763,14 +761,11 @@ def pagination_has_more(
         pagination: Pagination parameters containing current page and limit.
         items_count: Number of items displayed on the current page.
         has_more: Whether a next page exists.
-        hx_target: Optional HTMX target for loading pagination links.
     """
     start = (pagination.page - 1) * pagination.limit + 1
     end = start + items_count - 1
 
-    with _pagination_controls(
-        request, pagination, has_next=has_more, hx_target=hx_target
-    ):
+    with _pagination_controls(request, pagination, has_next=has_more, hx_target=None):
         if items_count > 0:
             text("Showing ")
             with tag.span(classes="font-bold"):

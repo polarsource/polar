@@ -15,8 +15,8 @@
     "knip": "knip",
     "box-codemod": "pnpm --filter @polar-sh/box-codemod box-codemod",
     "preinstall": "npx only-allow pnpm",
-    "prepare": "pnpm --filter polar-cli exec effect-tsgo patch && turbo run build --filter='./packages/*'",
-    "release-packages": "turbo run build test --filter='./packages/*' --filter='./adapters/*' --filter='!polar-cli' && turbo run lint --filter='!polar-cli' && changeset publish"
+    "prepare": "pnpm --filter @polar-sh/cli exec effect-tsgo patch && turbo run build --filter='./packages/*'",
+    "release-packages": "turbo run build test --filter='./packages/*' --filter='./adapters/*' --filter='!@polar-sh/cli' && turbo run lint --filter='!@polar-sh/cli' && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",

@@ -60,12 +60,12 @@ jobs:
         with:
           bun-version-file: clients/packages/cli/package.json
 
-      - run: pnpm --dir clients install --filter polar-cli --frozen-lockfile --ignore-scripts
-      - run: pnpm --dir clients --filter polar-cli exec effect-tsgo patch
-      - run: pnpm --dir clients --filter polar-cli format:check
-      - run: pnpm --dir clients --filter polar-cli lint
-      - run: pnpm --dir clients --filter polar-cli typecheck
-      - run: pnpm --dir clients --filter polar-cli test
+      - run: pnpm --dir clients install --filter @polar-sh/cli --frozen-lockfile --ignore-scripts
+      - run: pnpm --dir clients --filter @polar-sh/cli exec effect-tsgo patch
+      - run: pnpm --dir clients --filter @polar-sh/cli format:check
+      - run: pnpm --dir clients --filter @polar-sh/cli lint
+      - run: pnpm --dir clients --filter @polar-sh/cli typecheck
+      - run: pnpm --dir clients --filter @polar-sh/cli test
 
   build:
     needs: test
@@ -113,7 +113,7 @@ jobs:
         with:
           bun-version-file: clients/packages/cli/package.json
 
-      - run: pnpm --dir ../.. install --filter polar-cli --frozen-lockfile --ignore-scripts
+      - run: pnpm --dir ../.. install --filter @polar-sh/cli --frozen-lockfile --ignore-scripts
 
       - name: Validate macOS signing configuration
         if: matrix.sign

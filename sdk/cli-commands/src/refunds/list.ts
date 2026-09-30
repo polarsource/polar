@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { data, mergeInput, all } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['refunds']['list']>[0]>
 
@@ -11,6 +11,7 @@ export const command = Command.make(
   'list',
   {
     data,
+    all,
     input: {
       id: Flag.String('id')
         .pipe(Flag.atLeast(1))
@@ -90,6 +91,9 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
+        allPages: config.all,
+        page: (client, page) =>
+          client.refunds.list({ ...query, page, limit: query.limit ?? 100 }),
         invoke: (client) => client.refunds.list(query),
       })
     }),

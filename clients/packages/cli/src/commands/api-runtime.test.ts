@@ -67,6 +67,76 @@ describe('generated commands', () => {
     }
   }
 
+  describe('--all', () => {
+    const pages = (maxPage: number) =>
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = new Request(input, init)
+        requests.push(request)
+        const page = new URL(request.url).searchParams.get('page')
+        return Promise.resolve(
+          Response.json({
+            items: [{ id: `prod-${page}` }],
+            pagination: { total_count: maxPage, max_page: maxPage },
+          }),
+        )
+      })
+    const query = (request: Request) => {
+      const { page, limit, query } = Object.fromEntries(
+        new URL(request.url).searchParams,
+      )
+      return { page, limit, ...(query && { query }) }
+    }
+
+    test('fetches every page and prints them as one list', async () => {
+      pages(3)
+      const cli = run(['products', 'list', '--all'])
+      await cli.promise
+      expect(requests.map(query)).toEqual([
+        { page: '1', limit: '100' },
+        { page: '2', limit: '100' },
+        { page: '3', limit: '100' },
+      ])
+      expect(JSON.parse(cli.output())).toEqual({
+        items: [{ id: 'prod-1' }, { id: 'prod-2' }, { id: 'prod-3' }],
+        pagination: { total_count: 3, max_page: 1 },
+      })
+    })
+
+    test('keeps filters and an explicit page size on every request', async () => {
+      pages(2)
+      await run([
+        'products',
+        'list',
+        '--all',
+        '--limit',
+        '10',
+        '--query',
+        'Pro',
+      ]).promise
+      expect(requests.map(query)).toEqual([
+        { page: '1', limit: '10', query: 'Pro' },
+        { page: '2', limit: '10', query: 'Pro' },
+      ])
+    })
+
+    test('fetches a single page without it', async () => {
+      pages(3)
+      await run(['products', 'list']).promise
+      expect(requests).toHaveLength(1)
+    })
+
+    test('refuses a list that is too long after the first request', async () => {
+      pages(101)
+      await expect(
+        run(['products', 'list', '--all']).promise,
+      ).rejects.toMatchObject({
+        message: '--all fetches at most 100 pages, and this list has 101',
+        hint: 'Narrow it with filters, or fetch the pages you need with --page',
+      })
+      expect(requests).toHaveLength(1)
+    })
+  })
+
   describe('required flags', () => {
     test('stops before calling the API and shows an example', async () => {
       await expect(

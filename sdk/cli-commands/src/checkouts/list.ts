@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput, nullableStringFlag } from '../inputs'
+import { data, mergeInput, all, nullableStringFlag } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['checkouts']['list']>[0]>
 
@@ -11,6 +11,7 @@ export const command = Command.make(
   'list',
   {
     data,
+    all,
     input: {
       organization_id: Flag.String('organization-id')
         .pipe(Flag.atLeast(1))
@@ -94,6 +95,9 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
+        allPages: config.all,
+        page: (client, page) =>
+          client.checkouts.list({ ...query, page, limit: query.limit ?? 100 }),
         invoke: (client) => client.checkouts.list(query),
       })
     }),

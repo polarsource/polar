@@ -664,3 +664,76 @@ def test_only_absent_required_fields_count_as_missing(
 ) -> None:
     _emit(create_spec, tmp_path)
     assert "[key] === undefined" in (tmp_path / "src/inputs.ts").read_text()
+
+
+@pytest.fixture
+def list_spec(cli_spec: dict) -> dict:
+    cli_spec["paths"]["/widgets/"] = {
+        "get": {
+            "operationId": "widgets:list",
+            "tags": ["cli"],
+            "x-polar-pagination": {
+                "type": "page_limit",
+                "item_schema": {"$ref": "#/components/schemas/Widget"},
+            },
+            "parameters": [
+                {"name": name, "in": "query", "schema": {"type": "integer"}}
+                for name in ("page", "limit")
+            ],
+            "responses": {
+                "200": {
+                    "description": "Widgets",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "title": "ListResource[Widget]",
+                                "required": ["items", "pagination"],
+                                "properties": {
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/Widget"
+                                        },
+                                    },
+                                    "pagination": {
+                                        "type": "object",
+                                        "title": "Pagination",
+                                        "required": ["total_count", "max_page"],
+                                        "properties": {
+                                            "total_count": {"type": "integer"},
+                                            "max_page": {"type": "integer"},
+                                        },
+                                    },
+                                },
+                            },
+                        }
+                    },
+                }
+            },
+        },
+    }
+    return cli_spec
+
+
+def test_paginated_commands_can_fetch_every_page(
+    list_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit(list_spec, tmp_path)
+    source = (tmp_path / "src/widgets/list.ts").read_text()
+    assert "allPages: config.all," in source
+    assert (
+        "page: (client, page) => client.widgets.list("
+        "{ ...query, page, limit: query.limit ?? 100 }),"
+    ) in source
+    assert "allPages" not in (tmp_path / "src/widgets/get.ts").read_text()
+
+
+def test_inputs_cannot_shadow_the_all_flag(
+    list_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    list_spec["paths"]["/widgets/"]["get"]["parameters"].append(
+        {"name": "all", "in": "query", "schema": {"type": "boolean"}}
+    )
+    with pytest.raises(ValueError, match="collides with the CLI's own --all"):
+        _emit(list_spec, tmp_path)

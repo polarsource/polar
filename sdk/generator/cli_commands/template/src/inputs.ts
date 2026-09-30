@@ -45,3 +45,8 @@ export const mergeInput = <A>(
   )
   return { ...Option.getOrElse(json, () => ({})), ...provided } as A
 }
+
+export const all = Flag.Boolean('all').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Fetch every page instead of one (ignores --page)'),
+)

@@ -35,6 +35,9 @@ export const command = Command.make(
 {% if input_type %}
     data,
 {% endif %}
+{% if page_arguments %}
+    all,
+{% endif %}
 {% if fields %}
     input: {
 {% for field in fields %}
@@ -125,6 +128,10 @@ export const command = Command.make(
         },
       ),
 {% else %}
+{% if page_arguments %}
+      allPages: config.all,
+      page: (client, page) => client.{{ sdk_service }}.{{ sdk_method }}({{ page_arguments | join(', ') }}),
+{% endif %}
       invoke: (client) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
 {% endif %}
     })

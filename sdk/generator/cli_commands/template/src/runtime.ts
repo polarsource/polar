@@ -28,6 +28,8 @@ export interface ApiOperation<A> {
   environment?: Environment
   organizationId?: string | ReadonlyArray<string> | null | undefined
   preview?: ApiPreview
+  allPages?: boolean
+  page?: (client: Polar, page: number) => Promise<A>
   invoke: (client: Polar, core: PolarCore) => Promise<A>
 }
 

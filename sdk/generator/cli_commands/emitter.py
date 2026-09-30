@@ -34,6 +34,7 @@ JSON_SHAPE_DEPTH = 2
 JSON_SHAPE_ENUM_VALUES = 5
 NULLABLE = " | null"
 EXAMPLE_DEPTH = 6
+PAGE_SIZE = 100
 
 
 @dataclasses.dataclass(frozen=True)
@@ -245,6 +246,20 @@ class CLICommandsEmitter(EmitterBase):
         if input_type:
             helpers.extend(["data", "mergeInput"])
 
+        paginated = (
+            method.pagination is not None
+            and input_type == "Query"
+            and method.requires_authentication
+            and not method.pending_response
+        )
+        if paginated:
+            if any(field.name == "all" for field in fields):
+                raise ValueError(
+                    f"{method.operation_id} has an input named 'all', "
+                    "which collides with the CLI's own --all flag."
+                )
+            helpers.append("all")
+
         if required:
             helpers.append("missingFlags")
 
@@ -280,6 +295,12 @@ class CLICommandsEmitter(EmitterBase):
             "confirmation_expression": confirmation_expression,
             "arguments": arguments,
             "description": (method.description or method.name).split("\n")[0],
+            "page_arguments": [
+                *arguments[:-1],
+                f"{{ ...query, page, limit: query.limit ?? {PAGE_SIZE} }}",
+            ]
+            if paginated
+            else None,
         }
 
     def _example_flag(self, field: Field | Parameter, api: APIVersion) -> str:

@@ -7,6 +7,49 @@ import { formatRecordPreview } from '@/utils/api-preview'
 import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
 
+const MAX_PAGES = 100
+
+interface Page {
+  items: ReadonlyArray<unknown>
+  pagination: { max_page: number }
+}
+
+const isPage = (value: unknown): value is Page =>
+  typeof value === 'object' &&
+  value !== null &&
+  'items' in value &&
+  Array.isArray(value.items) &&
+  'pagination' in value &&
+  typeof value.pagination === 'object' &&
+  value.pagination !== null &&
+  'max_page' in value.pagination &&
+  typeof value.pagination.max_page === 'number'
+
+const everyPage = (
+  load: (page: number) => Effect.Effect<unknown, ApiCommandError>,
+) =>
+  Effect.gen(function* () {
+    const first = yield* load(1)
+    if (!isPage(first)) return first
+    const pages = first.pagination.max_page
+    if (pages > MAX_PAGES) {
+      return yield* new ApiCommandError({
+        message: `--all fetches at most ${MAX_PAGES} pages, and this list has ${pages}`,
+        hint: 'Narrow it with filters, or fetch the pages you need with --page',
+      })
+    }
+    const items = [...first.items]
+    for (let page = 2; page <= pages; page++) {
+      const next = yield* load(page)
+      if (isPage(next)) items.push(...next.items)
+    }
+    return {
+      ...first,
+      items,
+      pagination: { ...first.pagination, max_page: 1 },
+    }
+  })
+
 export const layer = Layer.effect(
   ApiRuntime,
   Effect.gen(function* () {
@@ -144,16 +187,24 @@ export const layer = Layer.effect(
             yield* Console.log(ui.blank)
           }
 
-          const result = yield* polar
-            .use(operation.invoke, environment, {
-              authenticated: operation.requiresAuthentication !== false,
-              organizationId,
-            })
-            .pipe(
-              Effect.mapError(
-                (error) => new ApiCommandError({ message: error.message }),
-              ),
-            )
+          const request = <B>(invoke: Parameters<typeof polar.use<B>>[0]) =>
+            polar
+              .use(invoke, environment, {
+                authenticated: operation.requiresAuthentication !== false,
+                organizationId,
+              })
+              .pipe(
+                Effect.mapError(
+                  (error) => new ApiCommandError({ message: error.message }),
+                ),
+              )
+          const { page } = operation
+          const result =
+            operation.allPages && page
+              ? yield* everyPage((number) =>
+                  request((client) => page(client, number)),
+                )
+              : yield* request(operation.invoke)
 
           if (result !== undefined) {
             yield* printJson(result)

@@ -9,8 +9,7 @@ from fastapi import Request
 from tagflow import tag, text
 
 from polar.enums import PayoutAccountStatus
-from polar.models import Organization
-from polar.models.organization_review_feedback import OrganizationReviewFeedback
+from polar.models import Organization, OrganizationReviewFeedback
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict

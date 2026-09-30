@@ -111,6 +111,92 @@ jobs:
         working-directory: sdk/typescript
         run: npm publish --tag latest
 
+  update-sdk-dependents:
+    needs: [detect-release, publish-typescript]
+    if: needs.detect-release.outputs.version != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: clients
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Update adapter and CLI SDK dependencies and add patch changeset
+        env:
+          RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+        run: node scripts/update-sdk-dependencies.mjs "$RELEASE_VERSION"
+
+      - name: Wait for the SDK release to propagate on npm
+        env:
+          RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+        run: |
+          delay=5
+          for attempt in $(seq 1 5); do
+            if npm view "@polar-sh/sdk@$RELEASE_VERSION" version >/dev/null 2>&1; then
+              echo "@polar-sh/sdk@$RELEASE_VERSION is available on npm"
+              exit 0
+            fi
+            echo "Attempt $attempt: @polar-sh/sdk@$RELEASE_VERSION not yet available, retrying in ${delay}s"
+            sleep "$delay"
+            delay=$((delay * 2))
+          done
+          echo "::error::@polar-sh/sdk@$RELEASE_VERSION did not appear on npm in time"
+          exit 1
+
+      - name: Update lockfile
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+
+      - name: Create SDK dependency update pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+        run: |
+          git add adapters/*/package.json packages/cli/package.json pnpm-lock.yaml .changeset/
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+
+          branch="sdk/dependents-$RELEASE_VERSION"
+          title="chore: update adapters and CLI to SDK $RELEASE_VERSION"
+          remote_sha=$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)
+          git switch -c "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "$title"
+          git push --force-with-lease="refs/heads/$branch:$remote_sha" origin "HEAD:refs/heads/$branch"
+
+          existing_pr=$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing_pr" ]; then
+            echo "Updated PR #$existing_pr"
+            exit 0
+          fi
+
+          body_file="$RUNNER_TEMP/sdk-dependency-update-pr.md"
+          printf '%s\n' \
+            "Update all adapters and the CLI to @polar-sh/sdk@$RELEASE_VERSION after its successful npm release." \
+            "" \
+            "Includes updated SDK dependencies and peer dependencies, the pnpm lockfile, and a patch changeset for every adapter and polar-cli." \
+            > "$body_file"
+          gh pr create --base main --head "$branch" --draft --title "$title" --body-file "$body_file"
+
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
     if: needs.detect-release.outputs.version != ''

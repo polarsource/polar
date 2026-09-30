@@ -6,7 +6,10 @@ from typing import Any, Literal, Protocol, Self, overload
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy.sql.expression import ColumnExpressionArgument
+from sqlalchemy.sql.operators import and_, eq
+from sqlalchemy.sql.selectable import FromClause, Join
 
 from polar.config import settings
 from polar.kit.crypto import get_current_secret_id
@@ -30,6 +33,36 @@ class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
 
 
 type Options = Sequence[ExecutableOption]
+
+
+def _may_duplicate_rows(from_clause: FromClause) -> bool:
+    if not isinstance(from_clause, Join):
+        return False
+    return (
+        _may_duplicate_rows(from_clause.left)
+        or _may_duplicate_rows(from_clause.right)
+        or not _is_joined_on_primary_key(from_clause)
+    )
+
+
+def _is_joined_on_primary_key(join: Join) -> bool:
+    primary_key = set(join.right.primary_key)
+    if join.onclause is None or not primary_key:
+        return False
+    onclause = join.onclause
+    conditions = (
+        onclause.clauses
+        if isinstance(onclause, BooleanClauseList) and onclause.operator is and_
+        else [onclause]
+    )
+    matched_columns = {
+        column
+        for condition in conditions
+        if isinstance(condition, BinaryExpression) and condition.operator is eq
+        for column in (condition.left, condition.right)
+        if column in primary_key
+    }
+    return len(matched_columns) == len(primary_key)
 
 
 class RepositoryProtocol[M](Protocol):
@@ -131,8 +164,20 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         Fetches one extra row to know whether a next page exists. Use it on
         large tables, where the `COUNT(*)` of `paginate` scans every matching
         row and costs far more than fetching the page itself.
+
+        LIMIT and OFFSET count rows, not entities, so a join that can match
+        several rows per entity is deduplicated with DISTINCT first. Eager-load
+        collections with `joinedload`, which SQLAlchemy limits in a subquery,
+        rather than with `contains_eager` over such a join.
         """
         offset = (page - 1) * limit
+        if any(
+            _may_duplicate_rows(from_clause)
+            for from_clause in statement.with_only_columns(
+                self.model.id
+            ).get_final_froms()
+        ):
+            statement = statement.distinct()
         paginated_statement = statement.limit(limit + 1).offset(offset)
         results = await self.session.execute(paginated_statement)
         items = list(results.unique().scalars().all())

@@ -143,6 +143,23 @@ jobs:
           RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
         run: node scripts/update-sdk-dependencies.mjs "$RELEASE_VERSION"
 
+      - name: Wait for the SDK release to propagate on npm
+        env:
+          RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+        run: |
+          delay=5
+          for attempt in $(seq 1 8); do
+            if npm view "@polar-sh/sdk@$RELEASE_VERSION" version >/dev/null 2>&1; then
+              echo "@polar-sh/sdk@$RELEASE_VERSION is available on npm"
+              exit 0
+            fi
+            echo "Attempt $attempt: @polar-sh/sdk@$RELEASE_VERSION not yet available, retrying in ${delay}s"
+            sleep "$delay"
+            delay=$((delay * 2))
+          done
+          echo "::error::@polar-sh/sdk@$RELEASE_VERSION did not appear on npm in time"
+          exit 1
+
       - name: Update lockfile
         run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
 

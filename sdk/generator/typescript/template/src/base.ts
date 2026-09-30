@@ -109,6 +109,8 @@ export interface ClientOptions {
   accessToken: string;
   /** Default request timeout, in seconds. */
   timeout?: number;
+  /** Organization to act on, sent in the `Polar-Organization` header. */
+  organizationId?: string | undefined;
 }
 
 export interface RequestOptions {
@@ -164,6 +166,9 @@ export class ClientBase {
       "Polar-Version": this.options.version,
       Authorization: `Bearer ${this.options.accessToken}`,
     });
+    if (this.options.organizationId !== undefined) {
+      headers.set("Polar-Organization", this.options.organizationId);
+    }
     return [
       fullUrl,
       {

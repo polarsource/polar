@@ -24,7 +24,7 @@ from pydantic import (
     TypeAdapter,
 )
 from pydantic.fields import FieldInfo
-from pydantic.json_schema import JsonSchemaValue
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic_core import CoreSchema, PydanticOmit, core_schema
 from sqlalchemy import CHAR, Dialect, TypeDecorator
 from starlette.datastructures import Headers, MutableHeaders
@@ -145,6 +145,10 @@ class _VersionRange:
             self.up_to is None or version <= self.up_to
         )
 
+    def __call__(self, _: typing.Any) -> bool:
+        version = _ACTIVE_API_VERSION.get()
+        return version is not None and not self.includes(version)
+
     def __get_pydantic_json_schema__(
         self, core_schema: CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
@@ -154,6 +158,26 @@ class _VersionRange:
         return handler(core_schema)
 
 
+_original_field_is_required = GenerateJsonSchema.field_is_required
+
+
+def _versioned_field_is_required(
+    self: GenerateJsonSchema,
+    field: core_schema.ModelField
+    | core_schema.DataclassField
+    | core_schema.TypedDictField,
+    total: bool,
+) -> bool:
+    if isinstance(field.get("serialization_exclude_if"), _VersionRange):
+        field = field.copy()
+        field.pop("serialization_exclude_if")
+    return _original_field_is_required(self, field, total)
+
+
+# Version availability determines presence, not requiredness within that version.
+GenerateJsonSchema.field_is_required = _versioned_field_is_required  # type: ignore[method-assign]
+
+
 def Version(
     *,
     starting_from: APIVersion | None = None,
@@ -161,11 +185,7 @@ def Version(
 ) -> FieldInfo:
     version_range = _VersionRange(starting_from=starting_from, up_to=up_to)
 
-    def exclude_if_unavailable(_: typing.Any) -> bool:
-        version = _ACTIVE_API_VERSION.get()
-        return version is not None and not version_range.includes(version)
-
-    field_info = Field(exclude_if=exclude_if_unavailable)
+    field_info = Field(exclude_if=version_range)
     field_info.metadata.append(version_range)
     return field_info
 

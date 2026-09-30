@@ -941,7 +941,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -14586,11 +14586,11 @@ export interface GrantedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -14631,6 +14631,22 @@ export interface GrantedLicenseKey {
    * expires_at
    */
   expires_at: string | null;
+  /**
+   * The ID of the subscription granting the license key.
+   */
+  subscription_id: string | null;
+  /**
+   * The subscription granting the license key, if any.
+   */
+  subscription: LicenseKeySubscription | null;
+  /**
+   * The ID of the one-time order granting the license key.
+   */
+  order_id: string | null;
+  /**
+   * The one-time order granting the license key, if any.
+   */
+  order: LicenseKeyOrder | null;
 }
 
 /**
@@ -15216,6 +15232,28 @@ export interface LicenseKeyMember {
 }
 
 /**
+ * LicenseKeyOrder
+ */
+export interface LicenseKeyOrder {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * status
+   */
+  status: OrderStatus;
+  /**
+   * Whether the order has been paid for.
+   */
+  paid: boolean;
+}
+
+/**
  * LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -15246,11 +15284,11 @@ export interface LicenseKeyRead {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -15291,6 +15329,36 @@ export interface LicenseKeyRead {
    * expires_at
    */
   expires_at: string | null;
+}
+
+/**
+ * LicenseKeySubscription
+ */
+export interface LicenseKeySubscription {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * status
+   */
+  status: SubscriptionStatus;
+  /**
+   * The start timestamp of the current billing period.
+   */
+  current_period_start: string;
+  /**
+   * The end timestamp of the current billing period.
+   */
+  current_period_end: string;
+  /**
+   * Whether the subscription will be canceled at the end of the current period.
+   */
+  cancel_at_period_end: boolean;
+  /**
+   * The timestamp when the subscription will end.
+   */
+  ends_at: string | null;
 }
 
 /**
@@ -15394,11 +15462,11 @@ export interface LicenseKeyWithActivations {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -21154,11 +21222,11 @@ export interface RotatedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -23968,11 +24036,11 @@ export interface ValidatedLicenseKey {
   /**
    * The ID of the seat member holding this key, if any.
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly.
    */
-  member?: LicenseKeyMember | null;
+  member: LicenseKeyMember | null;
   /**
    * The benefit ID.
    */
@@ -24013,6 +24081,22 @@ export interface ValidatedLicenseKey {
    * expires_at
    */
   expires_at: string | null;
+  /**
+   * The ID of the subscription granting the license key.
+   */
+  subscription_id: string | null;
+  /**
+   * The subscription granting the license key, if any.
+   */
+  subscription: LicenseKeySubscription | null;
+  /**
+   * The ID of the one-time order granting the license key.
+   */
+  order_id: string | null;
+  /**
+   * The one-time order granting the license key, if any.
+   */
+  order: LicenseKeyOrder | null;
   /**
    * activation
    */

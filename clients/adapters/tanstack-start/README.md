@@ -2,7 +2,7 @@
 
 Payments and Checkouts made dead simple with [Tanstack Start](https://tanstack.com/start)
 
-`pnpm install @polar-sh/tanstack-start zod`
+`pnpm install @polar-sh/tanstack-start`
 
 ## Checkout
 
@@ -11,16 +11,20 @@ Create a Checkout handler which takes care of redirections.
 ```typescript
 // routes/api/checkout.ts
 import { Checkout } from '@polar-sh/tanstack-start'
-import { createAPIFileRoute } from '@tanstack/react-start/api'
+import { createFileRoute } from '@tanstack/react-router'
 
-export const APIRoute = createAPIFileRoute('/api/checkout')({
-  GET: Checkout({
-    accessToken: process.env.POLAR_ACCESS_TOKEN,
-    successUrl: process.env.SUCCESS_URL,
-    returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
-    environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
-    theme: 'dark', // Enforces the theme - System-preferred theme will be set if left omitted
-  }),
+export const Route = createFileRoute('/api/checkout')({
+  server: {
+    handlers: {
+      GET: Checkout({
+        accessToken: process.env.POLAR_ACCESS_TOKEN!,
+        successUrl: process.env.SUCCESS_URL,
+        returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Checkout
+        environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+        theme: 'dark', // Enforces the theme - System-preferred theme will be set if left omitted
+      }),
+    },
+  },
 })
 ```
 
@@ -28,7 +32,7 @@ export const APIRoute = createAPIFileRoute('/api/checkout')({
 
 Pass query params to this route.
 
-- products `?products=123`
+- products `?products=123` - Repeat the parameter for multiple products: `?products=123&products=456`
 - customer_id (optional) `?products=123&customer_id=xxx`
 - external_customer_id (optional) `?products=123&external_customer_id=xxx`
 - customer_email (optional) `?products=123&customer_email=janedoe@gmail.com`
@@ -44,36 +48,43 @@ Create a customer portal where your customer can view orders and subscriptions.
 ```typescript
 // routes/api/portal.ts
 import { CustomerPortal } from '@polar-sh/tanstack-start'
-import { createAPIFileRoute } from '@tanstack/react-start/api'
-import { getSupabaseServerClient } from '~/servers/supabase-server'
+import { createFileRoute } from '@tanstack/react-router'
 
-export const APIRoute = createAPIFileRoute('/api/portal')({
-  GET: CustomerPortal({
-    accessToken: process.env.POLAR_ACCESS_TOKEN,
-    getCustomerId: async (request: Request) => '', // Fuction to resolve a Polar Customer ID
-    returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
-    environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
-  }),
+export const Route = createFileRoute('/api/portal')({
+  server: {
+    handlers: {
+      GET: CustomerPortal({
+        accessToken: process.env.POLAR_ACCESS_TOKEN!,
+        getCustomerId: async (request: Request) => '', // Function to resolve a Polar Customer ID
+        returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
+        environment: 'sandbox', // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+      }),
+    },
+  },
 })
 ```
 
 ## Webhooks
 
-A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
+A simple utility which resolves incoming webhook payloads by verifying their signature with your webhook secret.
 
 ```typescript
-// api/webhook/polar.ts
+// routes/api/webhook/polar.ts
 import { Webhooks } from '@polar-sh/tanstack-start'
-import { createAPIFileRoute } from '@tanstack/react-start/api'
+import { createFileRoute } from '@tanstack/react-router'
 
-export const APIRoute = createAPIFileRoute('/api/webhook/polar')({
-  POST: Webhooks({
-    webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
-    onPayload: async (payload) => {
-      // Handle the payload
-      // No need to return an acknowledge response
+export const Route = createFileRoute('/api/webhook/polar')({
+  server: {
+    handlers: {
+      POST: Webhooks({
+        webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+        onPayload: async (payload) => {
+          // Handle the payload
+          // No need to return an acknowledge response
+        },
+      }),
     },
-  }),
+  },
 })
 ```
 
@@ -81,25 +92,47 @@ export const APIRoute = createAPIFileRoute('/api/webhook/polar')({
 
 The Webhook handler also supports granular handlers for easy integration.
 
+- onPayload: (payload) => - Called for every event, in addition to the matching handler below
 - onCheckoutCreated: (payload) =>
+- onCheckoutExpired: (payload) =>
 - onCheckoutUpdated: (payload) =>
 - onOrderCreated: (payload) =>
 - onOrderUpdated: (payload) =>
 - onOrderPaid: (payload) =>
+- onOrderRefunded: (payload) =>
+- onRefundCreated: (payload) =>
+- onRefundUpdated: (payload) =>
 - onSubscriptionCreated: (payload) =>
 - onSubscriptionUpdated: (payload) =>
 - onSubscriptionActive: (payload) =>
 - onSubscriptionCanceled: (payload) =>
+- onSubscriptionCycled: (payload) =>
+- onSubscriptionPastDue: (payload) =>
+- onSubscriptionPaused: (payload) =>
+- onSubscriptionResumed: (payload) =>
 - onSubscriptionRevoked: (payload) =>
+- onSubscriptionUncanceled: (payload) =>
 - onProductCreated: (payload) =>
 - onProductUpdated: (payload) =>
 - onOrganizationUpdated: (payload) =>
 - onBenefitCreated: (payload) =>
 - onBenefitUpdated: (payload) =>
 - onBenefitGrantCreated: (payload) =>
+- onBenefitGrantCycled: (payload) =>
 - onBenefitGrantUpdated: (payload) =>
 - onBenefitGrantRevoked: (payload) =>
 - onCustomerCreated: (payload) =>
 - onCustomerUpdated: (payload) =>
 - onCustomerDeleted: (payload) =>
 - onCustomerStateChanged: (payload) =>
+- onCustomerSeatAssigned: (payload) =>
+- onCustomerSeatClaimed: (payload) =>
+- onCustomerSeatRevoked: (payload) =>
+- onDiscountCreated: (payload) =>
+- onDiscountUpdated: (payload) =>
+- onDiscountDeleted: (payload) =>
+- onMemberCreated: (payload) =>
+- onMemberUpdated: (payload) =>
+- onMemberDeleted: (payload) =>
+
+Handlers are `async` functions. Webhook payloads use the generated SDK's snake_case fields. Signed events unknown to the installed SDK version are acknowledged and ignored so newly introduced event types do not cause retries.

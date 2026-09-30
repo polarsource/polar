@@ -6501,10 +6501,10 @@ class GrantedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6527,6 +6527,18 @@ class GrantedLicenseKey:
     last_validated_at: str | None
 
     expires_at: str | None
+
+    subscription_id: str | None
+    """The ID of the subscription granting the license key."""
+
+    subscription: LicenseKeySubscription | None
+    """The subscription granting the license key, if any."""
+
+    order_id: str | None
+    """The ID of the one-time order granting the license key."""
+
+    order: LicenseKeyOrder | None
+    """The one-time order granting the license key, if any."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -6857,6 +6869,20 @@ class LicenseKeyMember:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class LicenseKeyOrder:
+    id: str
+    """The ID of the object."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    status: OrderStatus
+
+    paid: bool
+    """Whether the order has been paid for."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyRead:
     id: str
     """The ID of the object."""
@@ -6873,10 +6899,10 @@ class LicenseKeyRead:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6902,6 +6928,26 @@ class LicenseKeyRead:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class LicenseKeySubscription:
+    id: str
+    """The ID of the object."""
+
+    status: SubscriptionStatus
+
+    current_period_start: str
+    """The start timestamp of the current billing period."""
+
+    current_period_end: str
+    """The end timestamp of the current billing period."""
+
+    cancel_at_period_end: bool
+    """Whether the subscription will be canceled at the end of the current period."""
+
+    ends_at: str | None
+    """The timestamp when the subscription will end."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyWithActivations:
     id: str
     """The ID of the object."""
@@ -6918,10 +6964,10 @@ class LicenseKeyWithActivations:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -9475,10 +9521,10 @@ class RotatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11020,10 +11066,10 @@ class ValidatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11046,6 +11092,18 @@ class ValidatedLicenseKey:
     last_validated_at: str | None
 
     expires_at: str | None
+
+    subscription_id: str | None
+    """The ID of the subscription granting the license key."""
+
+    subscription: LicenseKeySubscription | None
+    """The subscription granting the license key, if any."""
+
+    order_id: str | None
+    """The ID of the one-time order granting the license key."""
+
+    order: LicenseKeyOrder | None
+    """The one-time order granting the license key, if any."""
 
     activation: LicenseKeyActivationBase | None = None
 

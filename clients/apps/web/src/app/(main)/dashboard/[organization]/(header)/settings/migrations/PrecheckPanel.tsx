@@ -26,6 +26,15 @@ export function PrecheckPanel({
     (precheck.isError
       ? "We couldn't start the pre-check. Please try again."
       : null)
+  // Creating a migration starts the pre-check, so there's nothing to click
+  // while it runs.
+  const action = stalled
+    ? 'Start again'
+    : running
+      ? null
+      : failed
+        ? 'Try again'
+        : 'Run pre-check'
 
   return (
     <Box flexDirection="column" rowGap="l" marginTop="m">
@@ -55,21 +64,13 @@ export function PrecheckPanel({
         </Text>
       )}
 
-      <Box>
-        <Button
-          size="sm"
-          onClick={() => precheck.mutate()}
-          disabled={running && !stalled}
-        >
-          {stalled
-            ? 'Start again'
-            : running
-              ? 'Checking…'
-              : failed
-                ? 'Try again'
-                : 'Run pre-check'}
-        </Button>
-      </Box>
+      {action && (
+        <Box>
+          <Button size="sm" onClick={() => precheck.mutate()}>
+            {action}
+          </Button>
+        </Box>
+      )}
     </Box>
   )
 }

@@ -14,7 +14,7 @@ from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import EmptyStrToNone, MultipleQueryFilter
 from polar.models import CheckoutLink
-from polar.openapi import APITag
+from polar.openapi import APITag, cli_preview
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
@@ -91,6 +91,7 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Checkout Link",
+    openapi_extra=cli_preview(("id", "ID"), ("label", "Label"), ("url", "URL")),
     response_model=CheckoutLinkSchema,
     responses={404: CheckoutLinkNotFound},
     tags=[APITag.mcp, APITag.cli],

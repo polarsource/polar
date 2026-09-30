@@ -40,9 +40,9 @@ from .factor import OAuth2FactorMixin
 
 
 async def _get_sso_redirect(
-    session: AsyncSession, email: str, return_to: str | None
+    session: AsyncSession, email: str, context: dict[str, typing.Any] | None
 ) -> RedirectResponse | None:
-    url = await get_sso_redirect_url(session, email, return_to)
+    url = await get_sso_redirect_url(session, email, context)
     return RedirectResponse(url, status_code=303) if url is not None else None
 
 
@@ -159,14 +159,14 @@ def get_oauth_login_router(
                 raise PolarAuthRedirectionError("No active authentication session")
 
         session = authentication_session_service.session
-        return_to = (authentication_session.context or {}).get("return_to")
+        context = authentication_session.context
 
         # Existing or linked user
         if enrollment is not None:
             identity_id = enrollment.identity_id
             user = await UserRepository.from_session(session).get_by_id(identity_id)
             if user is not None and (
-                sso_redirect := await _get_sso_redirect(session, user.email, return_to)
+                sso_redirect := await _get_sso_redirect(session, user.email, context)
             ):
                 set_state_cookie(request, sso_redirect, "", 0)
                 return sso_redirect
@@ -181,7 +181,7 @@ def get_oauth_login_router(
             except GetEmailError as e:
                 raise PolarAuthRedirectionError(e.message) from e
 
-            if sso_redirect := await _get_sso_redirect(session, email, return_to):
+            if sso_redirect := await _get_sso_redirect(session, email, context):
                 set_state_cookie(request, sso_redirect, "", 0)
                 return sso_redirect
 

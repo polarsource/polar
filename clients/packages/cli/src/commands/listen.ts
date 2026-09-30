@@ -17,7 +17,7 @@ import {
   HttpClientRequest,
   HttpClientResponse,
 } from 'effect/unstable/http'
-import { apiUrl, authenticatedClient } from '@/services/api'
+import { apiUrl, authenticatedClient, withOrganization } from '@/services/api'
 import { Deliveries, type Delivery } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
 import { org } from '@/commands/flags'
@@ -93,6 +93,7 @@ const banner = (organizationName: string, secret: string, forwardUrl: string) =>
 export interface StartListeningOptions {
   listenUrl: string
   forwardUrl: string
+  organizationId: string
   organizationName: string
   environment: PolarEnvironment
   forward?: (
@@ -104,6 +105,7 @@ export interface StartListeningOptions {
 export const startListening = ({
   listenUrl,
   forwardUrl,
+  organizationId,
   organizationName,
   environment,
   forward = fetch,
@@ -119,6 +121,7 @@ export const startListening = ({
       Effect.gen(function* () {
         let request = HttpClientRequest.get(listenUrl).pipe(
           HttpClientRequest.setHeader('Accept', 'text/event-stream'),
+          withOrganization(organizationId),
         )
         if (lastEventId)
           request = HttpClientRequest.setHeader(
@@ -399,6 +402,7 @@ export const listen = Command.make('listen', { url, org }, ({ url, org }) =>
       startListening({
         listenUrl,
         forwardUrl: target.href,
+        organizationId: organization.id,
         organizationName: organization.name,
         environment,
       }).pipe(

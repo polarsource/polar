@@ -72,9 +72,20 @@ export const DashboardSidebar = ({
   }
 
   const accessibleOrganizationIds = new Set(organizations.map((org) => org.id))
-  const ssoRequiredOrganizations = memberOrganizations.filter(
-    (org) => org.requires_sso && !accessibleOrganizationIds.has(org.id),
+  const signInOrganizations = memberOrganizations.filter(
+    (org) => !accessibleOrganizationIds.has(org.id),
   )
+  const signInToOrganization = (org: schemas['MemberOrganization']) => {
+    if (org.requires_sso) {
+      router.push(`/auth/sso/${org.slug}`)
+      return
+    }
+    const searchParams = new URLSearchParams({
+      sso_discovery: 'false',
+      return_to: `/dashboard/${org.slug}`,
+    })
+    router.push(`/auth?${searchParams.toString()}`)
+  }
 
   const [_isImpersonating, setIsImpersonating] = useState(false)
   useEffect(() => {
@@ -213,11 +224,11 @@ export const DashboardSidebar = ({
                       <span className="min-w-0 truncate">{org.name}</span>
                     </DropdownMenuItem>
                   ))}
-                  {ssoRequiredOrganizations.map((org) => (
+                  {signInOrganizations.map((org) => (
                     <DropdownMenuItem
                       key={org.id}
                       className="flex flex-row items-center gap-x-2"
-                      onClick={() => router.push(`/auth/sso/${org.slug}`)}
+                      onClick={() => signInToOrganization(org)}
                     >
                       <Avatar
                         name={org.name}
@@ -226,8 +237,14 @@ export const DashboardSidebar = ({
                       />
                       <span className="min-w-0 truncate">{org.name}</span>
                       <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        <LockOutlined fontSize="inherit" />
-                        SSO
+                        {org.requires_sso ? (
+                          <>
+                            <LockOutlined fontSize="inherit" />
+                            SSO
+                          </>
+                        ) : (
+                          'Sign in'
+                        )}
                       </span>
                     </DropdownMenuItem>
                   ))}

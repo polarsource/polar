@@ -34,7 +34,7 @@ let requests: Array<{
 }>
 let denied: boolean
 
-const environmentOf = () => polar.state.requests.at(-1)!
+const environmentOf = () => polar.state.requests.at(-1)!.environment
 const polar = fakePolar({
   organizations: {
     list: ({ page }: { page: number }) => {
@@ -80,6 +80,7 @@ beforeEach(() => {
   pages = { sandbox: [[first]], production: [[second]] }
   requests = []
   denied = false
+  polar.state.requests.length = 0
 })
 
 test('selection stores the organization with its environment', async () => {
@@ -171,6 +172,20 @@ test('an unknown explicit id names the environments that were searched', async (
   await expect(
     Effect.runPromise(organizations.resolve('missing')),
   ).rejects.toThrow('inaccessible in sandbox and production')
+})
+
+test('lookups are scoped to the organization while listing is not', async () => {
+  const organizations = await service()
+  await Effect.runPromise(organizations.resolve())
+  await Effect.runPromise(organizations.resolve(second.id))
+  await Effect.runPromise(organizations.listAll)
+  expect(polar.state.requests).toEqual([
+    { environment: 'sandbox', organizationId: first.id },
+    { environment: 'sandbox', organizationId: second.id },
+    { environment: 'production', organizationId: second.id },
+    { environment: 'sandbox', organizationId: undefined },
+    { environment: 'production', organizationId: undefined },
+  ])
 })
 
 test('explicit IDs require a session', async () => {

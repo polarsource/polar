@@ -10,6 +10,7 @@ import {
   apiUrl,
   authenticatedClient,
   describeApiFailure,
+  withOrganization,
 } from '@/services/api'
 
 export class TriggerError extends Data.TaggedError('TriggerError')<{
@@ -70,7 +71,7 @@ export class Trigger extends Context.Service<
   Trigger,
   {
     listEvents: (
-      environment: PolarEnvironment,
+      organization: ActiveOrganization,
     ) => Effect.Effect<ReadonlyArray<TriggerEvent>, AuthError | TriggerError>
     send: (
       organization: ActiveOrganization,
@@ -146,10 +147,12 @@ export const make = Effect.gen(function* () {
     production: yield* authenticatedClient('production'),
   }
 
-  const listEvents = (environment: PolarEnvironment) =>
+  const listEvents = ({ id, environment }: ActiveOrganization) =>
     Effect.gen(function* () {
       const response = yield* clients[environment].execute(
-        HttpClientRequest.get(yield* apiUrl(environment, '/cli/events')),
+        HttpClientRequest.get(yield* apiUrl(environment, '/cli/events')).pipe(
+          withOrganization(id),
+        ),
       )
       if (response.status !== 200) {
         return yield* apiFailure(response.status, environment)
@@ -170,7 +173,10 @@ export const make = Effect.gen(function* () {
       const { environment } = organization
       const httpRequest = yield* HttpClientRequest.post(
         yield* apiUrl(environment, `/cli/trigger/${organization.id}`),
-      ).pipe(HttpClientRequest.bodyJson(request))
+      ).pipe(
+        withOrganization(organization.id),
+        HttpClientRequest.bodyJson(request),
+      )
       const response = yield* clients[environment].execute(httpRequest)
 
       if (response.status === 409) {
@@ -182,7 +188,7 @@ export const make = Effect.gen(function* () {
             response,
           )
         if (isUnknownEventError(body.detail)) {
-          const events = yield* listEvents(environment)
+          const events = yield* listEvents(organization)
           const suggestion = closestEvent(
             request.event,
             events.map((item) => item.type),

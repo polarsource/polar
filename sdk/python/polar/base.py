@@ -74,6 +74,18 @@ def resolve_base_url(
         ) from e
 
 
+def _default_headers(
+    version: str, access_token: str, organization_id: str | None
+) -> dict[str, str]:
+    headers = {
+        "Polar-Version": version,
+        "Authorization": f"Bearer {access_token}",
+    }
+    if organization_id is not None:
+        headers["Polar-Organization"] = organization_id
+    return headers
+
+
 class BuildRequestMixin:
     def build_request(
         self: "SyncClientBase | AsyncClientBase",
@@ -115,14 +127,12 @@ class SyncClientBase(BuildRequestMixin):
         version: str,
         access_token: str,
         timeout: RequestTimeout | None = 5.0,
+        organization_id: str | None = None,
     ) -> None:
         self._client = httpx.Client(
             base_url=base_url,
             timeout=timeout,
-            headers={
-                "Polar-Version": version,
-                "Authorization": f"Bearer {access_token}",
-            },
+            headers=_default_headers(version, access_token, organization_id),
         )
 
     def __enter__(self) -> typing.Self:
@@ -151,14 +161,12 @@ class AsyncClientBase(BuildRequestMixin):
         version: str,
         access_token: str,
         timeout: RequestTimeout | None = 5.0,
+        organization_id: str | None = None,
     ) -> None:
         self._client = httpx.AsyncClient(
             base_url=base_url,
             timeout=timeout,
-            headers={
-                "Polar-Version": version,
-                "Authorization": f"Bearer {access_token}",
-            },
+            headers=_default_headers(version, access_token, organization_id),
         )
 
     async def __aenter__(self) -> typing.Self:

@@ -33,10 +33,13 @@ vi.mock('@polar-sh/orbit/Box', () => ({
   Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 
-const migrationWith = (stalled: boolean) =>
+const migrationWith = (
+  stalled: boolean,
+  status: schemas['MerchantMigrationOperationStatus'] = 'running',
+) =>
   ({
     id: 'migration_1',
-    operation: { status: 'running', stalled },
+    operation: { status, kind: 'precheck', stalled, error: null },
   }) as unknown as schemas['MerchantMigration']
 
 describe('PrecheckPanel', () => {
@@ -46,10 +49,34 @@ describe('PrecheckPanel', () => {
     precheck.isError = false
   })
 
-  it('keeps the button disabled while the pre-check is making progress', () => {
-    render(<PrecheckPanel migration={migrationWith(false)} />)
+  it('shows the pre-check that create started without asking for a click', () => {
+    render(<PrecheckPanel migration={migrationWith(false, 'pending')} />)
 
-    expect(screen.getByRole('button', { name: 'Checking…' })).toBeDisabled()
+    expect(screen.getByText(/reading your stripe catalog/i)).toBeTruthy()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('lets the merchant retry a failed pre-check', () => {
+    render(<PrecheckPanel migration={migrationWith(false, 'failed')} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(precheck.mutate).toHaveBeenCalledOnce()
+  })
+
+  it('still starts a pre-check for a migration that never ran one', () => {
+    render(
+      <PrecheckPanel
+        migration={
+          {
+            id: 'migration_1',
+            operation: null,
+          } as unknown as schemas['MerchantMigration']
+        }
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run pre-check' }))
+    expect(precheck.mutate).toHaveBeenCalledOnce()
   })
 
   it('lets the merchant start a stalled pre-check again', () => {
@@ -73,6 +100,6 @@ describe('PrecheckPanel', () => {
     render(<PrecheckPanel migration={migrationWith(true)} />)
 
     expect(screen.queryByText(/no progress for a while/i)).toBeNull()
-    expect(screen.getByRole('button', { name: 'Checking…' })).toBeDisabled()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })

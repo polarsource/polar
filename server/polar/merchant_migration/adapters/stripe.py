@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from polar.enums import TaxBehavior
 from polar.kit.address import Address
 from polar.kit.schemas import Schema
+from polar.kit.utils import utc_now
 from polar.tax.tax_id import COUNTRY_TAX_ID_MAP, TaxID, TaxIDFormat, from_stripe_tax_id
 
 from ..canonical import (
@@ -433,7 +434,6 @@ class StripeAdapter:
         self, cursor: StripeExtractionCursor
     ) -> ExtractionPage:
         params: stripe_lib.params.PromotionCodeListParams = {
-            "active": True,
             "limit": PAGE_SIZE,
             "expand": [
                 "data.promotion.coupon",
@@ -1126,7 +1126,8 @@ class StripeAdapter:
         coupon = promotion.coupon if promotion is not None else None
         if coupon is None or isinstance(coupon, str):
             return None
-        if self._promotion_code_is_restricted(promotion_code):
+        # A customer's own code says nothing about the coupon's public code.
+        if promotion_code.get("customer"):
             return None
         mapped = self._map_coupon(coupon)
         if mapped is None:
@@ -1134,27 +1135,35 @@ class StripeAdapter:
         code = polar_discount_code(promotion_code.code)
         if code is None:
             return None
+        remaining = tighter_cap(
+            mapped.max_redemptions,
+            self._remaining_redemptions(
+                promotion_code.get("max_redemptions"),
+                promotion_code.get("times_redeemed") or 0,
+            ),
+        )
+        ends_at = earlier_datetime(
+            mapped.ends_at, self._to_datetime(promotion_code.get("expires_at"))
+        )
+        spent = (
+            not promotion_code.get("active", True)
+            or remaining == 0
+            or (ends_at is not None and ends_at <= utc_now())
+        )
+        # A spent code can't be redeemed, so restrictions Polar can't enforce
+        # don't matter: keep it at its limit instead of dropping the code.
+        if not spent and self._promotion_code_is_restricted(promotion_code):
+            return None
         return replace(
             mapped,
             code=code,
-            max_redemptions=tighter_cap(
-                mapped.max_redemptions,
-                self._remaining_redemptions(
-                    promotion_code.get("max_redemptions"),
-                    promotion_code.get("times_redeemed") or 0,
-                ),
-            ),
-            ends_at=earlier_datetime(
-                mapped.ends_at,
-                self._to_datetime(promotion_code.get("expires_at")),
-            ),
+            max_redemptions=0 if spent else remaining,
+            ends_at=ends_at,
         )
 
     def _promotion_code_is_restricted(
         self, promotion_code: stripe_lib.PromotionCode
     ) -> bool:
-        if promotion_code.get("customer"):
-            return True
         restrictions = promotion_code.get("restrictions")
         if restrictions is None:
             return False

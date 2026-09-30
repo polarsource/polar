@@ -64,6 +64,22 @@ const customerState = await polar.customers.getStateExternal("customer_external_
 });
 ```
 
+## Organizations
+
+OAuth access tokens and personal access tokens can reach every organization the user belongs to.
+Pass `organizationId` to get a client that acts on a single organization. It sends the
+`Polar-Organization` header, so the API only returns and changes that organization's data:
+
+```typescript
+const acme = createPolar({
+  accessToken: "polar_at_u_xxx",
+  organizationId: "acme_organization_id",
+});
+const customers = await acme.customers.list();
+```
+
+Organization access tokens already act on their own organization and don't need it.
+
 ## Individual API Functions
 
 To import individual API functions for tree-shaking, create a core client and pass it to the

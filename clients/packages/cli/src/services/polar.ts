@@ -1,18 +1,49 @@
-import { createPolar, type Polar as PolarSDK } from '@polar-sh/sdk/2026-04'
-import { Context, Effect, Layer, Redacted } from 'effect'
-import { AuthError, loginCommand, type PolarEnvironment } from '@/schemas/Auth'
+import {
+  createPolar,
+  createPolarCore,
+  type Polar as PolarSDK,
+  type PolarCore,
+} from '@polar-sh/sdk/2026-10'
+import { Context, Effect, Layer, Option, Redacted, Schema } from 'effect'
+import {
+  AuthError,
+  loginCommand,
+  orgCommand,
+  type PolarEnvironment,
+} from '@/schemas/Auth'
 import { apiOrigin } from '@/services/api'
 import { Auth } from '@/services/auth'
 
 export class Polar extends Context.Service<Polar, PolarImpl>()('Polar') {}
+
+interface UseOptions {
+  timeout?: number
+  authenticated?: boolean
+  organizationId?: string | undefined
+}
+
+const OrganizationNotAccessible = Schema.Struct({
+  error: Schema.Literal('RequestedOrganizationNotAccessible'),
+})
+
+const isOrganizationNotAccessible = (body: unknown) =>
+  Option.isSome(
+    Schema.decodeUnknownOption(
+      Schema.Union([
+        OrganizationNotAccessible,
+        Schema.fromJsonString(OrganizationNotAccessible),
+      ]),
+    )(body),
+  )
 
 interface PolarImpl {
   getClient: (
     environment?: PolarEnvironment,
   ) => Effect.Effect<PolarSDK, AuthError>
   use: <A>(
-    fn: (client: PolarSDK) => Promise<A>,
+    fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
     environment?: PolarEnvironment,
+    options?: UseOptions,
   ) => Effect.Effect<A, AuthError>
 }
 
@@ -31,36 +62,50 @@ export const make = Effect.gen(function* () {
     })
 
   const use = <A>(
-    fn: (client: PolarSDK) => Promise<A>,
+    fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
     environment: PolarEnvironment = 'sandbox',
+    options?: UseOptions,
   ) =>
     Effect.gen(function* () {
-      const credential = yield* auth.resolve(environment)
+      const { authenticated = true, ...requestOptions } = options ?? {}
+      const credential = authenticated
+        ? yield* auth.resolve(environment)
+        : undefined
       const baseUrl = yield* apiOrigin(environment)
-      const request = (accessToken: Redacted.Redacted<string>) =>
+      const request = (accessToken?: Redacted.Redacted<string>) =>
         Effect.tryPromise({
-          try: () =>
-            fn(
-              createPolar({
-                environment,
-                baseUrl,
-                accessToken: Redacted.value(accessToken),
-              }),
-            ),
+          try: () => {
+            const clientOptions = {
+              environment,
+              baseUrl,
+              accessToken: accessToken ? Redacted.value(accessToken) : '',
+              ...requestOptions,
+            }
+            return fn(
+              createPolar(clientOptions),
+              createPolarCore(clientOptions),
+            )
+          },
           catch: (error) => ({
             statusCode:
               typeof error === 'object' &&
               error !== null &&
-              'statusCode' in error
+              'statusCode' in error &&
+              typeof error.statusCode === 'number'
                 ? error.statusCode
                 : undefined,
+            organizationNotAccessible:
+              typeof error === 'object' &&
+              error !== null &&
+              'error' in error &&
+              isOrganizationNotAccessible(error.error),
           }),
         })
 
-      return yield* request(credential.accessToken).pipe(
+      return yield* request(credential?.accessToken).pipe(
         Effect.catch((error) =>
           Effect.gen(function* () {
-            if (credential.source !== 'keyring' || error.statusCode !== 401)
+            if (credential?.source !== 'keyring' || error.statusCode !== 401)
               return yield* Effect.fail(error)
 
             const refreshed = yield* auth.resolve(
@@ -75,20 +120,25 @@ export const make = Effect.gen(function* () {
           switch (error.statusCode) {
             case 401:
               return new AuthError({
+                statusCode: error.statusCode,
                 message: `Authentication rejected for ${environment}. Check POLAR_ACCESS_TOKEN or run ${loginCommand(environment)} --new-session.`,
               })
             case 403:
               return new AuthError({
-                message:
-                  'Access denied. Check the token permissions (organizations:read is required to list organizations).',
+                statusCode: error.statusCode,
+                message: error.organizationNotAccessible
+                  ? `Organization ${requestOptions.organizationId} is not accessible with this credential. Check --org or run ${orgCommand}.`
+                  : 'Access denied. Check the token permissions (organizations:read is required to list organizations).',
               })
             case 404:
               return new AuthError({
+                statusCode: error.statusCode,
                 message:
                   'Organization is missing or inaccessible. Check --org or run polar auth org with the selected environment.',
               })
             default:
               return new AuthError({
+                statusCode: error.statusCode,
                 message:
                   'Polar API request failed. Check your connection and try again.',
               })

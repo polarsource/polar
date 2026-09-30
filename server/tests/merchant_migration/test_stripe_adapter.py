@@ -14,6 +14,7 @@ from polar.merchant_migration.adapters.stripe import (
 from polar.merchant_migration.canonical import (
     CanonicalCustomer,
     CanonicalDiscount,
+    CanonicalDiscountDuration,
     CanonicalDiscountType,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
@@ -1059,6 +1060,7 @@ def _stripe_promotion_code(
     id: str = "promo_1",
     code: str = "LAUNCH-10",
     coupon: stripe_lib.Coupon | None = None,
+    active: bool = True,
     max_redemptions: int | None = None,
     times_redeemed: int = 0,
     expires_at: int | None = None,
@@ -1070,6 +1072,7 @@ def _stripe_promotion_code(
         {
             "id": id,
             "code": code,
+            "active": active,
             "max_redemptions": max_redemptions,
             "times_redeemed": times_redeemed,
             "expires_at": expires_at,
@@ -1165,6 +1168,68 @@ class TestExtractCoupons:
         page = await adapter.extract_page({"phase": "promotion_codes"})
 
         assert page.records == []
+
+    async def test_spent_promotion_code_is_staged_at_its_limit(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        code="MIGRATIONS",
+                        coupon=_stripe_coupon(
+                            percent_off=100,
+                            duration="repeating",
+                            duration_in_months=6,
+                            times_redeemed=1,
+                        ),
+                        active=False,
+                        max_redemptions=1,
+                        times_redeemed=1,
+                    )
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        params = client.v1.promotion_codes.list_async.call_args.kwargs["params"]
+        assert "active" not in params
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.code == "MIGRATIONS"
+        assert discount.max_redemptions == 0
+        assert discount.duration == CanonicalDiscountDuration.repeating
+        assert discount.duration_in_months == 6
+        assert discount.ends_at is None
+
+    async def test_spent_restricted_promotion_code_is_staged_at_its_limit(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.promotion_codes.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[
+                    _stripe_promotion_code(
+                        id="promo_customer", customer="cus_1", active=False
+                    ),
+                    _stripe_promotion_code(
+                        id="promo_first", first_time_transaction=True, active=False
+                    ),
+                ],
+                has_more=False,
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "promotion_codes"})
+
+        assert len(page.records) == 1
+        discount = page.records[0]
+        assert isinstance(discount, CanonicalDiscount)
+        assert discount.code == "LAUNCH10"
+        assert discount.max_redemptions == 0
 
     async def test_invalid_promotion_code_is_not_staged(
         self, mocker: MockerFixture

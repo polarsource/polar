@@ -62,12 +62,12 @@ from .oauth2.apple import get_apple_factor
 from .oauth2.router import get_oauth_link_router, get_oauth_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
-    AuthenticationSessionStart,
     BackupCodesEnrollment,
     BackupCodesStatus,
     BackupCodesVerify,
     EmailOTPRequest,
     EmailOTPVerify,
+    GlobalAuthenticationSessionStart,
     LoginMethod,
     TOTPEnable,
     TOTPEnrollment,
@@ -102,7 +102,7 @@ async def logout(
 
 @router.post("/start", status_code=201)
 async def start(
-    authentication_session_start: AuthenticationSessionStart,
+    authentication_session_start: GlobalAuthenticationSessionStart,
     request: Request,
     response: Response,
     authentication_session_service: AuthenticationSessionService = Depends(
@@ -110,7 +110,8 @@ async def start(
     ),
 ) -> AuthenticationSessionSchema:
     token, authentication_session = await authentication_session_service.start(
-        return_to=authentication_session_start.return_to
+        return_to=authentication_session_start.return_to,
+        sso_discovery=authentication_session_start.sso_discovery,
     )
     await authentication_session_service.set_cookie(
         request, response, token, authentication_session.expires_at
@@ -233,7 +234,7 @@ async def email_otp_request(
     sso_redirect_url = await get_sso_redirect_url(
         authentication_session_service.session,
         email_otp_request.email,
-        (authentication_session.context or {}).get("return_to"),
+        authentication_session.context,
     )
     if sso_redirect_url is not None:
         raise SSORequired(sso_redirect_url)

@@ -83,14 +83,18 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
             header: (row.get(header) or "").strip()
             for header in PAYMENT_METHOD_MAPPING_HEADERS
         }
-        if not all(values.values()):
+        if not values["customer_id_old"] or not values["customer_id_new"]:
             raise PaymentMethodMappingCSVError(
-                f"Line {line_number} has an empty mapping value."
+                f"Line {line_number} has an empty customer ID."
             )
         if values["customer_id_old"] != values["customer_id_new"]:
             raise PaymentMethodMappingCSVError(
                 f"Line {line_number} changes the Stripe customer ID."
             )
+        # Stripe lists every copied customer, including those with no card, and
+        # a row missing either side has no card we can map.
+        if not values["source_id_old"] or not values["source_id_new"]:
+            continue
         mapping = PaymentMethodMapping(
             customer_id=values["customer_id_old"],
             source_payment_method_id=values["source_id_old"],

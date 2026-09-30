@@ -1,3 +1,4 @@
+import re
 from collections.abc import AsyncGenerator
 from datetime import timedelta
 
@@ -443,6 +444,23 @@ class TestDetail:
         assert "Failed records" in response.text
         assert "Stripe said no" in response.text
         assert "cus_1" in response.text
+
+    async def test_links_the_organization_slug_to_the_organization_page(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await backoffice_client.get(f"/merchant-migrations/{migration.id}")
+
+        assert response.status_code == 200
+        organization_url = f"/organizations/{organization.id}"
+        assert re.search(
+            rf'<a href="[^"]*{organization_url}" class="link">{organization.slug}</a>',
+            response.text,
+        )
 
     async def test_unknown_migration_is_not_found(
         self, backoffice_client: httpx.AsyncClient

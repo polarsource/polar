@@ -40,15 +40,22 @@ const AvatarComponent = ({
     setHasLoaded(true)
   }, [setHasLoaded, setShowInitials])
 
-  // Callback ref to detect images already in the browser cache.
+  // Callback ref to catch images that settled before React attached its
+  // listeners (browser cache, or a failure before hydration). `complete` is
+  // also true for broken images, so it alone doesn't mean success.
   const imgRef = useCallback(
     (node: HTMLImageElement | null) => {
-      if (node && node.complete) {
-        setHasLoaded(true)
-        setShowInitials(false)
+      if (!node || !node.complete) {
+        return
+      }
+      if (node.naturalWidth > 0) {
+        onLoad()
+      } else {
+        // Some browsers report naturalWidth 0 for SVGs without intrinsic size
+        node.decode().then(onLoad, onError)
       }
     },
-    [setHasLoaded, setShowInitials],
+    [onLoad, onError],
   )
 
   const ImageElement = CustomImageComponent || 'img'

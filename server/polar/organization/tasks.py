@@ -3,6 +3,7 @@ from typing import Annotated, Any, cast
 
 import structlog
 from sqlalchemy import CursorResult, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -438,29 +439,20 @@ async def _carry_external_ids_to_owner_members(
             Member.external_id.is_(None),
         )
     )
-    results = await session.stream(
-        statement,
-        execution_options={"yield_per": _BACKFILL_BATCH_SIZE},
-    )
+    rows = (await session.execute(statement)).all()
 
     count = 0
-    try:
-        async for customer, member in results:
-            taken = await session.scalar(
-                select(Member.id).where(
-                    Member.customer_id == customer.id,
-                    Member.external_id == customer.external_id,
-                    Member.deleted_at.is_(None),
-                )
-            )
-            if taken is not None:
-                continue
-            member.external_id = customer.external_id
-            count += 1
-            if count % _BACKFILL_BATCH_SIZE == 0:
+    for customer, member in rows:
+        # A savepoint per member: another member of the same customer may take that
+        # id first, and the constraint must not take the whole backfill down.
+        try:
+            async with session.begin_nested():
+                member.external_id = customer.external_id
                 await session.flush()
-    finally:
-        await results.close()
+        except IntegrityError:
+            await session.refresh(member)
+            continue
+        count += 1
 
     await session.flush()
     return count
@@ -645,16 +637,15 @@ async def _get_or_create_member_for_backfill(
         email=email,
     )
     if external_id is not None and member.external_id is None:
-        taken = await session.scalar(
-            select(Member.id).where(
-                Member.customer_id == billing_customer_id,
-                Member.external_id == external_id,
-                Member.deleted_at.is_(None),
-                Member.id != member.id,
-            )
-        )
-        if taken is None:
-            member.external_id = external_id
+        # A savepoint: another member of the same customer may hold that id, and the
+        # constraint must not take the whole backfill down.
+        try:
+            async with session.begin_nested():
+                member.external_id = external_id
+                await session.flush()
+        except IntegrityError:
+            # The rollback expired the member, and the caller reads its id next.
+            await session.refresh(member)
     return member
 
 

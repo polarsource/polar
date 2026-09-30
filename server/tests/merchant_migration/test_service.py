@@ -4382,7 +4382,7 @@ class TestStreamCustomerIdsToCopy:
             )
         )
 
-        source_ids = await service.stream_customer_source_ids_to_copy(
+        source_ids = await service.stream_imported_customer_source_ids(
             session, auth_subject, later.id
         )
 
@@ -4421,7 +4421,7 @@ class TestStreamCustomerIdsToCopy:
         assert customer is not None
         await create_payment_method(save_fixture, customer, processor_id="pm_sub_moved")
 
-        source_ids = await service.stream_customer_source_ids_to_copy(
+        source_ids = await service.stream_imported_customer_source_ids(
             session, auth_subject, migration.id
         )
 

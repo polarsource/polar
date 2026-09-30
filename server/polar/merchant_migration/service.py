@@ -853,7 +853,7 @@ class MerchantMigrationService:
             self._advance_retired_steps(migration, steps)
         return self._checklist(migration, steps)
 
-    async def stream_customer_source_ids_to_copy(
+    async def stream_imported_customer_source_ids(
         self,
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],

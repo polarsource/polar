@@ -13,7 +13,7 @@
     "generate": "uv run --directory ../generator -m cli generate openapi/2026-10.openapi.json ../cli-commands --language cli"
   },
   "peerDependencies": {
-    "@polar-sh/sdk": "1.0.0",
+    "@polar-sh/sdk": "1.0.1",
     "effect": "4.0.0-rc.117"
   }
 }

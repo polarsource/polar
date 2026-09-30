@@ -167,7 +167,7 @@ export const AgentSession = () => {
                 ) : (
                   <LoaderCircle size={12} className="animate-spin" />
                 )}
-                <Text variant="caption" color="muted" monospace wrap="nowrap">
+                <Text variant="caption" color="muted" monospace wrap="wrap">
                   <Shimmer active={started && !done}>{line}</Shimmer>
                 </Text>
               </Box>

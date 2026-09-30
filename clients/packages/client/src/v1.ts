@@ -23235,9 +23235,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -23269,16 +23269,16 @@ export interface components {
        * Subscription Id
        * @description The ID of the subscription granting the license key.
        */
-      subscription_id?: string | null
+      subscription_id: string | null
       /** @description The subscription granting the license key, if any. */
-      subscription?: components['schemas']['LicenseKeySubscription'] | null
+      subscription: components['schemas']['LicenseKeySubscription'] | null
       /**
        * Order Id
        * @description The ID of the one-time order granting the license key.
        */
-      order_id?: string | null
+      order_id: string | null
       /** @description The one-time order granting the license key, if any. */
-      order?: components['schemas']['LicenseKeyOrder'] | null
+      order: components['schemas']['LicenseKeyOrder'] | null
     }
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -24126,9 +24126,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -24295,9 +24295,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -34322,9 +34322,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -39207,9 +39207,9 @@ export interface components {
        * Member Id
        * @description The ID of the seat member holding this key, if any.
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly. */
-      member?: components['schemas']['LicenseKeyMember'] | null
+      member: components['schemas']['LicenseKeyMember'] | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -39241,16 +39241,16 @@ export interface components {
        * Subscription Id
        * @description The ID of the subscription granting the license key.
        */
-      subscription_id?: string | null
+      subscription_id: string | null
       /** @description The subscription granting the license key, if any. */
-      subscription?: components['schemas']['LicenseKeySubscription'] | null
+      subscription: components['schemas']['LicenseKeySubscription'] | null
       /**
        * Order Id
        * @description The ID of the one-time order granting the license key.
        */
-      order_id?: string | null
+      order_id: string | null
       /** @description The one-time order granting the license key, if any. */
-      order?: components['schemas']['LicenseKeyOrder'] | null
+      order: components['schemas']['LicenseKeyOrder'] | null
       activation?: components['schemas']['LicenseKeyActivationBase'] | null
     }
     /** ValidationError */

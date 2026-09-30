@@ -28,13 +28,13 @@ class VersionedProduct(BaseModel):
     name: str
     shared_field: Annotated[
         str, Version(starting_from=CURRENT_VERSION, up_to=NEXT_VERSION)
-    ] = "shared"
-    current_field: Annotated[str, Version(up_to=CURRENT_VERSION)] = "current"
+    ]
+    current_field: Annotated[str, Version(up_to=CURRENT_VERSION)]
     next_field: Annotated[
         str,
         Version(starting_from=NEXT_VERSION),
         Field(description="Only available in the next API version."),
-    ] = "next"
+    ]
 
 
 class VersionedSubscription(BaseModel):
@@ -75,7 +75,14 @@ def test_version_decorator_only_adds_metadata() -> None:
 
 
 def test_versioned_fields_are_serialized_for_requested_version() -> None:
-    subscription = VersionedSubscription(product=VersionedProduct(name="Pro"))
+    subscription = VersionedSubscription(
+        product=VersionedProduct(
+            name="Pro",
+            shared_field="shared",
+            current_field="current",
+            next_field="next",
+        )
+    )
 
     with api_version_context(CURRENT_VERSION):
         assert subscription.model_dump() == {
@@ -98,22 +105,24 @@ def test_versioned_fields_are_serialized_for_requested_version() -> None:
 
 def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
     with api_version_context(CURRENT_VERSION):
-        current_schema = VersionedSubscription.model_json_schema()
+        current_schema = VersionedSubscription.model_json_schema(mode="serialization")
     current_product = current_schema["$defs"]["VersionedProduct"]
     assert set(current_product["properties"]) == {
         "name",
         "shared_field",
         "current_field",
     }
+    assert set(current_product["required"]) == {"name", "shared_field", "current_field"}
 
     with api_version_context(NEXT_VERSION):
-        next_schema = VersionedSubscription.model_json_schema()
+        next_schema = VersionedSubscription.model_json_schema(mode="serialization")
     next_product = next_schema["$defs"]["VersionedProduct"]
     assert set(next_product["properties"]) == {"name", "shared_field", "next_field"}
     assert (
         next_product["properties"]["next_field"]["description"]
         == "Only available in the next API version."
     )
+    assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
 
 
 @pytest.mark.parametrize(

@@ -81,6 +81,7 @@ from .pan_transfer import (
     PanTransferUnavailable,
 )
 from .precheck import (
+    RENEWAL_ENABLED_STATUSES,
     account_blockers,
     classify_records,
     import_blockers,
@@ -203,6 +204,11 @@ class MerchantMigrationNotEnabled(MerchantMigrationError):
         super().__init__(
             "Merchant migration is not enabled for this organization.", 403
         )
+
+
+class OrganizationNotOnboarded(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("Finish onboarding before migrating from Stripe.", 403)
 
 
 class InvalidSourceCredentials(MerchantMigrationError):
@@ -466,7 +472,11 @@ class MerchantMigrationService:
             create_schema.organization_id,
             OrganizationPermission.organization_manage,
         )
-        await self._assert_feature_enabled(session, create_schema.organization_id)
+        organization = await self._assert_feature_enabled(
+            session, create_schema.organization_id
+        )
+        if organization.status not in RENEWAL_ENABLED_STATUSES:
+            raise OrganizationNotOnboarded()
         if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(create_schema.source_platform)
 
@@ -2003,11 +2013,12 @@ class MerchantMigrationService:
 
     async def _assert_feature_enabled(
         self, session: AsyncReadSession, organization_id: UUID
-    ) -> None:
+    ) -> Organization:
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(organization_id)
         if organization is None or not organization.is_merchant_migration_enabled:
             raise MerchantMigrationNotEnabled()
+        return organization
 
 
 merchant_migration = MerchantMigrationService()

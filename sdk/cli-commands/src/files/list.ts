@@ -3,13 +3,14 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { fields, data, mergeInput } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['files']['list']>[0]>
 
 export const command = Command.make(
   'list',
   {
+    fields,
     data,
     input: {
       organization_id: Flag.String('organization-id')
@@ -49,6 +50,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: query.organization_id,
+        fields: config.fields,
         invoke: (client) => client.files.list(query),
       })
     }),

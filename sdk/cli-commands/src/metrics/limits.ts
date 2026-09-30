@@ -2,18 +2,25 @@
 import { Effect } from 'effect'
 import { Command } from 'effect/unstable/cli'
 import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
 
-export const command = Command.make('limits', {}, () =>
-  Effect.gen(function* () {
-    const api = yield* ApiRuntime
-    yield* api.execute({
-      operationId: 'metrics:limits',
-      method: 'GET',
-      requiresConfirmation: false,
-      confirm: false,
-      invoke: (client) => client.metrics.limits(),
-    })
-  }),
+export const command = Command.make(
+  'limits',
+  {
+    fields,
+  },
+  (config) =>
+    Effect.gen(function* () {
+      const api = yield* ApiRuntime
+      yield* api.execute({
+        operationId: 'metrics:limits',
+        method: 'GET',
+        requiresConfirmation: false,
+        confirm: false,
+        fields: config.fields,
+        invoke: (client) => client.metrics.limits(),
+      })
+    }),
 ).pipe(
   Command.withDescription('Get the interval limits for the metrics endpoint.'),
 )

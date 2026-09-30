@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Command, Flag } from 'effect/unstable/cli'
 import { ApiRuntime, ApiCommandError } from '../runtime'
-import { data, mergeInput, missingFlags, nullableStringFlag } from '../inputs'
+import {
+  fields,
+  data,
+  mergeInput,
+  missingFlags,
+  nullableStringFlag,
+} from '../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['webhooks']['createWebhookEndpoint']>[0]
@@ -12,6 +18,7 @@ type Body = NonNullable<
 export const command = Command.make(
   'create_webhook_endpoint',
   {
+    fields,
     data,
     input: {
       url: Flag.String('url').pipe(
@@ -120,6 +127,7 @@ export const command = Command.make(
         requiresConfirmation: false,
         confirm: false,
         organizationId: body.organization_id,
+        fields: config.fields,
         invoke: (client) => client.webhooks.createWebhookEndpoint(body),
       })
     }),

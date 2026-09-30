@@ -3,6 +3,7 @@ import {
   isImported,
   isSelectable,
   needsAttention,
+  reasonLinks,
   type ReviewRow,
 } from './reviewRows'
 
@@ -135,5 +136,42 @@ describe('needsAttention', () => {
     expect(
       needsAttention(row({ import_status: 'pending', reason_level: 'info' })),
     ).toBe(false)
+  })
+})
+
+describe('reasonLinks', () => {
+  const customerHref = '/dashboard/acme/customers/cust_1'
+
+  it('has no links without a conflicting Polar customer', () => {
+    expect(
+      reasonLinks(row({ reason_code: 'customer_missing_email' }), 'acme'),
+    ).toEqual([])
+  })
+
+  it('sends a duplicate subscription to the Polar customer', () => {
+    expect(
+      reasonLinks(
+        row({
+          reason_code: 'customer_subscribed_on_polar',
+          conflicting_customer_id: 'cust_1',
+        }),
+        'acme',
+      ),
+    ).toEqual([{ label: 'View their Polar subscription', href: customerHref }])
+  })
+
+  it('offers support for a Stripe id conflict', () => {
+    expect(
+      reasonLinks(
+        row({
+          reason_code: 'customer_stripe_id_conflict',
+          conflicting_customer_id: 'cust_1',
+        }),
+        'acme',
+      ),
+    ).toEqual([
+      { label: 'View Polar customer', href: customerHref },
+      { label: 'Contact support', href: 'mailto:support@polar.sh' },
+    ])
   })
 })

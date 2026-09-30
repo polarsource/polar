@@ -1,11 +1,12 @@
 import contextlib
 from collections.abc import AsyncGenerator, Mapping, Sequence
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    Case,
     ColumnElement,
     Select,
     String,
@@ -21,7 +22,7 @@ from sqlalchemy import (
     values,
 )
 from sqlalchemy import inspect as orm_inspect
-from sqlalchemy.orm import InstanceState
+from sqlalchemy.orm import InstanceState, InstrumentedAttribute
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.event.system import CustomerUpdatedFields, SystemEvent
@@ -45,6 +46,15 @@ from polar.models.customer import EXTERNAL_ID_METADATA_KEY
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
+
+
+class CustomerStripeIdentity(NamedTuple):
+    id: UUID
+    # The Stripe id the customer can't move off: None when it has none, or when
+    # nothing depends on it any more.
+    stripe_customer_id: str | None
+    # Trialing, active or past due: `get_active_clause`, not just `active`.
+    subscribed: bool
 
 
 def _get_changed_value(
@@ -210,37 +220,43 @@ class CustomerRepository(
 
     async def get_bound_stripe_identities_by_organization(
         self, organization_id: UUID
-    ) -> dict[str, tuple[UUID, str | None]]:
-        """Per lower-cased email, the customer and the Stripe id it can't move
-        off, or None when it has none or nothing still depends on it."""
+    ) -> dict[str, CustomerStripeIdentity]:
+        """Per lower-cased email, the customer's Stripe identity."""
         statement = (
             self.get_base_statement()
-            .with_only_columns(
-                Customer.id,
-                Customer.email,
-                case(
-                    (
-                        self.get_stripe_customer_in_use_clause(),
-                        Customer.stripe_customer_id,
-                    ),
-                    else_=None,
-                ),
-            )
+            .with_only_columns(Customer.email, *self._stripe_identity_columns())
             .where(Customer.organization_id == organization_id)
         )
         result = await self.session.execute(statement)
         return {
-            email.lower(): (customer_id, stripe_customer_id)
-            for customer_id, email, stripe_customer_id in result.all()
+            email.lower(): CustomerStripeIdentity(*identity)
+            for email, *identity in result.all()
             if email
         }
 
-    async def is_stripe_customer_in_use(self, customer_id: UUID) -> bool:
-        statement = select(self.get_stripe_customer_in_use_clause()).where(
+    async def get_bound_stripe_identity(
+        self, customer_id: UUID
+    ) -> CustomerStripeIdentity:
+        statement = select(*self._stripe_identity_columns()).where(
             Customer.id == customer_id
         )
         result = await self.session.execute(statement)
-        return bool(result.scalar_one())
+        return CustomerStripeIdentity(*result.one())
+
+    def _stripe_identity_columns(
+        self,
+    ) -> tuple[InstrumentedAttribute[UUID], Case[Any], ColumnElement[bool]]:
+        return (
+            Customer.id,
+            case(
+                (
+                    self.get_stripe_customer_in_use_clause(),
+                    Customer.stripe_customer_id,
+                ),
+                else_=None,
+            ),
+            self.get_active_clause(True),
+        )
 
     def get_stripe_customer_in_use_clause(self) -> ColumnElement[bool]:
         """Counts a merchant migration's import too: it may still link copied

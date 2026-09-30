@@ -3875,7 +3875,7 @@ class TestImportPaymentMethodMappings:
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
 
-        summary = await service.import_payment_method_mappings(
+        await service.import_payment_method_mappings(
             session,
             migration,
             (
@@ -3883,11 +3883,6 @@ class TestImportPaymentMethodMappings:
                 b"cus_unknown,pm_old,cus_unknown,pm_new\n"
             ),
         )
-
-        assert summary.linked == 0
-        assert summary.skipped == [
-            "Customer cus_unknown wasn't imported in this migration."
-        ]
 
     async def test_all_customers_without_payment_method(
         self,
@@ -3910,7 +3905,7 @@ class TestImportPaymentMethodMappings:
             "polar.merchant_migration.cards.stripe_service.get_payment_method"
         )
 
-        summary = await service.import_payment_method_mappings(
+        await service.import_payment_method_mappings(
             session,
             migration,
             (
@@ -3920,9 +3915,6 @@ class TestImportPaymentMethodMappings:
             ),
         )
 
-        assert summary.linked == 0
-        assert summary.customers_without_payment_method == 2
-        assert summary.skipped == []
         get_payment_method.assert_not_called()
         staged = deserialize(record.type, record.canonical)
         assert isinstance(staged, CanonicalSubscription)
@@ -3974,7 +3966,7 @@ class TestImportPaymentMethodMappings:
             new=mocker.AsyncMock(return_value=stripe_payment_method),
         )
 
-        summary = await service.import_payment_method_mappings(
+        await service.import_payment_method_mappings(
             session,
             migration,
             (
@@ -3985,10 +3977,6 @@ class TestImportPaymentMethodMappings:
             ),
         )
 
-        assert summary.linked == 1
-        assert summary.customers_without_payment_method == 1
-        assert len(summary.skipped) == 1
-        assert "Line 4" in summary.skipped[0]
         get_payment_method.assert_awaited_once_with("pm_new")
         staged_with_card = deserialize(with_card.type, with_card.canonical)
         assert isinstance(staged_with_card, CanonicalSubscription)

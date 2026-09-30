@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, AsyncIterator, MutableSequence, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from dataclasses import replace
 from datetime import datetime
 from typing import NamedTuple, TypedDict
@@ -61,7 +61,6 @@ from .cards import (
     AmbiguousCopiedCard,
     PaymentMethodMapping,
     PaymentMethodMappingCSVError,
-    PaymentMethodMappingImportSummary,
     link_mapped_payment_method,
     link_payment_method,
     parse_payment_method_mapping_csv,
@@ -1058,57 +1057,32 @@ class MerchantMigrationService:
         session: AsyncSession,
         migration: MerchantMigration,
         contents: bytes,
-    ) -> PaymentMethodMappingImportSummary:
-        parsed = parse_payment_method_mapping_csv(contents)
-        payment_methods, unknown_customers = await self._link_mapped_payment_methods(
-            session, migration, parsed.mappings
+    ) -> None:
+        mappings = parse_payment_method_mapping_csv(contents)
+        payment_methods = await self._link_mapped_payment_methods(
+            session, migration, mappings
         )
         await self._rewrite_staged_payment_methods(
             session, migration.id, payment_methods
         )
-        summary = PaymentMethodMappingImportSummary(
-            linked=len(payment_methods),
-            customers_without_payment_method=len(
-                parsed.customers_without_payment_method
-            ),
-            skipped=[
-                *parsed.skipped,
-                *(
-                    f"Customer {customer_id} wasn't imported in this migration."
-                    for customer_id in unknown_customers
-                ),
-            ],
-        )
-        log.info(
-            "merchant_migration.payment_method_mappings.imported",
-            merchant_migration_id=migration.id,
-            linked=summary.linked,
-            customers_without_payment_method=summary.customers_without_payment_method,
-            skipped=len(summary.skipped),
-        )
-        return summary
 
     async def _link_mapped_payment_methods(
         self,
         session: AsyncSession,
         migration: MerchantMigration,
         mappings: Sequence[PaymentMethodMapping],
-    ) -> tuple[MappedPaymentMethods, Sequence[str]]:
+    ) -> MappedPaymentMethods:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)
         payment_methods: MappedPaymentMethods = {}
-        unknown_customers: MutableSequence[str] = []
         for mapping in mappings:
             customer_record = await record_repository.get_imported_customer_dependency(
                 migration.organization_id, mapping.customer_id
             )
-            customer = (
-                await customer_repository.get_by_id(customer_record.target_id)
-                if customer_record is not None and customer_record.target_id is not None
-                else None
-            )
+            if customer_record is None or customer_record.target_id is None:
+                continue
+            customer = await customer_repository.get_by_id(customer_record.target_id)
             if customer is None:
-                unknown_customers.append(mapping.customer_id)
                 continue
             payment_method = await link_mapped_payment_method(
                 session,
@@ -1123,7 +1097,7 @@ class MerchantMigrationService:
             payment_methods[mapping.customer_id, mapping.source_payment_method_id] = (
                 payment_method
             )
-        return payment_methods, unknown_customers
+        return payment_methods
 
     async def _rewrite_staged_payment_methods(
         self,

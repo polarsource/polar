@@ -56,21 +56,7 @@ class PaymentMethodMapping:
     destination_payment_method_id: str
 
 
-@dataclass(frozen=True)
-class ParsedPaymentMethodMappings:
-    mappings: list[PaymentMethodMapping]
-    customers_without_payment_method: frozenset[str]
-    skipped: list[str]
-
-
-@dataclass(frozen=True)
-class PaymentMethodMappingImportSummary:
-    linked: int
-    customers_without_payment_method: int
-    skipped: list[str]
-
-
-def parse_payment_method_mapping_csv(contents: bytes) -> ParsedPaymentMethodMappings:
+def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMapping]:
     try:
         decoded = contents.decode("utf-8-sig")
     except UnicodeDecodeError as e:
@@ -88,8 +74,6 @@ def parse_payment_method_mapping_csv(contents: bytes) -> ParsedPaymentMethodMapp
 
     by_source: dict[str, PaymentMethodMapping] = {}
     by_destination: dict[str, PaymentMethodMapping] = {}
-    customers_without_payment_method: set[str] = set()
-    skipped: list[str] = []
     for line_number, row in enumerate(reader, start=2):
         if None in row:
             raise PaymentMethodMappingCSVError(
@@ -107,21 +91,9 @@ def parse_payment_method_mapping_csv(contents: bytes) -> ParsedPaymentMethodMapp
             raise PaymentMethodMappingCSVError(
                 f"Line {line_number} changes the Stripe customer ID."
             )
-        # Stripe lists every copied customer, including those with no card.
-        if not values["source_id_old"] and not values["source_id_new"]:
-            customers_without_payment_method.add(values["customer_id_old"])
-            continue
-        if not values["source_id_new"]:
-            skipped.append(
-                f"Line {line_number}: source payment method "
-                f"{values['source_id_old']} has no copied payment method."
-            )
-            continue
-        if not values["source_id_old"]:
-            skipped.append(
-                f"Line {line_number}: copied payment method "
-                f"{values['source_id_new']} has no source payment method."
-            )
+        # Stripe lists every copied customer, including those with no card, and
+        # a row missing either side has no card we can map.
+        if not values["source_id_old"] or not values["source_id_new"]:
             continue
         mapping = PaymentMethodMapping(
             customer_id=values["customer_id_old"],
@@ -143,15 +115,7 @@ def parse_payment_method_mapping_csv(contents: bytes) -> ParsedPaymentMethodMapp
         by_source[mapping.source_payment_method_id] = mapping
         by_destination[mapping.destination_payment_method_id] = mapping
 
-    mappings = list(by_source.values())
-    return ParsedPaymentMethodMappings(
-        mappings=mappings,
-        customers_without_payment_method=frozenset(
-            customers_without_payment_method
-            - {mapping.customer_id for mapping in mappings}
-        ),
-        skipped=skipped,
-    )
+    return list(by_source.values())
 
 
 async def link_payment_method(

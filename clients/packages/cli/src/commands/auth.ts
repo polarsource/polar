@@ -24,6 +24,15 @@ const isSelected = (
 const describe = (organization: ActiveOrganization) =>
   `${ui.bold(organization.name)} ${ui.dim(organization.slug)} ${ui.dim(organization.environment)}`
 
+const organizationRows = (
+  organization: ActiveOrganization,
+): Array<readonly [string, string]> => [
+  ['Organization', ui.bold(organization.name)],
+  ['Slug', organization.slug],
+  ['Environment', organization.environment],
+  ['ID', ui.dim(organization.id)],
+]
+
 const notLoggedIn = Effect.gen(function* () {
   yield* Console.log(ui.warning('Not logged in'))
   yield* Console.log(
@@ -184,17 +193,16 @@ const whoami = Command.make('whoami', {}, () =>
     const environments = yield* auth.environments
     yield* Console.log(ui.blank)
     if (yield* auth.override) {
-      const rows: Array<readonly [string, string]> = [
-        ['Token', 'POLAR_ACCESS_TOKEN'],
-        ['Environment', environments[0]!],
-      ]
       const items = yield* organizations.listAll
       const organization = items.length === 1 ? items[0] : undefined
-      if (organization) {
-        rows.push(['Organization', describe(organization)])
-        rows.push(['ID', ui.dim(organization.id)])
-      }
-      yield* Console.log(ui.keyValue(rows))
+      yield* Console.log(
+        ui.keyValue([
+          ...(organization
+            ? organizationRows(organization)
+            : [['Environment', environments[0]!] as const]),
+          ['Token', 'POLAR_ACCESS_TOKEN'],
+        ]),
+      )
       if (!organization) {
         yield* Console.log(ui.blank)
         yield* Console.log(ui.warning('No active organization'))
@@ -208,24 +216,17 @@ const whoami = Command.make('whoami', {}, () =>
       return
     }
     if (environments.length === 0) return yield* notLoggedIn
-    const rows: Array<readonly [string, string]> = [
-      ['Logged in', environments.join(', ')],
-    ]
     const selection = yield* organizations.selected
     if (selection) {
       const organization = yield* organizations.resolve()
-      rows.push(['Organization', describe(organization)])
-      rows.push(['ID', ui.dim(organization.id)])
-    }
-    yield* Console.log(ui.keyValue(rows))
-    if (!selection) {
-      yield* Console.log(ui.blank)
+      yield* Console.log(ui.keyValue(organizationRows(organization)))
+    } else {
       yield* Console.log(ui.warning('No active organization'))
       yield* Console.log(ui.step(`Run ${ui.command(orgCommand)} to choose one`))
     }
     yield* Console.log(ui.blank)
   }),
-).pipe(Command.withDescription('Show your sessions and active organization'))
+).pipe(Command.withDescription('Show the active organization'))
 
 const list = Command.make('list', {}, () =>
   Effect.gen(function* () {

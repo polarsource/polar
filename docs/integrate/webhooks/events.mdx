@@ -275,10 +275,14 @@ The subscription data reflects the new period through `current_period_start` and
 
 When Polar takes over billing of a subscription imported from another provider, these events are sent at cutover:
 
-1. `subscription.updated`
-2. `subscription.migrated`
+- `subscription.updated`
+- `subscription.migrated`
+- `customer.state_changed`
+- `benefit_grant.created`, for any benefits attached to the product
 
-`subscription.migrated` carries `provider` and `provider_subscription_id` so you can match the Polar subscription to the source. Polar does not send `subscription.created` or `subscription.active` for this path.
+Polar enqueues `subscription.updated` before `subscription.migrated`, but delivery order isn't guaranteed.
+
+`subscription.migrated` carries `provider` and `provider_subscription_id` so you can match the Polar subscription to the source. Polar does not send `subscription.created`, `subscription.active`, or `subscription.resumed` for this path. A subscription already set to cancel at the end of its period arrives with `cancel_at_period_end` set, and gets `subscription.canceled` and `subscription.revoked` when that period ends.
 
 ### Orders
 

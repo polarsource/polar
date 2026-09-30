@@ -13,10 +13,7 @@ from tagflow import tag, text
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
 from polar.kit.pagination import PaginationParamsQuery
-from polar.merchant_migration.cards import (
-    PaymentMethodMappingCSVError,
-    PaymentMethodMappingImportSummary,
-)
+from polar.merchant_migration.cards import PaymentMethodMappingCSVError
 from polar.merchant_migration.pan_transfer import (
     STEP_STRIPE_COPY,
     PanStepOwner,
@@ -479,7 +476,6 @@ async def complete_step(
     current = current_pan_step(migration)
     inputs = step_inputs(migration, key)
     mapping_errors: Sequence[str] = []
-    mapping_summary: PaymentMethodMappingImportSummary | None = None
 
     if request.method == "POST":
         form_data = await request.form()
@@ -497,10 +493,8 @@ async def complete_step(
                         f"{PAYMENT_METHOD_MAPPING_MAX_BYTES // (1024 * 1024)} MB."
                     )
                 async with session.begin_nested():
-                    mapping_summary = (
-                        await merchant_migration_service.import_payment_method_mappings(
-                            session, migration, contents
-                        )
+                    await merchant_migration_service.import_payment_method_mappings(
+                        session, migration, contents
                     )
             await merchant_migration_service.complete_pan_step_as_ops(
                 session,
@@ -516,14 +510,6 @@ async def complete_step(
                 f"Completed “{PAN_STEP_LABELS.get(key, key)}”",
                 variant="success",
             )
-            if mapping_summary is not None:
-                views.mapping_import_summary(
-                    mapping_summary,
-                    detail_url=str(
-                        request.url_for("merchant_migrations:detail", id=id)
-                    ),
-                )
-                return None
             return _detail_redirect(request, id)
 
     label = PAN_STEP_LABELS.get(key, key)
@@ -587,8 +573,7 @@ async def complete_step(
                         text(
                             "Upload the CSV from Stripe Documents with "
                             "customer_id_old, source_id_old, customer_id_new, and "
-                            "source_id_new columns. Customers with no payment "
-                            "method are skipped and switch without a card."
+                            "source_id_new columns."
                         )
             with tag.div(classes="modal-action"):
                 with tag.form(method="dialog"):

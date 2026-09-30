@@ -1,0 +1,25 @@
+docs/integrate/webhooks/locally.mdx
+  s_ad8ff7da1a0178::t_bf5760eddb5fc7 15-16,20-21
+clients/packages/cli/README.md
+  s_ad8ff7da1a0178::t_bf5760eddb5fc7 146-149
+docs/integrate/webhooks/endpoints.mdx
+  s_ad8ff7da1a0178::t_bf5760eddb5fc7 79-80,84-85
+clients/packages/cli/scripts/npm-manifest.ts
+  s_ad8ff7da1a0178::t_bf5760eddb5fc7 113-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c240114ebecf7f667ac1e3d152684bbbbb5153c6",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

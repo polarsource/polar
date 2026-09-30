@@ -546,6 +546,7 @@ class SubscriptionCutover:
             self.migration.organization_id,
             options=(
                 selectinload(Product.prices),
+                selectinload(Product.all_prices),
                 joinedload(Product.organization),
             ),
         )

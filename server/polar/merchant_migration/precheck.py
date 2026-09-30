@@ -11,7 +11,7 @@ something, `info` when there is nothing to fix.
 from collections import Counter
 from collections.abc import AsyncIterable, Container, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -80,7 +80,6 @@ PRODUCT_DROP_CODES = {
     "one_time_product",
     "unsupported_recurring_interval",
     "product_name_too_short",
-    "multiple_prices_same_currency",
     "missing_default_currency_price",
 }
 PRICE_DROP_CODES = {
@@ -118,7 +117,6 @@ ACTION_REQUIRED_CODES = {
     "duplicate_customer_email",
     "product_name_too_short",
     "missing_default_currency_price",
-    "multiple_prices_same_currency",
     "send_invoice_collection",
     "customer_stripe_id_conflict",
     "customer_tax_id_dropped",
@@ -164,6 +162,10 @@ CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
 )
 _NO_IMPORTABLE_PRICE_REASON = (
     "None of this product's prices can be imported, so the product is skipped."
+)
+_UNSOLD_PRICE_REASON = (
+    "Polar sells one price per currency. Subscribers on this one keep paying what "
+    "they pay today, and new customers get the one Polar sells."
 )
 _MISSING_COUNTRY_REASON = (
     "No billing or payment-method country was found. The customer will import, "
@@ -496,8 +498,9 @@ class PrecheckEngine:
                     code="multiple_prices_same_currency",
                     message=(
                         f"Product '{product.name}' has {count} prices in "
-                        f"{currency.upper()}; Polar allows one per currency, so it "
-                        "and its subscriptions won't be imported."
+                        f"{currency.upper()}. Polar sells one of them and keeps "
+                        "the others as archived prices, so existing subscribers "
+                        "keep paying what they pay today."
                     ),
                     source_id=product.source_id,
                 )
@@ -520,14 +523,7 @@ class PrecheckEngine:
 
     def _importable_price_currencies(self, product: CanonicalProduct) -> Counter[str]:
         """How many prices Polar would take, per currency."""
-        currencies: Counter[str] = Counter()
-        for price in product.prices:
-            if (
-                _drop_reason(self._check_price(product, price), PRICE_DROP_CODES)
-                is None
-            ):
-                currencies[price.currency.lower()] += 1
-        return currencies
+        return Counter(price.currency.lower() for price in _importable_prices(product))
 
     def _check_price(
         self, product: CanonicalProduct, price: CanonicalPrice
@@ -1088,7 +1084,9 @@ def _product_items(
                 _interval_label(product),
                 skip=plan.skip,
                 note=note,
-                price=_representative_price(product, plan.importable_prices),
+                price=_representative_price(
+                    product, plan.importable_prices & _sold_price_keys(product)
+                ),
                 product_name=product.name,
                 product_source_id=product.product_source_id,
             )
@@ -1107,9 +1105,15 @@ def _price_items(
             precheck_engine._check_product(product, default_currency),
             PRODUCT_DROP_CODES,
         )
+        sold = _sold_price_keys(product)
         for price in product.prices:
             skip = product_skip or _drop_reason(
                 precheck_engine._check_price(product, price), PRICE_DROP_CODES
+            )
+            note = (
+                Reason("legacy_price", _UNSOLD_PRICE_REASON)
+                if canonical_price_key(price) not in sold
+                else None
             )
             subtitle = (
                 "No amount"
@@ -1123,6 +1127,7 @@ def _price_items(
                     product.name,
                     subtitle,
                     skip=skip,
+                    note=note,
                     price=PriceDisplay.of(product, price),
                     product_name=product.name,
                     product_source_id=product.product_source_id,
@@ -1471,14 +1476,7 @@ def plan_product_imports(
         if skip is not None:
             plans[product.source_id] = ProductImportPlan(skip, set())
             continue
-        prices = {
-            canonical_price_key(price)
-            for price in product.prices
-            if _drop_reason(
-                precheck_engine._check_price(product, price), PRICE_DROP_CODES
-            )
-            is None
-        }
+        prices = {canonical_price_key(price) for price in _importable_prices(product)}
         if not prices:
             plans[product.source_id] = ProductImportPlan(
                 Reason("no_importable_price", _NO_IMPORTABLE_PRICE_REASON), set()
@@ -1486,6 +1484,48 @@ def plan_product_imports(
         else:
             plans[product.source_id] = ProductImportPlan(None, prices)
     return plans
+
+
+def _importable_prices(product: CanonicalProduct) -> list[CanonicalPrice]:
+    return [
+        price
+        for price in product.prices
+        if _drop_reason(precheck_engine._check_price(product, price), PRICE_DROP_CODES)
+        is None
+    ]
+
+
+def _sale_rank(price: CanonicalPrice) -> tuple[bool, datetime]:
+    return price.is_default, price.created_at or datetime.min.replace(tzinfo=UTC)
+
+
+def _sold_prices(product: CanonicalProduct) -> dict[str, CanonicalPrice]:
+    """The price Polar sells in each currency: the source default, else the
+    newest."""
+    sold: dict[str, CanonicalPrice] = {}
+    for price in _importable_prices(product):
+        currency = price.currency.lower()
+        current = sold.get(currency)
+        if current is None or _sale_rank(price) > _sale_rank(current):
+            sold[currency] = price
+    return sold
+
+
+def _sold_price_keys(product: CanonicalProduct) -> set[PriceKey]:
+    return {canonical_price_key(price) for price in _sold_prices(product).values()}
+
+
+def archived_price_keys(product: CanonicalProduct) -> set[PriceKey]:
+    """Importable prices that bill another amount than the one Polar sells in
+    their currency. Each amount imports as an archived price on the same product,
+    so its subscribers keep paying it. A price at the sold amount bills through
+    the sold one."""
+    sold = _sold_prices(product)
+    return {
+        canonical_price_key(price)
+        for price in _importable_prices(product)
+        if price.amount != sold[price.currency.lower()].amount
+    }
 
 
 def plan_customer_imports(

@@ -34,8 +34,12 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
-from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
-from polar.product.repository import ProductRepository
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceFixed,
+    ProductPriceSource,
+)
+from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -61,6 +65,7 @@ from .precheck import (
     CUSTOMER_STRIPE_ID_CONFLICT_REASON,
     ProductImportPlan,
     Reason,
+    archived_price_keys,
     plan_customer_imports,
     plan_discount_imports,
     plan_product_imports,
@@ -185,6 +190,18 @@ def find_imported_price(
     if canonical_price is None:
         return None
     currency = canonical_price.currency.lower()
+    if key in archived_price_keys(canonical_product):
+        return next(
+            (
+                price
+                for price in product.all_prices
+                if isinstance(price, ProductPriceFixed)
+                and price.source == ProductPriceSource.catalog
+                and price.price_currency == currency
+                and price.price_amount == canonical_price.amount
+            ),
+            None,
+        )
     return next(
         (
             price
@@ -741,18 +758,27 @@ class CatalogImporter:
         self, product: CanonicalProduct, plan: ProductImportPlan
     ) -> Product:
         assert product.recurring_interval is not None
-        prices: list[ProductPriceCreate] = []
+        archived_keys = archived_price_keys(product)
+        sold_amounts: dict[str, int] = {}
+        archived_amounts: set[tuple[str, int]] = set()
         for price in product.prices:
-            if canonical_price_key(price) not in plan.importable_prices:
+            key = canonical_price_key(price)
+            if key not in plan.importable_prices:
                 continue
             assert price.amount is not None
-            prices.append(
-                ProductPriceFixedCreate(
-                    amount_type=ProductPriceAmountType.fixed,
-                    price_amount=price.amount,
-                    price_currency=PresentmentCurrency(price.currency.lower()),
-                )
+            currency = price.currency.lower()
+            if key in archived_keys:
+                archived_amounts.add((currency, price.amount))
+            else:
+                sold_amounts.setdefault(currency, price.amount)
+        prices: list[ProductPriceCreate] = [
+            ProductPriceFixedCreate(
+                amount_type=ProductPriceAmountType.fixed,
+                price_amount=amount,
+                price_currency=PresentmentCurrency(currency),
             )
+            for currency, amount in sold_amounts.items()
+        ]
         # A bulk import must not webhook or re-review the org for every product.
         # An organization token rejects an explicit organization_id.
         polar_product = await product_service.create(
@@ -769,6 +795,18 @@ class CatalogImporter:
             self.auth_subject,
             notify=False,
         )
+        # The create schema allows one price per currency; the others only bill
+        # the subscribers already on them, like a price replaced in the dashboard.
+        price_repository = ProductPriceRepository.from_session(self.session)
+        for currency, amount in archived_amounts:
+            await price_repository.create(
+                ProductPriceFixed(
+                    product=polar_product,
+                    price_currency=currency,
+                    price_amount=amount,
+                    is_archived=True,
+                )
+            )
         if product.archived:
             polar_product.is_archived = True
             await self.session.flush()

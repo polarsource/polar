@@ -22,6 +22,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
 )
 from polar.merchant_migration.precheck import (
+    archived_price_keys,
     classify_records,
     plan_customer_imports,
     plan_product_imports,
@@ -85,12 +86,16 @@ def build_price(
     currency: str = "usd",
     amount: int | None = 1000,
     pricing_scheme: CanonicalPricingScheme = CanonicalPricingScheme.fixed,
+    is_default: bool = False,
+    created_at: datetime | None = None,
 ) -> CanonicalPrice:
     return CanonicalPrice(
         source_id=source_id,
         currency=currency,
         amount=amount,
         pricing_scheme=pricing_scheme,
+        is_default=is_default,
+        created_at=created_at,
     )
 
 
@@ -990,22 +995,60 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
-    def test_two_prices_in_one_currency_skip_the_product(self) -> None:
+    @pytest.mark.parametrize(("old_is_default", "shown"), [(False, 1200), (True, 1000)])
+    def test_two_prices_in_one_currency_import_on_one_product(
+        self, old_is_default: bool, shown: int
+    ) -> None:
         records: list[CanonicalRecord] = [
             build_product(
                 product_source_id="prod_1",
                 prices=[
-                    build_price(source_id="price_old", amount=1000),
-                    build_price(source_id="price_new", amount=1200),
+                    build_price(
+                        source_id="price_old",
+                        amount=1000,
+                        is_default=old_is_default,
+                        created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                    ),
+                    build_price(
+                        source_id="price_new",
+                        amount=1200,
+                        created_at=datetime(2026, 2, 1, tzinfo=UTC),
+                    ),
                 ],
             )
         ]
 
         items = classify_records(records, PrecheckEntity.products, "usd")
 
-        assert items[0].status == PrecheckRecordStatus.skipped
-        assert items[0].reason_code == "multiple_prices_same_currency"
-        assert items[0].reason_level == PrecheckReasonLevel.action_required
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].reason_code is None
+        assert items[0].amount == shown
+
+    def test_subscription_on_a_legacy_price_imports(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_old", amount=1000),
+                    build_price(source_id="price_new", amount=1200, is_default=True),
+                ],
+            ),
+            build_customer(),
+            replace(build_subscription(), price_source_id="price_old"),
+        ]
+
+        [subscription] = classify_records(records, PrecheckEntity.subscriptions, "usd")
+        prices = {
+            item.source_id: item
+            for item in classify_records(records, PrecheckEntity.prices, "usd")
+        }
+
+        assert subscription.status == PrecheckRecordStatus.importable
+        assert subscription.amount == 1000
+        assert prices["price_old"].status == PrecheckRecordStatus.importable
+        assert prices["price_old"].reason_code == "legacy_price"
+        assert prices["price_old"].reason_level == PrecheckReasonLevel.info
+        assert prices["price_new"].reason_code is None
 
     def test_one_price_per_currency_imports(self) -> None:
         records: list[CanonicalRecord] = [
@@ -1697,6 +1740,42 @@ class TestPlanProductImports:
 
         assert plans[first.source_id].importable is True
         assert plans[second.source_id].importable is True
+
+
+class TestArchivedPriceKeys:
+    def test_other_amounts_in_a_sold_currency_are_archived(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_sold", amount=1200, is_default=True),
+                build_price(source_id="price_same", amount=1200),
+                build_price(source_id="price_old", amount=1000),
+                build_price(
+                    source_id="price_tiered",
+                    amount=500,
+                    pricing_scheme=CanonicalPricingScheme.tiered,
+                ),
+                build_price(source_id="price_eur", currency="eur", amount=900),
+            ]
+        )
+
+        assert archived_price_keys(product) == {("price_old", "usd")}
+
+    def test_a_default_multi_currency_price_is_sold_in_every_currency(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_new", amount=1200, is_default=True),
+                build_price(
+                    source_id="price_new", currency="eur", amount=1100, is_default=True
+                ),
+                build_price(source_id="price_old", amount=1000),
+                build_price(source_id="price_old", currency="eur", amount=900),
+            ]
+        )
+
+        assert archived_price_keys(product) == {
+            ("price_old", "usd"),
+            ("price_old", "eur"),
+        }
 
 
 class TestPlanCustomerImports:

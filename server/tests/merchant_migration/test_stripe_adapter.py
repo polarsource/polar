@@ -403,6 +403,8 @@ def _stripe_price(
     price_active: bool = True,
     product_name: str = "Pro",
     transform_quantity: dict[str, Any] | None = None,
+    default_price: str | None = None,
+    created: int | None = None,
 ) -> stripe_lib.Price:
     price: dict[str, Any] = {
         "transform_quantity": transform_quantity,
@@ -412,6 +414,7 @@ def _stripe_price(
         "currency": currency,
         "unit_amount": unit_amount,
         "billing_scheme": "per_unit",
+        "created": created,
         "recurring": {
             "interval": "month",
             "interval_count": 1,
@@ -422,6 +425,7 @@ def _stripe_price(
             "object": "product",
             "active": product_active,
             "name": product_name,
+            "default_price": default_price,
         },
     }
     if currency_options is not None:
@@ -672,6 +676,27 @@ class TestExtractProducts:
         assert {
             (p.source_id, p.amount) for p in by_id["prod_1:month:1:archived"].prices
         } == {("price_archived", 500)}
+
+    async def test_prices_carry_the_product_default_and_their_creation(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        _listed_prices(
+            mocker,
+            client,
+            _stripe_price(
+                id="price_new", default_price="price_new", created=1767225600
+            ),
+            _stripe_price(id="price_old", default_price="price_new", unit_amount=500),
+        )
+
+        [product] = await _extracted_products(adapter)
+
+        by_id = {price.source_id: price for price in product.prices}
+        assert by_id["price_new"].is_default is True
+        assert by_id["price_new"].created_at == datetime(2026, 1, 1, tzinfo=UTC)
+        assert by_id["price_old"].is_default is False
+        assert by_id["price_old"].created_at is None
 
     async def test_deleted_catalog_product_is_not_extracted(
         self, mocker: MockerFixture
